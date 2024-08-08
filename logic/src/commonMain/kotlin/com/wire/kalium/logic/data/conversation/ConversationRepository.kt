@@ -87,7 +87,17 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
+@Suppress("TooManyFunctions")
 interface ConversationRepository {
+    // region Get/Observe by id
+
+    suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
+    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
+    suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+    suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type>
+
+    // endregion
+
     @DelicateKaliumApi("This function does not get values from cache")
     suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId>
 
@@ -128,15 +138,9 @@ interface ConversationRepository {
 
     suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, Conversation>
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
-    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
-    suspend fun getConversationById(conversationId: ConversationId): Conversation?
-    suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>>
-    suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
-    suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getRecipientById(conversationId: ConversationId, userIDList: List<UserId>): Either<StorageFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
@@ -324,8 +328,43 @@ internal class ConversationDataSource internal constructor(
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationRepository {
 
-    // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
-    // this will help avoid some functions getting stuck when observeSelfUser will filter nullable values
+    // region Get/Observe by id
+
+    override suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>> =
+        conversationDAO.observeConversationById(conversationId.toDao()).filterNotNull()
+            .map(conversationMapper::fromDaoModel)
+            .wrapStorageRequest()
+
+    override suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getConversationById(conversationId.toDao())?.let {
+            conversationMapper.fromDaoModel(it)
+        }
+    }
+
+    override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
+        wrapStorageRequest {
+            conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
+                conversationMapper.fromConversationEntityType(it)
+            }
+        }
+    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
+        conversationDAO.observeConversationDetailsById(conversationID.toDao())
+            .wrapStorageRequest()
+            // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
+            .map { eitherConversationView ->
+                eitherConversationView.flatMap {
+                    try {
+                        Either.Right(conversationMapper.fromDaoModelToDetails(it, null, mapOf()))
+                    } catch (error: IllegalArgumentException) {
+                        kaliumLogger.e("require field in conversation Details", error)
+                        Either.Left(StorageFailure.DataNotFound)
+                    }
+                }
+            }
+            .distinctUntilChanged()
+
+    // endregion
+
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
         kaliumLogger.withFeatureId(CONVERSATIONS).d("Fetching conversations")
         return fetchAllConversationsFromAPI()
@@ -379,7 +418,7 @@ internal class ConversationDataSource internal constructor(
         selfUserTeamId: String?,
         originatedFromEvent: Boolean
     ): Either<CoreFailure, Boolean> = wrapStorageRequest {
-        val isNewConversation = conversationDAO.getConversationBaseInfoByQualifiedID(conversation.id.toDao()) == null
+        val isNewConversation = conversationDAO.getConversationById(conversation.id.toDao()) == null
         if (isNewConversation) {
             conversationDAO.insertConversation(
                 conversationMapper.fromApiModelToDaoModel(
@@ -513,7 +552,7 @@ internal class ConversationDataSource internal constructor(
                 selfUserTeamId = selfUserTeamId
             ).map { conversationResponse }
         }.flatMap { response ->
-            baseInfoById(response.id.toModel())
+            this.getConversationById(response.id.toModel())
         }
 
     private fun addOtherMemberIfMissing(
@@ -556,25 +595,6 @@ internal class ConversationDataSource internal constructor(
                 .map { it.toModel() }
         }
 
-    /**
-     * Gets a flow that allows observing of
-     */
-    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
-        conversationDAO.observeGetConversationByQualifiedID(conversationID.toDao())
-            .wrapStorageRequest()
-            // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
-            .map { eitherConversationView ->
-                eitherConversationView.flatMap {
-                    try {
-                        Either.Right(conversationMapper.fromDaoModelToDetails(it, null, mapOf()))
-                    } catch (error: IllegalArgumentException) {
-                        kaliumLogger.e("require field in conversation Details", error)
-                        Either.Left(StorageFailure.DataNotFound)
-                    }
-                }
-            }
-            .distinctUntilChanged()
-
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             conversationApi.fetchConversationDetails(conversationID.toApi())
@@ -598,46 +618,12 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationDAO.getConversationByQualifiedID(QualifiedIDEntity(conversationID.value, conversationID.domain))
+        conversationDAO.getConversationDetailsById(QualifiedIDEntity(conversationID.value, conversationID.domain))
     }.run {
         if (isLeft()) {
             fetchConversation(conversationID)
         } else {
             Either.Right(Unit)
-        }
-    }
-
-    // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
-    @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
-    override suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>> =
-        conversationDAO.observeGetConversationByQualifiedID(conversationId.toDao()).filterNotNull()
-            .map(conversationMapper::fromDaoModel)
-            .wrapStorageRequest()
-
-    // TODO: refactor. 3 Ways different ways to return conversation details?!
-    override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
-        conversationDAO.observeGetConversationByQualifiedID(conversationId.toDao())
-            .map { conversationEntity ->
-                conversationEntity?.let { conversationMapper.fromDaoModel(it) }
-            }.firstOrNull()
-
-    override suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>> =
-        wrapStorageRequest {
-            conversationDAO.observeConversationDetailsById(conversationId.toDao())
-                .map { conversationViewEntity ->
-                    conversationViewEntity?.let { conversationMapper.fromDaoModel(it) }
-                }
-        }
-
-    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
-        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let {
-            conversationMapper.fromDaoModel(it)
-        }
-    }
-
-    override suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
-        conversationDAO.getConversationBaseInfoByQualifiedID(conversationId.toDao())?.let {
-            conversationMapper.fromDaoModel(it)
         }
     }
 

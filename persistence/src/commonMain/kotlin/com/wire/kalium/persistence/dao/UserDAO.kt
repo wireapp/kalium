@@ -304,7 +304,13 @@ interface UserDAO {
      */
     suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
 
+    /**
+     * Update which 1-1 conversation iff it was not set before.
+     */
+    suspend fun updateActiveOneOnOneConversationIfNotSet(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
+
     suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>)
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean
     suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity?
+    suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized>
 }

@@ -131,7 +131,8 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
 
     override fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel =
         ConferenceCallingModel(
-            status = fromDTO(data.status)
+            status = fromDTO(data.status),
+            useSFTForOneOnOneCalls = data.config?.useSFTForOneToOneCalls ?: false
         )
 
     override fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel =

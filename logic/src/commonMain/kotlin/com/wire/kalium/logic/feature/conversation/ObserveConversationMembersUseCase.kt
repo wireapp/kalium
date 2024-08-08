@@ -49,6 +49,7 @@ class ObserveConversationMembersUseCaseImpl internal constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
         return conversationRepository.observeConversationMembers(conversationId).map { members ->
+            // TODO(perf): can be improved to fetch in a single query
             members.map { member ->
                 userRepository.observeUser(member.id).filterNotNull().map {
                     MemberDetails(it, member.role)

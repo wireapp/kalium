@@ -24,7 +24,6 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.data.call.CallActiveSpeakers
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 class OnActiveSpeakers(
@@ -36,9 +35,13 @@ class OnActiveSpeakers(
         val callActiveSpeakers = Json.decodeFromString<CallActiveSpeakers>(data)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
+        val onlyActiveSpeakers = callActiveSpeakers.activeSpeakers.filter { activeSpeaker ->
+            activeSpeaker.audioLevel > 0 || activeSpeaker.audioLevelNow > 0
+        }.groupBy({ qualifiedIdMapper.fromStringToQualifiedID(it.userId) }) { it.clientId }
+
         callRepository.updateParticipantsActiveSpeaker(
             conversationId = conversationIdWithDomain,
-            activeSpeakers = callActiveSpeakers
+            activeSpeakers = onlyActiveSpeakers
         )
     }
 }

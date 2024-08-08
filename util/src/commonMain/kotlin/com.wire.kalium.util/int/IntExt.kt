@@ -16,19 +16,19 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.util.int
 
-import com.wire.kalium.cryptography.CryptoCertificateStatus
-
-interface CertificateStatusMapper {
-    fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus
+@Suppress("MagicNumber")
+fun Int.toByteArray(): ByteArray {
+    return byteArrayOf(
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
 }
 
-class CertificateStatusMapperImpl : CertificateStatusMapper {
-    override fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus =
-        when (certificateStatus) {
-            CryptoCertificateStatus.EXPIRED -> CertificateStatus.EXPIRED
-            CryptoCertificateStatus.REVOKED -> CertificateStatus.REVOKED
-            CryptoCertificateStatus.VALID -> CertificateStatus.VALID
-        }
+@Suppress("MagicNumber")
+fun Int.toHexString(minDigits: Int = 4): String {
+    return "0x" + this.toString(16).padStart(minDigits, '0')
 }

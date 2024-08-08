@@ -71,7 +71,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             conferenceCallingConfigHandler.handle(it.conferenceCallingModel)
             passwordChallengeConfigHandler.handle(it.secondFactorPasswordChallengeModel)
             selfDeletingMessagesConfigHandler.handle(it.selfDeletingMessagesModel)
-            it.e2EIModel?.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
+            it.e2EIModel.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
             appLockConfigHandler.handle(it.appLockModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->

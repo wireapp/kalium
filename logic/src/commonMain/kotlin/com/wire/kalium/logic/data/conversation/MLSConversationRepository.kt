@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
-import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
@@ -99,17 +98,7 @@ data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?,
-    val identity: E2EIdentity?
-)
-
-data class E2EIdentity(
-    val clientId: CryptoQualifiedClientId,
-    val handle: String,
-    val displayName: String,
-    val domain: String,
-    val certificate: String,
-    val status: CryptoCertificateStatus,
-    val thumbprint: String
+    val identity: WireIdentity?
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -659,7 +648,9 @@ internal class MLSConversationDataSource(
             }
             if (!isNewClient) {
                 kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
-                keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
+                keyPackageRepository
+                    .replaceKeyPackages(clientId, rotateBundle.newKeyPackages, CipherSuite.fromTag(mlsClient.getDefaultCipherSuite()))
+                    .flatMapLeft {
                     return E2EIFailure.RotationAndMigration(it).left()
                 }
             }

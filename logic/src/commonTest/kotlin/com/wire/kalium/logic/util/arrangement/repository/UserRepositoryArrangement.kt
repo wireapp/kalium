@@ -88,6 +88,11 @@ internal interface UserRepositoryArrangement {
 
     suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
     suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
+    suspend fun withUpdateActiveOneOnOneConversationIfNotSet(
+        result: Either<CoreFailure, Unit>,
+        userId: Matcher<UserId> = AnyMatcher(valueOf()),
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
+    )
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -207,6 +212,19 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
 
     override suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<QualifiedID>) {
         coEvery { userRepository.getOneOnOnConversationId(matches { userId.matches(it) }) }
+            .returns(result)
+    }
+
+    override suspend fun withUpdateActiveOneOnOneConversationIfNotSet(
+        result: Either<CoreFailure, Unit>,
+        userId: Matcher<UserId>,
+        conversationId: Matcher<ConversationId>
+    ) {
+        coEvery {
+            userRepository.updateActiveOneOnOneConversationIfNotSet(
+                matches { userId.matches(it) },
+                matches { conversationId.matches(it) })
+        }
             .returns(result)
     }
 }

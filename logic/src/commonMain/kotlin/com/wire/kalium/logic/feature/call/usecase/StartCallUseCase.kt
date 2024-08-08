@@ -36,11 +36,13 @@ import kotlinx.coroutines.withContext
  * Will wait for sync to finish or fail if it is pending,
  * and return one [Result].
  */
+@Suppress("LongParameterList")
 class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
     private val syncManager: SyncManager,
     private val kaliumConfigs: KaliumConfigs,
     private val callRepository: CallRepository,
+    private val getCallConversationType: GetCallConversationTypeProvider,
     private val answerCall: AnswerCallUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -60,9 +62,13 @@ class StartCallUseCase internal constructor(
                     return@withContext Result.Success
                 }
             }
+
+            val callConversationType = getCallConversationType(conversationId)
+
             callManager.value.startCall(
                 conversationId = conversationId,
                 callType = callType,
+                conversationTypeCalling = callConversationType,
                 isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
             )
             return@withContext Result.Success
