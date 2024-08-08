@@ -19,6 +19,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUser
@@ -86,6 +87,7 @@ internal interface UserRepositoryArrangement {
         userIdList: Matcher<List<UserId>> = AnyMatcher(valueOf())
     )
 
+<<<<<<< HEAD
     suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
     suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
     suspend fun withUpdateActiveOneOnOneConversationIfNotSet(
@@ -93,6 +95,11 @@ internal interface UserRepositoryArrangement {
         userId: Matcher<UserId> = AnyMatcher(valueOf()),
         conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
+=======
+    fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
+    fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
+    fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>)
+>>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -226,5 +233,12 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
                 matches { conversationId.matches(it) })
         }
             .returns(result)
+    }
+
+    override fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
+        given(userRepository)
+            .suspendFunction(userRepository::getNameAndHandle)
+            .whenInvokedWith(userId)
+            .thenReturn(result)
     }
 }

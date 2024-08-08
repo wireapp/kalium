@@ -19,8 +19,10 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 
 /**
  * This use case is used to get the e2ei certificate status of specific user
@@ -31,11 +33,21 @@ interface IsOtherUserE2EIVerifiedUseCase {
 
 class IsOtherUserE2EIVerifiedUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
+    private val userRepository: UserRepository
 ) : IsOtherUserE2EIVerifiedUseCase {
     override suspend operator fun invoke(userId: UserId): Boolean =
+<<<<<<< HEAD
         isE2EIEnabledUseCase() && mlsConversationRepository.getUserIdentity(userId).fold(
             { false },
             { it.isUserMLSVerified() }
         )
+=======
+        if (isE2EIEnabledUseCase()) {
+            val nameHandle = userRepository.getNameAndHandle(userId).getOrNull()
+            mlsConversationRepository.getUserIdentity(userId).fold({ false }, { it.isUserMLSVerified(nameHandle) })
+        } else {
+            false
+        }
+>>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
 }
