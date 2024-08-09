@@ -22,7 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
-import com.wire.kalium.logic.data.call.MLSCallHelper
+import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -152,7 +152,7 @@ class OnParticipantListChangedTest {
         val userRepository = mock(UserRepository::class)
 
         @Mock
-        val mlsCallHelper = mock(MLSCallHelper::class)
+        val callHelper = mock(CallHelper::class)
 
         var isEndCallInvoked = false
 
@@ -163,7 +163,7 @@ class OnParticipantListChangedTest {
             participantMapper = participantMapper,
             userConfigRepository = userConfigRepository,
             userRepository = userRepository,
-            mlsCallHelper = mlsCallHelper,
+            callHelper = callHelper,
             qualifiedIdMapper = qualifiedIdMapper,
             endCall = {
                 isEndCallInvoked = true
@@ -200,8 +200,8 @@ class OnParticipantListChangedTest {
         }
 
         fun withShouldEndSFTOneOnOneCall(result: Boolean) = apply {
-            given(mlsCallHelper)
-                .function(mlsCallHelper::shouldEndSFTOneOnOneCall)
+            given(callHelper)
+                .function(callHelper::shouldEndSFTOneOnOneCall)
                 .whenInvokedWith(any(), any(), any(), any(), any())
                 .thenReturn(result)
         }

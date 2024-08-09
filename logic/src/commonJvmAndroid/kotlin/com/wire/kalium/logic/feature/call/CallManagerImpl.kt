@@ -37,7 +37,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
-import com.wire.kalium.logic.data.call.MLSCallHelperImpl
+import com.wire.kalium.logic.data.call.CallHelperImpl
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -198,7 +198,7 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
-                    mlsCallHelper = MLSCallHelperImpl(
+                    callHelper = CallHelperImpl(
                         callRepository = callRepository,
                         subconversationRepository = subconversationRepository,
                         userConfigRepository = userConfigRepository
@@ -478,7 +478,7 @@ class CallManagerImpl internal constructor(
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
                     userConfigRepository = userConfigRepository,
-                    mlsCallHelper = MLSCallHelperImpl(
+                    callHelper = CallHelperImpl(
                         callRepository = callRepository,
                         subconversationRepository = subconversationRepository,
                         userConfigRepository = userConfigRepository
