@@ -313,9 +313,6 @@ interface UserDAO {
     suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>)
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean
     suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity?
-<<<<<<< HEAD
     suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized>
-=======
     suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
->>>>>>> 20e5b8560d (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] 🍒 (#2939))
 }

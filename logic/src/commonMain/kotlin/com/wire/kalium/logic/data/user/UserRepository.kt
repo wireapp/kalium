@@ -162,11 +162,8 @@ interface UserRepository {
     suspend fun fetchUsersLegalHoldConsent(userIds: Set<UserId>): Either<CoreFailure, ListUsersLegalHoldConsent>
 
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
-<<<<<<< HEAD
     suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
-=======
     suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
->>>>>>> 20e5b8560d (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] 🍒 (#2939))
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")

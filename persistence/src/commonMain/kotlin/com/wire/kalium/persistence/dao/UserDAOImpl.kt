@@ -20,12 +20,8 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
-<<<<<<< HEAD
 import com.wire.kalium.persistence.cache.FlowCache
-=======
-import com.wire.kalium.persistence.cache.Cache
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
->>>>>>> 20e5b8560d (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] 🍒 (#2939))
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
