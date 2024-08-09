@@ -20,7 +20,12 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
+<<<<<<< HEAD
 import com.wire.kalium.persistence.cache.FlowCache
+=======
+import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
+>>>>>>> 20e5b8560d (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] 🍒 (#2939))
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -465,5 +470,9 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity? = withContext(queriesContext) {
         userQueries.selectOneOnOnConversationId(userId).executeAsOneOrNull()?.active_one_on_one_conversation_id
+    }
+
+    override suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity? = withContext(queriesContext) {
+        userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).executeAsOneOrNull()
     }
 }

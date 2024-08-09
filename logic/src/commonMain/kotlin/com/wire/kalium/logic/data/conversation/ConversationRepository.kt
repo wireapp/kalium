@@ -25,6 +25,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -57,8 +58,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -67,6 +66,8 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateConversation
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -303,6 +304,7 @@ interface ConversationRepository {
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
 
     suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
+    suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1101,6 +1103,13 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest {
             conversationDAO.selectGroupStatusMembersNamesAndHandles(groupID.value)
         }.map { EpochChangesData.fromEntity(it) }
+
+    override suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>> =
+        wrapStorageRequest {
+            memberDAO.selectMembersNameAndHandle(conversationId.toDao())
+                .mapValues { NameAndHandle.fromEntity(it.value) }
+                .mapKeys { it.key.toModel() }
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
