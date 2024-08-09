@@ -28,15 +28,16 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -128,10 +129,9 @@ class MLSCallHelperTest {
 
             mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.ONE_ON_ONE)
 
-            verify(arrangement.subconversationRepository)
-                .suspendFunction(arrangement.subconversationRepository::deleteRemoteSubConversation)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -150,10 +150,9 @@ class MLSCallHelperTest {
 
             mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.ONE_ON_ONE)
 
-            verify(arrangement.subconversationRepository)
-                .suspendFunction(arrangement.subconversationRepository::deleteRemoteSubConversation)
-                .with(eq(conversationId))
-                .wasNotInvoked()
+            coVerify {
+                arrangement.subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -165,10 +164,9 @@ class MLSCallHelperTest {
 
             mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.GROUP)
 
-            verify(arrangement.callRepository)
-                .suspendFunction(arrangement.callRepository::leaveMlsConference)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.callRepository.leaveMlsConference(any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -180,10 +178,9 @@ class MLSCallHelperTest {
 
             mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.GROUP)
 
-            verify(arrangement.callRepository)
-                .suspendFunction(arrangement.callRepository::leaveMlsConference)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+            }.wasInvoked(exactly = once)
         }
 
     private class Arrangement {
@@ -207,26 +204,21 @@ class MLSCallHelperTest {
 
         fun withShouldUseSFTForOneOnOneCallsReturning(result: Either<StorageFailure, Boolean>) =
             apply {
-                given(userConfigRepository)
-                    .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
-                    .whenInvoked()
-                    .thenReturn(result)
+                every { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(result)
             }
 
-        fun withFetchRemoteSubConversationDetailsReturning(result: Either<NetworkFailure, SubconversationResponse>) =
+        suspend fun withFetchRemoteSubConversationDetailsReturning(result: Either<NetworkFailure, SubconversationResponse>) =
             apply {
-                given(subconversationRepository)
-                    .suspendFunction(subconversationRepository::fetchRemoteSubConversationDetails)
-                    .whenInvokedWith(eq(conversationId), eq(CALL_SUBCONVERSATION_ID))
-                    .thenReturn(result)
+                coEvery {
+                    subconversationRepository.fetchRemoteSubConversationDetails(eq(conversationId), eq(CALL_SUBCONVERSATION_ID))
+                }.returns(result)
             }
 
-        fun withDeleteRemoteSubConversationSuccess() =
+        suspend fun withDeleteRemoteSubConversationSuccess() =
             apply {
-                given(subconversationRepository)
-                    .suspendFunction(subconversationRepository::deleteRemoteSubConversation)
-                    .whenInvokedWith(any(), any(), any())
-                    .thenReturn(Either.Right(Unit))
+                coEvery {
+                    subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
+                }.returns(Either.Right(Unit))
             }
     }
 
@@ -256,7 +248,7 @@ class MLSCallHelperTest {
         )
         val subconversationResponse = SubconversationResponse(
             id = "subconversationId",
-            parentId = com.wire.kalium.network.api.base.model.ConversationId(
+            parentId = com.wire.kalium.network.api.model.ConversationId(
                 "conversationId",
                 "domainId"
             ),

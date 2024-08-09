@@ -38,8 +38,9 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
@@ -78,20 +79,17 @@ class OnParticipantListChangedTest {
             )
             yield()
 
-            verify(arrangement.participantMapper)
-                .function(arrangement.participantMapper::fromCallMemberToParticipant)
-                .with(anything())
-                .wasInvoked(exactly = twice)
+            verify {
+                arrangement.participantMapper.fromCallMemberToParticipant(any())
+            }.wasInvoked(exactly = twice)
 
-            verify(arrangement.userRepository)
-                .suspendFunction(arrangement.userRepository::getKnownUserMinimized)
-                .with(anything())
-                .wasInvoked(exactly = twice)
+            coVerify {
+                arrangement.userRepository.getKnownUserMinimized(any())
+            }.wasInvoked(exactly = twice)
 
-            verify(arrangement.callRepository)
-                .function(arrangement.callRepository::updateCallParticipants)
-                .with(anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.callRepository.updateCallParticipants(any(), any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -172,54 +170,48 @@ class OnParticipantListChangedTest {
         )
 
         fun withUserConfigRepositoryReturning(result: Either<StorageFailure, Boolean>) = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
-                .whenInvoked()
-                .thenReturn(result)
+            every {
+                userConfigRepository.shouldUseSFTForOneOnOneCalls()
+            }.returns(result)
         }
 
         fun withParticipantMapper() = apply {
-            given(participantMapper)
-                .function(participantMapper::fromCallMemberToParticipant)
-                .whenInvokedWith(any())
-                .thenReturn(participant)
+            every {
+                participantMapper.fromCallMemberToParticipant(any())
+            }.returns(participant)
         }
 
         fun withProtocol() = apply {
-            given(callRepository)
-                .function(callRepository::currentCallProtocol)
-                .whenInvokedWith(any())
-                .thenReturn(mlsProtocolInfo)
+            every {
+                callRepository.currentCallProtocol(any())
+            }.returns(mlsProtocolInfo)
         }
 
-        fun withEstablishedCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallsFlow)
-                .whenInvoked()
-                .thenReturn(flowOf(listOf(call)))
+        suspend fun withEstablishedCall() = apply {
+            coEvery {
+                callRepository.establishedCallsFlow()
+            }.returns(flowOf(listOf(call)))
         }
 
         fun withShouldEndSFTOneOnOneCall(result: Boolean) = apply {
-            given(mlsCallHelper)
-                .function(mlsCallHelper::shouldEndSFTOneOnOneCall)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(result)
+            every {
+                mlsCallHelper.shouldEndSFTOneOnOneCall(any(), any(), any(), any(), any())
+            }.returns(result)
         }
 
-        fun withUserRepositorySuccess() = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getKnownUserMinimized)
-                .whenInvokedWith(any())
-                .thenReturn(
-                    Either.Right(
-                        OtherUserMinimized(
-                            TestUser.SELF.id,
-                            "name",
-                            null,
-                            UserType.ADMIN
-                        )
+        suspend fun withUserRepositorySuccess() = apply {
+            coEvery {
+                userRepository.getKnownUserMinimized(any())
+            }.returns(
+                Either.Right(
+                    OtherUserMinimized(
+                        TestUser.SELF.id,
+                        "name",
+                        null,
+                        UserType.ADMIN
                     )
                 )
+            )
         }
     }
 

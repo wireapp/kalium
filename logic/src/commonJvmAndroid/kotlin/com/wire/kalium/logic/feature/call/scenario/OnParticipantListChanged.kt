@@ -25,14 +25,18 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
@@ -42,15 +46,11 @@ class OnParticipantListChanged internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,
     private val userRepository: UserRepository,
-<<<<<<< HEAD
-    private val callingScope: CoroutineScope
-=======
     private val userConfigRepository: UserConfigRepository,
     private val mlsCallHelper: MLSCallHelper,
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope,
     private val jsonDecoder: Json = Json
->>>>>>> 3b8327e4ca (feat: End SFT oneOnOne call on proteus protocol (WPB-7153) (#2934))
 ) : ParticipantChangedHandler {
 
     override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {
@@ -75,8 +75,6 @@ class OnParticipantListChanged internal constructor(
                     participants.add(participant)
                 }
             }
-<<<<<<< HEAD
-=======
 
             if (userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false)) {
                 val callProtocol = callRepository.currentCallProtocol(conversationIdWithDomain)
@@ -96,7 +94,6 @@ class OnParticipantListChanged internal constructor(
                     }
                 }
             }
->>>>>>> 3b8327e4ca (feat: End SFT oneOnOne call on proteus protocol (WPB-7153) (#2934))
 
             callRepository.updateCallParticipants(
                 conversationId = conversationIdWithDomain,
