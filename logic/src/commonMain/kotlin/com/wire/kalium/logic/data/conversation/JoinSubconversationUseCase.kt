@@ -50,6 +50,7 @@ internal interface JoinSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 
+// TODO(refactor): usecase should not access API class directly, use SubconversationRepository instead
 internal class JoinSubconversationUseCaseImpl(
     private val conversationApi: ConversationApi,
     private val mlsConversationRepository: MLSConversationRepository,
