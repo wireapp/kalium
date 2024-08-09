@@ -24,8 +24,8 @@ import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 
-val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
-val DevelopmentApiVersions = setOf(6)
+val SupportedApiVersions: Set<Int> = setOf(0, 1, 2, 4, 5, 6)
+val DevelopmentApiVersions: Set<Int> = emptySet()
 
 interface BackendMetaDataUtil {
     fun calculateApiVersion(
