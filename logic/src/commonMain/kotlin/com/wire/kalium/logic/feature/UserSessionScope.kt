@@ -1845,6 +1845,7 @@ class UserSessionScope internal constructor(
             clientIdProvider,
             e2eiRepository,
             mlsConversationRepository,
+            conversationRepository,
             team.isSelfATeamMember,
             updateSupportedProtocols,
             clientRepository,
