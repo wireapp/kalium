@@ -35,12 +35,8 @@ import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArran
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
-<<<<<<< HEAD
 import io.mockative.coVerify
 import kotlinx.coroutines.runBlocking
-=======
-import io.mockative.verify
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -55,7 +51,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
                 withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
-                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")))
             }
 
             val result = getUserE2eiCertificateStatus(USER_ID)
@@ -69,7 +65,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
                 withUserIdentity(Either.Right(listOf()))
-                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")))
             }
 
             val result = getUserE2eiCertificateStatus(USER_ID)
@@ -82,7 +78,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
-                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")))
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -103,7 +99,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
-                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")))
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -124,7 +120,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
-                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")))
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -159,15 +155,12 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             }.wasNotInvoked()
         }
 
-<<<<<<< HEAD
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-=======
     @Test
     fun givenOneWireIdentityIsOk_whenUserNameDiffFromIdentityName_thenResultIsExpired() =
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
-                withNameAndHandle(Either.Right(NameAndHandle("another user displayName", "userHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("another user displayName", "userHandle")))
                 withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
             }
 
@@ -181,7 +174,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
-                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "anotherUserHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "anotherUserHandle")))
                 withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
             }
 
@@ -195,7 +188,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
-                withNameAndHandle(Either.Left(StorageFailure.DataNotFound), any())
+                withNameAndHandle(Either.Left(StorageFailure.DataNotFound))
                 withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
             }
 
@@ -209,7 +202,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
-                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")))
                 withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
             }
 
@@ -218,8 +211,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             assertTrue(result)
         }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {

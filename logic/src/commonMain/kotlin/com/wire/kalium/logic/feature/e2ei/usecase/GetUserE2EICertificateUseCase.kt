@@ -37,17 +37,10 @@ class IsOtherUserE2EIVerifiedUseCaseImpl internal constructor(
     private val userRepository: UserRepository
 ) : IsOtherUserE2EIVerifiedUseCase {
     override suspend operator fun invoke(userId: UserId): Boolean =
-<<<<<<< HEAD
-        isE2EIEnabledUseCase() && mlsConversationRepository.getUserIdentity(userId).fold(
-            { false },
-            { it.isUserMLSVerified() }
-        )
-=======
         if (isE2EIEnabledUseCase()) {
             val nameHandle = userRepository.getNameAndHandle(userId).getOrNull()
             mlsConversationRepository.getUserIdentity(userId).fold({ false }, { it.isUserMLSVerified(nameHandle) })
         } else {
             false
         }
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
 }

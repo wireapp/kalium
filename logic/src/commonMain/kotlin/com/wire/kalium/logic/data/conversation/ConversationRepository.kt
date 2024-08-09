@@ -58,8 +58,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -68,6 +66,8 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateConversation
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -1126,15 +1126,6 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.selectGroupStatusMembersNamesAndHandles(groupID.value)
         }.map { EpochChangesData.fromEntity(it) }
 
-<<<<<<< HEAD
-=======
-    override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
-        wrapStorageRequest {
-            conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
-                conversationMapper.fromConversationEntityType(it)
-            }
-        }
-
     override suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>> =
         wrapStorageRequest {
             memberDAO.selectMembersNameAndHandle(conversationId.toDao())
@@ -1142,7 +1133,6 @@ internal class ConversationDataSource internal constructor(
                 .mapKeys { it.key.toModel() }
         }
 
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
     }

@@ -30,13 +30,9 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatu
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
-<<<<<<< HEAD
-import io.mockative.matchers.EqualsMatcher
-import kotlinx.coroutines.runBlocking
-=======
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -116,14 +112,9 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             assertEquals(true, result[userId2])
         }
 
-<<<<<<< HEAD
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
-=======
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
 
         fun arrange() = run {
             runBlocking { block() }

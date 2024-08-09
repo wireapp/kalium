@@ -32,7 +32,6 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
-import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
@@ -87,7 +86,6 @@ internal interface UserRepositoryArrangement {
         userIdList: Matcher<List<UserId>> = AnyMatcher(valueOf())
     )
 
-<<<<<<< HEAD
     suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
     suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
     suspend fun withUpdateActiveOneOnOneConversationIfNotSet(
@@ -95,11 +93,8 @@ internal interface UserRepositoryArrangement {
         userId: Matcher<UserId> = AnyMatcher(valueOf()),
         conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
-=======
-    fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
-    fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
-    fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>)
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
+
+    suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -235,10 +230,7 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
             .returns(result)
     }
 
-    override fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
-        given(userRepository)
-            .suspendFunction(userRepository::getNameAndHandle)
-            .whenInvokedWith(userId)
-            .thenReturn(result)
+    override suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
+        coEvery { userRepository.getNameAndHandle(matches { userId.matches(it) }) }.returns(result)
     }
 }

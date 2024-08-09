@@ -107,18 +107,12 @@ internal interface ConversationRepositoryArrangement {
         }.returns(result)
     }
 
-<<<<<<< HEAD
     suspend fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>)
 
     suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
     suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
     suspend fun withPersistMembers(result: Either<StorageFailure, Unit>)
-=======
-    fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
-    fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
-    fun withPersistMembers(result: Either<StorageFailure, Unit>)
-    fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>)
->>>>>>> ddddd549fa (fix: Validate other members UserName and DisplayName in E2EI [WPB-10402] (#2932))
+    suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -280,10 +274,7 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         coEvery { conversationRepository.persistMembers(any(), any()) }.returns(result)
     }
 
-    override fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::selectMembersNameAndHandle)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
+        coEvery { conversationRepository.selectMembersNameAndHandle(any()) }.returns(result)
     }
 }
