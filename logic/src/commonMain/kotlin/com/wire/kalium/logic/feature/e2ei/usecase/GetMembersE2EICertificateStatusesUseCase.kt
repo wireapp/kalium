@@ -20,11 +20,14 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 
 /**
  * This use case is used to get the e2ei certificates of all the users in Conversation.
@@ -35,23 +38,27 @@ interface GetMembersE2EICertificateStatusesUseCase {
 }
 
 class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
-    private val mlsConversationRepository: MLSConversationRepository
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val conversationRepository: ConversationRepository
 ) : GetMembersE2EICertificateStatusesUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean> =
-        mlsConversationRepository.getMembersIdentities(conversationId, userIds).fold(
-            { mapOf() },
-            {
-                it.mapValues { (_, identities) ->
-                    // todo: we need to check the user name and details!
-                    identities.isUserMLSVerified()
+        mlsConversationRepository.getMembersIdentities(conversationId, userIds)
+            .map { identities ->
+                val usersNameAndHandle = conversationRepository.selectMembersNameAndHandle(conversationId).getOrElse(mapOf())
+
+                identities.mapValues { (userId, identities) ->
+                    identities.isUserMLSVerified(usersNameAndHandle[userId])
                 }
-            }
-        )
+            }.getOrElse(mapOf())
 }
 
 /**
  * @return if given user is verified or not
  */
-fun List<WireIdentity>.isUserMLSVerified() = this.isNotEmpty() && this.all {
-    it.x509Identity != null && it.credentialType == CredentialType.X509 && it.status == CryptoCertificateStatus.VALID
+fun List<WireIdentity>.isUserMLSVerified(nameAndHandle: NameAndHandle?) = this.isNotEmpty() && this.all {
+    it.x509Identity != null
+            && it.credentialType == CredentialType.X509
+            && it.status == CryptoCertificateStatus.VALID
+            && it.x509Identity?.handle?.handle == nameAndHandle?.handle
+            && it.x509Identity?.displayName == nameAndHandle?.name
 }
