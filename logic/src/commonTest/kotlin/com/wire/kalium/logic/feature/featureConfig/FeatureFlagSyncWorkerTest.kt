@@ -60,67 +60,21 @@ class FeatureFlagSyncWorkerTest {
 
     @Test
     fun givenSyncIsLiveTwiceInAShortInterval_thenShouldCallFeatureConfigsUseCaseOnlyOnce() = runTest {
-        val minimumInterval = 5.minutes
         val stateChannel = Channel<IncrementalSyncStatus>(capacity = Channel.UNLIMITED)
 
         val (arrangement, featureFlagSyncWorker) = arrange {
-            minimumIntervalBetweenPulls = minimumInterval
             withIncrementalSyncState(stateChannel.consumeAsFlow())
         }
         val job = launch {
             featureFlagSyncWorker.execute()
         }
-        stateChannel.send(IncrementalSyncStatus.Live)
         stateChannel.send(IncrementalSyncStatus.Pending)
-        advanceUntilIdle()
         stateChannel.send(IncrementalSyncStatus.Live)
         advanceUntilIdle() // Not enough to run twice
         coVerify {
             arrangement.syncFeatureConfigsUseCase.invoke()
         }.wasInvoked(exactly = once)
 
-        job.cancel()
-    }
-
-    @Test
-    fun givenSyncIsLiveAgainAfterMinInterval_thenShouldCallFeatureConfigsUseCaseTwice() = runTest {
-        val minInterval = 5.minutes
-        val now = Clock.System.now()
-        val stateTimes = mapOf(
-            now to IncrementalSyncStatus.Live,
-            now + minInterval + 1.milliseconds to IncrementalSyncStatus.Pending,
-            now + minInterval + 2.milliseconds to IncrementalSyncStatus.Live
-        )
-        val fakeClock = object : Clock {
-            var callCount = 0
-            override fun now(): Instant {
-                return stateTimes.keys.toList()[callCount].also { callCount++ }
-            }
-        }
-        val stateChannel = Channel<IncrementalSyncStatus>(capacity = Channel.UNLIMITED)
-        val (arrangement, featureFlagSyncWorker) = arrange {
-            minimumIntervalBetweenPulls = minInterval
-            withIncrementalSyncState(stateChannel.consumeAsFlow())
-            clock = fakeClock
-        }
-        stateChannel.send(stateTimes.values.toList()[0])
-        val job = launch {
-            featureFlagSyncWorker.execute()
-        }
-        advanceUntilIdle()
-
-        coVerify {
-            arrangement.syncFeatureConfigsUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        stateChannel.send(stateTimes.values.toList()[1])
-        advanceUntilIdle()
-
-        stateChannel.send(stateTimes.values.toList()[2])
-        advanceUntilIdle()
-
-        coVerify {
-            arrangement.syncFeatureConfigsUseCase.invoke()
-        }.wasInvoked(exactly = once)
         job.cancel()
     }
 
@@ -131,10 +85,6 @@ class FeatureFlagSyncWorkerTest {
         @Mock
         val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
 
-        var minimumIntervalBetweenPulls: Duration = 1.minutes
-
-        var clock: Clock = Clock.System
-
         suspend fun arrange(): Pair<Arrangement, FeatureFlagSyncWorkerImpl> = run {
             coEvery {
                 syncFeatureConfigsUseCase.invoke()
@@ -143,8 +93,6 @@ class FeatureFlagSyncWorkerTest {
             this@Arrangement to FeatureFlagSyncWorkerImpl(
                 incrementalSyncRepository = incrementalSyncRepository,
                 syncFeatureConfigs = syncFeatureConfigsUseCase,
-                minIntervalBetweenPulls = minimumIntervalBetweenPulls,
-                clock = clock,
                 kaliumLogger = kaliumLogger
             )
         }
