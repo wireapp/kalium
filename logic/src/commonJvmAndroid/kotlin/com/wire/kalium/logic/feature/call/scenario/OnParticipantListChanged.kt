@@ -25,7 +25,7 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.MLSCallHelper
+import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -47,7 +47,7 @@ class OnParticipantListChanged internal constructor(
     private val participantMapper: ParticipantMapper,
     private val userRepository: UserRepository,
     private val userConfigRepository: UserConfigRepository,
-    private val mlsCallHelper: MLSCallHelper,
+    private val callHelper: CallHelper,
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope,
     private val jsonDecoder: Json = Json
@@ -81,7 +81,7 @@ class OnParticipantListChanged internal constructor(
 
                 val currentCall = callRepository.establishedCallsFlow().first().firstOrNull()
                 currentCall?.let {
-                    val shouldEndSFTOneOnOneCall = mlsCallHelper.shouldEndSFTOneOnOneCall(
+                    val shouldEndSFTOneOnOneCall = callHelper.shouldEndSFTOneOnOneCall(
                         conversationId = conversationIdWithDomain,
                         callProtocol = callProtocol,
                         conversationType = it.conversationType,
