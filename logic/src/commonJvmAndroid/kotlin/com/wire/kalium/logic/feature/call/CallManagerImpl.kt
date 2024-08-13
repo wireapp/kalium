@@ -39,9 +39,13 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.MLSCallHelperImpl
+=======
+import com.wire.kalium.logic.data.call.CallHelperImpl
+>>>>>>> 375ca80e84 (chore: cleanup MLSCallHelper class (#2938))
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -216,8 +220,16 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
+<<<<<<< HEAD
                     mlsCallHelper = MLSCallHelperImpl(callRepository, subconversationRepository, userConfigRepository),
                     networkStateObserver = networkStateObserver,
+=======
+                    callHelper = CallHelperImpl(
+                        callRepository = callRepository,
+                        subconversationRepository = subconversationRepository,
+                        userConfigRepository = userConfigRepository
+                    ),
+>>>>>>> 375ca80e84 (chore: cleanup MLSCallHelper class (#2938))
                     scope = scope,
                     qualifiedIdMapper = qualifiedIdMapper
                 ).keepingStrongReference(),
@@ -542,7 +554,12 @@ class CallManagerImpl internal constructor(
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
+<<<<<<< HEAD
                     mlsCallHelper = MLSCallHelperImpl(
+=======
+                    userConfigRepository = userConfigRepository,
+                    callHelper = CallHelperImpl(
+>>>>>>> 375ca80e84 (chore: cleanup MLSCallHelper class (#2938))
                         callRepository = callRepository,
                         subconversationRepository = subconversationRepository,
                         userConfigRepository = userConfigRepository

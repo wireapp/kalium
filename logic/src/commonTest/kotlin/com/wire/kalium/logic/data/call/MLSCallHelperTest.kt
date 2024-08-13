@@ -196,7 +196,7 @@ class MLSCallHelperTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val mLSCallHelper: MLSCallHelper = MLSCallHelperImpl(
+        private val mLSCallHelper: CallHelper = CallHelperImpl(
             callRepository = callRepository,
             subconversationRepository = subconversationRepository,
             userConfigRepository = userConfigRepository

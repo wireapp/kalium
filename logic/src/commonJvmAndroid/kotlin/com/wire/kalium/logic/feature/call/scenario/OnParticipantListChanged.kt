@@ -24,7 +24,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.MLSCallHelper
+import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -45,7 +45,12 @@ class OnParticipantListChanged internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,
     private val userRepository: UserRepository,
+<<<<<<< HEAD
     private val mlsCallHelper: MLSCallHelper,
+=======
+    private val userConfigRepository: UserConfigRepository,
+    private val callHelper: CallHelper,
+>>>>>>> 375ca80e84 (chore: cleanup MLSCallHelper class (#2938))
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope
 ) : ParticipantChangedHandler {
@@ -74,6 +79,7 @@ class OnParticipantListChanged internal constructor(
             }
             val callProtocol = callRepository.currentCallProtocol(conversationIdWithDomain)
 
+<<<<<<< HEAD
             val currentCall = callRepository.establishedCallsFlow().first().firstOrNull()
             currentCall?.let {
                 val shouldEndSFTOneOnOneCall = mlsCallHelper.shouldEndSFTOneOnOneCall(
@@ -86,6 +92,24 @@ class OnParticipantListChanged internal constructor(
                 if (shouldEndSFTOneOnOneCall) {
                     kaliumLogger.i("[onParticipantChanged] - Ending MLS call due to participant leaving")
                     endCall(conversationIdWithDomain)
+=======
+            if (userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false)) {
+                val callProtocol = callRepository.currentCallProtocol(conversationIdWithDomain)
+
+                val currentCall = callRepository.establishedCallsFlow().first().firstOrNull()
+                currentCall?.let {
+                    val shouldEndSFTOneOnOneCall = callHelper.shouldEndSFTOneOnOneCall(
+                        conversationId = conversationIdWithDomain,
+                        callProtocol = callProtocol,
+                        conversationType = it.conversationType,
+                        newCallParticipants = participants,
+                        previousCallParticipants = it.participants
+                    )
+                    if (shouldEndSFTOneOnOneCall) {
+                        kaliumLogger.i("[onParticipantChanged] - Ending SFT one on one call due to participant leaving")
+                        endCall(conversationIdWithDomain)
+                    }
+>>>>>>> 375ca80e84 (chore: cleanup MLSCallHelper class (#2938))
                 }
             }
 

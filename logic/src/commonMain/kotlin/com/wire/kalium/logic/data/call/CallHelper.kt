@@ -30,13 +30,14 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 
 /**
- * Helper class to handle MLS call related operations.
+ * Helper class to handle call related operations.
  */
-interface MLSCallHelper {
+interface CallHelper {
 
     /**
-     * Check if the OneOnOne MLS call that uses SFT should be ended.
-     * The call should be ended if the call has two participants and the second participant has lost audio.
+     * Check if the OneOnOne call that uses SFT should be ended.
+     * For Proteus, the call should be ended if the call has one participant after having 2 in the call.
+     * For MLS, the call should be ended if the call has two participants and the second participant has lost audio.
      *
      * @param conversationId the conversation id.
      * @param callProtocol the call protocol.
@@ -55,7 +56,7 @@ interface MLSCallHelper {
 
     /**
      * Handle the call termination.
-     * If the call is a one on one call is oneOneOne on SFT, then delete MLS sub conversation
+     * If the call is oneOneOne on SFT, then delete MLS sub conversation
      * otherwise leave the MLS conference.
      *
      * @param conversationId the conversation id.
@@ -68,11 +69,11 @@ interface MLSCallHelper {
     )
 }
 
-class MLSCallHelperImpl(
+class CallHelperImpl(
     private val callRepository: CallRepository,
     private val subconversationRepository: SubconversationRepository,
     private val userConfigRepository: UserConfigRepository
-) : MLSCallHelper {
+) : CallHelper {
 
     override fun shouldEndSFTOneOnOneCall(
         conversationId: ConversationId,
@@ -94,12 +95,12 @@ class MLSCallHelperImpl(
         if (userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false) &&
             conversationType == Conversation.Type.ONE_ON_ONE
         ) {
-            callingLogger.i("[MLSCallHelper] -> fetching remote MLS sub conversation details")
+            callingLogger.i("[CallHelper] -> fetching remote MLS sub conversation details")
             subconversationRepository.fetchRemoteSubConversationDetails(
                 conversationId,
                 CALL_SUBCONVERSATION_ID
             ).onSuccess { subconversationDetails ->
-                callingLogger.i("[MLSCallHelper] -> Deleting remote MLS sub conversation")
+                callingLogger.i("[CallHelper] -> Deleting remote MLS sub conversation")
                 subconversationRepository.deleteRemoteSubConversation(
                     subconversationDetails.parentId.toModel(),
                     SubconversationId(subconversationDetails.id),
@@ -109,10 +110,10 @@ class MLSCallHelperImpl(
                     )
                 )
             }.onFailure {
-                callingLogger.e("[MLSCallHelper] -> Error fetching remote MLS sub conversation details")
+                callingLogger.e("[CallHelper] -> Error fetching remote MLS sub conversation details")
             }
         } else {
-            callingLogger.i("[MLSCallHelper] -> Leaving MLS conference")
+            callingLogger.i("[CallHelper] -> Leaving MLS conference")
             callRepository.leaveMlsConference(conversationId)
         }
     }
