@@ -531,7 +531,19 @@ class CallManagerImpl internal constructor(
                 val onParticipantListChanged = OnParticipantListChanged(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
+<<<<<<< HEAD
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
+=======
+                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
+                    userRepository = userRepository,
+                    userConfigRepository = userConfigRepository,
+                    mlsCallHelper = MLSCallHelperImpl(
+                        callRepository = callRepository,
+                        subconversationRepository = subconversationRepository,
+                        userConfigRepository = userConfigRepository
+                    ),
+                    endCall = { endCall(it) },
+>>>>>>> 58d7ee8954 (feat: End SFT oneOnOne call on proteus protocol (WPB-7153) 🍒 (#2936))
                     callingScope = scope
                 ).keepingStrongReference()
 
