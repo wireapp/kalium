@@ -266,3 +266,6 @@ WHERE m.user = :userId
 
 selectOneOnOnConversationId:
 SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :userId;
+
+selectNamesAndHandle:
+SELECT name, handle FROM User WHERE qualified_id = :userId;

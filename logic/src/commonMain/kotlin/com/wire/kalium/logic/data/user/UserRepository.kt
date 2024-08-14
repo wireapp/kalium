@@ -25,6 +25,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -150,6 +151,7 @@ interface UserRepository {
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
+    suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -572,6 +574,10 @@ internal class UserDataSource internal constructor(
     override suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId> = wrapStorageRequest {
         userDAO.getOneOnOnConversationId(userId.toDao())?.toModel()
     }
+
+    override suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle> = wrapStorageRequest {
+        userDAO.getNameAndHandle(userId.toDao())
+    }.map { NameAndHandle.fromEntity(it) }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
