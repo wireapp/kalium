@@ -56,8 +56,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
@@ -144,8 +144,8 @@ class MessageScope internal constructor(
             protoContentMapper = protoContentMapper
         )
 
-    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
-        get() = ValidateAssetMimeTypeUseCaseImpl()
+    private val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase
+        get() = ValidateAssetFileTypeUseCaseImpl()
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor

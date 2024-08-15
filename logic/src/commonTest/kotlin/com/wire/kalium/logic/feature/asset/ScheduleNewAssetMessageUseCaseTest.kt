@@ -706,7 +706,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
         @Mock
-        val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase = mock(ValidateAssetMimeTypeUseCase::class)
+        val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
 
         @Mock
         val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(ObserveFileSharingStatusUseCase::class)

@@ -22,18 +22,21 @@ package com.wire.kalium.logic.feature.asset
  * @param fileName the file name (with extension) to validate.
  * @param allowedExtension the list of allowed extension.
  */
-interface ValidateAssetMimeTypeUseCase {
-    operator fun invoke(fileName: String, allowedExtension: List<String>): Boolean
+interface ValidateAssetFileTypeUseCase {
+    operator fun invoke(fileName: String?, allowedExtension: List<String>): Boolean
 }
 
-internal class ValidateAssetMimeTypeUseCaseImpl : ValidateAssetMimeTypeUseCase {
-    override operator fun invoke(fileName: String, allowedExtension: List<String>): Boolean {
+internal class ValidateAssetFileTypeUseCaseImpl : ValidateAssetFileTypeUseCase {
+    override operator fun invoke(fileName: String?, allowedExtension: List<String>): Boolean {
+        if (fileName == null) return false
+
         val split = fileName.split(".")
         return if (split.size < 2) {
             false
         } else {
-            val extension = split.last().lowercase()
-            allowedExtension.any { it.lowercase() == extension }
+            val allowedExtensionLowerCase = allowedExtension.map { it.lowercase() }
+            val extensions = split.subList(1, split.size).map { it.lowercase() }
+            extensions.all { it.isNotEmpty() && allowedExtensionLowerCase.contains(it) }
         }
     }
 }

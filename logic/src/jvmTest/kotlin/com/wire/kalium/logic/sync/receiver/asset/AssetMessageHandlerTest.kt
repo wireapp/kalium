@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
@@ -44,7 +44,6 @@ import io.mockative.once
 import io.mockative.verify
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -383,7 +382,7 @@ class AssetMessageHandlerTest {
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         @Mock
-        val validateAssetMimeType = mock(classOf<ValidateAssetMimeTypeUseCase>())
+        val validateAssetMimeType = mock(classOf<ValidateAssetFileTypeUseCase>())
 
         private val assetMessageHandlerImpl = AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
 
