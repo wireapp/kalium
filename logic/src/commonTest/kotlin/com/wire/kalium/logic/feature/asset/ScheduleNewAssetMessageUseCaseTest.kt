@@ -628,7 +628,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         verify(arrangement.validateAssetMimeTypeUseCase)
             .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("text/plain"), eq(listOf("png")))
+            .with(eq("some-asset.txt"), eq(listOf("png")))
             .wasInvoked(exactly = once)
     }
 
@@ -636,7 +636,7 @@ class ScheduleNewAssetMessageUseCaseTest {
     fun givenAssetMimeTypeRestrictedAndFileAllowed_whenSending_thenReturnSendTheFile() = runTest(testDispatcher.default) {
         // Given
         val assetToSend = mockedLongAssetData()
-        val assetName = "some-asset.txt"
+        val assetName = "some-asset.png"
         val inputDataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
         val expectedAssetId = dummyUploadedAssetId
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
@@ -669,7 +669,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         verify(arrangement.validateAssetMimeTypeUseCase)
             .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("image/png"), eq(listOf("png")))
+            .with(eq("some-asset.png"), eq(listOf("png")))
             .wasInvoked(exactly = once)
     }
 

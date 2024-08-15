@@ -133,7 +133,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 FileSharingStatus.Value.EnabledAll -> { /* no-op*/
                 }
 
-                is FileSharingStatus.Value.EnabledSome -> if (!validateAssetMimeTypeUseCase(assetMimeType, it.state.allowedType)) {
+                is FileSharingStatus.Value.EnabledSome -> if (!validateAssetMimeTypeUseCase(assetName, it.state.allowedType)) {
                     kaliumLogger.e("The asset message trying to be processed has invalid content data")
                     return ScheduleNewAssetMessageResult.Failure.RestrictedFileType
                 }

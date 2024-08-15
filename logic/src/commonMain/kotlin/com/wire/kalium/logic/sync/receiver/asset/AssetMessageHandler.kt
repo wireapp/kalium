@@ -53,7 +53,7 @@ internal class AssetMessageHandlerImpl(
                 FileSharingStatus.Value.EnabledAll -> true
 
                 is FileSharingStatus.Value.EnabledSome -> validateAssetMimeTypeUseCase(
-                    messageContent.value.mimeType,
+                    messageContent.value.name ?: "",
                     it.state.allowedType
                 )
             }
