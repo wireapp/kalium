@@ -159,8 +159,8 @@ import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCaseImpl
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
@@ -1876,7 +1876,7 @@ class UserSessionScope internal constructor(
 
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
-    private val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
+    private val validateAssetMimeType: ValidateAssetFileTypeUseCase get() = ValidateAssetFileTypeUseCaseImpl()
 
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
