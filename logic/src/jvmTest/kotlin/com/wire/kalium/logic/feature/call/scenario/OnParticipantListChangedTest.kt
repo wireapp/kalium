@@ -195,7 +195,7 @@ class OnParticipantListChangedTest {
 
         fun withShouldEndSFTOneOnOneCall(result: Boolean) = apply {
             every {
-                mlsCallHelper.shouldEndSFTOneOnOneCall(any(), any(), any(), any(), any())
+                callHelper.shouldEndSFTOneOnOneCall(any(), any(), any(), any(), any())
             }.returns(result)
         }
 

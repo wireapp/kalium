@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestUser
@@ -317,7 +316,7 @@ class OnCloseCallTest {
             }.wasInvoked(once)
 
             coVerify {
-                mlsCallHelper.handleCallTermination(eq(conversationId), any())
+                callHelper.handleCallTermination(eq(conversationId), any())
             }.wasInvoked(once)
         }
 
