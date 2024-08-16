@@ -24,12 +24,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-<<<<<<< HEAD
 import com.wire.kalium.logic.data.message.hasValidData
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
-=======
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
->>>>>>> 9db15f2ff5 (fix: Check file extension instead of mimeType [WPB-10605] (#2950))
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger

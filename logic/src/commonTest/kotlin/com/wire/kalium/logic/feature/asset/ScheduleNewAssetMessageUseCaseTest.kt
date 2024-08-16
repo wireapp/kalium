@@ -628,16 +628,8 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
 
-<<<<<<< HEAD
-        verify {
-            arrangement.validateAssetMimeTypeUseCase(eq("text/plain"), eq(listOf("png")))
-        }.wasInvoked(exactly = once)
-=======
-        verify(arrangement.validateAssetMimeTypeUseCase)
-            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("some-asset.txt"), eq(listOf("png")))
+        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.txt"), eq(listOf("png"))) }
             .wasInvoked(exactly = once)
->>>>>>> 9db15f2ff5 (fix: Check file extension instead of mimeType [WPB-10605] (#2950))
     }
 
     @Test
@@ -675,16 +667,8 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-<<<<<<< HEAD
-        verify {
-            arrangement.validateAssetMimeTypeUseCase(eq("image/png"), eq(listOf("png")))
-        }.wasInvoked(exactly = once)
-=======
-        verify(arrangement.validateAssetMimeTypeUseCase)
-            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("some-asset.png"), eq(listOf("png")))
+        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.png"), eq(listOf("png"))) }
             .wasInvoked(exactly = once)
->>>>>>> 9db15f2ff5 (fix: Check file extension instead of mimeType [WPB-10605] (#2950))
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {

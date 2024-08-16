@@ -58,20 +58,11 @@ import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
-<<<<<<< HEAD
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
-import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
-=======
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
->>>>>>> 9db15f2ff5 (fix: Check file extension instead of mimeType [WPB-10605] (#2950))
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler

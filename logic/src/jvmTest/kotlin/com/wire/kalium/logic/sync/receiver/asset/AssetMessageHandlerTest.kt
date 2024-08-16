@@ -262,23 +262,19 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                it.id == updateAssetMessage.id
-                        && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
-                        && it.visibility == Message.Visibility.VISIBLE
-            })
+        coVerify {
+            arrangement.persistMessage(
+                matches {
+                    it.id == updateAssetMessage.id
+                            && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
+                            && it.visibility == Message.Visibility.VISIBLE
+                })
+        }.wasInvoked(exactly = once)
+
+        coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
             .wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.validateAssetMimeType)
-            .suspendFunction(arrangement.validateAssetMimeType::invoke)
-            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType))
+        coVerify { arrangement.validateAssetMimeType(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType)) }
             .wasInvoked(exactly = once)
     }
 
@@ -301,23 +297,18 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage(matches {
                 it.id == updateAssetMessage.id
                         && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
                         && it.visibility == updateAssetMessage.visibility
             })
+        }.wasInvoked(exactly = once)
+
+        coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
             .wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.validateAssetMimeType)
-            .suspendFunction(arrangement.validateAssetMimeType::invoke)
-            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType))
+        coVerify { arrangement.validateAssetMimeType(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType)) }
             .wasInvoked(exactly = once)
     }
 
@@ -340,23 +331,18 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage(matches {
                 it.id == updateAssetMessage.id
                         && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
                         && it.visibility == updateAssetMessage.visibility
             })
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+        coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
             .wasNotInvoked()
 
-        verify(arrangement.validateAssetMimeType)
-            .suspendFunction(arrangement.validateAssetMimeType::invoke)
-            .with(any<String>(), any<List<String>>())
+        coVerify { arrangement.validateAssetMimeType(any<String>(), any<List<String>>()) }
             .wasNotInvoked()
     }
 
@@ -372,11 +358,7 @@ class AssetMessageHandlerTest {
         val userConfigRepository = mock(UserConfigRepository::class)
 
         @Mock
-<<<<<<< HEAD
-        val validateAssetMimeType = mock(ValidateAssetMimeTypeUseCase::class)
-=======
-        val validateAssetMimeType = mock(classOf<ValidateAssetFileTypeUseCase>())
->>>>>>> 9db15f2ff5 (fix: Check file extension instead of mimeType [WPB-10605] (#2950))
+        val validateAssetMimeType = mock(ValidateAssetFileTypeUseCase::class)
 
         private val assetMessageHandlerImpl =
             AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
