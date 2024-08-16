@@ -24,8 +24,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+=======
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
+>>>>>>> 9db15f2ff5 (fix: Check file extension instead of mimeType [WPB-10605] (#2950))
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -38,7 +42,7 @@ internal class AssetMessageHandlerImpl(
     private val messageRepository: MessageRepository,
     private val persistMessage: PersistMessageUseCase,
     private val userConfigRepository: UserConfigRepository,
-    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
+    private val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase
 ) : AssetMessageHandler {
 
     override suspend fun handle(message: Message.Regular) {
@@ -53,7 +57,7 @@ internal class AssetMessageHandlerImpl(
                 FileSharingStatus.Value.EnabledAll -> true
 
                 is FileSharingStatus.Value.EnabledSome -> validateAssetMimeTypeUseCase(
-                    messageContent.value.mimeType,
+                    messageContent.value.name,
                     it.state.allowedType
                 )
             }
