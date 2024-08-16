@@ -58,7 +58,7 @@ class MLSCallHelperTest {
                 conversationId = conversationId,
                 callProtocol = Conversation.ProtocolInfo.Proteus,
                 conversationType = Conversation.Type.ONE_ON_ONE,
-                newCallParticipants = listOf(participant1, participant2),
+                newCallParticipants = listOf(participantMinimized1, participantMinimized2),
                 previousCallParticipants = listOf(participant1, participant2)
             )
             assertFalse { shouldEndSFTOneOnOneCall1 }
@@ -68,7 +68,7 @@ class MLSCallHelperTest {
                 conversationId = conversationId,
                 callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
                 conversationType = Conversation.Type.ONE_ON_ONE,
-                newCallParticipants = listOf(participant1),
+                newCallParticipants = listOf(participantMinimized1),
                 previousCallParticipants = listOf(participant1)
             )
             assertFalse { shouldEndSFTOneOnOneCall2 }
@@ -78,7 +78,7 @@ class MLSCallHelperTest {
                 conversationId = conversationId,
                 callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
                 conversationType = Conversation.Type.GROUP,
-                newCallParticipants = listOf(participant1, participant2),
+                newCallParticipants = listOf(participantMinimized1, participantMinimized2),
                 previousCallParticipants = listOf(participant1, participant2)
             )
             assertFalse { shouldEndSFTOneOnOneCall3 }
@@ -90,8 +90,8 @@ class MLSCallHelperTest {
                 conversationType = Conversation.Type.ONE_ON_ONE,
                 previousCallParticipants = listOf(participant1, participant2),
                 newCallParticipants = listOf(
-                    participant1,
-                    participant2.copy(hasEstablishedAudio = false)
+                    participantMinimized1,
+                    participantMinimized2.copy(hasEstablishedAudio = false)
                 )
             )
             assertTrue { shouldEndSFTOneOnOneCall4 }
@@ -107,8 +107,8 @@ class MLSCallHelperTest {
                 conversationType = Conversation.Type.ONE_ON_ONE,
                 previousCallParticipants = listOf(participant1, participant2),
                 newCallParticipants = listOf(
-                    participant1,
-                    participant2.copy(hasEstablishedAudio = false)
+                    participantMinimized1,
+                    participantMinimized2.copy(hasEstablishedAudio = false)
                 )
             )
             assertFalse { shouldEndSFTOneOnOneCall5 }
@@ -237,6 +237,19 @@ class MLSCallHelperTest {
             5UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        )
+        val participantMinimized1 = ParticipantMinimized(
+            id = QualifiedID("participantId", "participantDomain"),
+            userId = QualifiedID("participantId", "participantDomain"),
+            clientId = "abcd",
+            isMuted = true,
+            isCameraOn = false,
+            isSharingScreen = false,
+            hasEstablishedAudio = true
+        )
+        val participantMinimized2 = participantMinimized1.copy(
+            id = QualifiedID("participantId2", "participantDomain2"),
+            clientId = "efgh"
         )
         val participant1 = Participant(
             id = QualifiedID("participantId", "participantDomain"),
