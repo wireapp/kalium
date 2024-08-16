@@ -114,13 +114,13 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                 // check that all identities are valid and name and handle are matching
                 for ((userId, wireIdentity) in ccIdentity) {
                     val persistedMemberInfo = dbData.members[userId]
-                    val isUserVerified = wireIdentity.firstOrNull {
+                    val isUserVerified = wireIdentity.none {
                         it.status != CryptoCertificateStatus.VALID ||
                                 it.credentialType != CredentialType.X509 ||
                                 it.x509Identity == null ||
                                 it.x509Identity?.displayName != persistedMemberInfo?.name ||
                                 it.x509Identity?.handle?.handle != persistedMemberInfo?.handle
-                    } == null
+                    }
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED
                         break
@@ -141,7 +141,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
         var dbData = epochChangesData
 
         val missingUsers = missingUsers(
-            usersFromDB = epochChangesData.members.keys.map { it }.toSet(),
+            usersFromDB = epochChangesData.members.keys,
             usersFromCC = ccIdentities.keys
         )
 
