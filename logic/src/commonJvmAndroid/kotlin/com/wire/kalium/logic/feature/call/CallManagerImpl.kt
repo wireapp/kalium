@@ -541,18 +541,13 @@ class CallManagerImpl internal constructor(
                 val onParticipantListChanged = OnParticipantListChanged(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
-<<<<<<< HEAD
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
-=======
-                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
-                    userRepository = userRepository,
                     mlsCallHelper = MLSCallHelperImpl(
                         callRepository = callRepository,
                         subconversationRepository = subconversationRepository,
                         userConfigRepository = userConfigRepository
                     ),
                     endCall = { endCall(it) },
->>>>>>> a979cce019 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) 🍒 (#2930))
                     callingScope = scope
                 ).keepingStrongReference()
 

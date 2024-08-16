@@ -49,7 +49,7 @@ interface MLSCallHelper {
         conversationId: ConversationId,
         callProtocol: Conversation.ProtocolInfo?,
         conversationType: Conversation.Type,
-        newCallParticipants: List<Participant>,
+        newCallParticipants: List<ParticipantMinimized>,
         previousCallParticipants: List<Participant>
     ): Boolean
 
@@ -78,7 +78,7 @@ class MLSCallHelperImpl(
         conversationId: ConversationId,
         callProtocol: Conversation.ProtocolInfo?,
         conversationType: Conversation.Type,
-        newCallParticipants: List<Participant>,
+        newCallParticipants: List<ParticipantMinimized>,
         previousCallParticipants: List<Participant>
     ) = callProtocol is Conversation.ProtocolInfo.MLS &&
             userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false) &&
