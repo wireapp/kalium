@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
@@ -54,6 +55,12 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
+<<<<<<< HEAD
+=======
+    @Mock
+    val callHelper = mock(classOf<CallHelper>())
+
+>>>>>>> ec81cb6db0 (chore: cleanup MLSCallHelper class (WPB-7153) - cherrypick RC (#2957))
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -66,6 +73,10 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
+<<<<<<< HEAD
+=======
+            callHelper,
+>>>>>>> ec81cb6db0 (chore: cleanup MLSCallHelper class (WPB-7153) - cherrypick RC (#2957))
             testScope,
             qualifiedIdMapper,
             networkStateObserver
@@ -252,10 +263,17 @@ class OnCloseCallTest {
             callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
         }.wasInvoked(once)
 
+<<<<<<< HEAD
         coVerify {
             callRepository.leaveMlsConference(eq(conversationId))
         }.wasInvoked(once)
     }
+=======
+            coVerify {
+                callHelper.handleCallTermination(eq(conversationId), any())
+            }.wasInvoked(once)
+        }
+>>>>>>> ec81cb6db0 (chore: cleanup MLSCallHelper class (WPB-7153) - cherrypick RC (#2957))
 
     @Test
     fun givenDeviceOffline_whenOnCloseCallBackHappens_thenDoNotPersistMissedCall() = testScope.runTest {

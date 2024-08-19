@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
+import com.wire.kalium.logic.data.call.CallHelperImpl
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
@@ -209,8 +210,18 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
                     .keepingStrongReference(),
+<<<<<<< HEAD
                 closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper, networkStateObserver)
                     .keepingStrongReference(),
+=======
+                closeCallHandler = OnCloseCall(
+                    callRepository = callRepository,
+                    callHelper = CallHelperImpl(callRepository, subconversationRepository, userConfigRepository),
+                    networkStateObserver = networkStateObserver,
+                    scope = scope,
+                    qualifiedIdMapper = qualifiedIdMapper
+                ).keepingStrongReference(),
+>>>>>>> ec81cb6db0 (chore: cleanup MLSCallHelper class (WPB-7153) - cherrypick RC (#2957))
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
                     .keepingStrongReference(),
@@ -531,7 +542,19 @@ class CallManagerImpl internal constructor(
                 val onParticipantListChanged = OnParticipantListChanged(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
+<<<<<<< HEAD
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
+=======
+                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
+                    userRepository = userRepository,
+                    userConfigRepository = userConfigRepository,
+                    callHelper = CallHelperImpl(
+                        callRepository = callRepository,
+                        subconversationRepository = subconversationRepository,
+                        userConfigRepository = userConfigRepository
+                    ),
+                    endCall = { endCall(it) },
+>>>>>>> ec81cb6db0 (chore: cleanup MLSCallHelper class (WPB-7153) - cherrypick RC (#2957))
                     callingScope = scope
                 ).keepingStrongReference()
 
