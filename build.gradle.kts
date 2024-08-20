@@ -157,7 +157,6 @@ tasks.register("runAllUnitTests") {
     }
 }
 
-
 tasks.register("aggregateTestResults") {
     description = "Aggregates all Unit Test results into a single report."
 
