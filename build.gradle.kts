@@ -139,11 +139,11 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
 
 tasks.dokkaHtmlMultiModule.configure {}
 
-<<<<<<< HEAD
 moduleGraphConfig {
     readmePath.set("./README.md")
     heading.set("#### Dependency Graph")
-=======
+}
+
 tasks.register("runAllUnitTests") {
     description = "Runs all Unit Tests."
 
@@ -215,5 +215,4 @@ tasks.register("aggregateTestResults") {
         val relativePath = testResultsDir.relativeTo(currentWorkingDir).path
         println("Aggregated test reports are available at: $relativePath")
     }
->>>>>>> 4330df7149 (ci: run jvm and android unit tests and aggregating results [WPB-10599] (#2960))
 }
