@@ -323,7 +323,8 @@ WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qu
 selectOneOnOneConversationIdsByProtocol:
 SELECT Member.conversation FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = :protocol AND Member.user = :user;
+WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = :protocol AND Member.user = :user
+ORDER BY Member.conversation ASC;
 
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
