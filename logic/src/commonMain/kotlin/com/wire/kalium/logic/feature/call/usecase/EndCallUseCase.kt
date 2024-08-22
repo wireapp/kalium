@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -46,6 +47,8 @@ interface EndCallUseCase {
 internal class EndCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
+    private val endCallListener: EndCallResultListener,
+    private val shouldAskCallFeedbackUseCase: ShouldAskCallFeedbackUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : EndCallUseCase {
 
@@ -73,5 +76,6 @@ internal class EndCallUseCaseImpl(
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
+        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedbackUseCase())
     }
 }

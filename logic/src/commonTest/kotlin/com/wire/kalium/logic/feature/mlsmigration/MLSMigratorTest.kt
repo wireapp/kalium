@@ -39,7 +39,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.logic.util.arrangement.CallRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException

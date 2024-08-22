@@ -50,6 +50,7 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
@@ -74,6 +75,8 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.video.SetVideoSendStateUseCase
 import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
+import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.user.UpdateNextTimeCallFeedbackUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.KaliumDispatcher
@@ -145,7 +148,13 @@ class CallsScope internal constructor(
             kaliumConfigs
         )
 
-    val endCall: EndCallUseCase get() = EndCallUseCaseImpl(callManager, callRepository, KaliumDispatcherImpl)
+    val endCall: EndCallUseCase
+        get() = EndCallUseCaseImpl(
+            callManager = callManager,
+            callRepository = callRepository,
+            endCallListener = EndCallResultListenerImpl,
+            shouldAskCallFeedbackUseCase = shouldAskCallFeedbackUseCase
+        )
 
     val endCallOnConversationChange: EndCallOnConversationChangeUseCase
         get() = EndCallOnConversationChangeUseCaseImpl(
@@ -198,6 +207,14 @@ class CallsScope internal constructor(
 
     val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 
-    val observeEndCallDialog: ObserveEndCallDueToConversationDegradationUseCase
+    val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
         get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
+    val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
+        get() = ObserveAskCallFeedbackUseCase(EndCallResultListenerImpl)
+
+    private val shouldAskCallFeedbackUseCase: ShouldAskCallFeedbackUseCase by lazy { ShouldAskCallFeedbackUseCase(userConfigRepository) }
+
+    val updateNextTimeCallFeedback: UpdateNextTimeCallFeedbackUseCase by lazy {
+        UpdateNextTimeCallFeedbackUseCase(userConfigRepository)
+    }
 }
