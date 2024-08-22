@@ -226,7 +226,6 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun setNextTimeForCallFeedback(timestamp: Long) =
         metadataDAO.insertValue(timestamp.toString(), NEXT_TIME_TO_ASK_CALL_FEEDBACK)
 
-
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
