@@ -123,7 +123,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 cryptoboxAndroid = { module = "com.wire:cryptobox-android", version.ref = "cryptobox-android" }
 cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
 androidCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "android-security" }
-coreCrypto = { module = "com.wire:core-crypto", version.ref = "core-crypto" }
+coreCrypto = { module = "com.wire:core-crypto", version.ref = "core-crypto-multiplatform" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
