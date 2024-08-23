@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
@@ -65,6 +66,7 @@ interface MemberDAO {
     ): Map<ConversationIDEntity, List<UserIDEntity>>
 
     suspend fun getOneOneConversationWithFederatedMembers(domain: String): Map<ConversationIDEntity, UserIDEntity>
+    suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity): Map<QualifiedIDEntity, NameAndHandleEntity>
 }
 
 @Suppress("TooManyFunctions")
@@ -220,5 +222,10 @@ internal class MemberDAOImpl internal constructor(
         memberQueries.selectFederatedMembersFromOneOnOneConversations(domain)
             .executeAsList()
             .associateBy({ it.conversation }, { it.user })
+    }
+
+    override suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+            .let { members -> members.associate { it.user to NameAndHandleEntity(it.name, it.handle) } }
     }
 }
