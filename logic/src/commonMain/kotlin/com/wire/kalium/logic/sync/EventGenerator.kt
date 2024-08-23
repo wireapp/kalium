@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.benasher44.uuid.Uuid
-import com.benasher44.uuid.UuidHasher
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
@@ -47,7 +45,7 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserID)
     private val sessionId = CryptoSessionId(targetClient.userId.toCrypto(), CryptoClientId(targetClient.clientId.value))
 
-    suspend fun generateEvents(
+    fun generateEvents(
         limit: Int,
         conversationId: ConversationId,
     ): Flow<EventResponse> {
@@ -97,7 +95,8 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
     fun generateEventResponse(event: EventContentDTO): EventResponse {
         return EventResponse(
             id = uuid4().toString(), // TODO jacob (should actually be UUIDv1)
-            payload = listOf(event)
+            payload = listOf(event),
+            transient = true         // All events are transient to avoid persisting an incorrect last event id
         )
     }
 
