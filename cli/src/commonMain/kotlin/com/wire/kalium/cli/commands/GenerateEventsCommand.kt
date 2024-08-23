@@ -34,8 +34,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
+import kotlinx.io.Buffer
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.writeString
 
 class GenerateEventsCommand : CliktCommand(name = "generate-events") {
 
@@ -44,6 +49,7 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
     private val targetClientId: String by option(help = "Target Client which events will be generator for.").required()
     private val conversationId: String by option(help = "Target conversation which which will receive the events").required()
     private val eventLimit: Int by argument("Number of events to generate").int()
+    private val outputFile: String by argument("Output file for the generated events")
 
     private var json = Json {
         prettyPrint = true
@@ -73,7 +79,13 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
             notifications = events.toList()
         )
 
-        echo(json.encodeToString(response))
+        val sink = SystemFileSystem.sink(Path(outputFile)).buffered()
+        val buffer = Buffer()
+        buffer.writeString(json.encodeToString(response))
+        sink.write(buffer, buffer.size)
+        sink.close()
+
+        echo("Generated ${eventLimit} event(s) written into $outputFile")
     }
 }
 
