@@ -32,7 +32,7 @@ import com.wire.kalium.logic.kaliumLogger
 /**
  * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.
  */
-interface RevocationListChecker {
+internal interface RevocationListChecker {
     suspend fun check(url: String): Either<CoreFailure, ULong?>
 }
 
