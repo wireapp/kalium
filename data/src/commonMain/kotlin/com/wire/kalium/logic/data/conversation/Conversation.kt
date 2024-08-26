@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -339,6 +340,57 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
         )
     )
+}
+
+fun ConversationDetails.interactionAvailability(): InteractionAvailability {
+    val availability = when (this) {
+        is ConversationDetails.Connection -> InteractionAvailability.DISABLED
+        is ConversationDetails.Group -> {
+            if (isSelfUserMember) InteractionAvailability.ENABLED
+            else InteractionAvailability.NOT_MEMBER
+        }
+
+        is ConversationDetails.OneOne -> when {
+            otherUser.defederated -> InteractionAvailability.DISABLED
+            otherUser.deleted -> InteractionAvailability.DELETED_USER
+            otherUser.connectionStatus == ConnectionState.BLOCKED -> InteractionAvailability.BLOCKED_USER
+            conversation.legalHoldStatus == com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus.DEGRADED ->
+                InteractionAvailability.LEGAL_HOLD
+
+            else -> InteractionAvailability.ENABLED
+        }
+
+        is ConversationDetails.Self, is ConversationDetails.Team -> InteractionAvailability.DISABLED
+    }
+    return availability
+}
+
+enum class InteractionAvailability {
+    /**User is able to send messages and make calls */
+    ENABLED,
+
+    /**Self user is no longer conversation member */
+    NOT_MEMBER,
+
+    /**Other user is blocked by self user */
+    BLOCKED_USER,
+
+    /**Other team member or public user has been removed */
+    DELETED_USER,
+
+    /**
+     * This indicates that the conversation is using a protocol that self user does not support.
+     */
+    UNSUPPORTED_PROTOCOL,
+
+    /**Conversation type doesn't support messaging */
+    DISABLED,
+
+    /**
+     * One of conversation members is under legal hold and self user is not able to interact with it.
+     * This applies to 1:1 conversations only when other member is a guest.
+     */
+    LEGAL_HOLD
 }
 
 data class MembersInfo(val self: Conversation.Member, val otherMembers: List<Conversation.Member>)
