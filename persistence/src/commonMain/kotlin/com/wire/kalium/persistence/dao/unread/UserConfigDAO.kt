@@ -66,6 +66,8 @@ interface UserConfigDAO {
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
+    suspend fun getNextTimeForCallFeedback(): Long?
+    suspend fun setNextTimeForCallFeedback(timestamp: Long)
 }
 
 @Suppress("TooManyFunctions")
@@ -219,12 +221,18 @@ internal class UserConfigDAOImpl internal constructor(
         metadataDAO.deleteValue(key = ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY)
     }
 
+    override suspend fun getNextTimeForCallFeedback(): Long? = metadataDAO.valueByKey(NEXT_TIME_TO_ASK_CALL_FEEDBACK)?.toLong()
+
+    override suspend fun setNextTimeForCallFeedback(timestamp: Long) =
+        metadataDAO.insertValue(timestamp.toString(), NEXT_TIME_TO_ASK_CALL_FEEDBACK)
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
         private const val SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE = "should_notify_for_revoked_certificate"
         private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
         private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
+        private const val NEXT_TIME_TO_ASK_CALL_FEEDBACK = "next_time_to_ask_for_feedback_about_call"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =

@@ -144,6 +144,8 @@ interface UserConfigRepository {
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
+    suspend fun updateNextTimeForCallFeedback(valueMs: Long)
+    suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
 }
 
 @Suppress("TooManyFunctions")
@@ -538,4 +540,11 @@ internal class UserConfigDataSource internal constructor(
             userConfigDAO.deletePreviousTrackingIdentifier()
         }
     }
+
+    override suspend fun updateNextTimeForCallFeedback(valueMs: Long) {
+        userConfigDAO.setNextTimeForCallFeedback(valueMs)
+    }
+
+    override suspend fun getNextTimeForCallFeedback() = wrapStorageRequest { userConfigDAO.getNextTimeForCallFeedback() }
+
 }

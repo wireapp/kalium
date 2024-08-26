@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 interface EndCallResultListener {
-    suspend fun observeCallEndedBecauseOfVerificationDegraded(): Flow<ConversationId>
-    suspend fun onCallEndedBecauseOfVerificationDegraded(conversationId: ConversationId)
+    suspend fun observeCallEndedResult(): Flow<EndCallResult>
+    suspend fun onCallEndedBecauseOfVerificationDegraded()
+    suspend fun onCallEndedAskForFeedback(shouldAsk: Boolean)
 }
 
 /**
@@ -31,11 +31,20 @@ interface EndCallResultListener {
  */
 object EndCallResultListenerImpl : EndCallResultListener {
 
-    private val conversationCallEnded = MutableSharedFlow<ConversationId>()
+    private val conversationCallEnded = MutableSharedFlow<EndCallResult>()
 
-    override suspend fun observeCallEndedBecauseOfVerificationDegraded(): Flow<ConversationId> = conversationCallEnded
+    override suspend fun observeCallEndedResult(): Flow<EndCallResult> = conversationCallEnded
 
-    override suspend fun onCallEndedBecauseOfVerificationDegraded(conversationId: ConversationId) {
-        conversationCallEnded.emit(conversationId)
+    override suspend fun onCallEndedBecauseOfVerificationDegraded() {
+        conversationCallEnded.emit(EndCallResult.VerificationDegraded)
     }
+
+    override suspend fun onCallEndedAskForFeedback(shouldAsk: Boolean) {
+        conversationCallEnded.emit(EndCallResult.AskForFeedback(shouldAsk))
+    }
+}
+
+sealed class EndCallResult {
+    data object VerificationDegraded : EndCallResult()
+    data class AskForFeedback(val shouldAsk: Boolean) : EndCallResult()
 }
