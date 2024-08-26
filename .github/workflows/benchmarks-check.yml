@@ -59,7 +59,7 @@ jobs:
           unset REPORT_FULL_PATH_REF
 
       - name: Install bencher
-        uses: bencherdev/bencher@v0.4.17
+        uses: bencherdev/bencher@v0.4.18
 
       - name: Run Bencher on PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
