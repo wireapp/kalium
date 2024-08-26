@@ -48,7 +48,7 @@ internal class EndCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
     private val endCallListener: EndCallResultListener,
-    private val shouldAskCallFeedbackUseCase: ShouldAskCallFeedbackUseCase,
+    private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : EndCallUseCase {
 
@@ -76,6 +76,6 @@ internal class EndCallUseCaseImpl(
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
-        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedbackUseCase())
+        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback())
     }
 }

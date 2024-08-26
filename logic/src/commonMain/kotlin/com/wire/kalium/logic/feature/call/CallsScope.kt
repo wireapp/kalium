@@ -153,7 +153,7 @@ class CallsScope internal constructor(
             callManager = callManager,
             callRepository = callRepository,
             endCallListener = EndCallResultListenerImpl,
-            shouldAskCallFeedbackUseCase = shouldAskCallFeedbackUseCase
+            shouldAskCallFeedback = shouldAskCallFeedback
         )
 
     val endCallOnConversationChange: EndCallOnConversationChangeUseCase
@@ -212,7 +212,7 @@ class CallsScope internal constructor(
     val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
         get() = ObserveAskCallFeedbackUseCase(EndCallResultListenerImpl)
 
-    private val shouldAskCallFeedbackUseCase: ShouldAskCallFeedbackUseCase by lazy {
+    private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase by lazy {
         ShouldAskCallFeedbackUseCase(userConfigRepository)
     }
 
