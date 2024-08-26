@@ -54,7 +54,7 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
     private var json = Json {
         prettyPrint = true
     }
-    
+
     override fun run() = runBlocking {
         val selfUserId = userSession.users.getSelfUser().first().id
         val targetUserId = UserId(value = targetUserId, domain = selfUserId.domain)
@@ -85,7 +85,6 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
         sink.write(buffer, buffer.size)
         sink.close()
 
-        echo("Generated ${eventLimit} event(s) written into $outputFile")
+        echo("Generated $eventLimit event(s) written into $outputFile")
     }
 }
-

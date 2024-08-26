@@ -53,27 +53,38 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
             repeat(limit) { count ->
                 val protobuf = generateProtoContent(generateTextContent(count))
                 val message = encryptMessage(protobuf, proteusClient, sessionId, sessionId)
-                val event  = generateNewMessageDTO(selfUserID, conversationId, message)
+                val event = generateNewMessageDTO(selfUserID, conversationId, message)
                 emit(generateEventResponse(event))
             }
         }
     }
 
-    fun generateTextContent(index: Int): MessageContent.Text {
+    private fun generateTextContent(
+        index: Int
+    ): MessageContent.Text {
         return MessageContent.Text("Message $index")
     }
 
-    fun generateProtoContent(messageContent: MessageContent.FromProto): PlainMessageBlob {
-        return protoContentMapper.encodeToProtobuf(ProtoContent.Readable(
-            messageUid = uuid4().toString(),
-            messageContent = messageContent,
-            expectsReadConfirmation = true,
-            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
-            expiresAfterMillis = null
-        ))
+    private fun generateProtoContent(
+        messageContent: MessageContent.FromProto
+    ): PlainMessageBlob {
+        return protoContentMapper.encodeToProtobuf(
+            ProtoContent.Readable(
+                messageUid = uuid4().toString(),
+                messageContent = messageContent,
+                expectsReadConfirmation = true,
+                legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+                expiresAfterMillis = null
+            )
+        )
     }
 
-    suspend fun encryptMessage(message: PlainMessageBlob, proteusClient: ProteusClient, sender: CryptoSessionId, recipient: CryptoSessionId): MessageEventData {
+    private suspend fun encryptMessage(
+        message: PlainMessageBlob,
+        proteusClient: ProteusClient,
+        sender: CryptoSessionId,
+        recipient: CryptoSessionId
+    ): MessageEventData {
         return MessageEventData(
             text = proteusClient.encrypt(message.data, recipient).encodeBase64(),
             sender = sender.value,
@@ -82,7 +93,11 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
         )
     }
 
-    fun generateNewMessageDTO(from: UserId, conversationId: ConversationId, data: MessageEventData): EventContentDTO.Conversation.NewMessageDTO {
+    private fun generateNewMessageDTO(
+        from: UserId,
+        conversationId: ConversationId,
+        data: MessageEventData
+    ): EventContentDTO.Conversation.NewMessageDTO {
         return EventContentDTO.Conversation.NewMessageDTO(
             qualifiedConversation = conversationId.toApi(),
             qualifiedFrom = from.toApi(),
@@ -92,11 +107,11 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
 
     }
 
-    fun generateEventResponse(event: EventContentDTO): EventResponse {
+    private fun generateEventResponse(event: EventContentDTO): EventResponse {
         return EventResponse(
             id = uuid4().toString(), // TODO jacob (should actually be UUIDv1)
             payload = listOf(event),
-            transient = true         // All events are transient to avoid persisting an incorrect last event id
+            transient = true // All events are transient to avoid persisting an incorrect last event id
         )
     }
 

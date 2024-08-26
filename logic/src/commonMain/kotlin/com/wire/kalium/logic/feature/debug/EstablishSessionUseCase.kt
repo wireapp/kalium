@@ -44,8 +44,7 @@ sealed class EstablishSessionResult {
     data class Failure(val coreFailure: CoreFailure) : EstablishSessionResult()
 }
 
-
-internal class EstablishSessionUseCaseImpl(val sessionEstablisher: SessionEstablisher): EstablishSessionUseCase {
+internal class EstablishSessionUseCaseImpl(val sessionEstablisher: SessionEstablisher) : EstablishSessionUseCase {
     override suspend fun invoke(userId: UserId, clientId: ClientId): EstablishSessionResult {
         return sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
             listOf(Recipient(id = userId, clients = listOf(clientId)))
