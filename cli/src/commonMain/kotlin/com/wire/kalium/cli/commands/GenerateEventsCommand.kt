@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.sync.EventGenerator
+import com.wire.kalium.logic.feature.debug.EventGenerator
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
