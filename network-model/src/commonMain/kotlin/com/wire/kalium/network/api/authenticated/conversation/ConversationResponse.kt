@@ -36,7 +36,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonNames
 
 @Serializable
-data class ConversationResponse(
+data class ConversationResponse @OptIn(ExperimentalSerializationApi::class) constructor(
     @SerialName("creator")
     val creator: String?,
 
@@ -83,7 +83,7 @@ data class ConversationResponse(
     @SerialName("access")
     val access: Set<ConversationAccessDTO>,
 
-    @SerialName("access_role_v2")
+    @SerialName("access_role_v2") @JsonNames("access_role")
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 
     @SerialName("receipt_mode")
