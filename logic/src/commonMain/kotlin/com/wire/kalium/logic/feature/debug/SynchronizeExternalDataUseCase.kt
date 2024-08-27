@@ -18,12 +18,10 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.event.EventMapper
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.sync.incremental.EventProcessor
-import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
-import kotlinx.serialization.json.Json
 
 fun interface SynchronizeExternalDataUseCase {
 
@@ -45,17 +43,14 @@ sealed class SynchronizeExternalDataResult {
 }
 
 internal class SynchronizeExternalDataUseCaseImpl(
-    val eventMapper: EventMapper,
+    val eventRepository: EventRepository,
     val eventProcessor: EventProcessor
 ) : SynchronizeExternalDataUseCase {
 
     override suspend operator fun invoke(
         data: String,
     ): SynchronizeExternalDataResult {
-        val notificationResponse = Json.decodeFromString<NotificationResponse>(data)
-        return notificationResponse.notifications.map {
-            eventMapper.fromDTO(it, isLive = false)
-        }.flatten().foldToEitherWhileRight(Unit) { event, _ ->
+        return eventRepository.parseExternalEvents(data).foldToEitherWhileRight(Unit) { event, _ ->
             eventProcessor.processEvent(event)
         }.fold({
             return@fold SynchronizeExternalDataResult.Failure(it)

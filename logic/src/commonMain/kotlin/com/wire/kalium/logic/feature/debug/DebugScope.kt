@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -38,7 +39,6 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -79,6 +79,7 @@ class DebugScope internal constructor(
     private val userRepository: UserRepository,
     private val userId: UserId,
     private val assetRepository: AssetRepository,
+    private val eventRepository: EventRepository,
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
@@ -119,7 +120,7 @@ class DebugScope internal constructor(
 
     val synchronizeExternalData: SynchronizeExternalDataUseCase
         get() = SynchronizeExternalDataUseCaseImpl(
-            eventMapper = MapperProvider.eventMapper(selfUserId = userId),
+            eventRepository = eventRepository,
             eventProcessor = eventProcessor
         )
 
