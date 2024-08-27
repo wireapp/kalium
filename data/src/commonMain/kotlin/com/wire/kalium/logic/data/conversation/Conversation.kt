@@ -354,7 +354,7 @@ fun ConversationDetails.interactionAvailability(): InteractionAvailability {
             otherUser.defederated -> InteractionAvailability.DISABLED
             otherUser.deleted -> InteractionAvailability.DELETED_USER
             otherUser.connectionStatus == ConnectionState.BLOCKED -> InteractionAvailability.BLOCKED_USER
-            conversation.legalHoldStatus == com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus.DEGRADED ->
+            conversation.legalHoldStatus == Conversation.LegalHoldStatus.DEGRADED ->
                 InteractionAvailability.LEGAL_HOLD
 
             else -> InteractionAvailability.ENABLED
