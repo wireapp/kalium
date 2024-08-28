@@ -118,7 +118,8 @@ internal class ConversationMapperImpl(
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
-        accessRole = apiModel.accessRole.map { it.toDAO() },
+        accessRole = ((apiModel.accessRole ?: apiModel.accessRoleV2) ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL)
+            .map { it.toDAO() },
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
         messageTimer = apiModel.messageTimer,
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
