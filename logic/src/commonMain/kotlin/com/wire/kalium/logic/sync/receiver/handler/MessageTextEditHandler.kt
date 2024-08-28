@@ -63,7 +63,7 @@ internal class MessageTextEditHandlerImpl internal constructor(
             && editStatus is Message.EditStatus.Edited
         ) {
             // if the locally stored message is also already edited, we check which one is newer
-            if (editStatus.lastEditInstant < message.date) {
+            if (editStatus.lastEditInstant > message.date) {
                 // our local pending or failed edit is newer than one we got from the backend so we update locally only message id and date
                 messageRepository.updateTextMessage(
                     conversationId = message.conversationId,
@@ -100,5 +100,4 @@ internal class MessageTextEditHandlerImpl internal constructor(
             )
         }
     }
-
 }
