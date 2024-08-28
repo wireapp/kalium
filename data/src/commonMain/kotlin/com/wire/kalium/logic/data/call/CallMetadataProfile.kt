@@ -60,7 +60,7 @@ data class CallMetadata(
             hasEstablishedAudio = participant.hasEstablishedAudio,
             avatarAssetId = user?.completePicture,
             userType = user?.userType ?: UserType.NONE,
-            accentId = user?.accentId ?: 0
+            accentId = user?.accentId ?: -1
         )
     }
 }
