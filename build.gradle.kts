@@ -143,3 +143,7 @@ moduleGraphConfig {
     readmePath.set("./README.md")
     heading.set("#### Dependency Graph")
 }
+
+tasks.wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+}
