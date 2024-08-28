@@ -105,7 +105,7 @@ internal class EndCallOnConversationChangeUseCaseImpl(
             }
             .filter { it.shouldFinishCall() }
             .map {
-                endCallListener.onCallEndedBecauseOfVerificationDegraded(conversationId)
+                endCallListener.onCallEndedBecauseOfVerificationDegraded()
                 conversationId
             }
 
