@@ -72,8 +72,7 @@ class ApiModelMapperImpl : ApiModelMapper {
             response.lastEventTime,
             response.mlsCipherSuiteTag,
             response.access,
-            response.accessRole ?: response.accessRoleV2 ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
-            response.accessRole ?: response.accessRoleV2 ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+            accessRole = response.accessRole ?: response.accessRoleV2 ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
             response.receiptMode
         )
 
