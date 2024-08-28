@@ -82,9 +82,6 @@ data class ConversationResponse(
     @SerialName("access")
     val access: Set<ConversationAccessDTO>,
 
-    @SerialName("access_role")
-    val accessRole: Set<ConversationAccessRoleDTO>?,
-
     @SerialName("access_role_v2")
     val accessRole: Set<ConversationAccessRoleDTO>?,
 
