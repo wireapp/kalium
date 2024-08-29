@@ -83,7 +83,7 @@ data class ConversationResponse(
     val access: Set<ConversationAccessDTO>,
 
     @SerialName("access_role_v2")
-    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+    val accessRole: Set<ConversationAccessRoleDTO>?,
 
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode
@@ -145,8 +145,11 @@ data class ConversationResponseV3(
     @SerialName("access")
     val access: Set<ConversationAccessDTO>,
 
+    @SerialName("access_role")
+    val accessRole: Set<ConversationAccessRoleDTO>?,
+
     @SerialName("access_role_v2")
-    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+    val accessRoleV2: Set<ConversationAccessRoleDTO>?,
 
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode,
