@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
@@ -80,7 +81,7 @@ class OnParticipantListChangedTest {
             yield()
 
             verify {
-                arrangement.participantMapper.fromCallMemberToParticipant(any())
+                arrangement.participantMapper.fromCallMemberToParticipantMinimized(any())
             }.wasInvoked(exactly = twice)
 
             coVerify {
@@ -160,7 +161,6 @@ class OnParticipantListChangedTest {
             callRepository = callRepository,
             participantMapper = participantMapper,
             userConfigRepository = userConfigRepository,
-            userRepository = userRepository,
             mlsCallHelper = mlsCallHelper,
             qualifiedIdMapper = qualifiedIdMapper,
             endCall = {
@@ -177,7 +177,7 @@ class OnParticipantListChangedTest {
 
         fun withParticipantMapper() = apply {
             every {
-                participantMapper.fromCallMemberToParticipant(any())
+                participantMapper.fromCallMemberToParticipantMinimized(any())
             }.returns(participant)
         }
 
@@ -239,14 +239,12 @@ class OnParticipantListChangedTest {
               ]
             }
         """
-        val participant = Participant(
-            id = QualifiedID("participantId", "participantDomain"),
+        val participant = ParticipantMinimized(
+            id = QualifiedID("userid1", "domain"),
+            userId = QualifiedID("participantId", "participantDomain"),
             clientId = "abcd",
-            name = "name",
             isMuted = true,
-            isSpeaking = false,
             isCameraOn = false,
-            avatarAssetId = null,
             isSharingScreen = false,
             hasEstablishedAudio = true
         )
@@ -257,7 +255,7 @@ class OnParticipantListChangedTest {
             Clock.System.now(),
             CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
-        val conversationId = ConversationId("conversationId", "domainId")
+        private val conversationId = ConversationId("conversationId", "domainId")
 
         private val call = Call(
             conversationId = conversationId,
