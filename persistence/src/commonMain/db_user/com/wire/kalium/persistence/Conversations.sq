@@ -233,7 +233,7 @@ END AS isCreator,
 CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
     ELSE 1
-END AS isActive
+END AS isActive,
 Conversation.last_notified_date AS lastNotifiedMessageDate,
 memberRole. role AS selfRole,
 Conversation.protocol,

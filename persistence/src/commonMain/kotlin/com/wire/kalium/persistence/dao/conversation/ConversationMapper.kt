@@ -50,7 +50,6 @@ internal class ConversationMapper {
         otherUserActiveConversationId: QualifiedIDEntity?,
         isCreator: Long,
         isActive: Long,
-        accentId: Int?,
         lastNotifiedMessageDate: Instant?,
         selfRole: MemberEntity.Role?,
         protocol: ConversationEntity.Protocol,
@@ -75,6 +74,7 @@ internal class ConversationMapper {
         mlsVerificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        accentId: Int?
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
