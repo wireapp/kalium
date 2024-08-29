@@ -30,15 +30,15 @@ import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 object CreateConversationRequestJson {
 
     private val createConversationRequest = CreateConversationRequest(
-        listOf(QualifiedIDSamples.one),
+        qualifiedUsers = listOf(QualifiedIDSamples.one),
         name = "NameOfThisGroupConversation",
-        listOf(ConversationAccessDTO.PRIVATE),
-        listOf(ConversationAccessRoleDTO.TEAM_MEMBER),
-        ConvTeamInfo(false, "teamID"),
-        0,
-        ReceiptMode.DISABLED,
-        "WIRE_MEMBER",
-        ConvProtocol.PROTEUS,
+        access = listOf(ConversationAccessDTO.PRIVATE),
+        accessRole = listOf(ConversationAccessRoleDTO.TEAM_MEMBER),
+        convTeamInfo = ConvTeamInfo(false, "teamID"),
+        messageTimer = 0,
+        receiptMode = ReceiptMode.DISABLED,
+        conversationRole = "WIRE_MEMBER",
+        protocol = ConvProtocol.PROTEUS,
         creatorClient = null
     )
 
@@ -72,8 +72,10 @@ object CreateConversationRequestJson {
         """.trimMargin()
         }
 
-    val v3 = ValidJsonProvider(
-        createConversationRequest
+    fun v3(accessRole: List<ConversationAccessRoleDTO>? = null) = ValidJsonProvider(
+        createConversationRequest.copy(
+            accessRole = accessRole ?: createConversationRequest.accessRole
+        )
     ) {
         """
         |{

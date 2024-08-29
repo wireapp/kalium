@@ -22,8 +22,8 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
-import com.wire.kalium.logic.util.arrangement.CallRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.CallRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement

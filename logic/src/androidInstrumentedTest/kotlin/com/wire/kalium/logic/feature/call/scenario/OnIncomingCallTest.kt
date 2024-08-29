@@ -33,11 +33,13 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class OnIncomingCallTest {
 
     val testScope = TestScope()

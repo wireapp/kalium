@@ -19,68 +19,56 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangement
+import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.doesNothing
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class EndCallUseCaseTest {
 
-    @Mock
-    private val callManager = mock(CallManager::class)
-
-    @Mock
-    private val callRepository = mock(CallRepository::class)
-
-    private lateinit var endCall: EndCallUseCase
-
-    @BeforeTest
-    fun setup() = runBlocking {
-        endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository, TestKaliumDispatcher)
-
-        coEvery {
-            callManager.endCall(eq(conversationId))
-        }.returns(Unit)
-
-        every { callRepository.updateIsCameraOnById(eq(conversationId), eq(false)) }
-            .doesNothing()
-    }
-
     @Test
     fun givenAnEstablishedCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
-        coEvery {
-            callRepository.callsFlow()
-        }.returns(flowOf(listOf(call)))
+
+        val (arrangement, endCall) = Arrangement().arrange {
+            withEndCall()
+            withCallsFlow(flowOf(listOf(call)))
+            withUpdateIsCameraOnById()
+        }
 
         endCall.invoke(conversationId)
 
         coVerify {
-            callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(eq(conversationId))
         }.wasInvoked(once)
 
         verify {
-            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
         }.wasInvoked(once)
 
         coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
         }.wasInvoked(once)
     }
 
@@ -90,23 +78,28 @@ class EndCallUseCaseTest {
             status = CallStatus.STILL_ONGOING,
             conversationType = Conversation.Type.GROUP
         )
-
-        coEvery {
-            callRepository.callsFlow()
-        }.returns(flowOf(listOf(stillOngoingCall)))
+        val (arrangement, endCall) = Arrangement().arrange {
+            withEndCall()
+            withCallsFlow(flowOf(listOf(stillOngoingCall)))
+            withUpdateIsCameraOnById()
+        }
 
         endCall.invoke(conversationId)
 
         coVerify {
-            callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(eq(conversationId))
         }.wasInvoked(once)
 
         verify {
-            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
         }.wasInvoked(once)
 
         coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
         }.wasInvoked(once)
     }
 
@@ -116,23 +109,28 @@ class EndCallUseCaseTest {
             status = CallStatus.STARTED,
             conversationType = Conversation.Type.GROUP
         )
-
-        coEvery {
-            callRepository.callsFlow()
-        }.returns(flowOf(listOf(stillOngoingCall)))
+        val (arrangement, endCall) = Arrangement().arrange {
+            withEndCall()
+            withCallsFlow(flowOf(listOf(stillOngoingCall)))
+            withUpdateIsCameraOnById()
+        }
 
         endCall.invoke(conversationId)
 
         coVerify {
-            callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(eq(conversationId))
         }.wasInvoked(once)
 
         verify {
-            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
         }.wasInvoked(once)
 
         coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
         }.wasInvoked(once)
     }
 
@@ -142,23 +140,28 @@ class EndCallUseCaseTest {
             status = CallStatus.INCOMING,
             conversationType = Conversation.Type.GROUP
         )
-
-        coEvery {
-            callRepository.callsFlow()
-        }.returns(flowOf(listOf(stillOngoingCall)))
+        val (arrangement, endCall) = Arrangement().arrange {
+            withEndCall()
+            withCallsFlow(flowOf(listOf(stillOngoingCall)))
+            withUpdateIsCameraOnById()
+        }
 
         endCall.invoke(conversationId)
 
         coVerify {
-            callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(eq(conversationId))
         }.wasInvoked(once)
 
         verify {
-            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
         }.wasInvoked(once)
 
         coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
         }.wasInvoked(once)
     }
 
@@ -167,24 +170,62 @@ class EndCallUseCaseTest {
         val closedCall = call.copy(
             status = CallStatus.CLOSED
         )
-
-        coEvery {
-            callRepository.callsFlow()
-        }.returns(flowOf(listOf(closedCall)))
+        val (arrangement, endCall) = Arrangement().arrange {
+            withEndCall()
+            withCallsFlow(flowOf(listOf(closedCall)))
+            withUpdateIsCameraOnById()
+        }
 
         endCall.invoke(conversationId)
 
         coVerify {
-            callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(eq(conversationId))
         }.wasInvoked(once)
 
         verify {
-            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
         }.wasInvoked(once)
 
         coVerify {
-            callRepository.updateCallStatusById(any(), any())
+            arrangement.callRepository.updateCallStatusById(any(), any())
         }.wasNotInvoked()
+
+        coVerify {
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
+        }.wasInvoked(once)
+    }
+
+    private class Arrangement : CallRepositoryArrangement by CallRepositoryArrangementImpl(),
+        CallManagerArrangement by CallManagerArrangementImpl() {
+
+        @Mock
+        val endCallResultListener = mock(EndCallResultListener::class)
+
+        @Mock
+        val shouldAskCallFeedback = mock(ShouldAskCallFeedbackUseCase::class)
+
+        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, EndCallUseCase> {
+            runBlocking {
+                withShouldAskCallFeedback()
+                withOnCallEndedAskForFeedback()
+            }
+            runBlocking { block() }
+            return this to EndCallUseCaseImpl(
+                lazy { callManager },
+                callRepository,
+                endCallResultListener,
+                shouldAskCallFeedback,
+                TestKaliumDispatcher
+            )
+        }
+
+        suspend fun withShouldAskCallFeedback(should: Boolean = false) {
+            coEvery { shouldAskCallFeedback.invoke() }.returns(should)
+        }
+
+        suspend fun withOnCallEndedAskForFeedback() {
+            coEvery { endCallResultListener.onCallEndedAskForFeedback(any()) }.doesNothing()
+        }
     }
 
     companion object {

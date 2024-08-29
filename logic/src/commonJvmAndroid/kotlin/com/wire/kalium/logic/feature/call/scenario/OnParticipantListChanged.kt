@@ -25,36 +25,36 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-<<<<<<< HEAD
-=======
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
->>>>>>> 58d7ee8954 (feat: End SFT oneOnOne call on proteus protocol (WPB-7153) 🍒 (#2936))
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
+// TODO: add tests for this class
 @Suppress("LongParameterList")
 class OnParticipantListChanged internal constructor(
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,
-<<<<<<< HEAD
     private val callingScope: CoroutineScope
-=======
     private val userRepository: UserRepository,
     private val userConfigRepository: UserConfigRepository,
     private val mlsCallHelper: MLSCallHelper,
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope,
     private val jsonDecoder: Json = Json
->>>>>>> 58d7ee8954 (feat: End SFT oneOnOne call on proteus protocol (WPB-7153) 🍒 (#2936))
 ) : ParticipantChangedHandler {
 
     override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {
@@ -66,20 +66,22 @@ class OnParticipantListChanged internal constructor(
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId)
 
             participantsChange.members.map { member ->
-<<<<<<< HEAD
                 participants.add(participantMapper.fromCallMemberToParticipantMinimized(member))
-=======
-                val participant = participantMapper.fromCallMemberToParticipant(member)
-                val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
-                userRepository.getKnownUserMinimized(userId).onSuccess {
-                    val updatedParticipant = participant.copy(
-                        name = it.name,
-                        avatarAssetId = it.completePicture,
-                        userType = it.userType
-                    )
-                    participants.add(updatedParticipant)
-                }.onFailure {
-                    participants.add(participant)
+            }
+            val callProtocol = callRepository.currentCallProtocol(conversationIdWithDomain)
+
+            val currentCall = callRepository.establishedCallsFlow().first().firstOrNull()
+            currentCall?.let {
+                val shouldEndSFTOneOnOneCall = mlsCallHelper.shouldEndSFTOneOnOneCall(
+                    conversationId = conversationIdWithDomain,
+                    callProtocol = callProtocol,
+                    conversationType = it.conversationType,
+                    newCallParticipants = participants,
+                    previousCallParticipants = it.participants
+                )
+                if (shouldEndSFTOneOnOneCall) {
+                    kaliumLogger.i("[onParticipantChanged] - Ending MLS call due to participant leaving")
+                    endCall(conversationIdWithDomain)
                 }
             }
 
@@ -100,7 +102,6 @@ class OnParticipantListChanged internal constructor(
                         endCall(conversationIdWithDomain)
                     }
                 }
->>>>>>> 58d7ee8954 (feat: End SFT oneOnOne call on proteus protocol (WPB-7153) 🍒 (#2936))
             }
 
             callRepository.updateCallParticipants(

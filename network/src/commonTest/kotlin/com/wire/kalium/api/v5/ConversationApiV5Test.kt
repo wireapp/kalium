@@ -211,6 +211,6 @@ internal class ConversationApiV5Test : ApiTest() {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_PROTOCOL = "protocol"
         val USER_ID = UserId("id", "domain")
-        val FETCH_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
+        val FETCH_CONVERSATION_RESPONSE = ConversationResponseJson.v0().rawJson
     }
 }

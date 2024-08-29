@@ -35,3 +35,10 @@ data class ConversationResponseDTO(
     @SerialName("not_found") val conversationsNotFound: List<ConversationId>,
     @SerialName("failed") val conversationsFailed: List<ConversationId>,
 )
+
+@Serializable
+data class ConversationResponseDTOV3(
+    @SerialName("found") val conversationsFound: List<ConversationResponseV3>,
+    @SerialName("not_found") val conversationsNotFound: List<ConversationId>,
+    @SerialName("failed") val conversationsFailed: List<ConversationId>,
+)
