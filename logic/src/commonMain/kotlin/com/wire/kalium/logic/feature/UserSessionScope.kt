@@ -693,7 +693,8 @@ class UserSessionScope internal constructor(
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
-    private val subconversationRepository = SubconversationRepositoryImpl()
+    private val subconversationRepository =
+        SubconversationRepositoryImpl(conversationApi = authenticatedNetworkContainer.conversationApi)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -1234,6 +1235,8 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
+            subconversationRepository = subconversationRepository,
+            userConfigRepository = userConfigRepository,
             selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
