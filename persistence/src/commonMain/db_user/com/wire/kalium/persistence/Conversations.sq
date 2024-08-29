@@ -233,7 +233,7 @@ END AS isCreator,
 CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
     ELSE 1
-END AS isActive,
+END AS isActive
 Conversation.last_notified_date AS lastNotifiedMessageDate,
 memberRole. role AS selfRole,
 Conversation.protocol,
@@ -257,7 +257,11 @@ Conversation.archived,
 Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
-Conversation.legal_hold_status
+Conversation.legal_hold_status,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.accent_id
+    ELSE 0
+END AS accentId
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
