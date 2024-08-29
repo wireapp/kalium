@@ -105,7 +105,8 @@ class ParticipantsFilterTest {
             name = "Alok",
             isCameraOn = true,
             isMuted = false,
-            hasEstablishedAudio = true
+            hasEstablishedAudio = true,
+            accentId = 0
         )
         val participant11 = Participant(
             id = selfUserId,
@@ -113,7 +114,8 @@ class ParticipantsFilterTest {
             name = "Alok",
             isCameraOn = false,
             isMuted = false,
-            hasEstablishedAudio = true
+            hasEstablishedAudio = true,
+            accentId = 0
         )
         val participant2 = Participant(
             id = userId2,
@@ -121,7 +123,8 @@ class ParticipantsFilterTest {
             name = "Max",
             isCameraOn = true,
             isMuted = false,
-            hasEstablishedAudio = true
+            hasEstablishedAudio = true,
+            accentId = 0
         )
         val participant3 = Participant(
             id = userId3,
@@ -129,7 +132,8 @@ class ParticipantsFilterTest {
             name = "Hisoka",
             isCameraOn = false,
             isMuted = false,
-            hasEstablishedAudio = true
+            hasEstablishedAudio = true,
+            accentId = 0
         )
         val participants = listOf(participant1, participant2, participant3, participant11)
     }

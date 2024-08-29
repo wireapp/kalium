@@ -2018,7 +2018,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            accentId = -1
         )
     }
 
