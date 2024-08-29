@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.MLSCallHelper
-import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -32,9 +31,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.data.user.OtherUserMinimized
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -71,7 +67,6 @@ class OnParticipantListChangedTest {
         testScope.runTest {
             val (arrangement, onParticipantListChanged) = Arrangement()
                 .withParticipantMapper()
-                .withUserRepositorySuccess()
                 .withUserConfigRepositoryReturning(Either.Left(StorageFailure.DataNotFound))
                 .arrange()
 
@@ -85,10 +80,6 @@ class OnParticipantListChangedTest {
             }.wasInvoked(exactly = twice)
 
             coVerify {
-                arrangement.userRepository.getKnownUserMinimized(any())
-            }.wasInvoked(exactly = twice)
-
-            coVerify {
                 arrangement.callRepository.updateCallParticipants(any(), any())
             }.wasInvoked(exactly = once)
         }
@@ -98,7 +89,6 @@ class OnParticipantListChangedTest {
         testScope.runTest {
             val (arrangement, onParticipantListChanged) = Arrangement()
                 .withParticipantMapper()
-                .withUserRepositorySuccess()
                 .withUserConfigRepositoryReturning(Either.Right(true))
                 .withProtocol()
                 .withEstablishedCall()
@@ -120,7 +110,6 @@ class OnParticipantListChangedTest {
         testScope.runTest {
             val (arrangement, onParticipantListChanged) = Arrangement()
                 .withParticipantMapper()
-                .withUserRepositorySuccess()
                 .withUserConfigRepositoryReturning(Either.Right(true))
                 .withProtocol()
                 .withEstablishedCall()
@@ -146,9 +135,6 @@ class OnParticipantListChangedTest {
 
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
-        val userRepository = mock(UserRepository::class)
 
         @Mock
         val mlsCallHelper = mock(MLSCallHelper::class)
@@ -197,21 +183,6 @@ class OnParticipantListChangedTest {
             every {
                 mlsCallHelper.shouldEndSFTOneOnOneCall(any(), any(), any(), any(), any())
             }.returns(result)
-        }
-
-        suspend fun withUserRepositorySuccess() = apply {
-            coEvery {
-                userRepository.getKnownUserMinimized(any())
-            }.returns(
-                Either.Right(
-                    OtherUserMinimized(
-                        TestUser.SELF.id,
-                        "name",
-                        null,
-                        UserType.ADMIN
-                    )
-                )
-            )
         }
     }
 
