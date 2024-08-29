@@ -1076,7 +1076,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.getAllConversationDetails(fromArchive).first()
 
         // then
-        assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
+        assertEquals(conversation.toViewEntity(user1).copy(accentId = 0), result.firstOrNull { it.id == conversation.id })
     }
 
     @Test
