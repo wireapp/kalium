@@ -929,6 +929,7 @@ class UserSessionScope internal constructor(
             featureConfigEventReceiver,
             userPropertiesEventReceiver,
             federationEventReceiver,
+            this@UserSessionScope,
             userScopedLogger,
         )
     }
