@@ -464,7 +464,7 @@ internal class ConversationApiV0Test : ApiTest() {
         const val PATH_RECEIPT_MODE = "receipt-mode"
         const val PATH_CODE = "code"
         const val PATH_TYPING_NOTIFICATION = "typing"
-        val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
+        val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0().rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v0
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
         val UPDATE_ACCESS_ROLE_REQUEST = UpdateConversationAccessRequestJson.v0
