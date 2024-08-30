@@ -27,16 +27,16 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 
-interface ConversationAccessUpdateHandler {
+interface AccessUpdateHandler {
     suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit>
 }
 
 @Suppress("FunctionNaming")
-fun ConversationAccessUpdateHandler(
+fun AccessUpdateHandler(
     selfUserId: UserId,
     conversationDAO: ConversationDAO,
     conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
-) = object : ConversationAccessUpdateHandler {
+) = object : AccessUpdateHandler {
 
     override suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit> =
         wrapStorageRequest {

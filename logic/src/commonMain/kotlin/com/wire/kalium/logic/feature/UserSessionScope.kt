@@ -381,7 +381,7 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.ConversationAccessUpdateHandler
+import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -1467,8 +1467,8 @@ class UserSessionScope internal constructor(
             callRepository = callRepository
         )
 
-    private val conversationAccessUpdateHandler: ConversationAccessUpdateHandler
-        get() = ConversationAccessUpdateHandler(
+    private val conversationAccessUpdateHandler: AccessUpdateHandler
+        get() = AccessUpdateHandler(
             conversationDAO = userStorage.database.conversationDAO,
             selfUserId = userId
         )
