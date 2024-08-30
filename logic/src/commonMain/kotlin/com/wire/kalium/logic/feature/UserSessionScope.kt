@@ -381,7 +381,7 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateHandler
+import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -1467,8 +1467,8 @@ class UserSessionScope internal constructor(
             callRepository = callRepository
         )
 
-    private val conversationAccessUpdateHandler: AccessUpdateHandler
-        get() = AccessUpdateHandler(
+    private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
+        get() = AccessUpdateEventHandler(
             conversationDAO = userStorage.database.conversationDAO,
             selfUserId = userId
         )
@@ -1489,7 +1489,7 @@ class UserSessionScope internal constructor(
             conversationCodeDeletedHandler,
             typingIndicatorHandler,
             protocolUpdateEventHandler,
-            conversationAccessUpdateHandler
+            conversationAccessUpdateEventHandler
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateHandler
+import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -412,7 +412,7 @@ class ConversationEventReceiverTest {
         val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
 
         @Mock
-        val accessUpdateEventHandler = mock(AccessUpdateHandler::class)
+        val accessUpdateEventHandler = mock(AccessUpdateEventHandler::class)
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
@@ -429,7 +429,7 @@ class ConversationEventReceiverTest {
             codeDeletedHandler = codeDeletedHandler,
             typingIndicatorHandler = typingIndicatorHandler,
             protocolUpdateEventHandler = protocolUpdateEventHandler,
-            accessUpdateHandler = accessUpdateEventHandler
+            accessUpdateEventHandler = accessUpdateEventHandler
         )
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
