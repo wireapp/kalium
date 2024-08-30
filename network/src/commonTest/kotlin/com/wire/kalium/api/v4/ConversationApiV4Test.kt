@@ -151,6 +151,6 @@ internal class ConversationApiV4Test : ApiTest() {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_MEMBERS = "members"
         const val PATH_TYPING_NOTIFICATION = "typing"
-        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
+        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3()
     }
 }

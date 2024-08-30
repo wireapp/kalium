@@ -33,6 +33,7 @@ data class Participant(
     val hasEstablishedAudio: Boolean,
     val avatarAssetId: UserAssetId? = null,
     val userType: UserType = UserType.NONE,
+    val accentId: Int
 )
 
 data class ParticipantMinimized(
