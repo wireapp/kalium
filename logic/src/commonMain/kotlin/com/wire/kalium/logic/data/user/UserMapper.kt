@@ -210,7 +210,8 @@ internal class UserMapperImpl(
             userType = domainUserTypeMapper.fromUserTypeEntity(userType),
             isUserDeleted = deleted,
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
-            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus)
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
+            accentId = accentId
         )
     }
 
