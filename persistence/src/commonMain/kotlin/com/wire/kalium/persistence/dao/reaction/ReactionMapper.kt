@@ -46,7 +46,8 @@ object ReactionMapper {
             userTypeEntity = userType,
             deleted = deleted,
             connectionStatus = connectionStatus,
-            availabilityStatus = userAvailabilityStatus
+            availabilityStatus = userAvailabilityStatus,
+            accentId = accentId
         )
     }
 }
