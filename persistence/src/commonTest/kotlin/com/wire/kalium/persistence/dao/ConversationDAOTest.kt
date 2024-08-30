@@ -1076,7 +1076,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.getAllConversationDetails(fromArchive).first()
 
         // then
-        assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
+        assertEquals(conversation.toViewEntity(user1).copy(accentId = 0), result.firstOrNull { it.id == conversation.id })
     }
 
     @Test
@@ -2018,7 +2018,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            accentId = 1
         )
     }
 

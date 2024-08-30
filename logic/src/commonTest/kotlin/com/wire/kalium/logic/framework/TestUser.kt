@@ -189,5 +189,6 @@ object TestUser {
         name = "otherUsername",
         completePicture = UserAssetId("value2", "domain"),
         userType = UserType.EXTERNAL,
+        accentId = 0
     )
 }

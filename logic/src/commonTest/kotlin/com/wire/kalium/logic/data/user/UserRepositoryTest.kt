@@ -693,7 +693,8 @@ class UserRepositoryTest {
             id = QualifiedIDEntity("id", "domain"),
             name = "Max",
             userType = UserTypeEntity.ADMIN,
-            completeAssetId = null
+            completeAssetId = null,
+            accentId = 0
         )
         val (arrangement, userRepository) = Arrangement()
             .withUserDAOReturning(userMinimized)

@@ -198,6 +198,7 @@ internal class UserMapperImpl(
             name = userEntity.name,
             completePicture = userEntity.completeAssetId?.toModel(),
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            accentId = userEntity.accentId
         )
 
     override fun fromEntityToUserSummary(userEntity: UserEntity) = with(userEntity) {
