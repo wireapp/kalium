@@ -88,8 +88,8 @@ interface ConversationMapper {
 
     fun fromModelToDAOAccess(accessList: Set<Conversation.Access>): List<ConversationEntity.Access>
     fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole>
-    fun fromApiModel(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access>
-    fun fromApiModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole>
+    fun fromApiModelModelAccess(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access>
+    fun fromApiModelModelAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -473,10 +473,10 @@ internal class ConversationMapperImpl(
     override fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole> =
         accessRoleList.map { it.toDAO() }
 
-    override fun fromApiModel(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access> =
+    override fun fromApiModelModelAccess(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access> =
         accessList.map { it.toModel() }.toSet()
 
-    override fun fromApiModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole> =
+    override fun fromApiModelModelAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole> =
         accessRoleList.map { it.toModel() }.toSet()
 }
 
