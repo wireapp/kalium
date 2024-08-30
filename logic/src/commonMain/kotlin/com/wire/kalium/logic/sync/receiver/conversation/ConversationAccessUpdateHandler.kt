@@ -17,15 +17,18 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 
 interface ConversationAccessUpdateHandler {
-    suspend fun handle(event: Event.Conversation.AccessUpdate)
+    suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit>
 }
 
 @Suppress("FunctionNaming")
@@ -35,11 +38,12 @@ fun ConversationAccessUpdateHandler(
     conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) = object : ConversationAccessUpdateHandler {
 
-    override suspend fun handle(event: Event.Conversation.AccessUpdate) {
-        conversationDAO.updateAccess(
-            conversationID = event.conversationId.toDao(),
-            accessList = conversationMapper.fromModelToDAOAccess(event.access),
-            accessRoleList = conversationMapper.fromModelToDAOAccessRole(event.accessRole)
-        )
-    }
+    override suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateAccess(
+                conversationID = event.conversationId.toDao(),
+                accessList = conversationMapper.fromModelToDAOAccess(event.access),
+                accessRoleList = conversationMapper.fromModelToDAOAccessRole(event.accessRole)
+            )
+        }
 }
