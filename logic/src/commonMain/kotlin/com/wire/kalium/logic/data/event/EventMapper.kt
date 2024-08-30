@@ -202,8 +202,8 @@ class EventMapper(
     ): Event = Event.Conversation.AccessUpdate(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        access = conversationMapper.fromApiModelModelAccess(eventContentDTO.data.access),
-        accessRole = conversationMapper.fromApiModelModelAccessRole(eventContentDTO.data.accessRole),
+        access = conversationMapper.fromApiModelToAccessModel(eventContentDTO.data.access),
+        accessRole = conversationMapper.fromApiModelToAccessRoleModel(eventContentDTO.data.accessRole),
         qualifiedFrom = eventContentDTO.qualifiedFrom.toModel()
     )
 
