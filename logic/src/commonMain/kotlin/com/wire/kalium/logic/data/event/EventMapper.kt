@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -64,7 +65,8 @@ class EventMapper(
     private val selfUserId: UserId,
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
-    private val qualifiedIdMapper: QualifiedIdMapper = MapperProvider.qualifiedIdMapper(selfUserId)
+    private val qualifiedIdMapper: QualifiedIdMapper = MapperProvider.qualifiedIdMapper(selfUserId),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) {
     fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -94,7 +96,7 @@ class EventMapper(
             is EventContentDTO.User.LegalHoldDisabledDTO -> legalHoldDisabled(id, eventContentDTO)
             is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
-            is EventContentDTO.Conversation.AccessUpdate -> unknown(id, eventContentDTO)
+            is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
@@ -192,6 +194,17 @@ class EventMapper(
         messageTimer = eventContentDTO.data.messageTimer,
         senderUserId = eventContentDTO.qualifiedFrom.toModel(),
         dateTime = eventContentDTO.time
+    )
+
+    private fun conversationAccessUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.AccessUpdate
+    ): Event = Event.Conversation.AccessUpdate(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        access = conversationMapper.fromApiModel(eventContentDTO.data.access),
+        accessRole = conversationMapper.fromApiModel(eventContentDTO.data.accessRole),
+        qualifiedFrom = eventContentDTO.qualifiedFrom.toModel()
     )
 
     private fun conversationReceiptModeUpdate(
