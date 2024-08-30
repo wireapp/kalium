@@ -1,0 +1,41 @@
+DROP VIEW IF EXISTS ReceiptDetails;
+DROP VIEW IF EXISTS MessageDetailsReactions;
+
+CREATE VIEW IF NOT EXISTS ReceiptDetails
+AS SELECT
+	Receipt.type,
+	Receipt.date,
+	Receipt.message_id AS messageId,
+	Receipt.conversation_id AS conversationId,
+	User.qualified_id AS userId,
+	User.name AS userName,
+	User.handle AS userHandle,
+	User.preview_asset_id AS previewAssetId,
+	User.user_type AS userType,
+	User.deleted AS isUserDeleted,
+	User.connection_status AS connectionStatus,
+	User.user_availability_status AS userAvailabilityStatus,
+	User.accent_id AS accentId
+FROM
+	Receipt
+INNER JOIN User ON User.qualified_id = Receipt.user_id
+ORDER BY User.name;
+
+CREATE VIEW IF NOT EXISTS MessageDetailsReactions
+AS SELECT
+	Reaction.emoji,
+	Reaction.message_id AS messageId,
+	Reaction.conversation_id AS conversationId,
+	User.qualified_id AS userId,
+	User.name,
+	User.handle,
+	User.preview_asset_id AS previewAssetId,
+	User.user_type AS userType,
+	User.deleted,
+	User.connection_status AS connectionStatus,
+	User.user_availability_status AS userAvailabilityStatus,
+	User.accent_id AS accentId
+FROM
+	Reaction
+INNER JOIN User ON User.qualified_id = Reaction.sender_id
+ORDER BY Reaction.emoji;

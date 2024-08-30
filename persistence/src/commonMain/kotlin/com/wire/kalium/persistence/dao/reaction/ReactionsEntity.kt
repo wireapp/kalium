@@ -41,7 +41,8 @@ data class MessageReactionEntity(
     val userTypeEntity: UserTypeEntity,
     val deleted: Boolean,
     val connectionStatus: ConnectionEntity.State,
-    val availabilityStatus: UserAvailabilityStatusEntity
+    val availabilityStatus: UserAvailabilityStatusEntity,
+    val accentId: Int
 )
 
 typealias ReactionsCountEntity = Map<String, Int>

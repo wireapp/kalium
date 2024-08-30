@@ -240,7 +240,8 @@ class MLSCallHelperTest {
             isCameraOn = false,
             avatarAssetId = null,
             isSharingScreen = false,
-            hasEstablishedAudio = true
+            hasEstablishedAudio = true,
+            accentId = 0
         )
         val participant2 = participant1.copy(
             id = QualifiedID("participantId2", "participantDomain2"),

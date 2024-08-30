@@ -146,12 +146,14 @@ class UserMapper {
         userId: QualifiedIDEntity,
         name: String?,
         assetId: QualifiedIDEntity?,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        accentId: Int
     ) = UserEntityMinimized(
         userId,
         name,
         assetId,
-        userTypeEntity
+        userTypeEntity,
+        accentId
     )
 }
 
@@ -282,15 +284,15 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
         withContext(queriesContext) {
-            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
-                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType, accentId ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
             }.executeAsOneOrNull()
         }
 
     override suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized> =
         withContext(queriesContext) {
-            userQueries.selectMinimizedByQualifiedId(qualifiedIDs) { qualifiedId, name, completeAssetId, userType ->
-                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            userQueries.selectMinimizedByQualifiedId(qualifiedIDs) { qualifiedId, name, completeAssetId, userType, accentId ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
             }.executeAsList()
         }
 

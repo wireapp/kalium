@@ -205,7 +205,7 @@ internal class ConversationMapperImpl(
                         otherUser = OtherUser(
                             id = otherUserId.requireField("otherUserID in OneOnOne").toModel(),
                             name = name,
-                            accentId = 0,
+                            accentId = accentId ?: 0,
                             userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                             availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
                             deleted = userDeleted ?: false,
