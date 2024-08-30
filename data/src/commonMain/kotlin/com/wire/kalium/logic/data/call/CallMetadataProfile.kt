@@ -59,7 +59,8 @@ data class CallMetadata(
             isSharingScreen = participant.isSharingScreen,
             hasEstablishedAudio = participant.hasEstablishedAudio,
             avatarAssetId = user?.completePicture,
-            userType = user?.userType ?: UserType.NONE
+            userType = user?.userType ?: UserType.NONE,
+            accentId = user?.accentId ?: 0
         )
     }
 }

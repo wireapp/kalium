@@ -96,7 +96,8 @@ object TestCall {
                 id = QualifiedID("participantId", "participantDomain"),
                 name = "User Name",
                 completePicture = null,
-                userType = UserType.ADMIN
+                userType = UserType.ADMIN,
+                accentId = 0
             )
         )
     )
@@ -124,7 +125,8 @@ object TestCall {
                 name = "User Name",
                 avatarAssetId = null,
                 userType = UserType.ADMIN,
-                isSpeaking = false
+                isSpeaking = false,
+                accentId = 0
             )
         ),
         maxParticipants = 0

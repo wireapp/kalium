@@ -176,6 +176,7 @@ object TestConversation {
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        accentId = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -339,7 +340,8 @@ object TestConversation {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
-        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        accentId = null
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(

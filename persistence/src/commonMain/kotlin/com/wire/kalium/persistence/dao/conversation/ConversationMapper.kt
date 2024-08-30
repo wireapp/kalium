@@ -50,6 +50,7 @@ internal class ConversationMapper {
         otherUserActiveConversationId: QualifiedIDEntity?,
         isCreator: Long,
         isActive: Long,
+        accentId: Int?,
         lastNotifiedMessageDate: Instant?,
         selfRole: MemberEntity.Role?,
         protocol: ConversationEntity.Protocol,
@@ -122,7 +123,8 @@ internal class ConversationMapper {
         userSupportedProtocols = userSupportedProtocols,
         userActiveOneOnOneConversationId = otherUserActiveConversationId,
         proteusVerificationStatus = proteusVerificationStatus,
-        legalHoldStatus = legalHoldStatus
+        legalHoldStatus = legalHoldStatus,
+        accentId = accentId
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
