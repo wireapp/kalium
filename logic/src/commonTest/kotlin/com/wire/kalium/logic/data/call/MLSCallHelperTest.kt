@@ -47,13 +47,55 @@ import kotlin.test.assertTrue
 class MLSCallHelperTest {
 
     @Test
-    fun givenMlsConferenceCall_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
+    fun givenMlsProtocol_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
         runTest {
             val (_, mLSCallHelper) = Arrangement()
                 .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
                 .arrange()
 
-            // Proteus protocol
+            // one participant in the call
+            val shouldEndSFTOneOnOneCall1 = mLSCallHelper.shouldEndSFTOneOnOneCall(
+                conversationId = conversationId,
+                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                conversationType = Conversation.Type.ONE_ON_ONE,
+                newCallParticipants = listOf(participantMinimized1),
+                previousCallParticipants = listOf(participant1)
+            )
+            assertFalse { shouldEndSFTOneOnOneCall1 }
+
+            // Audio not lost for the second participant
+            val shouldEndSFTOneOnOneCall2 = mLSCallHelper.shouldEndSFTOneOnOneCall(
+                conversationId = conversationId,
+                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                conversationType = Conversation.Type.GROUP,
+                newCallParticipants = listOf(participantMinimized1, participantMinimized2),
+                previousCallParticipants = listOf(participant1, participant2)
+            )
+            assertFalse { shouldEndSFTOneOnOneCall2 }
+
+            // Audio lost for the second participant
+            val shouldEndSFTOneOnOneCall3 = mLSCallHelper.shouldEndSFTOneOnOneCall(
+                conversationId = conversationId,
+                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                conversationType = Conversation.Type.ONE_ON_ONE,
+                previousCallParticipants = listOf(participant1, participant2),
+                newCallParticipants = listOf(
+                    participantMinimized1,
+                    participantMinimized2.copy(hasEstablishedAudio = false)
+                )
+            )
+            assertTrue { shouldEndSFTOneOnOneCall3 }
+        }
+
+    @Test
+    fun givenProteusProtocol_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
+        runTest {
+
+            val (_, mLSCallHelper) = Arrangement()
+                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
+                .arrange()
+
+            // participants list has 2 items for the new list and the previous list
             val shouldEndSFTOneOnOneCall1 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
                 callProtocol = Conversation.ProtocolInfo.Proteus,
@@ -63,55 +105,15 @@ class MLSCallHelperTest {
             )
             assertFalse { shouldEndSFTOneOnOneCall1 }
 
-            // one participant in the call
+            // new participants list has 1 participant
             val shouldEndSFTOneOnOneCall2 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                callProtocol = Conversation.ProtocolInfo.Proteus,
                 conversationType = Conversation.Type.ONE_ON_ONE,
                 newCallParticipants = listOf(participantMinimized1),
-                previousCallParticipants = listOf(participant1)
-            )
-            assertFalse { shouldEndSFTOneOnOneCall2 }
-
-            // Audi not lost for the second participant
-            val shouldEndSFTOneOnOneCall3 = mLSCallHelper.shouldEndSFTOneOnOneCall(
-                conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.GROUP,
-                newCallParticipants = listOf(participantMinimized1, participantMinimized2),
                 previousCallParticipants = listOf(participant1, participant2)
             )
-            assertFalse { shouldEndSFTOneOnOneCall3 }
-
-            // Audio lost for the second participant
-            val shouldEndSFTOneOnOneCall4 = mLSCallHelper.shouldEndSFTOneOnOneCall(
-                conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.ONE_ON_ONE,
-                previousCallParticipants = listOf(participant1, participant2),
-                newCallParticipants = listOf(
-                    participantMinimized1,
-                    participantMinimized2.copy(hasEstablishedAudio = false)
-                )
-            )
-            assertTrue { shouldEndSFTOneOnOneCall4 }
-
-            val (_, mLSCallHelper2) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Left(StorageFailure.DataNotFound))
-                .arrange()
-
-            // ShouldUseSFTForOneOnOneCalls user config is not found
-            val shouldEndSFTOneOnOneCall5 = mLSCallHelper2.shouldEndSFTOneOnOneCall(
-                conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.ONE_ON_ONE,
-                previousCallParticipants = listOf(participant1, participant2),
-                newCallParticipants = listOf(
-                    participantMinimized1,
-                    participantMinimized2.copy(hasEstablishedAudio = false)
-                )
-            )
-            assertFalse { shouldEndSFTOneOnOneCall5 }
+            assertTrue { shouldEndSFTOneOnOneCall2 }
         }
 
     @Test
@@ -129,7 +131,7 @@ class MLSCallHelperTest {
 
             coVerify {
                 arrangement.subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
-            }.wasInvoked(once)
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -149,11 +151,7 @@ class MLSCallHelperTest {
             mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.ONE_ON_ONE)
 
             coVerify {
-                arrangement.subconversationRepository.deleteRemoteSubConversation(
-                    eq(conversationId),
-                    any(),
-                    any()
-                )
+                arrangement.subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
             }.wasNotInvoked()
         }
 
@@ -167,8 +165,8 @@ class MLSCallHelperTest {
             mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.GROUP)
 
             coVerify {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasInvoked(once)
+                arrangement.callRepository.leaveMlsConference(any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -182,7 +180,7 @@ class MLSCallHelperTest {
 
             coVerify {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasInvoked(once)
+            }.wasInvoked(exactly = once)
         }
 
     private class Arrangement {
@@ -206,18 +204,13 @@ class MLSCallHelperTest {
 
         fun withShouldUseSFTForOneOnOneCallsReturning(result: Either<StorageFailure, Boolean>) =
             apply {
-                every {
-                    userConfigRepository.shouldUseSFTForOneOnOneCalls()
-                }.returns(result)
+                every { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(result)
             }
 
         suspend fun withFetchRemoteSubConversationDetailsReturning(result: Either<NetworkFailure, SubconversationResponse>) =
             apply {
                 coEvery {
-                    subconversationRepository.fetchRemoteSubConversationDetails(
-                        conversationId,
-                        CALL_SUBCONVERSATION_ID
-                    )
+                    subconversationRepository.fetchRemoteSubConversationDetails(eq(conversationId), eq(CALL_SUBCONVERSATION_ID))
                 }.returns(result)
             }
 
@@ -238,19 +231,6 @@ class MLSCallHelperTest {
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
-        val participantMinimized1 = ParticipantMinimized(
-            id = QualifiedID("participantId", "participantDomain"),
-            userId = QualifiedID("participantId", "participantDomain"),
-            clientId = "abcd",
-            isMuted = true,
-            isCameraOn = false,
-            isSharingScreen = false,
-            hasEstablishedAudio = true
-        )
-        val participantMinimized2 = participantMinimized1.copy(
-            id = QualifiedID("participantId2", "participantDomain2"),
-            clientId = "efgh"
-        )
         val participant1 = Participant(
             id = QualifiedID("participantId", "participantDomain"),
             clientId = "abcd",
@@ -264,6 +244,19 @@ class MLSCallHelperTest {
             accentId = 0
         )
         val participant2 = participant1.copy(
+            id = QualifiedID("participantId2", "participantDomain2"),
+            clientId = "efgh"
+        )
+        val participantMinimized1 = ParticipantMinimized(
+            id = QualifiedID("participantId", "participantDomain"),
+            userId = QualifiedID("participantId", "participantDomain"),
+            clientId = "abcd",
+            isMuted = true,
+            isCameraOn = false,
+            isSharingScreen = false,
+            hasEstablishedAudio = true
+        )
+        val participantMinimized2 = participantMinimized1.copy(
             id = QualifiedID("participantId2", "participantDomain2"),
             clientId = "efgh"
         )

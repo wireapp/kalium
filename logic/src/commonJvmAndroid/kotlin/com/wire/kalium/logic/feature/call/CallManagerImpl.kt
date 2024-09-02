@@ -542,6 +542,7 @@ class CallManagerImpl internal constructor(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
+                    userConfigRepository = userConfigRepository,
                     mlsCallHelper = MLSCallHelperImpl(
                         callRepository = callRepository,
                         subconversationRepository = subconversationRepository,

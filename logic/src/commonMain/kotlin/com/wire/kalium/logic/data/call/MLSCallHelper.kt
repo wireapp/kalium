@@ -80,12 +80,18 @@ class MLSCallHelperImpl(
         conversationType: Conversation.Type,
         newCallParticipants: List<ParticipantMinimized>,
         previousCallParticipants: List<Participant>
-    ) = callProtocol is Conversation.ProtocolInfo.MLS &&
-            userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false) &&
+    ): Boolean {
+        return if (callProtocol is Conversation.ProtocolInfo.Proteus) {
             conversationType == Conversation.Type.ONE_ON_ONE &&
-            newCallParticipants.size == TWO_PARTICIPANTS &&
-            previousCallParticipants.size == TWO_PARTICIPANTS &&
-            previousCallParticipants[1].hasEstablishedAudio && !newCallParticipants[1].hasEstablishedAudio
+                    newCallParticipants.size == ONE_PARTICIPANTS &&
+                    previousCallParticipants.size == TWO_PARTICIPANTS
+        } else {
+            conversationType == Conversation.Type.ONE_ON_ONE &&
+                    newCallParticipants.size == TWO_PARTICIPANTS &&
+                    previousCallParticipants.size == TWO_PARTICIPANTS &&
+                    previousCallParticipants[1].hasEstablishedAudio && !newCallParticipants[1].hasEstablishedAudio
+        }
+    }
 
     override suspend fun handleCallTermination(
         conversationId: ConversationId,
@@ -119,5 +125,6 @@ class MLSCallHelperImpl(
 
     companion object {
         const val TWO_PARTICIPANTS = 2
+        const val ONE_PARTICIPANTS = 1
     }
 }
