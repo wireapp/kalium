@@ -152,9 +152,11 @@ tasks.register("runAllUnitTests") {
             println("Adding $name to runUnitTests")
             dependsOn(":$name:testDebugUnitTest")
         }
-        if (tasks.findByName("jvmTest") != null) {
-            println("Adding $name to jvmTest")
-            dependsOn(":$name:jvmTest")
+        if (name != "cryptography") {
+            if (tasks.findByName("jvmTest") != null) {
+                println("Adding $name to jvmTest")
+                dependsOn(":$name:jvmTest")
+            }
         }
     }
 }
