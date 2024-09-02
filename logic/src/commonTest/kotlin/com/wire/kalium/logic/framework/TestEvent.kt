@@ -139,6 +139,14 @@ object TestEvent {
         senderUserId = TestUser.USER_ID
     )
 
+    fun accessUpdate(eventId: String = "eventId") = Event.Conversation.AccessUpdate(
+        id = eventId,
+        conversationId = TestConversation.ID,
+        access = setOf(Conversation.Access.PRIVATE),
+        accessRole = setOf(Conversation.AccessRole.TEAM_MEMBER, Conversation.AccessRole.SERVICE),
+        qualifiedFrom = TestUser.USER_ID
+    )
+
     fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
         eventId,
         teamId = "teamId",
@@ -198,13 +206,6 @@ object TestEvent {
         TestUser.USER_ID,
         "dummy-message",
         timestampIso = "2022-03-30T15:36:00.000Z"
-    )
-
-    fun newAccessUpdateEvent() = Event.Conversation.AccessUpdate(
-        id = "eventId",
-        conversationId = TestConversation.ID,
-        data = TestConversation.CONVERSATION_RESPONSE,
-        qualifiedFrom = TestUser.USER_ID,
     )
 
     fun codeUpdated() = Event.Conversation.CodeUpdated(
