@@ -22,9 +22,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.InteractionAvailability
+import com.wire.kalium.logic.data.conversation.interactionAvailability
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
@@ -65,24 +66,7 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
                 if (!isProtocolSupported) { // short-circuit to Unsupported Protocol if it's the case
                     return@fold IsInteractionAvailableResult.Success(InteractionAvailability.UNSUPPORTED_PROTOCOL)
                 }
-                val availability = when (conversationDetails) {
-                    is ConversationDetails.Connection -> InteractionAvailability.DISABLED
-                    is ConversationDetails.Group -> {
-                        if (conversationDetails.isSelfUserMember) InteractionAvailability.ENABLED
-                        else InteractionAvailability.NOT_MEMBER
-                    }
-
-                    is ConversationDetails.OneOne -> when {
-                        conversationDetails.otherUser.defederated -> InteractionAvailability.DISABLED
-                        conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
-                        conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED -> InteractionAvailability.BLOCKED_USER
-                        conversationDetails.conversation.legalHoldStatus == Conversation.LegalHoldStatus.DEGRADED ->
-                            InteractionAvailability.LEGAL_HOLD
-                        else -> InteractionAvailability.ENABLED
-                    }
-
-                    is ConversationDetails.Self, is ConversationDetails.Team -> InteractionAvailability.DISABLED
-                }
+                val availability = conversationDetails.interactionAvailability()
                 IsInteractionAvailableResult.Success(availability)
             })
         }
@@ -109,32 +93,4 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
 sealed class IsInteractionAvailableResult {
     data class Success(val interactionAvailability: InteractionAvailability) : IsInteractionAvailableResult()
     data class Failure(val coreFailure: CoreFailure) : IsInteractionAvailableResult()
-}
-
-enum class InteractionAvailability {
-    /**User is able to send messages and make calls */
-    ENABLED,
-
-    /**Self user is no longer conversation member */
-    NOT_MEMBER,
-
-    /**Other user is blocked by self user */
-    BLOCKED_USER,
-
-    /**Other team member or public user has been removed */
-    DELETED_USER,
-
-    /**
-     * This indicates that the conversation is using a protocol that self user does not support.
-     */
-    UNSUPPORTED_PROTOCOL,
-
-    /**Conversation type doesn't support messaging */
-    DISABLED,
-
-    /**
-     * One of conversation members is under legal hold and self user is not able to interact with it.
-     * This applies to 1:1 conversations only when other member is a guest.
-     */
-    LEGAL_HOLD
 }

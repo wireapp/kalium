@@ -32,8 +32,10 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
+import com.wire.kalium.logic.data.call.CallHelperImpl
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
@@ -48,6 +50,7 @@ import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -112,6 +115,8 @@ class CallManagerImpl internal constructor(
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val networkStateObserver: NetworkStateObserver,
     private val getCallConversationType: GetCallConversationTypeProvider,
+    private val subconversationRepository: SubconversationRepository,
+    private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
@@ -210,10 +215,6 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
                     .keepingStrongReference(),
-<<<<<<< HEAD
-                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper, networkStateObserver)
-                    .keepingStrongReference(),
-=======
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
                     callHelper = CallHelperImpl(callRepository, subconversationRepository, userConfigRepository),
@@ -221,7 +222,6 @@ class CallManagerImpl internal constructor(
                     scope = scope,
                     qualifiedIdMapper = qualifiedIdMapper
                 ).keepingStrongReference(),
->>>>>>> ec81cb6db0 (chore: cleanup MLSCallHelper class (WPB-7153) - cherrypick RC (#2957))
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
                     .keepingStrongReference(),
@@ -542,11 +542,7 @@ class CallManagerImpl internal constructor(
                 val onParticipantListChanged = OnParticipantListChanged(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
-<<<<<<< HEAD
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
-=======
-                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
-                    userRepository = userRepository,
                     userConfigRepository = userConfigRepository,
                     callHelper = CallHelperImpl(
                         callRepository = callRepository,
@@ -554,7 +550,6 @@ class CallManagerImpl internal constructor(
                         userConfigRepository = userConfigRepository
                     ),
                     endCall = { endCall(it) },
->>>>>>> ec81cb6db0 (chore: cleanup MLSCallHelper class (WPB-7153) - cherrypick RC (#2957))
                     callingScope = scope
                 ).keepingStrongReference()
 

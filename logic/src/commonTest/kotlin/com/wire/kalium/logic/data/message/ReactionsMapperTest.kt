@@ -59,7 +59,8 @@ class ReactionsMapperTest {
             userType = UserTypeEntity.STANDARD,
             deleted = false,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
-            userAvailabilityStatus = UserAvailabilityStatusEntity.NONE
+            userAvailabilityStatus = UserAvailabilityStatusEntity.NONE,
+            accentId = 0
         )
 
         val expectedMessageReactionEntity = MessageReactionEntity(
@@ -71,7 +72,8 @@ class ReactionsMapperTest {
             userTypeEntity = UserTypeEntity.STANDARD,
             deleted = false,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            accentId = 0
         )
 
         val (_, reactionsMapper) = Arrangement()
@@ -99,7 +101,8 @@ class ReactionsMapperTest {
             userTypeEntity = UserTypeEntity.STANDARD,
             deleted = false,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            accentId = 0
         )
 
         val expectedMessageReaction = MessageReaction(
@@ -113,7 +116,8 @@ class ReactionsMapperTest {
                 userType = UserType.INTERNAL,
                 isUserDeleted = false,
                 connectionStatus = ConnectionState.ACCEPTED,
-                availabilityStatus = UserAvailabilityStatus.NONE
+                availabilityStatus = UserAvailabilityStatus.NONE,
+                accentId = 0
             )
         )
 

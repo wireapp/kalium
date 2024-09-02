@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -56,7 +57,8 @@ internal class ConversationEventReceiverImpl(
     private val codeUpdatedHandler: CodeUpdatedHandler,
     private val codeDeletedHandler: CodeDeletedHandler,
     private val typingIndicatorHandler: TypingIndicatorHandler,
-    private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
+    private val protocolUpdateEventHandler: ProtocolUpdateEventHandler,
+    private val accessUpdateEventHandler: AccessUpdateEventHandler
 ) : ConversationEventReceiver {
     override suspend fun onEvent(event: Event.Conversation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         // TODO: Make sure errors are accounted for by each handler.
@@ -108,11 +110,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.AccessUpdate -> {
-                /* no-op */
-                Either.Right(Unit)
-            }
-
+            is Event.Conversation.AccessUpdate -> accessUpdateEventHandler.handle(event)
             is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
             is Event.Conversation.CodeDeleted -> codeDeletedHandler.handle(event)
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
