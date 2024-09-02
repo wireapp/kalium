@@ -20,7 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
-import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +35,7 @@ import kotlin.coroutines.CoroutineContext
 
 class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
-    private val metadataCache: Cache<String, Flow<String?>>,
+    private val metadataCache: FlowCache<String, String?>,
     private val databaseScope: CoroutineScope,
     private val queriesContext: CoroutineContext
 ) : MetadataDAO {
@@ -48,12 +48,12 @@ class MetadataDAOImpl internal constructor(
         metadataQueries.deleteValue(key)
     }
 
-    override suspend fun valueByKeyFlow(key: String): Flow<String?> = metadataCache.get(key) {
+    override suspend fun valueByKeyFlow(
+        key: String
+    ): Flow<String?> = metadataCache.get(key) {
         metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
-            .distinctUntilChanged()
-            .shareIn(databaseScope, SharingStarted.Eagerly, 1)
     }
 
     override suspend fun valueByKey(key: String): String? = withContext(queriesContext) {

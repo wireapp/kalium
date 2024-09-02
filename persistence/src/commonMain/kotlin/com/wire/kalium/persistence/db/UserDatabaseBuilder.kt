@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
-import com.wire.kalium.persistence.cache.LRUCache
+import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -54,11 +54,13 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -79,13 +81,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmInline
-
-internal const val USER_CACHE_SIZE = 125
-internal const val CONVERSATION_CACHE_SIZE = 125
-internal const val METADATA_CACHE_SIZE = 30
 
 @JvmInline
 value class UserDBSecret(val value: ByteArray)
@@ -169,9 +166,9 @@ class UserDatabaseBuilder internal constructor(
     }
 
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val userCache = LRUCache<UserIDEntity, Flow<UserDetailsEntity?>>(USER_CACHE_SIZE)
+    private val userCache = FlowCache<UserIDEntity, UserDetailsEntity?>(databaseScope)
     val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries, userCache, databaseScope, queriesContext)
+        get() = UserDAOImpl(database.usersQueries, userCache, queriesContext)
 
     val messageMetaDataDAO: MessageMetadataDAO
         get() = MessageMetadataDAOImpl(database.messageMetadataQueries, queriesContext)
@@ -186,27 +183,34 @@ class UserDatabaseBuilder internal constructor(
             queriesContext
         )
 
+    private val conversationDetailsCache =
+        FlowCache<ConversationIDEntity, ConversationViewEntity?>(databaseScope)
+
     private val conversationCache =
-        LRUCache<ConversationIDEntity, Flow<ConversationViewEntity?>>(CONVERSATION_CACHE_SIZE)
+        FlowCache<ConversationIDEntity, ConversationEntity?>(databaseScope)
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
+            conversationDetailsCache,
             conversationCache,
             database.conversationsQueries,
             database.membersQueries,
             database.unreadEventsQueries,
             queriesContext,
-            databaseScope
         )
+
+    private val conversationMembersCache =
+        FlowCache<ConversationIDEntity, List<MemberEntity>>(databaseScope)
 
     val memberDAO: MemberDAO
         get() = MemberDAOImpl(
+            conversationMembersCache,
             database.membersQueries,
             database.usersQueries,
             database.conversationsQueries,
             queriesContext
         )
 
-    private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
+    private val metadataCache = FlowCache<String, String?>(databaseScope)
     val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(
             database.metadataQueries,

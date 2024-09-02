@@ -218,3 +218,7 @@ tasks.register("aggregateTestResults") {
         println("Aggregated test reports are available at: $relativePath")
     }
 }
+
+tasks.wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+}
