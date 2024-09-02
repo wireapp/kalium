@@ -1,0 +1,208 @@
+
+Decrypting Proteus. CheckingSession: 171.63us; Decrypting: 23.412150ms; Saving Session: 4.72us
+Processing Application Message. LegalHold: 17.415us; Actually Handling: 30.606893ms; Post Handling: 61.157us
+65 LastRead
+
+Decrypting Proteus. CheckingSession: 130.615us; Decrypting: 23.862264ms; Saving Session: 4.761us
+Processing Application Message. LegalHold: 8.499105ms; Actually Handling: 87.421549ms; Post Handling: 47.689us
+128 Text
+
+Decrypting Proteus. CheckingSession: 132.447us; Decrypting: 40.465699ms; Saving Session: 4.883us
+Processing Application Message. LegalHold: 43.508220ms; Actually Handling: 84.078043ms; Post Handling: 43.498us
+191 Text
+
+Decrypting Proteus. CheckingSession: 97.819us; Decrypting: 35.966390ms; Saving Session: 3.947us
+Processing Application Message. LegalHold: 22.293782ms; Actually Handling: 82.308838ms; Post Handling: 41.015us
+147 Text
+
+Decrypting Proteus. CheckingSession: 109.823us; Decrypting: 67.539388ms; Saving Session: 4.76us
+Processing Application Message. LegalHold: 18.875651ms; Actually Handling: 39.499064ms; Post Handling: 41.422us
+143 Text
+
+Decrypting Proteus. CheckingSession: 88.786us; Decrypting: 34.672689ms; Saving Session: 4.435us
+Processing Application Message. LegalHold: 12.254029ms; Actually Handling: 59.550049ms; Post Handling: 42.155us
+112 Text
+
+Decrypting Proteus. CheckingSession: 100.057us; Decrypting: 56.516113ms; Saving Session: 4.476us
+Processing Application Message. LegalHold: 4.922648ms; Actually Handling: 43.885620ms; Post Handling: 40.935us
+133 Text
+
+Decrypting Proteus. CheckingSession: 99.203us; Decrypting: 76.217733ms; Saving Session: 5.168us
+Processing Application Message. LegalHold: 4.521729ms; Actually Handling: 74.523437ms; Post Handling: 65.186us
+168 Text
+
+Decrypting Proteus. CheckingSession: 146.891us; Decrypting: 41.369263ms; Saving Session: 5.94us
+Processing Application Message. LegalHold: 17.425049ms; Actually Handling: 160.854289ms; Post Handling: 369.913us
+251 Text
+
+Decrypting Proteus. CheckingSession: 156.779us; Decrypting: 69.674438ms; Saving Session: 5.331us
+Processing Application Message. LegalHold: 29.853068ms; Actually Handling: 32.974365ms; Post Handling: 44.556us
+180 Text
+
+Decrypting Proteus. CheckingSession: 97.412us; Decrypting: 194.863933ms; Saving Session: 4.721us
+Processing Application Message. LegalHold: 8.449300ms; Actually Handling: 110.715779ms; Post Handling: 47.607us
+343 Text
+
+Decrypting Proteus. CheckingSession: 143.88us; Decrypting: 63.876993ms; Saving Session: 4.72us
+Processing Application Message. LegalHold: 26.663046ms; Actually Handling: 100.153483ms; Post Handling: 43.01us
+200 Text
+
+Decrypting Proteus. CheckingSession: 102.051us; Decrypting: 33.846557ms; Saving Session: 3.988us
+Processing Application Message. LegalHold: 32.440105ms; Actually Handling: 77.101400ms; Post Handling: 50.13us
+171 Text
+
+Decrypting Proteus. CheckingSession: 90.82us; Decrypting: 82.648763ms; Saving Session: 8.22us
+Processing Application Message. LegalHold: 13.928873ms; Actually Handling: 59.246338ms; Post Handling: 74.911us
+164 Text
+
+Decrypting Proteus. CheckingSession: 81.95us; Decrypting: 20.931438ms; Saving Session: 3.377us
+Processing Application Message. LegalHold: 22.170573ms; Actually Handling: 54.304688ms; Post Handling: 60.628us
+104 Text
+
+Decrypting Proteus. CheckingSession: 112.955us; Decrypting: 30.412068ms; Saving Session: 3.621us
+Processing Application Message. LegalHold: 7.205160ms; Actually Handling: 56.475545ms; Post Handling: 48.869us
+102 Text
+
+Decrypting Proteus. CheckingSession: 85.368us; Decrypting: 36.424520ms; Saving Session: 5.005us
+Processing Application Message. LegalHold: 4.438477ms; Actually Handling: 30.431315ms; Post Handling: 40.771us
+77 Text
+
+Decrypting Proteus. CheckingSession: 80.892us; Decrypting: 55.061971ms; Saving Session: 4.517us
+Processing Application Message. LegalHold: 13.422851ms; Actually Handling: 23.873372ms; Post Handling: 40.243us
+103 Text
+
+Decrypting Proteus. CheckingSession: 90.047us; Decrypting: 115.897624ms; Saving Session: 5.045us
+Processing Application Message. LegalHold: 5.418457ms; Actually Handling: 63.461101ms; Post Handling: 41.667us
+191 Text
+
+Decrypting Proteus. CheckingSession: 80.933us; Decrypting: 67.734945ms; Saving Session: 4.394us
+Processing Application Message. LegalHold: 7.931397ms; Actually Handling: 45.393474ms; Post Handling: 39.795us
+129 Text
+
+Decrypting Proteus. CheckingSession: 96.436us; Decrypting: 55.728027ms; Saving Session: 6.144us
+Processing Application Message. LegalHold: 4.656291ms; Actually Handling: 82.777262ms; Post Handling: 55.502us
+204 Text
+
+Decrypting Proteus. CheckingSession: 134.074us; Decrypting: 31.648315ms; Saving Session: 3.662us
+Processing Application Message. LegalHold: 5.795695ms; Actually Handling: 41.531982ms; Post Handling: 40.894us
+117 Text
+
+Decrypting Proteus. CheckingSession: 125.529us; Decrypting: 32.789713ms; Saving Session: 4.882us
+Processing Application Message. LegalHold: 5.650310ms; Actually Handling: 23.350098ms; Post Handling: 41.178us
+73 Text
+
+Decrypting Proteus. CheckingSession: 83.821us; Decrypting: 101.161296ms; Saving Session: 4.639us
+Processing Application Message. LegalHold: 5.676758ms; Actually Handling: 84.787313ms; Post Handling: 42.643us
+198 Text
+
+Decrypting Proteus. CheckingSession: 101.929us; Decrypting: 100.994466ms; Saving Session: 4.476us
+Processing Application Message. LegalHold: 6.584229ms; Actually Handling: 44.870361ms; Post Handling: 43.701us
+165 Text
+
+Decrypting Proteus. CheckingSession: 101.44us; Decrypting: 40.139079ms; Saving Session: 5.656us
+Processing Application Message. LegalHold: 23.923584ms; Actually Handling: 73.660075ms; Post Handling: 40.161us
+190 Text
+
+Decrypting Proteus. CheckingSession: 97.575us; Decrypting: 13.363729ms; Saving Session: 3.459us
+Processing Application Message. LegalHold: 15.317383ms; Actually Handling: 19.124390ms; Post Handling: 45.573us
+78 Text
+
+Decrypting Proteus. CheckingSession: 114.461us; Decrypting: 18.798991ms; Saving Session: 4.435us
+Processing Application Message. LegalHold: 7.636108ms; Actually Handling: 95.518391ms; Post Handling: 62.418us
+172 Text
+
+Decrypting Proteus. CheckingSession: 89.396us; Decrypting: 45.923869ms; Saving Session: 5.046us
+Processing Application Message. LegalHold: 30.199504ms; Actually Handling: 31.469930ms; Post Handling: 57.617us
+124 Text
+
+Decrypting Proteus. CheckingSession: 117.187us; Decrypting: 68.765584ms; Saving Session: 6.348us
+Processing Application Message. LegalHold: 19.563192ms; Actually Handling: 70.637858ms; Post Handling: 68.074us
+172 Text
+
+Decrypting Proteus. CheckingSession: 206.543us; Decrypting: 110.533895ms; Saving Session: 9.684us
+Processing Application Message. LegalHold: 9.586548ms; Actually Handling: 19.422160ms; Post Handling: 44.719us
+155 Text
+
+Decrypting Proteus. CheckingSession: 84.798us; Decrypting: 28.744751ms; Saving Session: 4.558us
+Processing Application Message. LegalHold: 4.979573ms; Actually Handling: 18.377157ms; Post Handling: 39.998us
+74 Text
+
+Decrypting Proteus. CheckingSession: 178.101us; Decrypting: 14.005493ms; Saving Session: 3.337us
+Processing Application Message. LegalHold: 4.134807ms; Actually Handling: 30.131144ms; Post Handling: 38.492us
+54 Text
+
+Decrypting Proteus. CheckingSession: 92.407us; Decrypting: 70.199544ms; Saving Session: 4.679us
+Processing Application Message. LegalHold: 13.248739ms; Actually Handling: 114.933187ms; Post Handling: 39.998us
+259 Text
+
+Decrypting Proteus. CheckingSession: 159.424us; Decrypting: 41.670899ms; Saving Session: 4.313us
+Processing Application Message. LegalHold: 28.232829ms; Actually Handling: 16.727539ms; Post Handling: 36.621us
+103 Text
+
+Decrypting Proteus. CheckingSession: 92.529us; Decrypting: 64.359416ms; Saving Session: 4.028us
+Processing Application Message. LegalHold: 4.952107ms; Actually Handling: 14.338094ms; Post Handling: 54.932us
+89 Text
+
+Decrypting Proteus. CheckingSession: 101.888us; Decrypting: 49.372478ms; Saving Session: 5.249us
+Processing Application Message. LegalHold: 36.024455ms; Actually Handling: 41.159505ms; Post Handling: 43.905us
+168 Text
+
+Decrypting Proteus. CheckingSession: 85.205us; Decrypting: 14.965413ms; Saving Session: 4.028us
+Processing Application Message. LegalHold: 5.274007ms; Actually Handling: 32.183391ms; Post Handling: 44.271us
+58 Text
+
+Decrypting Proteus. CheckingSession: 92.082us; Decrypting: 86.730713ms; Saving Session: 5.086us
+Processing Application Message. LegalHold: 4.609131ms; Actually Handling: 38.390340ms; Post Handling: 45.166us
+135 Text
+
+Decrypting Proteus. CheckingSession: 101.725us; Decrypting: 15.713461ms; Saving Session: 3.662us
+Processing Application Message. LegalHold: 4.611979ms; Actually Handling: 47.136109ms; Post Handling: 50.904us
+92 Text
+
+Decrypting Proteus. CheckingSession: 86.1us; Decrypting: 74.593669ms; Saving Session: 6.755us
+Processing Application Message. LegalHold: 4.965617ms; Actually Handling: 26.958374ms; Post Handling: 41.015us
+136 Text
+
+Decrypting Proteus. CheckingSession: 94.523us; Decrypting: 26.139405ms; Saving Session: 3.58us
+Processing Application Message. LegalHold: 14.431519ms; Actually Handling: 46.557496ms; Post Handling: 3.227986ms
+97 Text
+
+Decrypting Proteus. CheckingSession: 149.211us; Decrypting: 38.674520ms; Saving Session: 3.58us
+Processing Application Message. LegalHold: 5.177002ms; Actually Handling: 76.428630ms; Post Handling: 78.125us
+145 Text
+
+Decrypting Proteus. CheckingSession: 115.845us; Decrypting: 18.225139ms; Saving Session: 4.476us
+Processing Application Message. LegalHold: 19.205403ms; Actually Handling: 76.934448ms; Post Handling: 62.622us
+145 Text
+
+Decrypting Proteus. CheckingSession: 103.231us; Decrypting: 53.127604ms; Saving Session: 5.005us
+Processing Application Message. LegalHold: 5.670289ms; Actually Handling: 56.225545ms; Post Handling: 58.675us
+151 Text
+
+Decrypting Proteus. CheckingSession: 82.885us; Decrypting: 115.505900ms; Saving Session: 8.789us
+Processing Application Message. LegalHold: 11.379720ms; Actually Handling: 99.572673ms; Post Handling: 122.192us
+263 Text
+
+Decrypting Proteus. CheckingSession: 183.756us; Decrypting: 104.482625ms; Saving Session: 6.714us
+Processing Application Message. LegalHold: 13.235555ms; Actually Handling: 78.640258ms; Post Handling: 54.525us
+204 Text
+
+Decrypting Proteus. CheckingSession: 111.206us; Decrypting: 36.096680ms; Saving Session: 6.307us
+Processing Application Message. LegalHold: 31.570028ms; Actually Handling: 24.436483ms; Post Handling: 46.712us
+160 Text
+
+Decrypting Proteus. CheckingSession: 79.671us; Decrypting: 92.863240ms; Saving Session: 4.965us
+Processing Application Message. LegalHold: 50.057739ms; Actually Handling: 69.449626ms; Post Handling: 61.482us
+221 Text
+
+Decrypting Proteus. CheckingSession: 1.046183ms; Decrypting: 72.940877ms; Saving Session: 5.208us
+Processing Application Message. LegalHold: 5.366862ms; Actually Handling: 11.162923ms; Post Handling: 38.615us
+116 Text
+
+Decrypting Proteus. CheckingSession: 71.37us; Decrypting: 22.764160ms; Saving Session: 4.191us
+Processing Application Message. LegalHold: 9.260538ms; Actually Handling: 45.517619ms; Post Handling: 43.132us
+92 Text
+
+Decrypting Proteus. CheckingSession: 80.119us; Decrypting: 40.078939ms; Saving Session: 4.476us
+Processing Application Message. LegalHold: 6.736613ms; Actually Handling: 83.116537ms; Post Handling: 42.521us
+138 Text
