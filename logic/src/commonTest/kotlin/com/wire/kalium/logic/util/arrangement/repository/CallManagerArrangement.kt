@@ -15,22 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.asset
+package com.wire.kalium.logic.util.arrangement.repository
 
-/**
- * Returns true if the mime type is allowed and false otherwise.
- * @param mimeType the mime type to validate.
- * @param allowedExtension the list of allowed extension.
- */
-interface ValidateAssetMimeTypeUseCase {
-    operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean
+import com.wire.kalium.logic.feature.call.CallManager
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.mock
+
+interface CallManagerArrangement {
+
+    val callManager: CallManager
+
+    suspend fun withEndCall()
 }
 
-internal class ValidateAssetMimeTypeUseCaseImpl : ValidateAssetMimeTypeUseCase {
-    override operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean {
-        val extension = mimeType.split("/").last().lowercase()
-        return allowedExtension.any {
-            it.lowercase() == extension
-        }
+internal class CallManagerArrangementImpl : CallManagerArrangement {
+    @Mock
+    override val callManager = mock(CallManager::class)
+
+    override suspend fun withEndCall() {
+        coEvery { callManager.endCall(any()) }.returns(Unit)
     }
 }

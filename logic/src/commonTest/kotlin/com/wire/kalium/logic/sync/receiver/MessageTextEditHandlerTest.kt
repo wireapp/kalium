@@ -118,7 +118,7 @@ class MessageTextEditHandlerTest {
     @Test
     fun givenEditIsOlderThanLocalPendingStoredEdit_whenHandling_thenShouldUpdateOnlyMessageIdAndDate() = runTest {
         val originalContent = TestMessage.TEXT_CONTENT
-        val originalEditStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)
+        val originalEditStatus = Message.EditStatus.Edited(Instant.DISTANT_FUTURE) // original message date is newer than edit date
         val originalMessage = ORIGINAL_MESSAGE.copy(
             editStatus = originalEditStatus,
             content = originalContent,
@@ -127,7 +127,7 @@ class MessageTextEditHandlerTest {
         )
         val editContent = EDIT_CONTENT
         val editMessage = EDIT_MESSAGE.copy(
-            date = EDIT_MESSAGE.date - 10.minutes,
+            date = originalEditStatus.lastEditInstant - 10.minutes, // edit date is older than original message date
             content = editContent
         )
         val expectedContent = MessageContent.TextEdited(
@@ -148,6 +148,41 @@ class MessageTextEditHandlerTest {
             coVerify {
                 messageRepository.updateMessageStatus(any(), any(), any())
             }.wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenAnAlreadyEditedMessage_whenNewEditIsInTheFuture_thenMessageContentIsUpdatd() = runTest {
+        val originalContent = TestMessage.TEXT_CONTENT
+        val originalEditStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)
+        val originalMessage = ORIGINAL_MESSAGE.copy(
+            editStatus = originalEditStatus,
+            content = originalContent,
+            status = Message.Status.Sent
+        )
+        val editContent = EDIT_CONTENT
+        val editMessage = EDIT_MESSAGE.copy(
+            date = Instant.UNIX_FIRST_DATE + 10.minutes,
+            content = editContent
+        )
+        val expectedContent = MessageContent.TextEdited(
+            editMessageId = editContent.editMessageId,
+            newContent = editContent.newContent,
+            newMentions = editContent.newMentions
+        )
+        val (arrangement, messageTextEditHandler) = arrange {
+            withGetMessageById(Either.Right(originalMessage))
+        }
+
+        messageTextEditHandler.handle(editMessage, editContent)
+
+        with(arrangement) {
+            coVerify {
+                messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(editMessage.date))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                messageRepository.updateMessageStatus(any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 

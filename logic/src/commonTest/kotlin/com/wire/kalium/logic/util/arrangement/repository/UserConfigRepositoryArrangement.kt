@@ -48,6 +48,8 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withGetPreviousTrackingIdentifier(result: String?)
     suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>)
     suspend fun withDeletePreviousTrackingIdentifier()
+    suspend fun withUpdateNextTimeForCallFeedback()
+    suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -124,5 +126,13 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withDeletePreviousTrackingIdentifier() {
         coEvery { userConfigRepository.deletePreviousTrackingIdentifier() }.returns(Unit)
+    }
+
+    override suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>) {
+        coEvery { userConfigRepository.getNextTimeForCallFeedback() }.returns(result)
+    }
+
+    override suspend fun withUpdateNextTimeForCallFeedback() {
+        coEvery { userConfigRepository.updateNextTimeForCallFeedback(any()) }.returns(Unit)
     }
 }

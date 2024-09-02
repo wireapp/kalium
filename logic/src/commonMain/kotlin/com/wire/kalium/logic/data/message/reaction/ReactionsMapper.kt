@@ -53,7 +53,8 @@ internal class ReactionsMapperImpl(
             userTypeEntity = userType,
             deleted = deleted,
             connectionStatus = connectionStatus,
-            availabilityStatus = userAvailabilityStatus
+            availabilityStatus = userAvailabilityStatus,
+            accentId = accentId
         )
     }
 
@@ -71,7 +72,8 @@ internal class ReactionsMapperImpl(
                     userType = domainUserTypeMapper.fromUserTypeEntity(userTypeEntity),
                     isUserDeleted = deleted,
                     connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
-                    availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+                    availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+                    accentId = accentId
                 )
             )
         }

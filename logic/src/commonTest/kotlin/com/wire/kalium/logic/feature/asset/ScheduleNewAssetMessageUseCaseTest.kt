@@ -628,16 +628,15 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
 
-        verify {
-            arrangement.validateAssetMimeTypeUseCase(eq("text/plain"), eq(listOf("png")))
-        }.wasInvoked(exactly = once)
+        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.txt"), eq(listOf("png"))) }
+            .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAssetMimeTypeRestrictedAndFileAllowed_whenSending_thenReturnSendTheFile() = runTest(testDispatcher.default) {
         // Given
         val assetToSend = mockedLongAssetData()
-        val assetName = "some-asset.txt"
+        val assetName = "some-asset.png"
         val inputDataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
         val expectedAssetId = dummyUploadedAssetId
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
@@ -668,9 +667,8 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-        verify {
-            arrangement.validateAssetMimeTypeUseCase(eq("image/png"), eq(listOf("png")))
-        }.wasInvoked(exactly = once)
+        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.png"), eq(listOf("png"))) }
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {
@@ -706,7 +704,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
         @Mock
-        val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase = mock(ValidateAssetMimeTypeUseCase::class)
+        val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
 
         @Mock
         val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(ObserveFileSharingStatusUseCase::class)

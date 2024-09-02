@@ -34,5 +34,6 @@ data class DetailedReceiptEntity(
     val userType: UserTypeEntity,
     val isUserDeleted: Boolean,
     val connectionStatus: ConnectionEntity.State,
-    val availabilityStatus: UserAvailabilityStatusEntity
+    val availabilityStatus: UserAvailabilityStatusEntity,
+    val accentId: Int
 )
