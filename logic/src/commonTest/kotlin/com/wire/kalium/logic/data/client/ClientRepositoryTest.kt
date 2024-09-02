@@ -81,12 +81,40 @@ import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 class ClientRepositoryTest {
 
     @Test
-    fun givenSuccess_whenRegisteringMLSClient_thenSetHasRegisteredMLSClient() = runTest {
+    fun givenMLSClientHasRegistered_whenRegisteringMLSClient_thenTheSuccessIsPropagated() = runTest {
         val (arrangement, clientRepository) = Arrangement()
             .withRegisterMLSClient(Either.Right(Unit))
+            .witHasRegisteredMLSClient(true)
             .arrange()
 
         clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
+
+        verify(arrangement.clientRegistrationStorage)
+            .suspendFunction(arrangement.clientRegistrationStorage::hasRegisteredMLSClient)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.clientRemoteRepository)
+            .suspendFunction(arrangement.clientRemoteRepository::registerMLSClient)
+            .with(eq(CLIENT_ID), eq(MLS_PUBLIC_KEY.encodeBase64()))
+            .wasNotInvoked()
+
+        verify(arrangement.clientRegistrationStorage)
+            .suspendFunction(arrangement.clientRegistrationStorage::setHasRegisteredMLSClient)
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenSuccess_whenRegisteringMLSClient_thenSetHasRegisteredMLSClient() = runTest {
+        val (arrangement, clientRepository) = Arrangement()
+            .withRegisterMLSClient(Either.Right(Unit))
+            .witHasRegisteredMLSClient(false)
+            .arrange()
+
+        clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
+
+        verify(arrangement.clientRegistrationStorage)
+            .suspendFunction(arrangement.clientRegistrationStorage::hasRegisteredMLSClient)
+            .wasInvoked(exactly = once)
 
         verify(arrangement.clientRemoteRepository)
             .suspendFunction(arrangement.clientRemoteRepository::registerMLSClient)
@@ -163,7 +191,7 @@ class ClientRepositoryTest {
         val clientId = CLIENT_ID
 
         val (_, clientRepository) = Arrangement()
-            .witGgetRegisteredClientId(clientId.value)
+            .witGetRegisteredClientId(clientId.value)
             .arrange()
 
         val result = clientRepository.currentClientId()
@@ -178,7 +206,7 @@ class ClientRepositoryTest {
     fun givenNoClientIdIsStored_whenGettingRegisteredClientId_thenShouldFailWithMissingRegistration() = runTest {
 
         val (_, clientRepository) = Arrangement()
-            .witGgetRegisteredClientId(null)
+            .witGetRegisteredClientId(null)
             .arrange()
 
         val result = clientRepository.currentClientId()
@@ -561,9 +589,16 @@ class ClientRepositoryTest {
                 .thenReturn(resultL)
         }
 
-        fun witGgetRegisteredClientId(result: String?) = apply {
+        fun witGetRegisteredClientId(result: String?) = apply {
             given(clientRegistrationStorage)
                 .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun witHasRegisteredMLSClient(result: Boolean) = apply {
+            given(clientRegistrationStorage)
+                .suspendFunction(clientRegistrationStorage::hasRegisteredMLSClient)
                 .whenInvoked()
                 .thenReturn(result)
         }

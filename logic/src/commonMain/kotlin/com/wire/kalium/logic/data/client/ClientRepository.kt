@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -214,13 +215,16 @@ class ClientDataSource(
         clientId: ClientId,
         publicKey: ByteArray,
         cipherSuite: CipherSuite
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Unit> = if (clientRegistrationStorage.hasRegisteredMLSClient()) {
+        Unit.right()
+    } else {
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64(), cipherSuite)
             .flatMap {
                 wrapStorageRequest {
                     clientRegistrationStorage.setHasRegisteredMLSClient()
                 }
             }
+    }
 
     override suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean> =
         wrapStorageRequest {
