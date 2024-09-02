@@ -67,7 +67,7 @@ class OnParticipantListChanged internal constructor(
 
                 val currentCall = callRepository.establishedCallsFlow().first().firstOrNull()
                 currentCall?.let {
-                    val shouldEndSFTOneOnOneCall = mlsCallHelper.shouldEndSFTOneOnOneCall(
+                    val shouldEndSFTOneOnOneCall = callHelper.shouldEndSFTOneOnOneCall(
                         conversationId = conversationIdWithDomain,
                         callProtocol = callProtocol,
                         conversationType = it.conversationType,

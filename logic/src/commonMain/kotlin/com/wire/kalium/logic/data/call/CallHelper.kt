@@ -50,7 +50,7 @@ interface CallHelper {
         conversationId: ConversationId,
         callProtocol: Conversation.ProtocolInfo?,
         conversationType: Conversation.Type,
-        newCallParticipants: List<Participant>,
+        newCallParticipants: List<ParticipantMinimized>,
         previousCallParticipants: List<Participant>
     ): Boolean
 
@@ -79,7 +79,7 @@ class CallHelperImpl(
         conversationId: ConversationId,
         callProtocol: Conversation.ProtocolInfo?,
         conversationType: Conversation.Type,
-        newCallParticipants: List<Participant>,
+        newCallParticipants: List<ParticipantMinimized>,
         previousCallParticipants: List<Participant>
     ): Boolean {
         return if (callProtocol is Conversation.ProtocolInfo.Proteus) {

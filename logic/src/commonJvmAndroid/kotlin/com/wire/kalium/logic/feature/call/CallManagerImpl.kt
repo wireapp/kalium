@@ -40,7 +40,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
-import com.wire.kalium.logic.data.call.CallHelperImpl
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
