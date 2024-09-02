@@ -23,6 +23,8 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation.Access
+import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
@@ -124,7 +126,8 @@ sealed class Event(open val id: String) {
         data class AccessUpdate(
             override val id: String,
             override val conversationId: ConversationId,
-            val data: ConversationResponse,
+            val access: Set<Access>,
+            val accessRole: Set<AccessRole>,
             val qualifiedFrom: UserId,
         ) : Conversation(id, conversationId) {
 
