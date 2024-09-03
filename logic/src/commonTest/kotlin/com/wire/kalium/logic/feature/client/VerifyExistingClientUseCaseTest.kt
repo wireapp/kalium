@@ -80,6 +80,23 @@ class VerifyExistingClientUseCaseTest {
     }
 
     @Test
+    fun givenRegisteredClientIdAndMLSAllowedAndExistClientIsMLSCapable_whenRegisterMLSSucceed_thenReturnSuccessAndSkipMLSRegistration() = runTest {
+        val clientId = ClientId("clientId")
+        val client = TestClient.CLIENT.copy(id = clientId, isMLSCapable = true)
+        val (arrangement, useCase) = arrange {
+            withSelfClientsResult(Either.Right(listOf(client)))
+            withIsAllowedToRegisterMLSClient(true)
+        }
+        val result = useCase.invoke(clientId)
+        assertIs<VerifyExistingClientResult.Success>(result)
+        verify(arrangement.registerMLSClientUseCase)
+            .suspendFunction(arrangement.registerMLSClientUseCase::invoke)
+            .with(any())
+            .wasNotInvoked()
+        assertEquals(client, result.client)
+    }
+
+    @Test
     fun givenRegisteredClientIdAndMLSAllowed_whenRegisterMLSSucceed_thenReturnSuccess() = runTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
