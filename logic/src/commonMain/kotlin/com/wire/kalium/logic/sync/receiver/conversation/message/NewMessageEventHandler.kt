@@ -74,6 +74,8 @@ internal class NewMessageEventHandlerImpl(
 
                 logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
 
+                val errorCode = if (it is ProteusFailure) it.proteusException.intCode else null
+
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,
                     conversationId = event.conversationId,
@@ -82,6 +84,7 @@ internal class NewMessageEventHandlerImpl(
                     senderClientId = event.senderClientId,
                     content = MessageContent.FailedDecryption(
                         encodedData = event.encryptedExternalContent?.data,
+                        errorCode = errorCode,
                         isDecryptionResolved = false,
                         senderUserId = event.senderUserId,
                         clientId = ClientId(event.senderClientId.value)

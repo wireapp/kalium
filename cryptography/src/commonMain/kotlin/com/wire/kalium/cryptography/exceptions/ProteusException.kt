@@ -18,9 +18,20 @@
 
 package com.wire.kalium.cryptography.exceptions
 
-class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
+class ProteusException(message: String?, val code: Code, val intCode: Int, cause: Throwable? = null) : Exception(message, cause) {
 
-    constructor(message: String?, code: Int, cause: Throwable? = null) : this(message, fromNativeCode(code), cause)
+    constructor(message: String?, code: Code, cause: Throwable? = null) : this(
+        message,
+        code,
+        toProteusCode(code),
+        cause
+    )
+
+    constructor(message: String?, code: Int, cause: Throwable? = null) : this(
+        message,
+        fromNativeCode(code),
+        cause
+    )
 
     enum class Code {
         /**
@@ -187,6 +198,25 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
                 101 -> Code.PREKEY_NOT_FOUND
                 5 -> Code.PANIC
                 else -> Code.UNKNOWN_ERROR
+            }
+        }
+
+        fun toProteusCode(code: Code): Int {
+            @Suppress("MagicNumber")
+            return when (code) {
+                Code.STORAGE_ERROR -> 501
+                Code.SESSION_NOT_FOUND -> 102
+                Code.DECODE_ERROR -> 3
+                Code.REMOTE_IDENTITY_CHANGED -> 204
+                Code.INVALID_SIGNATURE -> 206
+                Code.INVALID_MESSAGE -> 200
+                Code.DUPLICATE_MESSAGE -> 209
+                Code.TOO_DISTANT_FUTURE -> 211
+                Code.OUTDATED_MESSAGE -> 208
+                Code.IDENTITY_ERROR -> 300
+                Code.PREKEY_NOT_FOUND -> 101
+                Code.PANIC -> 5
+                else -> -1
             }
         }
     }

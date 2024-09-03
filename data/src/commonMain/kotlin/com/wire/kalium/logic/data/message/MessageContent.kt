@@ -350,6 +350,7 @@ sealed interface MessageContent {
 
     data class FailedDecryption(
         val encodedData: ByteArray? = null,
+        val errorCode: Int? = null,
         val isDecryptionResolved: Boolean,
         val senderUserId: UserId,
         val clientId: ClientId? = null
