@@ -136,6 +136,7 @@ data class UserEntityMinimized(
     val name: String?,
     val completeAssetId: UserAssetIdEntity?,
     val userType: UserTypeEntity,
+    val accentId: Int
 )
 
 data class BotIdEntity(

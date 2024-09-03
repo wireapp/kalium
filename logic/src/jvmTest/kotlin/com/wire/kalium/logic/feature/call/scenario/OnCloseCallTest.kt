@@ -23,21 +23,24 @@ import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
+import io.mockative.any
+import io.mockative.classOf
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -54,6 +57,9 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
+    @Mock
+    val mlsCallHelper = mock(classOf<MLSCallHelper>())
+
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -66,6 +72,7 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
+            mlsCallHelper,
             testScope,
             qualifiedIdMapper,
             networkStateObserver
@@ -81,197 +88,261 @@ class OnCloseCallTest {
     }
 
     @Test
-    fun givenCloseReasonIsCanceled_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() = testScope.runTest {
-        val reason = CallClosedReason.CANCELLED.avsValue
+    fun givenCloseReasonIsCanceled_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val reason = CallClosedReason.CANCELLED.avsValue
 
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
-
-        coVerify {
-            callRepository.persistMissedCall(eq(conversationId))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.MISSED))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.leaveMlsConference(eq(conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenCloseReasonIsRejected_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() = testScope.runTest {
-        val reason = CallClosedReason.REJECTED.avsValue
-
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
-
-        coVerify {
-            callRepository.persistMissedCall(eq(conversationId))
-        }.wasNotInvoked()
-
-        coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.leaveMlsConference(eq(conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenCloseReasonIsEndedNormally_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() = testScope.runTest {
-
-        val reason = CallClosedReason.NORMAL.avsValue
-
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
-
-        coVerify {
-            callRepository.persistMissedCall(eq(conversationId))
-        }.wasNotInvoked()
-
-        coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.leaveMlsConference(eq(conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenAnIncomingGroupCall_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() = testScope.runTest {
-        val incomingCall = callMetadata.copy(
-            callStatus = CallStatus.INCOMING,
-            conversationType = Conversation.Type.GROUP
-        )
-
-        every {
-            callRepository.getCallMetadataProfile()
-        }.returns(CallMetadataProfile(mapOf(conversationId to incomingCall)))
-
-        val reason = CallClosedReason.NORMAL.avsValue
-
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
-
-        coVerify {
-            callRepository.persistMissedCall(eq(conversationId))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.leaveMlsConference(eq(conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenCurrentCallClosedInternally_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() = testScope.runTest {
-        val closedInternallyCall = callMetadata.copy(
-            callStatus = CallStatus.CLOSED_INTERNALLY,
-            conversationType = Conversation.Type.GROUP
-        )
-
-        every {
-            callRepository.getCallMetadataProfile()
-        }.returns(CallMetadataProfile(mapOf(conversationId to closedInternallyCall)))
-
-        val reason = CallClosedReason.NORMAL.avsValue
-
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
-
-        coVerify {
-            callRepository.persistMissedCall(eq(conversationId))
-        }.wasNotInvoked()
-
-        coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.leaveMlsConference(eq(conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenCurrentCallIsEstablished_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() = testScope.runTest {
-        val establishedCall = callMetadata.copy(
-            callStatus = CallStatus.ESTABLISHED,
-            establishedTime = "time",
-            conversationType = Conversation.Type.GROUP
-        )
-
-        every {
-            callRepository.getCallMetadataProfile()
-        }.returns(CallMetadataProfile(mapOf(conversationId to establishedCall)))
-        val reason = CallClosedReason.NORMAL.avsValue
-
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
-
-        coVerify {
-            callRepository.persistMissedCall(eq(conversationId))
-        }.wasNotInvoked()
-
-        coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.leaveMlsConference(eq(conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenMLSCallEndedNormally_whenOnCloseCallBackHappens_thenLeaveMlsConference() = testScope.runTest {
-        val mlsCall = callMetadata.copy(
-            protocol = Conversation.ProtocolInfo.MLS(
-                groupId = GroupID(""),
-                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                epoch = ULong.MAX_VALUE,
-                keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
-                cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
             )
-        )
+            yield()
 
-        every {
-            callRepository.getCallMetadataProfile()
-        }.returns(CallMetadataProfile(mapOf(conversationId to mlsCall)))
-        val reason = CallClosedReason.NORMAL.avsValue
+            coVerify {
+                callRepository.persistMissedCall(eq(conversationId))
+            }.wasInvoked(once)
 
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
+            coVerify {
+                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.MISSED))
+            }.wasInvoked(once)
 
-        coVerify {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-        }.wasInvoked(once)
-
-        coVerify {
-            callRepository.leaveMlsConference(eq(conversationId))
-        }.wasInvoked(once)
-    }
+            coVerify {
+                callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
+        }
 
     @Test
-    fun givenDeviceOffline_whenOnCloseCallBackHappens_thenDoNotPersistMissedCall() = testScope.runTest {
-        val reason = CallClosedReason.CANCELLED.avsValue
+    fun givenCloseReasonIsRejected_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val reason = CallClosedReason.REJECTED.avsValue
 
-        every {
-            networkStateObserver.observeNetworkState()
-        }.returns(MutableStateFlow(NetworkState.NotConnected))
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
 
-        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
-        yield()
+            coVerify {
+                callRepository.persistMissedCall(eq(conversationId))
+            }.wasNotInvoked()
 
-        coVerify {
-            callRepository.persistMissedCall(conversationId)
+            coVerify {
+                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
+            }.wasInvoked(once)
+
+            coVerify {
+                callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
         }
-    }
+
+    @Test
+    fun givenCloseReasonIsEndedNormally_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+
+            val reason = CallClosedReason.NORMAL.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.persistMissedCall(eq(conversationId))
+            }.wasNotInvoked()
+
+            coVerify {
+                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            }.wasInvoked(once)
+
+            coVerify {
+                callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenAnIncomingGroupCall_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val incomingCall = callMetadata.copy(
+                callStatus = CallStatus.INCOMING,
+                conversationType = Conversation.Type.GROUP
+            )
+
+            every {
+                callRepository.getCallMetadataProfile()
+            }.returns(CallMetadataProfile(mapOf(conversationId to incomingCall)))
+
+            val reason = CallClosedReason.NORMAL.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.persistMissedCall(eq(conversationId))
+            }.wasInvoked(once)
+
+            coVerify {
+                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            }.wasInvoked(once)
+
+            coVerify {
+                callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenCurrentCallClosedInternally_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val closedInternallyCall = callMetadata.copy(
+                callStatus = CallStatus.CLOSED_INTERNALLY,
+                conversationType = Conversation.Type.GROUP
+            )
+
+            every {
+                callRepository.getCallMetadataProfile()
+            }.returns(CallMetadataProfile(mapOf(conversationId to closedInternallyCall)))
+
+            val reason = CallClosedReason.NORMAL.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.persistMissedCall(eq(conversationId))
+            }.wasNotInvoked()
+
+            coVerify {
+                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            }.wasInvoked(once)
+
+            coVerify {
+                callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenCurrentCallIsEstablished_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val establishedCall = callMetadata.copy(
+                callStatus = CallStatus.ESTABLISHED,
+                establishedTime = "time",
+                conversationType = Conversation.Type.GROUP
+            )
+
+            every {
+                callRepository.getCallMetadataProfile()
+            }.returns(CallMetadataProfile(mapOf(conversationId to establishedCall)))
+            val reason = CallClosedReason.NORMAL.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.persistMissedCall(eq(conversationId))
+            }.wasNotInvoked()
+
+            coVerify {
+                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            }.wasInvoked(once)
+
+            coVerify {
+                callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenMLSCallEndedNormally_whenOnCloseCallBackHappens_thenLeaveMlsConference() =
+        testScope.runTest {
+            val mlsCall = callMetadata.copy(
+                protocol = Conversation.ProtocolInfo.MLS(
+                    groupId = GroupID(""),
+                    groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = ULong.MAX_VALUE,
+                    keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
+                    cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                )
+            )
+
+            every {
+                callRepository.getCallMetadataProfile()
+            }.returns(CallMetadataProfile(mapOf(conversationId to mlsCall)))
+            val reason = CallClosedReason.NORMAL.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            }.wasInvoked(once)
+
+            coVerify {
+                mlsCallHelper.handleCallTermination(eq(conversationId), any())
+            }.wasInvoked(once)
+        }
+
+    @Test
+    fun givenDeviceOffline_whenOnCloseCallBackHappens_thenDoNotPersistMissedCall() =
+        testScope.runTest {
+            val reason = CallClosedReason.CANCELLED.avsValue
+
+            every {
+                networkStateObserver.observeNetworkState()
+            }.returns(MutableStateFlow(NetworkState.NotConnected))
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.persistMissedCall(conversationId)
+            }.wasNotInvoked()
+        }
 
     companion object {
         private val conversationId = ConversationId("conversationId", "wire.com")

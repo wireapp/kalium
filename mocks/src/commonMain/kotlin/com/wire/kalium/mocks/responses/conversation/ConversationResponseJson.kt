@@ -83,8 +83,11 @@ object ConversationResponseJson {
         conversationResponse, conversationResponseSerializer
     )
 
-    val v0 = ValidJsonProvider(
-        conversationResponse, conversationResponseSerializerWithDeprecatedAccessRole
+    fun v0(accessRole: Set<ConversationAccessRoleDTO>? = null) = ValidJsonProvider(
+        conversationResponse.copy(
+            accessRole = accessRole ?: conversationResponse.accessRole
+        ),
+        conversationResponseSerializerWithDeprecatedAccessRole
     )
 }
 

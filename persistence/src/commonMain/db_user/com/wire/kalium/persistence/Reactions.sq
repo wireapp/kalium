@@ -44,7 +44,8 @@ AS SELECT
 	User.user_type AS userType,
 	User.deleted,
 	User.connection_status AS connectionStatus,
-	User.user_availability_status AS userAvailabilityStatus
+	User.user_availability_status AS userAvailabilityStatus,
+	User.accent_id AS accentId
 FROM
 	Reaction
 INNER JOIN User ON User.qualified_id = Reaction.sender_id

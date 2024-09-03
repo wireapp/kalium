@@ -381,6 +381,7 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -693,7 +694,8 @@ class UserSessionScope internal constructor(
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
-    private val subconversationRepository = SubconversationRepositoryImpl()
+    private val subconversationRepository =
+        SubconversationRepositoryImpl(conversationApi = authenticatedNetworkContainer.conversationApi)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -929,6 +931,7 @@ class UserSessionScope internal constructor(
             featureConfigEventReceiver,
             userPropertiesEventReceiver,
             federationEventReceiver,
+            this@UserSessionScope,
             userScopedLogger,
         )
     }
@@ -1233,6 +1236,8 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
+            subconversationRepository = subconversationRepository,
+            userConfigRepository = userConfigRepository,
             selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
@@ -1462,6 +1467,12 @@ class UserSessionScope internal constructor(
             callRepository = callRepository
         )
 
+    private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
+        get() = AccessUpdateEventHandler(
+            conversationDAO = userStorage.database.conversationDAO,
+            selfUserId = userId
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1477,7 +1488,8 @@ class UserSessionScope internal constructor(
             conversationCodeUpdateHandler,
             conversationCodeDeletedHandler,
             typingIndicatorHandler,
-            protocolUpdateEventHandler
+            protocolUpdateEventHandler,
+            conversationAccessUpdateEventHandler
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
