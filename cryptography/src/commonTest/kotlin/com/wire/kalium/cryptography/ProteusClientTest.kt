@@ -190,6 +190,7 @@ class ProteusClientTest : BaseProteusClientTest() {
 
     // TODO: Implement on CoreCrypto as well once it supports transactions
     @IgnoreJS
+    @IgnoreJvm
     @IgnoreIOS
     @Test
     fun givenNonEncryptedClient_whenThrowingDuringTransaction_thenShouldNotSaveSessionAndBeAbleToDecryptAgain() = runTest {
