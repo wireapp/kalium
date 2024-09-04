@@ -190,6 +190,7 @@ class ProteusClientTest : BaseProteusClientTest() {
 
     // TODO: Implement on CoreCrypto as well once it supports transactions
     @IgnoreJS
+    @IgnoreIOS
     @Test
     fun givenNonEncryptedClient_whenThrowingDuringTransaction_thenShouldNotSaveSessionAndBeAbleToDecryptAgain() = runTest {
         val aliceRef = createProteusStoreRef(alice.id)
