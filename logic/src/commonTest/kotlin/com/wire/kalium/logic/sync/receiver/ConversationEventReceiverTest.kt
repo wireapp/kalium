@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -209,17 +210,6 @@ class ConversationEventReceiverTest {
         }
 
     @Test
-    fun givenAccessUpdateEvent_whenOnEventInvoked_thenReturnSuccess() = runTest {
-        val accessUpdateEvent = TestEvent.newAccessUpdateEvent()
-
-        val (_, featureConfigEventReceiver) = Arrangement().arrange()
-
-        val result = featureConfigEventReceiver.onEvent(accessUpdateEvent, TestEvent.liveDeliveryInfo)
-
-        result.shouldSucceed()
-    }
-
-    @Test
     fun givenConversationMessageTimerEvent_whenOnEventInvoked_thenPropagateConversationMessageTimerEventHandlerResult() =
         runTest {
             val conversationMessageTimerEvent = TestEvent.timerChanged()
@@ -339,6 +329,48 @@ class ConversationEventReceiverTest {
         result.shouldFail()
     }
 
+    @Test
+    fun givenAccessUpdateEventAndHandlingSucceeds_whenOnEventInvoked_thenSuccessHandlerResult() = runTest {
+        // given
+        val accessUpdateEvent = TestEvent.accessUpdate()
+        val (arrangement, handler) = Arrangement()
+            .withConversationAccessUpdateEventSucceeded(Either.Right(Unit))
+            .arrange()
+
+        // when
+        val result = handler.onEvent(
+            event = accessUpdateEvent,
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
+
+        // then
+        result.shouldSucceed()
+        coVerify {
+            arrangement.accessUpdateEventHandler.handle(eq(accessUpdateEvent))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenAccessUpdateEventAndHandlingFails_whenOnEventInvoked_thenHandlerPropagateFails() = runTest {
+        // given
+        val accessUpdateEvent = TestEvent.accessUpdate()
+        val (arrangement, handler) = Arrangement()
+            .withConversationAccessUpdateEventSucceeded(Either.Left(StorageFailure.Generic(RuntimeException("some error"))))
+            .arrange()
+
+        // when
+        val result = handler.onEvent(
+            event = accessUpdateEvent,
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
+
+        // then
+        result.shouldFail()
+        coVerify {
+            arrangement.accessUpdateEventHandler.handle(eq(accessUpdateEvent))
+        }.wasInvoked(once)
+    }
+
     private class Arrangement :
         CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
         CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl() {
@@ -379,6 +411,9 @@ class ConversationEventReceiverTest {
         @Mock
         val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
 
+        @Mock
+        val accessUpdateEventHandler = mock(AccessUpdateEventHandler::class)
+
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
@@ -393,7 +428,8 @@ class ConversationEventReceiverTest {
             codeUpdatedHandler = codeUpdatedHandler,
             codeDeletedHandler = codeDeletedHandler,
             typingIndicatorHandler = typingIndicatorHandler,
-            protocolUpdateEventHandler = protocolUpdateEventHandler
+            protocolUpdateEventHandler = protocolUpdateEventHandler,
+            accessUpdateEventHandler = accessUpdateEventHandler
         )
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
@@ -422,6 +458,12 @@ class ConversationEventReceiverTest {
         suspend fun withConversationTypingEventSucceeded(result: Either<StorageFailure, Unit>) = apply {
             coEvery {
                 typingIndicatorHandler.handle(any())
+            }.returns(result)
+        }
+
+        suspend fun withConversationAccessUpdateEventSucceeded(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                accessUpdateEventHandler.handle(any())
             }.returns(result)
         }
 

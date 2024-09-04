@@ -31,5 +31,6 @@ data class UserSummary(
     val userType: UserType,
     val isUserDeleted: Boolean,
     val connectionStatus: ConnectionState,
-    val availabilityStatus: UserAvailabilityStatus
+    val availabilityStatus: UserAvailabilityStatus,
+    val accentId: Int
 )

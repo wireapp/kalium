@@ -145,6 +145,7 @@ data class OtherUserMinimized(
     val name: String?,
     val completePicture: UserAssetId?,
     val userType: UserType,
+    val accentId: Int
 )
 
 data class OtherUser(
