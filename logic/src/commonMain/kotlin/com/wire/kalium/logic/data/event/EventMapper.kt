@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -40,14 +41,14 @@ import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
-import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
-import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE
-import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE
-import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_RECEIPT_MODE
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
+import com.wire.kalium.network.api.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -64,7 +65,8 @@ class EventMapper(
     private val selfUserId: UserId,
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
-    private val qualifiedIdMapper: QualifiedIdMapper = MapperProvider.qualifiedIdMapper(selfUserId)
+    private val qualifiedIdMapper: QualifiedIdMapper = MapperProvider.qualifiedIdMapper(selfUserId),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) {
     fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -94,7 +96,7 @@ class EventMapper(
             is EventContentDTO.User.LegalHoldDisabledDTO -> legalHoldDisabled(id, eventContentDTO)
             is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
-            is EventContentDTO.Conversation.AccessUpdate -> unknown(id, eventContentDTO)
+            is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
@@ -191,7 +193,18 @@ class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         messageTimer = eventContentDTO.data.messageTimer,
         senderUserId = eventContentDTO.qualifiedFrom.toModel(),
-        timestampIso = eventContentDTO.time
+        dateTime = eventContentDTO.time
+    )
+
+    private fun conversationAccessUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.AccessUpdate
+    ): Event = Event.Conversation.AccessUpdate(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        access = conversationMapper.fromApiModelToAccessModel(eventContentDTO.data.access),
+        accessRole = conversationMapper.fromApiModelToAccessRoleModel(eventContentDTO.data.accessRole),
+        qualifiedFrom = eventContentDTO.qualifiedFrom.toModel()
     )
 
     private fun conversationReceiptModeUpdate(
@@ -288,7 +301,7 @@ class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         subconversationId = eventContentDTO.subconversation?.let { SubconversationId(it) },
         senderUserId = eventContentDTO.qualifiedFrom.toModel(),
-        timestampIso = eventContentDTO.time,
+        messageInstant = eventContentDTO.time,
         content = eventContentDTO.message
     )
 
@@ -375,7 +388,7 @@ class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         addedBy = eventContentDTO.qualifiedFrom.toModel(),
         members = eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
-        timestampIso = eventContentDTO.time,
+        dateTime = eventContentDTO.time,
     )
 
     fun conversationMemberLeave(
@@ -386,7 +399,7 @@ class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         removedBy = eventContentDTO.qualifiedFrom.toModel(),
         removedList = eventContentDTO.removedUsers.qualifiedUserIds.map { it.toModel() },
-        timestampIso = eventContentDTO.time,
+        dateTime = eventContentDTO.time,
         reason = eventContentDTO.removedUsers.reason.toModel()
     )
 
@@ -521,7 +534,7 @@ class EventMapper(
         conversationId = event.qualifiedConversation.toModel(),
         senderUserId = event.qualifiedFrom.toModel(),
         conversationName = event.updateNameData.conversationName,
-        timestampIso = event.time,
+        dateTime = event.time,
     )
 
     private fun teamMemberLeft(
@@ -531,7 +544,7 @@ class EventMapper(
         id = id,
         teamId = event.teamId,
         memberId = event.teamMember.nonQualifiedUserId,
-        timestampIso = event.time
+        dateTime = event.time
     )
 
     private fun userUpdate(

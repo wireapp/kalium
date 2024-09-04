@@ -18,23 +18,39 @@
 
 package com.wire.kalium.network.api.base.authenticated.keypackage
 
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface KeyPackageApi {
 
-    sealed class Param(open val user: UserId) {
+    sealed class Param {
+
+        abstract val user: UserId
+        abstract val cipherSuite: Int
+        abstract val selfClientId: String?
 
         /**
          * @param user user ID to claim key packages from.
          * @param selfClientId to skip selfClient key package.
          */
-        data class SkipOwnClient(override val user: UserId, val selfClientId: String) : Param(user)
+        data class SkipOwnClient(
+            override val user: UserId,
+            override val selfClientId: String,
+            override val cipherSuite: Int
+        ) : Param()
 
         /**
          * @param user user ID to claim key packages from.
          */
-        data class IncludeOwnClient(override val user: UserId) : Param(user)
+        data class IncludeOwnClient(
+            override val user: UserId,
+            override val cipherSuite: Int,
+        ) : Param() {
+            override val selfClientId: String? = null
+        }
     }
 
     /**
@@ -60,7 +76,11 @@ interface KeyPackageApi {
      * @param keyPackages list of key packages
      *
      */
-    suspend fun replaceKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit>
+    suspend fun replaceKeyPackages(
+        clientId: String,
+        keyPackages: List<KeyPackage>,
+        cipherSuite: Int
+    ): NetworkResponse<Unit>
 
     /**
      * Get the number of available key packages for the self client
@@ -71,6 +91,3 @@ interface KeyPackageApi {
      */
     suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO>
 }
-
-typealias KeyPackage = String
-typealias KeyPackageRef = String

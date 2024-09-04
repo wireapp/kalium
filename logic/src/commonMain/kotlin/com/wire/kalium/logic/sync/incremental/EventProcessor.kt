@@ -18,14 +18,13 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
-import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -35,6 +34,12 @@ import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.logic.util.EventLoggingStatus
+import com.wire.kalium.logic.util.createEventProcessingLogger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 
 /**
  * Handles incoming events from remote.
@@ -69,32 +74,41 @@ internal class EventProcessorImpl(
     private val teamEventReceiver: TeamEventReceiver,
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
-    private val federationEventReceiver: FederationEventReceiver
+    private val federationEventReceiver: FederationEventReceiver,
+    private val processingScope: CoroutineScope,
+    logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
 
     private val logger by lazy {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER)
+        logger.withFeatureId(EVENT_RECEIVER)
     }
 
     override var disableEventProcessing: Boolean = false
 
-    override suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> {
+    override suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> = processingScope.async {
         val (event, deliveryInfo) = eventEnvelope
         if (disableEventProcessing) {
             logger.w("Skipping processing of ${event.toLogString()} due to debug option")
-            return Either.Right(Unit)
+            Either.Right(Unit)
+        } else {
+            withContext(NonCancellable) {
+                doProcess(event, deliveryInfo, eventEnvelope)
+            }
         }
+    }.await()
 
+    private suspend fun doProcess(
+        event: Event,
+        deliveryInfo: EventDeliveryInfo,
+        eventEnvelope: EventEnvelope
+    ): Either<CoreFailure, Unit> {
         return when (event) {
             is Event.Conversation -> conversationEventReceiver.onEvent(event, deliveryInfo)
             is Event.User -> userEventReceiver.onEvent(event, deliveryInfo)
             is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event, deliveryInfo)
             is Event.Unknown -> {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SKIPPED,
-                        event
-                    )
+                kaliumLogger.createEventProcessingLogger(event)
+                    .logComplete(EventLoggingStatus.SKIPPED)
                 // Skipping event = success
                 Either.Right(Unit)
             }

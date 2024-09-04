@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.Ciphersuites
 import com.wire.crypto.ClientId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
@@ -28,31 +27,29 @@ import java.io.File
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String,
-    allowedCipherSuites: Ciphersuites,
-    defaultCipherSuite: UShort?
+    databaseKey: String
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, allowedCipherSuites, null)
+    val coreCrypto = coreCryptoDeferredInit(
+        path = path,
+        key = databaseKey
+    )
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
-        rootDir = rootDir,
-        cipherSuite = allowedCipherSuites,
-        defaultCipherSuite = defaultCipherSuite
+        rootDir = rootDir
     )
 }
 
 private class Callbacks : CoreCryptoCallbacks {
-
-    override fun authorize(conversationId: ByteArray, clientId: ClientId): Boolean {
+    override suspend fun authorize(conversationId: ByteArray, clientId: ClientId): Boolean {
         // We always return true because our BE is currently enforcing that this constraint is always true
         return true
     }
 
-    override fun clientIsExistingGroupUser(
-        conversationId: ConversationId,
+    override suspend fun clientIsExistingGroupUser(
+        conversationId: ByteArray,
         clientId: ClientId,
         existingClients: List<ClientId>,
         parentConversationClients: List<ClientId>?
@@ -61,11 +58,7 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override fun userAuthorize(
-        conversationId: ConversationId,
-        externalClientId: ClientId,
-        existingClients: List<ClientId>
-    ): Boolean {
+    override suspend fun userAuthorize(conversationId: ByteArray, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
         // We always return true because our BE is currently enforcing that this constraint is always true
         return true
     }
@@ -73,29 +66,35 @@ private class Callbacks : CoreCryptoCallbacks {
 
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
-    private val rootDir: String,
-    // TODO: remove one they are removed from the CC api
-    private val cipherSuite: Ciphersuites,
-    private val defaultCipherSuite: UShort?
+    private val rootDir: String
 ) : CoreCryptoCentral {
     fun getCoreCrypto() = cc
 
-    override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
-        cc.mlsInit(clientId.toString().encodeToByteArray(), cipherSuite, null)
-        return MLSClientImpl(cc, defaultCipherSuite!!)
+    override suspend fun mlsClient(
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: List<UShort>,
+        defaultCipherSuite: UShort
+    ): MLSClient {
+        cc.mlsInit(
+            clientId.toString().encodeToByteArray(),
+            allowedCipherSuites,
+            nbKeyPackage = null
+        )
+        return MLSClientImpl(cc, defaultCipherSuite)
     }
 
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
+        newMLSKeyPackageCount: UInt,
+        defaultCipherSuite: UShort
     ): MLSClient {
         // todo: use DPs list from here, and return alongside with the mls client
         cc.e2eiMlsInitOnly(
             (enrollment as E2EIClientImpl).wireE2eIdentity,
             certificateChain, newMLSKeyPackageCount
         )
-        return MLSClientImpl(cc, defaultCipherSuite!!)
+        return MLSClientImpl(cc, defaultCipherSuite)
     }
 
     override suspend fun proteusClient(): ProteusClient {
@@ -107,7 +106,8 @@ class CoreCryptoCentralImpl(
         displayName: String,
         handle: String,
         teamId: String?,
-        expiry: kotlin.time.Duration
+        expiry: kotlin.time.Duration,
+        defaultCipherSuite: UShort
     ): E2EIClient {
         return E2EIClientImpl(
             cc.e2eiNewEnrollment(
@@ -116,7 +116,7 @@ class CoreCryptoCentralImpl(
                 handle,
                 teamId,
                 expiry.inWholeSeconds.toUInt(),
-                defaultCipherSuite!!
+                defaultCipherSuite
             )
 
         )

@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.KaliumLogger
@@ -43,7 +44,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 
@@ -113,12 +114,13 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                 // check that all identities are valid and name and handle are matching
                 for ((userId, wireIdentity) in ccIdentity) {
                     val persistedMemberInfo = dbData.members[userId]
-                    val isUserVerified = wireIdentity.firstOrNull {
+                    val isUserVerified = wireIdentity.none {
                         it.status != CryptoCertificateStatus.VALID ||
-                                it.certificate == null ||
-                                it.certificate?.displayName != persistedMemberInfo?.name ||
-                                it.certificate?.handle?.handle != persistedMemberInfo?.handle
-                    } == null
+                                it.credentialType != CredentialType.X509 ||
+                                it.x509Identity == null ||
+                                it.x509Identity?.displayName != persistedMemberInfo?.name ||
+                                it.x509Identity?.handle?.handle != persistedMemberInfo?.handle
+                    }
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED
                         break
@@ -139,7 +141,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
         var dbData = epochChangesData
 
         val missingUsers = missingUsers(
-            usersFromDB = epochChangesData.members.keys.map { it }.toSet(),
+            usersFromDB = epochChangesData.members.keys,
             usersFromCC = ccIdentities.keys
         )
 
@@ -209,7 +211,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
             id = uuid4().toString(),
             content = content,
             conversationId = conversationId,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = Clock.System.now(),
             senderUserId = selfUserId,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,

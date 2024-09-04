@@ -92,7 +92,8 @@ class ObserveMessageReactionsUseCaseTest {
                 userType = UserType.INTERNAL,
                 isUserDeleted = false,
                 connectionStatus = ConnectionState.ACCEPTED,
-                availabilityStatus = UserAvailabilityStatus.NONE
+                availabilityStatus = UserAvailabilityStatus.NONE,
+                accentId = 0
             )
         )
     }

@@ -119,7 +119,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenConferenceCallingIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.ENABLED))
+                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.ENABLED, false))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetSupportedProtocolsReturning(null)
@@ -136,7 +136,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenConferenceCallingIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.DISABLED))
+                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.DISABLED, false))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetSupportedProtocolsReturning(null)
@@ -596,7 +596,7 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenE2EIIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
-        val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000L), Status.DISABLED)
+        val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000L, false, null), Status.DISABLED)
         val expectedGracePeriodEnd = DateTimeUtil.currentInstant().plus(10_000.toDuration(DurationUnit.SECONDS))
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(

@@ -19,16 +19,16 @@
 package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.EventContentDTOJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.conversation.CreateConversationRequestJson
-import com.wire.kalium.model.conversation.SendTypingStatusNotificationRequestJson
-import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.FederationConflictResponse
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.mocks.responses.conversation.CreateConversationRequestJson
+import com.wire.kalium.mocks.responses.conversation.SendTypingStatusNotificationRequestJson
+import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatus
+import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.FederationConflictResponse
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -151,6 +151,6 @@ internal class ConversationApiV4Test : ApiTest() {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_MEMBERS = "members"
         const val PATH_TYPING_NOTIFICATION = "typing"
-        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
+        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3()
     }
 }

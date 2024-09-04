@@ -24,7 +24,7 @@ import com.wire.kalium.api.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.v0.authenticated.PreKeyApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse

@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 /**
  * Use case for sending a button action message.
@@ -59,7 +59,7 @@ class SendButtonActionConfirmationMessageUseCase internal constructor(
                         buttonId = buttonId
                     ),
                     conversationId = conversationId,
-                    date = DateTimeUtil.currentIsoDateTimeString(),
+                    date = Clock.System.now(),
                     senderUserId = selfUserId,
                     senderClientId = currentClientId,
                     status = Message.Status.Pending,

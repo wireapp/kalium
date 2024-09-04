@@ -24,11 +24,11 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+import com.wire.kalium.logic.data.message.hasValidData
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
 
 internal interface AssetMessageHandler {
     suspend fun handle(message: Message.Regular)
@@ -38,22 +38,22 @@ internal class AssetMessageHandlerImpl(
     private val messageRepository: MessageRepository,
     private val persistMessage: PersistMessageUseCase,
     private val userConfigRepository: UserConfigRepository,
-    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
+    private val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase
 ) : AssetMessageHandler {
 
     override suspend fun handle(message: Message.Regular) {
-        if (message.content !is MessageContent.Asset) {
+        val messageContent = message.content
+        if (messageContent !is MessageContent.Asset) {
             kaliumLogger.e("The asset message trying to be processed has invalid content data")
             return
         }
-        val messageContent = message.content
         userConfigRepository.isFileSharingEnabled().onSuccess {
             val isThisAssetAllowed = when (it.state) {
                 FileSharingStatus.Value.Disabled -> false
                 FileSharingStatus.Value.EnabledAll -> true
 
                 is FileSharingStatus.Value.EnabledSome -> validateAssetMimeTypeUseCase(
-                    messageContent.value.mimeType,
+                    messageContent.value.name,
                     it.state.allowedType
                 )
             }

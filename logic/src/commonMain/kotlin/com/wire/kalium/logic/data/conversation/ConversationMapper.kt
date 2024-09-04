@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.E2EIConversationState
@@ -35,13 +36,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
@@ -50,7 +51,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -59,7 +59,6 @@ import kotlin.time.toDuration
 
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
-    fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
         daoModel: ConversationViewEntity,
@@ -83,6 +82,13 @@ interface ConversationMapper {
     fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
     fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus
     fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus
+
+    fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type
+
+    fun fromModelToDAOAccess(accessList: Set<Conversation.Access>): List<ConversationEntity.Access>
+    fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole>
+    fun fromApiModelToAccessModel(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access>
+    fun fromApiModelToAccessRoleModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -116,7 +122,8 @@ internal class ConversationMapperImpl(
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
-        accessRole = apiModel.accessRole.map { it.toDAO() },
+        accessRole = (apiModel.accessRole ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL)
+            .map { it.toDAO() },
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
         messageTimer = apiModel.messageTimer,
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
@@ -128,9 +135,9 @@ internal class ConversationMapperImpl(
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
-    override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
-        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
-        else lastReadDate.toIsoDateTimeString()
+    private fun fromConversationViewToEntity(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
+        else lastReadDate
 
         Conversation(
             id = id.toModel(),
@@ -140,8 +147,8 @@ internal class ConversationMapperImpl(
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
             removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
-            lastNotificationDate = lastNotificationDate?.toIsoDateTimeString(),
-            lastModifiedDate = lastModifiedDate?.toIsoDateTimeString(),
+            lastNotificationDate = lastNotificationDate,
+            lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
@@ -158,8 +165,8 @@ internal class ConversationMapperImpl(
     }
 
     override fun fromDaoModel(daoModel: ConversationEntity): Conversation = with(daoModel) {
-        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
-        else lastReadDate.toIsoDateTimeString()
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
+        else lastReadDate
         Conversation(
             id = id.toModel(),
             name = name,
@@ -168,8 +175,8 @@ internal class ConversationMapperImpl(
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
             removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
-            lastNotificationDate = lastNotificationDate?.toIsoDateTimeString(),
-            lastModifiedDate = lastModifiedDate?.toIsoDateTimeString(),
+            lastNotificationDate = lastNotificationDate,
+            lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
             access = access.map { it.toDAO() },
             accessRole = accessRole.map { it.toDAO() },
@@ -194,16 +201,16 @@ internal class ConversationMapperImpl(
         with(daoModel) {
             when (type) {
                 ConversationEntity.Type.SELF -> {
-                    ConversationDetails.Self(fromDaoModel(daoModel))
+                    ConversationDetails.Self(fromConversationViewToEntity(daoModel))
                 }
 
                 ConversationEntity.Type.ONE_ON_ONE -> {
                     ConversationDetails.OneOne(
-                        conversation = fromDaoModel(daoModel),
+                        conversation = fromConversationViewToEntity(daoModel),
                         otherUser = OtherUser(
                             id = otherUserId.requireField("otherUserID in OneOnOne").toModel(),
                             name = name,
-                            accentId = 0,
+                            accentId = accentId ?: 0,
                             userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                             availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
                             deleted = userDeleted ?: false,
@@ -227,7 +234,7 @@ internal class ConversationMapperImpl(
 
                 ConversationEntity.Type.GROUP -> {
                     ConversationDetails.Group(
-                        conversation = fromDaoModel(daoModel),
+                        conversation = fromConversationViewToEntity(daoModel),
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
@@ -260,11 +267,11 @@ internal class ConversationMapperImpl(
                         conversationId = id.toModel(),
                         otherUser = otherUser,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        lastModifiedDate = lastModifiedDate?.toIsoDateTimeString().orEmpty(),
+                        lastModifiedDate = lastModifiedDate ?: Instant.UNIX_FIRST_DATE,
                         connection = Connection(
                             conversationId = id.value,
                             from = "",
-                            lastUpdate = "",
+                            lastUpdate = Instant.UNIX_FIRST_DATE,
                             qualifiedConversationId = id.toModel(),
                             qualifiedToId = otherUserId.requireField("otherUserID in Connection").toModel(),
                             status = connectionStatusMapper.fromDaoModel(connectionStatus),
@@ -367,9 +374,9 @@ internal class ConversationMapperImpl(
             mutedTime = 0,
             removedBy = null,
             creatorId = creatorId.orEmpty(),
-            lastNotificationDate = (conversation.lastNotificationDate ?: "1970-01-01T00:00:00.000Z").toInstant(),
-            lastModifiedDate = (conversation.lastModifiedDate ?: "1970-01-01T00:00:00.000Z").toInstant(),
-            lastReadDate = conversation.lastReadDate.toInstant(),
+            lastNotificationDate = conversation.lastNotificationDate,
+            lastModifiedDate = conversation.lastModifiedDate ?: Instant.UNIX_FIRST_DATE,
+            lastReadDate = conversation.lastReadDate,
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
@@ -442,10 +449,34 @@ internal class ConversationMapperImpl(
         ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 
     override fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus =
-        ConversationEntity.LegalHoldStatus.valueOf(legalHoldStatus.name)
+        when (legalHoldStatus) {
+            Conversation.LegalHoldStatus.ENABLED -> ConversationEntity.LegalHoldStatus.ENABLED
+            Conversation.LegalHoldStatus.DEGRADED -> ConversationEntity.LegalHoldStatus.DEGRADED
+            else -> ConversationEntity.LegalHoldStatus.DISABLED
+        }
 
     override fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus =
-        Conversation.LegalHoldStatus.valueOf(legalHoldStatus.name)
+        when (legalHoldStatus) {
+            ConversationEntity.LegalHoldStatus.ENABLED -> Conversation.LegalHoldStatus.ENABLED
+            ConversationEntity.LegalHoldStatus.DEGRADED -> Conversation.LegalHoldStatus.DEGRADED
+            ConversationEntity.LegalHoldStatus.DISABLED -> Conversation.LegalHoldStatus.DISABLED
+        }
+
+    override fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type {
+        return type.fromDaoModelToType()
+    }
+
+    override fun fromModelToDAOAccess(accessList: Set<Conversation.Access>): List<ConversationEntity.Access> =
+        accessList.map { it.toDAO() }
+
+    override fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole> =
+        accessRoleList.map { it.toDAO() }
+
+    override fun fromApiModelToAccessModel(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access> =
+        accessList.map { it.toModel() }.toSet()
+
+    override fun fromApiModelToAccessRoleModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole> =
+        accessRoleList.map { it.toModel() }.toSet()
 }
 
 internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
@@ -463,6 +494,7 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
                 ConversationEntity.Type.GROUP
             }
         }
+
         ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
         ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
     }
@@ -535,6 +567,22 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
+}
+
+private fun ConversationAccessDTO.toModel(): Conversation.Access = when (this) {
+    ConversationAccessDTO.PRIVATE -> Conversation.Access.PRIVATE
+    ConversationAccessDTO.CODE -> Conversation.Access.CODE
+    ConversationAccessDTO.INVITE -> Conversation.Access.INVITE
+    ConversationAccessDTO.SELF_INVITE -> Conversation.Access.SELF_INVITE
+    ConversationAccessDTO.LINK -> Conversation.Access.LINK
+}
+
+private fun ConversationAccessRoleDTO.toModel(): Conversation.AccessRole = when (this) {
+    ConversationAccessRoleDTO.TEAM_MEMBER -> Conversation.AccessRole.TEAM_MEMBER
+    ConversationAccessRoleDTO.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
+    ConversationAccessRoleDTO.GUEST -> Conversation.AccessRole.GUEST
+    ConversationAccessRoleDTO.SERVICE -> Conversation.AccessRole.SERVICE
+    ConversationAccessRoleDTO.EXTERNAL -> Conversation.AccessRole.EXTERNAL
 }
 
 internal fun Conversation.Protocol.toApi(): ConvProtocol = when (this) {

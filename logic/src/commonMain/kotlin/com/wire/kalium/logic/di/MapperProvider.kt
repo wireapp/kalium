@@ -24,8 +24,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
-import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
-import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapperImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -69,6 +67,8 @@ import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.message.SendMessagePartialFailureMapper
 import com.wire.kalium.logic.data.message.SendMessagePartialFailureMapperImpl
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapperImpl
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapper
@@ -144,6 +144,7 @@ internal object MapperProvider {
         receiptModeMapper(),
     )
 
+    fun linkPreviewMapper(): LinkPreviewMapper = LinkPreviewMapperImpl(encryptionAlgorithmMapper())
     fun messageMentionMapper(selfUserId: UserId): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
@@ -153,7 +154,6 @@ internal object MapperProvider {
     fun protoContentMapper(selfUserId: UserId): ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
     fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
     fun callMapper(selfUserId: UserId): CallMapper = CallMapperImpl(qualifiedIdMapper(selfUserId))
-    fun activeSpeakerMapper(): ActiveSpeakerMapper = ActiveSpeakerMapperImpl()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()
     fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()

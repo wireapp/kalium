@@ -18,10 +18,10 @@
 
 package com.wire.kalium.network.api.v0.authenticated
 
-import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackage
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -41,7 +41,8 @@ internal open class KeyPackageApiV0 internal constructor() : KeyPackageApi {
 
     override suspend fun replaceKeyPackages(
         clientId: String,
-        keyPackages: List<KeyPackage>
+        keyPackages: List<KeyPackage>,
+        cipherSuite: Int
     ): NetworkResponse<Unit> = NetworkResponse.Error(
         APINotSupported("MLS: replaceKeyPackages api is only available on API V5")
     )

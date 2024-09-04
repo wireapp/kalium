@@ -27,7 +27,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.network.api.base.model.PushTokenBody
+import com.wire.kalium.network.api.model.PushTokenBody
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.serverpublickey
 
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface MLSPublicKeyApi {

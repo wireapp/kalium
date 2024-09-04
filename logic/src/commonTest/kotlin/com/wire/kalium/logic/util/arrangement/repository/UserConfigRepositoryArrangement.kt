@@ -20,6 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -27,6 +28,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
+import kotlinx.coroutines.flow.flowOf
 
 internal interface UserConfigRepositoryArrangement {
     val userConfigRepository: UserConfigRepository
@@ -34,10 +36,20 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>)
     suspend fun withSetSupportedProtocolsSuccessful()
     fun withSetDefaultProtocolSuccessful()
+    fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
     fun withSetMLSEnabledSuccessful()
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
+    suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
+    suspend fun withSetTrackingIdentifier()
+    suspend fun withGetTrackingIdentifier(result: String?)
+    suspend fun withSetPreviousTrackingIdentifier()
+    suspend fun withGetPreviousTrackingIdentifier(result: String?)
+    suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>)
+    suspend fun withDeletePreviousTrackingIdentifier()
+    suspend fun withUpdateNextTimeForCallFeedback()
+    suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -62,10 +74,18 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         }.returns(Either.Right(Unit))
     }
 
+    override fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
+        every { userConfigRepository.getDefaultProtocol() }.returns(result)
+    }
+
     override fun withSetMLSEnabledSuccessful() {
         every {
             userConfigRepository.setMLSEnabled(any())
         }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>) {
+        coEvery { userConfigRepository.getSupportedCipherSuite() }.returns(result)
     }
 
     override suspend fun withSetMigrationConfigurationSuccessful() {
@@ -82,5 +102,37 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
         coEvery { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
+    }
+
+    override suspend fun withSetTrackingIdentifier() {
+        coEvery { userConfigRepository.setCurrentTrackingIdentifier(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetTrackingIdentifier(result: String?) {
+        coEvery { userConfigRepository.getCurrentTrackingIdentifier() }.returns(result)
+    }
+
+    override suspend fun withSetPreviousTrackingIdentifier() {
+        coEvery { userConfigRepository.setPreviousTrackingIdentifier(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetPreviousTrackingIdentifier(result: String?) {
+        coEvery { userConfigRepository.getPreviousTrackingIdentifier() }.returns(result)
+    }
+
+    override suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>) {
+        coEvery { userConfigRepository.observeCurrentTrackingIdentifier() }.returns(flowOf(result))
+    }
+
+    override suspend fun withDeletePreviousTrackingIdentifier() {
+        coEvery { userConfigRepository.deletePreviousTrackingIdentifier() }.returns(Unit)
+    }
+
+    override suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>) {
+        coEvery { userConfigRepository.getNextTimeForCallFeedback() }.returns(result)
+    }
+
+    override suspend fun withUpdateNextTimeForCallFeedback() {
+        coEvery { userConfigRepository.updateNextTimeForCallFeedback(any()) }.returns(Unit)
     }
 }

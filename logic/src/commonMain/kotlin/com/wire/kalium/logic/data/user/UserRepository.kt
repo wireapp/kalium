@@ -25,6 +25,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -57,16 +58,18 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
+import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
-import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.UserProfileDTO
-import com.wire.kalium.network.api.base.model.isTeamMember
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -150,6 +153,8 @@ interface UserRepository {
 
     suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 
+    suspend fun updateActiveOneOnOneConversationIfNotSet(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
@@ -157,6 +162,8 @@ interface UserRepository {
     suspend fun fetchUsersLegalHoldConsent(userIds: Set<UserId>): Either<CoreFailure, ListUsersLegalHoldConsent>
 
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
+    suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
+    suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -320,7 +327,7 @@ internal class UserDataSource internal constructor(
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
 
-    private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
+    private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
         val teamMemberIds = userProfileList.filter { it.isTeamMember(selfUserTeamId?.value, selfUserDomain) }.map { it.id.value }
@@ -330,7 +337,7 @@ internal class UserDataSource internal constructor(
             .foldToEitherWhileRight(emptyList()) { chunk, acc ->
                 wrapApiRequest {
                     kaliumLogger.d("Fetching ${chunk.size} team members")
-                    teamsApi.getTeamMembersByIds(selfUserTeamId.value, TeamsApi.TeamMemberIdList(chunk))
+                    teamsApi.getTeamMembersByIds(selfUserTeamId.value, TeamMemberIdList(chunk))
                 }.map {
                     kaliumLogger.d("Found ${it.members.size} team members")
                     (acc + it.members).distinct()
@@ -344,7 +351,7 @@ internal class UserDataSource internal constructor(
 
     private suspend fun persistUsers(
         listUserProfileDTO: List<UserProfileDTO>,
-        listTeamMemberDTO: List<TeamsApi.TeamMemberDTO>,
+        listTeamMemberDTO: List<TeamMemberDTO>,
     ): Either<CoreFailure, Unit> {
         val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
@@ -416,7 +423,9 @@ internal class UserDataSource internal constructor(
                     kaliumLogger.i("$logPrefix: Succeeded")
                     userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
                 })
-            } else { refreshUserDetailsIfNeeded(selfUserId) }
+            } else {
+                refreshUserDetailsIfNeeded(selfUserId)
+            }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.observeUserDetailsByQualifiedID(selfUserID)
@@ -476,6 +485,12 @@ internal class UserDataSource internal constructor(
         }
     }
 
+    override suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>) = wrapStorageRequest {
+        userDAO.getUsersMinimizedByQualifiedIDs(
+            qualifiedIDs = userIds.map { it.toDao() }
+        ).map(userMapper::fromUserEntityToOtherUserMinimized)
+    }
+
     override suspend fun observeUser(userId: UserId): Flow<User?> =
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
@@ -509,6 +524,13 @@ internal class UserDataSource internal constructor(
     override suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { userDAO.updateActiveOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
 
+    override suspend fun updateActiveOneOnOneConversationIfNotSet(
+        userId: UserId,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.updateActiveOneOnOneConversationIfNotSet(userId.toDao(), conversationId.toDao())
+    }
+
     override suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId) = wrapStorageRequest {
         userDAO.isAtLeastOneUserATeamMember(userId.map { it.toDao() }, teamId.value)
     }
@@ -523,7 +545,7 @@ internal class UserDataSource internal constructor(
                 .partition { it.legalHoldStatus != LegalHoldStatusDTO.NO_CONSENT }
                 .let { (usersWithConsent, usersWithoutConsent) ->
                     ListUsersLegalHoldConsent(
-                        usersWithConsent = usersWithConsent.map { it.id.toModel() },
+                        usersWithConsent = usersWithConsent.map { it.id.toModel() to it.teamId?.let { TeamId(it) } },
                         usersWithoutConsent = usersWithoutConsent.map { it.id.toModel() },
                         usersFailed = listUsersDTO.usersFailed.map { it.toModel() }
                     )
@@ -620,6 +642,10 @@ internal class UserDataSource internal constructor(
     override suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId> = wrapStorageRequest {
         userDAO.getOneOnOnConversationId(userId.toDao())?.toModel()
     }
+
+    override suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle> = wrapStorageRequest {
+        userDAO.getNameAndHandle(userId.toDao())
+    }.map { NameAndHandle.fromEntity(it) }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"

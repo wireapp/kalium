@@ -145,6 +145,10 @@ interface UserConfigStorage {
      */
     fun isConferenceCallingEnabled(): Boolean
 
+    fun persistUseSftForOneOnOneCalls(shouldUse: Boolean)
+
+    fun shouldUseSftForOneOnOneCalls(): Boolean
+
     /**
      * Get the saved flag to know whether user's Read Receipts are currently enabled or not
      */
@@ -207,6 +211,8 @@ data class E2EISettingsEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("discoverUrl") val discoverUrl: String?,
     @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
+    @SerialName("shouldUseProxy") val shouldUseProxy: Boolean?,
+    @SerialName("crlProxy") val crlProxy: String?,
 )
 
 @Serializable
@@ -501,6 +507,16 @@ class UserConfigStorageImpl(
             DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         )
 
+    override fun persistUseSftForOneOnOneCalls(shouldUse: Boolean) {
+        kaliumPreferences.putBoolean(USE_SFT_FOR_ONE_ON_ONE_CALLS, shouldUse)
+    }
+
+    override fun shouldUseSftForOneOnOneCalls(): Boolean =
+        kaliumPreferences.getBoolean(
+            USE_SFT_FOR_ONE_ON_ONE_CALLS,
+            DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
+        )
+
     override fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
         .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true) }
         .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)) }
@@ -575,8 +591,10 @@ class UserConfigStorageImpl(
         const val E2EI_SETTINGS = "end_to_end_identity_settings"
         const val E2EI_NOTIFICATION_TIME = "end_to_end_identity_notification_time"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
+        const val USE_SFT_FOR_ONE_ON_ONE_CALLS = "use_sft_for_one_on_one_calls"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
+        const val DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE = false
         const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE =
             "require_second_factor_password_challenge"
         const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"

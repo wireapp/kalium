@@ -30,6 +30,8 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
@@ -39,6 +41,7 @@ import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
+import com.wire.kalium.testservice.models.LinkPreview
 import com.wire.kalium.testservice.models.SendTextResponse
 import kotlinx.coroutines.flow.first
 import okio.Path.Companion.toOkioPath
@@ -253,6 +256,7 @@ sealed class ConversationRepository {
             instance: Instance,
             conversationId: ConversationId,
             text: String?,
+            linkPreviews: List<LinkPreview> = emptyList(),
             mentions: List<MessageMention>,
             messageTimer: Int?,
             quotedMessageId: String?,
@@ -265,12 +269,21 @@ sealed class ConversationRepository {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             val result = if (buttons.isEmpty()) {
+                                val previews = mapLinkPreviews(linkPreviews)
                                 messages.sendTextMessage(
-                                    conversationId, text, mentions, quotedMessageId
+                                    conversationId,
+                                    text,
+                                    previews,
+                                    mentions,
+                                    quotedMessageId
                                 )
                             } else {
                                 messages.sendButtonMessage(
-                                    conversationId, text, mentions, quotedMessageId, buttons
+                                    conversationId,
+                                    text,
+                                    mentions,
+                                    quotedMessageId,
+                                    buttons
                                 )
                             }
                             result.fold({
@@ -291,6 +304,32 @@ sealed class ConversationRepository {
             }
         }
 
+        private fun mapLinkPreviews(linkPreviews: List<LinkPreview>): List<MessageLinkPreview> {
+            return linkPreviews.map {
+                val image = it.image?.let { image ->
+                    val temp: File = Files.createTempFile("asset", ".data").toFile()
+                    val byteArray = Base64.getDecoder().decode(image.data)
+                    FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
+                    LinkPreviewAsset(
+                        mimeType = image.type,
+                        assetDataPath = temp.toOkioPath(),
+                        assetDataSize = byteArray.size.toLong(),
+                        assetWidth = image.width,
+                        assetHeight = image.height,
+                        assetName = image.type.split("/")[1]
+                    )
+                }
+                MessageLinkPreview(
+                    url = it.url,
+                    urlOffset = it.urlOffset,
+                    permanentUrl = it.permanentUrl,
+                    title = it.title,
+                    summary = it.summary,
+                    image = image
+                )
+            }
+        }
+
         @Suppress("LongParameterList")
         suspend fun updateTextMessage(
             instance: Instance,
@@ -305,7 +344,7 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
                             setMessageTimer(instance, conversationId, messageTimer)
-                            log.info("Instance ${instance.instanceId}: Send text message '$text'")
+                            log.info("Instance ${instance.instanceId}: Update text message '$text'")
                             messages.sendEditTextMessage(
                                 conversationId, firstMessageId, text, mentions
                             ).fold({
@@ -443,7 +482,7 @@ sealed class ConversationRepository {
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get receipts from message")
         }
 
-        @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
+        @Suppress("LongParameterList", "LongMethod", "ThrowsCount", "ComplexMethod")
         suspend fun sendFile(
             instance: Instance,
             conversationId: ConversationId,
@@ -498,16 +537,28 @@ sealed class ConversationRepository {
                             }
                             when (sendResult) {
                                 is ScheduleNewAssetMessageResult.Failure -> {
-                                    if (sendResult.coreFailure is StorageFailure.Generic) {
-                                        val rootCause = (sendResult.coreFailure as StorageFailure.Generic)
-                                            .rootCause.message
-                                        Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                            .entity("Instance ${instance.instanceId}: Sending failed with $rootCause")
-                                            .build()
-                                    } else {
-                                        Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                            .entity("Instance ${instance.instanceId}: Sending file $fileName failed")
-                                            .build()
+                                    // if the IDE tels you that this casting is unnecessary
+                                    // first check kotlin version
+                                    // if version < 2 then casting is necessary
+                                    // if version >= 2 then casting is unnecessary
+                                    when (val result = sendResult as ScheduleNewAssetMessageResult.Failure) {
+                                        ScheduleNewAssetMessageResult.Failure.RestrictedFileType,
+                                        ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> {
+                                            throw WebApplicationException(
+                                                "Instance ${instance.instanceId}: Sending failed with $sendResult"
+                                            )
+                                        }
+
+                                        is ScheduleNewAssetMessageResult.Failure.Generic -> {
+                                            if (result.coreFailure is StorageFailure.Generic) {
+                                                val rootCause = (result.coreFailure as StorageFailure.Generic).rootCause.message
+                                                throw WebApplicationException(
+                                                    "Instance ${instance.instanceId}: Sending failed with $rootCause"
+                                                )
+                                            } else {
+                                                throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                                            }
+                                        }
                                     }
                                 }
 
@@ -533,7 +584,7 @@ sealed class ConversationRepository {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "ThrowsCount")
         suspend fun sendImage(
             instance: Instance,
             conversationId: ConversationId,
@@ -569,17 +620,24 @@ sealed class ConversationRepository {
                                 height,
                                 0L
                             )
-                            if (sendResult is ScheduleNewAssetMessageResult.Failure) {
-                                if (sendResult.coreFailure is StorageFailure.Generic) {
-                                    val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
-                                    throw WebApplicationException(
-                                        "Instance ${instance.instanceId}: Sending failed with $rootCause"
-                                    )
-                                } else {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                            when (sendResult) {
+                                ScheduleNewAssetMessageResult.Failure.RestrictedFileType,
+                                ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with $sendResult")
                                 }
-                            } else {
-                                Response.status(Response.Status.OK).build()
+
+                                is ScheduleNewAssetMessageResult.Failure.Generic -> {
+                                    if (sendResult.coreFailure is StorageFailure.Generic) {
+                                        val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
+                                        throw WebApplicationException(
+                                            "Instance ${instance.instanceId}: Sending failed with $rootCause"
+                                        )
+                                    } else {
+                                        throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                                    }
+                                }
+
+                                is ScheduleNewAssetMessageResult.Success -> Response.status(Response.Status.OK).build()
                             }
                         }
                     }

@@ -24,11 +24,12 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -49,19 +50,17 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
-import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
-import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapperImpl
+import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
@@ -101,6 +100,7 @@ class UserScope internal constructor(
     private val clientIdProvider: CurrentClientIdProvider,
     private val e2EIRepository: E2EIRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val conversationRepository: ConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val updateSelfUserSupportedProtocolsUseCase: UpdateSelfUserSupportedProtocolsUseCase,
     private val clientRepository: ClientRepository,
@@ -119,7 +119,6 @@ class UserScope internal constructor(
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
 
-    private val certificateStatusMapper by lazy { CertificateStatusMapperImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
 
@@ -128,27 +127,25 @@ class UserScope internal constructor(
             clientRepository,
             joinExistingMLSConversationsUseCase
         )
-    val getE2EICertificate: GetE2eiCertificateUseCase
-        get() = GetE2eiCertificateUseCaseImpl(
-            mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+    val getE2EICertificate: GetMLSClientIdentityUseCase
+        get() = GetMLSClientIdentityUseCaseImpl(
+            mlsConversationRepository = mlsConversationRepository
         )
-    val getUserE2eiCertificateStatus: GetUserE2eiCertificateStatusUseCase
-        get() = GetUserE2eiCertificateStatusUseCaseImpl(
+    val getUserE2eiCertificateStatus: IsOtherUserE2EIVerifiedUseCase
+        get() = IsOtherUserE2EIVerifiedUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper,
-            isE2EIEnabledUseCase = isE2EIEnabledUseCase
+            isE2EIEnabledUseCase = isE2EIEnabledUseCase,
+            userRepository = userRepository
         )
     val getUserE2eiCertificates: GetUserE2eiCertificatesUseCase
         get() = GetUserE2eiCertificatesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
     val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
         get() = GetMembersE2EICertificateStatusesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+            conversationRepository = conversationRepository
         )
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
@@ -211,14 +208,13 @@ class UserScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val certificateRevocationListCheckWorker: CertificateRevocationListCheckWorker by lazy {
-        CertificateRevocationListCheckWorkerImpl(
+    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase get() =
+        SyncCertificateRevocationListUseCase(
             certificateRevocationListRepository = certificateRevocationListRepository,
             incrementalSyncRepository = incrementalSyncRepository,
             revocationListChecker = checkRevocationList,
             kaliumLogger = userScopedLogger,
         )
-    }
 
     val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
         FeatureFlagSyncWorkerImpl(

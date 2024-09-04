@@ -25,15 +25,17 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {
@@ -50,18 +52,20 @@ interface KeyPackageRepository {
      * available. If the operation fails, it will be [Either.Left] with a [CoreFailure] object indicating the reason for the failure.
      * If **no** KeyPackages are available, [CoreFailure.MissingKeyPackages] will be the cause.
      */
-    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, KeyPackageClaimResult>
+    suspend fun claimKeyPackages(
+        userIds: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, KeyPackageClaimResult>
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
 
     suspend fun uploadKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
-    suspend fun replaceKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
+    suspend fun replaceKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>, cipherSuite: CipherSuite): Either<CoreFailure, Unit>
 
     suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO>
 
     suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int>
-
 }
 
 class KeyPackageDataSource(
@@ -71,13 +75,22 @@ class KeyPackageDataSource(
     private val selfUserId: UserId,
 ) : KeyPackageRepository {
 
-    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, KeyPackageClaimResult> =
-        currentClientIdProvider().flatMap { selfClientId ->
+    override suspend fun claimKeyPackages(
+        userIds: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, KeyPackageClaimResult> =
+        currentClientIdProvider().map { selfClientId ->
             val failedUsers = mutableSetOf<UserId>()
             val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
             userIds.forEach { userId ->
                 wrapApiRequest {
-                    keyPackageApi.claimKeyPackages(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value))
+                    keyPackageApi.claimKeyPackages(
+                        KeyPackageApi.Param.SkipOwnClient(
+                            userId.toApi(),
+                            selfClientId.value,
+                            cipherSuite = cipherSuite.tag
+                        )
+                    )
                 }.fold({ failedUsers.add(userId) }) {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
                         failedUsers.add(userId)
@@ -87,11 +100,7 @@ class KeyPackageDataSource(
                 }
             }
 
-            if (claimedKeyPackages.isEmpty() && failedUsers.isNotEmpty()) {
-                Either.Left(CoreFailure.MissingKeyPackages(failedUsers))
-            } else {
-                Either.Right(KeyPackageClaimResult(claimedKeyPackages, failedUsers))
-            }
+            KeyPackageClaimResult(claimedKeyPackages, failedUsers)
         }
 
     override suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int): Either<CoreFailure, Unit> =
@@ -115,10 +124,11 @@ class KeyPackageDataSource(
 
     override suspend fun replaceKeyPackages(
         clientId: ClientId,
-        keyPackages: List<ByteArray>
+        keyPackages: List<ByteArray>,
+        cipherSuite: CipherSuite
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() }, cipherSuite.tag)
         }
 
     override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =

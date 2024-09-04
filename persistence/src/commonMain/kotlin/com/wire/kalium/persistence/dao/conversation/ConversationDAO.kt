@@ -29,38 +29,52 @@ data class ProposalTimerEntity(
     val firingDate: Instant
 )
 
+@Suppress("TooManyFunctions")
 interface ConversationDAO {
+    //region Get/Observe by ID
+
+    suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
+    suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
+    suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
+    suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
+
+    //endregion
+
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
+    suspend fun updateMlsGroupStateAndCipherSuite(
+        groupState: ConversationEntity.GroupState,
+        cipherSuite: ConversationEntity.CipherSuite,
+        groupId: String
+    )
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
-    suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,
         teamId: String? = null
     ): List<QualifiedIDEntity>
+    suspend fun getConversationTypeById(conversationId: QualifiedIDEntity): ConversationEntity.Type?
+
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity>
-    suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
-    suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
-    suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun getOneOnOneConversationIdsWithOtherUser(
         userId: UserIDEntity,
         protocol: ConversationEntity.Protocol
     ): List<QualifiedIDEntity>
-    suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
+
+    suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
     suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
-    suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity>
+    suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
 
     suspend fun updateConversationMutedStatus(
@@ -87,9 +101,15 @@ interface ConversationDAO {
     suspend fun clearProposalTimer(groupID: String)
     suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
-    suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
+    suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, dateTime: Instant)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
-    suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean
+    suspend fun updateConversationProtocolAndCipherSuite(
+        conversationId: QualifiedIDEntity,
+        groupID: String?,
+        protocol: ConversationEntity.Protocol,
+        cipherSuite: ConversationEntity.CipherSuite
+    ): Boolean
+
     suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(

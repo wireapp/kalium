@@ -19,14 +19,14 @@
 package com.wire.kalium.api.v3.message
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.json.ValidJsonProvider
+import com.wire.kalium.mocks.responses.ValidJsonProvider
 import com.wire.kalium.api.tools.IgnoreIOS
-import com.wire.kalium.model.QualifiedSendMessageRequestJson
-import com.wire.kalium.model.QualifiedSendMessageResponseJson
+import com.wire.kalium.mocks.responses.QualifiedSendMessageRequestJson
+import com.wire.kalium.mocks.responses.QualifiedSendMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v0.authenticated.MessageApiV0
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.utils.isSuccessful

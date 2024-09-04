@@ -31,6 +31,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.logic.kaliumLogger
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()
@@ -53,8 +54,8 @@ internal class RegisterMLSClientUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : RegisterMLSClientUseCase {
 
-    override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> =
-        userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
+    override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> {
+        return userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
             if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()) {
                 return RegisterMLSClientResult.E2EICertificateRequired.right()
             } else {
@@ -71,5 +72,8 @@ internal class RegisterMLSClientUseCaseImpl(
         }.flatMap {
             keyPackageRepository.uploadNewKeyPackages(clientId, keyPackageLimitsProvider.refillAmount())
             Either.Right(RegisterMLSClientResult.Success)
+        }.onFailure {
+            kaliumLogger.e("Failed to register MLS client: $it")
         }
+    }
 }

@@ -18,18 +18,21 @@
 package com.wire.kalium.logic.feature.protocol
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 
 internal interface OneOnOneProtocolSelector {
     suspend fun getProtocolForUser(userId: UserId): Either<CoreFailure, SupportedProtocol>
 }
 
 internal class OneOnOneProtocolSelectorImpl(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val userConfigRepository: UserConfigRepository
 ) : OneOnOneProtocolSelector {
     override suspend fun getProtocolForUser(userId: UserId): Either<CoreFailure, SupportedProtocol> =
         userRepository.userById(userId).flatMap { otherUser ->
@@ -40,13 +43,17 @@ internal class OneOnOneProtocolSelectorImpl(
 
             val selfUserProtocols = selfUser.supportedProtocols.orEmpty()
             val otherUserProtocols = otherUser.supportedProtocols.orEmpty()
-
-            val commonProtocols = selfUserProtocols.intersect(otherUserProtocols)
+            val commonProtocols = userConfigRepository.getDefaultProtocol().fold({
+                selfUserProtocols.intersect(otherUserProtocols)
+            }, {
+                selfUserProtocols.intersect(listOf(it).toSet()).intersect(otherUserProtocols)
+            })
 
             return when {
                 commonProtocols.contains(SupportedProtocol.MLS) -> Either.Right(SupportedProtocol.MLS)
                 commonProtocols.contains(SupportedProtocol.PROTEUS) -> Either.Right(SupportedProtocol.PROTEUS)
-                else -> Either.Left(CoreFailure.NoCommonProtocolFound)
+                selfUserProtocols.contains(SupportedProtocol.MLS) -> Either.Left(CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate)
+                else -> Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate)
             }
         }
 }

@@ -24,13 +24,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -58,7 +58,7 @@ class NewConversationMembersRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -89,7 +89,7 @@ class NewConversationMembersRepositoryTest {
 
         suspend fun withPersistResolvedMembersSystemMessageSuccess() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any())
+                newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -99,13 +99,14 @@ class NewConversationMembersRepositoryTest {
     }
 
     private companion object {
+        const val GROUP_NAME = "Group Name"
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             ConversationMembersResponse(
                 ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_member"),
                 listOf(ConversationMemberDTO.Other(TestUser.OTHER.id.toApi(), "wire_member"))
             ),
-            ConversationGroupRepositoryTest.GROUP_NAME,
+            GROUP_NAME,
             TestConversation.NETWORK_ID,
             null,
             0UL,

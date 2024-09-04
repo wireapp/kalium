@@ -22,8 +22,8 @@ package com.wire.kalium.logic.configuration.server
 
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import io.ktor.http.URLBuilder
@@ -134,6 +134,19 @@ data class ServerConfig(
             isOnPremises = false,
             apiProxy = null
         )
+
+        val DUMMY = Links(
+            api = """https://dummy-nginz-https.zinfra.io""",
+            accounts = """https://wire-account-dummy.zinfra.io""",
+            webSocket = """https://dummy-nginz-ssl.zinfra.io""",
+            teams = """https://wire-teams-dummy.zinfra.io""",
+            blackList = """https://clientblacklist.wire.com/dummy""",
+            website = """https://dummy.wire.com""",
+            title = "dummy",
+            isOnPremises = false,
+            apiProxy = null
+        )
+
         val DEFAULT = PRODUCTION
 
         private const val FORGOT_PASSWORD_PATH = "forgot"

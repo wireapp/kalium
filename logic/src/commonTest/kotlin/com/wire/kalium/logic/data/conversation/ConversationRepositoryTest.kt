@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
@@ -37,8 +39,6 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -49,28 +49,28 @@ import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
+import com.wire.kalium.network.api.authenticated.conversation.ConversationPagingResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationProtocolDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -92,21 +92,20 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.EqualsMatcher
 import io.mockative.matchers.Matcher
-import io.mockative.matchers.PredicateMatcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -118,10 +117,8 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.base.model.ConversationId as APIConversationId
-import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
+import com.wire.kalium.network.api.model.ConversationId as APIConversationId
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("LargeClass")
@@ -133,7 +130,7 @@ class ConversationRepositoryTest {
             "id",
             TestConversation.ID,
             TestUser.SELF.id,
-            "time",
+            Instant.UNIX_FIRST_DATE,
             CONVERSATION_RESPONSE
         )
         val selfUserFlow = flowOf(TestUser.SELF)
@@ -161,7 +158,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE
             )
             val selfUserFlow = flowOf(TestUser.SELF)
@@ -190,7 +187,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE
             )
             val selfUserFlow = flowOf(TestUser.SELF)
@@ -219,7 +216,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE.copy(
                     groupId = RAW_GROUP_ID,
                     protocol = MLS,
@@ -339,7 +336,7 @@ class ConversationRepositoryTest {
             val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -354,7 +351,7 @@ class ConversationRepositoryTest {
             val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.SELF)
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -374,7 +371,7 @@ class ConversationRepositoryTest {
             )
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -389,7 +386,7 @@ class ConversationRepositoryTest {
             // given
             val (_, conversationRepository) = Arrangement()
                 .withSelfUserFlow(flowOf(TestUser.SELF))
-                .withExpectedConversationWithOtherUser(TestConversation.VIEW_ENTITY)
+                .withExpectedConversationWithOtherUser(TestConversation.ENTITY)
                 .withExpectedOtherKnownUser(TestUser.OTHER)
                 .arrange()
 
@@ -556,13 +553,15 @@ class ConversationRepositoryTest {
                 EventContentDTO.Conversation.AccessUpdate(
                     conversationIdDTO,
                     data = newAccessInfoDTO,
-                    qualifiedFrom = com.wire.kalium.network.api.base.model.UserId("from_id", "from_domain")
+                    qualifiedFrom = com.wire.kalium.network.api.model.UserId(
+                        "from_id",
+                        "from_domain"
+                    )
                 )
             )
 
             val (arrange, conversationRepository) = Arrangement()
                 .withApiUpdateAccessRoleReturns(NetworkResponse.Success(newAccess, mapOf(), 200))
-                .withDaoUpdateAccessSuccess()
                 .arrange()
 
             conversationRepository.updateAccessInfo(
@@ -773,7 +772,7 @@ class ConversationRepositoryTest {
             type = ConversationEntity.Type.GROUP,
         )
         val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversation(conversationEntity)
+            .withExpectedObservableConversationDetails(conversationEntity)
             .arrange()
 
         // when
@@ -798,7 +797,7 @@ class ConversationRepositoryTest {
             )
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             // when
@@ -940,18 +939,23 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationId_WhenTheConversationDoesNotExists_ShouldReturnANullConversation() = runTest {
+    fun givenAConversationId_whenTheConversationDoesNotExists_thenShouldReturnDataNotFound() = runTest {
         val conversationId = ConversationId("conv_id", "conv_domain")
-        val (_, conversationRepository) = Arrangement().withExpectedObservableConversation().arrange()
+        val (_, conversationRepository) = Arrangement()
+            .withExpectedConversationBase(null)
+            .arrange()
 
-        val result = conversationRepository.getConversationById(conversationId)
-        assertNull(result)
+        conversationRepository.getConversationById(conversationId)
+            .shouldFail {
+                assertIs<StorageFailure.DataNotFound>(it)
+            }
     }
 
     @Test
     fun givenAConversationId_WhenTheConversationExists_ShouldReturnAConversationInstance() = runTest {
         val conversationId = ConversationId("conv_id", "conv_domain")
-        val (_, conversationRepository) = Arrangement().withExpectedObservableConversation(TestConversation.VIEW_ENTITY)
+        val (_, conversationRepository) = Arrangement()
+            .withExpectedObservableConversation(TestConversation.ENTITY)
             .arrange()
 
         val result = conversationRepository.getConversationById(conversationId)
@@ -1156,12 +1160,18 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenNoChange_whenUpdatingProtocolToMls_thenShouldNotUpdateLocally() = runTest {
+    fun givenNoChange_whenUpdatingProtocolToMls_thenShouldUpdateLocally() = runTest {
         // given
         val protocol = Conversation.Protocol.MLS
-
+        val conversationResponse = NetworkResponse.Success(
+            TestConversation.CONVERSATION_RESPONSE,
+            emptyMap(),
+            HttpStatusCode.OK.value
+        )
         val (arrange, conversationRepository) = Arrangement()
+            .withDaoUpdateProtocolSuccess()
             .withUpdateProtocolResponse(UPDATE_PROTOCOL_UNCHANGED)
+            .withFetchConversationsDetails(conversationResponse)
             .arrange()
 
         // when
@@ -1171,8 +1181,13 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasNotInvoked()
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
+                    eq(CONVERSATION_ID.toDao()),
+                    eq(conversationResponse.value.groupId),
+                    eq(protocol.toDao()),
+                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -1227,7 +1242,12 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
+                    eq(CONVERSATION_ID.toDao()),
+                    eq(conversationResponse.value.groupId),
+                    eq(protocol.toDao()),
+                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                )
             }.wasInvoked(exactly = once)
         }
     }
@@ -1254,7 +1274,12 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
+                    eq(CONVERSATION_ID.toDao()),
+                    eq(conversationResponse.value.groupId),
+                    eq(protocol.toDao()),
+                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                )
             }.wasInvoked(exactly = once)
         }
     }
@@ -1274,9 +1299,8 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldFail()
-            coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasNotInvoked()
+            coVerify { arrange.conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
+                .wasNotInvoked()
         }
     }
 
@@ -1452,7 +1476,7 @@ class ConversationRepositoryTest {
             }.returns(response)
         }
 
-        suspend fun withExpectedConversationWithOtherUser(conversation: ConversationViewEntity?) = apply {
+        suspend fun withExpectedConversationWithOtherUser(conversation: ConversationEntity?) = apply {
             coEvery {
                 conversationDAO.observeOneOnOneConversationWithOtherUser(any())
             }.returns(flowOf(conversation))
@@ -1511,16 +1535,9 @@ class ConversationRepositoryTest {
             }.returns(response)
         }
 
-        suspend fun withDaoUpdateAccessSuccess() = apply {
-            coEvery {
-                conversationDAO.updateAccess(any(), any(), any())
-            }.returns(Unit)
-        }
-
         suspend fun withDaoUpdateProtocolSuccess() = apply {
-            coEvery {
-                conversationDAO.updateConversationProtocol(any(), any())
-            }.returns(true)
+            coEvery { conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
+                .returns(true)
         }
 
         suspend fun withGetConversationProtocolInfoReturns(result: ConversationEntity.ProtocolInfo) = apply {
@@ -1549,9 +1566,15 @@ class ConversationRepositoryTest {
             withObserveIsUserMember(expectedIsUserMember)
         }
 
-        suspend fun withExpectedObservableConversation(conversationEntity: ConversationViewEntity? = null) = apply {
+        suspend fun withExpectedObservableConversationDetails(conversationEntity: ConversationViewEntity? = null) = apply {
             coEvery {
-                conversationDAO.observeGetConversationByQualifiedID(any())
+                conversationDAO.observeConversationDetailsById(any())
+            }.returns(flowOf(conversationEntity))
+        }
+
+        suspend fun withExpectedObservableConversation(conversationEntity: ConversationEntity? = null) = apply {
+            coEvery {
+                conversationDAO.observeConversationById(any())
             }.returns(flowOf(conversationEntity))
         }
 
@@ -1563,13 +1586,19 @@ class ConversationRepositoryTest {
 
         suspend fun withExpectedConversation(conversationEntity: ConversationViewEntity?) = apply {
             coEvery {
-                conversationDAO.getConversationByQualifiedID(any())
+                conversationDAO.getConversationDetailsById(any())
             }.returns(conversationEntity)
+        }
+
+        suspend fun withExpectedConversationView(conversationEntity: ConversationViewEntity?) = apply {
+            coEvery {
+                conversationDAO.observeConversationDetailsById(any())
+            }.returns(flowOf(conversationEntity))
         }
 
         suspend fun withExpectedConversationBase(conversationEntity: ConversationEntity?) = apply {
             coEvery {
-                conversationDAO.getConversationBaseInfoByQualifiedID(any())
+                conversationDAO.getConversationById(any())
             }.returns(conversationEntity)
         }
 
@@ -1787,7 +1816,7 @@ class ConversationRepositoryTest {
             EventContentDTO.Conversation.ConversationRenameDTO(
                 CONVERSATION_ID.toApi(),
                 USER_ID.toApi(),
-                DateTimeUtil.currentIsoDateTimeString(),
+                Clock.System.now(),
                 ConversationNameUpdateEvent("newName")
             )
         )

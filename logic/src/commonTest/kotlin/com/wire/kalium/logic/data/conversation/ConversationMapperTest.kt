@@ -24,16 +24,16 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
@@ -232,6 +232,110 @@ class ConversationMapperTest {
         )
         val result = response.toConversationType(SELF_USER_TEAM_ID)
         assertEquals(ConversationEntity.Type.GROUP, result)
+    }
+
+    @Test
+    fun givenAccessList_whenMappingFromModelToDAOAccess_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessList = setOf(
+            Conversation.Access.PRIVATE,
+            Conversation.Access.CODE,
+            Conversation.Access.INVITE,
+            Conversation.Access.LINK,
+            Conversation.Access.SELF_INVITE
+        )
+
+        val expected = listOf(
+            ConversationEntity.Access.PRIVATE,
+            ConversationEntity.Access.CODE,
+            ConversationEntity.Access.INVITE,
+            ConversationEntity.Access.LINK,
+            ConversationEntity.Access.SELF_INVITE
+        )
+
+        // when
+        val result = conversationMapper.fromModelToDAOAccess(accessList)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAccessRoleList_whenMappingFromModelToDAOAccessRole_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessRoleList = setOf(
+            Conversation.AccessRole.SERVICE,
+            Conversation.AccessRole.GUEST,
+            Conversation.AccessRole.TEAM_MEMBER,
+            Conversation.AccessRole.NON_TEAM_MEMBER,
+            Conversation.AccessRole.EXTERNAL
+        )
+
+        val expected = listOf(
+            ConversationEntity.AccessRole.SERVICE,
+            ConversationEntity.AccessRole.GUEST,
+            ConversationEntity.AccessRole.TEAM_MEMBER,
+            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
+            ConversationEntity.AccessRole.EXTERNAL
+        )
+
+        // when
+        val result = conversationMapper.fromModelToDAOAccessRole(accessRoleList)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAccessList_whenMappingFromApiModelToAccessModel_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessList = setOf(
+            ConversationAccessDTO.PRIVATE,
+            ConversationAccessDTO.CODE,
+            ConversationAccessDTO.INVITE,
+            ConversationAccessDTO.LINK,
+            ConversationAccessDTO.SELF_INVITE
+        )
+
+        val expected = setOf(
+            Conversation.Access.PRIVATE,
+            Conversation.Access.CODE,
+            Conversation.Access.INVITE,
+            Conversation.Access.LINK,
+            Conversation.Access.SELF_INVITE
+        )
+
+        // when
+        val result = conversationMapper.fromApiModelToAccessModel(accessList)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAccessRoleList_whenMappingFromApiModelToAccessModel_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessRoleList = setOf(
+            ConversationAccessRoleDTO.SERVICE,
+            ConversationAccessRoleDTO.GUEST,
+            ConversationAccessRoleDTO.TEAM_MEMBER,
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER,
+            ConversationAccessRoleDTO.EXTERNAL
+        )
+
+        val expected = setOf(
+            Conversation.AccessRole.SERVICE,
+            Conversation.AccessRole.GUEST,
+            Conversation.AccessRole.TEAM_MEMBER,
+            Conversation.AccessRole.NON_TEAM_MEMBER,
+            Conversation.AccessRole.EXTERNAL
+        )
+
+        // when
+        val result = conversationMapper.fromApiModelToAccessRoleModel(accessRoleList)
+
+        // then
+        assertEquals(expected, result)
     }
 
     private companion object {

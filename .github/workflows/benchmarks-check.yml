@@ -1,55 +1,92 @@
 name: Benchmark Checks
 on:
-    merge_group:
-    pull_request:
-        types: [ opened, synchronize ]
-    workflow_dispatch:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+    types: [ opened, synchronize ]
+  workflow_dispatch:
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-    detekt:
-        uses: ./.github/workflows/codestyle.yml
-    benchmarks-check:
-        needs: [ detekt ]
-        runs-on: ubuntu-latest
-        container: wirebot/cryptobox:1.4.0
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-            -   name: Set up JDK
-                uses: actions/setup-java@v4
-                with:
-                    java-version: '17'
-                    distribution: 'temurin'
-                    cache: gradle
-            -   name: Validate Gradle wrapper
-                uses: gradle/actions/wrapper-validation@v3
-            -   name: Run Benchmarks
-                run: ./gradlew benchmark
-            -   name: Generate HTML Report
-                run: ./gradlew jmhReport
-            -   name: Archive Reports
-                if: always()
-                uses: actions/upload-artifact@v4
-                with:
-                    name: benchmarks-reports
-                    path: ./benchmarks/build/reports/benchmarks/**
-            -   name: Create Benchmark Table
-                id: benchmark-table
-                uses: boswelja/kotlinx-benchmark-table-action@0.0.4
-                with:
-                    benchmark-results: ./benchmarks/build/reports/benchmarks/main/**/jvm.json
-            -   name: Post Results
-                run: |
-                    echo '## Benchmarks results ⏱️' >> $GITHUB_STEP_SUMMARY
-                    echo '${{steps.benchmark-table.outputs.benchmark-table}}️' >> $GITHUB_STEP_SUMMARY
+  detekt:
+    uses: ./.github/workflows/codestyle.yml
+  benchmarks-check:
+    needs: [ detekt ]
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    container: wirebot/cryptobox:1.4.0
+    env:
+      BENCHER_PROJECT: kalium-hgtkc47o
+      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+      - name: Run Benchmarks
+        run: ./gradlew benchmark
+      - name: Generate HTML Report
+        run: ./gradlew jmhReport
+      - name: Archive Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks-reports
+          path: ./benchmarks/build/reports/benchmarks/**
+      - name: Create Benchmark Table
+        id: benchmark-table
+        uses: boswelja/kotlinx-benchmark-table-action@0.0.4
+        with:
+          benchmark-results: ./benchmarks/build/reports/benchmarks/main/**/jvm.json
+      - name: Post Results
+        run: |
+          echo '## Benchmarks results ⏱️' >> $GITHUB_STEP_SUMMARY
+          echo '${{steps.benchmark-table.outputs.benchmark-table}}️' >> $GITHUB_STEP_SUMMARY
 
-            -   name: Cleanup Gradle Cache
-                # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
-                # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-                run: |
-                    rm -f ~/.gradle/caches/modules-2/modules-2.lock
-                    rm -f ~/.gradle/caches/modules-2/gc.properties
+      - name: Set JMH report full path
+        id: path
+        shell: bash
+        run: |
+          REPORT_FULL_PATH_REF="$(set -- ./benchmarks/build/reports/benchmarks/main/**/jvm.json; echo $1)"
+          echo "report_full_path=$REPORT_FULL_PATH_REF" >> $GITHUB_OUTPUT
+          unset REPORT_FULL_PATH_REF
+
+      - name: Install bencher
+        uses: bencherdev/bencher@v0.4.18
+
+      - name: Run Bencher on PR
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+        run: |
+          bencher run \
+          --branch '${{ github.head_ref }}' \
+          --branch-start-point '${{ github.base_ref }}' \
+          --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
+          --adapter java_jmh \
+          --testbed ubuntu-latest \
+          --err \
+          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --file ${{ steps.path.outputs.report_full_path }}
+
+      - name: Run Bencher on base branch
+        if: github.event_name == 'push' && github.ref_name == 'develop'
+        run: |
+          bencher run \
+          --branch develop \
+          --adapter java_jmh \
+          --testbed ubuntu-latest \
+          --err \
+          --file ${{ steps.path.outputs.report_full_path }}
+
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties

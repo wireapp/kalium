@@ -18,12 +18,18 @@
 
 package com.wire.kalium.logic.feature.call
 
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 
 interface MediaManagerService {
-    fun turnLoudSpeakerOn()
-    fun turnLoudSpeakerOff()
-    fun observeSpeaker(): StateFlow<Boolean>
+    suspend fun turnLoudSpeakerOn()
+    suspend fun turnLoudSpeakerOff()
+    fun observeSpeaker(): Flow<Boolean>
+
+    /**
+     * Suspends the execution of the current coroutine until the media manager is started.
+     * If it is already started, then it returns instantly.
+     */
+    suspend fun startMediaManager()
 }
 
 expect class MediaManagerServiceImpl : MediaManagerService

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
@@ -29,12 +30,12 @@ import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
-import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.COMMIT_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
@@ -51,12 +52,10 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
-import com.wire.kalium.logic.data.mlspublickeys.KeyType
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -67,18 +66,17 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -86,8 +84,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
 import com.wire.kalium.persistence.dao.message.LocalId
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -161,10 +159,11 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -173,7 +172,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.createConversation(Arrangement.RAW_GROUP_ID, listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            arrangement.mlsClient.createConversation(Arrangement.RAW_GROUP_ID, Arrangement.CRYPTO_MLS_PUBLIC_KEY)
         }.wasInvoked(once)
 
         coVerify {
@@ -194,10 +193,11 @@ class MLSConversationRepositoryTest {
         val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
         val usersMissingKeyPackages = setOf(userMissingKeyPackage)
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(usersWithoutKeyPackages = usersMissingKeyPackages)
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -212,7 +212,7 @@ class MLSConversationRepositoryTest {
         }
 
         coVerify {
-            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
+            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
         }.wasInvoked(once)
 
         coVerify {
@@ -240,10 +240,11 @@ class MLSConversationRepositoryTest {
         val usersWithKeyPackages = setOf(userWithKeyPackage)
         val keyPackageSuccess = KEY_PACKAGE.copy(userId = userWithKeyPackage.value, domain = userWithKeyPackage.domain)
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = listOf(keyPackageSuccess), usersWithoutKeyPackages = usersMissingKeyPackages)
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -259,7 +260,7 @@ class MLSConversationRepositoryTest {
         }
 
         coVerify {
-            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
+            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
         }.wasInvoked(once)
 
         coVerify {
@@ -285,7 +286,7 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -298,13 +299,13 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful(COMMIT_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
             .withCheckRevocationListResult()
             .withSendCommitBundleSuccessful()
             .arrange()
 
-        mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
 
         coVerify {
             arrangement.checkRevocationList.check(any())
@@ -318,10 +319,11 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenMlsClientMismatchError_whenCallingEstablishMLSGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withWaitUntilLiveSuccessful()
@@ -346,10 +348,11 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenMlsStaleMessageError_whenCallingEstablishMLSGroup_thenAbortCommitAndWipeData() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR)
             .arrange()
@@ -373,10 +376,11 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForMembers() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -385,17 +389,23 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.keyPackageRepository.claimKeyPackages(matches { it.containsAll(listOf(TestConversation.USER_1)) })
+            arrangement.keyPackageRepository.claimKeyPackages(
+                matches {
+                    it.containsAll(listOf(TestConversation.USER_1))
+                },
+                eq(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+            )
         }.wasInvoked(once)
     }
 
     @Test
     fun givenNoOtherClients_whenCallingEstablishMLSGroup_thenCommitIsCreatedByUpdatingKeyMaterial() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = emptyList())
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withUpdateKeyingMaterialSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -418,7 +428,7 @@ class MLSConversationRepositoryTest {
             .withSendCommitBundleSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
@@ -444,7 +454,7 @@ class MLSConversationRepositoryTest {
             .withSendCommitBundleSuccessful(events = listOf(Arrangement.MEMBER_JOIN_EVENT))
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
@@ -465,7 +475,7 @@ class MLSConversationRepositoryTest {
             .withSendCommitBundleSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
@@ -484,7 +494,7 @@ class MLSConversationRepositoryTest {
             .withWaitUntilLiveSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
@@ -512,7 +522,7 @@ class MLSConversationRepositoryTest {
             .withWaitUntilLiveSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
@@ -539,7 +549,7 @@ class MLSConversationRepositoryTest {
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldFail()
 
         coVerify {
@@ -559,7 +569,7 @@ class MLSConversationRepositoryTest {
             .withWaitUntilLiveSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldFail()
 
         coVerify {
@@ -1154,6 +1164,7 @@ class MLSConversationRepositoryTest {
     fun givenSuccessResponse_whenRotatingKeysAndMigratingConversation_thenReturnsSuccess() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withSendCommitBundleSuccessful()
             .withKeyPackageLimits(10)
@@ -1170,7 +1181,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any())
+            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1186,6 +1197,7 @@ class MLSConversationRepositoryTest {
     fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful(ROTATE_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
             .withSendCommitBundleSuccessful()
             .withKeyPackageLimits(10)
@@ -1211,6 +1223,7 @@ class MLSConversationRepositoryTest {
     fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(TEST_FAILURE)
@@ -1227,7 +1240,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any())
+            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1239,6 +1252,7 @@ class MLSConversationRepositoryTest {
     fun givenSendingCommitBundlesFails_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(Either.Right(Unit))
@@ -1254,7 +1268,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any())
+            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1411,22 +1425,25 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSSubConversationGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() =
         runTest {
+            val defaultCipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+
             val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
                 .withCommitPendingProposalsReturningNothing()
                 .withClaimKeyPackagesSuccessful()
                 .withGetMLSClientSuccessful()
                 .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
                 .withGetExternalSenderKeySuccessful()
-                .withGetPublicKeysSuccessful()
+                .withKeyForCipherSuite()
                 .withUpdateKeyingMaterialSuccessful()
                 .withSendCommitBundleSuccessful()
+                .withGetDefaultCipherSuite(defaultCipherSuite)
                 .arrange()
 
             val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
             result.shouldSucceed()
 
             coVerify {
-                arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_EXTERNAL_KEY)))
+                arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.EXTERNAL_SENDER_KEY.value))
             }.wasInvoked(once)
 
             coVerify {
@@ -1447,7 +1464,7 @@ class MLSConversationRepositoryTest {
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
         val wireIdentity = WIRE_IDENTITY.copy(
-            certificate = WIRE_IDENTITY.certificate!!.copy(
+            x509Identity = WIRE_IDENTITY.x509Identity!!.copy(
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
@@ -1461,9 +1478,9 @@ class MLSConversationRepositoryTest {
         // then
         result.shouldSucceed() {
             it.forEach {
-                assertEquals(scheme, it.certificate?.handle?.scheme)
-                assertEquals(handle, it.certificate?.handle?.handle)
-                assertEquals(domain, it.certificate?.handle?.domain)
+                assertEquals(scheme, it.x509Identity?.handle?.scheme)
+                assertEquals(handle, it.x509Identity?.handle?.handle)
+                assertEquals(domain, it.x509Identity?.handle?.domain)
             }
         }
     }
@@ -1477,7 +1494,7 @@ class MLSConversationRepositoryTest {
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
         val wireIdentity = WIRE_IDENTITY.copy(
-            certificate = WIRE_IDENTITY.certificate!!.copy(
+            x509Identity = WIRE_IDENTITY.x509Identity!!.copy(
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
@@ -1492,9 +1509,9 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed() {
             it.values.forEach {
                 it.forEach {
-                    assertEquals(scheme, it.certificate?.handle?.scheme)
-                    assertEquals(handle, it.certificate?.handle?.handle)
-                    assertEquals(domain, it.certificate?.handle?.domain)
+                    assertEquals(scheme, it.x509Identity?.handle?.scheme)
+                    assertEquals(handle, it.x509Identity?.handle?.handle)
+                    assertEquals(domain, it.x509Identity?.handle?.domain)
                 }
             }
         }
@@ -1547,8 +1564,6 @@ class MLSConversationRepositoryTest {
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
 
-        val serverConfigLink = newServerConfig(1).links
-
         suspend fun arrange() = this to MLSConversationDataSource(
             TestUser.SELF.id,
             keyPackageRepository,
@@ -1564,7 +1579,6 @@ class MLSConversationRepositoryTest {
             keyPackageLimitsProvider,
             checkRevocationList,
             certificateRevocationListRepository,
-            serverConfigLink,
             kaliumDispatcher = kaliumDispatcher
         ).also {
             withCommitBundleEventReceiverSucceeding()
@@ -1586,7 +1600,7 @@ class MLSConversationRepositoryTest {
             usersWithoutKeyPackages: Set<UserId> = setOf()
         ) = apply {
             coEvery {
-                keyPackageRepository.claimKeyPackages(any())
+                keyPackageRepository.claimKeyPackages(any(), any())
             }.returns(Either.Right(KeyPackageClaimResult(keyPackages, usersWithoutKeyPackages)))
         }
 
@@ -1598,20 +1612,32 @@ class MLSConversationRepositoryTest {
 
         suspend fun withReplaceKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                keyPackageRepository.replaceKeyPackages(any(), any())
+                keyPackageRepository.replaceKeyPackages(any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withGetPublicKeysSuccessful() = apply {
             coEvery {
                 mlsPublicKeysRepository.getKeys()
-            }.returns(Either.Right(listOf(MLS_PUBLIC_KEY)))
+            }.returns(Either.Right(MLS_PUBLIC_KEY))
+        }
+
+        suspend fun withKeyForCipherSuite() = apply {
+            coEvery {
+                mlsPublicKeysRepository.getKeyForCipherSuite(any())
+            }.returns(Either.Right(CRYPTO_MLS_PUBLIC_KEY))
         }
 
         suspend fun withGetMLSClientSuccessful() = apply {
             coEvery {
                 mlsClientProvider.getMLSClient(any())
             }.returns(Either.Right(mlsClient))
+        }
+
+        fun withGetDefaultCipherSuiteSuccessful() = apply {
+            every {
+                mlsClient.getDefaultCipherSuite()
+            }.returns(CIPHER_SUITE.tag.toUShort())
         }
 
         suspend fun withGetExternalSenderKeySuccessful() = apply {
@@ -1762,21 +1788,29 @@ class MLSConversationRepositoryTest {
             }.returns(identitiesMap)
         }
 
+        fun withGetDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
+            every {
+                mlsClient.getDefaultCipherSuite()
+            }.returns(cipherSuite.tag.toUShort())
+        }
+
         companion object {
+            val CIPHER_SUITE = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
             val TEST_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
             const val EPOCH = 5UL
             const val RAW_GROUP_ID = "groupId"
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val WELCOME_BUNDLE = WelcomeBundle(RAW_GROUP_ID, null)
-            val TIME = DateTimeUtil.currentIsoDateTimeString()
+            val TIME = Instant.DISTANT_PAST
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
-            val MLS_PUBLIC_KEY = MLSPublicKey(
-                Ed25519Key("gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw=".decodeBase64Bytes()),
-                KeyType.REMOVAL
+            val MLS_PUBLIC_KEY = MLSPublicKeys(
+                removal = mapOf(
+                    "ed25519" to "gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw="
+                )
             )
-            val CRYPTO_MLS_PUBLIC_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(MLS_PUBLIC_KEY)
+
+            val CRYPTO_MLS_PUBLIC_KEY: ByteArray = MLS_PUBLIC_KEY.removal?.get("ed25519")!!.decodeBase64Bytes()
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
                 "wire.com",
@@ -1786,7 +1820,6 @@ class MLSConversationRepositoryTest {
             )
             val WELCOME = "welcome".encodeToByteArray()
             val EXTERNAL_SENDER_KEY = ExternalSenderKey("externalSenderKey".encodeToByteArray())
-            val CRYPTO_MLS_EXTERNAL_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(EXTERNAL_SENDER_KEY)
             val COMMIT = "commit".encodeToByteArray()
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
             val PUBLIC_GROUP_STATE_BUNDLE = GroupInfoBundle(
@@ -1800,14 +1833,22 @@ class MLSConversationRepositoryTest {
             val WIRE_IDENTITY =
                 WireIdentity(
                     CRYPTO_CLIENT_ID,
-                    "user_handle",
+                    CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint",
+                    CredentialType.X509,
+                    x509Identity = WireIdentity.X509Identity(
+                        WireIdentity.Handle(
+                            "wireapp",
+                            "user_handle",
+                            "wire.com"
+                        ),
                     "User Test",
                     "domain.com",
                     "certificate",
-                    CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint",
                     serialNumber = "serialNumber",
-                    endTimestampSeconds = 1899105093
+                        notAfter = 1899105093,
+                        notBefore = 1899205093
+                    )
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
@@ -1822,14 +1863,14 @@ class MLSConversationRepositoryTest {
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
-                "2022-03-30T15:36:00.000Z",
+                Instant.UNIX_FIRST_DATE,
                 ConversationMembers(emptyList(), emptyList()),
                 TestConversation.NETWORK_USER_ID1.value
             )
             val MEMBER_LEAVE_EVENT = EventContentDTO.Conversation.MemberLeaveDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
-                "2022-03-30T15:36:00.000Z",
+                Instant.UNIX_FIRST_DATE,
                 ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT),
                 TestConversation.NETWORK_USER_ID1.value
             )

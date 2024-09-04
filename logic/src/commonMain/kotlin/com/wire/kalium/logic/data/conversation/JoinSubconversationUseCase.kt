@@ -34,8 +34,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailur
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import kotlinx.datetime.Clock
@@ -50,6 +50,7 @@ internal interface JoinSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 
+// TODO(refactor): usecase should not access API class directly, use SubconversationRepository instead
 internal class JoinSubconversationUseCaseImpl(
     private val conversationApi: ConversationApi,
     private val mlsConversationRepository: MLSConversationRepository,

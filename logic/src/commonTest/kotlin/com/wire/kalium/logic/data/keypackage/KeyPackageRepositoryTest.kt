@@ -25,23 +25,25 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangement.Companion.CIPHER_SUITE
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackage
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageRef
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -87,7 +89,7 @@ class KeyPackageRepositoryTest {
             .withClaimKeyPackagesSuccessful(Arrangement.USER_ID)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID), CIPHER_SUITE)
 
         result.shouldSucceed { keyPackageResult ->
             assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackageResult.successfullyFetchedKeyPackages)
@@ -104,7 +106,7 @@ class KeyPackageRepositoryTest {
             .withClaimKeyPackagesSuccessfulWithEmptyResponse(userWithout)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(userWith, userWithout))
+        val result = keyPackageRepository.claimKeyPackages(listOf(userWith, userWithout), CIPHER_SUITE)
 
         result.shouldSucceed { keyPackageResult ->
             assertEquals(
@@ -119,7 +121,7 @@ class KeyPackageRepositoryTest {
     }
 
     @Test
-    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessFailWithMissingKeyPackages() = runTest {
+    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
         val usersWithout = setOf(
             Arrangement.USER_ID.copy(value = "missingKP"),
             Arrangement.USER_ID.copy(value = "alsoMissingKP"),
@@ -132,25 +134,27 @@ class KeyPackageRepositoryTest {
             }
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(usersWithout.toList())
+        val result = keyPackageRepository.claimKeyPackages(usersWithout.toList(), CIPHER_SUITE)
 
-        result.shouldFail { failure ->
-            assertIs<CoreFailure.MissingKeyPackages>(failure)
+        result.shouldSucceed { keyPackages ->
+            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+            assertEquals(usersWithout, keyPackages.usersWithoutKeyPackagesAvailable)
         }
     }
 
     @Test
-    fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenResultShouldFailWithError() = runTest {
+    fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
 
         val (_, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
             .withClaimKeyPackagesSuccessfulWithEmptyResponse(Arrangement.USER_ID)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID), CIPHER_SUITE)
 
-        result.shouldFail { failure ->
-            assertEquals(CoreFailure.MissingKeyPackages(setOf(Arrangement.USER_ID)), failure)
+        result.shouldSucceed { keyPackages ->
+            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+            assertEquals(setOf(Arrangement.USER_ID), keyPackages.usersWithoutKeyPackagesAvailable)
         }
     }
 
@@ -162,7 +166,7 @@ class KeyPackageRepositoryTest {
             .withClaimKeyPackagesSuccessfulWithEmptyResponse(Arrangement.SELF_USER_ID)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID))
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID), CIPHER_SUITE)
 
         result.shouldSucceed { keyPackages ->
             assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
@@ -212,13 +216,23 @@ class KeyPackageRepositoryTest {
 
         suspend fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
             coEvery {
-                keyPackageApi.claimKeyPackages(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
+                keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
             }.returns(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
         suspend fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             coEvery {
-                keyPackageApi.claimKeyPackages(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
+                keyPackageApi.claimKeyPackages(
+                    eq(
+                        KeyPackageApi.Param.SkipOwnClient(
+                            userId.toApi(),
+                            SELF_CLIENT_ID.value,
+                            CIPHER_SUITE.tag
+                        )
+                    )
+                )
             }.returns(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
@@ -226,6 +240,7 @@ class KeyPackageRepositoryTest {
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100
+            val CIPHER_SUITE = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
             val KEY_PACKAGE_COUNT_DTO = KeyPackageCountDTO(KEY_PACKAGE_COUNT)
             val SELF_CLIENT_ID: ClientId = PlainId("client_self")
             val OTHER_CLIENT_ID: ClientId = PlainId("client_other")

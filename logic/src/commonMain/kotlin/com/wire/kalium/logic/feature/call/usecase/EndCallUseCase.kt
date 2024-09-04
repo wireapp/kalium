@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -46,6 +47,8 @@ interface EndCallUseCase {
 internal class EndCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
+    private val endCallListener: EndCallResultListener,
+    private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : EndCallUseCase {
 
@@ -55,8 +58,12 @@ internal class EndCallUseCaseImpl(
     override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
         callRepository.callsFlow().first().find {
             // This use case can be invoked while joining the call or when the call is established.
-            it.conversationId == conversationId &&
-                    (it.status == CallStatus.STILL_ONGOING || it.status == CallStatus.ESTABLISHED)
+            it.conversationId == conversationId && it.status in listOf(
+                CallStatus.STARTED,
+                CallStatus.INCOMING,
+                CallStatus.STILL_ONGOING,
+                CallStatus.ESTABLISHED
+            )
         }?.let {
             if (it.conversationType == Conversation.Type.GROUP) {
                 callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
@@ -69,5 +76,6 @@ internal class EndCallUseCaseImpl(
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
+        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback())
     }
 }

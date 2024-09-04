@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.getType
+import com.wire.kalium.logic.data.message.hasValidData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
@@ -38,6 +40,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
@@ -45,6 +48,7 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -52,7 +56,7 @@ internal interface ApplicationMessageHandler {
 
     suspend fun handleContent(
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: ProtoContent.Readable,
@@ -62,7 +66,7 @@ internal interface ApplicationMessageHandler {
     suspend fun handleDecryptionError(
         eventId: String,
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: MessageContent.FailedDecryption
@@ -85,6 +89,7 @@ internal class ApplicationMessageHandlerImpl(
     private val messageEncoder: MessageContentEncoder,
     private val receiptMessageHandler: ReceiptMessageHandler,
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
+    private val dataTransferEventHandler: DataTransferEventHandler,
     private val selfUserId: UserId
 ) : ApplicationMessageHandler {
 
@@ -93,7 +98,7 @@ internal class ApplicationMessageHandlerImpl(
     @Suppress("ComplexMethod", "LongMethod")
     override suspend fun handleContent(
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: ProtoContent.Readable
@@ -120,7 +125,7 @@ internal class ApplicationMessageHandlerImpl(
                     id = content.messageUid,
                     content = protoContent,
                     conversationId = conversationId,
-                    date = timestampIso,
+                    date = messageInstant,
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.Sent,
@@ -143,7 +148,7 @@ internal class ApplicationMessageHandlerImpl(
                     id = content.messageUid,
                     content = protoContent,
                     conversationId = conversationId,
-                    date = timestampIso,
+                    date = messageInstant,
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.Sent,
@@ -160,6 +165,7 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun processSignaling(signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
@@ -214,6 +220,8 @@ internal class ApplicationMessageHandlerImpl(
                 signaling.senderUserId,
                 content
             )
+
+            is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
         }
     }
 
@@ -282,7 +290,7 @@ internal class ApplicationMessageHandlerImpl(
     override suspend fun handleDecryptionError(
         eventId: String,
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: MessageContent.FailedDecryption
@@ -291,7 +299,7 @@ internal class ApplicationMessageHandlerImpl(
             id = eventId,
             content = content,
             conversationId = conversationId,
-            date = timestampIso,
+            date = messageInstant,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
             status = Message.Status.Sent,
@@ -303,6 +311,14 @@ internal class ApplicationMessageHandlerImpl(
     }
 }
 
-fun AssetContent.hasValidRemoteData() = this.remoteData.hasValidData()
+@Deprecated(
+    "This will be moved to another package",
+    ReplaceWith("com.wire.kalium.logic.data.message.hasValidRemoteData")
+)
+fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
 
-fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()
+@Deprecated(
+    "This will be moved to another package",
+    ReplaceWith("com.wire.kalium.logic.data.message.hasValidData")
+)
+fun AssetContent.RemoteData.hasValidData() = hasValidData()

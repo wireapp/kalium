@@ -19,8 +19,11 @@ package com.wire.kalium.logic.client
 
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
@@ -29,6 +32,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -122,23 +126,31 @@ class E2EIClientProviderTest {
     }
 
     @Test
-    fun givenIsNewClientTrue_whenGettingE2EIClient_newAcmeEnrollmentCalled()= runTest {
+    fun givenIsNewClientTrue_whenGettingE2EIClient_newAcmeEnrollmentCalled() = runTest {
+        val supportedCipherSuite = SupportedCipherSuite(
+            supported = listOf(
+                CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+                CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+            ),
+            default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+        )
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
                 dispatcher = this@runTest.testKaliumDispatcher
                 withGettingCoreCryptoSuccessful()
                 withGetNewAcmeEnrollmentSuccessful()
                 withSelfUser(TestUser.SELF)
+                withGetOrFetchMLSConfig(supportedCipherSuite)
             }
 
-        e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID,isNewClient = true).shouldSucceed()
+        e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID, isNewClient = true).shouldSucceed()
 
         coVerify {
             arrangement.userRepository.getSelfUser()
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any())
+            arrangement.coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -158,6 +170,10 @@ class E2EIClientProviderTest {
             )
 
             return this to e2eiClientProvider
+        }
+
+        override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+            coEvery { mlsClientProvider.getOrFetchMLSConfig() }.returns(result.right())
         }
     }
 }

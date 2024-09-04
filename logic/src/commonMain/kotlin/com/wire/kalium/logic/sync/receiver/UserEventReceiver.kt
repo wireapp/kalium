@@ -25,8 +25,6 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -45,6 +43,8 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
+import com.wire.kalium.logic.util.EventLoggingStatus
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -77,22 +77,15 @@ internal class UserEventReceiverImpl internal constructor(
         }
     }
 
-    private suspend fun handleUserUpdate(event: Event.User.Update) =
-        userRepository.updateUserFromEvent(event)
-            .onSuccess {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
-            }
+    private suspend fun handleUserUpdate(event: Event.User.Update): Either<CoreFailure, Unit> {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return userRepository.updateUserFromEvent(event)
+            .onSuccess { logger.logSuccess() }
             .onFailure {
-                kaliumLogger
-                    .logEventProcessing(
-                        if (it is StorageFailure.DataNotFound) EventLoggingStatus.SKIPPED else EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$it")
-                    )
+                logger.logComplete(
+                    if (it is StorageFailure.DataNotFound) EventLoggingStatus.SKIPPED else EventLoggingStatus.FAILURE,
+                    arrayOf("errorInfo" to it)
+                )
             }
             .flatMapLeft {
                 if (it is StorageFailure.DataNotFound) {
@@ -103,9 +96,11 @@ internal class UserEventReceiverImpl internal constructor(
                     Either.Left(it)
                 }
             }
+    }
 
-    private suspend fun handleNewConnection(event: Event.User.NewConnection, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> =
-        userRepository.fetchUserInfo(event.connection.qualifiedToId)
+    private suspend fun handleNewConnection(event: Event.User.NewConnection, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return userRepository.fetchUserInfo(event.connection.qualifiedToId)
             .flatMap {
                 val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
                     .map { it.connection.status }.getOrNull()
@@ -127,74 +122,39 @@ internal class UserEventReceiverImpl internal constructor(
                     }
                     .flatMap { legalHoldHandler.handleNewConnection(event) }
             }
-            .onSuccess {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
-            }
-            .onFailure {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$it")
-                    )
-            }
+            .onSuccess { logger.logSuccess() }
+            .onFailure { logger.logFailure(it) }
+    }
 
-    private suspend fun handleClientRemove(event: Event.User.ClientRemove): Either<CoreFailure, Unit> =
-        currentClientIdProvider().map { currentClientId ->
+    private suspend fun handleClientRemove(event: Event.User.ClientRemove): Either<CoreFailure, Unit> {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return currentClientIdProvider().map { currentClientId ->
             if (currentClientId == event.clientId) {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event,
-                        Pair("info", "CURRENT_CLIENT")
-                    )
-                logout(LogoutReason.REMOVED_CLIENT)
+                logger.logSuccess("info" to "CURRENT_CLIENT")
+                logout(LogoutReason.REMOVED_CLIENT, waitUntilCompletes = true)
             } else {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event,
-                        Pair("info", "OTHER_CLIENT")
-                    )
+                logger.logSuccess("info" to "OTHER_CLIENT")
             }
         }
+    }
 
-    private suspend fun handleNewClient(event: Event.User.NewClient): Either<CoreFailure, Unit> =
-        clientRepository.saveNewClientEvent(event)
-            .onSuccess {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
-            }
-            .onFailure {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$it")
-                    )
-            }
+    private suspend fun handleNewClient(event: Event.User.NewClient): Either<CoreFailure, Unit> {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return clientRepository.saveNewClientEvent(event)
+            .onSuccess { logger.logSuccess() }
+            .onFailure { logger.logFailure(it) }
+    }
 
-    private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> =
-        if (selfUserId == event.userId) {
-            logout(LogoutReason.DELETED_ACCOUNT)
+    private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return if (selfUserId == event.userId) {
+            logout(LogoutReason.DELETED_ACCOUNT, waitUntilCompletes = true)
             Either.Right(Unit)
         } else {
             userRepository.markUserAsDeletedAndRemoveFromGroupConversations(event.userId)
                 .map { Unit }
-                .onFailure {
-                    kaliumLogger
-                        .logEventProcessing(
-                            EventLoggingStatus.FAILURE,
-                            event,
-                            Pair("errorInfo", "$it")
-                        )
-                }
+                .onSuccess { logger.logSuccess() }
+                .onFailure { logger.logFailure(it) }
         }
+    }
 }

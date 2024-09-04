@@ -23,6 +23,7 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
@@ -31,15 +32,16 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
-import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.TestVideoType
+import com.wire.kalium.logic.data.call.MLSCallHelperImpl
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -47,6 +49,7 @@ import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -55,6 +58,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.call.scenario.CallingMessageSender
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
@@ -71,12 +75,12 @@ import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.encodeBase64
@@ -89,6 +93,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.util.Collections
@@ -99,16 +104,21 @@ class CallManagerImpl internal constructor(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val selfConversationIdProvider: SelfConversationIdProvider,
+    selfConversationIdProvider: SelfConversationIdProvider,
     private val conversationRepository: ConversationRepository,
-    private val messageSender: MessageSender,
+    messageSender: MessageSender,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val networkStateObserver: NetworkStateObserver,
+    private val getCallConversationType: GetCallConversationTypeProvider,
+    private val subconversationRepository: SubconversationRepository,
+    private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs,
+    private val mediaManagerService: MediaManagerService,
+    private val flowManagerService: FlowManagerService,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
@@ -117,6 +127,14 @@ class CallManagerImpl internal constructor(
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
+
+    private val callingMessageSender = CallingMessageSender(
+        deferredHandle,
+        calling,
+        messageSender,
+        scope,
+        selfConversationIdProvider
+    )
 
     private val strongReferences = Collections.synchronizedList(mutableListOf<Any>())
     private fun <T : Any> T.keepingStrongReference(): T {
@@ -140,7 +158,7 @@ class CallManagerImpl internal constructor(
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
-        callingLogger.i("$TAG -> metricsHandler")
+        callingLogger.i("Calling metrics: $metricsJson")
     }.keepingStrongReference()
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
@@ -155,6 +173,16 @@ class CallManagerImpl internal constructor(
 
     private fun startHandleAsync(): Deferred<Handle> {
         return scope.async(start = CoroutineStart.LAZY) {
+            val mediaManagerStartJob = launch {
+                callingLogger.i("$TAG: Starting MediaManager")
+                mediaManagerService.startMediaManager()
+            }
+            val flowManagerStartJob = launch {
+                callingLogger.i("$TAG: Starting FlowManager")
+                flowManagerService.startFlowManager()
+            }
+            joinAll(flowManagerStartJob, mediaManagerStartJob)
+            callingLogger.i("$TAG: Creating Handle")
             val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
             val selfClientId = clientId.await().value
 
@@ -171,15 +199,11 @@ class CallManagerImpl internal constructor(
                 }.keepingStrongReference(),
                 // TODO(refactor): inject all of these CallbackHandlers in class constructor
                 sendHandler = OnSendOTR(
-                    deferredHandle,
-                    calling,
-                    qualifiedIdMapper,
-                    selfUserId,
-                    selfClientId,
-                    messageSender,
-                    selfConversationIdProvider,
-                    scope,
-                    callMapper
+                    qualifiedIdMapper = qualifiedIdMapper,
+                    selfUserId = selfUserId,
+                    selfClientId = selfClientId,
+                    callMapper = callMapper,
+                    callingMessageSender = callingMessageSender,
                 ).keepingStrongReference(),
                 sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope)
                     .keepingStrongReference(),
@@ -190,8 +214,13 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
                     .keepingStrongReference(),
-                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper, networkStateObserver)
-                    .keepingStrongReference(),
+                closeCallHandler = OnCloseCall(
+                    callRepository = callRepository,
+                    mlsCallHelper = MLSCallHelperImpl(callRepository, subconversationRepository, userConfigRepository),
+                    networkStateObserver = networkStateObserver,
+                    scope = scope,
+                    qualifiedIdMapper = qualifiedIdMapper
+                ).keepingStrongReference(),
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
                     .keepingStrongReference(),
@@ -230,7 +259,6 @@ class CallManagerImpl internal constructor(
 
         if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {
             val currTime = System.currentTimeMillis()
-            val msgTime = message.date.toEpochMillis()
 
             val targetConversationId = if (message.isSelfMessage) {
                 content.conversationId ?: message.conversationId
@@ -238,16 +266,15 @@ class CallManagerImpl internal constructor(
                 message.conversationId
             }
 
-            val type = conversationRepository.getConversationById(targetConversationId)?.let {
-                callMapper.fromConversationToConversationType(it)
-            } ?: ConversationType.Unknown
+            val callConversationType = getCallConversationType(targetConversationId)
+            val type = callMapper.toConversationType(callConversationType)
 
             wcall_recv_msg(
                 inst = deferredHandle.await(),
                 msg = msg,
                 len = msg.size,
                 curr_time = Uint32_t(value = currTime / 1000),
-                msg_time = Uint32_t(value = msgTime / 1000),
+                msg_time = Uint32_t(value = message.date.epochSeconds),
                 convId = federatedIdMapper.parseToFederatedId(targetConversationId),
                 userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
                 clientId = message.senderClientId.value,
@@ -260,6 +287,7 @@ class CallManagerImpl internal constructor(
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
+        conversationTypeCalling: ConversationTypeCalling,
         isAudioCbr: Boolean
     ) {
         callingLogger.d(
@@ -267,9 +295,8 @@ class CallManagerImpl internal constructor(
                     "${conversationId.toLogString()}.."
         )
         val isCameraOn = callType == CallType.VIDEO
-        val type = conversationRepository.getConversationById(conversationId)?.let {
-            callMapper.fromConversationToConversationType(it)
-        } ?: ConversationType.Unknown
+
+        val type = callMapper.toConversationType(conversationTypeCalling)
 
         callRepository.createCall(
             conversationId = conversationId,
@@ -283,13 +310,12 @@ class CallManagerImpl internal constructor(
 
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
-            val avsConversationType = callMapper.toConversationTypeCalling(type)
             // TODO: Handle response. Possible failure?
             wcall_start(
                 deferredHandle.await(),
                 federatedIdMapper.parseToFederatedId(conversationId),
                 avsCallType.avsValue,
-                avsConversationType.avsValue,
+                conversationTypeCalling.avsValue,
                 isAudioCbr.toInt()
             )
 
@@ -386,6 +412,7 @@ class CallManagerImpl internal constructor(
                 kcall_set_wuser(handle)
 
             }
+
             TestVideoType.FAKE -> {
                 kcall_init(1)
                 kcall_set_local_user(selfUserId, selfClientId)
@@ -499,6 +526,13 @@ class CallManagerImpl internal constructor(
         initActiveSpeakersHandler()
         initRequestNewEpochHandler()
         initSelfUserMuteHandler()
+        initCallingMessageSender()
+    }
+
+    private fun initCallingMessageSender() {
+        scope.launch {
+            callingMessageSender.processQueue()
+        }
     }
 
     private fun initParticipantsHandler() {
@@ -507,8 +541,14 @@ class CallManagerImpl internal constructor(
                 val onParticipantListChanged = OnParticipantListChanged(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
-                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
-                    userRepository = userRepository,
+                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
+                    userConfigRepository = userConfigRepository,
+                    mlsCallHelper = MLSCallHelperImpl(
+                        callRepository = callRepository,
+                        subconversationRepository = subconversationRepository,
+                        userConfigRepository = userConfigRepository
+                    ),
+                    endCall = { endCall(it) },
                     callingScope = scope
                 ).keepingStrongReference()
 

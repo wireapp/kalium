@@ -33,7 +33,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
 
@@ -44,15 +44,15 @@ object TestEvent {
         TestConversation.ID,
         TestUser.USER_ID,
         members,
-        "2022-03-30T15:36:00.000Z"
+        Instant.UNIX_FIRST_DATE,
     )
 
-    fun memberLeave(eventId: String = "eventId", members: List<Member> = listOf()) = Event.Conversation.MemberLeave(
+    fun memberLeave(eventId: String = "eventId", members: List<UserId> = listOf()) = Event.Conversation.MemberLeave(
         eventId,
         TestConversation.ID,
         TestUser.USER_ID,
-        listOf(),
-        "2022-03-30T15:36:00.000Z",
+        members,
+        Instant.UNIX_FIRST_DATE,
         reason = MemberLeaveReason.Left
     )
 
@@ -109,7 +109,7 @@ object TestEvent {
         Connection(
             conversationId = "conversationId",
             from = "from",
-            lastUpdate = "lastUpdate",
+            lastUpdate = Instant.UNIX_FIRST_DATE,
             qualifiedConversationId = TestConversation.ID,
             qualifiedToId = TestUser.USER_ID,
             status = status,
@@ -129,7 +129,7 @@ object TestEvent {
         TestConversation.ID,
         "newName",
         TestUser.USER_ID,
-        "2022-03-30T15:36:00.000Z"
+        Instant.UNIX_FIRST_DATE,
     )
 
     fun receiptModeUpdate(eventId: String = "eventId") = Event.Conversation.ConversationReceiptMode(
@@ -139,11 +139,19 @@ object TestEvent {
         senderUserId = TestUser.USER_ID
     )
 
+    fun accessUpdate(eventId: String = "eventId") = Event.Conversation.AccessUpdate(
+        id = eventId,
+        conversationId = TestConversation.ID,
+        access = setOf(Conversation.Access.PRIVATE),
+        accessRole = setOf(Conversation.AccessRole.TEAM_MEMBER, Conversation.AccessRole.SERVICE),
+        qualifiedFrom = TestUser.USER_ID
+    )
+
     fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
         eventId,
         teamId = "teamId",
         memberId = "memberId",
-        timestampIso = "2022-03-30T15:36:00.000Z",
+        Instant.UNIX_FIRST_DATE,
     )
 
     fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
@@ -151,7 +159,7 @@ object TestEvent {
         conversationId = TestConversation.ID,
         messageTimer = 3000,
         senderUserId = TestUser.USER_ID,
-        timestampIso = "2022-03-30T15:36:00.000Z"
+        Instant.UNIX_FIRST_DATE,
     )
 
     fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(
@@ -168,26 +176,26 @@ object TestEvent {
         TestConversation.ID,
         senderUserId,
         TestClient.CLIENT_ID,
-        "time",
+        Instant.UNIX_FIRST_DATE,
         encryptedContent,
         encryptedExternalContent
     )
 
     fun newMLSMessageEvent(
-        timestamp: Instant
+        dateTime: Instant
     ) = Event.Conversation.NewMLSMessage(
         "eventId",
         TestConversation.ID,
         null,
         TestUser.USER_ID,
-        timestamp.toIsoDateTimeString(),
+        dateTime,
         "content".encodeBase64(),
     )
 
     fun newConversationEvent() = Event.Conversation.NewConversation(
         id = "eventId",
         conversationId = TestConversation.ID,
-        timestampIso = "timestamp",
+        dateTime = Instant.UNIX_FIRST_DATE,
         conversation = TestConversation.CONVERSATION_RESPONSE,
         senderUserId = TestUser.SELF.id
     )
@@ -198,13 +206,6 @@ object TestEvent {
         TestUser.USER_ID,
         "dummy-message",
         timestampIso = "2022-03-30T15:36:00.000Z"
-    )
-
-    fun newAccessUpdateEvent() = Event.Conversation.AccessUpdate(
-        id = "eventId",
-        conversationId = TestConversation.ID,
-        data = TestConversation.CONVERSATION_RESPONSE,
-        qualifiedFrom = TestUser.USER_ID,
     )
 
     fun codeUpdated() = Event.Conversation.CodeUpdated(

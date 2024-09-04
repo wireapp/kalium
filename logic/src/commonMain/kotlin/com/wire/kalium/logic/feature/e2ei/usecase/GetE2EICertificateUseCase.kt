@@ -17,38 +17,30 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
-import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 
 /**
  * This use case is used to get the e2ei certificate
  */
-interface GetE2eiCertificateUseCase {
-    suspend operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult
+interface GetMLSClientIdentityUseCase {
+    suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity>
 }
 
-class GetE2eiCertificateUseCaseImpl internal constructor(
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val certificateStatusMapper: CertificateStatusMapper
-) : GetE2eiCertificateUseCase {
-    override suspend operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult =
-        mlsConversationRepository.getClientIdentity(clientId).fold(
-            { GetE2EICertificateUseCaseResult.Failure },
-            {
+class GetMLSClientIdentityUseCaseImpl internal constructor(
+    private val mlsConversationRepository: MLSConversationRepository
+) : GetMLSClientIdentityUseCase {
+    override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity> =
+        mlsConversationRepository.getClientIdentity(clientId).flatMap {
                 it?.let {
-                    E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)?.let { certificate ->
-                        GetE2EICertificateUseCaseResult.Success(certificate)
-                    }
-                } ?: GetE2EICertificateUseCaseResult.NotActivated
+                    MLSClientIdentity.fromWireIdentity(it).right()
+                } ?: StorageFailure.DataNotFound.left()
             }
-        )
-}
-
-sealed class GetE2EICertificateUseCaseResult {
-    class Success(val certificate: E2eiCertificate) : GetE2EICertificateUseCaseResult()
-    data object NotActivated : GetE2EICertificateUseCaseResult()
-    data object Failure : GetE2EICertificateUseCaseResult()
 }

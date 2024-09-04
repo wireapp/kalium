@@ -20,15 +20,13 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
-import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.cache.FlowCache
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted.Companion.Lazily
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
@@ -148,20 +146,21 @@ class UserMapper {
         userId: QualifiedIDEntity,
         name: String?,
         assetId: QualifiedIDEntity?,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        accentId: Int
     ) = UserEntityMinimized(
         userId,
         name,
         assetId,
-        userTypeEntity
+        userTypeEntity,
+        accentId
     )
 }
 
 @Suppress("TooManyFunctions")
 class UserDAOImpl internal constructor(
     private val userQueries: UsersQueries,
-    private val userCache: Cache<UserIDEntity, Flow<UserDetailsEntity?>>,
-    private val databaseScope: CoroutineScope,
+    private val userCache: FlowCache<UserIDEntity, UserDetailsEntity?>,
     private val queriesContext: CoroutineContext
 ) : UserDAO {
 
@@ -276,7 +275,6 @@ class UserDAOImpl internal constructor(
                 .asFlow()
                 .mapToOneOrNull()
                 .map { it?.let { mapper.toDetailsModel(it) } }
-                .shareIn(databaseScope, Lazily, 1)
         }
 
     override suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?> =
@@ -286,9 +284,16 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
         withContext(queriesContext) {
-            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
-                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType, accentId ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
             }.executeAsOneOrNull()
+        }
+
+    override suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized> =
+        withContext(queriesContext) {
+            userQueries.selectMinimizedByQualifiedId(qualifiedIDs) { qualifiedId, name, completeAssetId, userType, accentId ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
+            }.executeAsList()
         }
 
     override suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity> =
@@ -440,6 +445,13 @@ class UserDAOImpl internal constructor(
             userQueries.updateOneOnOnConversationId(conversationId, userId)
         }
 
+    override suspend fun updateActiveOneOnOneConversationIfNotSet(
+        userId: QualifiedIDEntity,
+        conversationId: QualifiedIDEntity,
+    ) = withContext(queriesContext) {
+        userQueries.setOneOnOneConversationIdIfNotSet(conversationId, userId)
+    }
+
     override suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>) {
         withContext(queriesContext) {
             userQueries.transaction {
@@ -456,5 +468,9 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity? = withContext(queriesContext) {
         userQueries.selectOneOnOnConversationId(userId).executeAsOneOrNull()?.active_one_on_one_conversation_id
+    }
+
+    override suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity? = withContext(queriesContext) {
+        userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).executeAsOneOrNull()
     }
 }

@@ -207,9 +207,9 @@ class GetIncomingCallsUseCaseTest {
         }
 
         suspend fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Conversation>): Arrangement {
-            coEvery { conversationRepository.baseInfoById(any()) }
+            coEvery { conversationRepository.getConversationById(any()) }
             coEvery {
-                conversationRepository.baseInfoById(any())
+                conversationRepository.getConversationById(any())
             }.invokes { id -> detailsGetter(id.first() as ConversationId) }
             return this
         }

@@ -33,9 +33,9 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
-import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
-import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
+import com.wire.kalium.network.api.unbound.acme.ACMEResponse
+import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
@@ -43,7 +43,6 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject

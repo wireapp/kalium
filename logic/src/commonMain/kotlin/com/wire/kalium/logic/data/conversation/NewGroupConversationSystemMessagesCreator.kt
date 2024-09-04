@@ -29,11 +29,12 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 /**
  * This class is responsible to generate system messages for new group conversations.
@@ -41,10 +42,14 @@ import com.wire.kalium.util.DateTimeUtil
  */
 internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationStarted(conversation: ConversationEntity): Either<CoreFailure, Unit>
-    suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse): Either<CoreFailure, Unit>
+    suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse, instant: Instant): Either<CoreFailure, Unit>
     suspend fun conversationReadReceiptStatus(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun conversationReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
-    suspend fun conversationResolvedMembersAdded(conversationId: ConversationIDEntity, validUsers: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun conversationReadReceiptStatus(conversation: ConversationResponse, instant: Instant): Either<CoreFailure, Unit>
+    suspend fun conversationResolvedMembersAdded(
+        conversationId: ConversationIDEntity,
+        validUsers: List<UserId>,
+        instant: Instant = Clock.System.now()
+    ): Either<CoreFailure, Unit>
 
     suspend fun conversationFailedToAddMembers(
         conversationId: ConversationId,
@@ -52,7 +57,10 @@ internal interface NewGroupConversationSystemMessagesCreator {
         type: MessageContent.MemberChange.FailedToAdd.Type,
     ): Either<CoreFailure, Unit>
 
-    suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun conversationStartedUnverifiedWarning(
+        conversationId: ConversationId,
+        instant: Instant = Clock.System.now()
+    ): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -72,22 +80,27 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         )
     }
 
-    override suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse) = run {
+    override suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse, instant: Instant) = run {
         if (conversation.type != ConversationResponse.Type.GROUP) {
             return Either.Right(Unit)
         }
         persistConversationStartedSystemMessage(
             creatorId,
-            conversation.id.toModel()
+            conversation.id.toModel(),
+            instant
         )
     }
 
-    private suspend fun persistConversationStartedSystemMessage(creatorId: UserId, conversationId: ConversationId) = persistMessage(
+    private suspend fun persistConversationStartedSystemMessage(
+        creatorId: UserId,
+        conversationId: ConversationId,
+        instant: Instant = Clock.System.now()
+    ) = persistMessage(
         Message.System(
             id = uuid4().toString(),
             content = MessageContent.ConversationCreated,
             conversationId = conversationId,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = instant,
             senderUserId = creatorId,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
@@ -107,7 +120,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         )
     }
 
-    override suspend fun conversationReadReceiptStatus(conversation: ConversationResponse) = run {
+    override suspend fun conversationReadReceiptStatus(conversation: ConversationResponse, instant: Instant) = run {
         if (conversation.type != ConversationResponse.Type.GROUP || !isSelfATeamMember()) {
             return Either.Right(Unit)
         }
@@ -115,20 +128,22 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         persistReadReceiptSystemMessage(
             conversationId = conversation.id.toModel(),
             creatorId = conversation.creator?.let { qualifiedIdMapper.fromStringToQualifiedID(it) } ?: selfUserId,
-            receiptMode = conversation.receiptMode == ReceiptMode.ENABLED
+            receiptMode = conversation.receiptMode == ReceiptMode.ENABLED,
+            instant = instant
         )
     }
 
     private suspend fun persistReadReceiptSystemMessage(
         conversationId: ConversationId,
         creatorId: UserId,
-        receiptMode: Boolean
+        receiptMode: Boolean,
+        instant: Instant = Clock.System.now()
     ) = persistMessage(
         Message.System(
             id = uuid4().toString(),
             content = MessageContent.NewConversationReceiptMode(receiptMode = receiptMode),
             conversationId = conversationId,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = instant,
             senderUserId = creatorId,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
@@ -139,6 +154,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     override suspend fun conversationResolvedMembersAdded(
         conversationId: ConversationIDEntity,
         validUsers: List<UserId>,
+        instant: Instant
     ): Either<CoreFailure, Unit> = run {
         if (validUsers.isNotEmpty()) {
             persistMessage(
@@ -146,7 +162,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     id = uuid4().toString(),
                     content = MessageContent.MemberChange.CreationAdded(validUsers.toList()),
                     conversationId = conversationId.toModel(),
-                    date = DateTimeUtil.currentIsoDateTimeString(),
+                    date = instant,
                     senderUserId = selfUserId,
                     status = Message.Status.Sent,
                     visibility = Message.Visibility.VISIBLE,
@@ -168,7 +184,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     uuid4().toString(),
                     MessageContent.MemberChange.FailedToAdd(userIdList, type),
                     conversationId,
-                    DateTimeUtil.currentIsoDateTimeString(),
+                    Clock.System.now(),
                     selfUserId,
                     Message.Status.Sent,
                     Message.Visibility.VISIBLE,
@@ -179,13 +195,16 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         Either.Right(Unit)
     }
 
-    override suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun conversationStartedUnverifiedWarning(
+        conversationId: ConversationId,
+        instant: Instant
+    ): Either<CoreFailure, Unit> =
         persistMessage(
             Message.System(
                 uuid4().toString(),
                 MessageContent.ConversationStartedUnverifiedWarning,
                 conversationId,
-                DateTimeUtil.currentIsoDateTimeString(),
+                instant,
                 selfUserId,
                 Message.Status.Sent,
                 Message.Visibility.VISIBLE,

@@ -25,15 +25,16 @@ import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 
@@ -107,6 +108,7 @@ internal class MLSMigratorImpl(
                         )
                     }
                 }
+                kaliumLogger.i("migrating ${conversationId.toLogString()} to mls")
                 establishConversation(conversationId)
             }.flatMapLeft {
                 kaliumLogger.w("failed to migrate ${conversationId.toLogString()} to mixed: $it")
@@ -135,12 +137,14 @@ internal class MLSMigratorImpl(
             .flatMap { protocolInfo ->
                 when (protocolInfo) {
                     is Conversation.ProtocolInfo.Mixed -> {
-                        mlsConversationRepository.establishMLSGroup(protocolInfo.groupId, emptyList())
-                            .flatMap {
-                                conversationRepository.getConversationMembers(conversationId).flatMap { members ->
-                                    mlsConversationRepository.addMemberToMLSGroup(protocolInfo.groupId, members)
-                                }
-                            }
+                        conversationRepository.getConversationMembers(conversationId).flatMap { members ->
+                            mlsConversationRepository.establishMLSGroup(
+                                protocolInfo.groupId,
+                                members,
+                                allowSkippingUsersWithoutKeyPackages = true
+                            )
+                        }
+                        Unit.right()
                     }
                     else -> Either.Right(Unit)
                 }

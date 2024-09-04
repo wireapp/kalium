@@ -29,6 +29,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -42,6 +43,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -56,17 +58,16 @@ class LegalHoldSystemMessagesHandlerTest {
     @Test
     fun givenNoLastLegalHoldEnabledMessageForConversation_whenHandlingEnableForUser_thenCreateNewSystemMessage() = runTest {
         // given
-        val timestampIso = "2022-03-30T15:36:00.000Z"
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
             .arrange()
         // when
-        handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
+        handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
         coVerify {
             arrangement.persistMessage.invoke(matches {
-                it.content is MessageContent.LegalHold.ForMembers.Enabled && it.date == timestampIso
+                it.content is MessageContent.LegalHold.ForMembers.Enabled && it.date == Instant.UNIX_FIRST_DATE
                         && (it.content as MessageContent.LegalHold.ForMembers.Enabled).members == listOf(TestUser.OTHER_USER_ID)
             })
         }.wasInvoked(exactly = once)
@@ -78,14 +79,13 @@ class LegalHoldSystemMessagesHandlerTest {
     @Test
     fun givenLastLegalHoldEnabledMessageForConversation_whenHandlingEnableForUser_thenUpdateExistingSystemMessage() = runTest {
         // given
-        val timestampIso = "2022-03-30T15:36:00.000Z"
         val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Enabled(listOf(TestUser.OTHER_USER_ID_2)))
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to legalHoldMessage))
             .arrange()
         // when
-        handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
+        handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
         coVerify {
             arrangement.persistMessage.invoke(any())
@@ -102,19 +102,20 @@ class LegalHoldSystemMessagesHandlerTest {
     @Test
     fun givenNoLastLegalHoldDisabledMessageForConversation_whenHandlingDisableForUser_thenCreateNewSystemMessage() = runTest {
         // given
-        val timestampIso = "2022-03-30T15:36:00.000Z"
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
             .arrange()
         // when
-        handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
+        handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
         coVerify {
-            arrangement.persistMessage.invoke(matches {
-                it.content is MessageContent.LegalHold.ForMembers.Disabled && it.date == timestampIso
-                        && (it.content as MessageContent.LegalHold.ForMembers.Disabled).members == listOf(TestUser.OTHER_USER_ID)
-            })
+            arrangement.persistMessage.invoke(
+                matches {
+                    it.content is MessageContent.LegalHold.ForMembers.Disabled && it.date == Instant.UNIX_FIRST_DATE
+                            && (it.content as MessageContent.LegalHold.ForMembers.Disabled).members == listOf(TestUser.OTHER_USER_ID)
+                }
+            )
         }.wasInvoked(exactly = once)
         coVerify {
             arrangement.messageRepository.updateLegalHoldMessageMembers(any(), any(), any())
@@ -124,14 +125,13 @@ class LegalHoldSystemMessagesHandlerTest {
     @Test
     fun givenLastLegalHoldDisabledMessageForConversation_whenHandlingDisableForUser_thenUpdateExistingSystemMessage() = runTest {
         // given
-        val timestampIso = "2022-03-30T15:36:00.000Z"
         val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Disabled(listOf(TestUser.OTHER_USER_ID_2)))
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to legalHoldMessage))
             .arrange()
         // when
-        handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
+        handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
         coVerify {
             arrangement.persistMessage.invoke(any())
@@ -147,26 +147,24 @@ class LegalHoldSystemMessagesHandlerTest {
     @Test
     fun givenConversationId_whenHandlingEnableForConversation_thenCreateNewSystemMessage() = runTest {
         // given
-        val timestampIso = "2022-03-30T15:36:00.000Z"
         val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleEnabledForConversation(conversationId = TestConversation.CONVERSATION.id, timestampIso)
+        handler.handleEnabledForConversation(conversationId = TestConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
         // then
         coVerify {
-            arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Enabled && it.date == timestampIso })
+            arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Enabled && it.date == Instant.UNIX_FIRST_DATE })
         }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenConversationId_whenHandlingDisableForConversation_thenCreateNewSystemMessage() = runTest {
         // given
-        val timestampIso = "2022-03-30T15:36:00.000Z"
         val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleDisabledForConversation(conversationId = TestConversation.CONVERSATION.id, timestampIso)
+        handler.handleDisabledForConversation(conversationId = TestConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
         // then
         coVerify {
-            arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Disabled && it.date == timestampIso })
+            arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Disabled && it.date == Instant.UNIX_FIRST_DATE })
         }.wasInvoked(exactly = once)
     }
 
@@ -237,7 +235,7 @@ class LegalHoldSystemMessagesHandlerTest {
         id = TestMessage.TEST_MESSAGE_ID,
         content = content,
         conversationId = ConversationId("conv", "id"),
-        date = TestMessage.TEST_DATE_STRING,
+        date = TestMessage.TEST_DATE,
         senderUserId = TestMessage.TEST_SENDER_USER_ID,
         status = Message.Status.Pending,
         expirationData = null

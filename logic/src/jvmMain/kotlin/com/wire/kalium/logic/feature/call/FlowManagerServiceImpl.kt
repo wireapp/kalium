@@ -22,9 +22,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformView
+import kotlinx.coroutines.CoroutineScope
 
+@Suppress("UnusedPrivateProperty")
 actual class FlowManagerServiceImpl(
-    appContext: PlatformContext
+    appContext: PlatformContext,
+    scope: CoroutineScope
 ) : FlowManagerService {
     override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         kaliumLogger.w("setVideoPreview for JVM but not supported yet.")
@@ -38,7 +41,11 @@ actual class FlowManagerServiceImpl(
         TODO("Not yet implemented")
     }
 
-    override fun setUIRotation(rotation: Int) {
+    override suspend fun setUIRotation(rotation: Int) {
         kaliumLogger.w("setUIRotation for JVM but not supported yet.")
+    }
+
+    override suspend fun startFlowManager() {
+        kaliumLogger.w("FlowManager not fully supported on JVM.")
     }
 }

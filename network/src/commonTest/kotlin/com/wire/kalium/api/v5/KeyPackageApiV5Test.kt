@@ -21,7 +21,7 @@ package com.wire.kalium.api.v5
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.KeyPackageJson
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v5.authenticated.KeyPackageApiV5
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -74,11 +74,12 @@ internal class KeyPackageApiV5Test : ApiTest() {
             assertion = {
                 assertPost()
                 assertPathEqual(KEY_PACKAGE_CLAIM_PATH)
+                assertQueryParameter("cipherSuite", "$cipherSuite")
             }
         )
         val keyPackageApi: KeyPackageApi = KeyPackageApiV5(networkClient)
 
-        val response = keyPackageApi.claimKeyPackages(KeyPackageApi.Param.IncludeOwnClient(VALID_USER_ID))
+        val response = keyPackageApi.claimKeyPackages(KeyPackageApi.Param.IncludeOwnClient(VALID_USER_ID, cipherSuite))
         assertTrue(response.isSuccessful())
         assertEquals(response.value, VALID_CLAIM_KEY_PACKAGES_RESPONSE.serializableData)
     }
@@ -92,5 +93,6 @@ internal class KeyPackageApiV5Test : ApiTest() {
         const val KEY_PACKAGE_COUNT_PATH = "/mls/key-packages/self/$VALID_CLIENT_ID/count"
         const val KEY_PACKAGE_UPLOAD_PATH = "/mls/key-packages/self/$VALID_CLIENT_ID"
         val KEY_PACKAGE_CLAIM_PATH = "/mls/key-packages/claim/${VALID_USER_ID.domain}/${VALID_USER_ID.value}"
+        val cipherSuite = 2
     }
 }

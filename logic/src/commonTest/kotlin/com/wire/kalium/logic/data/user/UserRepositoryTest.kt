@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
@@ -45,13 +46,15 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
+import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
-import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
-import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.PartialUserEntity
@@ -690,7 +693,8 @@ class UserRepositoryTest {
             id = QualifiedIDEntity("id", "domain"),
             name = "Max",
             userType = UserTypeEntity.ADMIN,
-            completeAssetId = null
+            completeAssetId = null,
+            accentId = 0
         )
         val (arrangement, userRepository) = Arrangement()
             .withUserDAOReturning(userMinimized)
@@ -755,7 +759,7 @@ class UserRepositoryTest {
         val userIdFailed = TestUser.OTHER_USER_ID.copy(value = "idFailed")
         val requestedUserIds = setOf(userIdWithConsent, userIdWithoutConsent, userIdFailed)
         val expectedResult = ListUsersLegalHoldConsent(
-            usersWithConsent = listOf(userIdWithConsent),
+            usersWithConsent = listOf(userIdWithConsent to TeamId("teamId")),
             usersWithoutConsent = listOf(userIdWithoutConsent),
             usersFailed = listOf(userIdFailed),
         )
@@ -884,10 +888,10 @@ class UserRepositoryTest {
             }.returns(NetworkResponse.Error(TestNetworkException.generic))
         }
 
-        suspend fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {
+        suspend fun withSuccessfulFetchTeamMembersByIds(result: List<TeamMemberDTO>) = apply {
             coEvery {
                 teamsApi.getTeamMembersByIds(any(), any())
-            }.returns(NetworkResponse.Success(TeamsApi.TeamMemberListNonPaginated(false, result), mapOf(), 200))
+            }.returns(NetworkResponse.Success(TeamMemberListNonPaginated(false, result), mapOf(), 200))
         }
 
         suspend fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {
@@ -1019,7 +1023,7 @@ class UserRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withGetTeamMemberSuccess(result: TeamsApi.TeamMemberDTO) = apply {
+        suspend fun withGetTeamMemberSuccess(result: TeamMemberDTO) = apply {
             coEvery {
                 teamsApi.getTeamMember(any(), any())
             }.returns(NetworkResponse.Success(result, mapOf(), 200))

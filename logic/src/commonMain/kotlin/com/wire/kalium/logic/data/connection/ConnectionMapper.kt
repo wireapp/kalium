@@ -28,12 +28,8 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 
 interface ConnectionMapper {
     fun fromApiToDao(state: ConnectionDTO): ConnectionEntity
@@ -52,7 +48,7 @@ internal class ConnectionMapperImpl(
     override fun fromApiToDao(state: ConnectionDTO): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversationId,
         from = state.from,
-        lastUpdateDate = state.lastUpdate.safeDateToInstant(),
+        lastUpdateDate = state.lastUpdate,
         qualifiedConversationId = idMapper.fromApiToDao(state.qualifiedConversationId),
         qualifiedToId = idMapper.fromApiToDao(state.qualifiedToId),
         status = statusMapper.fromApiToDao(state.status),
@@ -63,7 +59,7 @@ internal class ConnectionMapperImpl(
         Connection(
             conversationId = conversationId,
             from = from,
-            lastUpdate = lastUpdateDate.toIsoDateTimeString(),
+            lastUpdate = lastUpdateDate,
             qualifiedConversationId = qualifiedConversationId.toModel(),
             qualifiedToId = qualifiedToId.toModel(),
             status = statusMapper.fromDaoModel(status),
@@ -79,7 +75,7 @@ internal class ConnectionMapperImpl(
             conversationId = qualifiedConversationId.toModel(),
             otherUser = otherUser?.let { userMapper.fromUserEntityToOtherUser(it) },
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
-            lastModifiedDate = lastUpdateDate.toIsoDateTimeString(),
+            lastModifiedDate = lastUpdateDate,
             connection = fromDaoToModel(this),
             protocolInfo = ProtocolInfo.Proteus,
             // TODO(qol): need to be refactored
@@ -101,12 +97,10 @@ internal class ConnectionMapperImpl(
     override fun modelToDao(state: Connection): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversationId,
         from = state.from,
-        lastUpdateDate = state.lastUpdate.safeDateToInstant(),
+        lastUpdateDate = state.lastUpdate,
         qualifiedConversationId = state.qualifiedConversationId.toDao(),
         qualifiedToId = state.qualifiedToId.toDao(),
         status = statusMapper.toDaoModel(state.status),
         toId = state.toId,
     )
-
-    private fun String.safeDateToInstant() = takeIf { it.isNotBlank() }?.toInstant() ?: Instant.UNIX_FIRST_DATE
 }

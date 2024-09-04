@@ -45,13 +45,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
-import com.wire.kalium.network.api.base.unbound.acme.ACMEAuthorizationResponse
-import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
-import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
-import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
-import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
+import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
+import com.wire.kalium.network.api.unbound.acme.ACMEResponse
+import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
@@ -67,7 +67,6 @@ import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import pbandk.ByteArr
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -942,7 +941,7 @@ class E2EIRepositoryTest {
     @Test
     fun givenE2EIIsDisabled_whenCallingDiscoveryUrl_thenItFailWithDisabled() {
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(false, null, Instant.DISTANT_FUTURE)))
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(false, null, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldFail {
@@ -957,7 +956,7 @@ class E2EIRepositoryTest {
     @Test
     fun givenE2EIIsEnabledAndDiscoveryUrlIsNull_whenCallingDiscoveryUrl_thenItFailWithMissingDiscoveryUrl() {
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, null, Instant.DISTANT_FUTURE)))
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, null, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldFail {
@@ -972,7 +971,7 @@ class E2EIRepositoryTest {
     @Test
     fun givenE2EIIsEnabledAndDiscoveryUrlIsNotNull_whenCallingDiscoveryUrl_thenItSucceed() {
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, RANDOM_URL, Instant.DISTANT_FUTURE)))
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, RANDOM_URL, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldSucceed {
@@ -1330,7 +1329,7 @@ class E2EIRepositoryTest {
             val HEADERS = mapOf(NONCE_HEADER_KEY to RANDOM_NONCE.value, LOCATION_HEADER_KEY to RANDOM_URL)
 
             val E2EI_TEAM_SETTINGS = E2EISettings(
-                true, RANDOM_URL, DateTimeUtil.currentInstant()
+                true, RANDOM_URL, DateTimeUtil.currentInstant(), false, null
             )
         }
     }

@@ -44,6 +44,7 @@ import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class EndCallOnConversationChangeUseCaseTest {
@@ -175,7 +176,7 @@ class EndCallOnConversationChangeUseCaseTest {
                 endCall.invoke(eq(conversationId))
             }.returns(Unit)
             coEvery {
-                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded(eq(conversationId))
+                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded()
             }.returns(Unit)
 
             withEstablishedCallsFlow(listOf(call))
@@ -212,7 +213,7 @@ class EndCallOnConversationChangeUseCaseTest {
             lastModifiedDate = null,
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = Conversation.defaultGroupAccessRoles.toMutableList().apply { add(Conversation.AccessRole.GUEST) },
-            lastReadDate = "2022-04-04T16:11:28.388Z",
+            lastReadDate = Instant.parse("2022-04-04T16:11:28.388Z"),
             creatorId = null,
             receiptMode = Conversation.ReceiptMode.ENABLED,
             messageTimer = null,

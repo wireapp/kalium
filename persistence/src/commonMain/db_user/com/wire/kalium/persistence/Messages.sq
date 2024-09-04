@@ -42,6 +42,20 @@ CREATE INDEX message_status_index ON Message(status);
 CREATE INDEX message_expire_time_index ON Message(expire_after_millis);
 CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
+CREATE TABLE MessageLinkPreview (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      url TEXT NOT NULL,
+      url_offset INTEGER AS Int NOT NULL,
+      permanent_url TEXT,
+      title TEXT NOT NULL,
+      summary TEXT NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id, url_offset) -- there should not be any overlapping link previews
+);
+
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -305,8 +319,11 @@ DELETE FROM Message;
 deleteMessage:
 DELETE FROM Message WHERE id = ? AND conversation_id = ?;
 
+deleteMessageLinkPreviews:
+DELETE FROM MessageLinkPreview WHERE message_id = ? AND conversation_id = ?;
+
 deleteMessageMentions:
-DELETE FROM MessageMention WHERE  message_id = ? AND conversation_id = ?;
+DELETE FROM MessageMention WHERE message_id = ? AND conversation_id = ?;
 
 deleteMessageById:
 DELETE FROM Message WHERE id = ?;
@@ -347,6 +364,10 @@ insertOrIgnoreBulkSystemMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP');
 -- TODO: check if conversation type have an index
+
+insertMessageLinkPreview:
+INSERT OR IGNORE INTO MessageLinkPreview(message_id, conversation_id, url, url_offset, permanent_url, title, summary)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
 INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length, user_id)
@@ -497,7 +518,7 @@ SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? A
 selectByConversationIdAndSenderIdAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND contentType = ?;
 
-selectPendingMessagesIdsByConversationIdAndVisibilityAfterDate:
+selectMessageIdsThatExpectReadConfirmationWithinDates:
 SELECT Message.id
 FROM Message
 LEFT JOIN SelfUser
@@ -506,7 +527,8 @@ WHERE
     Message.conversation_id = ?
     AND Message.visibility IN ?
     AND (Message.expects_read_confirmation = 1)
-    AND Message.creation_date > Conversation.last_read_date
+    AND Message.creation_date > ?
+    AND Message.creation_date <= ?
     AND (Message.sender_user_id != SelfUser.id)
 ORDER BY
     Message.creation_date DESC;

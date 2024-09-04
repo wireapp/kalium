@@ -22,10 +22,10 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toModel
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 
 interface FeatureConfigMapper {
@@ -131,7 +131,8 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
 
     override fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel =
         ConferenceCallingModel(
-            status = fromDTO(data.status)
+            status = fromDTO(data.status),
+            useSFTForOneOnOneCalls = data.config?.useSFTForOneToOneCalls ?: false
         )
 
     override fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel =
@@ -139,14 +140,18 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             E2EIModel(
                 E2EIConfigModel(
                     data.config.url,
-                    data.config.verificationExpirationSeconds
+                    data.config.verificationExpirationSeconds,
+                    data.config.shouldUseProxy == true,
+                    data.config.crlProxy
                 ),
                 fromDTO(data.status)
             )
         } ?: E2EIModel(
             E2EIConfigModel(
                 null,
-                0
+                0,
+                false,
+                null
             ),
             Status.DISABLED
         )
