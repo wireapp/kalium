@@ -85,6 +85,11 @@ interface ConversationMapper {
     fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus
 
     fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type
+
+    fun fromModelToDAOAccess(accessList: Set<Conversation.Access>): List<ConversationEntity.Access>
+    fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole>
+    fun fromApiModelToAccessModel(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access>
+    fun fromApiModelToAccessRoleModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -118,7 +123,8 @@ internal class ConversationMapperImpl(
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
-        accessRole = apiModel.accessRole.map { it.toDAO() },
+        accessRole = (apiModel.accessRole ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL)
+            .map { it.toDAO() },
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
         messageTimer = apiModel.messageTimer,
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
@@ -460,6 +466,18 @@ internal class ConversationMapperImpl(
     override fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type {
         return type.fromDaoModelToType()
     }
+
+    override fun fromModelToDAOAccess(accessList: Set<Conversation.Access>): List<ConversationEntity.Access> =
+        accessList.map { it.toDAO() }
+
+    override fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole> =
+        accessRoleList.map { it.toDAO() }
+
+    override fun fromApiModelToAccessModel(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access> =
+        accessList.map { it.toModel() }.toSet()
+
+    override fun fromApiModelToAccessRoleModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole> =
+        accessRoleList.map { it.toModel() }.toSet()
 }
 
 internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
@@ -550,6 +568,22 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
+}
+
+private fun ConversationAccessDTO.toModel(): Conversation.Access = when (this) {
+    ConversationAccessDTO.PRIVATE -> Conversation.Access.PRIVATE
+    ConversationAccessDTO.CODE -> Conversation.Access.CODE
+    ConversationAccessDTO.INVITE -> Conversation.Access.INVITE
+    ConversationAccessDTO.SELF_INVITE -> Conversation.Access.SELF_INVITE
+    ConversationAccessDTO.LINK -> Conversation.Access.LINK
+}
+
+private fun ConversationAccessRoleDTO.toModel(): Conversation.AccessRole = when (this) {
+    ConversationAccessRoleDTO.TEAM_MEMBER -> Conversation.AccessRole.TEAM_MEMBER
+    ConversationAccessRoleDTO.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
+    ConversationAccessRoleDTO.GUEST -> Conversation.AccessRole.GUEST
+    ConversationAccessRoleDTO.SERVICE -> Conversation.AccessRole.SERVICE
+    ConversationAccessRoleDTO.EXTERNAL -> Conversation.AccessRole.EXTERNAL
 }
 
 internal fun Conversation.Protocol.toApi(): ConvProtocol = when (this) {
