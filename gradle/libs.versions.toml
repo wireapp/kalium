@@ -66,6 +66,7 @@ benchmark = "0.4.10"
 jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.45.3.0"
+kotlinx-io = "0.5.3"
 
 [plugins]
 # Home-made convention plugins
@@ -102,6 +103,7 @@ ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json"
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
 ktx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "ktx-atomicfu" }
 ktxReactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
+ktxIO = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io"}
 
 # android dependencies
 appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
