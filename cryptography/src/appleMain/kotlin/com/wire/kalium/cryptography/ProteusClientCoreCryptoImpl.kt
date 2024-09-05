@@ -98,7 +98,10 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
         return wrapException {
-            coreCrypto.proteusEncryptBatched(sessionIds.map { it.value }, toUByteList((message))).mapNotNull { entry ->
+            coreCrypto.proteusEncryptBatched(
+                sessionId = sessionIds.map { it.value },
+                plaintext = toUByteList((message))
+            ).mapNotNull { entry ->
                 CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
                     sessionId to toByteArray(entry.value)
                 }
