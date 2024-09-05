@@ -144,6 +144,81 @@ moduleGraphConfig {
     heading.set("#### Dependency Graph")
 }
 
+tasks.register("runAllUnitTests") {
+    description = "Runs all Unit Tests."
+
+    rootProject.subprojects {
+        if (tasks.findByName("testDebugUnitTest") != null) {
+            println("Adding $name to runUnitTests")
+            dependsOn(":$name:testDebugUnitTest")
+        }
+        if (name != "cryptography") {
+            if (tasks.findByName("jvmTest") != null) {
+                println("Adding $name to jvmTest")
+                dependsOn(":$name:jvmTest")
+            }
+        }
+    }
+}
+
+tasks.register("aggregateTestResults") {
+    description = "Aggregates all Unit Test results into a single report."
+
+    doLast {
+        val testResultsDir = rootProject.layout.buildDirectory.dir("testResults").get().asFile
+        testResultsDir.deleteRecursively()
+        testResultsDir.mkdirs()
+
+        val indexHtmlFile = File(testResultsDir, "index.html")
+        indexHtmlFile.writeText(
+            """
+            <html>
+            <head>
+                <title>Aggregated Test Reports</title>
+            </head>
+            <body>
+                <h1>Aggregated Test Reports</h1>
+                <ul>
+        """.trimIndent()
+        )
+
+        rootProject.subprojects {
+            val testResultsParentDir = layout.buildDirectory.dir("reports/tests").get().asFile
+
+            if (testResultsParentDir.exists()) {
+                testResultsParentDir.listFiles()?.forEach { testDir ->
+                    if (testDir.isDirectory) {
+                        val subprojectDir = File(testResultsDir, "$name/${testDir.name}")
+                        subprojectDir.mkdirs()
+
+                        testDir.copyRecursively(subprojectDir, overwrite = true)
+
+                        indexHtmlFile.appendText(
+                            """
+                            <li><a href="./$name/${testDir.name}/index.html">$name - ${testDir.name} Report</a></li>
+                        """.trimIndent()
+                        )
+                    }
+                }
+            }
+        }
+
+        indexHtmlFile.appendText(
+            """
+                </ul>
+            </body>
+            </html>
+        """.trimIndent()
+        )
+
+        // Print the location of the aggregated test results directory
+        // relative to the current terminal working dir
+        val currentWorkingDir = File(System.getProperty("user.dir"))
+        val relativePath = testResultsDir.relativeTo(currentWorkingDir).path
+        println("Aggregated test reports are available at: $relativePath")
+    }
+}
+
 tasks.wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
