@@ -72,7 +72,11 @@ internal class AssetMessageHandlerImpl(
                             mimeType = messageContent.value.mimeType,
                             allowedExtension = it.state.allowedType
                         ).let { validateResult ->
-                            if (validateResult) AssetRestrictionContinuationStrategy.Continue else AssetRestrictionContinuationStrategy.Restrict
+                            if (validateResult) {
+                                AssetRestrictionContinuationStrategy.Continue
+                            } else {
+                                AssetRestrictionContinuationStrategy.Restrict
+                            }
                         }
                     }
                 }
