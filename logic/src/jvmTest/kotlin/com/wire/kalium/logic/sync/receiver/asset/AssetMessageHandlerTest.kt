@@ -420,6 +420,53 @@ class AssetMessageHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenFileWithNullNameAndCompleteData_whenProcessingCheckAPreviousAssetWithTheSameIDIsMissing_thenStoreAsRestricted() = runTest {
+        // Given
+        val messageCOntant = MessageContent.Asset(
+            AssetContent(
+                sizeInBytes = 100,
+                name = null,
+                mimeType = "",
+                metadata = null,
+                remoteData = AssetContent.RemoteData(
+                    otrKey = "otrKey".toByteArray(),
+                    sha256 = "sha256".toByteArray(),
+                    assetId = "some-asset-id",
+                    assetDomain = "some-asset-domain",
+                    assetToken = "some-asset-token",
+                    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+                ),
+                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+            )
+
+        )
+        val assetMessage = COMPLETE_ASSET_MESSAGE.copy(content = messageCOntant)
+
+        val storedMessage = assetMessage.copy(content = MessageContent.RestrictedAsset(mimeType = "", sizeInBytes = 100, name = ""))
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png", "zip"))
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(null)
+            .withSuccessfulPersistMessageUseCase(storedMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(assetMessage)
+
+        // Then
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(assetMessage.conversationId), eq(assetMessage.id))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock

@@ -51,31 +51,43 @@ internal class AssetMessageHandlerImpl(
         val messageContent = message.content
         userConfigRepository.isFileSharingEnabled().onSuccess {
             val isThisAssetAllowed = when (it.state) {
-                FileSharingStatus.Value.Disabled -> false
-                FileSharingStatus.Value.EnabledAll -> true
+                FileSharingStatus.Value.Disabled -> AssetRestrictionConinuationStatagy.Restrict
+                FileSharingStatus.Value.EnabledAll -> AssetRestrictionConinuationStatagy.Continue
 
                 is FileSharingStatus.Value.EnabledSome -> {
                     // If the asset message is missing the name, but it does have full
                     // asset data then we can not decide now if it is allowed or not
                     // it is safe to continue and the code later will check the original
                     // asset message and decide if it is allowed or not
-                    if (message.content.value.name.isNullOrEmpty() && message.content.value.isCompleteAssetData) {
+                    if (
+                        message.content.value.name.isNullOrEmpty() &&
+                        message.content.value.mimeType.isBlank() &&
+                        message.content.value.isCompleteAssetData
+                    ) {
                         kaliumLogger.e("The asset message trying to be processed has invalid data looking locally")
-                        true
+                        AssetRestrictionConinuationStatagy.RestrictIfThereIsNotOldMessageWithTheSameAssetID
                     } else {
                         validateAssetMimeTypeUseCase(
                             fileName = messageContent.value.name,
                             mimeType = messageContent.value.mimeType,
                             allowedExtension = it.state.allowedType
-                        )
+                        ).let { validateResult ->
+                            if (validateResult) AssetRestrictionConinuationStatagy.Continue else AssetRestrictionConinuationStatagy.Restrict
+                        }
                     }
                 }
             }
 
-            if (isThisAssetAllowed) {
-                processNonRestrictedAssetMessage(message, messageContent)
-            } else {
-                persistRestrictedAssetMessage(message, messageContent)
+            when (isThisAssetAllowed) {
+                AssetRestrictionConinuationStatagy.Continue -> processNonRestrictedAssetMessage(message, messageContent, false)
+                AssetRestrictionConinuationStatagy.RestrictIfThereIsNotOldMessageWithTheSameAssetID -> processNonRestrictedAssetMessage(
+                    message,
+                    messageContent,
+                    true
+                )
+
+                AssetRestrictionConinuationStatagy.Restrict -> persistRestrictedAssetMessage(message, messageContent)
+
             }
         }
     }
@@ -91,16 +103,25 @@ internal class AssetMessageHandlerImpl(
         persistMessage(newMessage)
     }
 
-    private suspend fun processNonRestrictedAssetMessage(processedMessage: Message.Regular, assetContent: MessageContent.Asset) {
+    private suspend fun processNonRestrictedAssetMessage(
+        processedMessage: Message.Regular,
+        assetContent: MessageContent.Asset,
+        restrictIfNotAFollowUpMessage: Boolean
+    ) {
         messageRepository.getMessageById(processedMessage.conversationId, processedMessage.id).onFailure {
             // No asset message was received previously, so just persist the preview of the asset message
             // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
             // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
             // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
-            val initialMessage = processedMessage.copy(
-                visibility = if (assetContent.value.isCompleteAssetData) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
-            )
-            persistMessage(initialMessage)
+
+            if (restrictIfNotAFollowUpMessage) {
+                persistRestrictedAssetMessage(processedMessage, assetContent)
+            } else {
+                val initialMessage = processedMessage.copy(
+                    visibility = if (assetContent.value.isCompleteAssetData) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
+                )
+                persistMessage(initialMessage)
+            }
         }.onSuccess { persistedMessage ->
             val validDecryptionKeys = assetContent.value.remoteData
             // Check the second asset message is from the same original sender
@@ -148,4 +169,10 @@ internal class AssetMessageHandlerImpl(
             visibility = if (remoteData.hasValidData()) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
         )
     }
+}
+
+private sealed interface AssetRestrictionConinuationStatagy {
+    data object Continue : AssetRestrictionConinuationStatagy
+    data object Restrict : AssetRestrictionConinuationStatagy
+    data object RestrictIfThereIsNotOldMessageWithTheSameAssetID : AssetRestrictionConinuationStatagy
 }
