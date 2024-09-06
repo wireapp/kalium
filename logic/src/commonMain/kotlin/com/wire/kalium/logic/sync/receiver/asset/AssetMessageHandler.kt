@@ -55,8 +55,10 @@ internal class AssetMessageHandlerImpl(
                 FileSharingStatus.Value.EnabledAll -> true
 
                 is FileSharingStatus.Value.EnabledSome -> {
-                    // If the asset message is missing the name, but it does have full asset data then we can not decide now if it is allowed or not
-                    // it is safe to continue and the code later will check the original asset message and decide if it is allowed or not
+                    // If the asset message is missing the name, but it does have full
+                    // asset data then we can not decide now if it is allowed or not
+                    // it is safe to continue and the code later will check the original
+                    // asset message and decide if it is allowed or not
                     if (message.content.value.name.isNullOrEmpty() && message.content.value.isCompleteAssetData) {
                         kaliumLogger.e("The asset message trying to be processed has invalid data looking locally")
                         true
