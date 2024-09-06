@@ -288,7 +288,7 @@ class AssetMessageHandlerTest {
 
         verify(arrangement.validateAssetMimeType)
             .suspendFunction(arrangement.validateAssetMimeType::invoke)
-            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType))
+            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq("application/zip"), eq(isFileSharingEnabled.allowedType))
             .wasInvoked(exactly = once)
     }
 
@@ -327,7 +327,7 @@ class AssetMessageHandlerTest {
 
         verify(arrangement.validateAssetMimeType)
             .suspendFunction(arrangement.validateAssetMimeType::invoke)
-            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType))
+            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq("application/zip"), eq(isFileSharingEnabled.allowedType))
             .wasInvoked(exactly = once)
     }
 
@@ -370,6 +370,56 @@ class AssetMessageHandlerTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenFileWithNullNameAndCompleteData_whenProcessingCheckAPreviousAssetWithTheSameIDIsRestricted_thenDoNotStore() = runTest {
+        // Given
+        val messageCOntant = MessageContent.Asset(
+            AssetContent(
+                sizeInBytes = 100,
+                name = null,
+                mimeType = "",
+                metadata = null,
+                remoteData = AssetContent.RemoteData(
+                    otrKey = "otrKey".toByteArray(),
+                    sha256 = "sha256".toByteArray(),
+                    assetId = "some-asset-id",
+                    assetDomain = "some-asset-domain",
+                    assetToken = "some-asset-token",
+                    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+                ),
+                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+            )
+
+        )
+        val assetMessage = COMPLETE_ASSET_MESSAGE.copy(content = messageCOntant)
+
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(
+            visibility = Message.Visibility.HIDDEN,
+            content = MessageContent.RestrictedAsset("application/zip", 500, "some-asset-name.zip.")
+        )
+
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png", "zip"))
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(assetMessage)
+
+        // Then
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(assetMessage.conversationId), eq(assetMessage.id))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -384,7 +434,8 @@ class AssetMessageHandlerTest {
         @Mock
         val validateAssetMimeType = mock(classOf<ValidateAssetFileTypeUseCase>())
 
-        private val assetMessageHandlerImpl = AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
+        private val assetMessageHandlerImpl =
+            AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
 
         fun withValidateAssetMime(result: Boolean) = apply {
             given(validateAssetMimeType)
