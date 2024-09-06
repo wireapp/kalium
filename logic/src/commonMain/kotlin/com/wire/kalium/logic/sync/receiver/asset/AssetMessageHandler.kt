@@ -51,8 +51,8 @@ internal class AssetMessageHandlerImpl(
         val messageContent = message.content
         userConfigRepository.isFileSharingEnabled().onSuccess {
             val isThisAssetAllowed = when (it.state) {
-                FileSharingStatus.Value.Disabled -> AssetRestrictionConinuationStatagy.Restrict
-                FileSharingStatus.Value.EnabledAll -> AssetRestrictionConinuationStatagy.Continue
+                FileSharingStatus.Value.Disabled -> AssetRestrictionContinuationStrategy.Restrict
+                FileSharingStatus.Value.EnabledAll -> AssetRestrictionContinuationStrategy.Continue
 
                 is FileSharingStatus.Value.EnabledSome -> {
                     // If the asset message is missing the name, but it does have full
@@ -65,28 +65,28 @@ internal class AssetMessageHandlerImpl(
                         message.content.value.isCompleteAssetData
                     ) {
                         kaliumLogger.e("The asset message trying to be processed has invalid data looking locally")
-                        AssetRestrictionConinuationStatagy.RestrictIfThereIsNotOldMessageWithTheSameAssetID
+                        AssetRestrictionContinuationStrategy.RestrictIfThereIsNotOldMessageWithTheSameAssetID
                     } else {
                         validateAssetMimeTypeUseCase(
                             fileName = messageContent.value.name,
                             mimeType = messageContent.value.mimeType,
                             allowedExtension = it.state.allowedType
                         ).let { validateResult ->
-                            if (validateResult) AssetRestrictionConinuationStatagy.Continue else AssetRestrictionConinuationStatagy.Restrict
+                            if (validateResult) AssetRestrictionContinuationStrategy.Continue else AssetRestrictionContinuationStrategy.Restrict
                         }
                     }
                 }
             }
 
             when (isThisAssetAllowed) {
-                AssetRestrictionConinuationStatagy.Continue -> processNonRestrictedAssetMessage(message, messageContent, false)
-                AssetRestrictionConinuationStatagy.RestrictIfThereIsNotOldMessageWithTheSameAssetID -> processNonRestrictedAssetMessage(
+                AssetRestrictionContinuationStrategy.Continue -> processNonRestrictedAssetMessage(message, messageContent, false)
+                AssetRestrictionContinuationStrategy.RestrictIfThereIsNotOldMessageWithTheSameAssetID -> processNonRestrictedAssetMessage(
                     message,
                     messageContent,
                     true
                 )
 
-                AssetRestrictionConinuationStatagy.Restrict -> persistRestrictedAssetMessage(message, messageContent)
+                AssetRestrictionContinuationStrategy.Restrict -> persistRestrictedAssetMessage(message, messageContent)
 
             }
         }
@@ -171,8 +171,8 @@ internal class AssetMessageHandlerImpl(
     }
 }
 
-private sealed interface AssetRestrictionConinuationStatagy {
-    data object Continue : AssetRestrictionConinuationStatagy
-    data object Restrict : AssetRestrictionConinuationStatagy
-    data object RestrictIfThereIsNotOldMessageWithTheSameAssetID : AssetRestrictionConinuationStatagy
+private sealed interface AssetRestrictionContinuationStrategy {
+    data object Continue : AssetRestrictionContinuationStrategy
+    data object Restrict : AssetRestrictionContinuationStrategy
+    data object RestrictIfThereIsNotOldMessageWithTheSameAssetID : AssetRestrictionContinuationStrategy
 }
