@@ -61,7 +61,6 @@ internal class AssetMessageHandlerImpl(
                     // asset message and decide if it is allowed or not
                     if (
                         message.content.value.name.isNullOrEmpty() &&
-                        message.content.value.mimeType.isBlank() &&
                         message.content.value.isCompleteAssetData
                     ) {
                         kaliumLogger.e("The asset message trying to be processed has invalid data looking locally")
