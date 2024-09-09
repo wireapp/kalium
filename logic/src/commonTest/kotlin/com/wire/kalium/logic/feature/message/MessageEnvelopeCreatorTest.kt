@@ -338,7 +338,7 @@ class MessageEnvelopeCreatorTest {
 
     @Test
     fun givenProteusThrowsDuringEncryption_whenCreatingEnvelope_thenTheFailureShouldBePropagated() = runTest {
-        val exception = ProteusException("OOPS", ProteusException.Code.PANIC)
+        val exception = ProteusException("OOPS", ProteusException.Code.PANIC, 15)
         coEvery {
             proteusClient.encryptBatched(any(), any())
         }.throws(exception)
@@ -368,7 +368,7 @@ class MessageEnvelopeCreatorTest {
     fun givenProteusThrowsDuringEncryption_whenCreatingEnvelope_thenNoMoreEncryptionsShouldBeAttempted() = runTest {
         coEvery {
             proteusClient.encryptBatched(any(), any())
-        }.throws(ProteusException("OOPS", ProteusException.Code.PANIC))
+        }.throws(ProteusException("OOPS", ProteusException.Code.PANIC, 15))
 
         every {
 
@@ -590,7 +590,7 @@ class MessageEnvelopeCreatorTest {
 
     @Test
     fun givenProteusThrowsDuringEncryption_whenCreatingBroadcastEnvelope_thenTheFailureShouldBePropagated() = runTest {
-        val exception = ProteusException("OOPS", ProteusException.Code.PANIC)
+        val exception = ProteusException("OOPS", ProteusException.Code.PANIC, 15)
         coEvery {
             proteusClient.encryptBatched(any(), any())
         }.throws(exception)
@@ -610,7 +610,7 @@ class MessageEnvelopeCreatorTest {
     fun givenProteusThrowsDuringEncryption_whenCreatingBroadcastEnvelope_thenNoMoreEncryptionsShouldBeAttempted() = runTest {
         coEvery {
             proteusClient.encryptBatched(any(), any())
-        }.throws(ProteusException("OOPS", ProteusException.Code.PANIC))
+        }.throws(ProteusException("OOPS", ProteusException.Code.PANIC, 15))
 
         every {
             protoContentMapper.encodeToProtobuf(any())

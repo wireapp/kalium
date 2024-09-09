@@ -95,7 +95,7 @@ class ClientFingerprintUseCaseTest {
 
     @Test
     fun givenProteusException_whenGettingRemoteFingerPrint_thenErrorIsReturned() = runTest {
-        val error = ProteusException(null, ProteusException.Code.DECODE_ERROR)
+        val error = ProteusException(null, ProteusException.Code.DECODE_ERROR, 3)
 
         val userId = TestUser.USER_ID
         val clientId = TestClient.CLIENT_ID
@@ -147,7 +147,7 @@ class ClientFingerprintUseCaseTest {
                 .invokes { _ ->
                     if (getSessionCalled == 0) {
                         getSessionCalled++
-                        throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
+                        throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND, 2)
                     }
                     secondTimeResult
                 }

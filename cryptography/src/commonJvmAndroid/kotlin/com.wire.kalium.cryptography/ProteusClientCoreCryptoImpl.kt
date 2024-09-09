@@ -148,7 +148,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                 e
             )
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
     }
 
@@ -201,7 +201,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                     e.cause
                 )
             } catch (e: Exception) {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }
     }

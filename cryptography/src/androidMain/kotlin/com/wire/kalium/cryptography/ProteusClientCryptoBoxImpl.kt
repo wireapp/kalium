@@ -181,9 +181,9 @@ class ProteusClientCryptoBoxImpl constructor(
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, fromCryptoException(e), e.cause)
+            throw ProteusException(e.message, fromCryptoException(e), e.code.ordinal, e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
         }
     }
 
