@@ -216,7 +216,6 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
-                    callHelper = CallHelperImpl(callRepository, subconversationRepository, userConfigRepository),
                     networkStateObserver = networkStateObserver,
                     scope = scope,
                     qualifiedIdMapper = qualifiedIdMapper

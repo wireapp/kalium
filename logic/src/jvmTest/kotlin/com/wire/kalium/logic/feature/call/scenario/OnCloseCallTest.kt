@@ -316,7 +316,7 @@ class OnCloseCallTest {
             }.wasInvoked(once)
 
             coVerify {
-                callHelper.handleCallTermination(eq(conversationId), any())
+                callRepository.leaveMlsConference(eq(conversationId))
             }.wasInvoked(once)
         }
 
