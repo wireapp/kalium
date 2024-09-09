@@ -1263,6 +1263,26 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMultipleOneOnOneProteusConversationExisting_whenGettingOneOnOneConversationId_thenShouldReturnAlphabeticallyOrderedConversation() =
+        runTest {
+            // given
+            val conversationA = conversationEntity1.copy(id = QualifiedIDEntity("a", "wire.com"))
+            val conversationB = conversationEntity1.copy(id = QualifiedIDEntity("b", "wire.com"))
+
+            userDAO.upsertUser(user1)
+            conversationDAO.insertConversation(conversationB)
+            conversationDAO.insertConversation(conversationA)
+            memberDAO.insertMember(member1, conversationB.id)
+            memberDAO.insertMember(member1, conversationA.id)
+
+            // then
+            assertEquals(
+                conversationA.id,
+                conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).first()
+            )
+        }
+
+    @Test
     fun givenNoMLSConversationExistsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsNull() = runTest {
         // given
 
