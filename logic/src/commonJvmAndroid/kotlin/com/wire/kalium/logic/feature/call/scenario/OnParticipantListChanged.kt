@@ -22,10 +22,10 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallParticipants
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.MLSCallHelper
+import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -43,7 +43,7 @@ class OnParticipantListChanged internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,
     private val userConfigRepository: UserConfigRepository,
-    private val mlsCallHelper: MLSCallHelper,
+    private val callHelper: CallHelper,
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope,
     private val jsonDecoder: Json = Json
@@ -67,7 +67,7 @@ class OnParticipantListChanged internal constructor(
 
                 val currentCall = callRepository.establishedCallsFlow().first().firstOrNull()
                 currentCall?.let {
-                    val shouldEndSFTOneOnOneCall = mlsCallHelper.shouldEndSFTOneOnOneCall(
+                    val shouldEndSFTOneOnOneCall = callHelper.shouldEndSFTOneOnOneCall(
                         conversationId = conversationIdWithDomain,
                         callProtocol = callProtocol,
                         conversationType = it.conversationType,
