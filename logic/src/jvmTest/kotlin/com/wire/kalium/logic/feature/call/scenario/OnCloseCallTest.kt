@@ -33,6 +33,7 @@ import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -280,6 +281,10 @@ class OnCloseCallTest {
             .suspendFunction(callRepository::updateCallStatusById)
             .with(eq(conversationId), eq(CallStatus.CLOSED))
             .wasInvoked(once)
+
+        coVerify {
+            callRepository.leaveMlsConference(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     companion object {
