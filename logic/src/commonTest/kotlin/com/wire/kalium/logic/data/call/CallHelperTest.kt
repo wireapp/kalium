@@ -111,19 +111,9 @@ class CallHelperTest {
     private class Arrangement {
 
         @Mock
-        val callRepository = mock(classOf<CallRepository>())
-
-        @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
-
-        @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val mLSCallHelper: CallHelper = CallHelperImpl(
-            callRepository = callRepository,
-            subconversationRepository = subconversationRepository,
-            userConfigRepository = userConfigRepository
-        )
+        private val mLSCallHelper: CallHelper = CallHelperImpl()
 
         fun arrange() = this to mLSCallHelper
 
