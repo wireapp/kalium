@@ -27,9 +27,9 @@ class ProteusException(message: String?, val code: Code, val intCode: Int, cause
         cause
     )
 
-    constructor(message: String?, code: Int, cause: Throwable? = null) : this(
+    constructor(message: String?, nativeCodeInt: Int, cause: Throwable? = null) : this(
         message,
-        fromNativeCode(code),
+        fromNativeCode(nativeCodeInt),
         cause
     )
 
