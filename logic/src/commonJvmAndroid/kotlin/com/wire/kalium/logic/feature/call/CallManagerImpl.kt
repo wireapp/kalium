@@ -198,11 +198,7 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
-                    callHelper = CallHelperImpl(
-                        callRepository = callRepository,
-                        subconversationRepository = subconversationRepository,
-                        userConfigRepository = userConfigRepository
-                    ),
+                    callHelper = CallHelperImpl(),
                     scope = scope,
                     qualifiedIdMapper = qualifiedIdMapper
                 ).keepingStrongReference(),
@@ -478,11 +474,7 @@ class CallManagerImpl internal constructor(
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
                     userConfigRepository = userConfigRepository,
-                    callHelper = CallHelperImpl(
-                        callRepository = callRepository,
-                        subconversationRepository = subconversationRepository,
-                        userConfigRepository = userConfigRepository
-                    ),
+                    callHelper = CallHelperImpl(),
                     endCall = { endCall(it) },
                     callingScope = scope
                 ).keepingStrongReference()
