@@ -24,12 +24,17 @@ import com.wire.crypto.client.toByteArray
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(
     private val coreCrypto: CoreCrypto,
 ) : ProteusClient {
+
+    private val mutex = Mutex()
+    private val existingSessionsCache = mutableSetOf<CryptoSessionId>()
 
     override suspend fun close() {
         coreCrypto.close()
@@ -63,9 +68,16 @@ class ProteusClientCoreCryptoImpl private constructor(
         return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId().toInt(), coreCrypto.proteusLastResortPrekey()) }
     }
 
-    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        return wrapException {
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = mutex.withLock {
+        if (existingSessionsCache.contains(sessionId)) {
+            return@withLock true
+        }
+        wrapException {
             coreCrypto.proteusSessionExists(sessionId.value)
+        }.also { exists ->
+            if (exists) {
+                existingSessionsCache.add(sessionId)
+            }
         }
     }
 
@@ -78,13 +90,9 @@ class ProteusClientCoreCryptoImpl private constructor(
 
         return wrapException {
             if (sessionExists) {
-                val decryptedMessage = coreCrypto.proteusDecrypt(sessionId.value, message)
-                coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
+                coreCrypto.proteusDecrypt(sessionId.value, message)
             } else {
-                val decryptedMessage = coreCrypto.proteusSessionFromMessage(sessionId.value, message)
-                coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
+                coreCrypto.proteusSessionFromMessage(sessionId.value, message)
             }
         }
     }
@@ -120,7 +128,8 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
     }
 
-    override suspend fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) = mutex.withLock {
+        existingSessionsCache.remove(sessionId)
         wrapException {
             coreCrypto.proteusSessionDelete(sessionId.value)
         }
