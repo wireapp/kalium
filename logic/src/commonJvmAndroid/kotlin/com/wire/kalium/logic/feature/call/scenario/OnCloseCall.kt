@@ -69,12 +69,10 @@ class OnCloseCall(
                 status = callStatus
             )
 
-            val conversationType =
-                callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.conversationType
-
             if (callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.protocol is Conversation.ProtocolInfo.MLS) {
-                callHelper.handleCallTermination(conversationIdWithDomain, conversationType)
+                callRepository.leaveMlsConference(conversationIdWithDomain)
             }
+
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
         }
     }

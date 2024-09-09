@@ -280,11 +280,6 @@ class OnCloseCallTest {
             .suspendFunction(callRepository::updateCallStatusById)
             .with(eq(conversationId), eq(CallStatus.CLOSED))
             .wasInvoked(once)
-
-        verify(callHelper)
-            .suspendFunction(callHelper::handleCallTermination)
-            .with(eq(conversationId), any())
-            .wasInvoked(once)
     }
 
     companion object {
