@@ -61,7 +61,7 @@ internal class AssetMessageHandlerImpl(
                     // asset message and decide if it is allowed or not
                     if (
                         message.content.value.name.isNullOrEmpty() &&
-                        message.content.value.isCompleteAssetData
+                        message.content.value.isAssetDataComplete
                     ) {
                         kaliumLogger.e("The asset message trying to be processed has invalid data looking locally")
                         AssetRestrictionContinuationStrategy.RestrictIfThereIsNotOldMessageWithTheSameAssetID
@@ -121,7 +121,7 @@ internal class AssetMessageHandlerImpl(
                 persistRestrictedAssetMessage(processedMessage, assetContent)
             } else {
                 val initialMessage = processedMessage.copy(
-                    visibility = if (assetContent.value.isCompleteAssetData) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
+                    visibility = if (assetContent.value.isAssetDataComplete) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
                 )
                 persistMessage(initialMessage)
             }
