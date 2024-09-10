@@ -57,9 +57,6 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
-    @Mock
-    val callHelper = mock(classOf<CallHelper>())
-
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -72,7 +69,6 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
-            callHelper,
             testScope,
             qualifiedIdMapper,
             networkStateObserver
