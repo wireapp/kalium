@@ -628,7 +628,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         verify(arrangement.validateAssetMimeTypeUseCase)
             .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("some-asset.txt"), eq(listOf("png")))
+            .with(eq("some-asset.txt"), eq("text/plain"), eq(listOf("png")))
             .wasInvoked(exactly = once)
     }
 
@@ -669,7 +669,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         verify(arrangement.validateAssetMimeTypeUseCase)
             .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("some-asset.png"), eq(listOf("png")))
+            .with(eq("some-asset.png"), eq("image/png"), eq(listOf("png")))
             .wasInvoked(exactly = once)
     }
 
