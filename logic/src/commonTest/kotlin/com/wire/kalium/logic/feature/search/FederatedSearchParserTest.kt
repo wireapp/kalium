@@ -41,7 +41,7 @@ class FederatedSearchParserTest {
         }
 
         val searchQuery = "searchQuery"
-        val result = federatedSearchParser(searchQuery)
+        val result = federatedSearchParser(searchQuery, true)
 
         assertEquals(searchQuery, result.searchTerm)
         assertEquals(selfUserId.domain, result.domain)
@@ -58,7 +58,7 @@ class FederatedSearchParserTest {
         }
 
         val searchQuery = "search Query"
-        val result = federatedSearchParser(searchQuery)
+        val result = federatedSearchParser(searchQuery, true)
 
         assertEquals(searchQuery, result.searchTerm)
         assertEquals(selfUserId.domain, result.domain)
@@ -75,7 +75,7 @@ class FederatedSearchParserTest {
         }
 
         val searchQuery = " search Query @domain.co"
-        val result = federatedSearchParser(searchQuery)
+        val result = federatedSearchParser(searchQuery, true)
 
         assertEquals(" search Query ", result.searchTerm)
         assertEquals("domain.co", result.domain)
@@ -92,9 +92,26 @@ class FederatedSearchParserTest {
         }
 
         val searchQuery = " search Query @domain.co"
-        federatedSearchParser(searchQuery)
-        federatedSearchParser(searchQuery)
-        federatedSearchParser(searchQuery)
+        federatedSearchParser(searchQuery, true)
+        federatedSearchParser(searchQuery, true)
+        federatedSearchParser(searchQuery, true)
+
+        coVerify {
+            arrangement.sessionRepository.isFederated(eq(selfUserId))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUserIsNotFederated_whenSearchQueryIncludeDomainButRemoteDomainForbidden_thenSearchQueryIsNotModified() = runTest {
+        val (arrangement, federatedSearchParser) = Arrangement().arrange {
+            withIsFederated(result = true.right(), userId = AnyMatcher(valueOf()))
+        }
+
+        val searchQuery = " search Query @domain.co"
+        val result = federatedSearchParser(searchQuery, false)
+
+        assertEquals(" search Query @domain.co", result.searchTerm)
+        assertEquals(selfUserId.domain, result.domain)
 
         coVerify {
             arrangement.sessionRepository.isFederated(eq(selfUserId))
