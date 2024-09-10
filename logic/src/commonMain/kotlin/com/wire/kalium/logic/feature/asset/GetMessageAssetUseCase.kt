@@ -79,7 +79,16 @@ internal class GetMessageAssetUseCaseImpl(
         }, { message ->
             when (val content = message.content) {
                 is MessageContent.Asset -> {
+<<<<<<< HEAD
                     // TODO isIncompleteImage should be used here for incomplete messages
+=======
+                    val assetDownloadStatus = content.value.downloadStatus
+                    val assetUploadStatus = content.value.uploadStatus
+                    val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
+                    // assets uploaded by other clients have upload status NOT_UPLOADED
+                    val alreadyUploaded: Boolean = (assetUploadStatus == NOT_UPLOADED && content.value.isAssetDataComplete)
+                            || assetUploadStatus == UPLOADED
+>>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
                     val assetMetadata = with(content.value.remoteData) {
                         DownloadAssetMessageMetadata(
                             content.value.name ?: "",

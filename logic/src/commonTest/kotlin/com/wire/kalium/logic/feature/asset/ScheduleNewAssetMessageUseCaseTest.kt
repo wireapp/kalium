@@ -628,7 +628,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
 
+<<<<<<< HEAD
         coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.txt"), eq(listOf("png"))) }
+=======
+        verify(arrangement.validateAssetMimeTypeUseCase)
+            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
+            .with(eq("some-asset.txt"), eq("text/plain"), eq(listOf("png")))
+>>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
             .wasInvoked(exactly = once)
     }
 
@@ -667,7 +673,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
+<<<<<<< HEAD
         coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.png"), eq(listOf("png"))) }
+=======
+        verify(arrangement.validateAssetMimeTypeUseCase)
+            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
+            .with(eq("some-asset.png"), eq("image/png"), eq(listOf("png")))
+>>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
             .wasInvoked(exactly = once)
     }
 
