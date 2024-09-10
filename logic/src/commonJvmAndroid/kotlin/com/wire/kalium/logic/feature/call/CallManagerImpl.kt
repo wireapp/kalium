@@ -33,11 +33,11 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
+import com.wire.kalium.logic.data.call.CallHelperImpl
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
-import com.wire.kalium.logic.data.call.CallHelperImpl
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -198,7 +198,6 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
-                    callHelper = CallHelperImpl(),
                     scope = scope,
                     qualifiedIdMapper = qualifiedIdMapper
                 ).keepingStrongReference(),

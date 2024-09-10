@@ -26,7 +26,6 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
-import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -36,7 +35,6 @@ import kotlinx.coroutines.launch
 @Suppress("LongParameterList")
 class OnCloseCall(
     private val callRepository: CallRepository,
-    private val callHelper: CallHelper,
     private val scope: CoroutineScope,
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : CloseCallHandler {
