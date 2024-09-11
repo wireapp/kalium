@@ -76,7 +76,8 @@ class NewMessageEventHandlerTest {
                     ProteusFailure(
                         ProteusException(
                             message = null,
-                            code = ProteusException.Code.DUPLICATE_MESSAGE
+                            code = ProteusException.Code.DUPLICATE_MESSAGE,
+                            intCode = 7
                         )
                     )
                 )
@@ -104,7 +105,8 @@ class NewMessageEventHandlerTest {
                     ProteusFailure(
                         ProteusException(
                             message = null,
-                            code = ProteusException.Code.INVALID_SIGNATURE
+                            code = ProteusException.Code.INVALID_SIGNATURE,
+                            intCode = 5
                         )
                     )
                 )
