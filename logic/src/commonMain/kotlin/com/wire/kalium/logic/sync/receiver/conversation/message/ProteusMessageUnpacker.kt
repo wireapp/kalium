@@ -79,7 +79,8 @@ internal class ProteusMessageUnpackerImpl(
 
                     is ProteusFailure -> {
                         val loggableException =
-                            "{ \"code\": \"${it.proteusException.code.name}\", \"message\": \"${it.proteusException.message}\", " +
+                            "{ \"code\": \"${it.proteusException.code.name}\", \"intCode\": \"${it.proteusException.intCode}\"," +
+                                    " \"message\": \"${it.proteusException.message}\", " +
                                     "\"error\": \"${it.proteusException.stackTraceToString()}\"," +
                                     "\"senderClientId\": \"${event.senderClientId.value.obfuscateId()}\"," +
                                     "\"senderUserId\": \"${event.senderUserId.value.obfuscateId()}\"," +
