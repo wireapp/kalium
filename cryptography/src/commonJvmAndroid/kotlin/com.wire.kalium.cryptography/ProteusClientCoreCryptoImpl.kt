@@ -140,9 +140,15 @@ class ProteusClientCoreCryptoImpl private constructor(
         try {
             return b()
         } catch (e: CoreCryptoException) {
-            throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e)
+            val proteusLastErrorCode = coreCrypto.proteusLastErrorCode()
+            throw ProteusException(
+                e.message,
+                ProteusException.fromProteusCode(proteusLastErrorCode.toInt()),
+                proteusLastErrorCode.toInt(),
+                e
+            )
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
     }
 
@@ -188,9 +194,14 @@ class ProteusClientCoreCryptoImpl private constructor(
                 coreCrypto.proteusInit()
                 return ProteusClientCoreCryptoImpl(coreCrypto)
             } catch (e: CoreCryptoException) {
-                throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
+                throw ProteusException(
+                    e.message,
+                    ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()),
+                    coreCrypto.proteusLastErrorCode().toInt(),
+                    e.cause
+                )
             } catch (e: Exception) {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }
     }

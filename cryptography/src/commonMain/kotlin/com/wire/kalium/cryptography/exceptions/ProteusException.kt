@@ -18,9 +18,14 @@
 
 package com.wire.kalium.cryptography.exceptions
 
-class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
+class ProteusException(message: String?, val code: Code, val intCode: Int?, cause: Throwable? = null) : Exception(message, cause) {
 
-    constructor(message: String?, code: Int, cause: Throwable? = null) : this(message, fromNativeCode(code), cause)
+    constructor(message: String?, code: Int, cause: Throwable? = null) : this(
+        message,
+        fromNativeCode(code),
+        code,
+        cause
+    )
 
     enum class Code {
         /**
@@ -149,6 +154,9 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
     }
 
     companion object {
+
+        const val SESSION_NOT_FOUND_INT = 2
+
         @Suppress("MagicNumber")
         fun fromNativeCode(code: Int): Code {
             return when (code) {

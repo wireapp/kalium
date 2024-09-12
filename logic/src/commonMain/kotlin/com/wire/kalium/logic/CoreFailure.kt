@@ -336,7 +336,7 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
                 |"cause": ${e.cause} }" """.trimMargin()
         )
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)))
+        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)))
     }
 }
 

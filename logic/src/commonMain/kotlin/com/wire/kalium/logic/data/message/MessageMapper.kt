@@ -375,6 +375,7 @@ class MessageMapperImpl(
         // We store the encoded data in case we decide to try to decrypt them again in the future
         is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
             regularMessage.encodedData,
+            regularMessage.errorCode,
             regularMessage.isDecryptionResolved,
             regularMessage.senderUserId.toDao(),
             regularMessage.clientId?.value
@@ -611,6 +612,7 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
     is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
     is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
         this.encodedData,
+        this.code,
         this.isDecryptionResolved,
         this.senderUserId.toModel(),
         ClientId(this.senderClientId.orEmpty())
