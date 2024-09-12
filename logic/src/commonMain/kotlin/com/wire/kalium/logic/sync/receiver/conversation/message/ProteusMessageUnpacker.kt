@@ -46,7 +46,10 @@ import io.ktor.utils.io.core.toByteArray
 
 internal interface ProteusMessageUnpacker {
 
-    suspend fun unpackProteusMessage(event: Event.Conversation.NewMessage): Either<CoreFailure, MessageUnpackResult>
+    suspend fun <T : Any> unpackProteusMessage(
+        event: Event.Conversation.NewMessage,
+        handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
+    ): Either<CoreFailure, T>
 
 }
 
@@ -59,7 +62,10 @@ internal class ProteusMessageUnpackerImpl(
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
-    override suspend fun unpackProteusMessage(event: Event.Conversation.NewMessage): Either<CoreFailure, MessageUnpackResult> {
+    override suspend fun <T : Any> unpackProteusMessage(
+        event: Event.Conversation.NewMessage,
+        handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
+    ): Either<CoreFailure, T> {
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
         val cryptoSessionId = CryptoSessionId(
             idMapper.toCryptoQualifiedIDId(event.senderUserId),
@@ -68,6 +74,7 @@ internal class ProteusMessageUnpackerImpl(
         return proteusClientProvider.getOrError()
             .flatMap {
                 wrapProteusRequest {
+<<<<<<< HEAD
                     it.decrypt(decodedContentBytes, cryptoSessionId)
                 }
             }
@@ -87,19 +94,47 @@ internal class ProteusMessageUnpackerImpl(
                                     "\"cryptoClientId\": \"${cryptoSessionId.cryptoClientId.value.obfuscateId()}\"," +
                                     "\"cryptoUserId\": \"${cryptoSessionId.userId.value.obfuscateId()}\"}"
                         logger.e("ProteusFailure when processing message detail: $loggableException")
+=======
+                    it.decrypt(decodedContentBytes, cryptoSessionId) {
+                        val plainMessageBlob = PlainMessageBlob(it)
+                        getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent).map { readableContent ->
+                            val appMessage = MessageUnpackResult.ApplicationMessage(
+                                conversationId = event.conversationId,
+                                instant = event.messageInstant,
+                                senderUserId = event.senderUserId,
+                                senderClientId = event.senderClientId,
+                                content = readableContent
+                            )
+                            handleMessage(appMessage)
+                        }
+>>>>>>> 987b78283d (fix(proteus): prevent missing messages by using transactions [WPB-10873] (#2992))
                     }
-
-                    else -> logger.e("Failure when processing message: $it")
                 }
-            }.map { readableContent ->
-                MessageUnpackResult.ApplicationMessage(
-                    conversationId = event.conversationId,
-                    instant = event.messageInstant,
-                    senderUserId = event.senderUserId,
-                    senderClientId = event.senderClientId,
-                    content = readableContent
-                )
+            }.flatMap { it }
+            .onFailure { logUnpackingError(it, event, cryptoSessionId) }
+    }
+
+    private fun logUnpackingError(
+        it: CoreFailure,
+        event: Event.Conversation.NewMessage,
+        cryptoSessionId: CryptoSessionId
+    ) {
+        when (it) {
+            is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
+
+            is ProteusFailure -> {
+                val loggableException =
+                    "{ \"code\": \"${it.proteusException.code.name}\", \"message\": \"${it.proteusException.message}\", " +
+                            "\"error\": \"${it.proteusException.stackTraceToString()}\"," +
+                            "\"senderClientId\": \"${event.senderClientId.value.obfuscateId()}\"," +
+                            "\"senderUserId\": \"${event.senderUserId.value.obfuscateId()}\"," +
+                            "\"cryptoClientId\": \"${cryptoSessionId.cryptoClientId.value.obfuscateId()}\"," +
+                            "\"cryptoUserId\": \"${cryptoSessionId.userId.value.obfuscateId()}\"}"
+                logger.e("ProteusFailure when processing message detail: $loggableException")
             }
+
+            else -> logger.e("Failure when processing message: $it")
+        }
     }
 
     private fun getReadableMessageContent(

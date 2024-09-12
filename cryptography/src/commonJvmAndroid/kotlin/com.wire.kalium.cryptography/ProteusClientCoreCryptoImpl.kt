@@ -85,15 +85,20 @@ class ProteusClientCoreCryptoImpl private constructor(
         wrapException { coreCrypto.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.encodedData.decodeBase64Bytes()) }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T {
         val sessionExists = doesSessionExist(sessionId)
 
         return wrapException {
-            if (sessionExists) {
+            val decryptedMessage = if (sessionExists) {
                 coreCrypto.proteusDecrypt(sessionId.value, message)
             } else {
                 coreCrypto.proteusSessionFromMessage(sessionId.value, message)
             }
+            handleDecryptedMessage(decryptedMessage)
         }
     }
 
