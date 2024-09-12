@@ -430,6 +430,26 @@ class ProtoContentMapperTest {
         assertEquals(decoded, protoContent)
     }
 
+    @Test
+    fun givenDataTransferContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.DataTransfer(
+            MessageContent.DataTransfer.TrackingIdentifier(
+                "abcd-1234"
+            )
+        )
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(decoded, protoContent)
+    }
+
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
         val TEST_CONVERSATION_ID = TestConversation.ID

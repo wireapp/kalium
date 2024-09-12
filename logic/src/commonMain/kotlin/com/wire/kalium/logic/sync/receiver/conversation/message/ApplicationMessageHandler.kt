@@ -40,6 +40,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
@@ -88,6 +89,7 @@ internal class ApplicationMessageHandlerImpl(
     private val messageEncoder: MessageContentEncoder,
     private val receiptMessageHandler: ReceiptMessageHandler,
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
+    private val dataTransferEventHandler: DataTransferEventHandler,
     private val selfUserId: UserId
 ) : ApplicationMessageHandler {
 
@@ -163,6 +165,7 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun processSignaling(signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
@@ -217,6 +220,8 @@ internal class ApplicationMessageHandlerImpl(
                 signaling.senderUserId,
                 content
             )
+
+            is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
         }
     }
 

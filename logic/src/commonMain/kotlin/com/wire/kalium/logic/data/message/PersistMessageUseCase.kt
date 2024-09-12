@@ -43,11 +43,12 @@ internal class PersistMessageUseCaseImpl(
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
-
         val isSelfSender = message.isSelfTheSender(selfUserId)
+        val shouldUpdateConversationReadDate = modifiedMessage.content !is MessageContent.MissedCall && isSelfSender
+
         return messageRepository.persistMessage(
             message = modifiedMessage,
-            updateConversationReadDate = isSelfSender,
+            updateConversationReadDate = shouldUpdateConversationReadDate,
             updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
         ).onSuccess {
             val isConversationMuted = it == InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
@@ -126,6 +127,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.LegalHold -> false
             is MessageContent.MemberChange.RemovedFromTeam -> false
             is MessageContent.TeamMemberRemoved -> false
+            is MessageContent.DataTransfer -> false
         }
 
     @Suppress("ComplexMethod")
@@ -179,6 +181,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ConversationStartedUnverifiedWarning,
             is MessageContent.LegalHold,
             is MessageContent.MemberChange.RemovedFromTeam,
-            is MessageContent.TeamMemberRemoved -> false
+            is MessageContent.TeamMemberRemoved,
+            is MessageContent.DataTransfer -> false
         }
 }

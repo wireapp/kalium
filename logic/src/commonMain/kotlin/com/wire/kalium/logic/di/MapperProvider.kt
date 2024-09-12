@@ -24,8 +24,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
-import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
-import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapperImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -101,8 +99,6 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapperImpl
 
 @Suppress("TooManyFunctions")
 internal object MapperProvider {
@@ -158,7 +154,6 @@ internal object MapperProvider {
     fun protoContentMapper(selfUserId: UserId): ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
     fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
     fun callMapper(selfUserId: UserId): CallMapper = CallMapperImpl(qualifiedIdMapper(selfUserId))
-    fun activeSpeakerMapper(): ActiveSpeakerMapper = ActiveSpeakerMapperImpl()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()
     fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
@@ -180,5 +175,4 @@ internal object MapperProvider {
     fun serviceMapper(): ServiceMapper = ServiceMapper()
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
     fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
-    fun certificateStatusMapper(): CertificateStatusMapper = CertificateStatusMapperImpl()
 }

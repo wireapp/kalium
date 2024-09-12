@@ -65,7 +65,8 @@ internal class ReceiptsMapperImpl(
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                     isUserDeleted = isUserDeleted,
                     connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
-                    availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+                    availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+                    accentId = accentId
                 )
             )
         }

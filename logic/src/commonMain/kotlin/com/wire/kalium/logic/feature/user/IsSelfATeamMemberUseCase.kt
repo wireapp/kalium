@@ -19,20 +19,38 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.functional.fold
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 /**
  * Checks if the self user is a team member or not.
  * @return true if the self user is a team member, false otherwise.
  */
-fun interface IsSelfATeamMemberUseCase {
+interface IsSelfATeamMemberUseCase {
+    /**
+     * Flow that emits the current value, _i.e._ whether self user is a team member or not.
+     * It will _not_ emit while SlowSync isn't done, as it needs to assure that SelfUser has been properly initialised.
+     */
+    suspend fun observe(): Flow<Boolean>
     suspend operator fun invoke(): Boolean
 }
 
-class IsSelfATeamMemberUseCaseImpl internal constructor(
-    private val selfTeamIdProvider: SelfTeamIdProvider
+internal class IsSelfATeamMemberUseCaseImpl internal constructor(
+    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val slowSyncRepository: SlowSyncRepository
 ) : IsSelfATeamMemberUseCase {
-    override suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {
-        it != null
-    })
+
+    override suspend fun observe(): Flow<Boolean> = slowSyncRepository
+        .observeLastSlowSyncCompletionInstant()
+        .filterNotNull()
+        .map {
+            selfTeamIdProvider()
+                .fold({ false }, { it != null })
+        }
+
+    override suspend operator fun invoke(): Boolean = observe().first()
 }

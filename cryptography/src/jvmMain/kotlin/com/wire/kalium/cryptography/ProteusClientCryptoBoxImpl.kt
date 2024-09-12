@@ -91,7 +91,7 @@ class ProteusClientCryptoBoxImpl constructor(
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException {
             box.encryptFromSession(sessionId.value, message)
-        }?.let { it } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
+        } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND, ProteusException.SESSION_NOT_FOUND_INT)
     }
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
@@ -127,7 +127,7 @@ class ProteusClientCryptoBoxImpl constructor(
         } catch (e: CryptoException) {
             throw ProteusException(e.message, e.code.ordinal, e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
         }
     }
 

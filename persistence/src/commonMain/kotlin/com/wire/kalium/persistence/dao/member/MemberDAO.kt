@@ -21,10 +21,12 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
@@ -64,10 +66,12 @@ interface MemberDAO {
     ): Map<ConversationIDEntity, List<UserIDEntity>>
 
     suspend fun getOneOneConversationWithFederatedMembers(domain: String): Map<ConversationIDEntity, UserIDEntity>
+    suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity): Map<QualifiedIDEntity, NameAndHandleEntity>
 }
 
 @Suppress("TooManyFunctions")
 internal class MemberDAOImpl internal constructor(
+    private val membersCache: FlowCache<ConversationIDEntity, List<MemberEntity>>,
     private val memberQueries: MembersQueries,
     private val userQueries: UsersQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -140,8 +144,10 @@ internal class MemberDAOImpl internal constructor(
             }
         }
 
-    override suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>> {
-        return memberQueries.selectAllMembersByConversation(qualifiedID)
+    override suspend fun observeConversationMembers(
+        qualifiedID: QualifiedIDEntity
+    ): Flow<List<MemberEntity>> = membersCache.get(qualifiedID) {
+        memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
@@ -216,5 +222,10 @@ internal class MemberDAOImpl internal constructor(
         memberQueries.selectFederatedMembersFromOneOnOneConversations(domain)
             .executeAsList()
             .associateBy({ it.conversation }, { it.user })
+    }
+
+    override suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+            .let { members -> members.associate { it.user to NameAndHandleEntity(it.name, it.handle) } }
     }
 }

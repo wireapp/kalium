@@ -33,4 +33,15 @@ data class Participant(
     val hasEstablishedAudio: Boolean,
     val avatarAssetId: UserAssetId? = null,
     val userType: UserType = UserType.NONE,
+    val accentId: Int
+)
+
+data class ParticipantMinimized(
+    val id: QualifiedID,
+    val userId: QualifiedID,
+    val clientId: String,
+    val isMuted: Boolean,
+    val isCameraOn: Boolean,
+    val isSharingScreen: Boolean = false,
+    val hasEstablishedAudio: Boolean,
 )

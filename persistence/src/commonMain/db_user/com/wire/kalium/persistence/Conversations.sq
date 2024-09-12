@@ -234,6 +234,10 @@ CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
     ELSE 1
 END AS isActive,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.accent_id
+    ELSE 0
+END AS accentId,
 Conversation.last_notified_date AS lastNotifiedMessageDate,
 memberRole. role AS selfRole,
 Conversation.protocol,
@@ -289,7 +293,7 @@ WHERE
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectAllConversations:
-SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
+SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
 
 selectAllTeamProteusConversationsReadyForMigration:
 SELECT
@@ -303,7 +307,9 @@ selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationByQualifiedId:
-SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status, proteus_verification_status, legal_hold_status FROM Conversation WHERE qualified_id = ?;
+SELECT
+    Conversation.*
+FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
@@ -316,11 +322,11 @@ selectByGroupId:
 SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 
 selectByGroupState:
-SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED');
+SELECT * FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED');
 
 selectActiveOneOnOneConversation:
-SELECT * FROM ConversationDetails
-WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);
+SELECT * FROM Conversation
+WHERE qualified_id = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);
 
 selectOneOnOneConversationIdsByProtocol:
 SELECT Member.conversation FROM Member
@@ -332,6 +338,9 @@ SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationIds:
 SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :type AND (:teamId IS NULL OR team_id = :teamId);
+
+getConversationTypeById:
+SELECT type FROM Conversation WHERE qualified_id = ?;
 
 updateConversationMutingStatus:
 UPDATE Conversation

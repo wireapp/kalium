@@ -60,9 +60,9 @@ import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
@@ -160,8 +160,8 @@ class MessageScope internal constructor(
             protoContentMapper = protoContentMapper
         )
 
-    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
-        get() = ValidateAssetMimeTypeUseCaseImpl()
+    private val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase
+        get() = ValidateAssetFileTypeUseCaseImpl()
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor
@@ -185,9 +185,6 @@ class MessageScope internal constructor(
         messageSender = messageSender,
         kaliumLogger = kaliumLogger,
     )
-
-    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
 
     val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
@@ -416,6 +413,12 @@ class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             scope = scope
+        )
+
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
         )
 
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl

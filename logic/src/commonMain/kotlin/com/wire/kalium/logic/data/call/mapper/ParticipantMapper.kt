@@ -19,29 +19,29 @@
 package com.wire.kalium.logic.data.call.mapper
 
 import com.wire.kalium.logic.data.call.CallMember
-import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 
 interface ParticipantMapper {
-    fun fromCallMemberToParticipant(member: CallMember): Participant
+    fun fromCallMemberToParticipantMinimized(member: CallMember): ParticipantMinimized
 }
 
 class ParticipantMapperImpl(
     private val videoStateChecker: VideoStateChecker,
-    private val callMapper: CallMapper
+    private val callMapper: CallMapper,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : ParticipantMapper {
 
-    override fun fromCallMemberToParticipant(member: CallMember): Participant = with(member) {
+    override fun fromCallMemberToParticipantMinimized(member: CallMember): ParticipantMinimized = with(member) {
         val videoState = callMapper.fromIntToCallingVideoState(vrecv)
         val isCameraOn = videoStateChecker.isCameraOn(videoState)
         val isSharingScreen = videoStateChecker.isSharingScreen(videoState)
 
-        Participant(
-            id = QualifiedID(
-                value = userId.removeDomain(),
-                domain = userId.getDomain()
-            ),
+        ParticipantMinimized(
+            id = QualifiedID(value = member.userId.removeDomain(), domain = member.userId.getDomain()),
+            userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId),
             clientId = clientId,
             isMuted = isMuted == 1,
             isCameraOn = isCameraOn,

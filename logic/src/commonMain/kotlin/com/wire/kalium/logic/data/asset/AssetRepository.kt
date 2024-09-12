@@ -133,6 +133,7 @@ interface AssetRepository {
     suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path>
 }
 
+@Suppress("TooManyFunctions")
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
@@ -367,7 +368,22 @@ internal class AssetDataSource(
             .flatMap { deleteAssetLocally(assetId) }
 
     override suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit> =
-        wrapStorageRequest { assetDao.deleteAsset(assetId) }
+        deleteAssetFileLocally(assetId).let {
+            wrapStorageRequest {
+                assetDao.deleteAsset(assetId)
+            }
+        }
+
+    private suspend fun deleteAssetFileLocally(assetId: String) {
+        wrapStorageRequest {
+            assetDao.getAssetByKey(assetId).firstOrNull()
+        }.map {
+            val filePath = it.dataPath.toPath()
+            if (kaliumFileSystem.exists(filePath)) {
+                kaliumFileSystem.delete(path = it.dataPath.toPath(), mustExist = false)
+            }
+        }
+    }
 }
 
 private fun buildFileName(name: String, extension: String?): String =

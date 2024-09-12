@@ -85,7 +85,7 @@ class ConfirmationDeliveryHandlerTest {
     fun givenMessagesEnqueued_whenCollectingThem_thenShouldSendOnlyForOneToOneConversations() = runTest {
         val (arrangement, sut) = Arrangement()
             .withCurrentClientIdProvider()
-            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
             .withMessageSenderResult()
             .arrange()
 
@@ -96,7 +96,7 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
+        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
@@ -106,7 +106,7 @@ class ConfirmationDeliveryHandlerTest {
     fun givenMessagesEnqueued_whenCollectingThemAndNoSession_thenShouldStopCollecting() = runTest {
         val (arrangement, sut) = Arrangement()
             .withCurrentClientIdProvider()
-            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
             .withMessageSenderResult()
             .arrange()
 
@@ -118,7 +118,7 @@ class ConfirmationDeliveryHandlerTest {
         sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasNotInvoked()
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasNotInvoked()
     }
 
@@ -127,7 +127,7 @@ class ConfirmationDeliveryHandlerTest {
     fun givenMessagesEnqueued_whenSendingConfirmationsAndError_thenShouldNotFail() = runTest {
         val (arrangement, sut) = Arrangement()
             .withCurrentClientIdProvider()
-            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
             .withMessageSenderResult(Either.Left(CoreFailure.Unknown(RuntimeException("Something went wrong"))))
             .arrange()
 
@@ -139,7 +139,7 @@ class ConfirmationDeliveryHandlerTest {
 
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
+        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
@@ -149,7 +149,7 @@ class ConfirmationDeliveryHandlerTest {
     fun givenABigLoadOfMessagesEnqueued_whenSendingConfirmations_thenShouldAddAndRemoveSecurely() = runTest {
         val (arrangement, sut) = Arrangement()
             .withCurrentClientIdProvider()
-            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
             .withMessageSenderResult()
             .arrange()
 
@@ -169,7 +169,7 @@ class ConfirmationDeliveryHandlerTest {
         advanceTimeBy(2000L)
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
+        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked(once)
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
@@ -180,7 +180,7 @@ class ConfirmationDeliveryHandlerTest {
     fun givenMultipleEnqueues_whenSendingConfirmations_thenShouldOnlySendOnce() = runTest {
         val (arrangement, sut) = Arrangement()
             .withCurrentClientIdProvider()
-            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
             .withMessageSenderResult()
             .arrange()
 
@@ -193,7 +193,7 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
+        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked(once)
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
@@ -202,7 +202,7 @@ class ConfirmationDeliveryHandlerTest {
     fun givenSyncIsOngoing_whenItTakesLongTimeToExecute_thenShouldReturnAnyway() = runTest {
         val (arrangement, handler) = Arrangement()
             .withCurrentClientIdProvider()
-            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
             .withMessageSenderResult()
             .arrange()
 
@@ -247,8 +247,8 @@ class ConfirmationDeliveryHandlerTest {
             coEvery { currentClientIdProvider.invoke() }.returns(Either.Right(TestClient.CLIENT_ID))
         }
 
-        suspend fun withConversationDetailsResult(result: Either<StorageFailure, Flow<Conversation?>>) = apply {
-            coEvery { conversationRepository.observeCacheDetailsById(any()) }.returns(result)
+        suspend fun withConversationDetailsResult(result: Flow<Either<StorageFailure, Conversation>>) = apply {
+            coEvery { conversationRepository.observeConversationById(any()) }.returns(result)
         }
 
         suspend fun withMessageSenderResult(result: Either<CoreFailure, Unit> = Unit.right()) = apply {

@@ -308,6 +308,7 @@ sealed class MessageEntityContent {
 
     data class FailedDecryption(
         val encodedData: ByteArray? = null,
+        val code: Int?,
         val isDecryptionResolved: Boolean,
         val senderUserId: QualifiedIDEntity,
         val senderClientId: String?,
@@ -385,7 +386,9 @@ data class NotificationMessageEntity(
     val conversationName: String?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val conversationType: ConversationEntity.Type,
-    val degradedConversationNotified: Boolean
+    val degradedConversationNotified: Boolean,
+    val legalHoldStatus: ConversationEntity.LegalHoldStatus,
+    val legalHoldStatusChangeNotified: Boolean
 )
 
 sealed class MessagePreviewEntityContent {

@@ -98,7 +98,10 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
         return wrapException {
-            coreCrypto.proteusEncryptBatched(sessionIds.map { it.value }, toUByteList((message))).mapNotNull { entry ->
+            coreCrypto.proteusEncryptBatched(
+                sessionId = sessionIds.map { it.value },
+                plaintext = toUByteList((message))
+            ).mapNotNull { entry ->
                 CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
                     sessionId to toByteArray(entry.value)
                 }
@@ -131,9 +134,9 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
             return b()
         } catch (e: CryptoException) {
             // TODO underlying proteus error is not exposed atm
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         }
     }
 
@@ -187,9 +190,9 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
                 coreCrypto.proteusInit()
                 return ProteusClientCoreCryptoImpl(coreCrypto)
             } catch (e: CryptoException) {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             } catch (e: Exception) {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }
     }

@@ -53,7 +53,6 @@ import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
@@ -64,6 +63,7 @@ import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.Conv
 import com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -103,7 +103,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -135,7 +135,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -167,7 +167,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -198,7 +198,7 @@ class ConversationGroupRepositoryTest {
             )
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -302,7 +302,7 @@ class ConversationGroupRepositoryTest {
             )
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -401,7 +401,7 @@ class ConversationGroupRepositoryTest {
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), emptySet()))
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -443,7 +443,7 @@ class ConversationGroupRepositoryTest {
                 .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
                 .withInsertConversationSuccess()
                 .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), notAddedUsers = missingMembersFromMLSGroup))
-                .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+                .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
                 .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -1361,7 +1361,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -1779,13 +1779,19 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withConversationDetailsById(conversation: Conversation) = apply {
             coEvery {
-                conversationRepository.baseInfoById(any())
+                conversationRepository.getConversationById(any())
             }.returns(Either.Right(conversation))
         }
 
         suspend fun withConversationDetailsById(result: ConversationViewEntity?) = apply {
             coEvery {
-                conversationDAO.getConversationByQualifiedID(any())
+                conversationDAO.getConversationDetailsById(any())
+            }.returns(result)
+        }
+
+        suspend fun withConversationById(result: ConversationEntity?) = apply {
+            coEvery {
+                conversationDAO.getConversationById(any())
             }.returns(result)
         }
 

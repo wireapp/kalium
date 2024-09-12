@@ -176,7 +176,7 @@ class EndCallOnConversationChangeUseCaseTest {
                 endCall.invoke(eq(conversationId))
             }.returns(Unit)
             coEvery {
-                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded(eq(conversationId))
+                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded()
             }.returns(Unit)
 
             withEstablishedCallsFlow(listOf(call))

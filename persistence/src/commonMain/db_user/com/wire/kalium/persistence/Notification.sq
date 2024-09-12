@@ -16,6 +16,8 @@ WITH NumberedMessages AS (
         c.muted_status AS mutedStatus,
         c.type AS conversationType,
         c.degraded_conversation_notified AS degradedConversationNotified,
+        c.legal_hold_status AS legalHoldStatus,
+        IFNULL(lhs.legal_hold_status_change_notified, 1) == 1 AS legalHoldStatusChangeNotified,
         ROW_NUMBER() OVER (PARTITION BY m.conversation_id ORDER BY m.creation_date DESC) AS row_num
     FROM
         Message m
@@ -23,6 +25,8 @@ WITH NumberedMessages AS (
         User u ON m.sender_user_id = u.qualified_id
     JOIN
         Conversation c ON m.conversation_id = c.qualified_id
+    LEFT JOIN
+        ConversationLegalHoldStatusChangeNotified AS lhs ON m.conversation_id == lhs.conversation_id AND (m.creation_date > IFNULL(c.last_notified_date, 0))
     LEFT JOIN
         MessageAssetContent ac ON m.id = ac.message_id AND m.conversation_id = ac.conversation_id
     LEFT JOIN
@@ -50,7 +54,9 @@ SELECT
     assetMimeType,
     mutedStatus,
     conversationType,
-    degradedConversationNotified
+    degradedConversationNotified,
+    legalHoldStatus,
+    legalHoldStatusChangeNotified
 FROM
     NumberedMessages
 WHERE

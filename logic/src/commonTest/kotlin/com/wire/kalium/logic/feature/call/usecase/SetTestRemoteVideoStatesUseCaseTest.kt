@@ -70,7 +70,8 @@ class SetTestRemoteVideoStatesUseCaseTest {
             isSpeaking = false,
             isCameraOn = false,
             isSharingScreen = false,
-            hasEstablishedAudio = true
+            hasEstablishedAudio = true,
+            accentId = 0
         )
     }
 }

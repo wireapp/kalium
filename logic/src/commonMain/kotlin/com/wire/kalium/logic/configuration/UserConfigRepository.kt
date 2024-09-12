@@ -93,6 +93,8 @@ interface UserConfigRepository {
     suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
+    fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit>
+    fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
     fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
@@ -136,6 +138,14 @@ interface UserConfigRepository {
     suspend fun clearE2EISettings()
     fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     fun getShouldFetchE2EITrustAnchor(): Boolean
+    suspend fun setCurrentTrackingIdentifier(newIdentifier: String)
+    suspend fun getCurrentTrackingIdentifier(): String?
+    suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>>
+    suspend fun setPreviousTrackingIdentifier(identifier: String)
+    suspend fun getPreviousTrackingIdentifier(): String?
+    suspend fun deletePreviousTrackingIdentifier()
+    suspend fun updateNextTimeForCallFeedback(valueMs: Long)
+    suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
 }
 
 @Suppress("TooManyFunctions")
@@ -291,6 +301,14 @@ internal class UserConfigDataSource internal constructor(
         wrapStorageRequest {
             userConfigStorage.isConferenceCallingEnabled()
         }
+
+    override fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigStorage.persistUseSftForOneOnOneCalls(shouldUse)
+    }
+
+    override fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        userConfigStorage.shouldUseSftForOneOnOneCalls()
+    }
 
     override fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
@@ -495,4 +513,38 @@ internal class UserConfigDataSource internal constructor(
     }
 
     override fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigStorage.getShouldFetchE2EITrustAnchorHasRun()
+
+    override suspend fun setCurrentTrackingIdentifier(newIdentifier: String) {
+        wrapStorageRequest {
+            userConfigDAO.setTrackingIdentifier(identifier = newIdentifier)
+        }
+    }
+
+    override suspend fun getCurrentTrackingIdentifier(): String? =
+        userConfigDAO.getTrackingIdentifier()
+
+    override suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>> =
+        userConfigDAO.observeTrackingIdentifier().wrapStorageRequest()
+
+    override suspend fun setPreviousTrackingIdentifier(identifier: String) {
+        wrapStorageRequest {
+            userConfigDAO.setPreviousTrackingIdentifier(identifier = identifier)
+        }
+    }
+
+    override suspend fun getPreviousTrackingIdentifier(): String? =
+        userConfigDAO.getPreviousTrackingIdentifier()
+
+    override suspend fun deletePreviousTrackingIdentifier() {
+        wrapStorageRequest {
+            userConfigDAO.deletePreviousTrackingIdentifier()
+        }
+    }
+
+    override suspend fun updateNextTimeForCallFeedback(valueMs: Long) {
+        userConfigDAO.setNextTimeForCallFeedback(valueMs)
+    }
+
+    override suspend fun getNextTimeForCallFeedback() = wrapStorageRequest { userConfigDAO.getNextTimeForCallFeedback() }
+
 }

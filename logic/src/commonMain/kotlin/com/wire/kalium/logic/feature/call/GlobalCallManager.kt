@@ -21,10 +21,12 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -32,6 +34,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
@@ -46,12 +49,15 @@ expect class GlobalCallManager {
         currentClientIdProvider: CurrentClientIdProvider,
         selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
+        subconversationRepository: SubconversationRepository,
+        userConfigRepository: UserConfigRepository,
         messageSender: MessageSender,
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
         qualifiedIdMapper: QualifiedIdMapper,
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+        getCallConversationType: GetCallConversationTypeProvider,
         networkStateObserver: NetworkStateObserver,
         kaliumConfigs: KaliumConfigs
     ): CallManager
