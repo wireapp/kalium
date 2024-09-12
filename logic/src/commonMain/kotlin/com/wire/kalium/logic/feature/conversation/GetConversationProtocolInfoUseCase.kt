@@ -52,6 +52,10 @@ internal fun GetConversationProtocolInfoUseCase(
     override suspend operator fun invoke(conversationId: ConversationId): GetConversationProtocolInfoUseCase.Result =
         withContext(dispatcher.io) {
             conversationRepository.getConversationProtocolInfo(conversationId)
-                .fold({ GetConversationProtocolInfoUseCase.Result.Failure(it) }, { GetConversationProtocolInfoUseCase.Result.Success(it) })
+                .fold({
+                    GetConversationProtocolInfoUseCase.Result.Failure(it)
+                }, {
+                    GetConversationProtocolInfoUseCase.Result.Success(it)
+                })
         }
 }
