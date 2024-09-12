@@ -101,6 +101,8 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
         return EventContentDTO.Conversation.NewMessageDTO(
             qualifiedConversation = conversationId.toApi(),
             qualifiedFrom = from.toApi(),
+            conversation = conversationId.toPlainID().value,
+            from = from.toPlainID().value,
             time = Clock.System.now(),
             data = data
         )
