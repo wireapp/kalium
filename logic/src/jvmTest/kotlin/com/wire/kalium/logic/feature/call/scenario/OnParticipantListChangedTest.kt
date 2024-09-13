@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -231,7 +232,7 @@ class OnParticipantListChangedTest {
         private val call = Call(
             conversationId = conversationId,
             status = CallStatus.ESTABLISHED,
-            callerId = "called-id",
+            callerId = UserId("called-id", "domain"),
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,

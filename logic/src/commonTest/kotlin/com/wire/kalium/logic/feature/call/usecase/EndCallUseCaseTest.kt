@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangement
@@ -233,7 +234,7 @@ class EndCallUseCaseTest {
         private val call = Call(
             conversationId = conversationId,
             status = CallStatus.ESTABLISHED,
-            callerId = "called-id",
+            callerId = UserId("called-id", "domain"),
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,

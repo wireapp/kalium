@@ -305,7 +305,7 @@ class CallManagerImpl internal constructor(
             isMuted = false,
             isCameraOn = isCameraOn,
             isCbrEnabled = isAudioCbr,
-            callerId = userId.await().toString()
+            callerId = userId.await()
         )
 
         withCalling {

@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
@@ -351,6 +352,7 @@ class OnCloseCallTest {
         private const val clientId = "clientId"
 
         private val callMetadata = CallMetadata(
+            callerId = TestCall.CALLER_ID,
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,
