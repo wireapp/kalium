@@ -80,7 +80,7 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
         if (preKey != null) {
             return toPreKey(box.getIdentity().public_key, preKey)
         } else {
-            throw ProteusException("Local identity doesn't exist", ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException("Local identity doesn't exist", ProteusException.Code.UNKNOWN_ERROR, null, null)
         }
     }
 

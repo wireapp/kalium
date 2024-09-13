@@ -75,6 +75,8 @@ kotlin {
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.mordant)
+                implementation(libs.ktxSerialization)
+                implementation(libs.ktxIO)
             }
         }
         val jvmMain by getting {

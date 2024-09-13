@@ -120,6 +120,7 @@ sealed interface Message {
                 is MessageContent.FailedDecryption -> {
                     mutableMapOf(
                         typeKey to "failedDecryption",
+                        "code" to "${content.errorCode}",
                         "size" to "${content.encodedData?.size}",
                     )
                 }

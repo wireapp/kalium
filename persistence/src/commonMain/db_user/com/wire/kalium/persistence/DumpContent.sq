@@ -76,7 +76,8 @@ INSERT INTO MessageFailedToDecryptContent
     SELECT local_db.MessageFailedToDecryptContent.message_id,
            local_db.MessageFailedToDecryptContent.conversation_id,
            local_db.MessageFailedToDecryptContent.unknown_encoded_data,
-           local_db.MessageFailedToDecryptContent.is_decryption_resolved
+           local_db.MessageFailedToDecryptContent.is_decryption_resolved,
+           local_db.MessageFailedToDecryptContent.error_code
     FROM local_db.MessageFailedToDecryptContent
         LEFT JOIN selfdelete_message_id
            ON local_db.MessageFailedToDecryptContent.message_id = selfdelete_message_id.id

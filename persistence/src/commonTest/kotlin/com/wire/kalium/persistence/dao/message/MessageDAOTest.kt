@@ -979,7 +979,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     senderClientId = "someClient",
-                    content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
+                    content = MessageEntityContent.FailedDecryption(null, 333, false, userEntity1.id, "someClient")
                 ),
                 newRegularMessageEntity(
                     id = messageId2,
@@ -987,7 +987,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                     conversationId = conversationId2,
                     senderUserId = userEntity1.id,
                     senderClientId = "someClient",
-                    content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
+                    content = MessageEntityContent.FailedDecryption(null, 333, false, userEntity1.id, "someClient")
                 )
             )
         )
@@ -1000,6 +1000,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
         val updatedMessage2 = messageDAO.getMessageById(messageId2, conversationId2)
         assertTrue((updatedMessage2?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
+        assertEquals(333, (updatedMessage2.content as MessageEntityContent.FailedDecryption).code)
     }
 
     @Test

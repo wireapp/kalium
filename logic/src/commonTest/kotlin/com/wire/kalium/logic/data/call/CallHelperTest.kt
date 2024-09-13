@@ -44,7 +44,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class MLSCallHelperTest {
+class CallHelperTest {
 
     @Test
     fun givenMlsProtocol_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
@@ -194,7 +194,7 @@ class MLSCallHelperTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val mLSCallHelper: MLSCallHelper = MLSCallHelperImpl(
+        private val mLSCallHelper: CallHelper = CallHelperImpl(
             callRepository = callRepository,
             subconversationRepository = subconversationRepository,
             userConfigRepository = userConfigRepository
