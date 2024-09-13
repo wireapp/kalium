@@ -68,8 +68,14 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
             clientId = targetClientId
         )
         val generator = EventGenerator(
-            selfClient = QualifiedClientID(clientId = selfClientId, userId = selfUserId),
-            targetClient = QualifiedClientID(clientId = targetClientId, userId = targetUserId),
+            selfClient = QualifiedClientID(
+                clientId = selfClientId,
+                userId = selfUserId
+            ),
+            targetClient = QualifiedClientID(
+                clientId = targetClientId,
+                userId = targetUserId
+            ),
             proteusClient = userSession.proteusClientProvider.getOrCreate()
         )
         val events = generator.generateEvents(
