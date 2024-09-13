@@ -36,6 +36,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
+import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -251,7 +253,7 @@ class AssetMessageHandlerTest {
         val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png", "zip"))
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
-            .withValidateAssetMime(true)
+            .withValidateAssetFileType(true)
             .withSuccessfulStoredMessage(previewAssetMessage)
             .withSuccessfulPersistMessageUseCase(updateAssetMessage)
             .arrange()
@@ -279,6 +281,15 @@ class AssetMessageHandlerTest {
         }
             .wasInvoked(exactly = once)
 
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.validateAssetFileTypeUseCase)
+            .suspendFunction(arrangement.validateAssetFileTypeUseCase::invoke)
+            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq("application/zip"), eq(isFileSharingEnabled.allowedType))
+            .wasInvoked(exactly = once)
         coVerify {
             arrangement.validateAssetMimeType(
                 fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
@@ -296,7 +307,7 @@ class AssetMessageHandlerTest {
         val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png"))
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
-            .withValidateAssetMime(true)
+            .withValidateAssetFileType(true)
             .withSuccessfulStoredMessage(previewAssetMessage)
             .withSuccessfulPersistMessageUseCase(updateAssetMessage)
             .arrange()
@@ -329,6 +340,10 @@ class AssetMessageHandlerTest {
                 allowedExtension = eq(isFileSharingEnabled.allowedType)
             )
         }.wasInvoked(exactly = once)
+        verify(arrangement.validateAssetFileTypeUseCase)
+            .suspendFunction(arrangement.validateAssetFileTypeUseCase::invoke)
+            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq("application/zip"), eq(isFileSharingEnabled.allowedType))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -339,7 +354,7 @@ class AssetMessageHandlerTest {
         val isFileSharingEnabled = FileSharingStatus.Value.Disabled
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
-            .withValidateAssetMime(true)
+            .withValidateAssetFileType(true)
             .withSuccessfulStoredMessage(previewAssetMessage)
             .withSuccessfulPersistMessageUseCase(updateAssetMessage)
             .arrange()
@@ -362,6 +377,9 @@ class AssetMessageHandlerTest {
             .wasNotInvoked()
 
         coVerify { arrangement.validateAssetMimeType(any<String>(), any<String>(), any<List<String>>()) }
+        verify(arrangement.validateAssetFileTypeUseCase)
+            .suspendFunction(arrangement.validateAssetFileTypeUseCase::invoke)
+            .with(any<String>(), any<List<String>>())
             .wasNotInvoked()
     }
 
@@ -396,6 +414,7 @@ class AssetMessageHandlerTest {
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(previewAssetMessage)
+            .withValidateAssetFileType(true)
             .arrange()
 
         // When
@@ -440,6 +459,7 @@ class AssetMessageHandlerTest {
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(null)
             .withSuccessfulPersistMessageUseCase(storedMessage)
+            .withValidateAssetFileType(true)
             .arrange()
 
         // When
@@ -466,14 +486,20 @@ class AssetMessageHandlerTest {
 
         @Mock
         val validateAssetMimeType = mock(ValidateAssetFileTypeUseCase::class)
+        val validateAssetFileTypeUseCase = mock(classOf<ValidateAssetFileTypeUseCase>())
 
         private val assetMessageHandlerImpl =
-            AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
+            AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetFileTypeUseCase)
 
         fun withValidateAssetMime(result: Boolean) = apply {
             every {
                 validateAssetMimeType.invoke(any(), any(), any())
             }.returns(result)
+        fun withValidateAssetFileType(result: Boolean) = apply {
+            given(validateAssetFileTypeUseCase)
+                .function(validateAssetFileTypeUseCase::invoke)
+                .whenInvokedWith(anything(), any(), any())
+                .thenReturn(result)
         }
 
         fun withSuccessfulFileSharingFlag(value: FileSharingStatus.Value) = apply {
