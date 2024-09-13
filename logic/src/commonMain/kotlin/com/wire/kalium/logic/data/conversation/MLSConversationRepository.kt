@@ -47,7 +47,9 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
+import com.wire.kalium.logic.data.mlspublickeys.getRemovalKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
@@ -126,6 +128,7 @@ interface MLSConversationRepository {
     suspend fun establishMLSGroup(
         groupID: GroupID,
         members: List<UserId>,
+        publicKeys: MLSPublicKeys? = null,
         allowSkippingUsersWithoutKeyPackages: Boolean = false
     ): Either<CoreFailure, MLSAdditionResult>
 
@@ -575,16 +578,18 @@ internal class MLSConversationDataSource(
     override suspend fun establishMLSGroup(
         groupID: GroupID,
         members: List<UserId>,
-        allowSkippingUsersWithoutKeyPackages: Boolean,
+        publicKeys: MLSPublicKeys?,
+        allowSkippingUsersWithoutKeyPackages: Boolean
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
-        mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> {
-            mlsPublicKeysRepository.getKeyForCipherSuite(
-                CipherSuite.fromTag(it.getDefaultCipherSuite())
-            ).flatMap { key ->
+        mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> { mlsClient ->
+            val cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
+            val keys = publicKeys?.getRemovalKey(cipherSuite) ?: mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite)
+
+            keys.flatMap { externalSenders ->
                 establishMLSGroup(
                     groupID = groupID,
                     members = members,
-                    externalSenders = key,
+                    externalSenders = externalSenders,
                     allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
                 )
             }

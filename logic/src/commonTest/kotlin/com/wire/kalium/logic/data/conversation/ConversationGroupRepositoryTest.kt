@@ -279,7 +279,7 @@ class ConversationGroupRepositoryTest {
 
             verify(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
-                .with(anything(), anything(), eq(true))
+                .with(anything(), anything(), anything(), eq(true))
                 .wasInvoked(once)
 
             verify(newConversationMembersRepository)
@@ -323,7 +323,7 @@ class ConversationGroupRepositoryTest {
 
                 verify(mlsConversationRepository)
                     .suspendFunction(mlsConversationRepository::establishMLSGroup)
-                    .with(anything(), anything(), eq(true))
+                    .with(anything(), anything(), anything(), eq(true))
                     .wasInvoked(once)
 
                 verify(newConversationMembersRepository)

@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.KEY_PACKAGE
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.MLS_PUBLIC_KEY
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.ROTATE_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
@@ -174,7 +175,7 @@ class MLSConversationRepositoryTest {
             .withSendCommitBundleSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1))
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)
@@ -301,6 +302,90 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenPublicKeysIsNotNull_whenCallingEstablishMLSGroup_ThenGetPublicKeysRepositoryNotCalled() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withKeyForCipherSuite()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result =
+            mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = MLS_PUBLIC_KEY)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::addMember)
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsPublicKeysRepository)
+            .function(arrangement.mlsPublicKeysRepository::getKeyForCipherSuite)
+            .with(anything<CipherSuite>())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenPublicKeysIsNull_whenCallingEstablishMLSGroup_ThenGetPublicKeysRepositoryIsCalled() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withKeyForCipherSuite()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result =
+            mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::addMember)
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsPublicKeysRepository)
+            .function(arrangement.mlsPublicKeysRepository::getKeyForCipherSuite)
+            .with(anything<CipherSuite>())
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenNewCrlDistributionPoints_whenEstablishingMLSGroup_thenCheckRevocationList() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
@@ -351,7 +436,7 @@ class MLSConversationRepositoryTest {
             .withWaitUntilLiveSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1))
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)
@@ -382,7 +467,7 @@ class MLSConversationRepositoryTest {
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR)
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1))
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
         result.shouldFail()
 
         verify(arrangement.mlsMessageApi)
@@ -413,7 +498,7 @@ class MLSConversationRepositoryTest {
             .withSendCommitBundleSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1))
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
         result.shouldSucceed()
 
         verify(arrangement.keyPackageRepository)
@@ -434,7 +519,7 @@ class MLSConversationRepositoryTest {
             .withSendCommitBundleSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, emptyList())
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, emptyList(), publicKeys = null)
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)
