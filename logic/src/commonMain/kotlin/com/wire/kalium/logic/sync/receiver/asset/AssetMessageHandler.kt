@@ -24,15 +24,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-<<<<<<< HEAD
-import com.wire.kalium.logic.data.message.hasValidData
-=======
 import com.wire.kalium.logic.data.message.getType
->>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
 
 internal interface AssetMessageHandler {
     suspend fun handle(message: Message.Regular)
@@ -46,16 +43,13 @@ internal class AssetMessageHandlerImpl(
 ) : AssetMessageHandler {
 
     override suspend fun handle(message: Message.Regular) {
-        val messageContent = message.content
-        if (messageContent !is MessageContent.Asset) {
+        if (message.content !is MessageContent.Asset) {
             kaliumLogger.e("The asset message trying to be processed has invalid content data")
             return
         }
-<<<<<<< HEAD
-=======
 
-        val messageContent = message.content
->>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
+        val messageContent = message.content as MessageContent.Asset
+
         userConfigRepository.isFileSharingEnabled().onSuccess {
             val isThisAssetAllowed = when (it.state) {
                 FileSharingStatus.Value.Disabled -> AssetRestrictionContinuationStrategy.Restrict
@@ -67,8 +61,8 @@ internal class AssetMessageHandlerImpl(
                     // it is safe to continue and the code later will check the original
                     // asset message and decide if it is allowed or not
                     if (
-                        message.content.value.name.isNullOrEmpty() &&
-                        message.content.value.isAssetDataComplete
+                        messageContent.value.name.isNullOrEmpty() &&
+                        messageContent.value.isAssetDataComplete
                     ) {
                         kaliumLogger.e("The asset message trying to be processed has invalid data looking locally")
                         AssetRestrictionContinuationStrategy.RestrictIfThereIsNotOldMessageWithTheSameAssetID
@@ -155,7 +149,7 @@ internal class AssetMessageHandlerImpl(
         remoteData: AssetContent.RemoteData
     ): Message.Regular? {
         val assetMessageContent = when (persistedMessage.content) {
-            is MessageContent.Asset -> persistedMessage.content
+            is MessageContent.Asset -> persistedMessage.content as MessageContent.Asset
             is MessageContent.RestrictedAsset -> {
                 // original message was a restricted asset message, ignoring
                 return null

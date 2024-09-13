@@ -628,13 +628,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
 
-<<<<<<< HEAD
-        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.txt"), eq(listOf("png"))) }
-=======
-        verify(arrangement.validateAssetMimeTypeUseCase)
-            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("some-asset.txt"), eq("text/plain"), eq(listOf("png")))
->>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
+        coVerify {
+            arrangement.validateAssetMimeTypeUseCase(
+                fileName = eq("some-asset.txt"),
+                mimeType = eq("text/plain"),
+                allowedExtension = eq(listOf("png"))
+            )
+        }
             .wasInvoked(exactly = once)
     }
 
@@ -673,13 +673,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-<<<<<<< HEAD
-        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.png"), eq(listOf("png"))) }
-=======
-        verify(arrangement.validateAssetMimeTypeUseCase)
-            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("some-asset.png"), eq("image/png"), eq(listOf("png")))
->>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
+        coVerify {
+            arrangement.validateAssetMimeTypeUseCase(
+                fileName = eq("some-asset.png"),
+                mimeType = eq("image/png"),
+                allowedExtension = eq(listOf("png"))
+            )
+        }
             .wasInvoked(exactly = once)
     }
 
@@ -733,7 +733,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         fun withValidateAsseMimeTypeResult(result: Boolean) = apply {
             every {
-                validateAssetMimeTypeUseCase.invoke(any(), any())
+                validateAssetMimeTypeUseCase.invoke(any(), any(), any())
             }.returns(result)
         }
 

@@ -271,22 +271,21 @@ class AssetMessageHandlerTest {
                 })
         }.wasInvoked(exactly = once)
 
-        coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                eq(previewAssetMessage.conversationId),
+                eq(previewAssetMessage.id)
+            )
+        }
             .wasInvoked(exactly = once)
 
-<<<<<<< HEAD
-        coVerify { arrangement.validateAssetMimeType(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType)) }
-=======
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.validateAssetMimeType)
-            .suspendFunction(arrangement.validateAssetMimeType::invoke)
-            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq("application/zip"), eq(isFileSharingEnabled.allowedType))
->>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.validateAssetMimeType(
+                fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
+                mimeType = eq("application/zip"),
+                allowedExtension = eq(isFileSharingEnabled.allowedType)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -316,22 +315,20 @@ class AssetMessageHandlerTest {
             })
         }.wasInvoked(exactly = once)
 
-        coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                conversationId = eq(previewAssetMessage.conversationId),
+                messageUuid = eq(previewAssetMessage.id)
+            )
+        }.wasInvoked(exactly = once)
 
-<<<<<<< HEAD
-        coVerify { arrangement.validateAssetMimeType(eq(COMPLETE_ASSET_CONTENT.value.name), eq(isFileSharingEnabled.allowedType)) }
-=======
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.validateAssetMimeType)
-            .suspendFunction(arrangement.validateAssetMimeType::invoke)
-            .with(eq(COMPLETE_ASSET_CONTENT.value.name), eq("application/zip"), eq(isFileSharingEnabled.allowedType))
->>>>>>> 538bae1769 (fix: handle the case where asset name can be missing (#2995))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.validateAssetMimeType(
+                fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
+                mimeType = eq("application/zip"),
+                allowedExtension = eq(isFileSharingEnabled.allowedType)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -364,7 +361,7 @@ class AssetMessageHandlerTest {
         coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
             .wasNotInvoked()
 
-        coVerify { arrangement.validateAssetMimeType(any<String>(), any<List<String>>()) }
+        coVerify { arrangement.validateAssetMimeType(any<String>(), any<String>(), any<List<String>>()) }
             .wasNotInvoked()
     }
 
@@ -385,8 +382,6 @@ class AssetMessageHandlerTest {
                     assetToken = "some-asset-token",
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
                 ),
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
 
         )
@@ -407,15 +402,14 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
+        coVerify { arrangement.persistMessage(any()) }
             .wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(assetMessage.conversationId), eq(assetMessage.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                eq(assetMessage.conversationId), eq(assetMessage.id)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -435,8 +429,6 @@ class AssetMessageHandlerTest {
                     assetToken = "some-asset-token",
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
                 ),
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
 
         )
@@ -454,14 +446,10 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
+        coVerify { arrangement.persistMessage(any()) }
             .wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(assetMessage.conversationId), eq(assetMessage.id))
+        coVerify { arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id)) }
             .wasInvoked(exactly = once)
     }
 
@@ -484,7 +472,7 @@ class AssetMessageHandlerTest {
 
         fun withValidateAssetMime(result: Boolean) = apply {
             every {
-                validateAssetMimeType.invoke(any(), any())
+                validateAssetMimeType.invoke(any(), any(), any())
             }.returns(result)
         }
 
