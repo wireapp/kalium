@@ -44,11 +44,9 @@ internal class PersistMessageUseCaseImpl(
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
         val isSelfSender = message.isSelfTheSender(selfUserId)
-        val shouldUpdateConversationReadDate = modifiedMessage.content !is MessageContent.MissedCall && isSelfSender
 
         return messageRepository.persistMessage(
             message = modifiedMessage,
-            updateConversationReadDate = shouldUpdateConversationReadDate,
             updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
         ).onSuccess {
             val isConversationMuted = it == InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
