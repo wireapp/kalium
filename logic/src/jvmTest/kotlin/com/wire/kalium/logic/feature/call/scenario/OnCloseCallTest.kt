@@ -34,8 +34,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
-import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
@@ -57,9 +55,6 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
-    @Mock
-    val callHelper = mock(classOf<CallHelper>())
-
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -72,7 +67,6 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
-            callHelper,
             testScope,
             qualifiedIdMapper,
             networkStateObserver
@@ -316,7 +310,7 @@ class OnCloseCallTest {
             }.wasInvoked(once)
 
             coVerify {
-                callHelper.handleCallTermination(eq(conversationId), any())
+                callRepository.leaveMlsConference(eq(conversationId))
             }.wasInvoked(once)
         }
 

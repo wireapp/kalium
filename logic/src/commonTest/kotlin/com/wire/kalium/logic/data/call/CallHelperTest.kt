@@ -17,27 +17,18 @@
  */
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
-import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -116,109 +107,18 @@ class CallHelperTest {
             assertTrue { shouldEndSFTOneOnOneCall2 }
         }
 
-    @Test
-    fun givenMLSOneOnOneCallAndShouldUseSFTForOneOnOneCall_whenHandleCallTerminationIsCalled_thenDeleteRemoteSubConversation() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
-                .withFetchRemoteSubConversationDetailsReturning(
-                    Either.Right(subconversationResponse)
-                )
-                .withDeleteRemoteSubConversationSuccess()
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.ONE_ON_ONE)
-
-            coVerify {
-                arrangement.subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
-            }.wasInvoked(exactly = once)
-        }
-
-    @Test
-    fun givenSubconversationRepositoryReturnFailure_whenHandleCallTerminationIsCalled_thenDoNotDeleteRemoteSubConversation() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
-                .withFetchRemoteSubConversationDetailsReturning(
-                    Either.Left(
-                        NetworkFailure.ServerMiscommunication(
-                            TestNetworkException.badRequest
-                        )
-                    )
-                )
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.ONE_ON_ONE)
-
-            coVerify {
-                arrangement.subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
-            }.wasNotInvoked()
-        }
-
-    @Test
-    fun givenShouldNotUseSFTForOneOnOneCall_whenHandleCallTerminationIsCalled_thenLeaveMlsConference() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(false))
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.GROUP)
-
-            coVerify {
-                arrangement.callRepository.leaveMlsConference(any())
-            }.wasInvoked(exactly = once)
-        }
-
-    @Test
-    fun givenMLSGroupCall_whenHandleCallTerminationIsCalled_thenLeaveMlsConference() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.GROUP)
-
-            coVerify {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasInvoked(exactly = once)
-        }
-
     private class Arrangement {
-
-        @Mock
-        val callRepository = mock(classOf<CallRepository>())
-
-        @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val mLSCallHelper: CallHelper = CallHelperImpl(
-            callRepository = callRepository,
-            subconversationRepository = subconversationRepository,
-            userConfigRepository = userConfigRepository
-        )
+        private val mLSCallHelper: CallHelper = CallHelperImpl()
 
         fun arrange() = this to mLSCallHelper
 
         fun withShouldUseSFTForOneOnOneCallsReturning(result: Either<StorageFailure, Boolean>) =
             apply {
                 every { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(result)
-            }
-
-        suspend fun withFetchRemoteSubConversationDetailsReturning(result: Either<NetworkFailure, SubconversationResponse>) =
-            apply {
-                coEvery {
-                    subconversationRepository.fetchRemoteSubConversationDetails(eq(conversationId), eq(CALL_SUBCONVERSATION_ID))
-                }.returns(result)
-            }
-
-        suspend fun withDeleteRemoteSubConversationSuccess() =
-            apply {
-                coEvery {
-                    subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
-                }.returns(Either.Right(Unit))
             }
     }
 
@@ -247,6 +147,7 @@ class CallHelperTest {
             id = QualifiedID("participantId2", "participantDomain2"),
             clientId = "efgh"
         )
+<<<<<<< HEAD
         val participantMinimized1 = ParticipantMinimized(
             id = QualifiedID("participantId", "participantDomain"),
             userId = QualifiedID("participantId", "participantDomain"),
@@ -272,5 +173,7 @@ class CallHelperTest {
             mlsCipherSuiteTag = 5,
             members = listOf()
         )
+=======
+>>>>>>> 4d062f6eea (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) - RC (#3001))
     }
 }
