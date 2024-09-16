@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 
 enum class CallStatus {
     STARTED,
@@ -39,7 +40,7 @@ data class Call(
     val isMuted: Boolean,
     val isCameraOn: Boolean,
     val isCbrEnabled: Boolean,
-    val callerId: String,
+    val callerId: QualifiedID,
     val conversationName: String?,
     val conversationType: Conversation.Type,
     val callerName: String?,

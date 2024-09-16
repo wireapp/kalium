@@ -192,7 +192,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -242,7 +242,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -288,7 +288,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -343,7 +343,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -392,7 +392,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -427,7 +427,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -466,7 +466,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -504,7 +504,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -550,7 +550,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -587,7 +587,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -1477,7 +1477,7 @@ class CallRepositoryTest {
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
-        callerId = "callerId@domain",
+        callerId = UserId("callerId", "domain"),
         participants = listOf(),
         isMuted = false,
         isCameraOn = false,
@@ -1502,6 +1502,7 @@ class CallRepositoryTest {
     )
 
     private fun createCallMetadata() = CallMetadata(
+        callerId = callerId,
         isMuted = true,
         isCameraOn = false,
         isCbrEnabled = false,

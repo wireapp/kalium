@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.framework.TestCall
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -100,7 +101,7 @@ class MuteCallUseCaseTest {
         val call = Call(
             conversationId = conversationId,
             status = CallStatus.ESTABLISHED,
-            callerId = "called-id",
+            callerId = TestCall.CALLER_ID,
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,
