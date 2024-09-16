@@ -17,17 +17,17 @@
  */
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
+=======
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
 
 /**
  * Helper class to handle call related operations.
@@ -53,27 +53,9 @@ interface CallHelper {
         newCallParticipants: List<Participant>,
         previousCallParticipants: List<Participant>
     ): Boolean
-
-    /**
-     * Handle the call termination.
-     * If the call is oneOneOne on SFT, then delete MLS sub conversation
-     * otherwise leave the MLS conference.
-     *
-     * @param conversationId the conversation id.
-     * @param callProtocol the call protocol.
-     * @param conversationType the conversation type.
-     */
-    suspend fun handleCallTermination(
-        conversationId: ConversationId,
-        conversationType: Conversation.Type?
-    )
 }
 
-class CallHelperImpl(
-    private val callRepository: CallRepository,
-    private val subconversationRepository: SubconversationRepository,
-    private val userConfigRepository: UserConfigRepository
-) : CallHelper {
+class CallHelperImpl : CallHelper {
 
     override fun shouldEndSFTOneOnOneCall(
         conversationId: ConversationId,
@@ -91,36 +73,6 @@ class CallHelperImpl(
                     newCallParticipants.size == TWO_PARTICIPANTS &&
                     previousCallParticipants.size == TWO_PARTICIPANTS &&
                     previousCallParticipants[1].hasEstablishedAudio && !newCallParticipants[1].hasEstablishedAudio
-        }
-    }
-
-    override suspend fun handleCallTermination(
-        conversationId: ConversationId,
-        conversationType: Conversation.Type?
-    ) {
-        if (userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false) &&
-            conversationType == Conversation.Type.ONE_ON_ONE
-        ) {
-            callingLogger.i("[CallHelper] -> fetching remote MLS sub conversation details")
-            subconversationRepository.fetchRemoteSubConversationDetails(
-                conversationId,
-                CALL_SUBCONVERSATION_ID
-            ).onSuccess { subconversationDetails ->
-                callingLogger.i("[CallHelper] -> Deleting remote MLS sub conversation")
-                subconversationRepository.deleteRemoteSubConversation(
-                    subconversationDetails.parentId.toModel(),
-                    SubconversationId(subconversationDetails.id),
-                    SubconversationDeleteRequest(
-                        subconversationDetails.epoch,
-                        subconversationDetails.groupId
-                    )
-                )
-            }.onFailure {
-                callingLogger.e("[CallHelper] -> Error fetching remote MLS sub conversation details")
-            }
-        } else {
-            callingLogger.i("[CallHelper] -> Leaving MLS conference")
-            callRepository.leaveMlsConference(conversationId)
         }
     }
 

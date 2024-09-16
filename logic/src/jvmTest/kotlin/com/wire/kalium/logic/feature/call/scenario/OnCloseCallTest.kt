@@ -27,13 +27,15 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.call.CallHelper
+=======
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.coVerify
 import io.mockative.eq
@@ -57,9 +59,6 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
-    @Mock
-    val callHelper = mock(classOf<CallHelper>())
-
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -72,7 +71,6 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
-            callHelper,
             testScope,
             qualifiedIdMapper,
             networkStateObserver
@@ -116,9 +114,15 @@ class OnCloseCallTest {
         }
 
     @Test
+<<<<<<< HEAD
     fun givenCloseReasonIsRejected_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
         testScope.runTest {
             val reason = CallClosedReason.REJECTED.avsValue
+=======
+    fun givenCloseReasonIsCanceled_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val reason = CallClosedReason.CANCELLED.avsValue
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
 
             onCloseCall.onClosedCall(
                 reason,
@@ -130,6 +134,7 @@ class OnCloseCallTest {
             )
             yield()
 
+<<<<<<< HEAD
             coVerify {
                 callRepository.persistMissedCall(eq(conversationId))
             }.wasNotInvoked()
@@ -173,16 +178,57 @@ class OnCloseCallTest {
         }
 
     @Test
-    fun givenAnIncomingGroupCall_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
-        testScope.runTest {
-            val incomingCall = callMetadata.copy(
-                callStatus = CallStatus.INCOMING,
-                conversationType = Conversation.Type.GROUP
-            )
+=======
+            verify(callRepository)
+                .suspendFunction(callRepository::persistMissedCall)
+                .with(eq(conversationId))
+                .wasInvoked(once)
 
-            every {
-                callRepository.getCallMetadataProfile()
-            }.returns(CallMetadataProfile(mapOf(conversationId to incomingCall)))
+            verify(callRepository)
+                .suspendFunction(callRepository::updateCallStatusById)
+                .with(eq(conversationId), eq(CallStatus.MISSED))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::leaveMlsConference)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenCloseReasonIsRejected_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val reason = CallClosedReason.REJECTED.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            verify(callRepository)
+                .suspendFunction(callRepository::persistMissedCall)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+
+            verify(callRepository)
+                .suspendFunction(callRepository::updateCallStatusById)
+                .with(eq(conversationId), eq(CallStatus.REJECTED))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::leaveMlsConference)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenCloseReasonIsEndedNormally_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
 
             val reason = CallClosedReason.NORMAL.avsValue
 
@@ -196,6 +242,57 @@ class OnCloseCallTest {
             )
             yield()
 
+            verify(callRepository)
+                .suspendFunction(callRepository::persistMissedCall)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+
+            verify(callRepository)
+                .suspendFunction(callRepository::updateCallStatusById)
+                .with(eq(conversationId), eq(CallStatus.CLOSED))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::leaveMlsConference)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+        }
+
+    @Test
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
+    fun givenAnIncomingGroupCall_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val incomingCall = callMetadata.copy(
+                callStatus = CallStatus.INCOMING,
+                conversationType = Conversation.Type.GROUP
+            )
+
+<<<<<<< HEAD
+            every {
+                callRepository.getCallMetadataProfile()
+            }.returns(CallMetadataProfile(mapOf(conversationId to incomingCall)))
+=======
+            given(callRepository)
+                .function(callRepository::getCallMetadataProfile)
+                .whenInvoked()
+                .thenReturn(
+                    CallMetadataProfile(mapOf(conversationId to incomingCall))
+                )
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
+
+            val reason = CallClosedReason.NORMAL.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+<<<<<<< HEAD
             coVerify {
                 callRepository.persistMissedCall(eq(conversationId))
             }.wasInvoked(once)
@@ -207,6 +304,22 @@ class OnCloseCallTest {
             coVerify {
                 callRepository.leaveMlsConference(eq(conversationId))
             }.wasNotInvoked()
+=======
+            verify(callRepository)
+                .suspendFunction(callRepository::persistMissedCall)
+                .with(eq(conversationId))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::updateCallStatusById)
+                .with(eq(conversationId), eq(CallStatus.CLOSED))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::leaveMlsConference)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
         }
 
     @Test
@@ -217,9 +330,18 @@ class OnCloseCallTest {
                 conversationType = Conversation.Type.GROUP
             )
 
+<<<<<<< HEAD
             every {
                 callRepository.getCallMetadataProfile()
             }.returns(CallMetadataProfile(mapOf(conversationId to closedInternallyCall)))
+=======
+            given(callRepository)
+                .function(callRepository::getCallMetadataProfile)
+                .whenInvoked()
+                .thenReturn(
+                    CallMetadataProfile(mapOf(conversationId to closedInternallyCall))
+                )
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
 
             val reason = CallClosedReason.NORMAL.avsValue
 
@@ -233,6 +355,7 @@ class OnCloseCallTest {
             )
             yield()
 
+<<<<<<< HEAD
             coVerify {
                 callRepository.persistMissedCall(eq(conversationId))
             }.wasNotInvoked()
@@ -244,6 +367,22 @@ class OnCloseCallTest {
             coVerify {
                 callRepository.leaveMlsConference(eq(conversationId))
             }.wasNotInvoked()
+=======
+            verify(callRepository)
+                .suspendFunction(callRepository::persistMissedCall)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+
+            verify(callRepository)
+                .suspendFunction(callRepository::updateCallStatusById)
+                .with(eq(conversationId), eq(CallStatus.CLOSED))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::leaveMlsConference)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
         }
 
     @Test
@@ -255,9 +394,18 @@ class OnCloseCallTest {
                 conversationType = Conversation.Type.GROUP
             )
 
+<<<<<<< HEAD
             every {
                 callRepository.getCallMetadataProfile()
             }.returns(CallMetadataProfile(mapOf(conversationId to establishedCall)))
+=======
+            given(callRepository)
+                .function(callRepository::getCallMetadataProfile)
+                .whenInvoked()
+                .thenReturn(
+                    CallMetadataProfile(mapOf(conversationId to establishedCall))
+                )
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
             val reason = CallClosedReason.NORMAL.avsValue
 
             onCloseCall.onClosedCall(
@@ -270,6 +418,7 @@ class OnCloseCallTest {
             )
             yield()
 
+<<<<<<< HEAD
             coVerify {
                 callRepository.persistMissedCall(eq(conversationId))
             }.wasNotInvoked()
@@ -281,6 +430,22 @@ class OnCloseCallTest {
             coVerify {
                 callRepository.leaveMlsConference(eq(conversationId))
             }.wasNotInvoked()
+=======
+            verify(callRepository)
+                .suspendFunction(callRepository::persistMissedCall)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+
+            verify(callRepository)
+                .suspendFunction(callRepository::updateCallStatusById)
+                .with(eq(conversationId), eq(CallStatus.CLOSED))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::leaveMlsConference)
+                .with(eq(conversationId))
+                .wasNotInvoked()
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
         }
 
     @Test
@@ -296,9 +461,18 @@ class OnCloseCallTest {
                 )
             )
 
+<<<<<<< HEAD
             every {
                 callRepository.getCallMetadataProfile()
             }.returns(CallMetadataProfile(mapOf(conversationId to mlsCall)))
+=======
+            given(callRepository)
+                .function(callRepository::getCallMetadataProfile)
+                .whenInvoked()
+                .thenReturn(
+                    CallMetadataProfile(mapOf(conversationId to mlsCall))
+                )
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
             val reason = CallClosedReason.NORMAL.avsValue
 
             onCloseCall.onClosedCall(
@@ -311,6 +485,7 @@ class OnCloseCallTest {
             )
             yield()
 
+<<<<<<< HEAD
             coVerify {
                 callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
             }.wasInvoked(once)
@@ -342,6 +517,17 @@ class OnCloseCallTest {
             coVerify {
                 callRepository.persistMissedCall(conversationId)
             }.wasNotInvoked()
+=======
+            verify(callRepository)
+                .suspendFunction(callRepository::updateCallStatusById)
+                .with(eq(conversationId), eq(CallStatus.CLOSED))
+                .wasInvoked(once)
+
+            verify(callRepository)
+                .suspendFunction(callRepository::leaveMlsConference)
+                .with(eq(conversationId))
+                .wasInvoked(once)
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000))
         }
 
     companion object {

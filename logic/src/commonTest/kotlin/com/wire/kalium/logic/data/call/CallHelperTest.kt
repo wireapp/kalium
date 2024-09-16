@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -27,24 +26,31 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
+<<<<<<< HEAD:logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/MLSCallHelperTest.kt
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
+=======
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000)):logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/CallHelperTest.kt
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
+<<<<<<< HEAD:logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/MLSCallHelperTest.kt
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+=======
+import io.mockative.given
+import io.mockative.mock
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000)):logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/CallHelperTest.kt
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class MLSCallHelperTest {
+class CallHelperTest {
 
     @Test
     fun givenMlsProtocol_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
@@ -116,6 +122,7 @@ class MLSCallHelperTest {
             assertTrue { shouldEndSFTOneOnOneCall2 }
         }
 
+<<<<<<< HEAD:logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/MLSCallHelperTest.kt
     @Test
     fun givenMLSOneOnOneCallAndShouldUseSFTForOneOnOneCall_whenHandleCallTerminationIsCalled_thenDeleteRemoteSubConversation() =
         runTest {
@@ -183,22 +190,14 @@ class MLSCallHelperTest {
             }.wasInvoked(exactly = once)
         }
 
+=======
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000)):logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/CallHelperTest.kt
     private class Arrangement {
-
-        @Mock
-        val callRepository = mock(classOf<CallRepository>())
-
-        @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val mLSCallHelper: CallHelper = CallHelperImpl(
-            callRepository = callRepository,
-            subconversationRepository = subconversationRepository,
-            userConfigRepository = userConfigRepository
-        )
+        private val mLSCallHelper: CallHelper = CallHelperImpl()
 
         fun arrange() = this to mLSCallHelper
 
@@ -206,6 +205,7 @@ class MLSCallHelperTest {
             apply {
                 every { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(result)
             }
+<<<<<<< HEAD:logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/MLSCallHelperTest.kt
 
         suspend fun withFetchRemoteSubConversationDetailsReturning(result: Either<NetworkFailure, SubconversationResponse>) =
             apply {
@@ -220,6 +220,8 @@ class MLSCallHelperTest {
                     subconversationRepository.deleteRemoteSubConversation(any(), any(), any())
                 }.returns(Either.Right(Unit))
             }
+=======
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000)):logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/CallHelperTest.kt
     }
 
     companion object {
@@ -246,6 +248,7 @@ class MLSCallHelperTest {
             id = QualifiedID("participantId2", "participantDomain2"),
             clientId = "efgh"
         )
+<<<<<<< HEAD:logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/MLSCallHelperTest.kt
         val subconversationResponse = SubconversationResponse(
             id = "subconversationId",
             parentId = com.wire.kalium.network.api.model.ConversationId(
@@ -258,5 +261,7 @@ class MLSCallHelperTest {
             mlsCipherSuiteTag = 5,
             members = listOf()
         )
+=======
+>>>>>>> 8728f137e5 (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) (#3000)):logic/src/commonTest/kotlin/com/wire/kalium/logic/data/call/CallHelperTest.kt
     }
 }
