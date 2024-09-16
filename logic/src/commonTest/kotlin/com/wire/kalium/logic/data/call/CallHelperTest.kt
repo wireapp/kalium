@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -27,23 +26,17 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class MLSCallHelperTest {
+class CallHelperTest {
 
     @Test
     fun givenMlsProtocol_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
@@ -115,93 +108,12 @@ class MLSCallHelperTest {
             assertTrue { shouldEndSFTOneOnOneCall2 }
         }
 
-    @Test
-    fun givenMLSOneOnOneCallAndShouldUseSFTForOneOnOneCall_whenHandleCallTerminationIsCalled_thenDeleteRemoteSubConversation() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
-                .withFetchRemoteSubConversationDetailsReturning(
-                    Either.Right(subconversationResponse)
-                )
-                .withDeleteRemoteSubConversationSuccess()
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.ONE_ON_ONE)
-
-            verify(arrangement.subconversationRepository)
-                .suspendFunction(arrangement.subconversationRepository::deleteRemoteSubConversation)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
-        }
-
-    @Test
-    fun givenSubconversationRepositoryReturnFailure_whenHandleCallTerminationIsCalled_thenDoNotDeleteRemoteSubConversation() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
-                .withFetchRemoteSubConversationDetailsReturning(
-                    Either.Left(
-                        NetworkFailure.ServerMiscommunication(
-                            TestNetworkException.badRequest
-                        )
-                    )
-                )
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.ONE_ON_ONE)
-
-            verify(arrangement.subconversationRepository)
-                .suspendFunction(arrangement.subconversationRepository::deleteRemoteSubConversation)
-                .with(eq(conversationId))
-                .wasNotInvoked()
-        }
-
-    @Test
-    fun givenShouldNotUseSFTForOneOnOneCall_whenHandleCallTerminationIsCalled_thenLeaveMlsConference() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(false))
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.GROUP)
-
-            verify(arrangement.callRepository)
-                .suspendFunction(arrangement.callRepository::leaveMlsConference)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
-        }
-
-    @Test
-    fun givenMLSGroupCall_whenHandleCallTerminationIsCalled_thenLeaveMlsConference() =
-        runTest {
-            val (arrangement, mLSCallHelper) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
-                .arrange()
-
-            mLSCallHelper.handleCallTermination(conversationId, Conversation.Type.GROUP)
-
-            verify(arrangement.callRepository)
-                .suspendFunction(arrangement.callRepository::leaveMlsConference)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
-        }
-
     private class Arrangement {
-
-        @Mock
-        val callRepository = mock(classOf<CallRepository>())
-
-        @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val mLSCallHelper: CallHelper = CallHelperImpl(
-            callRepository = callRepository,
-            subconversationRepository = subconversationRepository,
-            userConfigRepository = userConfigRepository
-        )
+        private val mLSCallHelper: CallHelper = CallHelperImpl()
 
         fun arrange() = this to mLSCallHelper
 
@@ -211,22 +123,6 @@ class MLSCallHelperTest {
                     .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
                     .whenInvoked()
                     .thenReturn(result)
-            }
-
-        fun withFetchRemoteSubConversationDetailsReturning(result: Either<NetworkFailure, SubconversationResponse>) =
-            apply {
-                given(subconversationRepository)
-                    .suspendFunction(subconversationRepository::fetchRemoteSubConversationDetails)
-                    .whenInvokedWith(eq(conversationId), eq(CALL_SUBCONVERSATION_ID))
-                    .thenReturn(result)
-            }
-
-        fun withDeleteRemoteSubConversationSuccess() =
-            apply {
-                given(subconversationRepository)
-                    .suspendFunction(subconversationRepository::deleteRemoteSubConversation)
-                    .whenInvokedWith(any(), any(), any())
-                    .thenReturn(Either.Right(Unit))
             }
     }
 
@@ -253,18 +149,6 @@ class MLSCallHelperTest {
         val participant2 = participant1.copy(
             id = QualifiedID("participantId2", "participantDomain2"),
             clientId = "efgh"
-        )
-        val subconversationResponse = SubconversationResponse(
-            id = "subconversationId",
-            parentId = com.wire.kalium.network.api.base.model.ConversationId(
-                "conversationId",
-                "domainId"
-            ),
-            groupId = "groupId",
-            epoch = 1UL,
-            epochTimestamp = "2021-03-30T15:36:00.000Z",
-            mlsCipherSuiteTag = 5,
-            members = listOf()
         )
     }
 }
