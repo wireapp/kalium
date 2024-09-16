@@ -163,7 +163,7 @@ class MessageRepositoryTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                messageDAO.insertOrIgnoreMessage(eq(mappedEntity), any(), any())
+                messageDAO.insertOrIgnoreMessage(eq(mappedEntity), any())
             }.wasInvoked(exactly = once)
         }
     }
@@ -764,7 +764,7 @@ class MessageRepositoryTest {
 
         suspend fun withInsertOrIgnoreMessage(result: InsertMessageResult) = apply {
             coEvery {
-                messageDAO.insertOrIgnoreMessage(any(), any(), any())
+                messageDAO.insertOrIgnoreMessage(any(), any())
             }.returns(result)
         }
 

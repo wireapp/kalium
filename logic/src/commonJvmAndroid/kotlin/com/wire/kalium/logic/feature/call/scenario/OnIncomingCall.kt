@@ -62,7 +62,7 @@ class OnIncomingCall(
             callRepository.createCall(
                 conversationId = qualifiedConversationId,
                 status = status,
-                callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
+                callerId = qualifiedIdMapper.fromStringToQualifiedID(userId),
                 isMuted = isMuted,
                 isCameraOn = false,
                 type = mappedConversationType,

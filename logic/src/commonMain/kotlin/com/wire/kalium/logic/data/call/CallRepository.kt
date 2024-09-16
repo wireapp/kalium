@@ -81,6 +81,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -108,7 +109,7 @@ interface CallRepository {
         conversationId: ConversationId,
         type: ConversationTypeForCall,
         status: CallStatus,
-        callerId: String,
+        callerId: UserId,
         isMuted: Boolean,
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
@@ -133,6 +134,7 @@ interface CallRepository {
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
     suspend fun advanceEpoch(conversationId: ConversationId)
     fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
+    suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -161,6 +163,26 @@ internal class CallDataSource(
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
     private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
+
+    override suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?> = _callMetadataProfile.map {
+        it[conversationId]?.let { currentCall ->
+            Call(
+                conversationId = conversationId,
+                status = currentCall.callStatus,
+                isMuted = currentCall.isMuted,
+                isCameraOn = currentCall.isCameraOn,
+                isCbrEnabled = currentCall.isCbrEnabled,
+                callerId = currentCall.callerId,
+                conversationName = currentCall.conversationName,
+                conversationType = currentCall.conversationType,
+                callerName = currentCall.callerName,
+                callerTeamName = currentCall.callerTeamName,
+                establishedTime = currentCall.establishedTime,
+                participants = currentCall.getFullParticipants(),
+                maxParticipants = currentCall.maxParticipants
+            )
+        }
+    }
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -191,7 +213,7 @@ internal class CallDataSource(
         conversationId: ConversationId,
         type: ConversationTypeForCall,
         status: CallStatus,
-        callerId: String,
+        callerId: UserId,
         isMuted: Boolean,
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
@@ -199,10 +221,7 @@ internal class CallDataSource(
         val conversation: ConversationDetails =
             conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
-        // in OnIncomingCall we get callerId without a domain,
-        // to cover that case and have a valid UserId we have that workaround
-        val callerIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(callerId)
-        val caller = userRepository.getKnownUser(callerIdWithDomain).first()
+        val caller = userRepository.getKnownUser(callerId).first()
         val team = caller?.teamId?.let { teamId -> teamRepository.getTeam(teamId).first() }
 
         val callEntity = callMapper.toCallEntity(
@@ -211,10 +230,11 @@ internal class CallDataSource(
             type = type,
             status = status,
             conversationType = conversation.conversation.type,
-            callerId = callerIdWithDomain
+            callerId = callerId
         )
 
         val metadata = CallMetadata(
+            callerId = callerId,
             conversationName = conversation.conversation.name,
             conversationType = conversation.conversation.type,
             callerName = caller?.name,

@@ -38,7 +38,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageTextEditTest : BaseMessageTest() {
 
     @Test
@@ -247,7 +246,7 @@ class MessageTextEditTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenTextWasInsertedAndIsRead_whenUpdatingContentWithSelfMention_thenUnreadEventShouldNotChange() = runTest {
+    fun givenTextWasInsertedAndIsNotRead_whenUpdatingContentWithSelfMention_thenUnreadEventShouldNotChange() = runTest {
         // Given
         val initMentions = listOf(
             MessageEntity.Mention(0, 1, SELF_USER_ID),
@@ -255,8 +254,7 @@ class MessageTextEditTest : BaseMessageTest() {
         )
 
         insertInitialDataWithMentions(
-            mentions = initMentions,
-            updateConversationReadDate = true
+            mentions = initMentions
         )
 
         // When
@@ -276,20 +274,19 @@ class MessageTextEditTest : BaseMessageTest() {
         val unreadEvents = messageDAO.observeUnreadEvents()
             .first()[CONVERSATION_ID]
 
-        assertTrue(unreadEvents.isNullOrEmpty())
+        assertNotNull(unreadEvents)
+        assertEquals(1, unreadEvents.size)
     }
 
     private suspend fun insertInitialDataWithMentions(
         mentions: List<MessageEntity.Mention>,
-        updateConversationReadDate: Boolean = false
     ) {
         super.insertInitialData()
 
         messageDAO.insertOrIgnoreMessage(
             ORIGINAL_MESSAGE.copy(
                 content = ORIGINAL_CONTENT.copy(mentions = mentions)
-            ),
-            updateConversationReadDate = updateConversationReadDate
+            )
         )
     }
 

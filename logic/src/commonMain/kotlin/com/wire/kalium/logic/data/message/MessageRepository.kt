@@ -80,7 +80,6 @@ internal interface MessageRepository {
     )
     suspend fun persistMessage(
         message: Message.Standalone,
-        updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false,
     ): Either<CoreFailure, InsertMessageResult>
 
@@ -321,12 +320,10 @@ internal class MessageDataSource internal constructor(
     )
     override suspend fun persistMessage(
         message: Message.Standalone,
-        updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
     ): Either<CoreFailure, InsertMessageResult> = wrapStorageRequest {
         messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
-            updateConversationReadDate,
             updateConversationModifiedDate
         )
     }
