@@ -34,7 +34,7 @@ data class AssetContent(
     }
 
     // We should not display Preview Assets (assets w/o valid encryption keys sent by Mac/Web clients) unless they include image metadata
-    val shouldBeDisplayed = !isPreviewMessage || hasValidImageMetadata
+    val isAssetDataComplete = !isPreviewMessage || hasValidImageMetadata
 
     sealed class AssetMetadata {
         data class Image(val width: Int, val height: Int) : AssetMetadata()

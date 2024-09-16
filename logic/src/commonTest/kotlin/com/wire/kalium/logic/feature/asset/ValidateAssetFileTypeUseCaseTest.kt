@@ -28,7 +28,7 @@ class ValidateAssetFileTypeUseCaseTest {
     fun givenRegularFileNameWithAllowedExtension_whenInvoke_thenBeApproved() = runTest {
         val (_, validate) = arrange {}
 
-        val result = validate("name.txt", listOf("txt", "jpg"))
+        val result = validate(fileName = "name.txt", mimeType = "", allowedExtension = listOf("txt", "jpg"))
 
         assertTrue(result)
     }
@@ -37,7 +37,7 @@ class ValidateAssetFileTypeUseCaseTest {
     fun givenRegularFileNameWithNOTAllowedExtension_whenInvoke_thenBeRestricted() = runTest {
         val (_, validate) = arrange {}
 
-        val result = validate("name.php", listOf("txt", "jpg"))
+        val result = validate(fileName = "name.php", mimeType = "", allowedExtension = listOf("txt", "jpg"))
 
         assertFalse(result)
     }
@@ -46,7 +46,7 @@ class ValidateAssetFileTypeUseCaseTest {
     fun givenRegularFileNameWithoutExtension_whenInvoke_thenBeRestricted() = runTest {
         val (_, validate) = arrange {}
 
-        val result = validate("name", listOf("txt", "jpg"))
+        val result = validate(fileName = "name", mimeType = "", allowedExtension = listOf("txt", "jpg"))
 
         assertFalse(result)
     }
@@ -55,24 +55,40 @@ class ValidateAssetFileTypeUseCaseTest {
     fun givenNullFileName_whenInvoke_thenBeRestricted() = runTest {
         val (_, validate) = arrange {}
 
-        val result = validate(null, listOf("txt", "jpg"))
+        val result = validate(fileName = null, mimeType = "", allowedExtension = listOf("txt", "jpg"))
 
         assertFalse(result)
     }
 
     @Test
-    fun givenRegularFileNameWithFewExtensions_whenInvoke_thenEachExtensionIsChecked() = runTest {
+    fun givenFileNameIs() = runTest {
         val (_, validate) = arrange {}
 
-        val result1 = validate("name.php.txt", listOf("txt", "jpg"))
-        val result2 = validate("name.txt.php", listOf("txt", "jpg"))
-        val result3 = validate("name..txt.jpg", listOf("txt", "jpg"))
-        val result4 = validate("name.txt.php.txt.jpg", listOf("txt", "jpg"))
+        val result = validate(fileName = null, mimeType = "image/jpg", allowedExtension = listOf("txt", "jpg"))
 
-        assertFalse(result1)
-        assertFalse(result2)
-        assertFalse(result3)
-        assertFalse(result4)
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNullFileNameAndValidMimeType_whenInvoke_thenMimeTypeIsChecked() = runTest {
+        val (_, validate) = arrange {}
+
+        val result = validate(fileName = null, mimeType = "image/jpg", allowedExtension = listOf("txt", "jpg"))
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNullFileNameAndInvalidMimeType_whenInvoke_thenMimeTypeIsChecked() = runTest {
+        val (_, validate) = arrange {}
+
+        val result = validate(
+            fileName = null,
+            mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            allowedExtension = listOf("txt", "jpg")
+        )
+
+        assertFalse(result)
     }
 
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
