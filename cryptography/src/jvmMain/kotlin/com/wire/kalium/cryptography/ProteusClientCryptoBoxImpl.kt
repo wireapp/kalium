@@ -27,16 +27,12 @@ import java.util.Base64
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-class ProteusClientCryptoBoxImpl constructor(
+class ProteusClientCryptoBoxImpl(
     rootDir: String
 ) : ProteusClient {
 
-    private val path: String
+    private val path: String = rootDir
     private lateinit var box: CryptoBox
-
-    init {
-        path = rootDir
-    }
 
     fun openOrCreate() {
         val directory = File(path)
@@ -84,14 +80,18 @@ class ProteusClientCryptoBoxImpl constructor(
         wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), ByteArray(0)) }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException { box.decrypt(sessionId.value, message) }
+    override suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T = wrapException {
+        handleDecryptedMessage(box.decrypt(sessionId.value, message))
     }
 
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException {
             box.encryptFromSession(sessionId.value, message)
-        }?.let { it } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
+        } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
     }
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
@@ -121,7 +121,7 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun <T> wrapException(b: () -> T): T {
+    private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {

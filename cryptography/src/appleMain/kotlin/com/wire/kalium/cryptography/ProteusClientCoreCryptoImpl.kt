@@ -31,7 +31,8 @@ import platform.Foundation.URLByAppendingPathComponent
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: CoreCrypto) : ProteusClient {
     @Suppress("EmptyFunctionBlock")
-    override suspend fun close() {}
+    override suspend fun close() {
+    }
 
     override fun getIdentity(): ByteArray {
         return ByteArray(0)
@@ -72,18 +73,21 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         wrapException { coreCrypto.proteusSessionFromPrekey(sessionId.value, toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes())) }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T {
         val sessionExists = doesSessionExist(sessionId)
 
         return wrapException {
-            if (sessionExists) {
-                val decryptedMessage = toByteArray(coreCrypto.proteusDecrypt(sessionId.value, toUByteList(message)))
-                coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
+            val decryptedMessage = if (sessionExists) {
+                toByteArray(coreCrypto.proteusDecrypt(sessionId.value, toUByteList(message)))
             } else {
-                val decryptedMessage = toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))
+                toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))
+            }
+            handleDecryptedMessage(decryptedMessage).also {
                 coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
             }
         }
     }
@@ -129,7 +133,7 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun <T> wrapException(b: () -> T): T {
+    private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {

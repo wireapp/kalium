@@ -59,44 +59,43 @@ internal class NewMessageEventHandlerImpl(
 
     override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo) {
         val eventLogger = logger.createEventProcessingLogger(event)
-        proteusMessageUnpacker.unpackProteusMessage(event)
-            .onFailure {
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                    "errorInfo" to "$it",
-                    "protocol" to "Proteus"
-                )
+        proteusMessageUnpacker.unpackProteusMessage(event) {
+            processApplicationMessage(it, deliveryInfo)
+            it
+        }.onSuccess {
+            eventLogger.logSuccess(
+                "protocol" to "Proteus",
+                "messageType" to it.messageTypeDescription,
+            )
+        }.onFailure {
+            val logMap = mapOf(
+                "event" to event.toLogMap(),
+                "errorInfo" to "$it",
+                "protocol" to "Proteus"
+            )
 
-                if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.DUPLICATE_MESSAGE) {
-                    logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
-                    return
-                }
-
-                logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
-
-                applicationMessageHandler.handleDecryptionError(
-                    eventId = event.id,
-                    conversationId = event.conversationId,
-                    messageInstant = event.messageInstant,
-                    senderUserId = event.senderUserId,
-                    senderClientId = event.senderClientId,
-                    content = MessageContent.FailedDecryption(
-                        encodedData = event.encryptedExternalContent?.data,
-                        isDecryptionResolved = false,
-                        senderUserId = event.senderUserId,
-                        clientId = ClientId(event.senderClientId.value)
-                    )
-                )
-                eventLogger.logFailure(it, "protocol" to "Proteus")
-            }.onSuccess {
-                if (it is MessageUnpackResult.ApplicationMessage) {
-                    processApplicationMessage(it, deliveryInfo)
-                }
-                eventLogger.logSuccess(
-                    "protocol" to "Proteus",
-                    "messageType" to it.messageTypeDescription,
-                )
+            if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.DUPLICATE_MESSAGE) {
+                logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
+                return
             }
+
+            logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
+
+            applicationMessageHandler.handleDecryptionError(
+                eventId = event.id,
+                conversationId = event.conversationId,
+                messageInstant = event.messageInstant,
+                senderUserId = event.senderUserId,
+                senderClientId = event.senderClientId,
+                content = MessageContent.FailedDecryption(
+                    encodedData = event.encryptedExternalContent?.data,
+                    isDecryptionResolved = false,
+                    senderUserId = event.senderUserId,
+                    clientId = ClientId(event.senderClientId.value)
+                )
+            )
+            eventLogger.logFailure(it, "protocol" to "Proteus")
+        }
     }
 
     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
