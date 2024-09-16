@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.call.scenario
 
-import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.calling.ConversationTypeCalling
+import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.ConversationTypeForCall
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
@@ -66,7 +66,7 @@ class OnIncomingCallTest {
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationTypeForCall.Conference),
                 eq(CallStatus.INCOMING),
-                eq(TestUser.USER_ID.toString()),
+                eq(TestUser.USER_ID),
                 eq(true),
                 eq(false),
                 eq(false)
@@ -96,7 +96,7 @@ class OnIncomingCallTest {
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationTypeForCall.Conference),
                 eq(CallStatus.STILL_ONGOING),
-                eq(TestUser.USER_ID.toString()),
+                eq(TestUser.USER_ID),
                 eq(true),
                 eq(false),
                 eq(false)

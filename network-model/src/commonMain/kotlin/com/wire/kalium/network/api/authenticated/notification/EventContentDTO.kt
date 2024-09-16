@@ -206,7 +206,9 @@ sealed class EventContentDTO {
         data class NewMessageDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("conversation") val conversation: String? = null,
             @SerialName("time") val time: Instant,
+            @SerialName("from") val from: String? = null,
             @SerialName("data") val data: MessageEventData,
         ) : Conversation()
 

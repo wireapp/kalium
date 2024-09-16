@@ -53,6 +53,8 @@ import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
@@ -127,6 +129,12 @@ class CallsScope internal constructor(
     val observeOngoingCalls: ObserveOngoingCallsUseCase
         get() = ObserveOngoingCallsUseCaseImpl(
             callRepository = callRepository,
+        )
+
+    val observeEstablishedCallWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
+        get() = ObserveEstablishedCallWithSortedParticipantsUseCaseImpl(
+            callRepository = callRepository,
+            callingParticipantsOrder = callingParticipantsOrder
         )
 
     val startCall: StartCallUseCase

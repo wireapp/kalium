@@ -40,10 +40,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 
-class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClientID, val proteusClient: ProteusClient) {
+class EventGenerator(private val selfClient: QualifiedClientID, targetClient: QualifiedClientID, val proteusClient: ProteusClient) {
 
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserID)
-    private val sessionId = CryptoSessionId(targetClient.userId.toCrypto(), CryptoClientId(targetClient.clientId.value))
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfClient.userId)
+    private val targetSessionId = CryptoSessionId(
+        targetClient.userId.toCrypto(),
+        CryptoClientId(targetClient.clientId.value)
+    )
+    private val selfSessionId = CryptoSessionId(
+        selfClient.userId.toCrypto(),
+        CryptoClientId(selfClient.clientId.value)
+    )
 
     fun generateEvents(
         limit: Int,
@@ -52,8 +59,8 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
         return flow {
             repeat(limit) { count ->
                 val protobuf = generateProtoContent(generateTextContent(count))
-                val message = encryptMessage(protobuf, proteusClient, sessionId, sessionId)
-                val event = generateNewMessageDTO(selfUserID, conversationId, message)
+                val message = encryptMessage(protobuf, proteusClient, selfSessionId, targetSessionId)
+                val event = generateNewMessageDTO(selfClient.userId, conversationId, message)
                 emit(generateEventResponse(event))
             }
         }
@@ -87,8 +94,8 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
     ): MessageEventData {
         return MessageEventData(
             text = proteusClient.encrypt(message.data, recipient).encodeBase64(),
-            sender = sender.value,
-            recipient = recipient.value,
+            sender = sender.cryptoClientId.value,
+            recipient = recipient.cryptoClientId.value,
             encryptedExternalData = null
         )
     }
@@ -101,6 +108,8 @@ class EventGenerator(private val selfUserID: UserId, targetClient: QualifiedClie
         return EventContentDTO.Conversation.NewMessageDTO(
             qualifiedConversation = conversationId.toApi(),
             qualifiedFrom = from.toApi(),
+            conversation = conversationId.toPlainID().value,
+            from = from.toPlainID().value,
             time = Clock.System.now(),
             data = data
         )

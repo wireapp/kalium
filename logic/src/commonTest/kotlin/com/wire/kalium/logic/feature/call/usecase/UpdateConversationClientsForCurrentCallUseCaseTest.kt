@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.framework.TestCall
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -89,7 +90,7 @@ class UpdateConversationClientsForCurrentCallUseCaseTest {
         private val call = Call(
             conversationId = CONVERSATION_ID,
             status = CallStatus.ESTABLISHED,
-            callerId = "called-id",
+            callerId = TestCall.CALLER_ID,
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
@@ -31,6 +32,7 @@ data class CallMetadataProfile(
 }
 
 data class CallMetadata(
+    val callerId: QualifiedID,
     val isMuted: Boolean,
     val isCameraOn: Boolean,
     val isCbrEnabled: Boolean,

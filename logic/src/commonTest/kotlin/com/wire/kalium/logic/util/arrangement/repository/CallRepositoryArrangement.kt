@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestCall
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -77,7 +78,7 @@ internal open class CallRepositoryArrangementImpl : CallRepositoryArrangement {
         val call = Call(
             conversationId = ConversationId("conversationId", "domain"),
             status = CallStatus.ESTABLISHED,
-            callerId = UserId("caller", "domain").toString(),
+            callerId = TestCall.CALLER_ID,
             participants = listOf(),
             isMuted = true,
             isCameraOn = false,
