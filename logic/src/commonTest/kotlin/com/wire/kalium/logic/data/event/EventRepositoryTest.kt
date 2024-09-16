@@ -58,10 +58,10 @@ class EventRepositoryTest {
     @Test
     fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
         val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            TestConversation.NETWORK_ID,
-            UserId("value", "domain"),
-            Instant.UNIX_FIRST_DATE,
-            MessageEventData("text", "senderId", "recipient")
+            qualifiedConversation = TestConversation.NETWORK_ID,
+            qualifiedFrom = UserId("value", "domain"),
+            time = Instant.UNIX_FIRST_DATE,
+            data = MessageEventData("text", "senderId", "recipient")
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))

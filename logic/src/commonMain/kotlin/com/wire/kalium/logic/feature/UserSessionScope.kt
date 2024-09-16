@@ -1794,6 +1794,7 @@ class UserSessionScope internal constructor(
             userRepository,
             userId,
             assetRepository,
+            eventRepository,
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,

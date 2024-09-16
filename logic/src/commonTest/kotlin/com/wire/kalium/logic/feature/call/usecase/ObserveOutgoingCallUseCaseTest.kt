@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.framework.TestCall
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
@@ -68,7 +69,7 @@ class ObserveOutgoingCallUseCaseTest {
                 domain = "conversationDomain"
             ),
             status = CallStatus.STARTED,
-            callerId = "callerId@domain",
+            callerId = TestCall.CALLER_ID,
             participants = listOf(),
             isMuted = true,
             isCameraOn = false,

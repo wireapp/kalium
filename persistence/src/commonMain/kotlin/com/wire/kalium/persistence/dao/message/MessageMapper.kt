@@ -486,6 +486,7 @@ object MessageMapper {
         restrictedAssetSize: Long?,
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?,
+        decryptionErrorCode: Long?,
         isDecryptionResolved: Boolean?,
         conversationName: String?,
         allReactionsJson: String,
@@ -576,6 +577,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
+                code = decryptionErrorCode?.toInt(),
                 isDecryptionResolved = isDecryptionResolved ?: false,
                 senderUserId = senderUserId,
                 senderClientId = senderClientId

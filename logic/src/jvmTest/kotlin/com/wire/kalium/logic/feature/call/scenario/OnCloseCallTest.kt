@@ -19,16 +19,17 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
-import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
@@ -40,7 +41,6 @@ import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -58,7 +58,7 @@ class OnCloseCallTest {
     val networkStateObserver = mock(NetworkStateObserver::class)
 
     @Mock
-    val mlsCallHelper = mock(classOf<MLSCallHelper>())
+    val callHelper = mock(classOf<CallHelper>())
 
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
@@ -72,7 +72,7 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
-            mlsCallHelper,
+            callHelper,
             testScope,
             qualifiedIdMapper,
             networkStateObserver
@@ -316,7 +316,7 @@ class OnCloseCallTest {
             }.wasInvoked(once)
 
             coVerify {
-                mlsCallHelper.handleCallTermination(eq(conversationId), any())
+                callHelper.handleCallTermination(eq(conversationId), any())
             }.wasInvoked(once)
         }
 
@@ -351,6 +351,7 @@ class OnCloseCallTest {
         private const val clientId = "clientId"
 
         private val callMetadata = CallMetadata(
+            callerId = TestCall.CALLER_ID,
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,

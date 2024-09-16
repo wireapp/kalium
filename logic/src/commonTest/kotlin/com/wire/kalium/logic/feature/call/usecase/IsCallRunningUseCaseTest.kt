@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
@@ -83,26 +84,26 @@ class IsCallRunningUseCaseTest {
         private val call1 = Call(
             ConversationId("first", "domain"),
             CallStatus.STARTED,
-            true,
-            false,
-            false,
-            "caller-id1",
-            "ONE_ON_ONE Name",
-            Conversation.Type.ONE_ON_ONE,
-            "otherUsername",
-            "team1"
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            callerId = UserId("caller-id1", "domain"),
+            conversationName = "ONE_ON_ONE Name",
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            callerName = "otherUsername",
+            callerTeamName = "team1"
         )
         private val call2 = Call(
             ConversationId("second", "domain"),
             CallStatus.CLOSED,
-            true,
-            false,
-            false,
-            "caller-id2",
-            "ONE_ON_ONE Name",
-            Conversation.Type.ONE_ON_ONE,
-            "otherUsername",
-            "team1"
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            callerId = UserId("caller-id2", "domain"),
+            conversationName = "ONE_ON_ONE Name",
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            callerName = "otherUsername",
+            callerTeamName = "team1"
         )
     }
 

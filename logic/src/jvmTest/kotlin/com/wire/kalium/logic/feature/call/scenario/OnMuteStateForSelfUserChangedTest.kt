@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChanged
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
@@ -98,7 +99,7 @@ class OnMuteStateForSelfUserChangedTest {
             private val call = Call(
                 conversationId = conversationId,
                 status = CallStatus.ESTABLISHED,
-                callerId = "called-id",
+                callerId = TestCall.CALLER_ID,
                 isMuted = false,
                 isCameraOn = false,
                 isCbrEnabled = false,

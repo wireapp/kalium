@@ -308,6 +308,7 @@ sealed class MessageEntityContent {
 
     data class FailedDecryption(
         val encodedData: ByteArray? = null,
+        val code: Int?,
         val isDecryptionResolved: Boolean,
         val senderUserId: QualifiedIDEntity,
         val senderClientId: String?,

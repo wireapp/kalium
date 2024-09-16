@@ -177,7 +177,7 @@ class PreKeyRepositoryTest {
 
     @Test
     fun givenCreatingSessionsThrows_whenPreparingSessions_thenItShouldFail() = runTest {
-        val exception = ProteusException("PANIC!!!11!eleven!", ProteusException.Code.PANIC)
+        val exception = ProteusException("PANIC!!!11!eleven!", ProteusException.Code.PANIC, 15)
 
         val preKey = PreKeyDTO(42, "encodedData")
         val userPreKeysResult =
