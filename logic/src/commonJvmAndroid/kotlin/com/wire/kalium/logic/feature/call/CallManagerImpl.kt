@@ -49,7 +49,6 @@ import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -114,7 +113,6 @@ class CallManagerImpl internal constructor(
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val networkStateObserver: NetworkStateObserver,
     private val getCallConversationType: GetCallConversationTypeProvider,
-    private val subconversationRepository: SubconversationRepository,
     private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
@@ -216,7 +214,6 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
-                    callHelper = CallHelperImpl(callRepository, subconversationRepository, userConfigRepository),
                     networkStateObserver = networkStateObserver,
                     scope = scope,
                     qualifiedIdMapper = qualifiedIdMapper
@@ -543,11 +540,7 @@ class CallManagerImpl internal constructor(
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
                     userConfigRepository = userConfigRepository,
-                    callHelper = CallHelperImpl(
-                        callRepository = callRepository,
-                        subconversationRepository = subconversationRepository,
-                        userConfigRepository = userConfigRepository
-                    ),
+                    callHelper = CallHelperImpl(),
                     endCall = { endCall(it) },
                     callingScope = scope
                 ).keepingStrongReference()
