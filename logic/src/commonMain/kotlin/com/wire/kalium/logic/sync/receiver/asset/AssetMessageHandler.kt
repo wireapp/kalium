@@ -52,10 +52,33 @@ internal class AssetMessageHandlerImpl(
                 FileSharingStatus.Value.Disabled -> false
                 FileSharingStatus.Value.EnabledAll -> true
 
+<<<<<<< HEAD
                 is FileSharingStatus.Value.EnabledSome -> validateAssetMimeTypeUseCase(
                     messageContent.value.name,
                     it.state.allowedType
                 )
+=======
+                is FileSharingStatus.Value.EnabledSome -> {
+                    // If the asset message is missing the name, but it does have full
+                    // asset data then we can not decide now if it is allowed or not
+                    // it is safe to continue and the code later will check the original
+                    // asset message and decide if it is allowed or not
+                    if (validateAssetMimeTypeUseCase(
+                            fileName = messageContent.value.name,
+                            mimeType = messageContent.value.mimeType,
+                            allowedExtension = it.state.allowedType
+                        )
+                    ) {
+                        AssetRestrictionContinuationStrategy.Continue
+                    } else {
+                        if (messageContent.value.name.isNullOrEmpty() && messageContent.value.isAssetDataComplete) {
+                            AssetRestrictionContinuationStrategy.RestrictIfThereIsNotOldMessageWithTheSameAssetID
+                        } else {
+                            AssetRestrictionContinuationStrategy.Restrict
+                        }
+                    }
+                }
+>>>>>>> 6037016703 (fix: images form iOS are blocked when restrictions are applied [WPB-10830] 🍒 (#3010))
             }
 
             if (isThisAssetAllowed) {
