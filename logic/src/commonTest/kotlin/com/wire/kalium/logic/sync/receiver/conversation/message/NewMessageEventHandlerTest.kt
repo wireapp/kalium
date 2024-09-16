@@ -35,9 +35,9 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -48,7 +48,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.test.Test
 
 class NewMessageEventHandlerTest {
@@ -56,7 +55,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenProteusEvent_whenHandling_shouldAskProteusUnpackerToDecrypt() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withProteusUnpackerReturning(Either.Right(MessageUnpackResult.HandshakeMessage))
+            .withProteusUnpackerReturning(Either.Left(CoreFailure.InvalidEventSenderID))
             .arrange()
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
@@ -64,7 +63,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -88,7 +87,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -116,7 +115,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -210,7 +209,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -234,7 +233,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -255,7 +254,7 @@ class NewMessageEventHandlerTest {
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
         coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasNotInvoked()
     }
@@ -270,7 +269,7 @@ class NewMessageEventHandlerTest {
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
         coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasNotInvoked()
     }
@@ -284,7 +283,7 @@ class NewMessageEventHandlerTest {
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
         coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasInvoked(exactly = once)
     }
@@ -323,7 +322,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -343,7 +342,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(eq(newMessageEvent), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -433,10 +432,17 @@ class NewMessageEventHandlerTest {
             staleEpochVerifier
         )
 
-        suspend fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult>) = apply {
+        suspend fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult.ApplicationMessage>) = apply {
             coEvery {
-                proteusMessageUnpacker.unpackProteusMessage(any())
-            }.returns(result)
+                proteusMessageUnpacker.unpackProteusMessage<MessageUnpackResult.ApplicationMessage>(any(), any())
+            }.invokes { args ->
+                if (result is Either.Right) {
+                    val lambda = args[1] as suspend (MessageUnpackResult.ApplicationMessage) -> MessageUnpackResult.ApplicationMessage
+                    Either.Right(lambda(result.value))
+                } else {
+                    result
+                }
+            }
         }
 
         suspend fun withHandleLegalHoldSuccess() = apply {
