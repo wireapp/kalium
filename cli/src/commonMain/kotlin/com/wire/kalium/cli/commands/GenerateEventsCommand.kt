@@ -18,6 +18,7 @@
 package com.wire.kalium.cli.commands
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.requireObject
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.option
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.data.event.EventGenerator
+import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -57,6 +59,7 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
 
     override fun run() = runBlocking {
         val selfUserId = userSession.users.getSelfUser().first().id
+        val selfClientId = userSession.clientIdProvider().getOrFail { throw PrintMessage("No self client is registered") }
         val targetUserId = UserId(value = targetUserId, domain = selfUserId.domain)
         val targetClientId = ClientId(targetClientId)
 
@@ -65,8 +68,14 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
             clientId = targetClientId
         )
         val generator = EventGenerator(
-            selfUserID = selfUserId,
-            targetClient = QualifiedClientID(clientId = targetClientId, userId = targetUserId),
+            selfClient = QualifiedClientID(
+                clientId = selfClientId,
+                userId = selfUserId
+            ),
+            targetClient = QualifiedClientID(
+                clientId = targetClientId,
+                userId = targetUserId
+            ),
             proteusClient = userSession.proteusClientProvider.getOrCreate()
         )
         val events = generator.generateEvents(
