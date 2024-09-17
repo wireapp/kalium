@@ -119,7 +119,7 @@ class EventDataSource(
                     }
 
                     is WebSocketEvent.BinaryPayloadReceived -> {
-                        eventMapper.fromDTO(webSocketEvent.payload, true).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                        eventMapper.fromDTO(webSocketEvent.payload, true, null).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
                     }
                 }
             }.flattenConcat()
@@ -140,7 +140,7 @@ class EventDataSource(
                 lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
 
                 notificationsPageResult.value.notifications.flatMap {
-                    eventMapper.fromDTO(it, isLive = false)
+                    eventMapper.fromDTO(it, isLive = false, notificationsPageResult.value.time)
                 }.forEach { event ->
                     if (!coroutineContext.isActive) {
                         return@flow
@@ -157,7 +157,7 @@ class EventDataSource(
     override fun parseExternalEvents(data: String): List<EventEnvelope> {
         val notificationResponse = Json.decodeFromString<NotificationResponse>(data)
         return notificationResponse.notifications.flatMap {
-            eventMapper.fromDTO(it, isLive = false)
+            eventMapper.fromDTO(it, isLive = false, notificationResponse.time)
         }
     }
 

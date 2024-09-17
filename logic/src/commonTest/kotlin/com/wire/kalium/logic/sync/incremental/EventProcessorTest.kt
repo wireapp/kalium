@@ -29,6 +29,7 @@ import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -40,6 +41,7 @@ import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
@@ -51,7 +53,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EventProcessorTest {
 
     @Test
@@ -300,6 +304,19 @@ class EventProcessorTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenEventWithTime_whenProcessingEvent_thenTimeOffsetIsComputed() = runTest {
+        val time = "2024-03-30T15:36:00.000Z"
+        val event = TestEvent.newConversationEvent().wrapInEnvelope(time = time)
+
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
+            withUpdateLastProcessedEventId(event.event.id, Either.Right(Unit))
+        }
+        eventProcessor.processEvent(event)
+
+        assertTrue { arrangement.serverTimeHandler.getTimeOffset() != 0L }
+    }
+
     private class Arrangement(
         val processingScope: CoroutineScope
     ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
@@ -318,6 +335,8 @@ class EventProcessorTest {
 
         @Mock
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
+
+        val serverTimeHandler = ServerTimeHandler
 
         @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
@@ -392,7 +411,8 @@ class EventProcessorTest {
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver,
-                processingScope
+                processingScope,
+                serverTimeHandler
             )
         }
     }

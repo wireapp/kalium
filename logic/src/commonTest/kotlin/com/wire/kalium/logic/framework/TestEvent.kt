@@ -249,8 +249,12 @@ object TestEvent {
         id = "eventId",
     )
 
-    fun Event.wrapInEnvelope(isTransient: Boolean = false, source: EventSource = EventSource.LIVE): EventEnvelope {
-        return EventEnvelope(this, EventDeliveryInfo(isTransient, source))
+    fun Event.wrapInEnvelope(
+        isTransient: Boolean = false,
+        source: EventSource = EventSource.LIVE,
+        time: String? = null
+    ): EventEnvelope {
+        return EventEnvelope(this, EventDeliveryInfo(isTransient, source), time)
     }
 
     val liveDeliveryInfo = EventDeliveryInfo(false, EventSource.LIVE)

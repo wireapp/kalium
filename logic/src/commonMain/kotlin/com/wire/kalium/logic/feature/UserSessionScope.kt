@@ -924,15 +924,15 @@ class UserSessionScope internal constructor(
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
-            eventRepository,
-            conversationEventReceiver,
-            userEventReceiver,
-            teamEventReceiver,
-            featureConfigEventReceiver,
-            userPropertiesEventReceiver,
-            federationEventReceiver,
-            this@UserSessionScope,
-            userScopedLogger,
+            eventRepository = eventRepository,
+            conversationEventReceiver = conversationEventReceiver,
+            userEventReceiver = userEventReceiver,
+            teamEventReceiver = teamEventReceiver,
+            featureConfigEventReceiver = featureConfigEventReceiver,
+            userPropertiesEventReceiver = userPropertiesEventReceiver,
+            federationEventReceiver = federationEventReceiver,
+            processingScope = this@UserSessionScope,
+            logger = userScopedLogger,
         )
     }
 

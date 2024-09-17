@@ -1,0 +1,46 @@
+/*
+ * Wire
+ * Copyright (C) 2024 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.util
+
+import kotlinx.datetime.Clock
+
+object ServerTimeHandler {
+    private var timeOffset: Long = 0
+
+    /**
+     * Compute the time offset between the server and the client
+     * @param serverTime the server time to compute the offset
+     */
+    fun computeTimeOffset(serverTime: Long) {
+        val offset = Clock.System.now().epochSeconds - serverTime
+        timeOffset = offset
+    }
+
+    fun getTimeOffset(): Long {
+        return timeOffset
+    }
+
+    /**
+     * Convert local timestamp to server timestamp
+     * @param localTimestamp timestamp from client to convert
+     * @return the timestamp adjusted with the client/server time shift
+     */
+    fun toServerTimestamp(localTimestamp: Long = Clock.System.now().epochSeconds): Long {
+        return localTimestamp - timeOffset
+    }
+}

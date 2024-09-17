@@ -79,6 +79,7 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher
@@ -258,8 +259,6 @@ class CallManagerImpl internal constructor(
         )
 
         if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {
-            val currTime = System.currentTimeMillis()
-
             val targetConversationId = if (message.isSelfMessage) {
                 content.conversationId ?: message.conversationId
             } else {
@@ -273,7 +272,7 @@ class CallManagerImpl internal constructor(
                 inst = deferredHandle.await(),
                 msg = msg,
                 len = msg.size,
-                curr_time = Uint32_t(value = currTime / 1000),
+                curr_time = Uint32_t(value = ServerTimeHandler.toServerTimestamp()),
                 msg_time = Uint32_t(value = message.date.epochSeconds),
                 convId = federatedIdMapper.parseToFederatedId(targetConversationId),
                 userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
