@@ -110,18 +110,24 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = lock.withLock {
+    override suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T = lock.withLock {
         withContext(defaultContext) {
             val session = box.tryGetSession(sessionId.value)
             wrapException {
                 if (session != null) {
                     val decryptedMessage = session.decrypt(message)
-                    session.save()
-                    decryptedMessage
+                    handleDecryptedMessage(decryptedMessage).also {
+                        session.save()
+                    }
                 } else {
                     val result = box.initSessionFromMessage(sessionId.value, message)
-                    result.session.save()
-                    result.message
+                    handleDecryptedMessage(result.message).also {
+                        result.session.save()
+                    }
                 }
             }
         }
