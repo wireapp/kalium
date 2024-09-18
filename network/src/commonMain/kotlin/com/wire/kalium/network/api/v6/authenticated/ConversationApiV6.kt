@@ -19,8 +19,29 @@
 package com.wire.kalium.network.api.v6.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV6
+import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.base.model.ApiModelMapper
+import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class ConversationApiV6 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-) : ConversationApiV5(authenticatedNetworkClient)
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
+) : ConversationApiV5(authenticatedNetworkClient) {
+    override suspend fun createOne2OneConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV6> {
+        httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
+            setBody(apiModelMapper.toApiV3(createConversationRequest))
+        }
+    }.mapSuccess {
+        apiModelMapper.fromApiV6(it)
+    }
+}
