@@ -421,9 +421,16 @@ class ConversationGroupRepositoryTest {
                 conversationDAO.insertConversation(any())
             }.wasInvoked(once)
 
+<<<<<<< HEAD
             coVerify {
                 mlsConversationRepository.establishMLSGroup(any(), any(), eq(true))
             }.wasInvoked(once)
+=======
+            verify(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                .with(anything(), anything(), anything(), eq(true))
+                .wasInvoked(once)
+>>>>>>> 1b851495a0 (fix(mls): set removal-keys for 1on1 calls from conversation-response (#3009))
 
             coVerify {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
@@ -464,9 +471,16 @@ class ConversationGroupRepositoryTest {
                     conversationDAO.insertConversation(any())
                 }.wasInvoked(once)
 
+<<<<<<< HEAD
                 coVerify {
                     mlsConversationRepository.establishMLSGroup(any(), any(), eq(true))
                 }.wasInvoked(once)
+=======
+                verify(mlsConversationRepository)
+                    .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                    .with(anything(), anything(), anything(), eq(true))
+                    .wasInvoked(once)
+>>>>>>> 1b851495a0 (fix(mls): set removal-keys for 1on1 calls from conversation-response (#3009))
 
                 coVerify {
                     newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())

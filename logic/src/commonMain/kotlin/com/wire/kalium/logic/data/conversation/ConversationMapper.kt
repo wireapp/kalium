@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessagePreview
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
+<<<<<<< HEAD
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -43,6 +45,16 @@ import com.wire.kalium.network.api.authenticated.conversation.CreateConversation
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+=======
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+>>>>>>> 1b851495a0 (fix(mls): set removal-keys for 1on1 calls from conversation-response (#3009))
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
@@ -59,6 +71,7 @@ import kotlin.time.toDuration
 
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
+    fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
@@ -135,6 +148,12 @@ internal class ConversationMapperImpl(
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
+
+    override fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?) = mlsPublicKeysDTO?.let {
+        MLSPublicKeys(
+            removal = mlsPublicKeysDTO.removal
+        )
+    }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
