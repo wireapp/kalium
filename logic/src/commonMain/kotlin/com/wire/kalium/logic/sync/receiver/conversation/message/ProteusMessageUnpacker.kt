@@ -27,6 +27,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -34,7 +35,6 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -74,27 +74,6 @@ internal class ProteusMessageUnpackerImpl(
         return proteusClientProvider.getOrError()
             .flatMap {
                 wrapProteusRequest {
-<<<<<<< HEAD
-                    it.decrypt(decodedContentBytes, cryptoSessionId)
-                }
-            }
-            .map { PlainMessageBlob(it) }
-            .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent) }
-            .onFailure {
-                when (it) {
-                    is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
-
-                    is ProteusFailure -> {
-                        val loggableException =
-                            "{ \"code\": \"${it.proteusException.code.name}\", \"intCode\": \"${it.proteusException.intCode}\"," +
-                                    " \"message\": \"${it.proteusException.message}\", " +
-                                    "\"error\": \"${it.proteusException.stackTraceToString()}\"," +
-                                    "\"senderClientId\": \"${event.senderClientId.value.obfuscateId()}\"," +
-                                    "\"senderUserId\": \"${event.senderUserId.value.obfuscateId()}\"," +
-                                    "\"cryptoClientId\": \"${cryptoSessionId.cryptoClientId.value.obfuscateId()}\"," +
-                                    "\"cryptoUserId\": \"${cryptoSessionId.userId.value.obfuscateId()}\"}"
-                        logger.e("ProteusFailure when processing message detail: $loggableException")
-=======
                     it.decrypt(decodedContentBytes, cryptoSessionId) {
                         val plainMessageBlob = PlainMessageBlob(it)
                         getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent).map { readableContent ->
@@ -107,7 +86,6 @@ internal class ProteusMessageUnpackerImpl(
                             )
                             handleMessage(appMessage)
                         }
->>>>>>> 987b78283d (fix(proteus): prevent missing messages by using transactions [WPB-10873] (#2992))
                     }
                 }
             }.flatMap { it }
@@ -123,13 +101,18 @@ internal class ProteusMessageUnpackerImpl(
             is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
 
             is ProteusFailure -> {
-                val loggableException =
-                    "{ \"code\": \"${it.proteusException.code.name}\", \"message\": \"${it.proteusException.message}\", " +
-                            "\"error\": \"${it.proteusException.stackTraceToString()}\"," +
-                            "\"senderClientId\": \"${event.senderClientId.value.obfuscateId()}\"," +
-                            "\"senderUserId\": \"${event.senderUserId.value.obfuscateId()}\"," +
-                            "\"cryptoClientId\": \"${cryptoSessionId.cryptoClientId.value.obfuscateId()}\"," +
-                            "\"cryptoUserId\": \"${cryptoSessionId.userId.value.obfuscateId()}\"}"
+                val loggableException = """
+                    {
+                      "code": "${it.proteusException.code.name}",
+                      "intCode": "${it.proteusException.intCode}",
+                      "message": "${it.proteusException.message}",
+                      "error": "${it.proteusException.stackTraceToString()}",
+                      "senderClientId": "${event.senderClientId.value.obfuscateId()}",
+                      "senderUserId": "${event.senderUserId.value.obfuscateId()}",
+                      "cryptoClientId": "${cryptoSessionId.cryptoClientId.value.obfuscateId()}",
+                      "cryptoUserId": "${cryptoSessionId.userId.value.obfuscateId()}"
+                    }
+                    """.trimIndent()
                 logger.e("ProteusFailure when processing message detail: $loggableException")
             }
 
@@ -146,7 +129,9 @@ internal class ProteusMessageUnpackerImpl(
             logger.d("Solving external content '$protoContent', EncryptedData='$it'")
             solveExternalContentForProteusMessage(protoContent, encryptedData)
         } ?: run {
-            val rootCause = IllegalArgumentException("Null external content when processing external message instructions.")
+            val rootCause = IllegalArgumentException(
+                "Null external content when processing external message instructions."
+            )
             Either.Left(CoreFailure.Unknown(rootCause))
         }
     }
@@ -160,7 +145,9 @@ internal class ProteusMessageUnpackerImpl(
         PlainMessageBlob(decryptedExternalMessage)
     }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
-            val rootCause = IllegalArgumentException("матрёшка! External message can't contain another external message inside!")
+            val rootCause = IllegalArgumentException(
+                "матрёшка! External message can't contain another external message inside!"
+            )
             Either.Left(CoreFailure.Unknown(rootCause))
         } else {
             Either.Right(decodedProtobuf)

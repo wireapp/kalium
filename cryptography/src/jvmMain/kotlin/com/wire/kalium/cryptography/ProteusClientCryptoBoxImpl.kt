@@ -91,11 +91,7 @@ class ProteusClientCryptoBoxImpl(
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException {
             box.encryptFromSession(sessionId.value, message)
-<<<<<<< HEAD
         } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND, ProteusException.SESSION_NOT_FOUND_INT)
-=======
-        } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
->>>>>>> 987b78283d (fix(proteus): prevent missing messages by using transactions [WPB-10873] (#2992))
     }
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
