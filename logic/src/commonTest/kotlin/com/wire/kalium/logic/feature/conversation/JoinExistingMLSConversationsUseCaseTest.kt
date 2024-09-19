@@ -206,29 +206,29 @@ class JoinExistingMLSConversationsUseCaseTest {
         fun withJoinExistingMLSConversationSuccessful() = apply {
             given(joinExistingMLSConversationUseCase)
                 .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Right(Unit) }
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withJoinExistingMLSConversationNetworkFailure() = apply {
             given(joinExistingMLSConversationUseCase)
                 .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Left(NetworkFailure.NoNetworkConnection(null)) }
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
         fun withJoinExistingMLSConversationFailure() = apply {
             given(joinExistingMLSConversationUseCase)
                 .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Left(CoreFailure.NotSupportedByProteus) }
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Left(CoreFailure.NotSupportedByProteus))
         }
 
         fun withNoKeyPackagesAvailable() = apply {
             given(joinExistingMLSConversationUseCase)
                 .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Left(CoreFailure.MissingKeyPackages(setOf())) }
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Left(CoreFailure.MissingKeyPackages(setOf())))
         }
 
 
