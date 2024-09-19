@@ -19,8 +19,33 @@
 package com.wire.kalium.network.api.v6.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+<<<<<<< HEAD
 import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
 
 internal open class ConversationApiV6 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
 ) : ConversationApiV5(authenticatedNetworkClient)
+=======
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV6
+import com.wire.kalium.network.api.base.model.ApiModelMapper
+import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
+
+internal open class ConversationApiV6 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
+) : ConversationApiV5(authenticatedNetworkClient) {
+    override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
+        wrapKaliumResponse<ConversationResponseV6> {
+            httpClient.get("$PATH_CONVERSATIONS/$PATH_ONE_TO_ONE/${userId.domain}/${userId.value}")
+        }.mapSuccess {
+            apiModelMapper.fromApiV6(it)
+        }
+}
+>>>>>>> d491f958ba (fix(mls): fetch and set mls-removal keys for 1on1 conversations (#3020))
