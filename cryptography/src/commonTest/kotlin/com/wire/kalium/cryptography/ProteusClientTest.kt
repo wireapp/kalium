@@ -1,20 +1,20 @@
- /*
- * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see http://www.gnu.org/licenses/.
- */
+/*
+* Wire
+* Copyright (C) 2024 Wire Swiss GmbH
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see http://www.gnu.org/licenses/.
+*/
 
 package com.wire.kalium.cryptography
 
@@ -93,7 +93,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val message = "Hi Alice!"
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val encryptedMessage = bobClient.encryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId)
-        val decryptedMessage = aliceClient.decrypt(encryptedMessage, bobSessionId)
+        val decryptedMessage = aliceClient.decrypt(encryptedMessage, bobSessionId) { it }
         assertEquals(message, decryptedMessage.decodeToString())
     }
 
@@ -105,11 +105,11 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
         val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
-        aliceClient.decrypt(encryptedMessage1, bobSessionId)
+        aliceClient.decrypt(encryptedMessage1, bobSessionId) {}
 
         val message2 = "Hi again Alice!"
         val encryptedMessage2 = bobClient.encrypt(message2.encodeToByteArray(), aliceSessionId)
-        val decryptedMessage2 = aliceClient.decrypt(encryptedMessage2, bobSessionId)
+        val decryptedMessage2 = aliceClient.decrypt(encryptedMessage2, bobSessionId) { it }
 
         assertEquals(message2, decryptedMessage2.decodeToString())
     }
@@ -124,10 +124,10 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
         val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
-        aliceClient.decrypt(encryptedMessage1, bobSessionId)
+        aliceClient.decrypt(encryptedMessage1, bobSessionId) {}
 
         val exception: ProteusException = assertFailsWith {
-            aliceClient.decrypt(encryptedMessage1, bobSessionId)
+            aliceClient.decrypt(encryptedMessage1, bobSessionId) {}
         }
         assertEquals(ProteusException.Code.DUPLICATE_MESSAGE, exception.code)
     }
@@ -188,8 +188,44 @@ class ProteusClientTest : BaseProteusClientTest() {
         }
     }
 
+    // TODO: Implement on CoreCrypto as well once it supports transactions
+    @IgnoreJS
+    @IgnoreJvm
+    @IgnoreIOS
+    @Test
+    fun givenNonEncryptedClient_whenThrowingDuringTransaction_thenShouldNotSaveSessionAndBeAbleToDecryptAgain() = runTest {
+        val aliceRef = createProteusStoreRef(alice.id)
+        val failedAliceClient = createProteusClient(aliceRef)
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+
+        val aliceKey = failedAliceClient.newPreKeys(0, 10).first()
+        val message1 = "Hi Alice!"
+
+        var decryptedCount = 0
+
+        val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        try {
+            failedAliceClient.decrypt(encryptedMessage1, bobSessionId) {
+                decryptedCount++
+                throw NullPointerException("")
+            }
+        } catch (ignore: Throwable) {
+            /** No-op **/
+        }
+        // Assume that the app crashed after decrypting but before saving session.
+        // Trying to decrypt again should succeed.
+
+        val secondAliceClient = createProteusClient(aliceRef)
+
+        val result = secondAliceClient.decrypt(encryptedMessage1, bobSessionId) { result ->
+            decryptedCount++
+            result
+        }
+        assertEquals(message1, result.decodeToString())
+        assertEquals(2, decryptedCount)
+    }
+
     companion object {
         val PROTEUS_DB_SECRET = ProteusDBSecret("secret")
     }
-
 }
