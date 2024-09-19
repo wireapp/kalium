@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.every
@@ -147,7 +148,6 @@ class CallHelperTest {
             id = QualifiedID("participantId2", "participantDomain2"),
             clientId = "efgh"
         )
-<<<<<<< HEAD
         val participantMinimized1 = ParticipantMinimized(
             id = QualifiedID("participantId", "participantDomain"),
             userId = QualifiedID("participantId", "participantDomain"),
@@ -161,19 +161,5 @@ class CallHelperTest {
             id = QualifiedID("participantId2", "participantDomain2"),
             clientId = "efgh"
         )
-        val subconversationResponse = SubconversationResponse(
-            id = "subconversationId",
-            parentId = com.wire.kalium.network.api.model.ConversationId(
-                "conversationId",
-                "domainId"
-            ),
-            groupId = "groupId",
-            epoch = 1UL,
-            epochTimestamp = "2021-03-30T15:36:00.000Z",
-            mlsCipherSuiteTag = 5,
-            members = listOf()
-        )
-=======
->>>>>>> 4d062f6eea (chore: Remove call to deleteSubConversation after ending 1:1 call (WPB-11007) - RC (#3001))
     }
 }
