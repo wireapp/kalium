@@ -28,7 +28,6 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
-import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -40,7 +39,6 @@ import kotlinx.coroutines.launch
 @Suppress("LongParameterList")
 class OnCloseCall(
     private val callRepository: CallRepository,
-    private val callHelper: CallHelper,
     private val scope: CoroutineScope,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val networkStateObserver: NetworkStateObserver
@@ -65,8 +63,13 @@ class OnCloseCall(
 
         scope.launch {
 
-            val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
-            if (shouldPersistMissedCall(conversationIdWithDomain, callStatus) && isConnectedToInternet) {
+            val isConnectedToInternet =
+                networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
+            if (shouldPersistMissedCall(
+                    conversationIdWithDomain,
+                    callStatus
+                ) && isConnectedToInternet
+            ) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
@@ -75,11 +78,8 @@ class OnCloseCall(
                 status = callStatus
             )
 
-            val conversationType =
-                callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.conversationType
-
             if (callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.protocol is Conversation.ProtocolInfo.MLS) {
-                callHelper.handleCallTermination(conversationIdWithDomain, conversationType)
+                callRepository.leaveMlsConference(conversationIdWithDomain)
             }
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
         }
