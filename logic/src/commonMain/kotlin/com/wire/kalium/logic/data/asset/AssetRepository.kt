@@ -156,29 +156,33 @@ internal class AssetDataSource(
         otrKey: AES256Key,
         extension: String?
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
+        try {
+            val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
+            val assetDataSource = kaliumFileSystem.source(assetDataPath)
+            val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
 
-        val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
-        val assetDataSource = kaliumFileSystem.source(assetDataPath)
-        val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
+            // Encrypt the data on the provided temp path
+            val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
+            val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
 
-        // Encrypt the data on the provided temp path
-        val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
-        val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
+            // Calculate the SHA of the encrypted data
+            val sha256 = calcFileSHA256(encryptedDataSource)
+            assetDataSink.close()
+            encryptedDataSource.close()
+            assetDataSource.close()
 
-        // Calculate the SHA of the encrypted data
-        val sha256 = calcFileSHA256(encryptedDataSource)
-        assetDataSink.close()
-        encryptedDataSource.close()
-        assetDataSource.close()
+            val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
 
-        val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
-
-        return if (encryptionSucceeded) {
-            val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
-            uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
-        } else {
-            kaliumLogger.e("Something went wrong when encrypting the Asset Message")
-            Either.Left(EncryptionFailure.GenericEncryptionError)
+            return if (encryptionSucceeded) {
+                val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
+                uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
+            } else {
+                kaliumLogger.e("Something went wrong when encrypting the Asset Message")
+                Either.Left(EncryptionFailure.GenericEncryptionError)
+            }
+        } catch (e: IOException) {
+            kaliumLogger.e("Something went wrong when uploading the Asset Message. $e")
+            return Either.Left(EncryptionFailure.GenericEncryptionError)
         }
     }
 
