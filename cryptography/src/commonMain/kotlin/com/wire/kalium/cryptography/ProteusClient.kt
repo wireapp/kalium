@@ -81,8 +81,18 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId)
 
+    /**
+     * Decrypts a message.
+     * In case of success, calls [handleDecryptedMessage] with the decrypted bytes.
+     * @throws ProteusException in case of failure
+     * @throws CancellationException
+     */
     @Throws(ProteusException::class, CancellationException::class)
-    suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
+    suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray

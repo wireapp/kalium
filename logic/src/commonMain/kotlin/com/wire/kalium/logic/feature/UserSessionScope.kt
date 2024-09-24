@@ -1236,7 +1236,6 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
-            subconversationRepository = subconversationRepository,
             userConfigRepository = userConfigRepository,
             selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
