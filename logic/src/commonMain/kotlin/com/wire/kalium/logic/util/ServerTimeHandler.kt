@@ -20,6 +20,11 @@ package com.wire.kalium.logic.util
 import kotlinx.datetime.Clock
 
 object ServerTimeHandler {
+
+    /**
+     * Used to store the difference (offset) between the server time and the local client time.
+     * And it will be used to adjust timestamps between server and client times.
+     */
     private var timeOffset: Long = 0
 
     /**
