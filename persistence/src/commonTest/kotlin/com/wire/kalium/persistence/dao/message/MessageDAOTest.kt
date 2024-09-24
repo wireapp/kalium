@@ -2031,8 +2031,17 @@ class MessageDAOTest : BaseDatabaseTest() {
             status = MessageEntity.Status.SENT,
             senderName = userEntity1.name!!,
         )
-        val expectedMessages = listOf(alreadyEndedEphemeralMessage)
-        val allMessages = expectedMessages + listOf(pendingEphemeralMessage, nonEphemeralMessage)
+        val notYetStartedEphemeralMessage = newRegularMessageEntity(
+            "4",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+            selfDeletionEndDate = null,
+            expireAfterMs = 1.seconds.inWholeSeconds
+        )
+        val expectedMessages = listOf(pendingEphemeralMessage)
+        val allMessages = expectedMessages + listOf(alreadyEndedEphemeralMessage, nonEphemeralMessage, notYetStartedEphemeralMessage)
 
         messageDAO.insertOrIgnoreMessages(allMessages)
 
