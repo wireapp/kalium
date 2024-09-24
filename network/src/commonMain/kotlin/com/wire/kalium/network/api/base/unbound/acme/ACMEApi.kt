@@ -19,7 +19,6 @@ package com.wire.kalium.network.api.base.unbound.acme
 
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.CustomErrors
@@ -38,7 +37,6 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.URLBuilder
-import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
