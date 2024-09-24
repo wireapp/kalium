@@ -182,7 +182,7 @@ internal class AssetDataSource(
             }
         } catch (e: IOException) {
             kaliumLogger.e("Something went wrong when uploading the Asset Message. $e")
-            return Either.Left(EncryptionFailure.GenericEncryptionError)
+            return Either.Left(CoreFailure.Unknown(e))
         }
     }
 
