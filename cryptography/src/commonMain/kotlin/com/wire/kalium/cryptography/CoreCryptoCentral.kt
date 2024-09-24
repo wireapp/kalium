@@ -68,6 +68,8 @@ interface CoreCryptoCentral {
      * @param pem fetched certificate chain in pem format from the CA
      */
     suspend fun registerIntermediateCa(pem: CertificateChain)
+
+    suspend fun wipe()
 }
 
 expect suspend fun coreCryptoCentral(

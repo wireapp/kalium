@@ -60,8 +60,10 @@ internal class ClearClientDataUseCaseImpl internal constructor(
 
     private suspend fun clearCrypto(): Either<CoreFailure, Unit> =
         wrapProteusRequest {
+            kaliumLogger.d("cccc Clearing crypto storage")
             proteusClientProvider.clearLocalFiles()
         }.flatMap {
+            kaliumLogger.d("cccc Clearing MLS storage")
             wrapMLSRequest {
                 mlsClientProvider.clearLocalFiles()
             }

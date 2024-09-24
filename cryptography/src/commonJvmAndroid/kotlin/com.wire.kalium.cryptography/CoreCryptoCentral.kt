@@ -76,6 +76,7 @@ class CoreCryptoCentralImpl(
         allowedCipherSuites: Ciphersuites,
         defaultCipherSuite: UShort
     ): MLSClient {
+        kaliumLogger.d("CCCC mlsInit mlsClient")
         cc.mlsInit(clientId.toString().encodeToByteArray(), allowedCipherSuites, null)
         return MLSClientImpl(cc, defaultCipherSuite)
     }
@@ -86,6 +87,7 @@ class CoreCryptoCentralImpl(
         newMLSKeyPackageCount: UInt,
         defaultCipherSuite: UShort
     ): MLSClient {
+        kaliumLogger.d("CCCC e2eiMlsInitOnly mlsClient")
         // todo: use DPs list from here, and return alongside with the mls client
         cc.e2eiMlsInitOnly(
             (enrollment as E2EIClientImpl).wireE2eIdentity,
@@ -145,6 +147,10 @@ class CoreCryptoCentralImpl(
         } catch (exception: Exception) {
             kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
         }
+    }
+
+    override suspend fun wipe() {
+        cc.wipe()
     }
 
     companion object {

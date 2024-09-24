@@ -71,8 +71,10 @@ internal class EI2EIClientProviderImpl(
             } ?: run {
                 getSelfUserInfo().flatMap { selfUser ->
                     if (isNewClient) {
+                        kaliumLogger.d("cccc createNewE2EIClient")
                         createNewE2EIClient(currentClientId, selfUser)
                     } else {
+                        kaliumLogger.d("cccc getE2EIClientFromMLSClient")
                         getE2EIClientFromMLSClient(currentClientId, selfUser)
                     }
                 }
