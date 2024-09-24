@@ -19,6 +19,7 @@ package com.wire.kalium.network.api.base.unbound.acme
 
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.CustomErrors
@@ -262,8 +263,11 @@ class ACMEApiImpl internal constructor(
         }
 
         return wrapKaliumResponse {
-            val httpUrl = if (proxyUrl.isNullOrEmpty()) URLBuilder(url).apply { this.protocol = URLProtocol.HTTP }.build()
-            else URLBuilder(proxyUrl).apply { this.pathSegments = this.pathSegments.plus(url) }.build()
+            val crlUrlBuilder: URLBuilder = URLBuilder(url)
+            val proxyUrlBuilder: URLBuilder? = if (proxyUrl.isNullOrEmpty()) null else URLBuilder(proxyUrl)
+
+            val httpUrl = proxyUrlBuilder?.apply { this.pathSegments += crlUrlBuilder.host }?.build()
+                ?: crlUrlBuilder.build()
 
             clearTextTrafficHttpClient.get(httpUrl)
         }
