@@ -18,22 +18,13 @@
 
 package com.wire.kalium.network.api.model
 
-<<<<<<< HEAD:network-model/src/commonMain/kotlin/com/wire/kalium/network/api/model/ApiModelMapper.kt
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV3
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequestV3
-=======
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV6
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequestV3
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequestV3
->>>>>>> 1b851495a0 (fix(mls): set removal-keys for 1on1 calls from conversation-response (#3009)):network/src/commonMain/kotlin/com/wire/kalium/network/api/base/model/ApiModelMapper.kt
 
 /**
  * Mapping between the base API model and the versioned API models.

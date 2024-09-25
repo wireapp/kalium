@@ -18,22 +18,13 @@
 
 package com.wire.kalium.network.api.authenticated.conversation
 
-<<<<<<< HEAD:network-model/src/commonMain/kotlin/com/wire/kalium/network/api/authenticated/conversation/ConversationResponse.kt
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.SubconversationId
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.model.UserId
-=======
-import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.SubconversationId
-import com.wire.kalium.network.api.base.model.TeamId
-import com.wire.kalium.network.api.base.model.UserId
->>>>>>> 1b851495a0 (fix(mls): set removal-keys for 1on1 calls from conversation-response (#3009)):network/src/commonMain/kotlin/com/wire/kalium/network/api/base/authenticated/conversation/ConversationResponse.kt
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
