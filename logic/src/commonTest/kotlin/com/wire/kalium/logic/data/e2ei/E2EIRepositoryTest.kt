@@ -914,7 +914,7 @@ class E2EIRepositoryTest {
             arrangement.coreCryptoCentral.registerTrustAnchors(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
         }.wasInvoked(once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setShouldFetchE2EITrustAnchors(eq(false))
         }.wasInvoked(once)
     }
@@ -933,15 +933,9 @@ class E2EIRepositoryTest {
         // then
         result.shouldSucceed()
 
-<<<<<<< HEAD
-        verify {
+        coVerify {
             arrangement.userConfigRepository.getShouldFetchE2EITrustAnchor()
         }.wasInvoked(once)
-=======
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getShouldFetchE2EITrustAnchor)
-            .wasInvoked(once)
->>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
     }
 
     @Test
@@ -1105,31 +1099,18 @@ class E2EIRepositoryTest {
             }.returns(result)
         }
 
-        fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
-<<<<<<< HEAD
-            every {
+        suspend fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
+            coEvery {
                 userConfigRepository.getShouldFetchE2EITrustAnchor()
             }.returns(result)
         }
 
-        fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
-            every {
+        suspend fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
+            coEvery {
                 userConfigRepository.setShouldFetchE2EITrustAnchors(any())
             }.returns(Unit)
-=======
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::getShouldFetchE2EITrustAnchor)
-                .whenInvoked()
-                .thenReturn(result)
         }
 
-        fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::setShouldFetchE2EITrustAnchors)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
->>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
-        }
 
         suspend fun withAcmeDirectoriesApiSucceed() = apply {
             coEvery {

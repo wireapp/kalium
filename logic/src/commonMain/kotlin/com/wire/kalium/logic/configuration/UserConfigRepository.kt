@@ -136,19 +136,14 @@ interface UserConfigRepository {
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
     suspend fun clearE2EISettings()
-<<<<<<< HEAD
-    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
-    fun getShouldFetchE2EITrustAnchor(): Boolean
     suspend fun setCurrentTrackingIdentifier(newIdentifier: String)
     suspend fun getCurrentTrackingIdentifier(): String?
     suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>>
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
-=======
     suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     suspend fun getShouldFetchE2EITrustAnchor(): Boolean
->>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
 }
 
 @Suppress("TooManyFunctions")
@@ -515,9 +510,6 @@ internal class UserConfigDataSource internal constructor(
         userConfigDAO.setShouldFetchE2EITrustAnchors(shouldFetch = shouldFetch)
     }
 
-<<<<<<< HEAD
-    override fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigStorage.getShouldFetchE2EITrustAnchorHasRun()
-
     override suspend fun setCurrentTrackingIdentifier(newIdentifier: String) {
         wrapStorageRequest {
             userConfigDAO.setTrackingIdentifier(identifier = newIdentifier)
@@ -544,7 +536,5 @@ internal class UserConfigDataSource internal constructor(
             userConfigDAO.deletePreviousTrackingIdentifier()
         }
     }
-=======
     override suspend fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigDAO.getShouldFetchE2EITrustAnchorHasRun()
->>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
 }
