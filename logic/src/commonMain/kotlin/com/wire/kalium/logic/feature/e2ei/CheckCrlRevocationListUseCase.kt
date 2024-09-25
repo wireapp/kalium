@@ -45,6 +45,6 @@ class CheckCrlRevocationListUseCase internal constructor(
                     }
                 }
             }
-        }
+        } ?: logger.w("No CRLs found.")
     }
 }
