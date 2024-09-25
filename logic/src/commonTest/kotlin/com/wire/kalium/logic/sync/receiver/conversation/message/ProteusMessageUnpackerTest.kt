@@ -25,6 +25,7 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
@@ -76,7 +77,7 @@ class ProteusMessageUnpackerTest {
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
-        proteusUnpacker.unpackProteusMessage(messageEvent)
+        proteusUnpacker.unpackProteusMessage(messageEvent) {  }
 
         val cryptoSessionId = CryptoSessionId(
             CryptoUserID(messageEvent.senderUserId.value, messageEvent.senderUserId.domain),
@@ -85,7 +86,7 @@ class ProteusMessageUnpackerTest {
 
         val decodedByteArray = Base64.decodeFromBase64(messageEvent.content.toByteArray())
         coVerify {
-            arrangement.proteusClient.decrypt(matches { it.contentEquals(decodedByteArray) }, eq(cryptoSessionId))
+            arrangement.proteusClient.decrypt<Any>(matches { it.contentEquals(decodedByteArray) }, eq(cryptoSessionId), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -130,7 +131,7 @@ class ProteusMessageUnpackerTest {
             encryptedExternalContent = encryptedProtobufExternalContent
         )
 
-        val result = proteusUnpacker.unpackProteusMessage(messageEvent)
+        val result = proteusUnpacker.unpackProteusMessage(messageEvent) { it }
 
         result.shouldSucceed {
             assertIs<MessageUnpackResult.ApplicationMessage>(it)
@@ -152,8 +153,11 @@ class ProteusMessageUnpackerTest {
 
         suspend fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
             coEvery {
-                proteusClient.decrypt(any(), any())
-            }.returns(decryptedData)
+                proteusClient.decrypt<Either<*, *>>(any(), any(), any())
+            }.invokes { args ->
+                val lambda = args[2] as suspend (ByteArray) -> Either<*, *>
+                lambda.invoke(decryptedData)
+            }
         }
 
         fun withProtoContentMapperReturning(plainBlobMatcher: Matcher<PlainMessageBlob>, protoContent: ProtoContent) = apply {

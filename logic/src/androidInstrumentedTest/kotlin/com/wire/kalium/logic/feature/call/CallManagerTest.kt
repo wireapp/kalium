@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -81,9 +80,6 @@ class CallManagerTest {
     private val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
     @Mock
-    private val subconversationRepository = mock(SubconversationRepository::class)
-
-    @Mock
     private val userConfigRepository = mock(UserConfigRepository::class)
 
     @Mock
@@ -124,7 +120,6 @@ class CallManagerTest {
             currentClientIdProvider = currentClientIdProvider,
             selfConversationIdProvider = selfConversationIdProvider,
             conversationRepository = conversationRepository,
-            subconversationRepository = subconversationRepository,
             userConfigRepository = userConfigRepository,
             messageSender = messageSender,
             kaliumDispatchers = dispatcher,
