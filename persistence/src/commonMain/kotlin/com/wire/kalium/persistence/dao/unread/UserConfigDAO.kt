@@ -60,6 +60,8 @@ interface UserConfigDAO {
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
     suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity)
     suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity?
+    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -186,6 +188,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity? =
         metadataDAO.getSerializable(DEFAULT_CIPHER_SUITE_KEY, SupportedCipherSuiteEntity.serializer())
 
+    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        metadataDAO.insertValue(value = shouldFetch.toString(), key = SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)
+    }
+
+    override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
+        metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -196,5 +205,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
             "should_update_client_legal_hold_capability"
+        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
     }
 }

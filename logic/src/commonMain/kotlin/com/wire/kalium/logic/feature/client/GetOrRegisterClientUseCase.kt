@@ -53,7 +53,7 @@ internal class GetOrRegisterClientUseCaseImpl(
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        syncFeatureConfigsUseCase.invoke()
+        syncFeatureConfigsUseCase()
 
         val result: RegisterClientResult = clientRepository.retainedClientId()
             .nullableFold(

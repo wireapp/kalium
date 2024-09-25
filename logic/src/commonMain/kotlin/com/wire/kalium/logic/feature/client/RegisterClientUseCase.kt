@@ -135,7 +135,15 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         val verificationCode = registerClientParam.secondFactorVerificationCode ?: currentlyStoredVerificationCode()
         sessionRepository.cookieLabel(selfUserId)
             .flatMap { cookieLabel ->
-                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, model, cookieLabel, verificationCode)
+                generateProteusPreKeys(
+                    preKeysToSend,
+                    password,
+                    capabilities,
+                    clientType,
+                    model,
+                    cookieLabel,
+                    verificationCode
+                )
             }.fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->

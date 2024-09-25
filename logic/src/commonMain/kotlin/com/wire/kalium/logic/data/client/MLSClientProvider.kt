@@ -141,9 +141,12 @@ class MLSClientProviderImpl(
 
     override suspend fun clearLocalFiles() {
         mlsClientMutex.withLock {
-            mlsClient?.close()
-            mlsClient = null
-            FileUtil.deleteDirectory(rootKeyStorePath)
+            coreCryptoCentralMutex.withLock {
+                mlsClient?.close()
+                mlsClient = null
+                coreCryptoCentral = null
+                FileUtil.deleteDirectory(rootKeyStorePath)
+            }
         }
     }
 
@@ -182,7 +185,10 @@ class MLSClientProviderImpl(
         }
     }
 
-    private suspend fun mlsClient(userId: CryptoUserID, clientId: ClientId): Either<CoreFailure, MLSClient> {
+    private suspend fun mlsClient(
+        userId: CryptoUserID,
+        clientId: ClientId
+    ): Either<CoreFailure, MLSClient> {
         return getCoreCrypto(clientId).flatMap { cc ->
             getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
                 cc.mlsClient(
