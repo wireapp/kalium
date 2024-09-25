@@ -60,12 +60,17 @@ interface UserConfigDAO {
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
     suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity)
     suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity?
+<<<<<<< HEAD
     suspend fun setTrackingIdentifier(identifier: String)
     suspend fun getTrackingIdentifier(): String?
     suspend fun observeTrackingIdentifier(): Flow<String?>
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
+=======
+    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
+>>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
 }
 
 @Suppress("TooManyFunctions")
@@ -192,6 +197,7 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity? =
         metadataDAO.getSerializable(DEFAULT_CIPHER_SUITE_KEY, SupportedCipherSuiteEntity.serializer())
 
+<<<<<<< HEAD
     override suspend fun setTrackingIdentifier(identifier: String) {
         metadataDAO.insertValue(
             key = ANALYTICS_TRACKING_IDENTIFIER_KEY,
@@ -218,6 +224,14 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun deletePreviousTrackingIdentifier() {
         metadataDAO.deleteValue(key = ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY)
     }
+=======
+    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        metadataDAO.insertValue(value = shouldFetch.toString(), key = SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)
+    }
+
+    override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
+        metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
+>>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
 
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
@@ -229,7 +243,11 @@ internal class UserConfigDAOImpl internal constructor(
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
             "should_update_client_legal_hold_capability"
+<<<<<<< HEAD
         private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
+=======
+        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
+>>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
     }
 }

@@ -143,8 +143,12 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                     clientType,
                     model,
                     cookieLabel,
+<<<<<<< HEAD
                     verificationCode,
                     modelPostfix
+=======
+                    verificationCode
+>>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
                 )
             }.fold({
                 RegisterClientResult.Failure.Generic(it)

@@ -933,9 +933,15 @@ class E2EIRepositoryTest {
         // then
         result.shouldSucceed()
 
+<<<<<<< HEAD
         verify {
             arrangement.userConfigRepository.getShouldFetchE2EITrustAnchor()
         }.wasInvoked(once)
+=======
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getShouldFetchE2EITrustAnchor)
+            .wasInvoked(once)
+>>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
     }
 
     @Test
@@ -1100,6 +1106,7 @@ class E2EIRepositoryTest {
         }
 
         fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
+<<<<<<< HEAD
             every {
                 userConfigRepository.getShouldFetchE2EITrustAnchor()
             }.returns(result)
@@ -1109,6 +1116,19 @@ class E2EIRepositoryTest {
             every {
                 userConfigRepository.setShouldFetchE2EITrustAnchors(any())
             }.returns(Unit)
+=======
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::getShouldFetchE2EITrustAnchor)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::setShouldFetchE2EITrustAnchors)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
+>>>>>>> bea029d86e (fix: crash when login after session expire and client deleted remotely [WPB-11061] (#3031))
         }
 
         suspend fun withAcmeDirectoriesApiSucceed() = apply {
