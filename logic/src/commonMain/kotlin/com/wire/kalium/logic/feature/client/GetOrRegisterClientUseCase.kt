@@ -54,7 +54,6 @@ internal class GetOrRegisterClientUseCaseImpl(
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        kaliumLogger.d("cccc GetOrRegisterClientUseCaseImpl.invoke")
         syncFeatureConfigsUseCase()
 
         val result: RegisterClientResult = clientRepository.retainedClientId()
@@ -99,7 +98,6 @@ internal class GetOrRegisterClientUseCaseImpl(
     }
 
     private suspend fun clearOldClientRelatedData() {
-        kaliumLogger.d("cccc GetOrRegisterClientUseCaseImpl.clearOldClientRelatedData")
         cachedClientIdClearer()
         clearClientData()
         logoutRepository.clearClientRelatedLocalMetadata()

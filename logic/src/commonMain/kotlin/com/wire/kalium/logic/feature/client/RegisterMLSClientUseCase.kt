@@ -57,10 +57,8 @@ internal class RegisterMLSClientUseCaseImpl(
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> {
         return userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
             if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()) {
-                kaliumLogger.d("cccc isMLSClient is not init E2EICertificateRequired")
                 return RegisterMLSClientResult.E2EICertificateRequired.right()
             } else {
-                kaliumLogger.d("cccc MLSClient is init")
                 mlsClientProvider.getMLSClient(clientId)
             }
         }.onFailure {

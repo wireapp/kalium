@@ -142,14 +142,10 @@ class MLSClientProviderImpl(
     override suspend fun clearLocalFiles() {
         mlsClientMutex.withLock {
             coreCryptoCentralMutex.withLock {
-                kaliumLogger.d("cccc clearLocalFiles")
-//                 coreCryptoCentral?.wipe()
                 mlsClient?.close()
                 mlsClient = null
                 coreCryptoCentral = null
-                FileUtil.deleteDirectory(rootKeyStorePath).let {
-                    kaliumLogger.d("cccc clearLocalFiles in path $rootKeyStorePath $it")
-                }
+                FileUtil.deleteDirectory(rootKeyStorePath)
             }
         }
     }
@@ -189,19 +185,17 @@ class MLSClientProviderImpl(
         }
     }
 
-    private suspend fun mlsClient(userId: CryptoUserID, clientId: ClientId): Either<CoreFailure, MLSClient> {
+    private suspend fun mlsClient(
+        userId: CryptoUserID,
+        clientId: ClientId
+    ): Either<CoreFailure, MLSClient> {
         return getCoreCrypto(clientId).flatMap { cc ->
-            getOrFetchMLSConfig().flatMap { (supportedCipherSuite, defaultCipherSuite) ->
-                try {
-                    cc.mlsClient(
-                        clientId = CryptoQualifiedClientId(clientId.value, userId),
-                        allowedCipherSuites = supportedCipherSuite.map { it.tag.toUShort() },
-                        defaultCipherSuite = defaultCipherSuite.tag.toUShort()
-                    ).right()
-                } catch (e: Exception) {
-                    kaliumLogger.d("cccc ${e.stackTraceToString()}")
-                    CoreFailure.Unknown(e).left()
-                }
+            getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
+                cc.mlsClient(
+                    clientId = CryptoQualifiedClientId(clientId.value, userId),
+                    allowedCipherSuites = supportedCipherSuite.map { it.tag.toUShort() },
+                    defaultCipherSuite = defaultCipherSuite.tag.toUShort()
+                )
             }
         }
     }
