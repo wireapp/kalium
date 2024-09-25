@@ -28,7 +28,6 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.nullableFold
-import com.wire.kalium.logic.kaliumLogger
 
 /**
  * This use case is responsible for getting the client.
