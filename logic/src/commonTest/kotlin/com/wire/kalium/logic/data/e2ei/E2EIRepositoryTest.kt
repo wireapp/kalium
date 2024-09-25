@@ -1017,7 +1017,7 @@ class E2EIRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::getShouldFetchE2EITrustAnchor)
+            .suspendFunction(arrangement.userConfigRepository::getShouldFetchE2EITrustAnchor)
             .wasInvoked(once)
     }
 
@@ -1203,14 +1203,14 @@ class E2EIRepositoryTest {
 
         fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::getShouldFetchE2EITrustAnchor)
+                .suspendFunction(userConfigRepository::getShouldFetchE2EITrustAnchor)
                 .whenInvoked()
                 .thenReturn(result)
         }
 
         fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setShouldFetchE2EITrustAnchors)
+                .suspendFunction(userConfigRepository::setShouldFetchE2EITrustAnchors)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
