@@ -77,10 +77,16 @@ internal class AssetMessageHandlerImpl(
                 }
             }
 
-            if (isThisAssetAllowed) {
-                processNonRestrictedAssetMessage(message, messageContent)
-            } else {
-                persistRestrictedAssetMessage(message, messageContent)
+            when (isThisAssetAllowed) {
+                AssetRestrictionContinuationStrategy.Continue -> processNonRestrictedAssetMessage(message, messageContent, false)
+                AssetRestrictionContinuationStrategy.RestrictIfThereIsNotOldMessageWithTheSameAssetID -> processNonRestrictedAssetMessage(
+                    message,
+                    messageContent,
+                    true
+                )
+
+                AssetRestrictionContinuationStrategy.Restrict -> persistRestrictedAssetMessage(message, messageContent)
+
             }
         }
     }
