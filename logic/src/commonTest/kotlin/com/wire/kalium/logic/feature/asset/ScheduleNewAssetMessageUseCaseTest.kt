@@ -628,7 +628,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
 
-        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.txt"), eq(listOf("png"))) }
+        coVerify {
+            arrangement.validateAssetMimeTypeUseCase(
+                fileName = eq("some-asset.txt"),
+                mimeType = eq("text/plain"),
+                allowedExtension = eq(listOf("png"))
+            )
+        }
             .wasInvoked(exactly = once)
     }
 
@@ -667,7 +673,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-        coVerify { arrangement.validateAssetMimeTypeUseCase(eq("some-asset.png"), eq(listOf("png"))) }
+        coVerify {
+            arrangement.validateAssetMimeTypeUseCase(
+                fileName = eq("some-asset.png"),
+                mimeType = eq("image/png"),
+                allowedExtension = eq(listOf("png"))
+            )
+        }
             .wasInvoked(exactly = once)
     }
 
@@ -721,7 +733,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         fun withValidateAsseMimeTypeResult(result: Boolean) = apply {
             every {
-                validateAssetMimeTypeUseCase.invoke(any(), any())
+                validateAssetMimeTypeUseCase.invoke(any(), any(), any())
             }.returns(result)
         }
 
