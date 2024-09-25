@@ -107,10 +107,6 @@ class CoreCryptoCentralImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun wipe() {
-        TODO("Not yet implemented")
-    }
-
     companion object {
         const val KEYSTORE_NAME = "keystore"
     }

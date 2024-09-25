@@ -147,10 +147,6 @@ class CoreCryptoCentralImpl(
         }
     }
 
-    override suspend fun wipe() {
-        cc.wipe()
-    }
-
     companion object {
         const val KEYSTORE_NAME = "keystore"
     }
