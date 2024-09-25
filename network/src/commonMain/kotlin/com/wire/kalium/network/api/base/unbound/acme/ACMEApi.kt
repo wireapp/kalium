@@ -37,7 +37,6 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.URLBuilder
-import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -262,8 +261,11 @@ class ACMEApiImpl internal constructor(
         }
 
         return wrapKaliumResponse {
-            val httpUrl = if (proxyUrl.isNullOrEmpty()) URLBuilder(url).apply { this.protocol = URLProtocol.HTTP }.build()
-            else URLBuilder(proxyUrl).apply { this.pathSegments = this.pathSegments.plus(url) }.build()
+            val crlUrlBuilder: URLBuilder = URLBuilder(url)
+            val proxyUrlBuilder: URLBuilder? = if (proxyUrl.isNullOrEmpty()) null else URLBuilder(proxyUrl)
+
+            val httpUrl = proxyUrlBuilder?.apply { this.pathSegments += crlUrlBuilder.host }?.build()
+                ?: crlUrlBuilder.build()
 
             clearTextTrafficHttpClient.get(httpUrl)
         }
