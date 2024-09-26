@@ -66,6 +66,8 @@ interface UserConfigDAO {
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
+    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -219,6 +221,13 @@ internal class UserConfigDAOImpl internal constructor(
         metadataDAO.deleteValue(key = ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY)
     }
 
+    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        metadataDAO.insertValue(value = shouldFetch.toString(), key = SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)
+    }
+
+    override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
+        metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -231,5 +240,6 @@ internal class UserConfigDAOImpl internal constructor(
             "should_update_client_legal_hold_capability"
         private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
+        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
     }
 }
