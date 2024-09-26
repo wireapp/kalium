@@ -1723,11 +1723,10 @@ class ConversationGroupRepositoryTest {
                 legalHoldHandler
             )
 
-        suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement {
+        suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
-            return this
         }
 
         /**
