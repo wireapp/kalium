@@ -60,7 +60,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasNotInvoked()
     }
 
@@ -76,7 +76,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasNotInvoked()
     }
 
@@ -88,7 +88,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(twice)
     }
 
@@ -100,7 +100,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(twice)
     }
 
@@ -113,7 +113,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             assertIs<NetworkFailure>(it)
         }
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(twice)
     }
 
@@ -125,7 +125,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(twice)
     }
 
