@@ -266,7 +266,6 @@ class CallManagerImpl internal constructor(
             val callConversationType = getCallConversationType(targetConversationId)
             val type = callMapper.toConversationType(callConversationType)
 
-            val currentTime = System.currentTimeMillis()
             wcall_recv_msg(
                 inst = deferredHandle.await(),
                 msg = msg,
