@@ -142,13 +142,10 @@ interface UserConfigRepository {
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
-<<<<<<< HEAD
     suspend fun updateNextTimeForCallFeedback(valueMs: Long)
     suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
-=======
     suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     suspend fun getShouldFetchE2EITrustAnchor(): Boolean
->>>>>>> 8268f215d4 (fix: crash when login after session expire and client deleted remotely [WPB-11061] 🍒 (#3035))
 }
 
 @Suppress("TooManyFunctions")
@@ -541,7 +538,6 @@ internal class UserConfigDataSource internal constructor(
             userConfigDAO.deletePreviousTrackingIdentifier()
         }
     }
-<<<<<<< HEAD
 
     override suspend fun updateNextTimeForCallFeedback(valueMs: Long) {
         userConfigDAO.setNextTimeForCallFeedback(valueMs)
@@ -549,7 +545,5 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun getNextTimeForCallFeedback() = wrapStorageRequest { userConfigDAO.getNextTimeForCallFeedback() }
 
-=======
     override suspend fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigDAO.getShouldFetchE2EITrustAnchorHasRun()
->>>>>>> 8268f215d4 (fix: crash when login after session expire and client deleted remotely [WPB-11061] 🍒 (#3035))
 }

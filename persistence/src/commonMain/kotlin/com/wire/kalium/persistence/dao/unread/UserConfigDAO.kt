@@ -66,13 +66,10 @@ interface UserConfigDAO {
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
-<<<<<<< HEAD
     suspend fun getNextTimeForCallFeedback(): Long?
     suspend fun setNextTimeForCallFeedback(timestamp: Long)
-=======
     suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
->>>>>>> 8268f215d4 (fix: crash when login after session expire and client deleted remotely [WPB-11061] 🍒 (#3035))
 }
 
 @Suppress("TooManyFunctions")
@@ -226,19 +223,17 @@ internal class UserConfigDAOImpl internal constructor(
         metadataDAO.deleteValue(key = ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY)
     }
 
-<<<<<<< HEAD
     override suspend fun getNextTimeForCallFeedback(): Long? = metadataDAO.valueByKey(NEXT_TIME_TO_ASK_CALL_FEEDBACK)?.toLong()
 
     override suspend fun setNextTimeForCallFeedback(timestamp: Long) =
         metadataDAO.insertValue(timestamp.toString(), NEXT_TIME_TO_ASK_CALL_FEEDBACK)
-=======
+
     override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
         metadataDAO.insertValue(value = shouldFetch.toString(), key = SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)
     }
 
     override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
         metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
->>>>>>> 8268f215d4 (fix: crash when login after session expire and client deleted remotely [WPB-11061] 🍒 (#3035))
 
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
