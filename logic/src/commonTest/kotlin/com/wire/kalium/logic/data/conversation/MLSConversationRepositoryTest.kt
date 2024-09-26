@@ -106,20 +106,23 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class MLSConversationRepositoryTest {
 
+    @BeforeTest
+
     @Test
-    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
             .withDecryptMLSMessageSuccessful(Arrangement.DECRYPTED_MESSAGE_BUNDLE)
             .arrange()
 
-        val epochChange = async(TestKaliumDispatcher.default) {
+        val epochChange = async() {
             arrangement.epochsFlow.first()
         }
         yield()
@@ -284,7 +287,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenPublicKeysIsNotNull_whenCallingEstablishMLSGroup_ThenGetPublicKeysRepositoryNotCalled() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
+        val (arrangement, mlsConversationRepository) = Arrangement(kaliumDispatcher = testKaliumDispatcher)
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -325,7 +328,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenPublicKeysIsNull_whenCallingEstablishMLSGroup_ThenGetPublicKeysRepositoryIsCalled() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
+        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
