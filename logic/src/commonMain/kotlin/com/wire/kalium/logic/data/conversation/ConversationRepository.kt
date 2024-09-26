@@ -517,7 +517,9 @@ internal class ConversationDataSource internal constructor(
                 selfUserTeamId = selfUserTeamId
             ).map { conversationResponse }
         }.flatMap { response ->
-            baseInfoById(response.id.toModel()).map { it.copy(mlsPublicKeys = conversationMapper.fromApiModel(response.publicKeys)) }
+            baseInfoById(response.id.toModel()).map {
+                it.copy(mlsPublicKeys = conversationMapper.fromApiModel(response.publicKeys))
+            }
         }
 
     private fun addOtherMemberIfMissing(
