@@ -85,6 +85,7 @@ interface EventRepository {
      * @return Either containing a [CoreFailure] or the oldest available event ID as a String.
      */
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
+    suspend fun fetchServerTime(): String?
 }
 
 class EventDataSource(
@@ -119,7 +120,7 @@ class EventDataSource(
                     }
 
                     is WebSocketEvent.BinaryPayloadReceived -> {
-                        eventMapper.fromDTO(webSocketEvent.payload, true, null).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                        eventMapper.fromDTO(webSocketEvent.payload, true).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
                     }
                 }
             }.flattenConcat()
@@ -140,7 +141,7 @@ class EventDataSource(
                 lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
 
                 notificationsPageResult.value.notifications.flatMap {
-                    eventMapper.fromDTO(it, isLive = false, notificationsPageResult.value.time)
+                    eventMapper.fromDTO(it, isLive = false)
                 }.forEach { event ->
                     if (!coroutineContext.isActive) {
                         return@flow
@@ -157,7 +158,7 @@ class EventDataSource(
     override fun parseExternalEvents(data: String): List<EventEnvelope> {
         val notificationResponse = Json.decodeFromString<NotificationResponse>(data)
         return notificationResponse.notifications.flatMap {
-            eventMapper.fromDTO(it, isLive = false, notificationResponse.time)
+            eventMapper.fromDTO(it, isLive = false)
         }
     }
 
@@ -192,6 +193,15 @@ class EventDataSource(
                 notificationApi.oldestNotification(clientId.value)
             }
         }.map { it.id }
+
+    override suspend fun fetchServerTime(): String? {
+        val result = notificationApi.getServerTime(NOTIFICATIONS_QUERY_SIZE)
+        return if (result.isSuccessful()) {
+            result.value
+        } else {
+            null
+        }
+    }
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100

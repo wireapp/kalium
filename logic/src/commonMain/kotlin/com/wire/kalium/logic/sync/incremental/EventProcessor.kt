@@ -35,13 +35,11 @@ import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.EventLoggingStatus
-import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.toInstant
 
 /**
  * Handles incoming events from remote.
@@ -78,7 +76,6 @@ internal class EventProcessorImpl(
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
     private val federationEventReceiver: FederationEventReceiver,
     private val processingScope: CoroutineScope,
-    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandler,
     logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
 
@@ -89,10 +86,7 @@ internal class EventProcessorImpl(
     override var disableEventProcessing: Boolean = false
 
     override suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> = processingScope.async {
-        val (event, deliveryInfo, time) = eventEnvelope
-        time?.let {
-            serverTimeHandler.computeTimeOffset(it.toInstant().epochSeconds)
-        }
+        val (event, deliveryInfo) = eventEnvelope
         if (disableEventProcessing) {
             logger.w("Skipping processing of ${event.toLogString()} due to debug option")
             Either.Right(Unit)

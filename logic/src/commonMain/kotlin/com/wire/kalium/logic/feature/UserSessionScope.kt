@@ -917,9 +917,9 @@ class UserSessionScope internal constructor(
         )
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(
-        eventRepository,
-        incrementalSyncRepository,
-        userScopedLogger,
+        eventRepository = eventRepository,
+        incrementalSyncRepository = incrementalSyncRepository,
+        logger = userScopedLogger
     )
 
     private val eventProcessor: EventProcessor by lazy {

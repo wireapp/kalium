@@ -57,8 +57,7 @@ import kotlinx.serialization.json.JsonNull
  */
 data class EventEnvelope(
     val event: Event,
-    val deliveryInfo: EventDeliveryInfo,
-    val time: String?
+    val deliveryInfo: EventDeliveryInfo
 ) {
     override fun toString(): String {
         return super.toString()
@@ -68,8 +67,7 @@ data class EventEnvelope(
 
     fun toLogMap(): Map<String, Any?> = mapOf(
         "event" to event.toLogMap(),
-        "deliveryInfo" to deliveryInfo.toLogMap(),
-        "time" to time
+        "deliveryInfo" to deliveryInfo.toLogMap()
     )
 }
 

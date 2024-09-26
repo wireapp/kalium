@@ -38,13 +38,13 @@ internal open class NotificationApiV3 internal constructor(
 
     override suspend fun notificationsCall(
         querySize: Int,
-        queryClient: String,
+        queryClient: String?,
         querySince: String?
     ): NetworkResponse<NotificationResponse> = wrapKaliumResponse {
         // Pretty much the same V0 request, but without the 404 overwrite
         httpClient.get(V0.PATH_NOTIFICATIONS) {
             parameter(V0.SIZE_QUERY_KEY, querySize)
-            parameter(V0.CLIENT_QUERY_KEY, queryClient)
+            queryClient?.let { parameter(V0.CLIENT_QUERY_KEY, it) }
             querySince?.let { parameter(V0.SINCE_QUERY_KEY, it) }
         }
     }

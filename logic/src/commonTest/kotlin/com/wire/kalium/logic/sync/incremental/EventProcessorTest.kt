@@ -53,7 +53,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventProcessorTest {
@@ -304,19 +303,6 @@ class EventProcessorTest {
         }.wasNotInvoked()
     }
 
-    @Test
-    fun givenEventWithTime_whenProcessingEvent_thenTimeOffsetIsComputed() = runTest {
-        val time = "2024-03-30T15:36:00.000Z"
-        val event = TestEvent.newConversationEvent().wrapInEnvelope(time = time)
-
-        val (arrangement, eventProcessor) = Arrangement(this).arrange {
-            withUpdateLastProcessedEventId(event.event.id, Either.Right(Unit))
-        }
-        eventProcessor.processEvent(event)
-
-        assertTrue { arrangement.serverTimeHandler.getTimeOffset() != 0L }
-    }
-
     private class Arrangement(
         val processingScope: CoroutineScope
     ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
@@ -336,7 +322,7 @@ class EventProcessorTest {
         @Mock
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
 
-        val serverTimeHandler = ServerTimeHandler
+        val serverTimeHandler = ServerTimeHandler()
 
         @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
@@ -411,8 +397,7 @@ class EventProcessorTest {
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver,
-                processingScope,
-                serverTimeHandler
+                processingScope
             )
         }
     }

@@ -120,6 +120,7 @@ class CallManagerImpl internal constructor(
     private val flowManagerService: FlowManagerService,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
+    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandler(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
@@ -265,11 +266,12 @@ class CallManagerImpl internal constructor(
             val callConversationType = getCallConversationType(targetConversationId)
             val type = callMapper.toConversationType(callConversationType)
 
+            val currentTime = System.currentTimeMillis()
             wcall_recv_msg(
                 inst = deferredHandle.await(),
                 msg = msg,
                 len = msg.size,
-                curr_time = Uint32_t(value = ServerTimeHandler.toServerTimestamp()),
+                curr_time = Uint32_t(value = serverTimeHandler.toServerTimestamp()),
                 msg_time = Uint32_t(value = message.date.epochSeconds),
                 convId = federatedIdMapper.parseToFederatedId(targetConversationId),
                 userId = federatedIdMapper.parseToFederatedId(message.senderUserId),

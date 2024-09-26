@@ -34,6 +34,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
@@ -52,6 +53,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transformWhile
+import kotlinx.datetime.toInstant
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -77,6 +79,7 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandler(),
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
@@ -165,6 +168,7 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen() {
         logger.i("Websocket Open")
+        handleTimeDrift()
         eventRepository
             .pendingEvents()
             .onEach { result ->
@@ -179,6 +183,12 @@ internal class EventGathererImpl(
             }
         logger.i("Offline events collection finished. Collecting Live events.")
         _currentSource.value = EventSource.LIVE
+    }
+
+    private suspend fun handleTimeDrift() {
+        eventRepository.fetchServerTime()?.let {
+            serverTimeHandler.computeTimeOffset(it.toInstant().epochSeconds)
+        }
     }
 
     private fun throwPendingEventException(failure: CoreFailure) {
