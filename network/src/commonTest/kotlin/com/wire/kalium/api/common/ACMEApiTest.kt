@@ -211,6 +211,49 @@ internal class ACMEApiTest : ApiTest() {
         }
     }
 
+    @Test
+    fun givenProxyAndCrl_whenGettingClientDomainCRL_thenUseProxyUrlWithCRLHostAddedToPath() = runTest {
+        val crlUrl = "https://crl.wire.com/crl"
+        val proxyUrl = "https://proxy.wire:9000/proxy"
+        val expected = "$proxyUrl/crl.wire.com"
+        val networkClient = mockUnboundNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertUrlEqual(expected)
+                assertGet()
+                assertNoQueryParams()
+            }
+        )
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
+
+        acmeApi.getClientDomainCRL(url = crlUrl, proxyUrl = proxyUrl).also { actual ->
+            assertIs<NetworkResponse.Success<CertificateChain>>(actual)
+        }
+    }
+
+    @Test
+    fun givenCRLWithHttpsProtocol_whenGettingClientDomainCRL_thenItShouldNotBeChanged() = runTest {
+        val crlUrl = "https://crl.wire.com/crl"
+        val expected = crlUrl
+        val networkClient = mockUnboundNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertUrlEqual(expected)
+                assertGet()
+                assertNoQueryParams()
+            }
+        )
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
+
+        acmeApi.getClientDomainCRL(url = crlUrl, proxyUrl = null).also { actual ->
+            assertIs<NetworkResponse.Success<CertificateChain>>(actual)
+        }
+    }
+
     companion object {
         private const val ACME_DISCOVERY_URL = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
         private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
