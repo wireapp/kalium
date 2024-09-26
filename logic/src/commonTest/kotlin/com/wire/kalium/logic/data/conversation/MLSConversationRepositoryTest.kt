@@ -99,6 +99,7 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
+import io.mockative.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -297,30 +298,29 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = MLS_PUBLIC_KEY)
         result.shouldSucceed()
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::createConversation)
-            .with(eq(Arrangement.RAW_GROUP_ID), anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsClient.createConversation(
+                groupId = eq(Arrangement.RAW_GROUP_ID),
+                externalSenders = any())
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::addMember)
-            .with(eq(Arrangement.RAW_GROUP_ID), anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsClient.addMember(
+                groupId = eq(Arrangement.RAW_GROUP_ID),
+                membersKeyPackages = any())
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi)
-            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
-            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsMessageApi.sendCommitBundle(any<MLSMessageApi.CommitBundle>())
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::commitAccepted)
-            .with(eq(Arrangement.RAW_GROUP_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsClient.commitAccepted(eq(Arrangement.RAW_GROUP_ID))
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsPublicKeysRepository)
-            .function(arrangement.mlsPublicKeysRepository::getKeyForCipherSuite)
-            .with(anything<CipherSuite>())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsPublicKeysRepository.getKeyForCipherSuite(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -339,30 +339,25 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
         result.shouldSucceed()
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::createConversation)
-            .with(eq(Arrangement.RAW_GROUP_ID), anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::addMember)
-            .with(eq(Arrangement.RAW_GROUP_ID), anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi)
-            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
-            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsMessageApi.sendCommitBundle(any<MLSMessageApi.CommitBundle>())
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::commitAccepted)
-            .with(eq(Arrangement.RAW_GROUP_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsClient.commitAccepted(eq(Arrangement.RAW_GROUP_ID))
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsPublicKeysRepository)
-            .function(arrangement.mlsPublicKeysRepository::getKeyForCipherSuite)
-            .with(anything<CipherSuite>())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsPublicKeysRepository.getKeyForCipherSuite(any())
+        }.wasInvoked(once)
     }
 
     @Test
