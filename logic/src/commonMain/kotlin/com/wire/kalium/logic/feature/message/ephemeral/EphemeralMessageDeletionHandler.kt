@@ -62,43 +62,38 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
     private val ongoingSelfDeletionMessagesMutex = Mutex()
     private val ongoingSelfDeletionMessages = mutableMapOf<Pair<ConversationId, String>, Unit>()
+
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
             messageRepository.getMessageById(conversationId, messageId).map { message ->
-                if (message.expirationData != null && message.status != Message.Status.Pending) {
-                    enqueueSelfDeletion(
-                        message = message,
-                        expirationData = message.expirationData!!
-                    )
-                } else {
-                    kaliumLogger.i(
-                        "Self deletion requested for message without expiration data: ${message.content.getType()}"
-                    )
+                val expirationData = message.expirationData
+                when {
+                    expirationData == null ->
+                        kaliumLogger.i("Self deletion requested for message without expiration data: ${message.content.getType()}")
+
+                    message.status == Message.Status.Pending ->
+                        logger.log(LoggingSelfDeletionEvent.InvalidMessageStatus(message, expirationData))
+
+                    else -> enqueueSelfDeletion(message, expirationData)
                 }
             }
         }
     }
 
     override fun enqueueSelfDeletion(message: Message, expirationData: Message.ExpirationData) {
-        logger.log(
-            LoggingSelfDeletionEvent.InvalidMessageStatus(
-                message,
-                expirationData
-            )
-        )
-
         launch {
             ongoingSelfDeletionMessagesMutex.withLock {
                 val isSelfDeletionOutgoing = ongoingSelfDeletionMessages[message.conversationId to message.id] != null
 
-                logger.log(
-                    LoggingSelfDeletionEvent.SelfSelfDeletionAlreadyRequested(
-                        message,
-                        expirationData
+                if (isSelfDeletionOutgoing) {
+                    logger.log(
+                        LoggingSelfDeletionEvent.SelfSelfDeletionAlreadyRequested(
+                            message,
+                            expirationData
+                        )
                     )
-                )
-
-                if (isSelfDeletionOutgoing) return@launch
+                    return@launch
+                }
 
                 addToOutgoingDeletion(message)
             }
