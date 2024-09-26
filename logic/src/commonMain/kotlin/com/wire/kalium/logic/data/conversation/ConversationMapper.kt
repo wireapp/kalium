@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessagePreview
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection

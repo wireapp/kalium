@@ -25,7 +25,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap

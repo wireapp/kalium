@@ -151,7 +151,6 @@ class JoinExistingMLSConversationsUseCaseTest {
         )
 
         @Suppress("MaxLineLength")
-<<<<<<< HEAD
         suspend fun withGetConversationsByGroupStateSuccessful(
             conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)
         ) = apply {
@@ -162,66 +161,25 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         suspend fun withJoinExistingMLSConversationSuccessful() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any())
+                joinExistingMLSConversationUseCase.invoke(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withJoinExistingMLSConversationNetworkFailure() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any())
+                joinExistingMLSConversationUseCase.invoke(any(), any())
             }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
         suspend fun withJoinExistingMLSConversationFailure() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any())
+                joinExistingMLSConversationUseCase.invoke(any(), any())
             }.returns(Either.Left(CoreFailure.NotSupportedByProteus))
-=======
-        fun withGetConversationsByGroupStateSuccessful(
-            conversations: List<Conversation> = listOf(
-                MLS_CONVERSATION1,
-                MLS_CONVERSATION2
-            )
-        ) =
-            apply {
-                given(conversationRepository)
-                    .suspendFunction(conversationRepository::getConversationsByGroupState)
-                    .whenInvokedWith(anything())
-                    .then { Either.Right(conversations) }
-            }
-
-        fun withJoinExistingMLSConversationSuccessful() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withJoinExistingMLSConversationNetworkFailure() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(null)))
-        }
-
-        fun withJoinExistingMLSConversationFailure() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Left(CoreFailure.NotSupportedByProteus))
-        }
-
-        fun withNoKeyPackagesAvailable() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Left(CoreFailure.MissingKeyPackages(setOf())))
->>>>>>> d491f958ba (fix(mls): fetch and set mls-removal keys for 1on1 conversations (#3020))
         }
 
         suspend fun withNoKeyPackagesAvailable() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any())
+                joinExistingMLSConversationUseCase.invoke(any(), any())
             }.returns(Either.Left(CoreFailure.MissingKeyPackages(setOf())))
         }
 

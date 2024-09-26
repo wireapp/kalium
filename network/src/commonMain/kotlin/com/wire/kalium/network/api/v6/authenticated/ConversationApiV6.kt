@@ -19,14 +19,12 @@
 package com.wire.kalium.network.api.v6.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
-
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV6
-import com.wire.kalium.network.api.base.model.ApiModelMapper
-import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
-import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
+import com.wire.kalium.network.api.model.ApiModelMapper
+import com.wire.kalium.network.api.model.ApiModelMapperImpl
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
