@@ -34,6 +34,15 @@ data class MLSPublicKeys(
     val removal: Map<String, String>?
 )
 
+fun MLSPublicKeys.getRemovalKey(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
+    val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
+    val keySignature = mlsPublicKeysMapper.fromCipherSuite(cipherSuite)
+    val key = this.removal?.let { removalKeys ->
+        removalKeys[keySignature.value]
+    } ?: return Either.Left(MLSFailure.Generic(IllegalStateException("No key found for cipher suite $cipherSuite")))
+    return key.decodeBase64Bytes().right()
+}
+
 interface MLSPublicKeysRepository {
     suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
     suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys>
@@ -42,7 +51,6 @@ interface MLSPublicKeysRepository {
 
 class MLSPublicKeysRepositoryImpl(
     private val mlsPublicKeyApi: MLSPublicKeyApi,
-    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
 ) : MLSPublicKeysRepository {
 
     // TODO: make it thread safe
@@ -60,14 +68,8 @@ class MLSPublicKeysRepositoryImpl(
     }
 
     override suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
-
         return getKeys().flatMap { serverPublicKeys ->
-            val keySignature = mlsPublicKeysMapper.fromCipherSuite(cipherSuite)
-            val key = serverPublicKeys.removal?.let { removalKeys ->
-                removalKeys[keySignature.value]
-            } ?: return Either.Left(MLSFailure.Generic(IllegalStateException("No key found for cipher suite $cipherSuite")))
-            key.decodeBase64Bytes().right()
+            serverPublicKeys.getRemovalKey(cipherSuite)
         }
     }
-
 }

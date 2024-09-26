@@ -136,14 +136,14 @@ interface UserConfigRepository {
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
     suspend fun clearE2EISettings()
-    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
-    fun getShouldFetchE2EITrustAnchor(): Boolean
     suspend fun setCurrentTrackingIdentifier(newIdentifier: String)
     suspend fun getCurrentTrackingIdentifier(): String?
     suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>>
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
+    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    suspend fun getShouldFetchE2EITrustAnchor(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -506,11 +506,9 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
 
-    override fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
-        userConfigStorage.setShouldFetchE2EITrustAnchors(shouldFetch = shouldFetch)
+    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        userConfigDAO.setShouldFetchE2EITrustAnchors(shouldFetch = shouldFetch)
     }
-
-    override fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigStorage.getShouldFetchE2EITrustAnchorHasRun()
 
     override suspend fun setCurrentTrackingIdentifier(newIdentifier: String) {
         wrapStorageRequest {
@@ -538,4 +536,5 @@ internal class UserConfigDataSource internal constructor(
             userConfigDAO.deletePreviousTrackingIdentifier()
         }
     }
+    override suspend fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigDAO.getShouldFetchE2EITrustAnchorHasRun()
 }

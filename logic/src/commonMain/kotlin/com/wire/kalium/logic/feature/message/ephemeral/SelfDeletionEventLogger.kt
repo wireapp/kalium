@@ -44,6 +44,7 @@ internal sealed class LoggingSelfDeletionEvent(
     fun toJson(): String {
         return EPHEMERAL_LOG_TAG + mapOf(
             "message" to (message as Message.Sendable).toLogMap(),
+            "expiration-data" to expirationData.toLogMap(),
         )
             .toMutableMap()
             .plus(toLogMap())
