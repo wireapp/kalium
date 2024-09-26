@@ -144,7 +144,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                     model,
                     cookieLabel,
                     verificationCode,
-                    modelPostfix
+                    modelPostfix,
                 )
             }.fold({
                 RegisterClientResult.Failure.Generic(it)
