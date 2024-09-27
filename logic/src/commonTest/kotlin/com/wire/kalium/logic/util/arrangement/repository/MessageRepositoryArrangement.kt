@@ -22,6 +22,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -34,6 +35,9 @@ import kotlinx.coroutines.flow.Flow
 internal interface MessageRepositoryArrangement {
     @Mock
     val messageRepository: MessageRepository
+
+    @Mock
+    val systemMessageInserter: SystemMessageInserter
 
     fun withGetMessageById(
         result: Either<StorageFailure, Message>,
@@ -65,6 +69,7 @@ internal interface MessageRepositoryArrangement {
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
     @Mock
     override val messageRepository: MessageRepository = mock(MessageRepository::class)
+    override val systemMessageInserter = mock(SystemMessageInserter::class)
 
     override fun withGetMessageById(
         result: Either<StorageFailure, Message>,
@@ -117,3 +122,4 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
             .thenReturn(result)
     }
 }
+

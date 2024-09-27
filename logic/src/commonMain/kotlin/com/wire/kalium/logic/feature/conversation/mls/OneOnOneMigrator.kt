@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.isTeammate
@@ -56,7 +57,8 @@ internal class OneOnOneMigratorImpl(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val systemMessageInserter: SystemMessageInserter
 ) : OneOnOneMigrator {
 
     override suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId> =
@@ -99,6 +101,12 @@ internal class OneOnOneMigratorImpl(
                             userId = user.id
                         ).map {
                             mlsConversation
+                        }.also {
+                            systemMessageInserter.insertProtocolChangedSystemMessage(
+                                conversationId = mlsConversation,
+                                senderUserId = user.id,
+                                protocol = Conversation.Protocol.MLS
+                            )
                         }
                     }
             }

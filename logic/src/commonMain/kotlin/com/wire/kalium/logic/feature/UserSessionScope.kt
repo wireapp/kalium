@@ -996,7 +996,8 @@ class UserSessionScope internal constructor(
             conversationGroupRepository,
             conversationRepository,
             messageRepository,
-            userRepository
+            userRepository,
+            systemMessageInserter
         )
     private val oneOnOneResolver: OneOnOneResolver
         get() = OneOnOneResolverImpl(

@@ -35,7 +35,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
-import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.matchers.OneOfMatcher

@@ -37,10 +37,8 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
-import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -293,7 +291,7 @@ class OneOnOneMigratorTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
-        fun arrange() = run {
+        suspend fun arrange() = run {
             block()
             this@Arrangement to OneOnOneMigratorImpl(
                 getResolvedMLSOneOnOne = mlsOneOnOneConversationResolver,
@@ -307,6 +305,6 @@ class OneOnOneMigratorTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
     }
 }
