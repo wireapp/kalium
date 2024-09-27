@@ -132,6 +132,10 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.messageRepository.moveMessagesToAnotherConversation(any(), any())
         }.wasNotInvoked()
+
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -141,7 +145,7 @@ class OneOnOneMigratorTest {
         )
         val failure = CoreFailure.MissingClientRegistration
 
-        val (_, oneOnOneMigrator) = arrange {
+        val (arrangement, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Left(failure))
         }
 
@@ -170,6 +174,10 @@ class OneOnOneMigratorTest {
 
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -212,6 +220,10 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.messageRepository.moveMessagesToAnotherConversation(eq(originalConversationId), eq(resolvedConversationId))
         }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -234,6 +246,10 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(resolvedConversationId))
         }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
@@ -249,7 +265,8 @@ class OneOnOneMigratorTest {
                 conversationGroupRepository = conversationGroupRepository,
                 conversationRepository = conversationRepository,
                 messageRepository = messageRepository,
-                userRepository = userRepository
+                userRepository = userRepository,
+                systemMessageInserter = systemMessageInserter
             )
         }
     }
