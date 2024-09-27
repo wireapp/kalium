@@ -58,7 +58,7 @@ actual class GlobalCallManager(
     }
 
     private val calling by lazy {
-        Calling.INSTANCE.apply {
+        Calling.INSTANCE?.apply {
             if (CurrentPlatform().type == PlatformType.ANDROID)
                 wcall_init(env = ENVIRONMENT_DEFAULT)
             else {

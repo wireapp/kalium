@@ -214,6 +214,12 @@ interface Calling : Library {
     )
 
     companion object {
-        val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
+        val INSTANCE: Calling? by lazy {
+            try {
+                Native.load("avs", Calling::class.java)
+            } catch (e: UnsatisfiedLinkError) {
+                null
+            }
+        }
     }
 }

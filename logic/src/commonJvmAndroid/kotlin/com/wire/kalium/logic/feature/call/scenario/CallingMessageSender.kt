@@ -60,8 +60,8 @@ internal interface CallingMessageSender {
 
 @Suppress("FunctionNaming")
 internal fun CallingMessageSender(
-    handle: Deferred<Handle>,
-    calling: Calling,
+    handle: Deferred<Handle?>,
+    calling: Calling?,
     messageSender: MessageSender,
     callingScope: CoroutineScope,
     selfConversationIdProvider: SelfConversationIdProvider
@@ -143,12 +143,14 @@ internal fun CallingMessageSender(
                 HttpStatusCode.BadRequest.value to "Couldn't send Calling Message"
             }
         }
-        calling.wcall_resp(
-            inst = handle.await(),
-            status = code,
-            reason = message,
-            arg = messageInstructions.context
-        )
+        handle.await()?.let { handle ->
+            calling?.wcall_resp(
+                inst = handle,
+                status = code,
+                reason = message,
+                arg = messageInstructions.context
+            )
+        }
     }
 
     @Suppress("LongParameterList")
