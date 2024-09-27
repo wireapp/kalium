@@ -24,8 +24,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DelicateKaliumApi
 
 /**
@@ -52,36 +50,22 @@ internal class VerifyExistingClientUseCaseImpl @OptIn(DelicateKaliumApi::class) 
         return clientRepository.selfListOfClients()
             .fold({
                 VerifyExistingClientResult.Failure.Generic(it)
-            }, { listOfClients ->
-                val client = listOfClients.firstOrNull { it.id == clientId }
+            }, { listOfRegisteredClients ->
+                val registeredClient = listOfRegisteredClients.firstOrNull { it.id == clientId }
                 when {
-                    (client == null) -> VerifyExistingClientResult.Failure.ClientNotRegistered
+                    registeredClient == null -> VerifyExistingClientResult.Failure.ClientNotRegistered
 
-                    isAllowedToRegisterMLSClient() -> {
-                        registerMLSClientUseCase.invoke(clientId = client.id).map {
-                            if (it is RegisterMLSClientResult.E2EICertificateRequired)
-                                VerifyExistingClientResult.Failure.E2EICertificateRequired(client, selfUserId)
-                            else VerifyExistingClientResult.Success(client)
-                        }.getOrElse { VerifyExistingClientResult.Failure.Generic(it) }
-                    }
-
-                    else -> VerifyExistingClientResult.Success(client)
-                }
-
-                if (client != null) {
-                    if (isAllowedToRegisterMLSClient()) {
-                        registerMLSClientUseCase.invoke(clientId = client.id).fold({
+                    !registeredClient.isMLSCapable && isAllowedToRegisterMLSClient() -> {
+                        registerMLSClientUseCase.invoke(clientId = registeredClient.id).fold({
                             VerifyExistingClientResult.Failure.Generic(it)
-                        }) {
+                        }, {
                             if (it is RegisterMLSClientResult.E2EICertificateRequired)
-                                VerifyExistingClientResult.Failure.E2EICertificateRequired(client, selfUserId)
-                            else VerifyExistingClientResult.Success(client)
-                        }
-                    } else {
-                        VerifyExistingClientResult.Success(client)
+                                VerifyExistingClientResult.Failure.E2EICertificateRequired(registeredClient, selfUserId)
+                            else VerifyExistingClientResult.Success(registeredClient)
+                        })
                     }
-                } else {
-                    VerifyExistingClientResult.Failure.ClientNotRegistered
+
+                    else -> VerifyExistingClientResult.Success(registeredClient)
                 }
             })
     }
