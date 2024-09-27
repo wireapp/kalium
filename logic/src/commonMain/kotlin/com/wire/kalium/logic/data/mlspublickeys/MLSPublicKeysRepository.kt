@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.mlspublickeys
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -30,9 +31,20 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import io.ktor.util.decodeBase64Bytes
 
+<<<<<<< HEAD
 data class MLSPublicKeys(
     val removal: Map<String, String>?
 )
+=======
+fun MLSPublicKeys.getRemovalKey(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
+    val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
+    val keySignature = mlsPublicKeysMapper.fromCipherSuite(cipherSuite)
+    val key = this.removal?.let { removalKeys ->
+        removalKeys[keySignature.value]
+    } ?: return Either.Left(MLSFailure.Generic(IllegalStateException("No key found for cipher suite $cipherSuite")))
+    return key.decodeBase64Bytes().right()
+}
+>>>>>>> 86f064246a (fix(mls): fetch and set mls-removal keys for 1on1 conversations (WPB-10743) 🍒 (#3021))
 
 interface MLSPublicKeysRepository {
     suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
