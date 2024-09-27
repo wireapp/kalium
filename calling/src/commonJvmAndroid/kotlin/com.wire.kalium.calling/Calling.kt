@@ -214,13 +214,8 @@ interface Calling : Library {
     )
 
     companion object {
-        val INSTANCE: Calling? by lazy {
-            try {
-                Native.load("avs", Calling::class.java)
-            } catch (e: UnsatisfiedLinkError) {
-                println("Failed to load calling library: ${e.message}")
-                null
-            }
+        val INSTANCE: Calling by lazy {
+            Native.load("avs", Calling::class.java)!!
         }
     }
 }

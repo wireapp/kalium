@@ -99,7 +99,7 @@ import java.util.Collections
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
-    private val calling: Calling?,
+    private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -186,7 +186,7 @@ class CallManagerImpl internal constructor(
 
             val waitInitializationJob = Job()
 
-            val handle = calling?.wcall_create(
+            val handle = calling.wcall_create(
                 userId = selfUserId,
                 clientId = selfClientId,
                 readyHandler = ReadyHandler { version: Int, arg: Pointer? ->
@@ -228,13 +228,13 @@ class CallManagerImpl internal constructor(
             callingLogger.d("$TAG - wcall_create() called")
             // TODO(edge-case): Add a timeout. Perhaps make some functions (like onCallingMessageReceived) return Eithers.
             waitInitializationJob.join()
-            handle ?: Uint32_t(0)
+            handle
         }
     }
 
     private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
         val handle = deferredHandle.await()
-        return calling?.action(handle) ?: error("Calling is not initialized")
+        return calling.action(handle)
     }
 
     override suspend fun onCallingMessageReceived(

@@ -49,7 +49,8 @@ data class KaliumConfigs(
     // if null there will be no limit and all team members will be fetched
     // preferably it should be a multiple of TeamRepository.FETCH_TEAM_MEMBER_PAGE_SIZE
     val limitTeamMembersFetchDuringSlowSync: Int? = null,
-    val maxRemoteSearchResultCount: Int = 30
+    val maxRemoteSearchResultCount: Int = 30,
+    val enableCalling: Boolean = true
 )
 
 sealed interface BuildFileRestrictionState {

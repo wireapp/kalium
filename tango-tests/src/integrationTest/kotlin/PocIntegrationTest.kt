@@ -136,7 +136,8 @@ class PocIntegrationTest {
                 isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
                 mockedRequests = mockedRequests,
-                mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER
+                mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
+                enableCalling = false
             ),
             userAgent = "Wire Integration Tests"
         )
