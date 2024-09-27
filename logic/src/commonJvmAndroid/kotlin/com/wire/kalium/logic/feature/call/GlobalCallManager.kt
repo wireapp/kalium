@@ -70,6 +70,10 @@ actual class GlobalCallManager(
                 arg = null
             )
             callingLogger.i("GlobalCallManager -> wcall_init")
+        }.also {
+            if (it == null) {
+                callingLogger.e("GlobalCallManager -> failed to load calling library")
+            }
         }
     }
 

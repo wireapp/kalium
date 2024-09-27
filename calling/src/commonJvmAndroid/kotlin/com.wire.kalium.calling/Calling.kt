@@ -218,6 +218,7 @@ interface Calling : Library {
             try {
                 Native.load("avs", Calling::class.java)
             } catch (e: UnsatisfiedLinkError) {
+                println("Failed to load calling library: ${e.message}")
                 null
             }
         }
