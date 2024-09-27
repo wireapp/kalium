@@ -68,7 +68,6 @@ class PocIntegrationTest {
         }
     }
 
-    @Ignore("needs to be checked and fix")
     @Test
     fun givenEmailAndPasswordWhenLoggingInThenRegisterClientAndLogout() = runTest {
         val mockedRequests = mutableListOf<TestRequestHandler>().apply {
