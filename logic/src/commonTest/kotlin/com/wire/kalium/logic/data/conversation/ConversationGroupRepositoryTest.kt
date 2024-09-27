@@ -905,7 +905,10 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()))
+            arrangement.joinExistingMLSConversation.invoke(
+                ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
+                null
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -950,7 +953,10 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()))
+            arrangement.joinExistingMLSConversation.invoke(
+                ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
+                null
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1282,9 +1288,10 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAConversationFailsWithUnreachableAndNotFromUsersInRequest_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
         runTest {
+            val conversation = TestConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
-                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withConversationDetailsById(conversation)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
@@ -1309,11 +1316,9 @@ class ConversationGroupRepositoryTest {
 
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
-                    conversationId = any(),
-                    userIdList = matches {
-                        it.containsAll(expectedInitialUsersNotFromUnreachableInformed)
-                    },
-                    type = any()
+                    conversationId = conversation.id,
+                    userIdList = expectedInitialUsersNotFromUnreachableInformed,
+                    type = MessageContent.MemberChange.FailedToAdd.Type.Federation
                 )
             }.wasInvoked(once)
         }
@@ -1772,7 +1777,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withJoinExistingMlsConversationSucceeds() = apply {
             coEvery {
-                joinExistingMLSConversation.invoke(any())
+                joinExistingMLSConversation.invoke(any(), any())
             }.returns(Either.Right(Unit))
         }
 

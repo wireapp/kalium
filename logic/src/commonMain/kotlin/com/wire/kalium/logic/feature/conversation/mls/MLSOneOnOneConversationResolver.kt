@@ -68,7 +68,7 @@ internal class MLSOneOnOneConversationResolverImpl(
             } else {
                 kaliumLogger.d("Establishing mls group for one-on-one with ${userId.toLogString()}")
                 conversationRepository.fetchMlsOneToOneConversation(userId).flatMap { conversation ->
-                    joinExistingMLSConversationUseCase(conversation.id).map { conversation.id }
+                    joinExistingMLSConversationUseCase(conversation.id, conversation.mlsPublicKeys).map { conversation.id }
                 }
             }
         }

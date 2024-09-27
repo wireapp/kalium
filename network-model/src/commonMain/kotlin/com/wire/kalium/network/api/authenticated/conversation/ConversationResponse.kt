@@ -162,7 +162,7 @@ data class ConversationResponseV3(
 @Serializable
 data class ConversationResponseV6(
     @SerialName("conversation")
-    val conversation: ConversationResponseV3,
+    val conversation: ConversationResponse,
     @SerialName("public_keys")
     val publicKeys: MLSPublicKeysDTO
 )

@@ -508,6 +508,7 @@ internal class ConversationDataSource internal constructor(
         wrapApiRequest {
             conversationApi.fetchMlsOneToOneConversation(userId.toApi())
         }.map { conversationResponse ->
+            // question: do we need to do this? since it's one on one!
             addOtherMemberIfMissing(conversationResponse, userId)
         }.flatMap { conversationResponse ->
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
@@ -516,7 +517,9 @@ internal class ConversationDataSource internal constructor(
                 selfUserTeamId = selfUserTeamId
             ).map { conversationResponse }
         }.flatMap { response ->
-            baseInfoById(response.id.toModel())
+            baseInfoById(response.id.toModel()).map {
+                it.copy(mlsPublicKeys = conversationMapper.fromApiModel(response.publicKeys))
+            }
         }
 
     private fun addOtherMemberIfMissing(

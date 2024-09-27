@@ -64,7 +64,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -88,7 +88,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
@@ -112,7 +112,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -136,7 +136,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(twice)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(once)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -205,7 +205,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any())
+                joinExistingMLSConversationUseCase.invoke(any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -226,10 +226,10 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(eq(failedGroupId))
+                joinExistingMLSConversationUseCase.invoke(failedGroupId, null)
             }.returns(Either.Left(StorageFailure.DataNotFound))
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(matches { it != failedGroupId })
+                joinExistingMLSConversationUseCase.invoke(matches { it != failedGroupId }, any())
             }.returns(Either.Right(Unit))
         }
 
