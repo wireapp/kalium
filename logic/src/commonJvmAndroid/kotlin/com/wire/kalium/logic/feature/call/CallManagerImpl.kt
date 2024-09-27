@@ -471,7 +471,7 @@ class CallManagerImpl internal constructor(
             }
             val clientsJson = CallClientList(clients).toJsonString()
             val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
-            calling?.wcall_request_video_streams(
+            calling.wcall_request_video_streams(
                 inst = it,
                 conversationId = conversationIdString,
                 mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,

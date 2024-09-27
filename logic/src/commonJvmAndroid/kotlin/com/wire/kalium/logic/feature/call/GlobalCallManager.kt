@@ -52,7 +52,7 @@ import java.util.concurrent.ConcurrentMap
 
 actual class GlobalCallManager(
     appContext: PlatformContext,
-    scope: CoroutineScope,
+    scope: CoroutineScope
 ) {
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
         ConcurrentHashMap()
