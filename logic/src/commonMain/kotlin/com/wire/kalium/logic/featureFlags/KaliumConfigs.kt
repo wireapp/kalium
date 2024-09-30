@@ -43,6 +43,7 @@ data class KaliumConfigs(
     val certPinningConfig: Map<String, List<String>> = emptyMap(),
     val mockedRequests: List<TestRequestHandler>? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null,
+    val mockedWebSocket: Boolean = false,
     // Interval between attempts to advance the proteus to MLS migration
     val mlsMigrationInterval: Duration = 24.hours,
     // limit for the number of team members to fetch during slow sync
