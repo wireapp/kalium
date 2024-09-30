@@ -67,11 +67,13 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.websocket.WebSocketSession
 
 internal class AuthenticatedNetworkContainerV0 internal constructor(
     private val sessionManager: SessionManager,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?,
+    mockWebSocketSession: WebSocketSession?,
     kaliumLogger: KaliumLogger,
     engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
@@ -83,7 +85,12 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
         sessionManager = sessionManager,
         accessTokenApi = { httpClient -> AccessTokenApiV0(httpClient) },
         engine = engine,
-        kaliumLogger = kaliumLogger
+        kaliumLogger = kaliumLogger,
+        webSocketSessionProvider = if (mockWebSocketSession != null) {
+            { _, _ -> mockWebSocketSession }
+        } else {
+            null
+        }
     ) {
 
     override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV0(networkClient.httpClient)

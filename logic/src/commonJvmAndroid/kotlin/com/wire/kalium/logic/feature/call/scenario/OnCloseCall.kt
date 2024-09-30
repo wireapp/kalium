@@ -27,10 +27,10 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.CoroutineScope
@@ -63,8 +63,13 @@ class OnCloseCall(
 
         scope.launch {
 
-            val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
-            if (shouldPersistMissedCall(conversationIdWithDomain, callStatus) && isConnectedToInternet) {
+            val isConnectedToInternet =
+                networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
+            if (shouldPersistMissedCall(
+                    conversationIdWithDomain,
+                    callStatus
+                ) && isConnectedToInternet
+            ) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
@@ -76,12 +81,14 @@ class OnCloseCall(
             if (callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)
             }
-
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
         }
     }
 
-    private fun shouldPersistMissedCall(conversationId: ConversationId, callStatus: CallStatus): Boolean {
+    private fun shouldPersistMissedCall(
+        conversationId: ConversationId,
+        callStatus: CallStatus
+    ): Boolean {
         if (callStatus == CallStatus.MISSED)
             return true
         return callRepository.getCallMetadataProfile().data[conversationId]?.let {

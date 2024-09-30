@@ -201,7 +201,7 @@ internal class ConversationGroupRepositoryImpl(
             legalHoldHandler.handleConversationMembersChanged(conversationEntity.id.toModel())
         }.flatMap {
             wrapStorageRequest {
-                conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
+                conversationDAO.getConversationById(conversationEntity.id)?.let {
                     conversationMapper.fromDaoModel(it)
                 }
             }

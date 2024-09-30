@@ -208,6 +208,7 @@ interface MLSFailure : CoreFailure {
     data object ConversationDoesNotSupportMLS : MLSFailure
     data object StaleProposal : MLSFailure
     data object StaleCommit : MLSFailure
+    data object InternalErrors : MLSFailure
 
     data class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
@@ -336,7 +337,7 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
                 |"cause": ${e.cause} }" """.trimMargin()
         )
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)))
+        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)))
     }
 }
 

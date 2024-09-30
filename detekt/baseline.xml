@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues>
     <ID>MatchingDeclarationName:Widgets.kt$CustomScrollRegion : Widget</ID>
+    <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by sourceSets.getting { dependencies { implementation(project(":network")) implementation(project(":cryptography")) implementation(project(":logic")) implementation(project(":util")) implementation(libs.cliKt) implementation(libs.ktor.utils) implementation(libs.coroutines.core) implementation(libs.ktxDateTime) implementation(libs.mordant) implementation(libs.ktxSerialization) implementation(libs.ktxIO) } }</ID>
   </ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>AnnotationSpacing:HttpClientConnectionSpecsTest.kt$HttpClientConnectionSpecsTest$@Test</ID>

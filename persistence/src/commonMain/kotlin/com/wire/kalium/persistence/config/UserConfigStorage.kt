@@ -145,6 +145,10 @@ interface UserConfigStorage {
      */
     fun isConferenceCallingEnabled(): Boolean
 
+    fun persistUseSftForOneOnOneCalls(shouldUse: Boolean)
+
+    fun shouldUseSftForOneOnOneCalls(): Boolean
+
     /**
      * Get the saved flag to know whether user's Read Receipts are currently enabled or not
      */
@@ -174,8 +178,6 @@ interface UserConfigStorage {
     fun getE2EINotificationTime(): Long?
     fun e2EINotificationTimeFlow(): Flow<Long?>
     fun updateE2EINotificationTime(timeStamp: Long)
-    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
-    fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
 }
 
 @Serializable
@@ -503,6 +505,16 @@ class UserConfigStorageImpl(
             DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         )
 
+    override fun persistUseSftForOneOnOneCalls(shouldUse: Boolean) {
+        kaliumPreferences.putBoolean(USE_SFT_FOR_ONE_ON_ONE_CALLS, shouldUse)
+    }
+
+    override fun shouldUseSftForOneOnOneCalls(): Boolean =
+        kaliumPreferences.getBoolean(
+            USE_SFT_FOR_ONE_ON_ONE_CALLS,
+            DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
+        )
+
     override fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
         .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true) }
         .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)) }
@@ -562,13 +574,6 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
-        kaliumPreferences.putBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, shouldFetch)
-    }
-
-    override fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
-        kaliumPreferences.getBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, true)
-
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
@@ -577,14 +582,15 @@ class UserConfigStorageImpl(
         const val E2EI_SETTINGS = "end_to_end_identity_settings"
         const val E2EI_NOTIFICATION_TIME = "end_to_end_identity_notification_time"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
+        const val USE_SFT_FOR_ONE_ON_ONE_CALLS = "use_sft_for_one_on_one_calls"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
+        const val DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE = false
         const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE =
             "require_second_factor_password_challenge"
         const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
         const val APP_LOCK = "app_lock"
         const val DEFAULT_PROTOCOL = "default_protocol"
-        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
     }
 }

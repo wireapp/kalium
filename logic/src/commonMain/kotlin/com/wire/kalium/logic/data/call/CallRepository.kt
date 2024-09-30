@@ -25,7 +25,6 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -51,9 +50,9 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -82,6 +81,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -107,9 +107,9 @@ interface CallRepository {
     @Suppress("LongParameterList")
     suspend fun createCall(
         conversationId: ConversationId,
-        type: ConversationType,
+        type: ConversationTypeForCall,
         status: CallStatus,
-        callerId: String,
+        callerId: UserId,
         isMuted: Boolean,
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
@@ -119,10 +119,11 @@ interface CallRepository {
     fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean)
     fun updateIsCbrEnabled(isCbrEnabled: Boolean)
     fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
-    fun updateCallParticipants(conversationId: ConversationId, participants: List<Participant>)
-    fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: CallActiveSpeakers)
+    suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
+    fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
+    suspend fun leavePreviouslyJoinedMlsConferences()
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
         conversationId: ConversationId,
@@ -132,6 +133,8 @@ interface CallRepository {
     suspend fun leaveMlsConference(conversationId: ConversationId)
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
     suspend fun advanceEpoch(conversationId: ConversationId)
+    fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
+    suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -151,7 +154,6 @@ internal class CallDataSource(
     private val leaveSubconversation: LeaveSubconversationUseCase,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
-    private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallRepository {
 
@@ -161,6 +163,26 @@ internal class CallDataSource(
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
     private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
+
+    override suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?> = _callMetadataProfile.map {
+        it[conversationId]?.let { currentCall ->
+            Call(
+                conversationId = conversationId,
+                status = currentCall.callStatus,
+                isMuted = currentCall.isMuted,
+                isCameraOn = currentCall.isCameraOn,
+                isCbrEnabled = currentCall.isCbrEnabled,
+                callerId = currentCall.callerId,
+                conversationName = currentCall.conversationName,
+                conversationType = currentCall.conversationType,
+                callerName = currentCall.callerName,
+                callerTeamName = currentCall.callerTeamName,
+                establishedTime = currentCall.establishedTime,
+                participants = currentCall.getFullParticipants(),
+                maxParticipants = currentCall.maxParticipants
+            )
+        }
+    }
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -189,9 +211,9 @@ internal class CallDataSource(
     @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
         conversationId: ConversationId,
-        type: ConversationType,
+        type: ConversationTypeForCall,
         status: CallStatus,
-        callerId: String,
+        callerId: UserId,
         isMuted: Boolean,
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
@@ -199,10 +221,7 @@ internal class CallDataSource(
         val conversation: ConversationDetails =
             conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
-        // in OnIncomingCall we get callerId without a domain,
-        // to cover that case and have a valid UserId we have that workaround
-        val callerIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(callerId)
-        val caller = userRepository.getKnownUser(callerIdWithDomain).first()
+        val caller = userRepository.getKnownUser(callerId).first()
         val team = caller?.teamId?.let { teamId -> teamRepository.getTeam(teamId).first() }
 
         val callEntity = callMapper.toCallEntity(
@@ -211,10 +230,11 @@ internal class CallDataSource(
             type = type,
             status = status,
             conversationType = conversation.conversation.type,
-            callerId = callerIdWithDomain
+            callerId = callerId
         )
 
         val metadata = CallMetadata(
+            callerId = callerId,
             conversationName = conversation.conversation.name,
             conversationType = conversation.conversation.type,
             callerName = caller?.name,
@@ -224,7 +244,8 @@ internal class CallDataSource(
             isCbrEnabled = isCbrEnabled,
             establishedTime = null,
             callStatus = status,
-            protocol = conversation.conversation.protocol
+            protocol = conversation.conversation.protocol,
+            activeSpeakers = mapOf()
         )
 
         val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId)
@@ -407,7 +428,8 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateCallParticipants(conversationId: ConversationId, participants: List<Participant>) {
+    @Suppress("NestedBlockDepth")
+    override suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>) {
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { call ->
             if (call.participants != participants) {
@@ -417,10 +439,24 @@ internal class CallDataSource(
                             " with size of: ${participants.size}"
                 )
 
+                val currentParticipantIds = call.participants.map { it.userId }.toSet()
+                val newParticipantIds = participants.map { it.userId }.toSet()
+
+                val updatedUsers = call.users.toMutableList()
+
+                newParticipantIds.minus(currentParticipantIds).let { missedUserIds ->
+                    if (missedUserIds.isNotEmpty())
+                        updatedUsers.addAll(
+                            userRepository.getUsersMinimizedByQualifiedIDs(missedUserIds.toList()).getOrElse { listOf() }
+                        )
+
+                }
+
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                     this[conversationId] = call.copy(
                         participants = participants,
-                        maxParticipants = max(call.maxParticipants, participants.size + 1)
+                        maxParticipants = max(call.maxParticipants, participants.size + 1),
+                        users = updatedUsers
                     )
                 }
 
@@ -430,7 +466,9 @@ internal class CallDataSource(
             }
         }
 
-        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS &&
+            _callMetadataProfile.value[conversationId]?.conversationType == Conversation.Type.GROUP
+        ) {
             participants.forEach { participant ->
                 if (participant.hasEstablishedAudio) {
                     clearStaleParticipantTimeout(participant)
@@ -441,14 +479,14 @@ internal class CallDataSource(
         }
     }
 
-    private fun clearStaleParticipantTimeout(participant: Participant) {
+    private fun clearStaleParticipantTimeout(participant: ParticipantMinimized) {
         callingLogger.i("Clear stale participant timer")
         val qualifiedClient = QualifiedClientID(ClientId(participant.clientId), participant.id)
         staleParticipantJobs.remove(qualifiedClient)?.cancel()
     }
 
     private fun removeStaleParticipantAfterTimeout(
-        participant: Participant,
+        participant: ParticipantMinimized,
         conversationId: ConversationId
     ) {
         val qualifiedClient = QualifiedClientID(ClientId(participant.clientId), participant.id)
@@ -469,7 +507,7 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: CallActiveSpeakers) {
+    override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>) {
         val callMetadataProfile = _callMetadataProfile.value
 
         callMetadataProfile.data[conversationId]?.let { call ->
@@ -477,19 +515,11 @@ internal class CallDataSource(
                 "updateActiveSpeakers() -" +
                         " conversationId: ${conversationId.value.obfuscateId()}" +
                         "@${conversationId.domain.obfuscateDomain()}" +
-                        "with size of: ${activeSpeakers.activeSpeakers.size}"
-            )
-
-            val updatedParticipants = activeSpeakerMapper.mapParticipantsActiveSpeaker(
-                participants = call.participants,
-                activeSpeakers = activeSpeakers
+                        "with size of: ${activeSpeakers.size}"
             )
 
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = call.copy(
-                    participants = updatedParticipants,
-                    maxParticipants = max(call.maxParticipants, updatedParticipants.size + 1)
-                )
+                this[conversationId] = call.copy(activeSpeakers = activeSpeakers)
             }
 
             _callMetadataProfile.value = callMetadataProfile.copy(
@@ -546,7 +576,7 @@ internal class CallDataSource(
             }
         }
 
-    private suspend fun leavePreviouslyJoinedMlsConferences() {
+    override suspend fun leavePreviouslyJoinedMlsConferences() {
         callingLogger.i("Leaving previously joined MLS conferences")
 
         callDAO.observeEstablishedCalls()
@@ -671,6 +701,9 @@ internal class CallDataSource(
                 .onFailure { callingLogger.e("[CallRepository] -> Failure generating new epoch: $it") }
         } ?: callingLogger.w("[CallRepository] -> Requested new epoch but there's no conference subconversation")
     }
+
+    override fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo? =
+        _callMetadataProfile.value.data[conversationId]?.protocol
 
     companion object {
         val STALE_PARTICIPANT_TIMEOUT = 190.toDuration(kotlin.time.DurationUnit.SECONDS)

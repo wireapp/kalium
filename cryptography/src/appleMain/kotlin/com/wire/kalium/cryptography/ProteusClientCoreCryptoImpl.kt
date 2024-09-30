@@ -31,7 +31,8 @@ import platform.Foundation.URLByAppendingPathComponent
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: CoreCrypto) : ProteusClient {
     @Suppress("EmptyFunctionBlock")
-    override suspend fun close() {}
+    override suspend fun close() {
+    }
 
     override fun getIdentity(): ByteArray {
         return ByteArray(0)
@@ -72,18 +73,21 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         wrapException { coreCrypto.proteusSessionFromPrekey(sessionId.value, toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes())) }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T {
         val sessionExists = doesSessionExist(sessionId)
 
         return wrapException {
-            if (sessionExists) {
-                val decryptedMessage = toByteArray(coreCrypto.proteusDecrypt(sessionId.value, toUByteList(message)))
-                coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
+            val decryptedMessage = if (sessionExists) {
+                toByteArray(coreCrypto.proteusDecrypt(sessionId.value, toUByteList(message)))
             } else {
-                val decryptedMessage = toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))
+                toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))
+            }
+            handleDecryptedMessage(decryptedMessage).also {
                 coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
             }
         }
     }
@@ -98,7 +102,10 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
         return wrapException {
-            coreCrypto.proteusEncryptBatched(sessionIds.map { it.value }, toUByteList((message))).mapNotNull { entry ->
+            coreCrypto.proteusEncryptBatched(
+                sessionId = sessionIds.map { it.value },
+                plaintext = toUByteList((message))
+            ).mapNotNull { entry ->
                 CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
                     sessionId to toByteArray(entry.value)
                 }
@@ -126,14 +133,14 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun <T> wrapException(b: () -> T): T {
+    private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
             // TODO underlying proteus error is not exposed atm
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         }
     }
 
@@ -187,9 +194,9 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
                 coreCrypto.proteusInit()
                 return ProteusClientCoreCryptoImpl(coreCrypto)
             } catch (e: CryptoException) {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             } catch (e: Exception) {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }
     }

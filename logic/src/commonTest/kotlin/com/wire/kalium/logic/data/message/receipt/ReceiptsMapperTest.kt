@@ -118,7 +118,8 @@ class ReceiptsMapperTest {
             isUserDeleted = false,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            date = date
+            date = date,
+            accentId = 0
         )
 
         val expectedDetailedReceipt = DetailedReceipt(
@@ -132,7 +133,8 @@ class ReceiptsMapperTest {
                 userType = UserType.INTERNAL,
                 isUserDeleted = false,
                 connectionStatus = ConnectionState.ACCEPTED,
-                availabilityStatus = UserAvailabilityStatus.NONE
+                availabilityStatus = UserAvailabilityStatus.NONE,
+                accentId = 0
             )
         )
 

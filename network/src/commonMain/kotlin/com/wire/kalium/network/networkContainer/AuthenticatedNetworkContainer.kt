@@ -55,6 +55,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
+import io.ktor.websocket.WebSocketSession
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
@@ -114,6 +115,7 @@ interface AuthenticatedNetworkContainer {
             userAgent: String,
             certificatePinning: CertificatePinning,
             mockEngine: HttpClientEngine?,
+            mockWebSocketSession: WebSocketSession?,
             kaliumLogger: KaliumLogger,
         ): AuthenticatedNetworkContainer {
 
@@ -124,14 +126,16 @@ interface AuthenticatedNetworkContainer {
                     sessionManager,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     sessionManager,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
@@ -139,7 +143,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 // this is intentional since we should drop support for api v3
@@ -149,7 +154,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
@@ -157,7 +163,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
@@ -165,7 +172,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 6 -> AuthenticatedNetworkContainerV6(
@@ -173,7 +181,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 else -> error("Unsupported version: $version")
@@ -194,6 +203,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine,
+    private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)?,
     private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
 
@@ -241,7 +251,8 @@ internal class AuthenticatedHttpClientProviderImpl(
             engine,
             bearerAuthProvider,
             sessionManager.serverConfig(),
-            kaliumLogger
+            kaliumLogger,
+            webSocketSessionProvider
         )
     }
     override val networkClientWithoutCompression by lazy {

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.framework
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -181,5 +182,13 @@ object TestUser {
     val LIST_USERS_DTO = ListUsersDTO(
         usersFailed = emptyList(),
         usersFound = listOf(USER_PROFILE_DTO)
+    )
+
+    val OTHER_MINIMIZED = OtherUserMinimized(
+        OTHER_USER_ID,
+        name = "otherUsername",
+        completePicture = UserAssetId("value2", "domain"),
+        userType = UserType.EXTERNAL,
+        accentId = 0
     )
 }

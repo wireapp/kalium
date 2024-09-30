@@ -19,41 +19,28 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.CertificateStatus
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 
 /**
  * This use case is used to get the e2ei certificate status of specific user
  */
-interface GetUserE2eiCertificateStatusUseCase {
-    suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult
+interface IsOtherUserE2EIVerifiedUseCase {
+    suspend operator fun invoke(userId: UserId): Boolean
 }
 
-class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
+class IsOtherUserE2EIVerifiedUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
-) : GetUserE2eiCertificateStatusUseCase {
-    override suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult =
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
+    private val userRepository: UserRepository
+) : IsOtherUserE2EIVerifiedUseCase {
+    override suspend operator fun invoke(userId: UserId): Boolean =
         if (isE2EIEnabledUseCase()) {
-            mlsConversationRepository.getUserIdentity(userId).fold(
-                {
-                    GetUserE2eiCertificateStatusResult.Failure.NotActivated
-                },
-                { identities ->
-                    identities.getUserCertificateStatus()?.let {
-                        GetUserE2eiCertificateStatusResult.Success(it)
-                    } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
-                }
-            )
+            val nameHandle = userRepository.getNameAndHandle(userId).getOrNull()
+            mlsConversationRepository.getUserIdentity(userId).fold({ false }, { it.isUserMLSVerified(nameHandle) })
         } else {
-            GetUserE2eiCertificateStatusResult.Failure.NotActivated
+            false
         }
-}
-
-sealed class GetUserE2eiCertificateStatusResult {
-    class Success(val status: CertificateStatus) : GetUserE2eiCertificateStatusResult()
-    sealed class Failure : GetUserE2eiCertificateStatusResult() {
-        data object NotActivated : Failure()
-    }
 }

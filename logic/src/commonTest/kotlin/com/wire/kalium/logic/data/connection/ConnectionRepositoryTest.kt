@@ -69,7 +69,6 @@ import io.mockative.twice
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -514,7 +513,7 @@ class ConnectionRepositoryTest {
 
         suspend fun withSuccessfulGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
             coEvery {
-                conversationDAO.observeGetConversationByQualifiedID(eq(conversationId))
+                conversationDAO.observeConversationDetailsById(eq(conversationId))
             }.returns(flowOf(TestConversation.VIEW_ENTITY))
 
             return this

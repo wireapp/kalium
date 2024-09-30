@@ -163,7 +163,7 @@ class MessageRepositoryTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                messageDAO.insertOrIgnoreMessage(eq(mappedEntity), any(), any())
+                messageDAO.insertOrIgnoreMessage(eq(mappedEntity), any())
             }.wasInvoked(exactly = once)
         }
     }
@@ -764,7 +764,7 @@ class MessageRepositoryTest {
 
         suspend fun withInsertOrIgnoreMessage(result: InsertMessageResult) = apply {
             coEvery {
-                messageDAO.insertOrIgnoreMessage(any(), any(), any())
+                messageDAO.insertOrIgnoreMessage(any(), any())
             }.returns(result)
         }
 
@@ -870,7 +870,9 @@ class MessageRepositoryTest {
             conversationName = null,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             conversationType = ConversationEntity.Type.ONE_ON_ONE,
-            degradedConversationNotified = true
+            degradedConversationNotified = true,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.ENABLED,
+            legalHoldStatusChangeNotified = true
         )
     }
 }

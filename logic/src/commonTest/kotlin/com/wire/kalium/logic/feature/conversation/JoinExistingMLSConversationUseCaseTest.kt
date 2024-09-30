@@ -238,7 +238,7 @@ class JoinExistingMLSConversationUseCaseTest {
         suspend fun withGetConversationsByIdSuccessful(conversation: Conversation = MLS_CONVERSATION1) =
             apply {
                 coEvery {
-                    conversationRepository.baseInfoById(any())
+                    conversationRepository.getConversationById(any())
                 }.returns(Either.Right(conversation))
             }
 

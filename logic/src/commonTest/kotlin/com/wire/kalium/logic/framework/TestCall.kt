@@ -18,12 +18,17 @@
 
 package com.wire.kalium.logic.framework
 
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallMetadata
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -73,7 +78,29 @@ object TestCall {
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
         callStatus = CallStatus.ESTABLISHED,
-        protocol = Conversation.ProtocolInfo.Proteus
+        protocol = Conversation.ProtocolInfo.Proteus,
+        participants = listOf(
+            ParticipantMinimized(
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true
+            )
+        ),
+        activeSpeakers = mapOf(QualifiedID("participantId", "participantDomain") to listOf("abcd")),
+        callerId = CALLER_ID,
+        users = listOf(
+            OtherUserMinimized(
+                id = QualifiedID("participantId", "participantDomain"),
+                name = "User Name",
+                completePicture = null,
+                userType = UserType.ADMIN,
+                accentId = 0
+            )
+        )
     )
 
     fun oneOnOneEstablishedCall() = Call(
@@ -82,13 +109,27 @@ object TestCall {
         isMuted = true,
         isCameraOn = false,
         isCbrEnabled = false,
-        callerId = CALLER_ID.toString(),
+        callerId = CALLER_ID,
         conversationName = CONVERSATION_NAME,
         conversationType = Conversation.Type.ONE_ON_ONE,
         callerName = CALLER_NAME,
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
-        participants = emptyList(),
+        participants = listOf(
+            Participant(
+                id = QualifiedID("participantId", ""),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true,
+                name = "User Name",
+                avatarAssetId = null,
+                userType = UserType.ADMIN,
+                isSpeaking = false,
+                accentId = 0
+            )
+        ),
         maxParticipants = 0
     )
 
@@ -99,11 +140,11 @@ object TestCall {
             false,
             false,
             false,
-            "client1",
+            UserId("client1", "domain"),
             "ONE_ON_ONE Name ${convId.value}",
             Conversation.Type.ONE_ON_ONE,
             null,
-            null
+            null,
         )
 
     fun groupIncomingCall(convId: ConversationId) =
@@ -113,7 +154,7 @@ object TestCall {
             false,
             false,
             false,
-            "client1",
+            UserId("client1", "domain"),
             "ONE_ON_ONE Name ${convId.value}",
             Conversation.Type.GROUP,
             null,

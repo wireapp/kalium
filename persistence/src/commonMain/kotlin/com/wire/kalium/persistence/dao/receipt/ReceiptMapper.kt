@@ -40,6 +40,7 @@ internal object ReceiptMapper {
         isUserDeleted: Boolean,
         connectionStatus: ConnectionEntity.State,
         userAvailabilityStatus: UserAvailabilityStatusEntity,
+        accentId: Int
     ) = DetailedReceiptEntity(
         type = type,
         date = Instant.parse(date),
@@ -51,5 +52,6 @@ internal object ReceiptMapper {
         isUserDeleted = isUserDeleted,
         connectionStatus = connectionStatus,
         availabilityStatus = userAvailabilityStatus,
+        accentId = accentId
     )
 }

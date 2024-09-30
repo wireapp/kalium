@@ -90,26 +90,26 @@ class LinkPreviewMapperImpl(
         permanentUrl = linkPreview.permanentUrl,
         title = linkPreview.title,
         summary = linkPreview.summary,
-        image = linkPreview.image?.let {
+        image = linkPreview.image?.let { image ->
             Asset(
                 original = Asset.Original(
-                    mimeType = linkPreview.image.mimeType,
-                    size = linkPreview.image.assetDataSize,
+                    mimeType = image.mimeType,
+                    size = image.assetDataSize,
                     metaData = Asset.Original.MetaData.Image(
                         image = Asset.ImageMetaData(
-                            height = linkPreview.image.assetHeight,
-                            width = linkPreview.image.assetWidth
+                            height = image.assetHeight,
+                            width = image.assetWidth
                         )
                     )
                 ),
                 status = Asset.Status.Uploaded(
                     uploaded = Asset.RemoteData(
-                        otrKey = ByteArr(linkPreview.image.otrKey.data),
-                        sha256 = ByteArr(linkPreview.image.sha256Key.data),
-                        assetId = linkPreview.image.assetKey,
-                        assetToken = linkPreview.image.assetToken,
-                        assetDomain = linkPreview.image.assetDomain,
-                        encryption = encryptionAlgorithmMapper.toProtoBufModel(linkPreview.image.encryptionAlgorithm)
+                        otrKey = ByteArr(image.otrKey),
+                        sha256 = ByteArr(image.sha256Key),
+                        assetId = image.assetKey,
+                        assetToken = image.assetToken,
+                        assetDomain = image.assetDomain,
+                        encryption = encryptionAlgorithmMapper.toProtoBufModel(image.encryptionAlgorithm)
                     )
                 )
             )

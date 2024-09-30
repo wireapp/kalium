@@ -176,7 +176,7 @@ class EndCallOnConversationChangeUseCaseTest {
                 endCall.invoke(eq(conversationId))
             }.returns(Unit)
             coEvery {
-                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded(eq(conversationId))
+                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded()
             }.returns(Unit)
 
             withEstablishedCallsFlow(listOf(call))
@@ -190,7 +190,7 @@ class EndCallOnConversationChangeUseCaseTest {
         private val call = Call(
             conversationId = conversationId,
             status = CallStatus.ESTABLISHED,
-            callerId = "called-id",
+            callerId = UserId("called-id", "domain"),
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,

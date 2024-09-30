@@ -36,7 +36,10 @@ import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.webSocketSession
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.websocket.WebSocketSession
 
 /**
  * Provides a [HttpClient] that has all the
@@ -102,6 +105,7 @@ internal class AuthenticatedWebSocketClient(
     private val bearerAuthProvider: BearerAuthProvider,
     private val serverConfigDTO: ServerConfigDTO,
     private val kaliumLogger: KaliumLogger,
+    private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)? = null
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -123,6 +127,13 @@ internal class AuthenticatedWebSocketClient(
                 pingInterval = WEBSOCKET_PING_INTERVAL_MILLIS
             }
         }
+
+    suspend fun createWebSocketSession(clientId: String, block: HttpRequestBuilder.() -> Unit): WebSocketSession {
+        val client = createDisposableHttpClient()
+        return webSocketSessionProvider?.let {
+            return it(client, clientId)
+        } ?: client.webSocketSession(block)
+    }
 }
 
 internal fun provideBaseHttpClient(

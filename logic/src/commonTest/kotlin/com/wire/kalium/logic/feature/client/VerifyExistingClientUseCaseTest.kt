@@ -16,20 +16,23 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.client.Client
-import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.IsAllowedToRegisterMLSClientUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.IsAllowedToRegisterMLSClientUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseArrangementImpl
+import com.wire.kalium.util.DelicateKaliumApi
 import io.mockative.any
-import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.mock
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,12 +41,70 @@ import kotlin.test.assertIs
 class VerifyExistingClientUseCaseTest {
 
     @Test
-    fun givenRegisteredClientId_whenInvoking_thenReturnSuccess() = runTest {
+    fun givenRegisteredClientIdAndNoMLS_whenInvoking_thenReturnSuccess() = runTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
-        val (_, useCase) = Arrangement()
-            .withSelfClientsResult(Either.Right(listOf(client)))
-            .arrange()
+        val (_, useCase) = arrange {
+            withSelfClientsResult(Either.Right(listOf(client)))
+            withIsAllowedToRegisterMLSClient(false)
+        }
+        val result = useCase.invoke(clientId)
+        assertIs<VerifyExistingClientResult.Success>(result)
+        assertEquals(client, result.client)
+    }
+
+    @Test
+    fun givenRegisteredClientIdAndMLSAllowed_whenRegisterMLSFails_thenReturnFailure() = runTest {
+        val clientId = ClientId("clientId")
+        val client = TestClient.CLIENT.copy(id = clientId)
+        val (_, useCase) = arrange {
+            withSelfClientsResult(Either.Right(listOf(client)))
+            withIsAllowedToRegisterMLSClient(true)
+            withRegisterMLSClient(Either.Left(CoreFailure.Unknown(null)))
+        }
+        val result = useCase.invoke(clientId)
+        assertIs<VerifyExistingClientResult.Failure.Generic>(result)
+    }
+
+    @Test
+    fun givenRegisteredClientIdAndMLSAllowed_whenE2EIRequired_thenReturnE2EIRequiredFailure() = runTest {
+        val clientId = ClientId("clientId")
+        val client = TestClient.CLIENT.copy(id = clientId)
+        val (_, useCase) = arrange {
+            withSelfClientsResult(Either.Right(listOf(client)))
+            withIsAllowedToRegisterMLSClient(true)
+            withRegisterMLSClient(Either.Right(RegisterMLSClientResult.E2EICertificateRequired))
+        }
+        val result = useCase.invoke(clientId)
+        assertIs<VerifyExistingClientResult.Failure.E2EICertificateRequired>(result)
+    }
+
+    @Test
+    fun givenRegisteredClientIdAndMLSAllowedAndExistClientIsMLSCapable_whenRegisterMLSSucceed_thenReturnSuccessAndSkipMLSRegistration() =
+        runTest {
+            val clientId = ClientId("clientId")
+            val client = TestClient.CLIENT.copy(id = clientId, isMLSCapable = true)
+            val (arrangement, useCase) = arrange {
+                withSelfClientsResult(Either.Right(listOf(client)))
+                withIsAllowedToRegisterMLSClient(true)
+            }
+            val result = useCase.invoke(clientId)
+            assertIs<VerifyExistingClientResult.Success>(result)
+            coVerify {
+                arrangement.registerMLSClientUseCase(any())
+            }.wasNotInvoked()
+            assertEquals(client, result.client)
+        }
+
+    @Test
+    fun givenRegisteredClientIdAndMLSAllowed_whenRegisterMLSSucceed_thenReturnSuccess() = runTest {
+        val clientId = ClientId("clientId")
+        val client = TestClient.CLIENT.copy(id = clientId)
+        val (_, useCase) = arrange {
+            withSelfClientsResult(Either.Right(listOf(client)))
+            withIsAllowedToRegisterMLSClient(true)
+            withRegisterMLSClient(Either.Right(RegisterMLSClientResult.Success))
+        }
         val result = useCase.invoke(clientId)
         assertIs<VerifyExistingClientResult.Success>(result)
         assertEquals(client, result.client)
@@ -52,30 +113,31 @@ class VerifyExistingClientUseCaseTest {
     @Test
     fun givenNotRegisteredClientId_whenInvoking_thenReturnClientNotRegisteredFailure() = runTest {
         val clientId = ClientId("clientId")
-        val (arrangement, useCase) = Arrangement()
-            .withSelfClientsResult(Either.Right(listOf()))
-            .arrange()
+        val (arrangement, useCase) = arrange {
+            withSelfClientsResult(Either.Right(listOf()))
+        }
         val result = useCase.invoke(clientId)
         assertIs<VerifyExistingClientResult.Failure.ClientNotRegistered>(result)
-        coVerify {
-            arrangement.clientRepository.persistClientId(any())
-        }.wasNotInvoked()
+        coVerify { arrangement.clientRepository.persistClientId(any()) }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
-        @Mock
-        val clientRepository = mock(ClientRepository::class)
+    @OptIn(DelicateKaliumApi::class)
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
+        RegisterMLSClientUseCaseArrangement by RegisterMLSClientUseCaseArrangementImpl(),
+        ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
+        IsAllowedToRegisterMLSClientUseCaseArrangement by IsAllowedToRegisterMLSClientUseCaseArrangementImpl() {
 
-        val verifyExistingClientUseCase: VerifyExistingClientUseCase = VerifyExistingClientUseCaseImpl(clientRepository)
+        fun arrange() = run {
+            runBlocking { block() }
 
-        suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>): Arrangement {
-            coEvery {
-                clientRepository.selfListOfClients()
-            }.returns(result)
-            return this
+            this@Arrangement to VerifyExistingClientUseCaseImpl(
+                TestUser.USER_ID,
+                clientRepository,
+                isAllowedToRegisterMLSClientUseCase,
+                registerMLSClientUseCase
+            )
         }
-
-        fun arrange() = this to verifyExistingClientUseCase
     }
 }

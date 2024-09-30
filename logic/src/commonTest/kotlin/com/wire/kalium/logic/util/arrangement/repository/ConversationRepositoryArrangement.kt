@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
@@ -54,12 +55,12 @@ internal interface ConversationRepositoryArrangement {
 
     suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
-    suspend fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION)
+    suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
     suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
-    suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangementImpl
-    suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
-    suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
-    suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
+    suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement
+    suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangement
+    suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangement
+    suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangement
     suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
     suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
     suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
@@ -74,8 +75,6 @@ internal interface ConversationRepositoryArrangement {
 
     suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>)
 
-    suspend fun withGetConversationByIdReturning(result: Conversation?)
-
     suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
         coEvery {
             conversationRepository.fetchConversationIfUnknown(any())
@@ -88,10 +87,10 @@ internal interface ConversationRepositoryArrangement {
         }.returns(Either.Right(Unit))
     }
 
-    suspend fun withCachedInfoByIdReturning(conversation: Conversation) {
+    suspend fun withObserveByIdReturning(conversation: Conversation) {
         coEvery {
-            conversationRepository.observeCacheDetailsById(eq(conversation.id))
-        }.returns(Either.Right(flowOf(conversation)))
+            conversationRepository.observeConversationById(eq(conversation.id))
+        }.returns(flowOf(Either.Right(conversation)))
     }
 
     suspend fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
@@ -111,6 +110,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
     suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
     suspend fun withPersistMembers(result: Either<StorageFailure, Unit>)
+    suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -152,12 +152,6 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         coEvery {
             conversationRepository.deleteConversation(matches { conversationId.matches(it) })
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-    }
-
-    override suspend fun withGetConversation(conversation: Conversation?) {
-        coEvery {
-            conversationRepository.getConversationById(any())
-        }.returns(conversation)
     }
 
     override suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit>) {
@@ -244,10 +238,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withGetConversationByIdReturning(result: Conversation?) {
+    override suspend fun withGetConversationByIdReturning(conversation: Conversation?) {
         coEvery {
             conversationRepository.getConversationById(any())
-        }.returns(result)
+        }.returns(
+            if (conversation != null) Either.Right(conversation)
+            else Either.Left(StorageFailure.DataNotFound)
+        )
     }
 
     override suspend fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>) {
@@ -264,11 +261,15 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
 
     override suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
         coEvery {
-            conversationRepository.detailsById(any())
+            conversationRepository.getConversationById(any())
         }.returns(result)
     }
 
     override suspend fun withPersistMembers(result: Either<StorageFailure, Unit>) {
         coEvery { conversationRepository.persistMembers(any(), any()) }.returns(result)
+    }
+
+    override suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
+        coEvery { conversationRepository.selectMembersNameAndHandle(any()) }.returns(result)
     }
 }

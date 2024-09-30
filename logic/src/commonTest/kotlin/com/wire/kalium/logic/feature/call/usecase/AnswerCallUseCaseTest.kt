@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import io.mockative.Mock
@@ -170,7 +171,7 @@ class AnswerCallUseCaseTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            callerId = "id",
+            callerId = TestCall.CALLER_ID,
             conversationName = "caller-name",
             conversationType = Conversation.Type.GROUP,
             callerName = "Name",

@@ -50,14 +50,14 @@ fun databaseDriver(
             schema = schema,
             context = context,
             name = dbName,
-            factory = SupportOpenHelperFactory(passphrase, enableWAL)
+            factory = SupportOpenHelperFactory(passphrase, enableWAL),
         )
     } else {
         AndroidSqliteDriver(
             schema = schema,
             context = context,
             name = dbName,
-            callback = SqliteCallback(schema, enableWAL)
+            callback = SqliteCallback(schema, enableWAL),
         )
     }
 }

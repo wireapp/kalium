@@ -25,7 +25,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.ConversationTypeForCall
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -55,14 +55,14 @@ class OnIncomingCall(
                     " | UserId: ${userId.obfuscateId()} | shouldRing: $shouldRing | type: $conversationType"
         )
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
-        val isMuted = setOf(ConversationType.Conference, ConversationType.ConferenceMls).contains(mappedConversationType)
+        val isMuted = setOf(ConversationTypeForCall.Conference, ConversationTypeForCall.ConferenceMls).contains(mappedConversationType)
         val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
         val qualifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         scope.launch {
             callRepository.createCall(
                 conversationId = qualifiedConversationId,
                 status = status,
-                callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
+                callerId = qualifiedIdMapper.fromStringToQualifiedID(userId),
                 isMuted = isMuted,
                 isCameraOn = false,
                 type = mappedConversationType,

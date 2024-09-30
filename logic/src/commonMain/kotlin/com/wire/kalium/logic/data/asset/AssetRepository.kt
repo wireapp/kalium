@@ -133,6 +133,7 @@ interface AssetRepository {
     suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path>
 }
 
+@Suppress("TooManyFunctions")
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
@@ -155,29 +156,33 @@ internal class AssetDataSource(
         otrKey: AES256Key,
         extension: String?
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
+        try {
+            val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
+            val assetDataSource = kaliumFileSystem.source(assetDataPath)
+            val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
 
-        val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
-        val assetDataSource = kaliumFileSystem.source(assetDataPath)
-        val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
+            // Encrypt the data on the provided temp path
+            val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
+            val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
 
-        // Encrypt the data on the provided temp path
-        val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
-        val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
+            // Calculate the SHA of the encrypted data
+            val sha256 = calcFileSHA256(encryptedDataSource)
+            assetDataSink.close()
+            encryptedDataSource.close()
+            assetDataSource.close()
 
-        // Calculate the SHA of the encrypted data
-        val sha256 = calcFileSHA256(encryptedDataSource)
-        assetDataSink.close()
-        encryptedDataSource.close()
-        assetDataSource.close()
+            val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
 
-        val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
-
-        return if (encryptionSucceeded) {
-            val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
-            uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
-        } else {
-            kaliumLogger.e("Something went wrong when encrypting the Asset Message")
-            Either.Left(EncryptionFailure.GenericEncryptionError)
+            return if (encryptionSucceeded) {
+                val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
+                uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
+            } else {
+                kaliumLogger.e("Something went wrong when encrypting the Asset Message")
+                Either.Left(EncryptionFailure.GenericEncryptionError)
+            }
+        } catch (e: IOException) {
+            kaliumLogger.e("Something went wrong when uploading the Asset Message. $e")
+            return Either.Left(CoreFailure.Unknown(e))
         }
     }
 
@@ -367,7 +372,22 @@ internal class AssetDataSource(
             .flatMap { deleteAssetLocally(assetId) }
 
     override suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit> =
-        wrapStorageRequest { assetDao.deleteAsset(assetId) }
+        deleteAssetFileLocally(assetId).let {
+            wrapStorageRequest {
+                assetDao.deleteAsset(assetId)
+            }
+        }
+
+    private suspend fun deleteAssetFileLocally(assetId: String) {
+        wrapStorageRequest {
+            assetDao.getAssetByKey(assetId).firstOrNull()
+        }.map {
+            val filePath = it.dataPath.toPath()
+            if (kaliumFileSystem.exists(filePath)) {
+                kaliumFileSystem.delete(path = it.dataPath.toPath(), mustExist = false)
+            }
+        }
+    }
 }
 
 private fun buildFileName(name: String, extension: String?): String =

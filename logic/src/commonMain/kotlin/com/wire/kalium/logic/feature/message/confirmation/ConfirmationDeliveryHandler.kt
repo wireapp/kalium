@@ -38,11 +38,10 @@ import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
@@ -96,9 +95,8 @@ internal class ConfirmationDeliveryHandlerImpl(
                 kaliumLogger.d("Started collecting pending messages for delivery confirmation")
                 with(pendingConfirmationMessages.iterator()) {
                     forEach { (conversationId, messages) ->
-                        conversationRepository.observeCacheDetailsById(conversationId).flatMap { conversationFlow: Flow<Conversation?> ->
-                            val conversation = conversationFlow.firstOrNull()
-                            if (conversation != null && conversation.type == Conversation.Type.ONE_ON_ONE) {
+                        conversationRepository.observeConversationById(conversationId).first().flatMap { conversation ->
+                            if (conversation.type == Conversation.Type.ONE_ON_ONE) {
                                 sendDeliveredSignal(
                                     conversation = conversation,
                                     messages = messages.toList()
