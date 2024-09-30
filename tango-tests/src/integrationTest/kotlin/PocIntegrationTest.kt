@@ -21,7 +21,6 @@ import action.ClientActions
 import action.LoginActions
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.event.EventGenerator
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -30,10 +29,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
-import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.util.TimeLogger
+import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.requests.ACMERequests
 import com.wire.kalium.mocks.requests.ClientRequests
 import com.wire.kalium.mocks.requests.ConnectionRequests
@@ -162,22 +161,9 @@ class PocIntegrationTest {
                 proteusClient = userSession.proteusClientProvider.getOrCreate()
             )
 
-            val conversationResult = userSession.conversations.createGroupConversation(
-                "Test Group", listOf(selfUserId), ConversationOptions(
-                    creatorClientId = selfClientId,
-                )
-            )
-
-            val conversation = when (conversationResult) {
-                is CreateGroupConversationUseCase.Result.BackendConflictFailure -> null
-                is CreateGroupConversationUseCase.Result.Success -> conversationResult.conversation
-                CreateGroupConversationUseCase.Result.SyncFailure -> null
-                is CreateGroupConversationUseCase.Result.UnknownFailure -> null
-            }
-
             val events = generator.generateEvents(
                 limit = 1000,
-                conversationId = conversation!!.id,
+                conversationId = ConversationId(ConversationMocks.conversationId.value, ConversationMocks.conversationId.domain),
             )
 
             val response = NotificationResponse(
@@ -249,7 +235,8 @@ class PocIntegrationTest {
                 wipeOnDeviceRemoval = true,
                 mockedRequests = mockedRequests,
                 mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-                enableCalling = false
+                enableCalling = false,
+                mockedWebSocket = true
             ),
             userAgent = "Wire Integration Tests"
         )

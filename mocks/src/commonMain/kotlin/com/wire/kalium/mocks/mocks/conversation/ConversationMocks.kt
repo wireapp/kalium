@@ -42,7 +42,7 @@ object ConversationMocks {
             emptyList()
         ),
         "group name",
-        QualifiedIDSamples.one,
+        conversationId,
         null,
         0UL,
         ConversationResponse.Type.GROUP,
