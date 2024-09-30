@@ -19,9 +19,10 @@
 package com.wire.kalium.api.v2
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.mocks.responses.conversation.ConversationDetailsResponse
-import com.wire.kalium.mocks.responses.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationId
@@ -43,7 +44,7 @@ internal class ConversationApiV2Test : ApiTest() {
             assertion = {
                 assertPost()
                 assertJson()
-                assertJsonBodyContent(CREATE_CONVERSATION_IDS_REQUEST.rawJson)
+                assertJsonBodyContent(CREATE_CONVERSATION_IDS_REQUEST.toJsonString())
                 assertPathEqual(PATH_CONVERSATIONS_LIST)
             }
         )
@@ -94,7 +95,7 @@ internal class ConversationApiV2Test : ApiTest() {
         const val PATH_CONVERSATIONS_LIST = "/conversations/list"
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_MEMBERS = "members"
-        val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
+        val CREATE_CONVERSATION_IDS_REQUEST = ConversationMocks.conversationsDetailsRequest
         val CONVERSATION_DETAILS_RESPONSE = ConversationDetailsResponse.validGetDetailsForIds
     }
 }

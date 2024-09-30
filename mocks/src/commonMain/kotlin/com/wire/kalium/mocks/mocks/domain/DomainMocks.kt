@@ -15,35 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.mocks.mocks.domain
 
-package com.wire.kalium.mocks.responses.connection
+object DomainMocks {
 
-import com.wire.kalium.mocks.responses.ValidJsonProvider
+    const val domain = "domain.com"
+    const val federatedDomain = "federated.com"
 
-object ConnectionRequestsJson {
-
-    val validEmptyBody = ValidJsonProvider(String) {
-        """
-            {
-                "size":500
-            }
-        """.trimIndent()
-    }
-
-    val validPagingState = ValidJsonProvider("PAGING_STATE_1234") {
-        """
-            {
-                "paging_state": "$it",
-                "size":500
-            }
-        """.trimIndent()
-    }
-
-    val validConnectionStatusUpdate = ValidJsonProvider("accepted") {
-        """
-            {
-                "status": "$it"  
-            }
-        """.trimIndent()
-    }
 }

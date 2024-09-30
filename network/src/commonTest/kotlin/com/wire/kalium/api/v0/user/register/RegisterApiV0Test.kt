@@ -20,10 +20,11 @@ package com.wire.kalium.api.v0.user.register
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.user.UserMocks
 import com.wire.kalium.mocks.responses.ActivationRequestJson
 import com.wire.kalium.mocks.responses.RegisterAccountJson
 import com.wire.kalium.mocks.responses.RequestActivationCodeJson
-import com.wire.kalium.mocks.responses.UserDTOJson
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore
@@ -36,7 +37,7 @@ internal class RegisterApiV0Test : ApiTest() {
     @Test
     fun givenAValidEmail_whenRegisteringAccountWithEMail_theRequestShouldBeConfiguredCorrectly() = runTest {
         val networkClient = mockUnauthenticatedNetworkClient(
-            VALID_REGISTER_RESPONSE.rawJson,
+            VALID_REGISTER_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertPost()
@@ -170,7 +171,7 @@ internal class RegisterApiV0Test : ApiTest() {
 
     private companion object {
         val VALID_PERSONAL_ACCOUNT_REQUEST = RegisterAccountJson.validPersonalAccountRegister
-        val VALID_REGISTER_RESPONSE = UserDTOJson.valid
+        val VALID_REGISTER_RESPONSE = UserMocks.selfUser
         val VALID_SEND_ACTIVATE_EMAIL = RequestActivationCodeJson.validActivateEmail
         val VALID_ACTIVATE_EMAIL = ActivationRequestJson.validActivateEmail
         val ERROR_RESPONSE = ErrorResponseJson.valid

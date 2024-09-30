@@ -68,6 +68,7 @@ object MockUnboundNetworkClient {
                 )
             }
         }
+        println("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
         throw UnsupportedOperationException("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
     }
 
