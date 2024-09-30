@@ -81,6 +81,7 @@ type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
 mls_epoch = excluded.mls_epoch,
+mls_group_state = excluded.mls_group_state,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
@@ -331,8 +332,7 @@ WHERE qualified_id = (SELECT active_one_on_one_conversation_id FROM User WHERE q
 selectOneOnOneConversationIdsByProtocol:
 SELECT Member.conversation FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = :protocol AND Member.user = :user
-ORDER BY Member.conversation ASC;
+WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = :protocol AND Member.user = :user;
 
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;

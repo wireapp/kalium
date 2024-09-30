@@ -87,7 +87,6 @@ class PocIntegrationTest {
         }
     }
 
-    @Ignore("needs to be checked and fix")
     @Test
     fun givenEmailAndPasswordWhenLoggingInThenRegisterClientAndLogout() = runTest {
         val mockedRequests = mutableListOf<TestRequestHandler>().apply {
@@ -249,7 +248,8 @@ class PocIntegrationTest {
                 isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
                 mockedRequests = mockedRequests,
-                mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER
+                mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
+                enableCalling = false
             ),
             userAgent = "Wire Integration Tests"
         )

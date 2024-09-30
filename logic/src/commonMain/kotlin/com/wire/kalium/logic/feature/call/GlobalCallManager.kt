@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -49,7 +48,6 @@ expect class GlobalCallManager {
         currentClientIdProvider: CurrentClientIdProvider,
         selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
-        subconversationRepository: SubconversationRepository,
         userConfigRepository: UserConfigRepository,
         messageSender: MessageSender,
         callMapper: CallMapper,

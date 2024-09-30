@@ -121,6 +121,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_WhenReinserting_ThenGroupStateIsUpdated() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity2.copy(
+            protocolInfo = mlsProtocolInfo1.copy(
+                groupState = ConversationEntity.GroupState.PENDING_JOIN
+            )
+        ))
+        val result = conversationDAO.getConversationById(conversationEntity2.id)
+        assertEquals(ConversationEntity.GroupState.PENDING_JOIN, (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState)
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
@@ -1263,26 +1275,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleOneOnOneProteusConversationExisting_whenGettingOneOnOneConversationId_thenShouldReturnAlphabeticallyOrderedConversation() =
-        runTest {
-            // given
-            val conversationA = conversationEntity1.copy(id = QualifiedIDEntity("a", "wire.com"))
-            val conversationB = conversationEntity1.copy(id = QualifiedIDEntity("b", "wire.com"))
-
-            userDAO.upsertUser(user1)
-            conversationDAO.insertConversation(conversationB)
-            conversationDAO.insertConversation(conversationA)
-            memberDAO.insertMember(member1, conversationB.id)
-            memberDAO.insertMember(member1, conversationA.id)
-
-            // then
-            assertEquals(
-                conversationA.id,
-                conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).first()
-            )
-        }
-
-    @Test
     fun givenNoMLSConversationExistsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsNull() = runTest {
         // given
 
@@ -2064,6 +2056,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isMLSCapable = false
         )
 
+        val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
+            "group2",
+            ConversationEntity.GroupState.ESTABLISHED,
+            0UL,
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        )
+        val mlsProtocolInfo2 = ConversationEntity.ProtocolInfo.MLS(
+            "group3",
+            ConversationEntity.GroupState.PENDING_JOIN,
+            0UL,
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        )
+
         val team = TeamEntity(teamId, "teamName", "")
 
         val conversationEntity1 = ConversationEntity(
@@ -2093,13 +2100,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation2",
             ConversationEntity.Type.ONE_ON_ONE,
             null,
-            ConversationEntity.ProtocolInfo.MLS(
-                "group2",
-                ConversationEntity.GroupState.ESTABLISHED,
-                0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            ),
+            protocolInfo = mlsProtocolInfo1,
             creatorId = "someValue",
             lastNotificationDate = null,
             lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
@@ -2122,13 +2123,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation3",
             ConversationEntity.Type.GROUP,
             null,
-            ConversationEntity.ProtocolInfo.MLS(
-                "group3",
-                ConversationEntity.GroupState.PENDING_JOIN,
-                0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            ),
+            protocolInfo = mlsProtocolInfo2,
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),

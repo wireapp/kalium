@@ -32,6 +32,7 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
             is CryptoError.StaleCommit -> MLSFailure.StaleCommit
             is CryptoError.ConversationAlreadyExists -> MLSFailure.ConversationAlreadyExists
             is CryptoError.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
+            is CryptoError.MlsException -> MLSFailure.InternalErrors
             else -> MLSFailure.Generic(exception)
         }
     } else {
