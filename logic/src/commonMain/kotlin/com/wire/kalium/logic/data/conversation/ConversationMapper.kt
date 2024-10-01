@@ -61,11 +61,8 @@ import kotlin.time.toDuration
 
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
-<<<<<<< HEAD
-=======
     fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
->>>>>>> 1dd7cb2113 (fix(mls): set removal-keys for 1on1 calls from conversation-response (WPB-10743) 🍒 (#3019))
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
         daoModel: ConversationViewEntity,
@@ -142,9 +139,35 @@ internal class ConversationMapperImpl(
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
-<<<<<<< HEAD
     private fun fromConversationViewToEntity(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
-=======
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
+        else lastReadDate
+
+        Conversation(
+            id = id.toModel(),
+            name = name,
+            type = type.fromDaoModelToType(),
+            teamId = teamId?.let { TeamId(it) },
+            protocol = protocolInfoMapper.fromEntity(protocolInfo),
+            mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+            removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
+            lastNotificationDate = lastNotificationDate,
+            lastModifiedDate = lastModifiedDate,
+            lastReadDate = lastReadDateEntity,
+            access = accessList.map { it.toDAO() },
+            accessRole = accessRoleList.map { it.toDAO() },
+            creatorId = creatorId,
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            archived = archived,
+            archivedDateTime = archivedDateTime,
+            mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
+        )
+    }
+
     override fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?) = mlsPublicKeysDTO?.let {
         MLSPublicKeys(
             removal = mlsPublicKeysDTO.removal
@@ -152,7 +175,6 @@ internal class ConversationMapperImpl(
     }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
->>>>>>> 1dd7cb2113 (fix(mls): set removal-keys for 1on1 calls from conversation-response (WPB-10743) 🍒 (#3019))
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
         else lastReadDate
 
