@@ -82,6 +82,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -1472,6 +1473,56 @@ class CallRepositoryTest {
         )
 
         assertEquals(activeSpeakers, callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.activeSpeakers)
+    }
+
+    @Test
+    fun givenCallWithActiveSpeakers_whenGetFullParticipants_thenOnlySpeakingUsers() = runTest {
+        val (_, callRepository) = Arrangement().arrange()
+        val mutedParticipant = ParticipantMinimized(
+            id = QualifiedID("participantId", ""),
+            userId = QualifiedID("participantId", "participantDomain"),
+            clientId = "abcd0",
+            isMuted = true,
+            isCameraOn = false,
+            isSharingScreen = false,
+            hasEstablishedAudio = true
+        )
+        val unMutedParticipant = mutedParticipant.copy(
+            id = QualifiedID("anotherParticipantId", ""),
+            userId = QualifiedID("anotherParticipantId", "participantDomain"),
+            clientId = "abcd1",
+            isMuted = false
+        )
+        val activeSpeakers = mapOf(
+            mutedParticipant.userId to listOf(mutedParticipant.clientId),
+            unMutedParticipant.userId to listOf(unMutedParticipant.clientId),
+        )
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    Arrangement.conversationId to createCallMetadata().copy(
+                        participants = listOf(mutedParticipant, unMutedParticipant),
+                        maxParticipants = 0
+                    )
+                )
+            )
+        )
+
+        // when
+        callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId, activeSpeakers)
+
+        // then
+        val fullParticipants = callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.getFullParticipants()
+
+        assertEquals(
+            false,
+            fullParticipants?.first { it.id == mutedParticipant.id && it.clientId == mutedParticipant.clientId }?.isSpeaking
+        )
+        assertEquals(
+            true,
+            fullParticipants?.first { it.id == unMutedParticipant.id && it.clientId == unMutedParticipant.clientId }?.isSpeaking
+        )
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(

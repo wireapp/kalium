@@ -28,10 +28,8 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessagePreview
-<<<<<<< HEAD
-=======
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
->>>>>>> 86f064246a (fix(mls): fetch and set mls-removal keys for 1on1 conversations (WPB-10743) 🍒 (#3021))
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
@@ -45,6 +43,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -63,6 +62,8 @@ import kotlin.time.toDuration
 
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
+    fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
+    fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
         daoModel: ConversationViewEntity,
@@ -140,6 +141,41 @@ internal class ConversationMapperImpl(
     )
 
     private fun fromConversationViewToEntity(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
+        else lastReadDate
+
+        Conversation(
+            id = id.toModel(),
+            name = name,
+            type = type.fromDaoModelToType(),
+            teamId = teamId?.let { TeamId(it) },
+            protocol = protocolInfoMapper.fromEntity(protocolInfo),
+            mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+            removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
+            lastNotificationDate = lastNotificationDate,
+            lastModifiedDate = lastModifiedDate,
+            lastReadDate = lastReadDateEntity,
+            access = accessList.map { it.toDAO() },
+            accessRole = accessRoleList.map { it.toDAO() },
+            creatorId = creatorId,
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            archived = archived,
+            archivedDateTime = archivedDateTime,
+            mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
+        )
+    }
+
+    override fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?) = mlsPublicKeysDTO?.let {
+        MLSPublicKeys(
+            removal = mlsPublicKeysDTO.removal
+        )
+    }
+
+    override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
         else lastReadDate
 

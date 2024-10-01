@@ -19,13 +19,6 @@
 package com.wire.kalium.network.api.v6.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-<<<<<<< HEAD
-import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
-
-internal open class ConversationApiV6 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
-) : ConversationApiV5(authenticatedNetworkClient)
-=======
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
@@ -48,4 +41,3 @@ internal open class ConversationApiV6 internal constructor(
             apiModelMapper.fromApiV6(it)
         }
 }
->>>>>>> 86f064246a (fix(mls): fetch and set mls-removal keys for 1on1 conversations (WPB-10743) 🍒 (#3021))

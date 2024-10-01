@@ -214,6 +214,6 @@ interface Calling : Library {
     )
 
     companion object {
-        val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
+        val INSTANCE: Calling by lazy { Native.load("avs", Calling::class.java)!! }
     }
 }
