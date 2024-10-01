@@ -50,7 +50,7 @@ data class CallMetadata(
 ) {
     fun getFullParticipants(): List<Participant> = participants.map { participant ->
         val user = users.firstOrNull { it.id == participant.userId }
-        val isSpeaking = (activeSpeakers[participant.id]?.contains(participant.clientId) ?: false) && !participant.isMuted
+        val isSpeaking = (activeSpeakers[participant.userId]?.contains(participant.clientId) ?: false) && !participant.isMuted
         Participant(
             id = participant.id,
             clientId = participant.clientId,
