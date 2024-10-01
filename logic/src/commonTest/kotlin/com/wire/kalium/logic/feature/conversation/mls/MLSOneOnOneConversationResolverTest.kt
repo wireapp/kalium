@@ -72,7 +72,7 @@ class MLSOneOnOneConversationResolverTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasNotInvoked()
     }
 
@@ -127,7 +127,7 @@ class MLSOneOnOneConversationResolverTest {
         }
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
         }.wasInvoked(exactly = once)
     }
 

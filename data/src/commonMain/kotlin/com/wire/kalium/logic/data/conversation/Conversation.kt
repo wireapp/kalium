@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
@@ -79,7 +80,8 @@ data class Conversation(
     val archivedDateTime: Instant?,
     val mlsVerificationStatus: VerificationStatus,
     val proteusVerificationStatus: VerificationStatus,
-    val legalHoldStatus: LegalHoldStatus
+    val legalHoldStatus: LegalHoldStatus,
+    val mlsPublicKeys: MLSPublicKeys? = null
 ) {
 
     companion object {
