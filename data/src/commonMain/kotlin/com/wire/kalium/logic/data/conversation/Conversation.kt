@@ -30,11 +30,8 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.mls.CipherSuite
-<<<<<<< HEAD
-import com.wire.kalium.logic.data.user.ConnectionState
-=======
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
->>>>>>> 86f064246a (fix(mls): fetch and set mls-removal keys for 1on1 conversations (WPB-10743) 🍒 (#3021))
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId

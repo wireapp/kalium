@@ -108,17 +108,10 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 }
                             }
                         } else {
-<<<<<<< HEAD
                             conversationRepository.fetchConversation(conversation.id)
                         }.flatMap {
                             conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(conversation)
-=======
-                            conversationRepository.fetchConversation(conversation.id).map { null }
-                        }.flatMap { publicKeys ->
-                            conversationRepository.baseInfoById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(conversation, publicKeys)
->>>>>>> 86f064246a (fix(mls): fetch and set mls-removal keys for 1on1 conversations (WPB-10743) 🍒 (#3021))
+                                joinOrEstablishMLSGroup(conversation, null)
                             }
                         }
                     } else if (failure.kaliumException.isMlsMissingGroupInfo()) {

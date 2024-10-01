@@ -555,13 +555,9 @@ internal class ConversationDataSource internal constructor(
                 selfUserTeamId = selfUserTeamId
             ).map { conversationResponse }
         }.flatMap { response ->
-<<<<<<< HEAD
-            this.getConversationById(response.id.toModel())
-=======
-            baseInfoById(response.id.toModel()).map {
+            this.getConversationById(response.id.toModel()).map {
                 it.copy(mlsPublicKeys = conversationMapper.fromApiModel(response.publicKeys))
             }
->>>>>>> 86f064246a (fix(mls): fetch and set mls-removal keys for 1on1 conversations (WPB-10743) 🍒 (#3021))
         }
 
     private fun addOtherMemberIfMissing(
