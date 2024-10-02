@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cli.commands
+package com.wire.kalium.cli.commands.interactive
 
 sealed class InputAction {
     data class UpdateDraft(

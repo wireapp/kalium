@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cli.commands
+package com.wire.kalium.cli.commands.interactive
 
 import com.github.ajalt.mordant.rendering.Lines
 import com.github.ajalt.mordant.rendering.OverflowWrap
@@ -126,6 +126,8 @@ private fun regularContent(message: Message.Regular) =
         is MessageContent.Knock -> textMessage(message.senderUserName, "<ping>")
         is MessageContent.RestrictedAsset -> textMessage(message.senderUserName, "Shared an asset")
         is MessageContent.Unknown -> systemMessage(message.senderUserName, "Unknown message")
+        is MessageContent.Composite -> textMessage(message.senderUserName, "<composite message>")
+        is MessageContent.Location -> textMessage(message.senderUserName, "Shared an location: ${content.name}")
     }
 
 private fun systemContent(message: Message.System) =
@@ -151,6 +153,28 @@ private fun systemContent(message: Message.System) =
             systemMessage(null, "Read receipts are ${if (content.receiptMode) "enabled" else "disabled" }")
         is MessageContent.TeamMemberRemoved ->
             systemMessage(null, "${content.userName} was removed from the team")
+
+        MessageContent.ConversationCreated -> TODO()
+        MessageContent.ConversationDegradedMLS -> TODO()
+        MessageContent.ConversationDegradedProteus -> TODO()
+        is MessageContent.ConversationMessageTimerChanged -> TODO()
+        is MessageContent.ConversationProtocolChanged -> TODO()
+        MessageContent.ConversationProtocolChangedDuringACall -> TODO()
+        MessageContent.ConversationStartedUnverifiedWarning -> TODO()
+        MessageContent.ConversationVerifiedMLS -> TODO()
+        MessageContent.ConversationVerifiedProteus -> TODO()
+        is MessageContent.FederationStopped.ConnectionRemoved -> TODO()
+        is MessageContent.FederationStopped.Removed -> TODO()
+        MessageContent.HistoryLostProtocolChanged -> TODO()
+        MessageContent.LegalHold.ForConversation.Disabled -> TODO()
+        MessageContent.LegalHold.ForConversation.Enabled -> TODO()
+        is MessageContent.LegalHold.ForMembers.Disabled -> TODO()
+        is MessageContent.LegalHold.ForMembers.Enabled -> TODO()
+        MessageContent.MLSWrongEpochWarning -> TODO()
+        is MessageContent.MemberChange.CreationAdded -> TODO()
+        is MessageContent.MemberChange.FailedToAdd -> TODO()
+        is MessageContent.MemberChange.FederationRemoved -> TODO()
+        is MessageContent.MemberChange.RemovedFromTeam -> TODO()
     }
 
 @Suppress("MagicNumber")

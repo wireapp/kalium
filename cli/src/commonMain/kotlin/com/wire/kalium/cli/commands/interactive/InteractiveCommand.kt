@@ -15,28 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cli.commands
+package com.wire.kalium.cli.commands.interactive
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.requireObject
+import com.github.ajalt.mordant.input.enterRawMode
 import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.terminal.prompt
 import com.wire.kalium.cli.listConversations
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.conversation.GetConversationUseCase
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.set
-import kotlinx.cinterop.staticCFunction
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
@@ -45,21 +41,6 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import platform.posix.SIGWINCH
-import platform.posix.STDIN_FILENO
-import platform.posix.TCSAFLUSH
-import platform.posix.VMIN
-import platform.posix.VTIME
-import platform.posix.signal
-import platform.posix.tcgetattr
-import platform.posix.tcsetattr
-import platform.posix.termios
-
-sealed class PosixSignal {
-    data object WindowChanged : PosixSignal()
-}
-
-private val signalFlow = MutableSharedFlow<PosixSignal>()
 
 data class ViewState(
     val title: String,
@@ -91,7 +72,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                             viewState.inputInfo,
                             viewState.title,
                             viewState.messages,
-                            terminal.info.height
+                            terminal.size.height
                         )
                     )
                 )
@@ -106,15 +87,6 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
     }
 
     override fun run() = runBlocking {
-        signal(
-            SIGWINCH,
-            staticCFunction<Int, Unit> {
-                runBlocking {
-                    signalFlow.emit(PosixSignal.WindowChanged)
-                }
-            }
-        )
-
         while (!finished) {
             displayConversation(currentConversationId ?: userSession.selectConversation().id)
         }
@@ -130,9 +102,9 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         return conversations[selectedConversationIndex]
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalStdlibApi::class)
     private suspend fun displayConversation(conversationId: ConversationId) {
-        terminal.withRawMode {
+        terminal.enterRawMode().use { _ ->
             terminal.cursor.move {
                 setPosition(0, 0)
                 clearScreen()
@@ -143,7 +115,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                     userSession.messages.getRecentMessages(conversationId, limit = 100),
                     userSession.conversations.getConversationDetails(conversationId)
                         .mapNotNull { if (it is GetConversationUseCase.Result.Success) it.conversation.name else null },
-                    actionFlow(userSession)
+                    actionFlow(userSession, terminal)
                         .onEach {
                             when (it) {
                                 is InputAction.Quit -> {
@@ -182,18 +154,5 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                 }.collect()
             }.join()
         }
-    }
-
-    @Suppress("UnusedPrivateMember")
-    private fun enableReadTimeout() = memScoped {
-        val termios = alloc<termios>()
-        if (tcgetattr(STDIN_FILENO, termios.ptr) != 0) {
-            return@memScoped
-        }
-
-        termios.c_cc[VMIN] = 0u
-        termios.c_cc[VTIME] = 1u
-
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, termios.ptr)
     }
 }
