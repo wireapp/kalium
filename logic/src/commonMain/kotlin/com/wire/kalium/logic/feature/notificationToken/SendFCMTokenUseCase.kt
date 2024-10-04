@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.network.api.model.PushTokenBody
 
 /**
@@ -47,28 +49,26 @@ class SendFCMTokenToAPIUseCaseImpl(
 ) : SendFCMTokenUseCase {
 
     override suspend fun invoke(): Either<SendFCMTokenError, Unit> {
-        val clientId = currentClientIdProvider().fold(
+        val clientIdResult = currentClientIdProvider()
+        val notificationTokenResult = notificationTokenRepository.getNotificationToken()
+
+        val error: SendFCMTokenError? = clientIdResult.nullableFold(
+            { SendFCMTokenError(SendFCMTokenError.Reason.CANT_GET_CLIENT_ID, it.toString()) },
             {
-                return Either.Left(
-                    SendFCMTokenError(
-                        SendFCMTokenError.Reason.CANT_GET_CLIENT_ID,
-                        it.toString()
-                    )
+                notificationTokenResult.nullableFold(
+                    { SendFCMTokenError(SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN, it.toString()) },
+                    { null }
                 )
-            },
-            { it.value }
+            }
         )
-        val notificationToken = notificationTokenRepository.getNotificationToken().fold(
-            {
-                return Either.Left(
-                    SendFCMTokenError(
-                        SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN,
-                        it.toString()
-                    )
-                )
-            },
-            { it }
-        )
+
+        if (error != null) {
+            return Either.Left(error)
+        }
+
+        val clientId = clientIdResult.getOrNull()!!.value
+        val notificationToken = notificationTokenResult.getOrNull()!!
+
         return clientRepository.registerToken(
             body = PushTokenBody(
                 senderId = notificationToken.applicationId,
