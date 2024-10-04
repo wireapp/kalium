@@ -57,6 +57,7 @@ class SendFCMTokenToAPIUseCaseTest {
 
         val useCase = Arrangement()
             .withClientIdFailure()
+            .withNotificationToken()
             .arrange()
 
         val failReason = useCase.invoke().fold(
