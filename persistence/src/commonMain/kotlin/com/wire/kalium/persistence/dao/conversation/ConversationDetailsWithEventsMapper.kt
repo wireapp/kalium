@@ -32,7 +32,7 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
 import kotlinx.datetime.Instant
 
 data object ConversationDetailsWithEventsMapper {
-    @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
+    @Suppress("LongParameterList", "FunctionParameterNaming")
     fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,
