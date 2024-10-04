@@ -123,7 +123,7 @@ class PushTokenUpdaterTest {
     }
 
     companion object {
-        private const val MOCK_TOKEN = "72391"
+        private const val MOCK_TOKEN = "7239"
         private const val MOCK_TRANSPORT = "GCM"
         private const val MOCK_APP_ID = "applicationId"
         private const val MOCK_CLIENT_ID = "clientId"
