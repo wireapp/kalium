@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+// Will be fixed in separate PR that will refactor clientRepository.registerToken to parameters list
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 package com.wire.kalium.logic.feature.notificationToken
 
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
@@ -42,7 +44,7 @@ data class SendFCMTokenError(
     }
 }
 
-class SendFCMTokenToAPIUseCaseImpl(
+class SendFCMTokenToAPIUseCaseImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val clientRepository: ClientRepository,
     private val notificationTokenRepository: NotificationTokenRepository,

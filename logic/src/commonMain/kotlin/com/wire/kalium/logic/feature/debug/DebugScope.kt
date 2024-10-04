@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -62,7 +61,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -92,7 +90,7 @@ class DebugScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val eventProcessor: EventProcessor,
     private val legalHoldHandler: LegalHoldHandler,
-    private val globalPreferences: GlobalPrefProvider,
+    private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -219,10 +217,6 @@ class DebugScope internal constructor(
             selfUserId = userId,
             kaliumLogger = logger
         )
-
-    private val notificationTokenRepository: NotificationTokenRepository
-        get() =
-            NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     val sendFCMTokenToServer: SendFCMTokenUseCase
         get() = SendFCMTokenToAPIUseCaseImpl(
