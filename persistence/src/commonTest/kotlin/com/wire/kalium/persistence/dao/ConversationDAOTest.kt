@@ -22,6 +22,8 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.call.CallDAO
+import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -38,8 +40,11 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -69,10 +74,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var clientDao: ClientDAO
     private lateinit var connectionDAO: ConnectionDAO
     private lateinit var messageDAO: MessageDAO
+    private lateinit var messageDraftDAO: MessageDraftDAO
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
     private lateinit var memberDAO: MemberDAO
     private lateinit var assertDAO: AssetDAO
+    private lateinit var callDAO: CallDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -83,14 +90,16 @@ class ConversationDAOTest : BaseDatabaseTest() {
         clientDao = db.clientDAO
         connectionDAO = db.connectionDAO
         messageDAO = db.messageDAO
+        messageDraftDAO = db.messageDraftDAO
         userDAO = db.userDAO
         teamDAO = db.teamDAO
         memberDAO = db.memberDAO
         assertDAO = db.assetDAO
+        callDAO = db.callDAO
     }
 
     @Test
-    fun givenConversationIsInserted_whenFetchingById_thenConversationIsReturned() = runTest {
+    fun givenConversationIsInserted_whenFetchingById_thenConversationIsReturned() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
         val result = conversationDAO.getConversationDetailsById(conversationEntity1.id)
@@ -98,7 +107,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest {
+    fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest(dispatcher) {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
         insertTeamUserAndMember(team, user2, conversationEntity2.id)
@@ -109,7 +118,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_ThenConversationCanBeDeleted() = runTest {
+    fun givenExistingConversation_ThenConversationCanBeDeleted() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
         val result = try {
@@ -121,7 +130,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_WhenReinserting_ThenGroupStateIsUpdated() = runTest {
+    fun givenExistingConversation_WhenReinserting_ThenGroupStateIsUpdated() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity2.copy(
             protocolInfo = mlsProtocolInfo1.copy(
@@ -133,7 +142,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_ThenConversationCanBeUpdated() = runTest {
+    fun givenExistingConversation_ThenConversationCanBeUpdated() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
@@ -266,7 +275,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
+    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationGroupState(
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
@@ -279,7 +288,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest {
+    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateMlsGroupStateAndCipherSuite(
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
@@ -297,7 +306,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
+    fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
@@ -307,7 +316,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() = runTest {
+    fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationMutedStatus(
             conversationId = conversationEntity2.id,
@@ -322,7 +331,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     @IgnoreIOS
-    fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
+    fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest(dispatcher) {
         val convStored = conversationEntity1.copy(
             lastNotificationDate = "2022-04-30T15:36:00.000Z".toInstant(),
             lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
@@ -347,7 +356,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversation_whenUpdatingAccessInfo_thenItsUpdated() = runTest {
+    fun givenConversation_whenUpdatingAccessInfo_thenItsUpdated() = runTest(dispatcher) {
         val convStored = conversationEntity1.copy(
             accessRole = listOf(ConversationEntity.AccessRole.TEAM_MEMBER), access = listOf(ConversationEntity.Access.INVITE)
         )
@@ -370,7 +379,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
+    fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest(dispatcher) {
         // given
         val expectedLastReadDate = Instant.fromEpochMilliseconds(1648654560000)
 
@@ -388,7 +397,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
-        runTest {
+        runTest(dispatcher) {
             // given
             val expectedConversationSeenDate = Instant.fromEpochMilliseconds(1648654560000)
 
@@ -452,7 +461,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest {
+    fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest(dispatcher) {
         val conversation = conversationEntity5
         val groupId = "groupId"
         val updatedCipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
@@ -799,7 +808,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAConversation_whenChangingTheName_itReturnsTheUpdatedName() = runTest {
+    fun givenAConversation_whenChangingTheName_itReturnsTheUpdatedName() = runTest(dispatcher) {
         // given
         conversationDAO.insertConversation(conversationEntity3)
         insertTeamUserAndMember(team, user1, conversationEntity3.id)
@@ -833,7 +842,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAConversation_whenUpdatingReceiptMode_itReturnsTheUpdatedValue() = runTest {
+    fun givenAConversation_whenUpdatingReceiptMode_itReturnsTheUpdatedValue() = runTest(dispatcher) {
         // given
         conversationDAO.insertConversation(conversationEntity1.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED))
 
@@ -846,7 +855,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenSelfUserIsNotMemberOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
+    fun givenSelfUserIsNotMemberOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest(dispatcher) {
         // given
         conversationDAO.insertConversation(conversationEntity3)
         teamDAO.insertTeam(team)
@@ -861,7 +870,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversation_whenUpdatingMessageTimer_itReturnsCorrectTimer() = runTest {
+    fun givenConversation_whenUpdatingMessageTimer_itReturnsCorrectTimer() = runTest(dispatcher) {
         // given
         conversationDAO.insertConversation(conversationEntity3)
         val messageTimer = 60000L
@@ -875,7 +884,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
+    fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest(dispatcher) {
         // given
         conversationDAO.insertConversation(conversationEntity3.copy(creatorId = selfUserId.value))
         teamDAO.insertTeam(team)
@@ -996,6 +1005,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(conversationId, result.id)
             assertEquals(ConversationEntity.Type.CONNECTION_PENDING, result.type)
         }
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+            assertEquals(1, it.size)
+            val result = it.first()
+
+            assertEquals(conversationId, result.conversationViewEntity.id)
+            assertEquals(ConversationEntity.Type.CONNECTION_PENDING, result.conversationViewEntity.type)
+        }
     }
 
     @Test
@@ -1020,6 +1036,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.getAllConversationDetails(fromArchive).first().let {
             assertEquals(1, it.size)
         }
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+            assertEquals(1, it.size)
+        }
     }
 
     @Test
@@ -1038,6 +1057,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+            assertEquals(1, it.size)
+            assertEquals(conversationEntity1.id, it.first().conversationViewEntity.id)
+        }
     }
 
     @Test
@@ -1053,9 +1076,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)
 
-        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
-
-        assertEquals(2, result.size)
+        conversationDAO.getAllConversationDetails(fromArchive).first().let {
+            assertEquals(2, it.size)
+        }
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+            assertEquals(2, it.size)
+        }
     }
 
     @Test
@@ -1071,9 +1097,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)
 
-        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
-
-        assertEquals(2, result.size)
+        conversationDAO.getAllConversationDetails(fromArchive).first().let {
+            assertEquals(2, it.size)
+        }
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+            assertEquals(2, it.size)
+        }
     }
 
     @Test
@@ -1086,9 +1115,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
-        assertEquals(conversation.toViewEntity(user1).copy(accentId = 0), result.firstOrNull { it.id == conversation.id })
+        val expected = conversation.toViewEntity(user1).copy(accentId = 0)
+        assertEquals(expected, result.firstOrNull { it.id == conversation.id })
+        assertEquals(expected, resultWithEvents.firstOrNull { it.conversationViewEntity.id == conversation.id }?.conversationViewEntity)
     }
 
     @Test
@@ -1101,9 +1133,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
-        assertNull(result.firstOrNull { it.id == conversation.id })
+        assertEquals(null, result.firstOrNull { it.id == conversation.id })
+        assertEquals(null, resultWithEvents.firstOrNull { it.conversationViewEntity.id == conversation.id })
     }
 
     @Test
@@ -1132,10 +1166,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
         assertEquals(conversation2.id, result[0].id)
+        assertEquals(conversation2.id, resultWithEvents[0].conversationViewEntity.id)
         assertEquals(conversation1.id, result[1].id)
+        assertEquals(conversation1.id, resultWithEvents[1].conversationViewEntity.id)
     }
 
     @Test
@@ -1166,11 +1203,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
         assertTrue(result.size == 1)
+        assertTrue(resultWithEvents.size == 1)
         assertTrue(!result[0].archived)
+        assertTrue(!resultWithEvents[0].conversationViewEntity.archived)
         assertEquals(conversation2.id, result[0].id)
+        assertEquals(conversation2.id, resultWithEvents[0].conversationViewEntity.id)
     }
 
     @Test
@@ -1240,6 +1281,222 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.getAllConversationDetails(fromArchive = false).first().let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
+        }
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive = false).first().let {
+            assertEquals(1, it.size)
+            assertEquals(conversationEntity1.id, it.first().conversationViewEntity.id)
+        }
+    }
+
+    @Test
+    fun givenConversationWithUnreadMessageAndDraft_whenGettingAllConversationsWithEvents_thenShouldReturnCorrectValues() = runTest {
+        val conversationEntity = conversationEntity1.copy(lastReadDate = Instant.fromEpochMilliseconds(0))
+        conversationDAO.insertConversation(conversationEntity)
+
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity.id))
+
+        memberDAO.insertMember(member1, conversationEntity.id)
+        memberDAO.insertMember(member2, conversationEntity.id)
+
+        val messageEntity = newRegularMessageEntity(
+            id = "unread_message_id",
+            conversationId = conversationEntity.id,
+            senderUserId = user1.id,
+            date = conversationEntity.lastReadDate.plus(1.seconds) // message received after last read date so it should be unread
+        )
+        messageDAO.insertOrIgnoreMessage(messageEntity)
+
+        val draftMessageEntity = newDraftMessageEntity(conversationId = conversationEntity.id)
+        messageDraftDAO.upsertMessageDraft(draftMessageEntity)
+
+        conversationDAO.getAllConversationDetailsWithEvents(false).first().let {
+            assertEquals(conversationEntity.id, it.first().conversationViewEntity.id)
+            assertEquals(1, it.first().unreadEvents.unreadEvents[UnreadEventTypeEntity.MESSAGE])
+            assertEquals(draftMessageEntity.text, it.first().messageDraft?.text)
+            assertEquals(messageEntity.id, it.first().lastMessage?.id)
+        }
+    }
+
+    @Test
+    fun givenConversationWithoutEvents_whenGettingAllConversationsWithEvents_thenShouldReturnCorrectValues() = runTest {
+        val conversationEntity = conversationEntity1.copy(lastReadDate = Instant.fromEpochMilliseconds(0))
+        conversationDAO.insertConversation(conversationEntity)
+
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity.id))
+
+        memberDAO.insertMember(member1, conversationEntity.id)
+        memberDAO.insertMember(member2, conversationEntity.id)
+
+        conversationDAO.getAllConversationDetailsWithEvents(false).first().let {
+            assertEquals(conversationEntity.id, it.first().conversationViewEntity.id)
+            assertEquals(0, it.first().unreadEvents.unreadEvents.size)
+            assertEquals(null, it.first().messageDraft)
+            assertEquals(null, it.first().lastMessage)
+        }
+    }
+
+    @Test
+    fun givenArchiveConversationWithUnreadMessageAndDraft_whenGettingAllConversationsWithEvents_thenShouldReturnCorrectValues() = runTest {
+        val conversationEntity = conversationEntity1.copy(
+            archived = true,
+            lastReadDate = Instant.fromEpochMilliseconds(0L)
+        )
+        conversationDAO.insertConversation(conversationEntity)
+
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity.id))
+
+        memberDAO.insertMember(member1, conversationEntity.id)
+        memberDAO.insertMember(member2, conversationEntity.id)
+
+        val messageEntity = newRegularMessageEntity(
+            id = "unread_message_id",
+            conversationId = conversationEntity.id,
+            senderUserId = user1.id,
+            date = conversationEntity.lastReadDate.plus(1.seconds) // message received after last read date so it should be unread
+        )
+        messageDAO.insertOrIgnoreMessage(messageEntity)
+
+        val draftMessageEntity = newDraftMessageEntity(conversationId = conversationEntity.id)
+        messageDraftDAO.upsertMessageDraft(draftMessageEntity)
+
+        conversationDAO.getAllConversationDetailsWithEvents(true).first().let {
+            assertEquals(conversationEntity.id, it.first().conversationViewEntity.id)
+            assertEquals(1, it.first().unreadEvents.unreadEvents[UnreadEventTypeEntity.MESSAGE])
+            assertEquals(null, it.first().messageDraft) // do not return draft for archived conversation
+            assertEquals(null, it.first().lastMessage) // do not return last message for archived conversation
+        }
+    }
+
+    @Test
+    fun givenConversationWithStillOngoingCall_whenGettingAllConversationsWithEvents_thenConversationsAreInCorrectOrder() = runTest {
+        val conversationEntity1 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation1", "domain"),
+            type = ConversationEntity.Type.GROUP,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            lastModifiedDate = Instant.fromEpochMilliseconds(2) // conversation 1 is more recent than conversation 2
+        )
+        val conversationEntity2 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation2", "domain"),
+            type = ConversationEntity.Type.GROUP,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            lastModifiedDate = Instant.fromEpochMilliseconds(1) // conversation 2 is less recent than conversation 1
+        )
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        userDAO.upsertUser(user1)
+        val callEntity = CallEntity(
+            conversationId = conversationEntity1.id,
+            id = "call_id",
+            status = CallEntity.Status.STILL_ONGOING,
+            callerId = "callerId",
+            conversationType = ConversationEntity.Type.GROUP,
+            type = CallEntity.Type.CONFERENCE
+        )
+        callDAO.insertCall(callEntity.copy(conversationId = conversationEntity2.id)) // but conversation 2 has ongoing call
+        conversationDAO.getAllConversationDetailsWithEvents(false).first().let {
+            assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with ongoing call
+            assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
+        }
+    }
+
+    @Test
+    fun givenConversationWithUnreadEvents_whenGettingAllConversationsWithEvents_thenConversationsAreInCorrectOrder() = runTest {
+        val conversationEntity1 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation1", "domain"),
+            type = ConversationEntity.Type.GROUP,
+            lastModifiedDate = Instant.fromEpochMilliseconds(2), // conversation 1 is more recent than conversation 2
+            lastReadDate = Instant.fromEpochMilliseconds(2) // but it's also already read
+        )
+        val conversationEntity2 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation2", "domain"),
+            type = ConversationEntity.Type.GROUP,
+            lastModifiedDate = Instant.fromEpochMilliseconds(0), // conversation 2 is less recent than conversation 1
+            lastReadDate = Instant.fromEpochMilliseconds(0) // but it's still unread
+        )
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        userDAO.upsertUser(user1)
+        val messageEntity = newRegularMessageEntity(
+            id = "unread_message_id",
+            conversationId = conversationEntity2.id,
+            senderUserId = user1.id,
+            date = Instant.fromEpochMilliseconds(1) // message received after last read date so it should be unread
+        )
+        messageDAO.insertOrIgnoreMessage(messageEntity)
+        conversationDAO.getAllConversationDetailsWithEvents(false).first().let {
+            assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with unread event
+            assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
+        }
+    }
+
+    @Test
+    fun givenConversationWithUnreadEventsButMuted_whenGettingAllConversationsWithEvents_thenConversationsAreInCorrectOrder() = runTest {
+        val conversationEntity1 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation1", "domain"),
+            type = ConversationEntity.Type.GROUP,
+            lastModifiedDate = Instant.fromEpochMilliseconds(2), // conversation 1 is more recent than conversation 2
+            lastReadDate = Instant.fromEpochMilliseconds(0),
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED, // but new messages are muted
+        )
+        val conversationEntity2 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation2", "domain"),
+            type = ConversationEntity.Type.GROUP,
+            lastModifiedDate = Instant.fromEpochMilliseconds(1), // conversation 2 is less recent than conversation 1
+            lastReadDate = Instant.fromEpochMilliseconds(0),
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED, // but new messages are not muted
+        )
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        userDAO.upsertUser(user1)
+        val messageEntity1 = newRegularMessageEntity(
+            id = "unread_message_id_1",
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = Instant.fromEpochMilliseconds(1) // message received after last read date so it should be unread
+        )
+        val messageEntity2 = newRegularMessageEntity(
+            id = "unread_message_id_2",
+            conversationId = conversationEntity2.id,
+            senderUserId = user1.id,
+            date = Instant.fromEpochMilliseconds(1) // message received after last read date so it should be unread
+        )
+        messageDAO.insertOrIgnoreMessage(messageEntity1)
+        messageDAO.insertOrIgnoreMessage(messageEntity2)
+        conversationDAO.getAllConversationDetailsWithEvents(false).first().let {
+            assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with not muted new message
+            assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
+        }
+    }
+
+    @Test
+    fun givenReceivedConnectionRequest_whenGettingAllConversationsWithEvents_thenConversationsAreInCorrectOrder() = runTest {
+        val conversationEntity1 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation1", "domain"),
+            type = ConversationEntity.Type.GROUP,
+            lastModifiedDate = Instant.fromEpochMilliseconds(2), // conversation 1 is more recent than conversation 2
+        )
+        val conversationEntity2 = conversationEntity1.copy(
+            id = ConversationIDEntity("conversation2", "domain"),
+            type = ConversationEntity.Type.CONNECTION_PENDING,
+            lastModifiedDate = Instant.fromEpochMilliseconds(1), // conversation 1 is more recent than conversation 2
+        )
+        val userEntity = user1.copy(connectionStatus = ConnectionEntity.State.PENDING)
+        val connectionEntity = ConnectionEntity(
+            conversationId = conversationEntity2.id.value,
+            from = userEntity.id.value,
+            lastUpdateDate = Instant.fromEpochMilliseconds(1),
+            qualifiedConversationId = conversationEntity2.id,
+            qualifiedToId = userEntity.id,
+            status = ConnectionEntity.State.PENDING,
+            toId = userEntity.id.value,
+        )
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        connectionDAO.insertConnection(connectionEntity)
+        userDAO.upsertUser(userEntity)
+        conversationDAO.getAllConversationDetailsWithEvents(false).first().let {
+            assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with received connection request
+            assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
         }
     }
 

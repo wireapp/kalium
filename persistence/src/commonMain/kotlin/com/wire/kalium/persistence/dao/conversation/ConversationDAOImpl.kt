@@ -58,6 +58,10 @@ internal class ConversationDAOImpl internal constructor(
     private val unreadEventsQueries: UnreadEventsQueries,
     private val coroutineContext: CoroutineContext,
 ) : ConversationDAO {
+    private val conversationMapper = ConversationMapper
+    private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
+    override val platformExtensions: ConversationExtensions =
+        ConversationExtensionsImpl(conversationQueries, conversationDetailsWithEventsMapper, coroutineContext)
 
     // region Get/Observe by ID
 
@@ -90,7 +94,6 @@ internal class ConversationDAOImpl internal constructor(
 
     // endregion
 
-    private val conversationMapper = ConversationMapper()
     override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) = withContext(coroutineContext) {
         conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
     }
@@ -210,6 +213,14 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>> {
         return conversationQueries.selectAllConversationDetails(fromArchive, conversationMapper::fromViewToModel)
             .asFlow()
+            .mapToList()
+            .flowOn(coroutineContext)
+    }
+
+    override suspend fun getAllConversationDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEventsEntity>> {
+        return conversationQueries.selectAllConversationDetailsWithEvents(
+            fromArchive, conversationDetailsWithEventsMapper::fromViewToModel
+        ).asFlow()
             .mapToList()
             .flowOn(coroutineContext)
     }

@@ -33,6 +33,7 @@ data class ProposalTimerEntity(
 interface ConversationDAO {
     //region Get/Observe by ID
 
+    val platformExtensions: ConversationExtensions
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
@@ -57,6 +58,7 @@ interface ConversationDAO {
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEventsEntity>>
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,

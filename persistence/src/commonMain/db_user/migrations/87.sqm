@@ -1,0 +1,114 @@
+CREATE VIEW IF NOT EXISTS LastMessagePreview
+AS SELECT
+    MessagePreview.id AS id,
+    MessagePreview.conversationId AS conversationId,
+    MessagePreview.contentType AS contentType,
+    MessagePreview.date AS date,
+    MessagePreview.visibility AS visibility,
+    MessagePreview.senderUserId AS senderUserId,
+    MessagePreview.isEphemeral AS isEphemeral,
+    MessagePreview.senderName AS senderName,
+    MessagePreview.senderConnectionStatus AS senderConnectionStatus,
+    MessagePreview.senderIsDeleted AS senderIsDeleted,
+    MessagePreview.selfUserId AS selfUserId,
+    MessagePreview.isSelfMessage AS isSelfMessage,
+    MessagePreview.memberChangeList AS memberChangeList,
+    MessagePreview.memberChangeType AS memberChangeType,
+    MessagePreview.updateConversationName AS updateConversationName,
+    MessagePreview.conversationName AS conversationName,
+    MessagePreview.isMentioningSelfUser AS isMentioningSelfUser,
+    MessagePreview.isQuotingSelfUser AS isQuotingSelfUser,
+    MessagePreview.text AS text,
+    MessagePreview.assetMimeType AS assetMimeType,
+    MessagePreview.isUnread AS isUnread,
+    MessagePreview.shouldNotify AS shouldNotify,
+    MessagePreview.mutedStatus AS mutedStatus,
+    MessagePreview.conversationType AS conversationType
+FROM MessagePreview
+WHERE MessagePreview.id IN (
+   	SELECT id FROM Message
+   	WHERE
+   		Message.visibility IN ('VISIBLE', 'DELETED') AND
+   		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+   	GROUP BY Message.conversation_id
+   	HAVING Message.creation_date = MAX(Message.creation_date)
+);
+
+CREATE VIEW IF NOT EXISTS UnreadEventCountsGrouped AS
+SELECT
+    conversation_id AS conversationId,
+    SUM(CASE WHEN type = 'KNOCK' THEN 1 ELSE 0 END) AS knocksCount,
+    SUM(CASE WHEN type = 'MISSED_CALL' THEN 1 ELSE 0 END) AS missedCallsCount,
+    SUM(CASE WHEN type = 'MENTION' THEN 1 ELSE 0 END) AS mentionsCount,
+    SUM(CASE WHEN type = 'REPLY' THEN 1 ELSE 0 END) AS repliesCount,
+    SUM(CASE WHEN type = 'MESSAGE' THEN 1 ELSE 0 END) AS messagesCount
+FROM UnreadEvent
+GROUP BY conversation_id;
+
+CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
+SELECT
+    ConversationDetails.*,
+    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
+    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
+    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
+    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
+    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
+    CASE
+        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
+        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
+           CASE
+                WHEN knocksCount + missedCallsCount + mentionsCount + repliesCount + messagesCount > 0 THEN 1 -- if any unread events, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN mentionsCount + repliesCount > 0 THEN 1 -- only if unread mentions or replies, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        ELSE 0
+    END AS hasNewActivitiesToShow,
+    LastMessagePreview.id AS lastMessageId,
+    LastMessagePreview.contentType AS lastMessageContentType,
+    LastMessagePreview.date AS lastMessageDate,
+    LastMessagePreview.visibility AS lastMessageVisibility,
+    LastMessagePreview.senderUserId AS lastMessageSenderUserId,
+    LastMessagePreview.isEphemeral AS lastMessageIsEphemeral,
+    LastMessagePreview.senderName AS lastMessageSenderName,
+    LastMessagePreview.senderConnectionStatus AS lastMessageSenderConnectionStatus,
+    LastMessagePreview.senderIsDeleted AS lastMessageSenderIsDeleted,
+    LastMessagePreview.selfUserId AS lastMessageSelfUserId,
+    LastMessagePreview.isSelfMessage AS lastMessageIsSelfMessage,
+    LastMessagePreview.memberChangeList AS lastMessageMemberChangeList,
+    LastMessagePreview.memberChangeType AS lastMessageMemberChangeType,
+    LastMessagePreview.updateConversationName AS lastMessageUpdateConversationName,
+    LastMessagePreview.conversationName AS lastMessageConversationName,
+    LastMessagePreview.isMentioningSelfUser AS lastMessageIsMentioningSelfUser,
+    LastMessagePreview.isQuotingSelfUser AS lastMessageIsQuotingSelfUser,
+    LastMessagePreview.text AS lastMessageText,
+    LastMessagePreview.assetMimeType AS lastMessageAssetMimeType,
+    LastMessagePreview.isUnread AS lastMessageIsUnread,
+    LastMessagePreview.shouldNotify AS lastMessageShouldNotify,
+    LastMessagePreview.mutedStatus AS lastMessageMutedStatus,
+    LastMessagePreview.conversationType AS lastMessageConversationType,
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.mention_list AS messageDraftMentionList
+FROM ConversationDetails
+LEFT JOIN UnreadEventCountsGrouped
+    ON ConversationDetails.qualifiedId = UnreadEventCountsGrouped.conversationId
+LEFT JOIN LastMessagePreview ON ConversationDetails.qualifiedId = LastMessagePreview.conversationId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
+LEFT JOIN MessageDraft ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
+WHERE
+    type IS NOT 'SELF'
+    AND (
+    type IS 'GROUP'
+    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+    OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND isActive
+ORDER BY hasNewActivitiesToShow DESC, lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;

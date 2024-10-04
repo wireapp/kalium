@@ -291,15 +291,11 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         override val conversation: Conversation,
         val otherUser: OtherUser,
         val userType: UserType,
-        val unreadEventCount: UnreadEventCount,
-        val lastMessage: MessagePreview?
     ) : ConversationDetails(conversation)
 
     data class Group(
         override val conversation: Conversation,
         val hasOngoingCall: Boolean = false,
-        val unreadEventCount: UnreadEventCount,
-        val lastMessage: MessagePreview?,
         val isSelfUserMember: Boolean,
         val isSelfUserCreator: Boolean,
         val selfRole: Conversation.Member.Role?
@@ -341,6 +337,13 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         )
     )
 }
+
+data class ConversationDetailsWithEvents(
+    val conversationDetails: ConversationDetails,
+    val unreadEventCount: UnreadEventCount = emptyMap(),
+    val lastMessage: MessagePreview? = null,
+    val hasNewActivitiesToShow: Boolean = false,
+)
 
 fun ConversationDetails.interactionAvailability(): InteractionAvailability {
     val availability = when (this) {

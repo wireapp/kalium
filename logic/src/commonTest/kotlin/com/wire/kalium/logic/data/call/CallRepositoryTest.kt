@@ -174,10 +174,8 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             false,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -214,10 +212,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -270,10 +266,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -315,10 +309,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -374,10 +366,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -1819,8 +1809,6 @@ class CallRepositoryTest {
                 conversation = oneOnOneConversation,
                 otherUser = TestUser.OTHER,
                 userType = UserType.INTERNAL,
-                lastMessage = null,
-                unreadEventCount = emptyMap()
             )
 
             val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(
