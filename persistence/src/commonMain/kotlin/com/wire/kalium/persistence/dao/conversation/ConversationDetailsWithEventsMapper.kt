@@ -199,13 +199,13 @@ data object ConversationDetailsWithEventsMapper {
                 conversationType = lastMessageConversationType,
             )
         } else null,
-        messageDraft = if (messageDraftText != null && messageDraftMentionList != null) {
+        messageDraft = if (!messageDraftText.isNullOrBlank()) {
             MessageDraftMapper.toDao(
                 conversationId = qualifiedId,
                 text = messageDraftText,
                 editMessageId = messageDraftEditMessageId,
                 quotedMessageId = messageDraftQuotedMessageId,
-                mentionList = messageDraftMentionList,
+                mentionList = messageDraftMentionList ?: emptyList(),
             )
         } else null,
         hasNewActivitiesToShow = hasNewActivitiesToShow > 0L,
