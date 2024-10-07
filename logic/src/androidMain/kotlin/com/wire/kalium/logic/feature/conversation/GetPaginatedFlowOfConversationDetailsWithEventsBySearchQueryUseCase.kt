@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.flowOn
  * @see PagingData
  * @see ConversationDetailsWithEvents
  */
-class GetPaginatedFlowOfConversationDetailsBySearchQueryUseCase internal constructor(
+class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val conversationRepository: ConversationRepository,
 ) {
