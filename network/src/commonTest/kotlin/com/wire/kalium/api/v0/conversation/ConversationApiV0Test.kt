@@ -133,7 +133,7 @@ internal class ConversationApiV0Test : ApiTest() {
         val conversationApi = ConversationApiV0(networkClient)
         conversationApi.fetchConversationsListDetails(
             listOf(
-                ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+                ConversationMocks.conversationId,
                 ConversationId("f4680835-2cfe-4d4d-8491-cbb201bd5c2b", "anta.wire.link")
             )
         )
