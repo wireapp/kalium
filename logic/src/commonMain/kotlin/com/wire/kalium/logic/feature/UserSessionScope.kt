@@ -446,6 +446,7 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.network.utils.MockWebSocketSession
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -586,6 +587,7 @@ class UserSessionScope internal constructor(
         userAgent = userAgent,
         certificatePinning = kaliumConfigs.certPinningConfig,
         mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+        mockWebSocketSession = if (kaliumConfigs.mockedWebSocket) MockWebSocketSession() else null,
         kaliumLogger = userScopedLogger
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
@@ -1032,7 +1034,8 @@ class UserSessionScope internal constructor(
             conversationGroupRepository,
             conversationRepository,
             messageRepository,
-            userRepository
+            userRepository,
+            systemMessageInserter
         )
     private val oneOnOneResolver: OneOnOneResolver
         get() = OneOnOneResolverImpl(
@@ -1801,6 +1804,7 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             eventProcessor,
             legalHoldHandler,
+            notificationTokenRepository,
             this,
             userScopedLogger,
         )
@@ -1993,12 +1997,13 @@ class UserSessionScope internal constructor(
             appLockConfigHandler
         )
 
-    val team: TeamScope get() = TeamScope(
-        teamRepository = teamRepository,
-        conversationRepository = conversationRepository,
-        slowSyncRepository = slowSyncRepository,
-        selfTeamIdProvider = selfTeamId
-    )
+    val team: TeamScope
+        get() = TeamScope(
+            teamRepository = teamRepository,
+            conversationRepository = conversationRepository,
+            slowSyncRepository = slowSyncRepository,
+            selfTeamIdProvider = selfTeamId
+        )
 
     val service: ServiceScope
         get() = ServiceScope(

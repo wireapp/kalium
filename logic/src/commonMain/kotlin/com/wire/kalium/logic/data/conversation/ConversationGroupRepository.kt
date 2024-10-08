@@ -154,6 +154,7 @@ internal class ConversationGroupRepositoryImpl(
         val conversationEntity = conversationMapper.fromApiModelToDaoModel(
             conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
         )
+        val mlsPublicKeys = conversationMapper.fromApiModel(conversationResponse.publicKeys)
         val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
 
         return wrapStorageRequest {
@@ -166,7 +167,8 @@ internal class ConversationGroupRepositoryImpl(
                 is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
                     groupID = protocol.groupId,
                     members = usersList + selfUserId,
-                    allowSkippingUsersWithoutKeyPackages = true
+                    publicKeys = mlsPublicKeys,
+                    allowSkippingUsersWithoutKeyPackages = true,
                 ).map { it.notAddedUsers }
             }
         }.flatMap { protocolSpecificAdditionFailures ->

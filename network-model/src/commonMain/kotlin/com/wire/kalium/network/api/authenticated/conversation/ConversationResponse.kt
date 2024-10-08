@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.authenticated.conversation
 
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
@@ -86,7 +87,10 @@ data class ConversationResponse(
     val accessRole: Set<ConversationAccessRoleDTO>?,
 
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode
+    val receiptMode: ReceiptMode,
+
+    @SerialName("public_keys")
+    val publicKeys: MLSPublicKeysDTO? = null
 ) {
 
     @Suppress("MagicNumber")
@@ -153,6 +157,14 @@ data class ConversationResponseV3(
 
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode,
+)
+
+@Serializable
+data class ConversationResponseV6(
+    @SerialName("conversation")
+    val conversation: ConversationResponse,
+    @SerialName("public_keys")
+    val publicKeys: MLSPublicKeysDTO
 )
 
 @Serializable

@@ -43,13 +43,12 @@ import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
-import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -121,19 +120,16 @@ internal open class NotificationApiV0 internal constructor(
                 //       exceptions when the backend returns 401 instead of triggering a token refresh.
                 //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
                 //       before attempting to open the websocket
-                authenticatedWebSocketClient
-                    .createDisposableHttpClient()
-                    .webSocket({
-                        setWSSUrl(Url(serverLinks.webSocket), PATH_AWAIT)
-                        parameter(CLIENT_QUERY_KEY, clientId)
-                    }) {
-                        emitWebSocketEvents(this)
-                    }
+                val webSocketSession = authenticatedWebSocketClient.createWebSocketSession(clientId) {
+                    setWSSUrl(Url(serverLinks.webSocket), PATH_AWAIT)
+                    parameter(CLIENT_QUERY_KEY, clientId)
+                }
+                emitWebSocketEvents(webSocketSession)
             }
         }
 
     private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
-        defaultClientWebSocketSession: DefaultClientWebSocketSession
+        defaultClientWebSocketSession: WebSocketSession
     ) {
         val logger = kaliumLogger.withFeatureId(EVENT_RECEIVER)
         logger.i("Websocket open")
