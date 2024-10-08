@@ -18,7 +18,6 @@
 package com.wire.kalium.mocks.mocks.conversation
 
 import com.wire.kalium.mocks.mocks.domain.DomainMocks
-import com.wire.kalium.mocks.responses.samples.QualifiedIDSamples
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
