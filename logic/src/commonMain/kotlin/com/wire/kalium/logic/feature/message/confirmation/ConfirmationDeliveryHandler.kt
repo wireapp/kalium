@@ -147,7 +147,7 @@ internal class ConfirmationDeliveryHandlerImpl(
             }, {
                 kaliumLogger.logStructuredJson(
                     level = KaliumLogLevel.DEBUG,
-                    leadingMessage = "Delivery confirmation sent for ${conversation.name} and message count: ${messages.size}",
+                    leadingMessage = "Delivery confirmation sent for ${conversation.id.toLogString()} and message count: ${messages.size}",
                     jsonStringKeyValues = mapOf(
                         "conversationId" to conversation.id.toLogString(),
                         "messages" to messages.joinToString { it.obfuscateId() },
