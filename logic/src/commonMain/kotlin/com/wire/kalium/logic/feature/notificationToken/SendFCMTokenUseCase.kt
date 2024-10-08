@@ -15,8 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-// Will be fixed in separate PR that will refactor clientRepository.registerToken to parameters list
-@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 package com.wire.kalium.logic.feature.notificationToken
 
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
@@ -26,7 +24,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.nullableFold
-import com.wire.kalium.network.api.model.PushTokenBody
 
 /**
  * Sends to the API locally stored FCM push token
@@ -58,7 +55,12 @@ class SendFCMTokenToAPIUseCaseImpl internal constructor(
             { SendFCMTokenError(SendFCMTokenError.Reason.CANT_GET_CLIENT_ID, it.toString()) },
             {
                 notificationTokenResult.nullableFold(
-                    { SendFCMTokenError(SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN, it.toString()) },
+                    {
+                        SendFCMTokenError(
+                            SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN,
+                            it.toString()
+                        )
+                    },
                     { null }
                 )
             }
@@ -72,12 +74,10 @@ class SendFCMTokenToAPIUseCaseImpl internal constructor(
         val notificationToken = notificationTokenResult.getOrNull()!!
 
         return clientRepository.registerToken(
-            body = PushTokenBody(
-                senderId = notificationToken.applicationId,
-                client = clientId,
-                token = notificationToken.token,
-                transport = notificationToken.transport
-            )
+            senderId = notificationToken.applicationId,
+            client = clientId,
+            token = notificationToken.token,
+            transport = notificationToken.transport
         ).fold(
             {
                 Either.Left(
