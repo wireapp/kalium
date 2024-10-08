@@ -146,13 +146,13 @@ class SendFCMTokenToAPIUseCaseTest {
 
         suspend fun withClientRepositoryRegisterToken() = apply {
             coEvery {
-                clientRepository.registerToken(any())
+                clientRepository.registerToken(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withClientRepositoryRegisterTokenFailure() = apply {
             coEvery {
-                clientRepository.registerToken(any())
+                clientRepository.registerToken(any(), any(), any(), any())
             }.returns(Either.Left(NetworkFailure.FeatureNotSupported))
         }
 
