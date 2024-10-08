@@ -1805,6 +1805,7 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             eventProcessor,
             legalHoldHandler,
+            notificationTokenRepository,
             this,
             userScopedLogger,
         )
