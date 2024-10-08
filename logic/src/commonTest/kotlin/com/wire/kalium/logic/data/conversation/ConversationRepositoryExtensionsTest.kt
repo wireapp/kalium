@@ -57,16 +57,17 @@ class ConversationRepositoryExtensionsTest {
             .withConversationExtensionsReturningPager(kaliumPager)
             .arrange()
         val searchQuery = "search"
-        val fromArchive = false
         conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
             searchQuery = searchQuery,
-            fromArchive = fromArchive,
+            fromArchive = false,
+            onlyInteractionsEnabled = false,
+            newActivitiesOnTop = false,
             pagingConfig = pagingConfig,
             startingOffset = 0L
         )
         verify {
             arrangement.conversationDaoExtensions
-                .getPagerForConversationDetailsWithEventsSearch(eq(searchQuery), eq(fromArchive), eq(pagingConfig), any())
+                .getPagerForConversationDetailsWithEventsSearch(eq(pagingConfig), eq(searchQuery), eq(false), eq(false), eq(false), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -96,7 +97,7 @@ class ConversationRepositoryExtensionsTest {
         }
         fun withConversationExtensionsReturningPager(kaliumPager: KaliumPager<ConversationDetailsWithEventsEntity>) = apply {
             every {
-                conversationDaoExtensions.getPagerForConversationDetailsWithEventsSearch(any(), any(), any(), any())
+                conversationDaoExtensions.getPagerForConversationDetailsWithEventsSearch(any(), any(), any(), any(), any(), any())
             }.returns(kaliumPager)
         }
         fun arrange() = this to conversationRepositoryExtensions

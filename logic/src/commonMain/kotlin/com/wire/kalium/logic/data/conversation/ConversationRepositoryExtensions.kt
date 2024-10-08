@@ -33,6 +33,8 @@ interface ConversationRepositoryExtensions {
     suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         searchQuery: String,
         fromArchive: Boolean,
+        onlyInteractionsEnabled: Boolean,
+        newActivitiesOnTop: Boolean,
         pagingConfig: PagingConfig,
         startingOffset: Long,
     ): Flow<PagingData<ConversationDetailsWithEvents>>
@@ -46,11 +48,15 @@ class ConversationRepositoryExtensionsImpl internal constructor(
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         searchQuery: String,
         fromArchive: Boolean,
+        onlyInteractionsEnabled: Boolean,
+        newActivitiesOnTop: Boolean,
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<ConversationDetailsWithEvents>> {
-        val pager: KaliumPager<ConversationDetailsWithEventsEntity> = conversationDAO.platformExtensions
-                .getPagerForConversationDetailsWithEventsSearch(searchQuery, fromArchive, pagingConfig, startingOffset)
+        val pager: KaliumPager<ConversationDetailsWithEventsEntity> =
+            conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
+                pagingConfig, searchQuery, fromArchive, onlyInteractionsEnabled, newActivitiesOnTop, startingOffset
+            )
 
         return pager.pagingDataFlow.map {
             it.map {

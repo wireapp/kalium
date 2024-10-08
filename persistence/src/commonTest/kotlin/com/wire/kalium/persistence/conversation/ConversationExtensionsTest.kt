@@ -159,7 +159,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     private fun getPager(searchQuery: String = "", fromArchive: Boolean = false): KaliumPager<ConversationDetailsWithEventsEntity> =
-        conversationExtensions.getPagerForConversationDetailsWithEventsSearch(searchQuery, fromArchive, PagingConfig(PAGE_SIZE), 0)
+        conversationExtensions.getPagerForConversationDetailsWithEventsSearch(PagingConfig(PAGE_SIZE), searchQuery, fromArchive)
 
     private suspend fun PagingSource<Int, ConversationDetailsWithEventsEntity>.refresh() =
         load(PagingSourceLoadParamsRefresh<Int>(null, PAGE_SIZE, false))

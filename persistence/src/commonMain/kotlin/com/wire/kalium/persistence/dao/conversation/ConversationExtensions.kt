@@ -26,10 +26,12 @@ import kotlin.coroutines.CoroutineContext
 
 interface ConversationExtensions {
     fun getPagerForConversationDetailsWithEventsSearch(
-        searchQuery: String,
-        fromArchive: Boolean,
         pagingConfig: PagingConfig,
-        startingOffset: Long
+        searchQuery: String = "",
+        fromArchive: Boolean = false,
+        onlyInteractionEnabled: Boolean = false,
+        newActivitiesOnTop: Boolean = false,
+        startingOffset: Long = 0,
     ): KaliumPager<ConversationDetailsWithEventsEntity>
 }
 
@@ -39,25 +41,34 @@ internal class ConversationExtensionsImpl internal constructor(
     private val coroutineContext: CoroutineContext,
 ) : ConversationExtensions {
     override fun getPagerForConversationDetailsWithEventsSearch(
+        pagingConfig: PagingConfig,
         searchQuery: String,
         fromArchive: Boolean,
-        pagingConfig: PagingConfig,
+        onlyInteractionEnabled: Boolean,
+        newActivitiesOnTop: Boolean,
         startingOffset: Long
     ): KaliumPager<ConversationDetailsWithEventsEntity> =
         KaliumPager( // We could return a Flow directly, but having the PagingSource is the only way to test this
-            Pager(pagingConfig) { getConversationDetailsWithEventsSearchPagingSource(searchQuery, fromArchive, startingOffset) },
-            getConversationDetailsWithEventsSearchPagingSource(searchQuery, fromArchive, startingOffset),
+            Pager(pagingConfig) { pagingSource(searchQuery, fromArchive, onlyInteractionEnabled, newActivitiesOnTop, startingOffset) },
+            pagingSource(searchQuery, fromArchive, onlyInteractionEnabled, newActivitiesOnTop, startingOffset),
             coroutineContext
         )
 
-    private fun getConversationDetailsWithEventsSearchPagingSource(searchQuery: String, fromArchive: Boolean, initialOffset: Long) =
-        QueryPagingSource(
-            countQuery = queries.countConversationDetailsWithEventsFromSearch(fromArchive, searchQuery),
-            transacter = queries,
-            context = coroutineContext,
-            initialOffset = initialOffset,
-            queryProvider = { limit, offset ->
-                queries.selectConversationDetailsWithEventsFromSearch(fromArchive, searchQuery, limit, offset, mapper::fromViewToModel)
-            }
-        )
+    private fun pagingSource(
+        searchQuery: String,
+        fromArchive: Boolean,
+        onlyInteractionEnabled: Boolean,
+        newActivitiesOnTop: Boolean,
+        initialOffset: Long
+    ) = QueryPagingSource(
+        countQuery = queries.countConversationDetailsWithEventsFromSearch(fromArchive, onlyInteractionEnabled, searchQuery),
+        transacter = queries,
+        context = coroutineContext,
+        initialOffset = initialOffset,
+        queryProvider = { limit, offset ->
+            queries.selectConversationDetailsWithEventsFromSearch(
+                fromArchive, onlyInteractionEnabled, searchQuery, newActivitiesOnTop, limit, offset, mapper::fromViewToModel
+            )
+        }
+    )
 }

@@ -37,9 +37,12 @@ class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase intern
     suspend operator fun invoke(
         searchQuery: String,
         fromArchive: Boolean,
+        onlyInteractionsEnabled: Boolean,
+        newActivitiesOnTop: Boolean,
         startingOffset: Long,
         pagingConfig: PagingConfig
     ): Flow<PagingData<ConversationDetailsWithEvents>> = conversationRepository.extensions
-        .getPaginatedConversationDetailsWithEventsBySearchQuery(searchQuery, fromArchive, pagingConfig, startingOffset)
-        .flowOn(dispatcher.io)
+        .getPaginatedConversationDetailsWithEventsBySearchQuery(
+            searchQuery, fromArchive, onlyInteractionsEnabled, newActivitiesOnTop, pagingConfig, startingOffset
+        ).flowOn(dispatcher.io)
 }

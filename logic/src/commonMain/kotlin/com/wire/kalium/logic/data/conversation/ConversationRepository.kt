@@ -126,7 +126,11 @@ interface ConversationRepository {
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
-    suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>>
+    suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean = false,
+        onlyInteractionsEnabled: Boolean = false,
+        newActivitiesOnTop: Boolean = false,
+    ): Flow<List<ConversationDetailsWithEvents>>
     suspend fun getConversationIds(
         type: Conversation.Type,
         protocol: Conversation.Protocol,
@@ -515,11 +519,16 @@ internal class ConversationDataSource internal constructor(
            conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
        }
 
-    override suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>> =
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).map { conversationDetailsWithEventsViewEntityList ->
-            conversationDetailsWithEventsViewEntityList.map { conversationDetailsWithEventsViewEntity ->
-                conversationMapper.fromDaoModelToDetailsWithEvents(conversationDetailsWithEventsViewEntity)
-            }
+    override suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean,
+        onlyInteractionsEnabled: Boolean,
+        newActivitiesOnTop: Boolean,
+    ): Flow<List<ConversationDetailsWithEvents>> =
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive, onlyInteractionsEnabled, newActivitiesOnTop)
+            .map { conversationDetailsWithEventsViewEntityList ->
+                conversationDetailsWithEventsViewEntityList.map { conversationDetailsWithEventsViewEntity ->
+                    conversationMapper.fromDaoModelToDetailsWithEvents(conversationDetailsWithEventsViewEntity)
+                }
         }
 
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, Conversation> =
