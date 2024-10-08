@@ -48,6 +48,22 @@ GROUP BY conversation_id;
 CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
 SELECT
     ConversationDetails.*,
+    CASE
+        WHEN ConversationDetails.type = 'GROUP' THEN
+            CASE
+                WHEN ConversationDetails.selfRole IS NOT NULL THEN 1
+                ELSE 0
+            END
+        WHEN ConversationDetails.type = 'ONE_ON_ONE' THEN
+            CASE
+                WHEN userDefederated = 1 THEN 0
+                WHEN userDeleted = 1 THEN 0
+                WHEN connectionStatus = 'BLOCKED' THEN 0
+                WHEN legal_hold_status = 'DEGRADED' THEN 0
+                ELSE 1
+            END
+        ELSE 0
+    END AS interactionEnabled,
     UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
     UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
     UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
@@ -110,5 +126,4 @@ WHERE
     OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
     AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
-    AND isActive
-ORDER BY hasNewActivitiesToShow DESC, lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
+    AND isActive;
