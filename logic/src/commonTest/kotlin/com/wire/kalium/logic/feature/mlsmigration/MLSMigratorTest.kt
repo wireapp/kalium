@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
@@ -78,18 +79,23 @@ class MLSMigratorTest {
         migrator.migrateProteusConversations()
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolRemotely(eq(conversation.id), eq(Conversation.Protocol.MIXED))
+            arrangement.conversationRepository.updateProtocolRemotely(conversation.id, Conversation.Protocol.MIXED)
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.establishMLSGroup(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(emptyList()), any())
+            arrangement.mlsConversationRepository.establishMLSGroup(
+                groupID = Arrangement.MIXED_PROTOCOL_INFO.groupId,
+                members = emptyList(),
+                publicKeys = null,
+                false
+            )
         }
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                eq(Arrangement.MIXED_PROTOCOL_INFO.groupId),
-                eq(Arrangement.MEMBERS),
-                eq(CIPHER_SUITE)
+                Arrangement.MIXED_PROTOCOL_INFO.groupId,
+                Arrangement.MEMBERS,
+                CIPHER_SUITE
             )
         }
     }
@@ -119,7 +125,12 @@ class MLSMigratorTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.establishMLSGroup(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(emptyList()), any())
+            arrangement.mlsConversationRepository.establishMLSGroup(
+                groupID = Arrangement.MIXED_PROTOCOL_INFO.groupId,
+                members = emptyList(),
+                publicKeys = null,
+                allowSkippingUsersWithoutKeyPackages = false
+            )
         }
 
         coVerify {
@@ -232,7 +243,11 @@ class MLSMigratorTest {
 
         suspend fun withGetProteusTeamConversationsReturning(conversationsIds: List<ConversationId>) = apply {
             coEvery {
-                conversationRepository.getConversationIds(eq(Conversation.Type.GROUP), eq(Conversation.Protocol.PROTEUS), any())
+                conversationRepository.getConversationIds(
+                    Conversation.Type.GROUP,
+                    Conversation.Protocol.PROTEUS,
+                    TeamId(value = "Some-team")
+                )
             }.returns(Either.Right(conversationsIds))
         }
 
@@ -268,13 +283,13 @@ class MLSMigratorTest {
 
         suspend fun withEstablishGroupSucceeds(additionResult: MLSAdditionResult) = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
         }
 
         suspend fun withEstablishGroupFails() = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
             }.returns(Either.Left(NetworkFailure.ServerMiscommunication(MLS_STALE_MESSAGE_ERROR)))
         }
 
