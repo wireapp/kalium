@@ -68,11 +68,18 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param conversationId The conversation id to update the last read date.
      * @param time The last read date to update.
      */
-    operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
+    operator fun invoke(
+        conversationId: QualifiedID,
+        time: Instant,
+        shouldWaitUntilLive: Boolean = true
+    ) {
+        workQueue.enqueue(
+            ConversationTimeEventInput(conversationId, time, shouldWaitUntilLive),
+            worker
+        )
     }
 
-    private val worker = ConversationTimeEventWorker { (conversationId, time) ->
+    private val worker = ConversationTimeEventWorker { (conversationId, time, shouldWaitUntilLive) ->
         coroutineScope {
             conversationRepository.observeConversationById(conversationId).first().onFailure {
                 logger.w("Failed to update conversation read date; StorageFailure $it")
@@ -82,7 +89,7 @@ class UpdateConversationReadDateUseCase internal constructor(
                     return@onSuccess
                 }
                 launch {
-                    sendConfirmation(conversationId, conversation.lastReadDate, time)
+                    sendConfirmation(conversationId, conversation.lastReadDate, time, shouldWaitUntilLive)
                 }
                 launch {
                     conversationRepository.updateConversationReadDate(conversationId, time)
