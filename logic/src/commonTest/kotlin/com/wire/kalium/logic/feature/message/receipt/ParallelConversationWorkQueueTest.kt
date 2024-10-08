@@ -178,6 +178,6 @@ class ParallelConversationWorkQueueTest {
     private fun workInput(
         convIdValue: String = "abc",
         time: Instant = Instant.DISTANT_PAST
-    ) = ConversationTimeEventInput(ConversationId(convIdValue, "domain"), time)
+    ) = ConversationTimeEventInput(ConversationId(convIdValue, "domain"), time, true)
 
 }

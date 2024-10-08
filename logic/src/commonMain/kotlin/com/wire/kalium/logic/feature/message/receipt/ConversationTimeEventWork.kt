@@ -27,7 +27,8 @@ import kotlinx.datetime.Instant
  */
 internal data class ConversationTimeEventInput(
     val conversationId: ConversationId,
-    val eventTime: Instant
+    val eventTime: Instant,
+    val shouldWaitUntilLive: Boolean
 )
 
 /**

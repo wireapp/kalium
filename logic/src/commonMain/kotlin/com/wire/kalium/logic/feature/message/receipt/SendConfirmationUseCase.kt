@@ -57,7 +57,8 @@ internal interface SendConfirmationUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         afterDateTime: Instant,
-        untilDateTime: Instant
+        untilDateTime: Instant,
+        shouldWaitUntilLive: Boolean = true
     ): Either<CoreFailure, Unit>
 }
 
@@ -81,9 +82,12 @@ internal fun SendConfirmationUseCase(
     override suspend operator fun invoke(
         conversationId: ConversationId,
         afterDateTime: Instant,
-        untilDateTime: Instant
+        untilDateTime: Instant,
+        shouldWaitUntilLive: Boolean
     ): Either<CoreFailure, Unit> {
-        syncManager.waitUntilLive()
+        if (shouldWaitUntilLive) {
+            syncManager.waitUntilLive()
+        }
 
         val messageIds = getPendingUnreadMessagesIds(
             conversationId,

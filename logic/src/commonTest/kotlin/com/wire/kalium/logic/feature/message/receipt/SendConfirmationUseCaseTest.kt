@@ -60,6 +60,37 @@ class SendConfirmationUseCaseTest {
         val result = sendConfirmation(TestConversation.ID, after, until)
 
         result.shouldSucceed()
+
+        coVerify {
+            arrangement.syncManager.waitUntilLive()
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAShouldNotWaitUntilLive_whenSendingReadReceipts_theDoNotWaitForSyncAndSendConfirmation() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withGetConversationByIdSuccessful()
+            .withToggleReadReceiptsStatus(true)
+            .withPendingMessagesResponse()
+            .withSendMessageSuccess()
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until, false)
+
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.syncManager.waitUntilLive()
+        }.wasNotInvoked()
+
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(exactly = once)
@@ -101,7 +132,7 @@ class SendConfirmationUseCaseTest {
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        private val syncManager = mock(SyncManager::class)
+        val syncManager = mock(SyncManager::class)
 
         @Mock
         val messageSender = mock(MessageSender::class)
