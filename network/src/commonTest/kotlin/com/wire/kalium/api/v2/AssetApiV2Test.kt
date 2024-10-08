@@ -19,9 +19,10 @@
 package com.wire.kalium.api.v2
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.mocks.responses.asset.AssetUploadResponseJson
-import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.asset.AssetMocks
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.AssetId
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.model.UserId
@@ -31,7 +32,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.Source
@@ -41,7 +41,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class AssetApiV2Test : ApiTest() {
 
     private val userId: UserId = UserId("user_id", "domain")
@@ -54,7 +53,7 @@ internal class AssetApiV2Test : ApiTest() {
         val encryptedData = "some-data".encodeToByteArray()
         val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
         val networkClient = mockAuthenticatedNetworkClient(
-            VALID_ASSET_UPLOAD_RESPONSE.rawJson,
+            VALID_ASSET_UPLOAD_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
@@ -70,7 +69,7 @@ internal class AssetApiV2Test : ApiTest() {
 
         // Then
         assertTrue(response.isSuccessful())
-        assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE.serializableData)
+        assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE)
     }
 
     @Test
@@ -81,7 +80,7 @@ internal class AssetApiV2Test : ApiTest() {
         val encryptedData = "some-data".encodeToByteArray()
         val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
         val networkClient = mockAuthenticatedNetworkClient(
-            INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
+            INVALID_ASSET_UPLOAD_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.BadRequest,
             assertion = {
                 assertPost()
@@ -161,8 +160,8 @@ internal class AssetApiV2Test : ApiTest() {
         const val ASSET_KEY = "3-1-e7788668-1b22-488a-b63c-acede42f771f"
         const val ASSET_DOMAIN = "wire.com"
         const val ASSET_TOKEN = "assetToken"
-        val VALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.valid
-        val INVALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.invalid
+        val VALID_ASSET_UPLOAD_RESPONSE = AssetMocks.asset
+        val INVALID_ASSET_UPLOAD_RESPONSE = AssetMocks.invalid
         val assetId: AssetId = AssetId(ASSET_KEY, ASSET_DOMAIN)
         val tempFileSink = blackholeSink()
     }

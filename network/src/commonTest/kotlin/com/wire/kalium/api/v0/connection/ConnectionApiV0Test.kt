@@ -19,8 +19,8 @@
 package com.wire.kalium.api.v0.connection
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.mocks.responses.connection.ConnectionRequestsJson
-import com.wire.kalium.mocks.responses.connection.ConnectionResponsesJson
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.connection.ConnectionMocks
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.model.UserId
@@ -36,12 +36,12 @@ internal class ConnectionApiV0Test : ApiTest() {
     @Test
     fun givenAGetConnectionsRequest_whenRequestingAllConnectionsWithSuccess_thenRequestShouldBeConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            GET_CONNECTIONS_RESPONSE.rawJson,
+            GET_CONNECTIONS_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertJson()
                 assertPost()
-                assertJsonBodyContent(GET_CONNECTIONS_NO_PAGING_REQUEST.rawJson)
+                assertJsonBodyContent(GET_CONNECTIONS_NO_PAGING_REQUEST.toJsonString())
                 assertPathEqual(PATH_CONNECTIONS)
             }
         )
@@ -53,18 +53,18 @@ internal class ConnectionApiV0Test : ApiTest() {
     @Test
     fun givenAGetConnectionsRequestWithPaging_whenRequestingAllConnectionsWithSuccess_thenRequestShouldBeConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            GET_CONNECTIONS_RESPONSE.rawJson,
+            GET_CONNECTIONS_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertJson()
                 assertPost()
-                assertJsonBodyContent(GET_CONNECTIONS_WITH_PAGING_REQUEST.rawJson)
+                assertJsonBodyContent(GET_CONNECTIONS_WITH_PAGING_REQUEST.toJsonString())
                 assertPathEqual(PATH_CONNECTIONS)
             }
         )
 
         val connectionApi: ConnectionApi = ConnectionApiV0(networkClient)
-        connectionApi.fetchSelfUserConnections(pagingState = GET_CONNECTIONS_WITH_PAGING_REQUEST.serializableData)
+        connectionApi.fetchSelfUserConnections(pagingState = GET_CONNECTIONS_WITH_PAGING_REQUEST.pagingState)
     }
 
     @Test
@@ -72,7 +72,7 @@ internal class ConnectionApiV0Test : ApiTest() {
         // given
         val userId = UserId("user_id", "domain_id")
         val httpClient = mockAuthenticatedNetworkClient(
-            CREATE_CONNECTION_RESPONSE.rawJson,
+            CREATE_CONNECTION_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertJson()
@@ -96,13 +96,13 @@ internal class ConnectionApiV0Test : ApiTest() {
             // given
             val userId = UserId("user_id", "domain_id")
             val httpClient = mockAuthenticatedNetworkClient(
-                CREATE_CONNECTION_RESPONSE.rawJson,
+                CREATE_CONNECTION_RESPONSE.toJsonString(),
                 statusCode = HttpStatusCode.OK,
                 assertion = {
                     assertJson()
                     assertPut()
                     assertPathEqual("$PATH_CONNECTIONS_ENDPOINT/${userId.domain}/${userId.value}")
-                    assertJsonBodyContent(GET_CONNECTION_STATUS_REQUEST.rawJson)
+                    assertJsonBodyContent(GET_CONNECTION_STATUS_REQUEST.toJsonString())
                 }
             )
             val connectionApi = ConnectionApiV0(httpClient)
@@ -118,10 +118,10 @@ internal class ConnectionApiV0Test : ApiTest() {
         const val PATH_CONNECTIONS = "/list-connections"
         const val PATH_CONNECTIONS_ENDPOINT = "/connections"
 
-        val GET_CONNECTIONS_RESPONSE = ConnectionResponsesJson.GetConnections.validGetConnections
-        val CREATE_CONNECTION_RESPONSE = ConnectionResponsesJson.CreateConnectionResponse.jsonProvider
-        val GET_CONNECTIONS_NO_PAGING_REQUEST = ConnectionRequestsJson.validEmptyBody
-        val GET_CONNECTIONS_WITH_PAGING_REQUEST = ConnectionRequestsJson.validPagingState
-        val GET_CONNECTION_STATUS_REQUEST = ConnectionRequestsJson.validConnectionStatusUpdate
+        val GET_CONNECTIONS_RESPONSE = ConnectionMocks.connectionsResponse
+        val CREATE_CONNECTION_RESPONSE = ConnectionMocks.connection
+        val GET_CONNECTIONS_NO_PAGING_REQUEST = ConnectionMocks.emptyPaginationRequest
+        val GET_CONNECTIONS_WITH_PAGING_REQUEST = ConnectionMocks.paginationRequest
+        val GET_CONNECTION_STATUS_REQUEST = ConnectionMocks.acceptedConnectionRequest
     }
 }

@@ -50,7 +50,7 @@ object CommonResponses {
     /**
      * DTO
      */
-    val userID = QualifiedID("user_id", "user.domain.io")
+    val userID = QualifiedID("someValue", "someDomain")
     private val accessTokenDTO = AccessTokenDTO(
         userId = userID.value,
         value = "Nlrhltkj-NgJUjEVevHz8Ilgy_pyWCT2b0kQb-GlnamyswanghN9DcC3an5RUuA7sh1_nC3hv2ZzMRlIhPM7Ag==.v=1.k=1.d=1637254939." +
