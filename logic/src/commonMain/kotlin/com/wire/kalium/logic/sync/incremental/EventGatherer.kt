@@ -35,6 +35,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.ServerTimeHandler
+import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
@@ -79,7 +80,7 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandler(),
+    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 

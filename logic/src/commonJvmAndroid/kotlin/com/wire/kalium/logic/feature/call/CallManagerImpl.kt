@@ -79,6 +79,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.ServerTimeHandler
+import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher
@@ -120,7 +121,7 @@ class CallManagerImpl internal constructor(
     private val flowManagerService: FlowManagerService,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
-    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandler(),
+    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 

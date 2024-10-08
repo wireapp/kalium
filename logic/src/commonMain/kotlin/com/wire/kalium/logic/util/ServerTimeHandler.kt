@@ -20,7 +20,12 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.datetime.Clock
 
-class ServerTimeHandler {
+internal interface ServerTimeHandler {
+    fun computeTimeOffset(serverTime: Long)
+    fun toServerTimestamp(localTimestamp: Long = Clock.System.now().epochSeconds): Long
+}
+
+internal class ServerTimeHandlerImpl : ServerTimeHandler {
 
     /**
      * Used to store the difference (offset) between the server time and the local client time.
@@ -32,14 +37,10 @@ class ServerTimeHandler {
      * Compute the time offset between the server and the client
      * @param serverTime the server time to compute the offset
      */
-    fun computeTimeOffset(serverTime: Long) {
+    override fun computeTimeOffset(serverTime: Long) {
         kaliumLogger.i("ServerTimeHandler: computing time offset between server and client..")
         val offset = Clock.System.now().epochSeconds - serverTime
         timeOffset = offset
-    }
-
-    fun getTimeOffset(): Long {
-        return timeOffset
     }
 
     /**
@@ -47,7 +48,7 @@ class ServerTimeHandler {
      * @param localTimestamp timestamp from client to convert
      * @return the timestamp adjusted with the client/server time shift
      */
-    fun toServerTimestamp(localTimestamp: Long = Clock.System.now().epochSeconds): Long {
+    override fun toServerTimestamp(localTimestamp: Long): Long {
         return localTimestamp - timeOffset
     }
 }
