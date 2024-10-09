@@ -76,15 +76,29 @@ interface ClientRepository {
     suspend fun isClientRegistrationBlockedByE2EI(): Either<CoreFailure, Boolean>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
-    suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
+    suspend fun observeClientsByUserIdAndClientId(
+        userId: UserId,
+        clientId: ClientId
+    ): Flow<Either<StorageFailure, Client>>
+
     suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
-    suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
+    suspend fun storeUserClientIdList(
+        userId: UserId,
+        clients: List<ClientId>
+    ): Either<StorageFailure, Unit>
+
     suspend fun storeMapOfUserToClientId(userToClientMap: Map<UserId, List<ClientId>>): Either<StorageFailure, Unit>
     suspend fun removeClientsAndReturnUsersWithNoClients(
         redundantClientsOfUsers: Map<UserId, List<ClientId>>
     ): Either<StorageFailure, List<UserId>>
 
-    suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
+    suspend fun registerToken(
+        senderId: String,
+        client: String,
+        token: String,
+        transport: String
+    ): Either<NetworkFailure, Unit>
+
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
     suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>>
@@ -205,7 +219,10 @@ class ClientDataSource(
             }
     }
 
-    override suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>> =
+    override suspend fun observeClientsByUserIdAndClientId(
+        userId: UserId,
+        clientId: ClientId
+    ): Flow<Either<StorageFailure, Client>> =
         clientDAO.observeClient(userId.toDao(), clientId.value)
             .map { it?.let { clientMapper.fromClientEntity(it) } }
             .wrapStorageRequest()
@@ -250,7 +267,11 @@ class ClientDataSource(
         redundantClientsOfUsers.mapKeys { it.key.toDao() }
             .mapValues { it.value.map { clientId -> clientId.value } }
             .let { redundantClientsOfUsersDao ->
-                wrapStorageRequest { clientDAO.removeClientsAndReturnUsersWithNoClients(redundantClientsOfUsersDao) }
+                wrapStorageRequest {
+                    clientDAO.removeClientsAndReturnUsersWithNoClients(
+                        redundantClientsOfUsersDao
+                    )
+                }
                     .map {
                         it.map { userId -> userId.toModel() }
                     }
@@ -258,10 +279,20 @@ class ClientDataSource(
 
     override suspend fun storeUserClientListAndRemoveRedundantClients(
         clients: List<InsertClientParam>
-    ): Either<StorageFailure, Unit> = wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(clients) }
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(clients) }
 
-    override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
-    override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> = clientRemoteRepository.deregisterToken(token)
+    override suspend fun registerToken(
+        senderId: String,
+        client: String,
+        token: String,
+        transport: String
+    ): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(
+        PushTokenBody(senderId, client, token, transport)
+    )
+
+    override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> =
+        clientRemoteRepository.deregisterToken(token)
 
     override suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>> =
         wrapStorageRequest {

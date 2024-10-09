@@ -20,7 +20,8 @@ package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.mocks.responses.connection.ConnectionResponsesJson
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.connection.ConnectionMocks
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConnectionApiV4
@@ -40,7 +41,7 @@ internal class ConnectionApiV4Test : ApiTest() {
             // given
             val userId = UserId("user_id", "domain_id")
             val httpClient = mockAuthenticatedNetworkClient(
-                CREATE_CONNECTION_RESPONSE.rawJson,
+                CREATE_CONNECTION_RESPONSE.toJsonString(),
                 statusCode = HttpStatusCode.OK,
                 assertion = {
                     assertJson()
@@ -93,6 +94,6 @@ internal class ConnectionApiV4Test : ApiTest() {
 
     private companion object {
         const val PATH_CONNECTIONS_ENDPOINT = "/connections"
-        val CREATE_CONNECTION_RESPONSE = ConnectionResponsesJson.CreateConnectionResponse.jsonProvider
+        val CREATE_CONNECTION_RESPONSE = ConnectionMocks.connection
     }
 }

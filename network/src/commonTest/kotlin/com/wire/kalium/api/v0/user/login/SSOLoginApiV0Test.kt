@@ -20,11 +20,12 @@ package com.wire.kalium.api.v0.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND
-import com.wire.kalium.mocks.responses.AccessTokenDTOJson
-import com.wire.kalium.mocks.responses.UserDTOJson
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.client.TokenMocks
+import com.wire.kalium.mocks.mocks.user.UserMocks
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
-import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
@@ -32,13 +33,11 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.protocolWithAuthority
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class SSOLoginApiV0Test : ApiTest() {
 
     @Test
@@ -107,13 +106,13 @@ internal class SSOLoginApiV0Test : ApiTest() {
     @Test
     fun givenBEResponseSuccess_whenFetchingAuthToken_thenTheRefreshTokenIsClean() = runTest {
         val cookie = "zuid=cookie"
-        val authResponse = AccessTokenDTOJson.valid
-        val selfResponse = UserDTOJson.valid
+        val authResponse = TokenMocks.accessToken
+        val selfResponse = UserMocks.selfUser
         val networkClient = mockUnauthenticatedNetworkClient(
             listOf(
-                ApiTest.TestRequestHandler(
+                TestRequestHandler(
                     path = PATH_ACCESS,
-                    authResponse.rawJson,
+                    authResponse.toJsonString(),
                     statusCode = HttpStatusCode.OK,
                     assertion = {
                         assertGet()
@@ -121,9 +120,9 @@ internal class SSOLoginApiV0Test : ApiTest() {
                         assertPathEqual(PATH_ACCESS)
                     }
                 ),
-                ApiTest.TestRequestHandler(
+                TestRequestHandler(
                     path = PATH_SELF,
-                    selfResponse.rawJson,
+                    selfResponse.toJsonString(),
                     statusCode = HttpStatusCode.OK,
                     assertion = {
                         assertGet()
@@ -137,21 +136,21 @@ internal class SSOLoginApiV0Test : ApiTest() {
 
         assertIs<NetworkResponse.Success<AuthenticationResultDTO>>(actual)
         assertEquals(cookie.removePrefix("zuid="), actual.value.sessionDTO.refreshToken)
-        assertEquals(authResponse.serializableData.value, actual.value.sessionDTO.accessToken)
-        assertEquals(authResponse.serializableData.tokenType, actual.value.sessionDTO.tokenType)
-        assertEquals(selfResponse.serializableData.id, actual.value.sessionDTO.userId)
-        assertEquals(selfResponse.serializableData, actual.value.userDTO)
+        assertEquals(authResponse.value, actual.value.sessionDTO.accessToken)
+        assertEquals(authResponse.tokenType, actual.value.sessionDTO.tokenType)
+        assertEquals(selfResponse.id, actual.value.sessionDTO.userId)
+        assertEquals(selfResponse, actual.value.userDTO)
     }
 
     @Test
     fun cookieIsMissingZuidToke_whenFetchingAuthToken_thenReturnError() = runTest {
         val cookie = "cookie"
-        val authResponse = AccessTokenDTOJson.valid
+        val authResponse = TokenMocks.accessToken
         val networkClient = mockUnauthenticatedNetworkClient(
             listOf(
-                ApiTest.TestRequestHandler(
+                TestRequestHandler(
                     path = PATH_ACCESS,
-                    authResponse.rawJson,
+                    authResponse.toJsonString(),
                     statusCode = HttpStatusCode.OK
                 )
             )

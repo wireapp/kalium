@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.notificationToken
 
@@ -27,7 +26,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.network.api.model.PushTokenBody
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -51,18 +49,18 @@ internal class PushTokenUpdater(
                 notificationTokenRepository.getNotificationToken()
                     .flatMap { notificationToken ->
                         clientRepository.registerToken(
-                            body = PushTokenBody(
-                                senderId = notificationToken.applicationId,
-                                client = clientId.value,
-                                token = notificationToken.token,
-                                transport = notificationToken.transport
-                            )
+                            senderId = notificationToken.applicationId,
+                            client = clientId.value,
+                            token = notificationToken.token,
+                            transport = notificationToken.transport
                         )
                     }
                     .onFailure {
                         kaliumLogger.i(
                             "$TAG Error while registering Firebase token " +
-                                    "for the client: ${clientId.toString().obfuscateId()} error: $it"
+                                    "for the client: ${
+                                        clientId.toString().obfuscateId()
+                                    } error: $it"
                         )
                     }
             }

@@ -917,24 +917,23 @@ class UserSessionScope internal constructor(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    private val eventGatherer: EventGatherer
-        get() = EventGathererImpl(
-            eventRepository,
-            incrementalSyncRepository,
-            userScopedLogger,
-        )
+    private val eventGatherer: EventGatherer get() = EventGathererImpl(
+        eventRepository = eventRepository,
+        incrementalSyncRepository = incrementalSyncRepository,
+        logger = userScopedLogger
+    )
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
-            eventRepository,
-            conversationEventReceiver,
-            userEventReceiver,
-            teamEventReceiver,
-            featureConfigEventReceiver,
-            userPropertiesEventReceiver,
-            federationEventReceiver,
-            this@UserSessionScope,
-            userScopedLogger,
+            eventRepository = eventRepository,
+            conversationEventReceiver = conversationEventReceiver,
+            userEventReceiver = userEventReceiver,
+            teamEventReceiver = teamEventReceiver,
+            featureConfigEventReceiver = featureConfigEventReceiver,
+            userPropertiesEventReceiver = userPropertiesEventReceiver,
+            federationEventReceiver = federationEventReceiver,
+            processingScope = this@UserSessionScope,
+            logger = userScopedLogger,
         )
     }
 
@@ -1804,6 +1803,7 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             eventProcessor,
             legalHoldHandler,
+            notificationTokenRepository,
             this,
             userScopedLogger,
         )

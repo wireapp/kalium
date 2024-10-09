@@ -58,7 +58,9 @@ object ConversationResponseJson {
                 otrMutedRef = "2022-04-11T14:15:48.044Z",
                 otrMutedStatus = MutedStatus.fromOrdinal(0)
             ),
-            listOf(ConversationMemberDTO.Other(id = QualifiedIDSamples.two, conversationRole = "wire_member"))
+            listOf(
+//                 ConversationMemberDTO.Other(id = QualifiedIDSamples.two, conversationRole = "wire_member")
+            )
         ),
         "group name",
         QualifiedIDSamples.one,

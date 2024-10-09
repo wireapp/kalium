@@ -249,7 +249,10 @@ object TestEvent {
         id = "eventId",
     )
 
-    fun Event.wrapInEnvelope(isTransient: Boolean = false, source: EventSource = EventSource.LIVE): EventEnvelope {
+    fun Event.wrapInEnvelope(
+        isTransient: Boolean = false,
+        source: EventSource = EventSource.LIVE
+    ): EventEnvelope {
         return EventEnvelope(this, EventDeliveryInfo(isTransient, source))
     }
 
