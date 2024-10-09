@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import kotlinx.datetime.Instant
 
 @Suppress("LongParameterList")
@@ -84,3 +85,11 @@ fun newSystemMessageEntity(
     selfDeletionEndDate = null,
     readCount = 0
 )
+
+fun newDraftMessageEntity(
+    conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"),
+    text: String = "draft text",
+    editMessageId: String? = null,
+    quotedMessageId: String? = null,
+    selectedMentionList: List<MessageEntity.Mention> = emptyList()
+) = MessageDraftEntity(conversationId, text, editMessageId, quotedMessageId, selectedMentionList)

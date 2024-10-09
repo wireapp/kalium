@@ -45,13 +45,41 @@ LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
-getLastMessages:
-SELECT * FROM MessagePreview AS message
-WHERE id IN (
-	SELECT id FROM Message
-	WHERE
-		Message.visibility IN ('VISIBLE', 'DELETED') AND
-		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
-	GROUP BY Message.conversation_id
-	HAVING Message.creation_date = MAX(Message.creation_date)
+CREATE VIEW IF NOT EXISTS LastMessagePreview
+AS SELECT
+    MessagePreview.id AS id,
+    MessagePreview.conversationId AS conversationId,
+    MessagePreview.contentType AS contentType,
+    MessagePreview.date AS date,
+    MessagePreview.visibility AS visibility,
+    MessagePreview.senderUserId AS senderUserId,
+    MessagePreview.isEphemeral AS isEphemeral,
+    MessagePreview.senderName AS senderName,
+    MessagePreview.senderConnectionStatus AS senderConnectionStatus,
+    MessagePreview.senderIsDeleted AS senderIsDeleted,
+    MessagePreview.selfUserId AS selfUserId,
+    MessagePreview.isSelfMessage AS isSelfMessage,
+    MessagePreview.memberChangeList AS memberChangeList,
+    MessagePreview.memberChangeType AS memberChangeType,
+    MessagePreview.updateConversationName AS updateConversationName,
+    MessagePreview.conversationName AS conversationName,
+    MessagePreview.isMentioningSelfUser AS isMentioningSelfUser,
+    MessagePreview.isQuotingSelfUser AS isQuotingSelfUser,
+    MessagePreview.text AS text,
+    MessagePreview.assetMimeType AS assetMimeType,
+    MessagePreview.isUnread AS isUnread,
+    MessagePreview.shouldNotify AS shouldNotify,
+    MessagePreview.mutedStatus AS mutedStatus,
+    MessagePreview.conversationType AS conversationType
+FROM MessagePreview
+WHERE MessagePreview.id IN (
+   	SELECT id FROM Message
+   	WHERE
+   		Message.visibility IN ('VISIBLE', 'DELETED') AND
+   		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+   	GROUP BY Message.conversation_id
+   	HAVING Message.creation_date = MAX(Message.creation_date)
 );
+
+getLastMessages:
+SELECT * FROM LastMessagePreview;

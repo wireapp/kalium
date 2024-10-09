@@ -80,20 +80,16 @@ class ObserveConversationDetailsUseCaseTest {
                 Either.Right(
                     ConversationDetails.Group(
                         conversation,
-                        lastMessage = null,
                         isSelfUserMember = true,
                         isSelfUserCreator = true,
-                        unreadEventCount = emptyMap(),
                         selfRole = Conversation.Member.Role.Member
                     )
                 ),
                 Either.Right(
                     ConversationDetails.Group(
                         conversation.copy(name = "New Name"),
-                        lastMessage = null,
                         isSelfUserMember = true,
                         isSelfUserCreator = true,
-                        unreadEventCount = emptyMap(),
                         selfRole = Conversation.Member.Role.Member
                     )
                 )

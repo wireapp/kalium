@@ -20,8 +20,7 @@ package com.wire.kalium.persistence.dao.message.draft
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MessageDraftsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftMapper.toDao
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -57,19 +56,4 @@ class MessageDraftDAOImpl internal constructor(
         .asFlow()
         .flowOn(coroutineContext)
         .mapToList()
-
-    private fun toDao(
-        conversationId: QualifiedIDEntity,
-        text: String?,
-        editMessageId: String?,
-        quotedMessageId: String?,
-        mentionList: List<MessageEntity.Mention>
-    ): MessageDraftEntity =
-        MessageDraftEntity(
-            conversationId = conversationId,
-            text = text.orEmpty(),
-            editMessageId = editMessageId,
-            quotedMessageId = quotedMessageId,
-            selectedMentionList = mentionList
-        )
 }

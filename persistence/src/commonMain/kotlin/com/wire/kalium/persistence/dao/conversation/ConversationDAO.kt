@@ -57,6 +57,11 @@ interface ConversationDAO {
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetailsWithEvents(
+        fromArchive: Boolean = false,
+        onlyInteractionEnabled: Boolean = false,
+        newActivitiesOnTop: Boolean = false,
+    ): Flow<List<ConversationDetailsWithEventsEntity>>
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,

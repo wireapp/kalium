@@ -128,7 +128,8 @@ internal object MapperProvider {
             AvailabilityStatusMapperImpl(),
             DomainUserTypeMapperImpl(),
             ConnectionStatusMapperImpl(),
-            ConversationRoleMapperImpl()
+            ConversationRoleMapperImpl(),
+            MessageMapperImpl(selfUserId),
         )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
