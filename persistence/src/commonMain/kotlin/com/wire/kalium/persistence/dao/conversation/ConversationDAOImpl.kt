@@ -60,6 +60,8 @@ internal class ConversationDAOImpl internal constructor(
 ) : ConversationDAO {
     private val conversationMapper = ConversationMapper
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
+    override val platformExtensions: ConversationExtensions =
+        ConversationExtensionsImpl(conversationQueries, conversationDetailsWithEventsMapper, coroutineContext)
 
     // region Get/Observe by ID
 

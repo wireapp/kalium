@@ -31,6 +31,7 @@ data class ProposalTimerEntity(
 
 @Suppress("TooManyFunctions")
 interface ConversationDAO {
+    val platformExtensions: ConversationExtensions
     //region Get/Observe by ID
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
