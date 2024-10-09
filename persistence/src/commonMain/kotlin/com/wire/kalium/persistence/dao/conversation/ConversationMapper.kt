@@ -28,7 +28,8 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
 
 data object ConversationMapper {
-    @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
+    // suppressed because the method cannot be shortened and there are unused parameters because sql view returns some duplicated fields
+    @Suppress("LongParameterList", "LongMethod", "UnusedParameter")
     fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,
@@ -37,7 +38,7 @@ data object ConversationMapper {
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
-        lastModifiedDate_: Instant?,
+        lastModifiedDate: Instant?,
         lastReadDate: Instant,
         userAvailabilityStatus: UserAvailabilityStatusEntity?,
         userType: UserTypeEntity?,
@@ -61,11 +62,11 @@ data object ConversationMapper {
         mlsGroupState: ConversationEntity.GroupState,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>,
-        teamId_: String?,
+        unusedTeamId: String?,
         mlsProposalTimer: String?,
         mutedTime: Long,
         creatorId: String,
-        lastModifiedDate: Instant,
+        unusedLastModifiedDate: Instant,
         receiptMode: ConversationEntity.ReceiptMode,
         messageTimer: Long?,
         userMessageTimer: Long?,

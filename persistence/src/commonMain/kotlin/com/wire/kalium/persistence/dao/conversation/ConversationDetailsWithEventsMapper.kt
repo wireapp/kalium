@@ -32,7 +32,8 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
 import kotlinx.datetime.Instant
 
 data object ConversationDetailsWithEventsMapper {
-    @Suppress("LongParameterList", "FunctionParameterNaming")
+    // suppressed because the method cannot be shortened and there are unused parameters because sql view returns some duplicated fields
+    @Suppress("LongParameterList", "LongMethod", "UnusedParameter")
     fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,
@@ -41,7 +42,7 @@ data object ConversationDetailsWithEventsMapper {
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
-        lastModifiedDate_: Instant?,
+        lastModifiedDate: Instant?,
         lastReadDate: Instant,
         userAvailabilityStatus: UserAvailabilityStatusEntity?,
         userType: UserTypeEntity?,
@@ -65,11 +66,11 @@ data object ConversationDetailsWithEventsMapper {
         mlsGroupState: ConversationEntity.GroupState,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>,
-        teamId_: String?,
+        unusedTeamId: String?,
         mlsProposalTimer: String?,
         mutedTime: Long,
         creatorId: String,
-        lastModifiedDate: Instant,
+        unusedLastModifiedDate: Instant,
         receiptMode: ConversationEntity.ReceiptMode,
         messageTimer: Long?,
         userMessageTimer: Long?,
@@ -122,7 +123,7 @@ data object ConversationDetailsWithEventsMapper {
             previewAssetId = previewAssetId,
             mutedStatus = mutedStatus,
             teamId = teamId,
-            lastModifiedDate_ = lastModifiedDate_,
+            lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDate,
             userAvailabilityStatus = userAvailabilityStatus,
             userType = userType,
@@ -146,11 +147,11 @@ data object ConversationDetailsWithEventsMapper {
             mlsGroupState = mlsGroupState,
             accessList = accessList,
             accessRoleList = accessRoleList,
-            teamId_ = teamId_,
+            unusedTeamId = unusedTeamId,
             mlsProposalTimer = mlsProposalTimer,
             mutedTime = mutedTime,
             creatorId = creatorId,
-            lastModifiedDate = lastModifiedDate,
+            unusedLastModifiedDate = unusedLastModifiedDate,
             receiptMode = receiptMode,
             messageTimer = messageTimer,
             userMessageTimer = userMessageTimer,
@@ -169,10 +170,14 @@ data object ConversationDetailsWithEventsMapper {
             repliesCount = unreadRepliesCount,
             messagesCount = unreadMessagesCount,
         ),
-        lastMessage = if (lastMessageId != null && lastMessageContentType != null && lastMessageDate != null
+        lastMessage =
+        @Suppress("ComplexCondition") // we need to check all these fields
+        if (
+            lastMessageId != null && lastMessageContentType != null && lastMessageDate != null
             && lastMessageVisibility != null && lastMessageSenderUserId != null && lastMessageIsEphemeral != null
             && lastMessageIsSelfMessage != null && lastMessageIsMentioningSelfUser != null && lastMessageIsUnread != null
-            && lastMessageShouldNotify != null) {
+            && lastMessageShouldNotify != null
+        ) {
             MessageMapper.toPreviewEntity(
                 id = lastMessageId,
                 conversationId = qualifiedId,

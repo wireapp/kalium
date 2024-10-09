@@ -221,7 +221,10 @@ internal class ConversationDAOImpl internal constructor(
         newActivitiesOnTop: Boolean,
     ): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationQueries.selectAllConversationDetailsWithEvents(
-            fromArchive, onlyInteractionEnabled, newActivitiesOnTop, conversationDetailsWithEventsMapper::fromViewToModel
+            fromArchive = fromArchive,
+            onlyInteractionsEnabled = onlyInteractionEnabled,
+            newActivitiesOnTop = newActivitiesOnTop,
+            mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()
             .mapToList()
             .flowOn(coroutineContext)
