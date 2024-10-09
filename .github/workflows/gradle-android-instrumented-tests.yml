@@ -66,6 +66,12 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
 
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
         env:
@@ -98,7 +104,7 @@ jobs:
             ./**/build/outputs/androidTest-results/**/*.xml
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.11.0
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2.17.1
         if: always()
         with:
           files: |
@@ -119,7 +125,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         continue-on-error: true
         with:
           name: test-results

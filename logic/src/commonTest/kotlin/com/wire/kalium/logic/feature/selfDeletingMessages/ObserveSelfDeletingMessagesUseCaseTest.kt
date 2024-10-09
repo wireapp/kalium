@@ -189,7 +189,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.conversationRepository.observeById(any())
+            arrangement.conversationRepository.observeConversationById(any())
         }.wasInvoked(exactly = once)
 
         assertEquals(storedConversationStatus.messageTimer, result.first().duration)
@@ -212,7 +212,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         suspend fun withStoredConversation(conversation: Conversation) = apply {
             coEvery {
-                conversationRepository.observeById(any())
+                conversationRepository.observeConversationById(any())
             }.returns(flowOf(Either.Right(conversation)))
         }
 

@@ -53,7 +53,6 @@ import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
@@ -64,6 +63,7 @@ import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.Conv
 import com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -103,7 +103,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -135,7 +135,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -167,7 +167,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -198,7 +198,7 @@ class ConversationGroupRepositoryTest {
             )
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -302,7 +302,7 @@ class ConversationGroupRepositoryTest {
             )
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -401,7 +401,7 @@ class ConversationGroupRepositoryTest {
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), emptySet()))
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -422,7 +422,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(once)
 
             coVerify {
-                mlsConversationRepository.establishMLSGroup(any(), any(), eq(true))
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), eq(true))
             }.wasInvoked(once)
 
             coVerify {
@@ -443,7 +443,7 @@ class ConversationGroupRepositoryTest {
                 .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
                 .withInsertConversationSuccess()
                 .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), notAddedUsers = missingMembersFromMLSGroup))
-                .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+                .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
                 .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -465,7 +465,7 @@ class ConversationGroupRepositoryTest {
                 }.wasInvoked(once)
 
                 coVerify {
-                    mlsConversationRepository.establishMLSGroup(any(), any(), eq(true))
+                    mlsConversationRepository.establishMLSGroup(any(), any(), any(), eq(true))
                 }.wasInvoked(once)
 
                 coVerify {
@@ -905,7 +905,10 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()))
+            arrangement.joinExistingMLSConversation.invoke(
+                ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
+                null
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -950,7 +953,10 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()))
+            arrangement.joinExistingMLSConversation.invoke(
+                ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
+                null
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1282,9 +1288,10 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAConversationFailsWithUnreachableAndNotFromUsersInRequest_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
         runTest {
+            val conversation = TestConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
-                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withConversationDetailsById(conversation)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
@@ -1309,11 +1316,9 @@ class ConversationGroupRepositoryTest {
 
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
-                    conversationId = any(),
-                    userIdList = matches {
-                        it.containsAll(expectedInitialUsersNotFromUnreachableInformed)
-                    },
-                    type = any()
+                    conversationId = conversation.id,
+                    userIdList = expectedInitialUsersNotFromUnreachableInformed,
+                    type = MessageContent.MemberChange.FailedToAdd.Type.Federation
                 )
             }.wasInvoked(once)
         }
@@ -1361,7 +1366,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
@@ -1723,11 +1728,10 @@ class ConversationGroupRepositoryTest {
                 legalHoldHandler
             )
 
-        suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement {
+        suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
-            return this
         }
 
         /**
@@ -1773,19 +1777,25 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withJoinExistingMlsConversationSucceeds() = apply {
             coEvery {
-                joinExistingMLSConversation.invoke(any())
+                joinExistingMLSConversation.invoke(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withConversationDetailsById(conversation: Conversation) = apply {
             coEvery {
-                conversationRepository.baseInfoById(any())
+                conversationRepository.getConversationById(any())
             }.returns(Either.Right(conversation))
         }
 
         suspend fun withConversationDetailsById(result: ConversationViewEntity?) = apply {
             coEvery {
-                conversationDAO.getConversationByQualifiedID(any())
+                conversationDAO.getConversationDetailsById(any())
+            }.returns(result)
+        }
+
+        suspend fun withConversationById(result: ConversationEntity?) = apply {
+            coEvery {
+                conversationDAO.getConversationById(any())
             }.returns(result)
         }
 

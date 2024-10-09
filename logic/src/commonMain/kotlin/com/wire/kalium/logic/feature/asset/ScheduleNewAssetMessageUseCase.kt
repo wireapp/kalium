@@ -111,7 +111,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val scope: CoroutineScope,
     private val observeFileSharingStatus: ObserveFileSharingStatusUseCase,
-    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase,
+    private val validateAssetFileUseCase: ValidateAssetFileTypeUseCase,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
 
@@ -133,7 +133,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 FileSharingStatus.Value.Disabled -> return ScheduleNewAssetMessageResult.Failure.DisabledByTeam
                 FileSharingStatus.Value.EnabledAll -> { /* no-op*/ }
 
-                is FileSharingStatus.Value.EnabledSome -> if (!validateAssetMimeTypeUseCase(assetMimeType, it.state.allowedType)) {
+                is FileSharingStatus.Value.EnabledSome -> if (!validateAssetFileUseCase(
+                        fileName = assetName,
+                        mimeType = assetMimeType,
+                        allowedExtension = it.state.allowedType
+                    )
+                ) {
                     kaliumLogger.e("The asset message trying to be processed has invalid content data")
                     return ScheduleNewAssetMessageResult.Failure.RestrictedFileType
                 }

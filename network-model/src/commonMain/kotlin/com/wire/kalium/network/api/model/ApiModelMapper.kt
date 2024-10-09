@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.model
 
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV3
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
@@ -33,6 +34,7 @@ interface ApiModelMapper {
     fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
+    fun fromApiV6(response: ConversationResponseV6): ConversationResponse
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
@@ -72,8 +74,27 @@ class ApiModelMapperImpl : ApiModelMapper {
             response.lastEventTime,
             response.mlsCipherSuiteTag,
             response.access,
-            response.accessRole,
+            accessRole = response.accessRole ?: response.accessRoleV2 ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
             response.receiptMode
         )
 
+    override fun fromApiV6(response: ConversationResponseV6): ConversationResponse =
+        ConversationResponse(
+            creator = response.conversation.creator,
+            members = response.conversation.members,
+            name = response.conversation.name,
+            id = response.conversation.id,
+            groupId = response.conversation.groupId,
+            epoch = response.conversation.epoch,
+            type = response.conversation.type,
+            messageTimer = response.conversation.messageTimer,
+            teamId = response.conversation.teamId,
+            protocol = response.conversation.protocol,
+            lastEventTime = response.conversation.lastEventTime,
+            mlsCipherSuiteTag = response.conversation.mlsCipherSuiteTag,
+            access = response.conversation.access,
+            accessRole = response.conversation.accessRole,
+            receiptMode = response.conversation.receiptMode,
+            publicKeys = response.publicKeys
+        )
 }

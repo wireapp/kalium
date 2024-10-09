@@ -22,7 +22,9 @@ import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -38,7 +40,10 @@ class ParticipantMapperTest {
     @Mock
     private val callMapper = mock(CallMapper::class)
 
-    private val participantMapperImpl = ParticipantMapperImpl(videoStateChecker, callMapper)
+    @Mock
+    private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+
+    private val participantMapperImpl = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper)
 
     @BeforeTest
     fun setUp() {
@@ -51,16 +56,22 @@ class ParticipantMapperTest {
         every {
             videoStateChecker.isSharingScreen(VideoStateCalling.STOPPED)
         }.returns(false)
+        every { qualifiedIdMapper.fromStringToQualifiedID(any()) }
+            .returns(DUMMY_USER_ID)
     }
 
     @Test
     fun whenMappingToParticipant_withCallMember_thenReturnParticipant() = runTest {
-        val participantMap = participantMapperImpl.fromCallMemberToParticipant(
+        val participantMap = participantMapperImpl.fromCallMemberToParticipantMinimized(
             member = DUMMY_CALL_MEMBER
         )
 
-        val expectedParticipant = Participant(
+        val expectedParticipant = ParticipantMinimized(
             id = QualifiedID(
+                value = "dummyId",
+                domain = ""
+            ),
+            userId = QualifiedID(
                 value = "dummyId",
                 domain = "dummyDomain"
             ),
@@ -76,11 +87,16 @@ class ParticipantMapperTest {
 
     companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
-            userId = "dummyId@dummyDomain",
+            userId = "dummyId",
             clientId = "dummyClientId",
             aestab = 0,
             vrecv = 0,
             isMuted = 0
+        )
+
+        private val DUMMY_USER_ID = QualifiedID(
+            value = "dummyId",
+            domain = "dummyDomain"
         )
     }
 }

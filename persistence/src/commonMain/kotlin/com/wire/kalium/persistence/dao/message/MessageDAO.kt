@@ -50,7 +50,6 @@ interface MessageDAO {
      */
     suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
-        updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false
     ): InsertMessageResult
 

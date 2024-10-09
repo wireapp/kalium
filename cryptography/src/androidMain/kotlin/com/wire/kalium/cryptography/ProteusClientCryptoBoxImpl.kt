@@ -110,18 +110,24 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = lock.withLock {
+    override suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T = lock.withLock {
         withContext(defaultContext) {
             val session = box.tryGetSession(sessionId.value)
             wrapException {
                 if (session != null) {
                     val decryptedMessage = session.decrypt(message)
-                    session.save()
-                    decryptedMessage
+                    handleDecryptedMessage(decryptedMessage).also {
+                        session.save()
+                    }
                 } else {
                     val result = box.initSessionFromMessage(sessionId.value, message)
-                    result.session.save()
-                    result.message
+                    handleDecryptedMessage(result.message).also {
+                        result.session.save()
+                    }
                 }
             }
         }
@@ -181,9 +187,9 @@ class ProteusClientCryptoBoxImpl constructor(
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, fromCryptoException(e), e.cause)
+            throw ProteusException(e.message, fromCryptoException(e), e.code.ordinal, e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
         }
     }
 

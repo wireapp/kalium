@@ -131,7 +131,12 @@ class JoinExistingMLSConversationUseCaseTest {
             joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id).shouldSucceed()
 
             coVerify {
-                arrangement.mlsConversationRepository.establishMLSGroup(eq(Arrangement.GROUP_ID3), eq(emptyList()), any())
+                arrangement.mlsConversationRepository.establishMLSGroup(
+                    groupID = Arrangement.GROUP_ID3,
+                    members = emptyList(),
+                    publicKeys = null,
+                    allowSkippingUsersWithoutKeyPackages = false
+                )
             }.wasNotInvoked()
         }
 
@@ -148,7 +153,12 @@ class JoinExistingMLSConversationUseCaseTest {
             joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION.id).shouldSucceed()
 
             coVerify {
-                arrangement.mlsConversationRepository.establishMLSGroup(eq(Arrangement.GROUP_ID_SELF), eq(emptyList()), any())
+                arrangement.mlsConversationRepository.establishMLSGroup(
+                    groupID = Arrangement.GROUP_ID_SELF,
+                    members = emptyList(),
+                    publicKeys = null,
+                    allowSkippingUsersWithoutKeyPackages = false
+                )
             }.wasInvoked(once)
         }
 
@@ -167,7 +177,12 @@ class JoinExistingMLSConversationUseCaseTest {
             joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.id).shouldSucceed()
 
             coVerify {
-                arrangement.mlsConversationRepository.establishMLSGroup(eq(Arrangement.GROUP_ID_ONE_ON_ONE), eq(members), any())
+                arrangement.mlsConversationRepository.establishMLSGroup(
+                    groupID = Arrangement.GROUP_ID_ONE_ON_ONE,
+                    members = members,
+                    publicKeys = null,
+                    allowSkippingUsersWithoutKeyPackages = false
+                )
             }.wasInvoked(once)
         }
 
@@ -238,7 +253,7 @@ class JoinExistingMLSConversationUseCaseTest {
         suspend fun withGetConversationsByIdSuccessful(conversation: Conversation = MLS_CONVERSATION1) =
             apply {
                 coEvery {
-                    conversationRepository.baseInfoById(any())
+                    conversationRepository.getConversationById(any())
                 }.returns(Either.Right(conversation))
             }
 
@@ -256,7 +271,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withEstablishMLSGroupSuccessful(additionResult: MLSAdditionResult) = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
         }
 

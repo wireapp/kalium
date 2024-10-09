@@ -89,16 +89,10 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
-        updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean
     ) = withContext(coroutineContext) {
         queries.transactionWithResult {
             val messageCreationInstant = message.date
-
-            if (updateConversationReadDate) {
-                conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
-                unreadEventsQueries.deleteUnreadEvents(message.date, message.conversationId)
-            }
 
             insertInDB(message)
 

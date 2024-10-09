@@ -40,7 +40,7 @@ class GetConversationUseCase(
     }
 
     suspend operator fun invoke(conversationId: QualifiedID): Flow<Result> {
-        return conversationRepository.observeById(conversationId)
+        return conversationRepository.observeConversationById(conversationId)
             .map { it.fold({ Result.Failure(it) }, { Result.Success(it) }) }
     }
 }

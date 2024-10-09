@@ -55,7 +55,7 @@ internal class GetOrRegisterClientUseCaseImpl(
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        syncFeatureConfigsUseCase.invoke()
+        syncFeatureConfigsUseCase()
 
         val result: RegisterClientResult = clientRepository.retainedClientId()
             .nullableFold(
@@ -70,6 +70,11 @@ internal class GetOrRegisterClientUseCaseImpl(
                             clearOldClientRelatedData()
                             null
                         }
+
+                        is VerifyExistingClientResult.Failure.E2EICertificateRequired -> RegisterClientResult.E2EICertificateRequired(
+                            result.client,
+                            result.userId
+                        )
                     }
                 }
             ) ?: registerClient(registerClientParam)

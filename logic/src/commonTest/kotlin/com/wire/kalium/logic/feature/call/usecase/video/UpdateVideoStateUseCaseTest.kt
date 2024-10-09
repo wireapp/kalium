@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.framework.TestCall
 import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.coEvery
@@ -59,7 +60,7 @@ class UpdateVideoStateUseCaseTest {
             isMuted = true,
             isCameraOn = true,
             isCbrEnabled = false,
-            callerId = "caller-id",
+            callerId = TestCall.CALLER_ID,
             conversationName = "",
             Conversation.Type.ONE_ON_ONE,
             null,

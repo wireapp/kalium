@@ -128,6 +128,9 @@ class ConversationScope internal constructor(
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
 
+    val getConversationProtocolInfo: GetConversationProtocolInfoUseCase
+        get() = GetConversationProtocolInfoUseCase(conversationRepository)
+
     val notifyConversationIsOpen: NotifyConversationIsOpenUseCase
         get() = NotifyConversationIsOpenUseCaseImpl(
             oneOnOneResolver,

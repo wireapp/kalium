@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -138,14 +137,16 @@ class SendTextMessageCaseTest {
             .withMessageTimer(SelfDeletionTimer.Disabled)
             .withSendMessageSuccess()
             .arrange()
-        val linkPreviews = listOf(MessageLinkPreview(
-            url = "",
-            urlOffset = 0,
-            permanentUrl = "",
-            summary = "",
-            title = "",
-            image = null
-        ))
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = null
+            )
+        )
 
         // When
         val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
@@ -175,14 +176,16 @@ class SendTextMessageCaseTest {
             .withMessageTimer(SelfDeletionTimer.Disabled)
             .withSendMessageSuccess()
             .arrange()
-        val linkPreviews = listOf(MessageLinkPreview(
-            url = "",
-            urlOffset = 0,
-            permanentUrl = "",
-            summary = "",
-            title = "",
-            image = VALID_LINK_PREVIEW_ASSET
-        ))
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = VALID_LINK_PREVIEW_ASSET
+            )
+        )
 
         // When
         val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
@@ -194,10 +197,12 @@ class SendTextMessageCaseTest {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
         }.wasInvoked(once)
         coVerify {
-            arrangement.persistMessage.invoke(matches { message ->
-                (message.content as MessageContent.Text).linkPreviews.get(0).image != null
-                        && (message.content as MessageContent.Text).linkPreviews.get(0).image?.otrKey != AES256Key(ByteArray(0))
-            })
+            arrangement.persistMessage.invoke(
+                matches { message ->
+                    (message.content as MessageContent.Text).linkPreviews[0].image != null
+                            && !(message.content as MessageContent.Text).linkPreviews[0].image?.otrKey.contentEquals(ByteArray(0))
+                }
+            )
         }.wasInvoked(once)
     }
 
@@ -213,14 +218,16 @@ class SendTextMessageCaseTest {
             .withMessageTimer(SelfDeletionTimer.Disabled)
             .withSendMessageSuccess()
             .arrange()
-        val linkPreviews = listOf(MessageLinkPreview(
-            url = "",
-            urlOffset = 0,
-            permanentUrl = "",
-            summary = "",
-            title = "",
-            image = INVALID_LINK_PREVIEW_ASSET
-        ))
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = INVALID_LINK_PREVIEW_ASSET
+            )
+        )
 
         // When
         val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
@@ -250,14 +257,16 @@ class SendTextMessageCaseTest {
             .withMessageTimer(SelfDeletionTimer.Disabled)
             .withSendMessageSuccess()
             .arrange()
-        val linkPreviews = listOf(MessageLinkPreview(
-            url = "",
-            urlOffset = 0,
-            permanentUrl = "",
-            summary = "",
-            title = "",
-            image = VALID_LINK_PREVIEW_ASSET
-        ))
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = VALID_LINK_PREVIEW_ASSET
+            )
+        )
 
         // When
         val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)

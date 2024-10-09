@@ -38,6 +38,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":network"))
+                api(project(":data"))
                 api(project(":network-util"))
                 implementation(project(":cryptography"))
                 implementation(project(":persistence"))

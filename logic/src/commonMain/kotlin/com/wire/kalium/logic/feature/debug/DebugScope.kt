@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -53,6 +55,8 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
+import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
+import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -78,6 +82,7 @@ class DebugScope internal constructor(
     private val userRepository: UserRepository,
     private val userId: UserId,
     private val assetRepository: AssetRepository,
+    private val eventRepository: EventRepository,
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
@@ -85,10 +90,14 @@ class DebugScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val eventProcessor: EventProcessor,
     private val legalHoldHandler: LegalHoldHandler,
+    private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
-    private val logger: KaliumLogger,
+    logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
+
+    val establishSession: EstablishSessionUseCase
+        get() = EstablishSessionUseCaseImpl(sessionEstablisher)
 
     val breakSession: BreakSessionUseCase
         get() = BreakSessionUseCaseImpl(proteusClientProvider)
@@ -113,6 +122,12 @@ class DebugScope internal constructor(
 
     val disableEventProcessing: DisableEventProcessingUseCase
         get() = DisableEventProcessingUseCaseImpl(
+            eventProcessor = eventProcessor
+        )
+
+    val synchronizeExternalData: SynchronizeExternalDataUseCase
+        get() = SynchronizeExternalDataUseCaseImpl(
+            eventRepository = eventRepository,
             eventProcessor = eventProcessor
         )
 
@@ -168,7 +183,12 @@ class DebugScope internal constructor(
             messageSendingInterceptor,
             userRepository,
             staleEpochVerifier,
-            { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
+            { message, expirationData ->
+                ephemeralMessageDeletionHandler.enqueueSelfDeletion(
+                    message,
+                    expirationData
+                )
+            },
             scope
         )
 
@@ -183,7 +203,10 @@ class DebugScope internal constructor(
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+        )
 
     private val ephemeralMessageDeletionHandler =
         EphemeralMessageDeletionHandlerImpl(
@@ -193,5 +216,12 @@ class DebugScope internal constructor(
             deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
             selfUserId = userId,
             kaliumLogger = logger
+        )
+
+    val sendFCMTokenToServer: SendFCMTokenUseCase
+        get() = SendFCMTokenToAPIUseCaseImpl(
+            currentClientIdProvider,
+            clientRepository,
+            notificationTokenRepository,
         )
 }

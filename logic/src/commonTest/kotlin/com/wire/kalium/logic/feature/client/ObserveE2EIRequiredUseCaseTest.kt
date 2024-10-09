@@ -18,20 +18,27 @@
 package com.wire.kalium.logic.feature.client
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
+import com.wire.kalium.logic.data.id.QualifiedClientID
+import com.wire.kalium.logic.feature.e2ei.MLSClientE2EIStatus
+import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
 import com.wire.kalium.logic.feature.user.E2EIRequiredResult
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestMLSClientIdentity.getMLSClientIdentityWithE2EI
+import com.wire.kalium.logic.framework.TestMLSClientIdentity.getMLSClientIdentityWithOutE2EI
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
@@ -68,7 +75,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
-            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.NotActivated)
+            .withGetE2EICertificateUseCaseResult(getMLSClientIdentityWithOutE2EI(CLIENT_ID_USER1).right())
             .arrange()
 
         useCase().test {
@@ -87,7 +94,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
-            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.NotActivated)
+            .withGetE2EICertificateUseCaseResult(getMLSClientIdentityWithOutE2EI(CLIENT_ID_USER1).right())
             .arrange()
 
         useCase().test {
@@ -107,7 +114,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withE2EINotificationTime(DateTimeUtil.currentInstant().plus(delayDuration))
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
-            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.NotActivated)
+            .withGetE2EICertificateUseCaseResult(getMLSClientIdentityWithOutE2EI(CLIENT_ID_USER1).right())
             .arrange()
 
         useCase().test {
@@ -130,7 +137,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
-            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.NotActivated)
+            .withGetE2EICertificateUseCaseResult(getMLSClientIdentityWithOutE2EI(CLIENT_ID_USER1).right())
             .arrange()
 
         useCase().test {
@@ -148,7 +155,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
-            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.NotActivated)
+            .withGetE2EICertificateUseCaseResult(getMLSClientIdentityWithOutE2EI(CLIENT_ID_USER1).right())
             .arrange()
 
         useCase().test {
@@ -186,12 +193,15 @@ class ObserveE2EIRequiredUseCaseTest {
         val setting = MLS_E2EI_SETTING.copy(
             gracePeriodEnd = DateTimeUtil.currentInstant()
         )
+        val mlsClientIdentity = getMLSClientIdentityWithE2EI(CLIENT_ID_USER1)
         val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
-            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Success(VALID_CERTIFICATE))
+            .withGetE2EICertificateUseCaseResult(
+                mlsClientIdentity.copy(x509Identity = mlsClientIdentity.x509Identity?.copy(notAfter = Instant.DISTANT_PAST)).right()
+            )
             .arrange()
 
         useCase().test {
@@ -212,7 +222,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
             .withGetE2EICertificateUseCaseResult(
-                GetE2EICertificateUseCaseResult.Success(VALID_CERTIFICATE.copy(status = CertificateStatus.EXPIRED))
+                getMLSClientIdentityWithE2EI(CLIENT_ID_USER1, MLSClientE2EIStatus.EXPIRED).right()
             )
             .arrange()
 
@@ -233,7 +243,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
-            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure)
+            .withGetE2EICertificateUseCaseResult(StorageFailure.DataNotFound.left())
             .arrange()
 
         useCase().test {
@@ -253,12 +263,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
             .withGetE2EICertificateUseCaseResult(
-                GetE2EICertificateUseCaseResult.Success(
-                    VALID_CERTIFICATE.copy(
-                        status = CertificateStatus.EXPIRED,
-                        endAt = DateTimeUtil.currentInstant().minus(1.days)
-                    )
-                )
+                getMLSClientIdentityWithE2EI(CLIENT_ID_USER1, MLSClientE2EIStatus.EXPIRED).right()
             )
             .arrange()
 
@@ -280,9 +285,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
             .withGetE2EICertificateUseCaseResult(
-                GetE2EICertificateUseCaseResult.Success(
-                    VALID_CERTIFICATE.copy(endAt = DateTimeUtil.currentInstant().plus(40.days))
-                )
+                getMLSClientIdentityWithE2EI(CLIENT_ID_USER1).right()
             )
             .arrange()
 
@@ -304,9 +307,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withIsMLSSupported(true)
             .withCurrentClientProviderSuccess()
             .withGetE2EICertificateUseCaseResult(
-                GetE2EICertificateUseCaseResult.Success(
-                    VALID_CERTIFICATE.copy(status = CertificateStatus.REVOKED)
-                )
+                getMLSClientIdentityWithE2EI(CLIENT_ID_USER1, MLSClientE2EIStatus.REVOKED).right()
             )
             .arrange()
 
@@ -325,7 +326,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val featureSupport = mock(FeatureSupport::class)
 
         @Mock
-        val e2eiCertificate = mock(GetE2eiCertificateUseCase::class)
+        val e2eiCertificate = mock(GetMLSClientIdentityUseCase::class)
 
         @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
@@ -355,7 +356,7 @@ class ObserveE2EIRequiredUseCaseTest {
             }.returns(Either.Right(clientId))
         }
 
-        suspend fun withGetE2EICertificateUseCaseResult(result: GetE2EICertificateUseCaseResult) = apply {
+        suspend fun withGetE2EICertificateUseCaseResult(result: Either<CoreFailure, MLSClientIdentity>) = apply {
             coEvery {
                 e2eiCertificate.invoke(any())
             }.returns(result)
@@ -366,13 +367,6 @@ class ObserveE2EIRequiredUseCaseTest {
 
     companion object {
         private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null, false, null)
-        private val VALID_CERTIFICATE = E2eiCertificate(
-            userHandle = "userHandle",
-            serialNumber = "serialNumber",
-            certificateDetail = "certificateDetail",
-            status = CertificateStatus.VALID,
-            thumbprint = "thumbprint",
-            endAt = DateTimeUtil.currentInstant().plus(1.days)
-        )
+        private val CLIENT_ID_USER1 = QualifiedClientID(ClientId("clientId1"), TestUser.USER_ID)
     }
 }

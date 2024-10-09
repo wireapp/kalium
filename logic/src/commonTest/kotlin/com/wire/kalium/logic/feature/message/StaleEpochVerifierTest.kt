@@ -79,7 +79,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(eq(CONVERSATION_ID))
+            arrangement.joinExistingMLSConversationUseCase.invoke(CONVERSATION_ID, null)
         }.wasNotInvoked()
     }
 
@@ -96,7 +96,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(eq(CONVERSATION_ID))
+            arrangement.joinExistingMLSConversationUseCase.invoke(CONVERSATION_ID, null)
         }.wasInvoked(once)
     }
 

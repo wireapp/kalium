@@ -173,7 +173,7 @@ selectDetailsByQualifiedId:
 SELECT * FROM UserDetails WHERE qualified_id IN ?;
 
 selectMinimizedByQualifiedId:
-SELECT qualified_id, name, complete_asset_id, user_type FROM User WHERE qualified_id IN ?;
+SELECT qualified_id, name, complete_asset_id, user_type, accent_id FROM User WHERE qualified_id IN ?;
 
 selectWithTeamByQualifiedId:
 SELECT * FROM UserDetails LEFT JOIN Team ON UserDetails.team == Team.id WHERE UserDetails.qualified_id IN ?;
@@ -252,6 +252,9 @@ UPDATE User SET supported_protocols = ? WHERE qualified_id = ?;
 updateOneOnOnConversationId:
 UPDATE User SET active_one_on_one_conversation_id = ? WHERE qualified_id = ?;
 
+setOneOnOneConversationIdIfNotSet:
+UPDATE User SET active_one_on_one_conversation_id = ? WHERE qualified_id = ? AND active_one_on_one_conversation_id IS NULL;
+
 isOneUserATeamMember:
 SELECT EXISTS (
     SELECT 1 FROM User
@@ -267,3 +270,6 @@ WHERE m.user = :userId
 
 selectOneOnOnConversationId:
 SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :userId;
+
+selectNamesAndHandle:
+SELECT name, handle FROM User WHERE qualified_id = :userId;

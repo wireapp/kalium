@@ -198,6 +198,7 @@ internal class UserMapperImpl(
             name = userEntity.name,
             completePicture = userEntity.completeAssetId?.toModel(),
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            accentId = userEntity.accentId
         )
 
     override fun fromEntityToUserSummary(userEntity: UserEntity) = with(userEntity) {
@@ -209,7 +210,8 @@ internal class UserMapperImpl(
             userType = domainUserTypeMapper.fromUserTypeEntity(userType),
             isUserDeleted = deleted,
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
-            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus)
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
+            accentId = accentId
         )
     }
 

@@ -44,12 +44,21 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
+
     suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>
     suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
+
+    /**
+     * Parse events from an external JSON payload
+     *
+     * @return List of [EventEnvelope]
+     */
+    fun parseExternalEvents(data: String): List<EventEnvelope>
 
     /**
      * Retrieves the last processed event ID from the storage.
@@ -142,6 +151,13 @@ class EventDataSource(
                 hasMore = false
                 emit(Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException)))
             }
+        }
+    }
+
+    override fun parseExternalEvents(data: String): List<EventEnvelope> {
+        val notificationResponse = Json.decodeFromString<NotificationResponse>(data)
+        return notificationResponse.notifications.flatMap {
+            eventMapper.fromDTO(it, isLive = false)
         }
     }
 

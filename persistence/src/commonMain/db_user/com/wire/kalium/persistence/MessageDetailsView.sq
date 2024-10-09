@@ -69,6 +69,7 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.error_code AS decryptionErrorCode,
 FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
 '{' || IFNULL(

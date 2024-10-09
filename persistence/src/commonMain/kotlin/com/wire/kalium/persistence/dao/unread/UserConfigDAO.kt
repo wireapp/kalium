@@ -60,6 +60,16 @@ interface UserConfigDAO {
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
     suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity)
     suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity?
+    suspend fun setTrackingIdentifier(identifier: String)
+    suspend fun getTrackingIdentifier(): String?
+    suspend fun observeTrackingIdentifier(): Flow<String?>
+    suspend fun setPreviousTrackingIdentifier(identifier: String)
+    suspend fun getPreviousTrackingIdentifier(): String?
+    suspend fun deletePreviousTrackingIdentifier()
+    suspend fun getNextTimeForCallFeedback(): Long?
+    suspend fun setNextTimeForCallFeedback(timestamp: Long)
+    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -186,15 +196,58 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity? =
         metadataDAO.getSerializable(DEFAULT_CIPHER_SUITE_KEY, SupportedCipherSuiteEntity.serializer())
 
+    override suspend fun setTrackingIdentifier(identifier: String) {
+        metadataDAO.insertValue(
+            key = ANALYTICS_TRACKING_IDENTIFIER_KEY,
+            value = identifier
+        )
+    }
+
+    override suspend fun getTrackingIdentifier(): String? =
+        metadataDAO.valueByKey(key = ANALYTICS_TRACKING_IDENTIFIER_KEY)
+
+    override suspend fun observeTrackingIdentifier(): Flow<String?> =
+        metadataDAO.valueByKeyFlow(key = ANALYTICS_TRACKING_IDENTIFIER_KEY)
+
+    override suspend fun setPreviousTrackingIdentifier(identifier: String) {
+        metadataDAO.insertValue(
+            key = ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY,
+            value = identifier
+        )
+    }
+
+    override suspend fun getPreviousTrackingIdentifier(): String? =
+        metadataDAO.valueByKey(key = ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY)
+
+    override suspend fun deletePreviousTrackingIdentifier() {
+        metadataDAO.deleteValue(key = ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY)
+    }
+
+    override suspend fun getNextTimeForCallFeedback(): Long? = metadataDAO.valueByKey(NEXT_TIME_TO_ASK_CALL_FEEDBACK)?.toLong()
+
+    override suspend fun setNextTimeForCallFeedback(timestamp: Long) =
+        metadataDAO.insertValue(timestamp.toString(), NEXT_TIME_TO_ASK_CALL_FEEDBACK)
+
+    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        metadataDAO.insertValue(value = shouldFetch.toString(), key = SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)
+    }
+
+    override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
+        metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
         private const val SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE = "should_notify_for_revoked_certificate"
         private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
         private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
+        private const val NEXT_TIME_TO_ASK_CALL_FEEDBACK = "next_time_to_ask_for_feedback_about_call"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
             "should_update_client_legal_hold_capability"
+        private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
+        private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
+        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
     }
 }

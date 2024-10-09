@@ -19,10 +19,12 @@ package com.wire.kalium.logic.data.message.ephemeral
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageTarget
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.functional.Either
@@ -37,10 +39,10 @@ import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangem
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.any
-import io.mockative.matches
 import io.mockative.coVerify
+import io.mockative.matchers.EqualsMatcher
+import io.mockative.matches
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -50,27 +52,15 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
 
     @Test
     fun givenMessage_whenDeleting_then2DeleteMessagesAreSentForSelfAndOriginalSender() = runTest {
-        val messageId = "messageId"
-        val conversationId = ConversationId("conversationId", "conversationDomain.com")
-        val currentClientId = CURRENT_CLIENT_ID
-
-        val senderUserID = UserId("senderUserId", "senderUserDomain.com")
-        val message = Message.Regular(
-            id = messageId,
-            content = MessageContent.Text("text"),
-            conversationId = conversationId,
-            date = Instant.DISTANT_FUTURE,
-            senderUserId = senderUserID,
-            senderClientId = currentClientId,
-            status = Message.Status.Pending,
-            editStatus = Message.EditStatus.NotEdited,
-            isSelfMessage = true
-        )
+        val message = MESSAGE_REGULAR
+        val messageId = message.id
+        val conversationId = message.conversationId
+        val senderUserId = message.senderUserId
         val (arrangement, useCase) = Arrangement()
             .arrange {
                 withMarkAsDeleted(Either.Right(Unit))
                 withCurrentClientIdSuccess(CURRENT_CLIENT_ID)
-                withSelfConversationIds(SELF_CONVERSION_ID)
+                withSelfConversationIds(SELF_CONVERSATION_ID)
                 withGetMessageById(Either.Right(message))
                 withSendMessageSucceed()
                 withDeleteMessage(Either.Right(Unit))
@@ -85,7 +75,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         coVerify {
             arrangement.messageSender.sendMessage(
                 matches {
-                    it.conversationId == SELF_CONVERSION_ID.first() &&
+                    it.conversationId == SELF_CONVERSATION_ID.first() &&
                             it.content == MessageContent.DeleteForMe(messageId, conversationId)
                 },
                 matches {
@@ -101,7 +91,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                             it.content == MessageContent.DeleteMessage(messageId)
                 },
                 matches {
-                    it == MessageTarget.Users(listOf(senderUserID))
+                    it == MessageTarget.Users(listOf(senderUserId))
                 }
             )
         }.wasInvoked(exactly = once)
@@ -111,10 +101,61 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAssetMessage_whenDeleting_thenDeleteAssetLocally() = runTest {
+        val assetContent = ASSET_IMAGE_CONTENT
+        val message = MESSAGE_REGULAR.copy(
+            content = MessageContent.Asset(assetContent)
+        )
+        val (arrangement, useCase) = Arrangement()
+            .arrange {
+                withCurrentClientIdSuccess(CURRENT_CLIENT_ID)
+                withSelfConversationIds(SELF_CONVERSATION_ID)
+                withSendMessageSucceed()
+                withDeleteMessage(Either.Right(Unit))
+                withMarkAsDeleted(Either.Right(Unit), EqualsMatcher(message.id), EqualsMatcher(message.conversationId))
+                withGetMessageById(Either.Right(message), EqualsMatcher(message.id), EqualsMatcher(message.conversationId))
+                withDeleteAssetLocally(Either.Right(Unit), EqualsMatcher(assetContent.remoteData.assetId))
+            }
+
+        useCase(message.conversationId, message.id).shouldSucceed()
+
+        coVerify {
+            arrangement.assetRepository.deleteAssetLocally(assetContent.remoteData.assetId)
+        }.wasInvoked(exactly = once)
+    }
+
     private companion object {
-        val selfUserId = UserId("selfUserId", "selfUserDomain.sy")
-        val SELF_CONVERSION_ID = listOf(ConversationId("selfConversationId", "selfConversationDomain.com"))
+        val SELF_USER_ID = UserId("selfUserId", "selfUserDomain.sy")
+        val SENDER_USER_ID = UserId("senderUserId", "senderDomain")
+        val SELF_CONVERSATION_ID = listOf(ConversationId("selfConversationId", "selfConversationDomain.com"))
         val CURRENT_CLIENT_ID = ClientId("currentClientId")
+        val ASSET_CONTENT_REMOTE_DATA = AssetContent.RemoteData(
+            otrKey = ByteArray(0),
+            sha256 = ByteArray(16),
+            assetId = "asset-id",
+            assetToken = "==some-asset-token",
+            assetDomain = "some-asset-domain.com",
+            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+        )
+        val ASSET_IMAGE_CONTENT = AssetContent(
+            0L,
+            "name",
+            "image/jpg",
+            AssetContent.AssetMetadata.Image(100, 100),
+            ASSET_CONTENT_REMOTE_DATA
+        )
+        val MESSAGE_REGULAR = Message.Regular(
+            id = "messageId",
+            content = MessageContent.Text("text"),
+            conversationId = ConversationId("conversationId", "conversationDomain"),
+            date = Instant.DISTANT_FUTURE,
+            senderUserId = SENDER_USER_ID,
+            senderClientId = CURRENT_CLIENT_ID,
+            status = Message.Status.Pending,
+            editStatus = Message.EditStatus.NotEdited,
+            isSelfMessage = true
+        )
     }
 
     private class Arrangement :
@@ -128,7 +169,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
             DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                 messageRepository = messageRepository,
                 messageSender = messageSender,
-                selfUserId = selfUserId,
+                selfUserId = SELF_USER_ID,
                 selfConversationIdProvider = selfConversationIdProvider,
                 assetRepository = assetRepository,
                 currentClientIdProvider = currentClientIdProvider

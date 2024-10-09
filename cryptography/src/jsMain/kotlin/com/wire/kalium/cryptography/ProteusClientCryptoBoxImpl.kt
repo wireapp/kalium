@@ -80,7 +80,7 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
         if (preKey != null) {
             return toPreKey(box.getIdentity().public_key, preKey)
         } else {
-            throw ProteusException("Local identity doesn't exist", ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException("Local identity doesn't exist", ProteusException.Code.UNKNOWN_ERROR, null, null)
         }
     }
 
@@ -102,12 +102,13 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
         box.session_from_prekey(sessionId.value, preKeyBundle.toArrayBuffer()).await()
     }
 
-    override suspend fun decrypt(
+    override suspend fun <T : Any> decrypt(
         message: ByteArray,
-        sessionId: CryptoSessionId
-    ): ByteArray {
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T {
         val decryptedMessage = box.decrypt(sessionId.value, message.toArrayBuffer()).await()
-        return Int8Array(decryptedMessage.buffer).unsafeCast<ByteArray>()
+        return handleDecryptedMessage(Int8Array(decryptedMessage.buffer).unsafeCast<ByteArray>())
     }
 
     override suspend fun encrypt(
