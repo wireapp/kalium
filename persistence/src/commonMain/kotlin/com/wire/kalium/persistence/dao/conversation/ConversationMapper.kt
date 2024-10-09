@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
 
-internal class ConversationMapper {
+data object ConversationMapper {
     @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
     fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
