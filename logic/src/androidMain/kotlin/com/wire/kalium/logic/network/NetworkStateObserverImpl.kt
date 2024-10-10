@@ -110,8 +110,16 @@ internal actual class NetworkStateObserverImpl(
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
                 defaultNetworkDataStateFlow.update {
-                    if (it is DefaultNetworkData.Connected) it.copy(isBlocked = blocked)
-                    else it
+                    when (it) {
+                        is DefaultNetworkData.Connected -> {
+                            it.copy(isBlocked = blocked)
+                        }
+
+                        is DefaultNetworkData.NotConnected -> {
+                            if (blocked) it
+                            else DefaultNetworkData.Connected(network)
+                        }
+                    }
                 }
                 super.onBlockedStatusChanged(network, blocked)
             }
