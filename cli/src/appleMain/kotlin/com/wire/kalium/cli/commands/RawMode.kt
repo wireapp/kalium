@@ -17,39 +17,39 @@
  */
 package com.wire.kalium.cli.commands
 
-import com.github.ajalt.mordant.terminal.Terminal
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.convert
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import platform.posix.ECHO
-import platform.posix.ICANON
-import platform.posix.STDOUT_FILENO
-import platform.posix.TCSAFLUSH
-import platform.posix.tcgetattr
-import platform.posix.tcsetattr
-import platform.posix.termios
+// import com.github.ajalt.mordant.terminal.Terminal
+// import kotlinx.cinterop.alloc
+// import kotlinx.cinterop.convert
+// import kotlinx.cinterop.memScoped
+// import kotlinx.cinterop.ptr
+// import platform.posix.ECHO
+// import platform.posix.ICANON
+// import platform.posix.STDOUT_FILENO
+// import platform.posix.TCSAFLUSH
+// import platform.posix.tcgetattr
+// import platform.posix.tcsetattr
+// import platform.posix.termios
 
-fun Terminal.setRawMode(enabled: Boolean) = memScoped {
-    val termios = alloc<termios>()
-    if (tcgetattr(STDOUT_FILENO, termios.ptr) != 0) {
-        return@memScoped
-    }
-
-    if (enabled) {
-        termios.c_lflag = termios.c_lflag and ICANON.inv().convert()
-        termios.c_lflag = termios.c_lflag and ECHO.inv().convert()
-    } else {
-        termios.c_lflag = termios.c_lflag or ICANON.convert()
-        termios.c_lflag = termios.c_lflag or ECHO.convert()
-    }
-
-    tcsetattr(0, TCSAFLUSH, termios.ptr)
-}
-
-inline fun <T> Terminal.withRawMode(block: () -> T): T {
-    setRawMode(true)
-    val result = block()
-    setRawMode(false)
-    return result
-}
+// fun Terminal.setRawMode(enabled: Boolean) = memScoped {
+//     val termios = alloc<termios>()
+//     if (tcgetattr(STDOUT_FILENO, termios.ptr) != 0) {
+//         return@memScoped
+//     }
+//
+//     if (enabled) {
+//         termios.c_lflag = termios.c_lflag and ICANON.inv().convert()
+//         termios.c_lflag = termios.c_lflag and ECHO.inv().convert()
+//     } else {
+//         termios.c_lflag = termios.c_lflag or ICANON.convert()
+//         termios.c_lflag = termios.c_lflag or ECHO.convert()
+//     }
+//
+//     tcsetattr(0, TCSAFLUSH, termios.ptr)
+// }
+//
+// inline fun <T> Terminal.withRawMode(block: () -> T): T {
+//     setRawMode(true)
+//     val result = block()
+//     setRawMode(false)
+//     return result
+// }
