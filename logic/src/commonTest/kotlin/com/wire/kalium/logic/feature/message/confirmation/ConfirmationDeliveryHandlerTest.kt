@@ -17,18 +17,15 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
@@ -58,7 +55,6 @@ class ConfirmationDeliveryHandlerTest {
     @Test
     fun givenANewMessage_whenEnqueuing_thenShouldBeAddedSuccessfullyToTheConversationKey() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withCurrentClientIdProvider()
             .arrange()
 
         sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
@@ -70,7 +66,6 @@ class ConfirmationDeliveryHandlerTest {
     @Test
     fun givenANewMessage_whenEnqueuingDuplicated_thenShouldNotBeAddedToTheConversationKey() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withCurrentClientIdProvider()
             .arrange()
 
         sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
@@ -84,9 +79,8 @@ class ConfirmationDeliveryHandlerTest {
     @Test
     fun givenMessagesEnqueued_whenCollectingThem_thenShouldSendOnlyForOneToOneConversations() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
-            .withMessageSenderResult()
+            .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -97,7 +91,7 @@ class ConfirmationDeliveryHandlerTest {
         job.cancel()
 
         coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
+        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked()
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
@@ -105,9 +99,8 @@ class ConfirmationDeliveryHandlerTest {
     @Test
     fun givenMessagesEnqueued_whenCollectingThemAndNoSession_thenShouldStopCollecting() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
-            .withMessageSenderResult()
+            .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -119,16 +112,15 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
 
         coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasNotInvoked()
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasNotInvoked()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenMessagesEnqueued_whenSendingConfirmationsAndError_thenShouldNotFail() = runTest {
+    fun givenMessagesEnqueued_whenSendingConfirmationsAndError_thenMessagesShouldPersist() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
-            .withMessageSenderResult(Either.Left(CoreFailure.Unknown(RuntimeException("Something went wrong"))))
+            .withSendDeliverSignalResult(Either.Left(CoreFailure.Unknown(RuntimeException("Something went wrong"))))
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -140,17 +132,16 @@ class ConfirmationDeliveryHandlerTest {
         job.cancel()
 
         coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
-        assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
+        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked()
+        assertTrue(arrangement.pendingConfirmationMessages.isNotEmpty())
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenABigLoadOfMessagesEnqueued_whenSendingConfirmations_thenShouldAddAndRemoveSecurely() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
-            .withMessageSenderResult()
+            .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -170,7 +161,7 @@ class ConfirmationDeliveryHandlerTest {
         job.cancel()
 
         coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked(once)
+        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked(once)
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
@@ -179,9 +170,8 @@ class ConfirmationDeliveryHandlerTest {
     @Test
     fun givenMultipleEnqueues_whenSendingConfirmations_thenShouldOnlySendOnce() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
-            .withMessageSenderResult()
+            .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -194,16 +184,15 @@ class ConfirmationDeliveryHandlerTest {
         job.cancel()
 
         coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked(once)
+        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked(once)
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
     @Test
     fun givenSyncIsOngoing_whenItTakesLongTimeToExecute_thenShouldReturnAnyway() = runTest {
         val (arrangement, handler) = Arrangement()
-            .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
-            .withMessageSenderResult()
+            .withSendDeliverSignalResult()
             .arrange()
 
         coEvery { arrangement.syncManager.waitUntilLive() }.invokes { ->
@@ -227,43 +216,52 @@ class ConfirmationDeliveryHandlerTest {
         sendJob.cancel()
     }
 
-    private class Arrangement {
+    @Test
+    fun givenMessagesSent_whenCleared_thenShouldRemoveMessagesFromPendingConfirmation() = runTest {
+        val (arrangement, handler) = Arrangement()
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
+            .withSendDeliverSignalResult()
+            .arrange()
 
-        @Mock
-        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+        val job = launch { handler.sendPendingConfirmations() }
+        advanceUntilIdle()
+
+        handler.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        advanceUntilIdle()
+        job.cancel()
+
+        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
+        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked()
+        assertTrue(arrangement.pendingConfirmationMessages[TestConversation.ID]?.isEmpty() ?: true)
+    }
+
+    private class Arrangement {
 
         @Mock
         val syncManager: SyncManager = mock(SyncManager::class)
 
         @Mock
-        val messageSender = mock(MessageSender::class)
+        val sendDeliverSignal: SendDeliverSignalUseCase = mock(SendDeliverSignalUseCase::class)
 
         @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
-        val pendingConfirmationMessages: MutableMap<ConversationId, MutableSet<String>> = mutableMapOf()
-
-        suspend fun withCurrentClientIdProvider() = apply {
-            coEvery { currentClientIdProvider.invoke() }.returns(Either.Right(TestClient.CLIENT_ID))
-        }
+        val pendingConfirmationMessages: ConcurrentMutableMap<ConversationId, MutableSet<String>> = ConcurrentMutableMap()
 
         suspend fun withConversationDetailsResult(result: Flow<Either<StorageFailure, Conversation>>) = apply {
             coEvery { conversationRepository.observeConversationById(any()) }.returns(result)
         }
 
-        suspend fun withMessageSenderResult(result: Either<CoreFailure, Unit> = Unit.right()) = apply {
-            coEvery { messageSender.sendMessage(any(), any()) }.returns(result)
+        suspend fun withSendDeliverSignalResult(result: Either<CoreFailure, Unit> = Unit.right()) = apply {
+            coEvery { sendDeliverSignal(any(), any()) }.returns(result)
         }
 
         fun arrange() = this to ConfirmationDeliveryHandlerImpl(
             syncManager = syncManager,
-            selfUserId = TestUser.SELF.id,
-            currentClientIdProvider = currentClientIdProvider,
             conversationRepository = conversationRepository,
-            messageSender = messageSender,
+            sendDeliverSignalUseCase = sendDeliverSignal,
             kaliumLogger = kaliumLogger,
             pendingConfirmationMessages = pendingConfirmationMessages
         )
     }
-
 }
