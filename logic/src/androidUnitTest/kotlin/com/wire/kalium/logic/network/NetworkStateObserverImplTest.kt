@@ -230,6 +230,21 @@ class NetworkStateObserverImplTest {
         }
 
     @Test
+    fun givenNetworkNotConnectedAndButBlocked_whenItChangesToNotBlocked_thenStateChangesToConnectedWithInternet() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.NotConnected, awaitItem())
+                arrangement.connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                arrangement.changeNetworkBlocked(networkType = NetworkType.MOBILE, false)
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+            }
+        }
+
+    @Test
     fun givenOneNetworkConnectedWithoutInternetValidated_whenItChangesToBlocked_thenStateDoesNotChange() = runTest(dispatcher.default) {
         // given
         val (arrangement, networkStateObserverImpl) = Arrangement()
