@@ -488,6 +488,9 @@ UPDATE Message
 SET id = :newId
 WHERE id = :oldId AND conversation_id = :conversationId;
 
+getMessage:
+SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
+
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
