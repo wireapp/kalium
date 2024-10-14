@@ -21,6 +21,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -35,14 +36,9 @@ class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase intern
     private val conversationRepository: ConversationRepository,
 ) {
     suspend operator fun invoke(
-        searchQuery: String,
-        fromArchive: Boolean,
-        onlyInteractionsEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
+        queryConfig: ConversationQueryConfig,
+        pagingConfig: PagingConfig,
         startingOffset: Long,
-        pagingConfig: PagingConfig
     ): Flow<PagingData<ConversationDetailsWithEvents>> = conversationRepository.extensions
-        .getPaginatedConversationDetailsWithEventsBySearchQuery(
-            searchQuery, fromArchive, onlyInteractionsEnabled, newActivitiesOnTop, pagingConfig, startingOffset
-        ).flowOn(dispatcher.io)
+        .getPaginatedConversationDetailsWithEventsBySearchQuery(queryConfig, pagingConfig, startingOffset).flowOn(dispatcher.io)
 }

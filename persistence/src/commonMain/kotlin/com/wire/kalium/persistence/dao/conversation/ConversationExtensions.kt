@@ -21,18 +21,23 @@ import app.cash.paging.Pager
 import app.cash.paging.PagingConfig
 import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import kotlin.coroutines.CoroutineContext
 
 interface ConversationExtensions {
     fun getPagerForConversationDetailsWithEventsSearch(
+        queryConfig: QueryConfig,
         pagingConfig: PagingConfig,
-        searchQuery: String = "",
-        fromArchive: Boolean = false,
-        onlyInteractionEnabled: Boolean = false,
-        newActivitiesOnTop: Boolean = false,
         startingOffset: Long = 0,
     ): KaliumPager<ConversationDetailsWithEventsEntity>
+
+    data class QueryConfig(
+        val searchQuery: String = "",
+        val fromArchive: Boolean = false,
+        val onlyInteractionEnabled: Boolean = false,
+        val newActivitiesOnTop: Boolean = false,
+    )
 }
 
 internal class ConversationExtensionsImpl internal constructor(
@@ -41,34 +46,36 @@ internal class ConversationExtensionsImpl internal constructor(
     private val coroutineContext: CoroutineContext,
 ) : ConversationExtensions {
     override fun getPagerForConversationDetailsWithEventsSearch(
+        queryConfig: QueryConfig,
         pagingConfig: PagingConfig,
-        searchQuery: String,
-        fromArchive: Boolean,
-        onlyInteractionEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
         startingOffset: Long
     ): KaliumPager<ConversationDetailsWithEventsEntity> =
-        KaliumPager( // We could return a Flow directly, but having the PagingSource is the only way to test this
-            Pager(pagingConfig) { pagingSource(searchQuery, fromArchive, onlyInteractionEnabled, newActivitiesOnTop, startingOffset) },
-            pagingSource(searchQuery, fromArchive, onlyInteractionEnabled, newActivitiesOnTop, startingOffset),
-            coroutineContext
+        KaliumPager(
+            // We could return a Flow directly, but having the PagingSource is the only way to test this
+            pager = Pager(pagingConfig) {
+                pagingSource(queryConfig, startingOffset)
+            },
+            pagingSource = pagingSource(queryConfig, startingOffset),
+            coroutineContext = coroutineContext,
         )
 
-    private fun pagingSource(
-        searchQuery: String,
-        fromArchive: Boolean,
-        onlyInteractionEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
-        initialOffset: Long
-    ) = QueryPagingSource(
-        countQuery = queries.countConversationDetailsWithEventsFromSearch(fromArchive, onlyInteractionEnabled, searchQuery),
-        transacter = queries,
-        context = coroutineContext,
-        initialOffset = initialOffset,
-        queryProvider = { limit, offset ->
-            queries.selectConversationDetailsWithEventsFromSearch(
-                fromArchive, onlyInteractionEnabled, searchQuery, newActivitiesOnTop, limit, offset, mapper::fromViewToModel
-            )
-        }
-    )
+    private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
+        QueryPagingSource(
+            countQuery = queries.countConversationDetailsWithEventsFromSearch(fromArchive, onlyInteractionEnabled, searchQuery),
+            transacter = queries,
+            context = coroutineContext,
+            initialOffset = initialOffset,
+            queryProvider = { limit, offset ->
+                queries.selectConversationDetailsWithEventsFromSearch(
+                    fromArchive = fromArchive,
+                    onlyInteractionsEnabled = onlyInteractionEnabled,
+                    searchQuery = searchQuery,
+                    newActivitiesOnTop = newActivitiesOnTop,
+                    limit = limit,
+                    offset = offset,
+                    mapper = mapper::fromViewToModel,
+                )
+            }
+        )
+    }
 }

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlinx.coroutines.flow.Flow
@@ -31,10 +32,7 @@ import kotlinx.coroutines.flow.map
 
 interface ConversationRepositoryExtensions {
     suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
-        searchQuery: String,
-        fromArchive: Boolean,
-        onlyInteractionsEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
+        queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long,
     ): Flow<PagingData<ConversationDetailsWithEvents>>
@@ -46,17 +44,16 @@ class ConversationRepositoryExtensionsImpl internal constructor(
     private val messageMapper: MessageMapper,
 ) : ConversationRepositoryExtensions {
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
-        searchQuery: String,
-        fromArchive: Boolean,
-        onlyInteractionsEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
+        queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<ConversationDetailsWithEvents>> {
-        val pager: KaliumPager<ConversationDetailsWithEventsEntity> =
+        val pager: KaliumPager<ConversationDetailsWithEventsEntity> = with(queryConfig) {
             conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
-                pagingConfig, searchQuery, fromArchive, onlyInteractionsEnabled, newActivitiesOnTop, startingOffset
+                queryConfig = QueryConfig(searchQuery, fromArchive, onlyInteractionEnabled, newActivitiesOnTop),
+                pagingConfig = pagingConfig
             )
+        }
 
         return pager.pagingDataFlow.map {
             it.map {
@@ -82,3 +79,10 @@ class ConversationRepositoryExtensionsImpl internal constructor(
         }
     }
 }
+
+data class ConversationQueryConfig(
+    val searchQuery: String = "",
+    val fromArchive: Boolean = false,
+    val onlyInteractionEnabled: Boolean = false,
+    val newActivitiesOnTop: Boolean = false,
+)
