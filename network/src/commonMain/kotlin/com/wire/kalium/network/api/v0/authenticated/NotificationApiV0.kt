@@ -89,9 +89,12 @@ internal open class NotificationApiV0 internal constructor(
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
+    override suspend fun getServerTime(querySize: Int): NetworkResponse<String> =
+        notificationsCall(querySize = querySize, queryClient = null, querySince = null).mapSuccess { it.time }
+
     protected open suspend fun notificationsCall(
         querySize: Int,
-        queryClient: String,
+        queryClient: String?,
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
         return wrapKaliumResponse({
@@ -103,7 +106,7 @@ internal open class NotificationApiV0 internal constructor(
         }) {
             httpClient.get(PATH_NOTIFICATIONS) {
                 parameter(SIZE_QUERY_KEY, querySize)
-                parameter(CLIENT_QUERY_KEY, queryClient)
+                queryClient?.let { parameter(CLIENT_QUERY_KEY, it) }
                 querySince?.let { parameter(SINCE_QUERY_KEY, it) }
             }
         }

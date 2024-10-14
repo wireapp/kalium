@@ -21,20 +21,38 @@ import action.ClientActions
 import action.LoginActions
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.event.EventGenerator
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.functional.getOrFail
+import com.wire.kalium.logic.util.TimeLogger
+import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.requests.ACMERequests
 import com.wire.kalium.mocks.requests.ClientRequests
+import com.wire.kalium.mocks.requests.ConnectionRequests
+import com.wire.kalium.mocks.requests.ConversationRequests
 import com.wire.kalium.mocks.requests.FeatureConfigRequests
 import com.wire.kalium.mocks.requests.LoginRequests
+import com.wire.kalium.mocks.requests.NotificationRequests
+import com.wire.kalium.mocks.requests.PreKeyRequests
 import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.TestRequestHandler
 import com.wire.kalium.network.utils.TestRequestHandler.Companion.TEST_BACKEND_CONFIG
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Ignore
 import org.junit.Test
 
@@ -74,6 +92,10 @@ class PocIntegrationTest {
             addAll(LoginRequests.loginRequestResponseSuccess)
             addAll(ClientRequests.clientRequestResponseSuccess)
             addAll(FeatureConfigRequests.responseSuccess)
+            addAll(NotificationRequests.notificationsRequestResponseSuccess)
+            addAll(ConversationRequests.conversationsRequestResponseSuccess)
+            addAll(ConnectionRequests.connectionRequestResponseSuccess())
+            addAll(PreKeyRequests.preKeyRequestResponseSuccess)
         }
 
         val coreLogic = createCoreLogic(mockedRequests)
@@ -90,17 +112,90 @@ class PocIntegrationTest {
                 authScope = authScope
             )
 
-            val userSessionScope = ClientActions.registerClient(
+            val userSession = ClientActions.registerClient(
                 password = USER_PASSWORD,
                 userId = loginAuthToken.userId,
                 coreLogic = coreLogic
             )
 
-            val x = userSessionScope.client.fetchSelfClients()
-            println(x.toString())
-
-            userSessionScope.logout.invoke(LogoutReason.SELF_SOFT_LOGOUT)
+            userSession.logout.invoke(LogoutReason.SELF_SOFT_LOGOUT)
         }
+    }
+
+    @Test
+    fun givenUserWhenHandlingTextMessagesThenProcessShouldSucceed() = runTest {
+        val mockedRequests = mutableListOf<TestRequestHandler>().apply {
+            addAll(LoginRequests.loginRequestResponseSuccess)
+            addAll(ClientRequests.clientRequestResponseSuccess)
+            addAll(FeatureConfigRequests.responseSuccess)
+            addAll(NotificationRequests.notificationsRequestResponseSuccess)
+            addAll(ConversationRequests.conversationsRequestResponseSuccess)
+            addAll(ConnectionRequests.connectionRequestResponseSuccess())
+            addAll(PreKeyRequests.preKeyRequestResponseSuccess)
+        }
+
+        TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
+
+        launch {
+            val userSession = initUserSession(createCoreLogic(mockedRequests))
+
+            val selfUserId = userSession.users.getSelfUser().first().id
+            val selfClientId = userSession.clientIdProvider().getOrFail { throw IllegalStateException("No self client is registered") }
+            val targetUserId = UserId(value = selfUserId.value, domain = selfUserId.domain)
+
+            userSession.debug.breakSession(selfUserId, selfClientId)
+
+            userSession.debug.establishSession(
+                userId = targetUserId,
+                clientId = selfClientId
+            )
+            val generator = EventGenerator(
+                selfClient = QualifiedClientID(
+                    clientId = selfClientId,
+                    userId = selfUserId
+                ),
+                targetClient = QualifiedClientID(
+                    clientId = selfClientId,
+                    userId = targetUserId
+                ),
+                proteusClient = userSession.proteusClientProvider.getOrCreate()
+            )
+
+            val events = generator.generateEvents(
+                limit = 1000,
+                conversationId = ConversationId(ConversationMocks.conversationId.value, ConversationMocks.conversationId.domain),
+            )
+
+            val response = NotificationResponse(
+                time = Clock.System.now().toString(),
+                hasMore = false,
+                notifications = events.toList()
+            )
+
+            val encodedData = json.encodeToString(response)
+
+            val logger = TimeLogger("entire process")
+            logger.start()
+            userSession.debug.synchronizeExternalData(encodedData)
+            logger.finish()
+        }
+    }
+
+    private suspend fun initUserSession(coreLogic: CoreLogic): UserSessionScope {
+        val authScope = getAuthScope(coreLogic, TEST_BACKEND_CONFIG.links)
+
+        val loginAuthToken = LoginActions.loginAndAddAuthenticatedUser(
+            email = USER_EMAIL,
+            password = USER_PASSWORD,
+            coreLogic = coreLogic,
+            authScope = authScope
+        )
+
+        return ClientActions.registerClient(
+            password = USER_PASSWORD,
+            userId = loginAuthToken.userId,
+            coreLogic = coreLogic
+        )
     }
 
     private suspend fun getAuthScope(coreLogic: CoreLogic, backend: ServerConfigDTO.Links): AuthenticationScope {
@@ -127,6 +222,9 @@ class PocIntegrationTest {
         private val HOME_DIRECTORY: String = System.getProperty("user.home")
         private val USER_EMAIL = "user@domain.com"
         private val USER_PASSWORD = "password"
+        private var json = Json {
+            prettyPrint = true
+        }
 
         fun createCoreLogic(mockedRequests: List<TestRequestHandler>) = CoreLogic(
             rootPath = "$HOME_DIRECTORY/.kalium/accounts-test",
@@ -137,7 +235,8 @@ class PocIntegrationTest {
                 wipeOnDeviceRemoval = true,
                 mockedRequests = mockedRequests,
                 mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-                enableCalling = false
+                enableCalling = false,
+                mockedWebSocket = true
             ),
             userAgent = "Wire Integration Tests"
         )

@@ -30,10 +30,12 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -66,6 +68,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning("2022-03-30T15:36:00.000Z")
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -82,6 +85,10 @@ class EventGathererTest {
                 arrangement.eventRepository.pendingEvents()
             }.wasInvoked(exactly = once)
 
+            coVerify {
+                arrangement.serverTimeHandler.computeTimeOffset(any())
+            }.wasInvoked(exactly = once)
+
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -95,6 +102,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -125,6 +133,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Right(pendingEvent)))
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -157,6 +166,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
             .withLiveEventsReturning(Either.Right(liveEventsChannel))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -171,11 +181,12 @@ class EventGathererTest {
     fun givenWebsocketEventAndDisconnectPolicy_whenGathering_thenShouldCompleteFlow() = runTest {
         val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
 
-        val (arrangement, eventGatherer) = Arrangement()
+        val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         // Open Websocket should trigger fetching pending events
@@ -198,6 +209,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -222,6 +234,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -248,6 +261,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -272,6 +286,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.receiveAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -293,6 +308,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(emptyFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -315,6 +331,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Right(event)))
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         // Open Websocket should trigger fetching pending events
@@ -337,6 +354,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         // Open Websocket should trigger fetching pending events
@@ -362,6 +380,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Right(event)))
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         // Open Websocket should trigger fetching pending events
@@ -397,6 +416,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withFetchServerTimeReturning(null)
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -419,12 +439,21 @@ class EventGathererTest {
         @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
-        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository)
+        @Mock
+        val serverTimeHandler = mock(ServerTimeHandler::class)
+
+        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository, serverTimeHandler)
 
         suspend fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>) = apply {
             coEvery {
                 eventRepository.liveEvents()
             }.returns(either)
+        }
+
+        suspend fun withFetchServerTimeReturning(time: String?) = apply {
+            coEvery {
+                eventRepository.fetchServerTime()
+            }.returns(time)
         }
 
         suspend fun withPendingEventsReturning(either: Flow<Either<CoreFailure, EventEnvelope>>) = apply {

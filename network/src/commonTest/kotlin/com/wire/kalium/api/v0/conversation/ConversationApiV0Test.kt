@@ -19,11 +19,12 @@
 package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.responses.AddServiceResponseJson
 import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.mocks.responses.EventContentDTOJson.validGenerateGuestRoomLink
 import com.wire.kalium.mocks.responses.conversation.ConversationDetailsResponse
-import com.wire.kalium.mocks.responses.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.mocks.responses.conversation.ConversationResponseJson
 import com.wire.kalium.mocks.responses.conversation.CreateConversationRequestJson
 import com.wire.kalium.mocks.responses.conversation.MemberUpdateRequestJson
@@ -103,7 +104,7 @@ internal class ConversationApiV0Test : ApiTest() {
     @Test
     fun givenFetchConversationsIds_whenCallingFetchConversations_thenTheRequestShouldBeConfiguredOK() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = CONVERSATION_IDS_RESPONSE.rawJson,
+            responseBody = CONVERSATION_IDS_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertPost()
@@ -124,7 +125,7 @@ internal class ConversationApiV0Test : ApiTest() {
             assertion = {
                 assertPost()
                 assertJson()
-                assertJsonBodyContent(CREATE_CONVERSATION_IDS_REQUEST.rawJson)
+                assertJsonBodyContent(CREATE_CONVERSATION_IDS_REQUEST.toJsonString())
                 assertPathEqual(PATH_CONVERSATIONS_LIST_V2)
             }
         )
@@ -132,7 +133,7 @@ internal class ConversationApiV0Test : ApiTest() {
         val conversationApi = ConversationApiV0(networkClient)
         conversationApi.fetchConversationsListDetails(
             listOf(
-                ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+                ConversationMocks.conversationId,
                 ConversationId("f4680835-2cfe-4d4d-8491-cbb201bd5c2b", "anta.wire.link")
             )
         )
@@ -466,9 +467,9 @@ internal class ConversationApiV0Test : ApiTest() {
         const val PATH_TYPING_NOTIFICATION = "typing"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0().rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v0
-        val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
+        val CREATE_CONVERSATION_IDS_REQUEST = ConversationMocks.conversationsDetailsRequest
         val UPDATE_ACCESS_ROLE_REQUEST = UpdateConversationAccessRequestJson.v0
-        val CONVERSATION_IDS_RESPONSE = ConversationListIdsResponseJson.validGetIds
+        val CONVERSATION_IDS_RESPONSE = ConversationMocks.conversationListIdsResponse
         val CONVERSATION_DETAILS_RESPONSE = ConversationDetailsResponse.validGetDetailsForIds
         val MEMBER_UPDATE_REQUEST = MemberUpdateRequestJson.valid
     }

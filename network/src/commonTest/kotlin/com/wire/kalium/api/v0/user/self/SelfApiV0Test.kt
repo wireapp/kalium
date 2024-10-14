@@ -20,7 +20,8 @@ package com.wire.kalium.api.v0.user.self
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.mocks.responses.UserDTOJson
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.user.UserMocks
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.exceptions.KaliumException
@@ -40,7 +41,7 @@ internal class SelfApiV0Test : ApiTest() {
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val networkClient = mockAuthenticatedNetworkClient(
-                VALID_SELF_RESPONSE.rawJson,
+                VALID_SELF_RESPONSE.toJsonString(),
                 statusCode = HttpStatusCode.Created,
                 assertion = {
                     assertGet()
@@ -51,7 +52,7 @@ internal class SelfApiV0Test : ApiTest() {
             val selfApi = SelfApiV0(networkClient, TEST_SESSION_MANAGER)
             val response = selfApi.getSelfInfo()
             assertTrue(response.isSuccessful())
-            assertEquals(response.value, VALID_SELF_RESPONSE.serializableData)
+            assertEquals(response.value, VALID_SELF_RESPONSE)
         }
 
     @Test
@@ -135,7 +136,7 @@ internal class SelfApiV0Test : ApiTest() {
 
     private companion object {
         const val PATH_SELF = "/self"
-        val VALID_SELF_RESPONSE = UserDTOJson.valid
+        val VALID_SELF_RESPONSE = UserMocks.selfUser
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }
 }
