@@ -33,6 +33,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -58,26 +59,37 @@ class ConversationRepositoryExtensionsTest {
             .arrange()
         val searchQuery = "search"
         conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
-            searchQuery = searchQuery,
-            fromArchive = false,
-            onlyInteractionsEnabled = false,
-            newActivitiesOnTop = false,
+            queryConfig = ConversationQueryConfig(
+                searchQuery = searchQuery,
+                fromArchive = false,
+                onlyInteractionEnabled = false,
+                newActivitiesOnTop = false,
+            ),
             pagingConfig = pagingConfig,
             startingOffset = 0L
         )
         verify {
             arrangement.conversationDaoExtensions
-                .getPagerForConversationDetailsWithEventsSearch(eq(pagingConfig), eq(searchQuery), eq(false), eq(false), eq(false), any())
+                .getPagerForConversationDetailsWithEventsSearch(
+                    queryConfig = matches {
+                        it.searchQuery == searchQuery && !it.fromArchive && !it.onlyInteractionEnabled && !it.newActivitiesOnTop
+                    },
+                    pagingConfig = eq(pagingConfig),
+                    startingOffset = any()
+                )
         }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
         val conversationDaoExtensions: ConversationExtensions = mock(ConversationExtensions::class)
+
         @Mock
         private val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
+
         @Mock
         private val conversationMapper: ConversationMapper = mock(ConversationMapper::class)
+
         @Mock
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
         private val conversationRepositoryExtensions: ConversationRepositoryExtensions by lazy {
@@ -95,11 +107,13 @@ class ConversationRepositoryExtensionsTest {
                 conversationDAO.platformExtensions
             }.returns(conversationDaoExtensions)
         }
+
         fun withConversationExtensionsReturningPager(kaliumPager: KaliumPager<ConversationDetailsWithEventsEntity>) = apply {
             every {
-                conversationDaoExtensions.getPagerForConversationDetailsWithEventsSearch(any(), any(), any(), any(), any(), any())
+                conversationDaoExtensions.getPagerForConversationDetailsWithEventsSearch(any(), any(), any())
             }.returns(kaliumPager)
         }
+
         fun arrange() = this to conversationRepositoryExtensions
     }
 }
