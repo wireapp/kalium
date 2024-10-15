@@ -374,7 +374,7 @@ internal class MessageDAOImpl internal constructor(
         messagePreviewQueries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
-        return unreadEventsQueries.getConversationsUnreadEvents(unreadEventMapper::toConversationUnreadEntity)
+        return unreadEventsQueries.getConversationsUnreadEventCountsGrouped(unreadEventMapper::toConversationUnreadEntity)
             .asFlow().mapToList()
     }
 
