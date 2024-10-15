@@ -18,7 +18,9 @@
 package com.wire.kalium.persistence.dao.message.draft
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageDraftsQueries
+import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftMapper.toDao
 import com.wire.kalium.persistence.util.mapToList
@@ -29,11 +31,36 @@ import kotlin.coroutines.CoroutineContext
 
 class MessageDraftDAOImpl internal constructor(
     private val queries: MessageDraftsQueries,
+    private val messagesQueries: MessagesQueries,
+    private val conversationsQueries: ConversationsQueries,
     private val coroutineContext: CoroutineContext,
 ) : MessageDraftDAO {
 
     override suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity) =
         withContext(coroutineContext) {
+            val conversationExists = conversationsQueries.selectConversationByQualifiedId(messageDraft.conversationId)
+                .executeAsOneOrNull() != null
+
+            if (!conversationExists) {
+                return@withContext
+            }
+
+            if (messageDraft.editMessageId != null) {
+                val messageExists = messagesQueries.getMessage(messageDraft.editMessageId, messageDraft.conversationId)
+                    .executeAsOneOrNull() != null
+                if (!messageExists) {
+                    return@withContext
+                }
+            }
+
+            if (messageDraft.quotedMessageId != null) {
+                val quotedMessageExists = messagesQueries.getMessage(messageDraft.quotedMessageId, messageDraft.conversationId)
+                    .executeAsOneOrNull() != null
+                if (!quotedMessageExists) {
+                    return@withContext
+                }
+            }
+
             queries.upsertDraft(
                 conversation_id = messageDraft.conversationId,
                 text = messageDraft.text,
