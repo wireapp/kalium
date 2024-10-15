@@ -160,6 +160,38 @@ class RetryFailedMessageUseCaseTest {
         }
 
     @Test
+    fun givenAValidFailedAndNotUploadedAssetMessage_whenSuccessfullyUploadedAsset_thenAssetTransferShouldBeChangedToUploaded() =
+        runTest(testDispatcher.default) {
+            // given
+            val name = "some_asset.txt"
+            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
+            val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+            val message = assetMessage().copy(content = content, status = Message.Status.Failed)
+            val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
+            val uploadedAssetSha = SHA256Key(byteArrayOf())
+            val (arrangement, useCase) = Arrangement()
+                .withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+                .withFetchPrivateDecodedAsset(Either.Right(path))
+                .withStoredData(mockedLongAssetData(), path)
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+                .withUploadAndPersistPrivateAsset(Either.Right(uploadedAssetId to uploadedAssetSha))
+                .withPersistMessage(Either.Right(Unit))
+                .withSendMessage(Either.Right(Unit))
+                .arrange()
+
+            // when
+            useCase.invoke(message.id, message.conversationId)
+            advanceUntilIdle()
+
+            // then
+            coVerify {
+                arrangement.updateAssetMessageTransferStatus.invoke(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
+            }.wasInvoked(exactly = once)
+        }
+
+    @Test
     fun givenAValidFailedAndNotUploadedAssetMessage_whenRetryingFailedMessage_thenUploadAssetAndSendAMessageWithProperAssetRemoteData() =
         runTest(testDispatcher.default) {
             // given

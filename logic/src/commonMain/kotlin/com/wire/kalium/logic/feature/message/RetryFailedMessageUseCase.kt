@@ -178,7 +178,10 @@ class RetryFailedMessageUseCase internal constructor(
 
             else -> handleError("Asset message with transfer status $assetTransferStatus cannot be retried")
         }
-            .onSuccess { retrySendingMessage(it) }
+            .onSuccess {
+                updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
+                retrySendingMessage(it)
+            }
             .map { /* returns Unit */ }
     }
 
