@@ -84,6 +84,8 @@ import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface ConversationRepository {
+    val extensions: ConversationRepositoryExtensions
+
     // region Get/Observe by id
 
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
@@ -327,6 +329,8 @@ internal class ConversationDataSource internal constructor(
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationRepository {
+    override val extensions: ConversationRepositoryExtensions =
+        ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper, messageMapper)
 
     // region Get/Observe by id
 
