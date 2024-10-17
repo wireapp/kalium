@@ -22,6 +22,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.os.Build
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
@@ -56,7 +57,8 @@ internal actual class NetworkStateObserverImpl(
 
     init {
         val initialDefaultNetworkData = connectivityManager.activeNetwork?.let {
-            val defaultNetworkCapabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            val defaultNetworkCapabilities =
+                connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
             DefaultNetworkData.Connected(it, defaultNetworkCapabilities)
         } ?: DefaultNetworkData.NotConnected
         defaultNetworkDataStateFlow = MutableStateFlow(initialDefaultNetworkData)
@@ -76,14 +78,46 @@ internal actual class NetworkStateObserverImpl(
 
         val callback = object : ConnectivityManager.NetworkCallback() {
 
-            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            override fun onCapabilitiesChanged(
+                network: Network,
+                networkCapabilities: NetworkCapabilities
+            ) {
                 super.onCapabilitiesChanged(network, networkCapabilities)
-                kaliumLogger.i(
-                    "${NetworkStateObserver.TAG} capabilities changed " +
-                            "internet:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)} " +
-                            "validated:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)}"
-                )
-                defaultNetworkDataStateFlow.update { DefaultNetworkData.Connected(network, networkCapabilities) }
+                val loggerMessage = buildString {
+                    append("${NetworkStateObserver.TAG} capabilities changed ")
+                    append("internet:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)} ")
+                    append("validated:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)} ")
+                    append("not restricted:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)} ")
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        append("foreground:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND)} ")
+                        append(
+                            "not congested:${
+                                networkCapabilities.hasCapability(
+                                    NetworkCapabilities.NET_CAPABILITY_NOT_CONGESTED
+                                )
+                            } "
+                        )
+                        append(
+                            "not suspended:${
+                                networkCapabilities.hasCapability(
+                                    NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED
+                                )
+                            } "
+                        )
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        append("signalStrength:${networkCapabilities.signalStrength}")
+                    }
+                }
+                kaliumLogger.i(loggerMessage)
+                defaultNetworkDataStateFlow.update {
+                    DefaultNetworkData.Connected(
+                        network,
+                        networkCapabilities
+                    )
+                }
             }
 
             override fun onLost(network: Network) {
@@ -112,8 +146,7 @@ internal actual class NetworkStateObserverImpl(
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
                 defaultNetworkDataStateFlow.update {
-                    kaliumLogger.d("${NetworkStateObserver.TAG} block connection changed to $blocked current state is $it")
-                    when (it) {
+                    val updatedValue = when (it) {
                         is DefaultNetworkData.Connected -> {
                             it.copy(isBlocked = blocked)
                         }
@@ -123,6 +156,8 @@ internal actual class NetworkStateObserverImpl(
                             else DefaultNetworkData.Connected(network)
                         }
                     }
+                    kaliumLogger.d("${NetworkStateObserver.TAG} default network state $it changed to $updatedValue")
+                    updatedValue
                 }
                 super.onBlockedStatusChanged(network, blocked)
             }
