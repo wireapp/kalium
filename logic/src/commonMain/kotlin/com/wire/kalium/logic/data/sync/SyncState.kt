@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logic.CoreFailure
+import kotlin.time.Duration
 
 sealed class SyncState {
 
@@ -53,6 +54,7 @@ sealed class SyncState {
 
     /**
      * Sync was not completed due to a failure.
+     * [retryDelay] specifies the duration in which next try will happen
      */
-    data class Failed(val cause: CoreFailure) : SyncState()
+    data class Failed(val cause: CoreFailure, val retryDelay: Duration) : SyncState()
 }

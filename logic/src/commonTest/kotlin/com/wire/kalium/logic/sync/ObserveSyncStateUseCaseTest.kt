@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +36,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 
 class ObserveSyncStateUseCaseTest {
 
@@ -49,7 +49,7 @@ class ObserveSyncStateUseCaseTest {
 
         useCase().test {
             val item = awaitItem()
-            assertEquals(SyncState.Failed(coreFailure), item)
+            assertEquals(SyncState.Failed(coreFailure, Duration.ZERO), item)
         }
     }
 
@@ -102,7 +102,7 @@ class ObserveSyncStateUseCaseTest {
 
             useCase().test {
                 val item = awaitItem()
-                assertEquals(SyncState.Failed(coreFailure), item)
+                assertEquals(SyncState.Failed(coreFailure, Duration.ZERO), item)
             }
         }
 
@@ -198,7 +198,7 @@ class ObserveSyncStateUseCaseTest {
 
     companion object {
         val coreFailure = CoreFailure.Unknown(null)
-        val slowSyncFailureFlow = MutableStateFlow(SlowSyncStatus.Failed(coreFailure)).asStateFlow()
-        val incrementalSyncFailureFlow = flowOf(IncrementalSyncStatus.Failed(coreFailure))
+        val slowSyncFailureFlow = MutableStateFlow(SlowSyncStatus.Failed(coreFailure, Duration.ZERO)).asStateFlow()
+        val incrementalSyncFailureFlow = flowOf(IncrementalSyncStatus.Failed(coreFailure, Duration.ZERO))
     }
 }

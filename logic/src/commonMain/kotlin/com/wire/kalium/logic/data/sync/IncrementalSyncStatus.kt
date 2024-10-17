@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logic.CoreFailure
+import kotlin.time.Duration
 
 sealed interface IncrementalSyncStatus {
 
@@ -34,8 +35,8 @@ sealed interface IncrementalSyncStatus {
         override fun toString() = "LIVE"
     }
 
-    data class Failed(val failure: CoreFailure) : IncrementalSyncStatus {
-        override fun toString() = "FAILED, cause: '$failure'"
+    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : IncrementalSyncStatus {
+        override fun toString() = "FAILED, cause: '$failure' retry in: $retryDelay"
     }
 
 }

@@ -21,10 +21,10 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.util.shouldFail
@@ -40,6 +40,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncManagerTest {
@@ -47,7 +48,7 @@ class SyncManagerTest {
     @Test
     fun givenSlowSyncFailed_whenWaitingUntilLiveOrFailure_thenShouldReturnFailure() = runTest {
         val (arrangement, syncManager) = Arrangement().arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration))
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO))
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
 
         val result = syncManager.waitUntilLiveOrFailure()
@@ -59,7 +60,7 @@ class SyncManagerTest {
     fun givenIncrementalSyncFailedAndSlowSyncIsComplete_whenWaitingUntilLiveOrFailure_thenShouldReturnFailure() = runTest {
         val (arrangement, syncManager) = Arrangement().arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
-        val failedState = IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration)
+        val failedState = IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO)
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(failedState)
 
         val result = syncManager.waitUntilLiveOrFailure()
@@ -79,7 +80,7 @@ class SyncManagerTest {
         advanceUntilIdle()
         assertTrue { result.isActive }
 
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration))
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO))
         advanceUntilIdle()
         result.await().shouldFail()
     }
@@ -97,7 +98,7 @@ class SyncManagerTest {
         assertTrue { result.isActive }
 
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
-        val failure = IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration)
+        val failure = IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO)
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(failure)
         advanceUntilIdle()
         result.await().shouldFail()
@@ -144,7 +145,7 @@ class SyncManagerTest {
             advanceUntilIdle()
             assertTrue { result.isActive }
 
-            val failure = IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration)
+            val failure = IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO)
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(failure)
             advanceUntilIdle()
             assertTrue { result.isCompleted }
@@ -155,7 +156,7 @@ class SyncManagerTest {
     @Test
     fun givenSlowSyncFailed_whenWaitingUntilStartedOrFailure_thenShouldReturnFailure() = runTest {
         val (arrangement, syncManager) = Arrangement().arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration))
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO))
 
         val result = syncManager.waitUntilStartedOrFailure()
 
