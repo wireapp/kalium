@@ -46,13 +46,13 @@ internal class ObserveSyncStateUseCaseImpl internal constructor(
     override operator fun invoke(): Flow<SyncState> =
         combine(slowSyncRepository.slowSyncStatus, incrementalSyncRepository.incrementalSyncState) { slowStatus, incrementalStatus ->
             when (slowStatus) {
-                is SlowSyncStatus.Failed -> SyncState.Failed(slowStatus.failure)
+                is SlowSyncStatus.Failed -> SyncState.Failed(slowStatus.failure, slowStatus.retryDelay)
                 is SlowSyncStatus.Ongoing -> SyncState.SlowSync
                 SlowSyncStatus.Pending -> SyncState.Waiting
                 SlowSyncStatus.Complete -> {
                     when (incrementalStatus) {
                         IncrementalSyncStatus.Live -> SyncState.Live
-                        is IncrementalSyncStatus.Failed -> SyncState.Failed(incrementalStatus.failure)
+                        is IncrementalSyncStatus.Failed -> SyncState.Failed(incrementalStatus.failure, incrementalStatus.retryDelay)
                         IncrementalSyncStatus.FetchingPendingEvents -> SyncState.GatheringPendingEvents
                         IncrementalSyncStatus.Pending -> SyncState.GatheringPendingEvents
                     }

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logic.CoreFailure
+import kotlin.time.Duration
 
 sealed interface SlowSyncStatus {
 
@@ -28,7 +29,7 @@ sealed interface SlowSyncStatus {
 
     data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
 
-    data class Failed(val failure: CoreFailure) : SlowSyncStatus
+    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
 }
 
 enum class SlowSyncStep {

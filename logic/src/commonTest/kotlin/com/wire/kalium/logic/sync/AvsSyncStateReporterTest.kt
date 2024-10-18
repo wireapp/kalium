@@ -30,6 +30,7 @@ import io.mockative.once
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.time.Duration
 
 class AvsSyncStateReporterTest {
 
@@ -124,7 +125,7 @@ class AvsSyncStateReporterTest {
         fun withFailedIncrementalSyncState() = apply {
             every {
                 incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.Failed(CoreFailure.SyncEventOrClientNotFound)))
+            }.returns(flowOf(IncrementalSyncStatus.Failed(CoreFailure.SyncEventOrClientNotFound, Duration.ZERO)))
         }
     }
 }

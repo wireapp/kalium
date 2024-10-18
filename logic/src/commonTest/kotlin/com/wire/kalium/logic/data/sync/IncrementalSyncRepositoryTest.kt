@@ -41,6 +41,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -87,7 +88,7 @@ class IncrementalSyncRepositoryTest {
             IncrementalSyncStatus.FetchingPendingEvents,
             IncrementalSyncStatus.Live,
             IncrementalSyncStatus.Pending,
-            IncrementalSyncStatus.Failed(NetworkFailure.NoNetworkConnection(null)),
+            IncrementalSyncStatus.Failed(NetworkFailure.NoNetworkConnection(null), Duration.ZERO),
             IncrementalSyncStatus.FetchingPendingEvents
         )
 
