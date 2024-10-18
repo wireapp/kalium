@@ -23,7 +23,9 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher
@@ -83,35 +85,22 @@ internal actual class NetworkStateObserverImpl(
                 networkCapabilities: NetworkCapabilities
             ) {
                 super.onCapabilitiesChanged(network, networkCapabilities)
-                val loggerMessage = buildString {
-                    append("${NetworkStateObserver.TAG} capabilities changed ")
-                    append("internet:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)} ")
-                    append("validated:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)} ")
-                    append("not restricted:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)} ")
+                val loggerMessage = mutableMapOf<String, String>().apply {
+                    put("internet", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).toString())
+                    put("validated", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED).toString())
+                    put("not restricted", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED).toString())
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        append("foreground:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND)} ")
-                        append(
-                            "not congested:${
-                                networkCapabilities.hasCapability(
-                                    NetworkCapabilities.NET_CAPABILITY_NOT_CONGESTED
-                                )
-                            } "
-                        )
-                        append(
-                            "not suspended:${
-                                networkCapabilities.hasCapability(
-                                    NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED
-                                )
-                            } "
-                        )
+                        put("foreground", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND).toString())
+                        put("not congested", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_CONGESTED).toString())
+                        put("not suspended", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED).toString())
                     }
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        append("signalStrength:${networkCapabilities.signalStrength}")
+                        put("signalStrength", networkCapabilities.signalStrength.toString())
                     }
                 }
-                kaliumLogger.i(loggerMessage)
+                kaliumLogger.logStructuredJson(KaliumLogLevel.INFO, "${NetworkStateObserver.TAG} capabilities changed", loggerMessage)
                 defaultNetworkDataStateFlow.update {
                     DefaultNetworkData.Connected(
                         network,
