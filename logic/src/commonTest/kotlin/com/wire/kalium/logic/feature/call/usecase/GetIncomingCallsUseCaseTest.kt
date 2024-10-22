@@ -36,6 +36,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -71,6 +72,31 @@ class GetIncomingCallsUseCaseTest {
             val firstItem = awaitItem()
             assertEquals(2, firstItem.size)
             assertEquals(TestConversation.id(0), firstItem.first().conversationId)
+        }
+    }
+
+    @Test
+    fun givenIncomingCall_whenInvokingGetIncomingCallsUseCaseAndAnotherCallAppears_thenPropagateUpdatedList() = runTest {
+        val incomingCallsFlow = MutableStateFlow(listOf(incomingCall(0)))
+        val (_, getIncomingCalls) = Arrangement()
+            .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
+            .withConversationDetails { id -> Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)) }
+            .withIncomingCallsFlow(incomingCallsFlow)
+            .arrange()
+
+        getIncomingCalls().test {
+            // initially there is only one incoming call
+            awaitItem().let {
+                assertEquals(1, it.size)
+                assertEquals(TestConversation.id(0), it[0].conversationId)
+            }
+            // then new incoming call appears
+            incomingCallsFlow.value = listOf(incomingCall(0), incomingCall(1))
+            awaitItem().let {
+                assertEquals(2, it.size)
+                assertEquals(TestConversation.id(0), it[0].conversationId)
+                assertEquals(TestConversation.id(1), it[1].conversationId)
+            }
         }
     }
 
@@ -196,6 +222,12 @@ class GetIncomingCallsUseCaseTest {
             }.returns(MutableStateFlow(calls))
 
             return this
+        }
+
+        suspend fun withIncomingCallsFlow(callsFlow: Flow<List<Call>>): Arrangement = apply {
+            coEvery {
+                callRepository.incomingCallsFlow()
+            }.returns(callsFlow)
         }
 
         suspend fun withSelfUserStatus(status: UserAvailabilityStatus): Arrangement {
