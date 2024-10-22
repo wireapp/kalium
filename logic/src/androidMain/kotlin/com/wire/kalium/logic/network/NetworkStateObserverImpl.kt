@@ -32,6 +32,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -70,6 +71,7 @@ internal actual class NetworkStateObserverImpl(
                     else networkData.networkCapabilities.toState()
                 } else NetworkState.NotConnected
             }
+            .buffer(capacity = 0)
             .stateIn(scope, SharingStarted.Eagerly, initialState)
 
         val callback = object : ConnectivityManager.NetworkCallback() {
@@ -110,8 +112,17 @@ internal actual class NetworkStateObserverImpl(
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
                 defaultNetworkDataStateFlow.update {
-                    if (it is DefaultNetworkData.Connected) it.copy(isBlocked = blocked)
-                    else it
+                    kaliumLogger.d("${NetworkStateObserver.TAG} block connection changed to $blocked current state is $it")
+                    when (it) {
+                        is DefaultNetworkData.Connected -> {
+                            it.copy(isBlocked = blocked)
+                        }
+
+                        is DefaultNetworkData.NotConnected -> {
+                            if (blocked) it
+                            else DefaultNetworkData.Connected(network)
+                        }
+                    }
                 }
                 super.onBlockedStatusChanged(network, blocked)
             }

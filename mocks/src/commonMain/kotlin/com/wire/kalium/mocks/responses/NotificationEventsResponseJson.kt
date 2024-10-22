@@ -390,4 +390,16 @@ object NotificationEventsResponseJson {
         payload = listOf(),
         transient = false
     )
+
+    val notificationResponseWithEmptyEvents = NotificationResponse(
+        time = "2022-02-15T12:54:30Z",
+        hasMore = false,
+        notifications = listOf(
+            EventResponse(
+                id = "eventId",
+                payload = listOf(),
+                transient = false
+            )
+        )
+    )
 }

@@ -20,9 +20,9 @@ package com.wire.kalium.api.v0.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.mocks.responses.AccessTokenDTOJson
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.client.TokenMocks
 import com.wire.kalium.mocks.responses.LoginWithEmailRequestJson
-import com.wire.kalium.mocks.responses.UserDTOJson
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.SelfUserDTO
@@ -49,7 +49,7 @@ internal class LoginApiV0Test : ApiTest() {
     fun givenAValidLoginRequest_whenCallingTheLoginEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         val expectedLoginRequest = TestRequestHandler(
             path = PATH_LOGIN,
-            responseBody = VALID_ACCESS_TOKEN_RESPONSE.rawJson,
+            responseBody = VALID_ACCESS_TOKEN_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertPost()
@@ -61,9 +61,9 @@ internal class LoginApiV0Test : ApiTest() {
             },
             headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
-        val expectedSelfResponse = ApiTest.TestRequestHandler(
+        val expectedSelfResponse = TestRequestHandler(
             path = PATH_SELF,
-            responseBody = VALID_SELF_RESPONSE.rawJson,
+            responseBody = VALID_SELF_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
@@ -74,9 +74,9 @@ internal class LoginApiV0Test : ApiTest() {
         val networkClient = mockUnauthenticatedNetworkClient(
             listOf(expectedLoginRequest, expectedSelfResponse)
         )
-        val expected = with(VALID_ACCESS_TOKEN_RESPONSE.serializableData) {
+        val expected = with(VALID_ACCESS_TOKEN_RESPONSE) {
             SessionDTO(
-                userId = VALID_SELF_RESPONSE.serializableData.id,
+                userId = VALID_SELF_RESPONSE.id,
                 accessToken = value,
                 tokenType = tokenType,
                 refreshToken = refreshToken,
@@ -106,13 +106,13 @@ internal class LoginApiV0Test : ApiTest() {
 
     @Test
     fun givenLoginRequestSuccessAndSelfInfoFail_thenExceptionIsPropagated() = runTest {
-        val expectedLoginRequest = ApiTest.TestRequestHandler(
+        val expectedLoginRequest = TestRequestHandler(
             path = PATH_LOGIN,
-            responseBody = VALID_ACCESS_TOKEN_RESPONSE.rawJson,
+            responseBody = VALID_ACCESS_TOKEN_RESPONSE.toJsonString(),
             statusCode = HttpStatusCode.OK,
             headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
-        val expectedSelfResponse = ApiTest.TestRequestHandler(
+        val expectedSelfResponse = TestRequestHandler(
             path = PATH_SELF,
             responseBody = ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
@@ -157,8 +157,8 @@ internal class LoginApiV0Test : ApiTest() {
             ssoID = null,
             supportedProtocols = null
         )
-        val VALID_ACCESS_TOKEN_RESPONSE = AccessTokenDTOJson.createValid(accessTokenDto)
-        val VALID_SELF_RESPONSE = UserDTOJson.createValid(userDTO)
+        val VALID_ACCESS_TOKEN_RESPONSE = accessTokenDto
+        val VALID_SELF_RESPONSE = userDTO
 
         val LOGIN_WITH_EMAIL_REQUEST = LoginWithEmailRequestJson.validLoginWithEmail
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
