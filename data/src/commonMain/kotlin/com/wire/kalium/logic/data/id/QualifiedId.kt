@@ -33,7 +33,8 @@ data class QualifiedID(
     @SerialName("domain")
     val domain: String
 ) {
-    override fun toString(): String = if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
+    override fun toString(): String =
+        if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
 
     fun toLogString(): String = if (domain.isEmpty()) {
         value.obfuscateId()
@@ -48,7 +49,7 @@ data class QualifiedID(
      * To be used when when of the instance do not have domain due to the API limitations.
      */
     fun equalsIgnoringBlankDomain(other: QualifiedID): Boolean {
-        if(domain.isBlank() || other.domain.isBlank()) {
+        if (domain.isBlank() || other.domain.isBlank()) {
             return value == other.value
         }
         return this == other
