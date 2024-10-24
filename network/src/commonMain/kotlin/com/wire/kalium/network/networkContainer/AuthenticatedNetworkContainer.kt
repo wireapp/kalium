@@ -24,6 +24,7 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
@@ -105,6 +106,8 @@ interface AuthenticatedNetworkContainer {
     val mlsPublicKeyApi: MLSPublicKeyApi
 
     val propertiesApi: PropertiesApi
+
+    val wildCardApi: WildCardApi
 
     companion object {
 

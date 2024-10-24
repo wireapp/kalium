@@ -22,6 +22,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
@@ -61,6 +62,7 @@ import com.wire.kalium.network.api.v6.authenticated.SelfApiV6
 import com.wire.kalium.network.api.v6.authenticated.TeamsApiV6
 import com.wire.kalium.network.api.v6.authenticated.UserDetailsApiV6
 import com.wire.kalium.network.api.v6.authenticated.UserSearchApiV6
+import com.wire.kalium.network.api.vcommon.WildCardApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderImpl
@@ -135,4 +137,6 @@ internal class AuthenticatedNetworkContainerV6 internal constructor(
     override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV6(networkClient)
 
     override val propertiesApi: PropertiesApi get() = PropertiesApiV6(networkClient)
+
+    override val wildCardApi: WildCardApi get() = WildCardApiImpl(networkClient)
 }
