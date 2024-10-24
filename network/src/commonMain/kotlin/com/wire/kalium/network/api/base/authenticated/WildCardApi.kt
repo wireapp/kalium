@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.base.authenticated
 
+import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpMethod
 
 interface WildCardApi {
@@ -26,5 +27,5 @@ interface WildCardApi {
         body: String?,
         queryParam: Map<String, String>,
         customHeader: Map<String, String>
-    )
+    ): NetworkResponse<String>
 }
