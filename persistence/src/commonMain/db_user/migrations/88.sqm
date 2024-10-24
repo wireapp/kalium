@@ -1,0 +1,215 @@
+DROP VIEW IF EXISTS LastMessagePreview;
+DROP VIEW IF EXISTS ConversationDetails;
+DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
+SELECT
+Conversation.qualified_id AS qualifiedId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.name
+    WHEN 'CONNECTION_PENDING' THEN connection_user.name
+    ELSE Conversation.name
+END AS name,
+Conversation.type,
+Call.status AS callStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.preview_asset_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.preview_asset_id
+END AS previewAssetId,
+Conversation.muted_status AS mutedStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.team
+    ELSE Conversation.team_id
+END AS teamId,
+CASE (Conversation.type)
+    WHEN 'CONNECTION_PENDING' THEN Connection.last_update_date
+    ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_availability_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_availability_status
+END AS userAvailabilityStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_type
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_type
+END AS userType,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.bot_service
+    WHEN 'CONNECTION_PENDING' THEN connection_user.bot_service
+END AS botService,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.deleted
+    WHEN 'CONNECTION_PENDING' THEN connection_user.deleted
+END AS userDeleted,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.defederated
+    WHEN 'CONNECTION_PENDING' THEN connection_user.defederated
+END AS userDefederated,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.supported_protocols
+    WHEN 'CONNECTION_PENDING' THEN connection_user.supported_protocols
+END AS userSupportedProtocols,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.connection_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.connection_status
+END AS connectionStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.qualified_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.qualified_id
+END AS otherUserId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
+END AS otherUserActiveConversationId,
+CASE
+    WHEN (SelfUser.id LIKE (Conversation.creator_id || '@%')) THEN 1
+    ELSE 0
+END AS isCreator,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
+    ELSE 1
+END AS isActive,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.accent_id
+    ELSE 0
+END AS accentId,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
+memberRole. role AS selfRole,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update_date,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.receipt_mode,
+Conversation.message_timer,
+Conversation.user_message_timer,
+Conversation.incomplete_metadata,
+Conversation.archived,
+Conversation.archived_date_time,
+Conversation.verification_status AS mls_verification_status,
+Conversation.proteus_verification_status,
+Conversation.legal_hold_status,
+SelfUser.id AS selfUserId,
+CASE
+    WHEN Conversation.type = 'GROUP' THEN
+        CASE
+            WHEN memberRole.role IS NOT NULL THEN 1
+            ELSE 0
+        END
+    WHEN Conversation.type = 'ONE_ON_ONE' THEN
+        CASE
+            WHEN User.defederated = 1 THEN 0
+            WHEN User.deleted = 1 THEN 0
+            WHEN User.connection_status = 'BLOCKED' THEN 0
+            WHEN Conversation.legal_hold_status = 'DEGRADED' THEN 0
+            ELSE 1
+        END
+    ELSE 0
+END AS interactionEnabled
+FROM Conversation
+LEFT JOIN SelfUser
+LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT SelfUser.id
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS SelfUser.id
+LEFT JOIN User ON User.qualified_id = Member.user
+LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
+    AND (Connection.status = 'SENT'
+         OR Connection.status = 'PENDING'
+         OR Connection.status = 'NOT_CONNECTED'
+         AND Conversation.type IS 'CONNECTION_PENDING')
+LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+
+CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
+SELECT
+    ConversationDetails.*,
+    -- unread events
+    SUM(CASE WHEN UnreadEvent.type = 'KNOCK' THEN 1 ELSE 0 END) AS unreadKnocksCount,
+    SUM(CASE WHEN UnreadEvent.type = 'MISSED_CALL' THEN 1 ELSE 0 END) AS unreadMissedCallsCount,
+    SUM(CASE WHEN UnreadEvent.type = 'MENTION' THEN 1 ELSE 0 END) AS unreadMentionsCount,
+    SUM(CASE WHEN UnreadEvent.type = 'REPLY' THEN 1 ELSE 0 END) AS unreadRepliesCount,
+    SUM(CASE WHEN UnreadEvent.type = 'MESSAGE' THEN 1 ELSE 0 END) AS unreadMessagesCount,
+    CASE
+        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
+        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
+           CASE
+                WHEN COUNT(UnreadEvent.id) > 0 THEN 1 -- if any unread events, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN SUM(CASE WHEN UnreadEvent.type IN ('MENTION', 'REPLY') THEN 1 ELSE 0 END) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        ELSE 0
+    END AS hasNewActivitiesToShow,
+    -- draft message
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.mention_list AS messageDraftMentionList,
+    -- last message
+    LastMessage.id AS lastMessageId,
+    LastMessage.content_type AS lastMessageContentType,
+    LastMessage.creation_date AS lastMessageDate,
+    LastMessage.visibility AS lastMessageVisibility,
+    LastMessage.sender_user_id AS lastMessageSenderUserId,
+    (LastMessage.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
+    User.name AS lastMessageSenderName,
+    User.connection_status AS lastMessageSenderConnectionStatus,
+    User.deleted AS lastMessageSenderIsDeleted,
+    (LastMessage.sender_user_id IS NOT NULL AND LastMessage.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
+    MemberChangeContent.member_change_list AS lastMessageMemberChangeList,
+    MemberChangeContent.member_change_type AS lastMessageMemberChangeType,
+    ConversationNameChangedContent.conversation_name AS lastMessageUpdateConversationName,
+    (Mention.user_id IS NOT NULL) AS lastMessageIsMentioningSelfUser,
+    TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
+    TextContent.text_body AS lastMessageText,
+    AssetContent.asset_mime_type AS lastMessageAssetMimeType
+FROM ConversationDetails
+LEFT JOIN UnreadEvent
+    ON UnreadEvent.conversation_id = ConversationDetails.qualifiedId
+LEFT JOIN MessageDraft
+    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
+LEFT JOIN Message AS LastMessage
+    ON LastMessage.id = (
+            SELECT Message.id
+            FROM Message
+            WHERE ConversationDetails.qualifiedId = Message.conversation_id
+            ORDER BY Message.creation_date DESC
+            LIMIT 1
+        ) AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
+LEFT JOIN User
+    ON LastMessage.sender_user_id = User.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
+    ON LastMessage.id = MemberChangeContent.message_id AND LastMessage.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention
+    ON LastMessage.id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
+    ON LastMessage.id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent
+    ON LastMessage.id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON LastMessage.id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+WHERE
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
+    AND ConversationDetails.isActive
+GROUP BY ConversationDetails.qualifiedId;

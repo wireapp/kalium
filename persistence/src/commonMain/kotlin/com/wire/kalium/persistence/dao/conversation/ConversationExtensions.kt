@@ -20,7 +20,7 @@ package com.wire.kalium.persistence.dao.conversation
 import app.cash.paging.Pager
 import app.cash.paging.PagingConfig
 import app.cash.sqldelight.paging3.QueryPagingSource
-import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import kotlin.coroutines.CoroutineContext
@@ -41,7 +41,7 @@ interface ConversationExtensions {
 }
 
 internal class ConversationExtensionsImpl internal constructor(
-    private val queries: ConversationsQueries,
+    private val queries: ConversationDetailsWithEventsQueries,
     private val mapper: ConversationDetailsWithEventsMapper,
     private val coroutineContext: CoroutineContext,
 ) : ConversationExtensions {
@@ -61,20 +61,33 @@ internal class ConversationExtensionsImpl internal constructor(
 
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
         QueryPagingSource(
-            countQuery = queries.countConversationDetailsWithEventsFromSearch(fromArchive, onlyInteractionEnabled, searchQuery),
+            countQuery =
+            if (searchQuery.isBlank()) queries.countConversationDetailsWithEvents(fromArchive, onlyInteractionEnabled)
+            else queries.countConversationDetailsWithEventsFromSearch(fromArchive, onlyInteractionEnabled, searchQuery),
             transacter = queries,
             context = coroutineContext,
             initialOffset = initialOffset,
             queryProvider = { limit, offset ->
-                queries.selectConversationDetailsWithEventsFromSearch(
-                    fromArchive = fromArchive,
-                    onlyInteractionsEnabled = onlyInteractionEnabled,
-                    searchQuery = searchQuery,
-                    newActivitiesOnTop = newActivitiesOnTop,
-                    limit = limit,
-                    offset = offset,
-                    mapper = mapper::fromViewToModel,
-                )
+                if (searchQuery.isBlank()) {
+                    queries.selectConversationDetailsWithEvents(
+                        fromArchive = fromArchive,
+                        onlyInteractionsEnabled = onlyInteractionEnabled,
+                        newActivitiesOnTop = newActivitiesOnTop,
+                        limit = limit,
+                        offset = offset,
+                        mapper = mapper::fromViewToModel,
+                    )
+                } else {
+                    queries.selectConversationDetailsWithEventsFromSearch(
+                        fromArchive = fromArchive,
+                        onlyInteractionsEnabled = onlyInteractionEnabled,
+                        searchQuery = searchQuery,
+                        newActivitiesOnTop = newActivitiesOnTop,
+                        limit = limit,
+                        offset = offset,
+                        mapper = mapper::fromViewToModel,
+                    )
+                }
             }
         )
     }

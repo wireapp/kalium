@@ -29,8 +29,8 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensionsImpl
@@ -65,7 +65,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     fun setUp() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
-        val queries = db.database.conversationsQueries
+        val queries = db.database.conversationDetailsWithEventsQueries
         messageDAO = db.messageDAO
         messageDraftDAO = db.messageDraftDAO
         conversationDAO = db.conversationDAO
