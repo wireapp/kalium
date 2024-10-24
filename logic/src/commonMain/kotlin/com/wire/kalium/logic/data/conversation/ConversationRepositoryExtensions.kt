@@ -50,7 +50,13 @@ class ConversationRepositoryExtensionsImpl internal constructor(
     ): Flow<PagingData<ConversationDetailsWithEvents>> {
         val pager: KaliumPager<ConversationDetailsWithEventsEntity> = with(queryConfig) {
             conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
-                queryConfig = QueryConfig(searchQuery, fromArchive, onlyInteractionEnabled, newActivitiesOnTop),
+                queryConfig = QueryConfig(
+                    searchQuery = searchQuery,
+                    fromArchive = fromArchive,
+                    onlyInteractionEnabled = onlyInteractionEnabled,
+                    newActivitiesOnTop = newActivitiesOnTop,
+                    conversationFilter = conversationFilter.toDao()
+                ),
                 pagingConfig = pagingConfig
             )
         }
@@ -85,4 +91,5 @@ data class ConversationQueryConfig(
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,
     val newActivitiesOnTop: Boolean = false,
+    val conversationFilter: ConversationFilter = ConversationFilter.NONE,
 )
