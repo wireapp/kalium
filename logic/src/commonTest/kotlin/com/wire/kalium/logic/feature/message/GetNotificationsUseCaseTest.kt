@@ -64,6 +64,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 class GetNotificationsUseCaseTest {
@@ -192,7 +193,7 @@ class GetNotificationsUseCaseTest {
                 arrange.notificationEventsManager.observeEphemeralNotifications()
             }.wasInvoked(exactly = once)
 
-            syncStatusFlow.emit(IncrementalSyncStatus.Failed(CoreFailure.Unknown(null)))
+            syncStatusFlow.emit(IncrementalSyncStatus.Failed(CoreFailure.Unknown(null), Duration.ZERO))
 
             coVerify {
                 arrange.messageRepository.getNotificationMessage(any())
