@@ -70,11 +70,15 @@ internal class SlowSyncManager(
     private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider,
     logger: KaliumLogger = kaliumLogger,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
+    private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
+        MIN_RETRY_DELAY,
+        MAX_RETRY_DELAY
+    )
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
+    private val scope =
+        CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = logger.withFeatureId(SYNC)
 
     private val coroutineExceptionHandler = SyncExceptionHandler(
@@ -84,9 +88,9 @@ internal class SlowSyncManager(
         onFailure = { failure ->
             logger.i("SlowSync ExceptionHandler error $failure")
             scope.launch {
-                slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
+                val delay = exponentialDurationHelper.next()
+                slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
                 slowSyncRecoveryHandler.recover(failure) {
-                    val delay = exponentialDurationHelper.next()
                     logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
                     networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
                     logger.i("SlowSync Delay and waiting for connection finished - retrying")
@@ -101,30 +105,34 @@ internal class SlowSyncManager(
         startMonitoring()
     }
 
-    private suspend fun isSlowSyncNeededFlow(): Flow<SlowSyncParam> = slowSyncRepository.observeLastSlowSyncCompletionInstant()
-        .map { latestSlowSync ->
-            logger.i("Last SlowSync was performed on '$latestSlowSync'")
-            val lastVersion = slowSyncRepository.getSlowSyncVersion()
-            when {
-                (lastVersion != null) && (CURRENT_VERSION > lastVersion) -> {
-                    logger.i("Last saved SlowSync version is $lastVersion, current is $CURRENT_VERSION")
-                    SlowSyncParam.MigrationNeeded(oldVersion = lastVersion, newVersion = CURRENT_VERSION)
-                }
+    private suspend fun isSlowSyncNeededFlow(): Flow<SlowSyncParam> =
+        slowSyncRepository.observeLastSlowSyncCompletionInstant()
+            .map { latestSlowSync ->
+                logger.i("Last SlowSync was performed on '$latestSlowSync'")
+                val lastVersion = slowSyncRepository.getSlowSyncVersion()
+                when {
+                    (lastVersion != null) && (CURRENT_VERSION > lastVersion) -> {
+                        logger.i("Last saved SlowSync version is $lastVersion, current is $CURRENT_VERSION")
+                        SlowSyncParam.MigrationNeeded(
+                            oldVersion = lastVersion,
+                            newVersion = CURRENT_VERSION
+                        )
+                    }
 
-                latestSlowSync == null -> {
-                    SlowSyncParam.NotPerformedBefore
-                }
+                    latestSlowSync == null -> {
+                        SlowSyncParam.NotPerformedBefore
+                    }
 
-                DateTimeUtil.currentInstant() > (latestSlowSync + MIN_TIME_BETWEEN_SLOW_SYNCS) -> {
-                    logger.i("Slow sync too old - last slow sync was performed on '$latestSlowSync'")
-                    SlowSyncParam.LastSlowSyncTooOld
-                }
+                    DateTimeUtil.currentInstant() > (latestSlowSync + MIN_TIME_BETWEEN_SLOW_SYNCS) -> {
+                        logger.i("Slow sync too old - last slow sync was performed on '$latestSlowSync'")
+                        SlowSyncParam.LastSlowSyncTooOld
+                    }
 
-                else -> {
-                    SlowSyncParam.Success
+                    else -> {
+                        SlowSyncParam.Success
+                    }
                 }
             }
-        }
 
     private fun startMonitoring() {
         scope.launch(coroutineExceptionHandler) {
@@ -139,7 +147,10 @@ internal class SlowSyncManager(
         }
     }
 
-    private suspend fun handleCriteriaResolution(syncCriteriaResolution: SyncCriteriaResolution, isSlowSyncNeeded: SlowSyncParam) {
+    private suspend fun handleCriteriaResolution(
+        syncCriteriaResolution: SyncCriteriaResolution,
+        isSlowSyncNeeded: SlowSyncParam
+    ) {
         if (syncCriteriaResolution is SyncCriteriaResolution.Ready) {
             // START SYNC IF NEEDED
             logger.i("SlowSync criteria ready, checking if SlowSync is needed or already performed")

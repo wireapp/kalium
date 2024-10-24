@@ -111,10 +111,12 @@ internal class IncrementalSyncManager(
         onFailure = { failure ->
             logger.i("$TAG ExceptionHandler error $failure")
             syncScope.launch {
-                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
+                val delay = exponentialDurationHelper.next()
+                incrementalSyncRepository.updateIncrementalSyncState(
+                    IncrementalSyncStatus.Failed(failure, delay)
+                )
 
                 incrementalSyncRecoveryHandler.recover(failure = failure) {
-                    val delay = exponentialDurationHelper.next()
                     logger.i("$TAG Triggering delay($delay) and waiting for reconnection")
                     delayUntilConnectedOrPolicyUpgrade(delay)
                     logger.i("$TAG Delay and waiting for connection finished - retrying")
