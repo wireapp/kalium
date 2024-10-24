@@ -51,7 +51,7 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 // TODO: Refactor. We can split this into smaller DAOs.
 //       For example, one for Members, one for Protocol/MLS-related things, etc.
 //       Even if they operate on the same table underneath, these DAOs can represent/do different things.
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class ConversationDAOImpl internal constructor(
     private val conversationDetailsCache: FlowCache<ConversationIDEntity, ConversationViewEntity?>,
     private val conversationCache: FlowCache<ConversationIDEntity, ConversationEntity?>,
