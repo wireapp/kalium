@@ -62,7 +62,7 @@ import com.wire.kalium.network.api.v5.authenticated.SelfApiV5
 import com.wire.kalium.network.api.v5.authenticated.TeamsApiV5
 import com.wire.kalium.network.api.v5.authenticated.UserDetailsApiV5
 import com.wire.kalium.network.api.v5.authenticated.UserSearchApiV5
-import com.wire.kalium.network.api.v_common.WildCardApiImpl
+import com.wire.kalium.network.api.vcommon.WildCardApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderImpl
