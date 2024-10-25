@@ -606,6 +606,7 @@ com.wire.kalium.network.api.v6.authenticated
 com.wire.kalium.network.api.v6.authenticated.networkContainer
 com.wire.kalium.network.api.v6.unauthenticated
 com.wire.kalium.network.api.v6.unauthenticated.networkContainer
+com.wire.kalium.network.api.vcommon
 com.wire.kalium.network.exceptions
 com.wire.kalium.network.networkContainer
 com.wire.kalium.network.serialization
