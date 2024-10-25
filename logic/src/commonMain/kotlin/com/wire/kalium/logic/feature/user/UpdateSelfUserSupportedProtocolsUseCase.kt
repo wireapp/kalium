@@ -63,7 +63,7 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
 
     override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
         val mlsKey = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            val cipherSuite: CipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
+            val cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
             mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite)
         }
 
