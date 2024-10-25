@@ -983,7 +983,7 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
-        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
+        wrapStorageRequest { conversationDAO.getConversationDetailsByGroupID(mlsGroupId.value) }
             .map { conversationMapper.fromDaoModelToDetails(it) }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
