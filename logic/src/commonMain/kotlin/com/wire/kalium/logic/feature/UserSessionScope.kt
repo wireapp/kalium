@@ -1051,6 +1051,8 @@ class UserSessionScope internal constructor(
             userConfigRepository,
             featureSupport,
             clientIdProvider,
+            mlsClientProvider,
+            mlsPublicKeysRepository,
             userScopedLogger
         )
 

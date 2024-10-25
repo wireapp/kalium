@@ -23,11 +23,14 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.isActive
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
@@ -35,6 +38,8 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.isLeft
+import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import kotlinx.datetime.Instant
 
@@ -51,12 +56,23 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureSupport: FeatureSupport,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val mlsClientProvider: MLSClientProvider,
+    private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val logger: KaliumLogger
 ) : UpdateSelfUserSupportedProtocolsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
-        return if (!featureSupport.isMLSSupported) {
-            logger.d("Skip updating supported protocols, since MLS is not supported.")
+        val mlsKey = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            val cipherSuite: CipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
+            mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite)
+        }
+
+        return if (!featureSupport.isMLSSupported || mlsKey.isLeft()) {
+            logger.d(
+                "Skip updating supported protocols, since MLS is not supported. " +
+                        "Feature flag: ${featureSupport.isMLSSupported} " +
+                        "Has mls key: ${mlsKey.isRight()}"
+            )
             Either.Right(false)
         } else {
             (userRepository.getSelfUser()?.let { selfUser ->
