@@ -18,7 +18,7 @@
 package com.wire.kalium.persistence.dao.conversation
 
 enum class ConversationFilterEntity {
-    NONE,
+    ALL,
     FAVORITES,
     GROUPS,
     ONE_ON_ONE

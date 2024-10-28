@@ -674,14 +674,14 @@ internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.Verif
 }
 
 internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) {
-    ConversationFilter.NONE -> ConversationFilterEntity.NONE
+    ConversationFilter.ALL -> ConversationFilterEntity.ALL
     ConversationFilter.FAVORITES -> ConversationFilterEntity.FAVORITES
     ConversationFilter.GROUPS -> ConversationFilterEntity.GROUPS
     ConversationFilter.ONE_ON_ONE -> ConversationFilterEntity.ONE_ON_ONE
 }
 
 internal fun ConversationFilterEntity.toModel(): ConversationFilter = when (this) {
-    ConversationFilterEntity.NONE -> ConversationFilter.NONE
+    ConversationFilterEntity.ALL -> ConversationFilter.ALL
     ConversationFilterEntity.FAVORITES -> ConversationFilter.FAVORITES
     ConversationFilterEntity.GROUPS -> ConversationFilter.GROUPS
     ConversationFilterEntity.ONE_ON_ONE -> ConversationFilter.ONE_ON_ONE

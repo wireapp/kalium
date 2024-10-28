@@ -37,7 +37,7 @@ interface ConversationExtensions {
         val fromArchive: Boolean = false,
         val onlyInteractionEnabled: Boolean = false,
         val newActivitiesOnTop: Boolean = false,
-        val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.NONE,
+        val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.ALL,
     )
 }
 

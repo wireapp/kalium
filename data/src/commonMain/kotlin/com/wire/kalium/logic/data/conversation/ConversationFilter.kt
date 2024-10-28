@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 enum class ConversationFilter {
-    NONE,
+    ALL,
     FAVORITES,
     GROUPS,
     ONE_ON_ONE
