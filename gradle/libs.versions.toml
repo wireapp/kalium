@@ -176,6 +176,7 @@ okio-test = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "o
 
 # sql dependencies
 sqlite-androidx = { module = "androidx.sqlite:sqlite", version.ref = "androidx-sqlite" }
+sqlite-androidxFramework = { module = "androidx.sqlite:sqlite-framework", version.ref = "androidx-sqlite" }
 sql-android-cipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher-android" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutinesExtension = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }

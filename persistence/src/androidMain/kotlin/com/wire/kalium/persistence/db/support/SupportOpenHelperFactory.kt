@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.db.support
 
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import net.zetetic.database.sqlcipher.SQLiteConnection
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SQLiteDatabaseHook
 import net.zetetic.database.sqlcipher.SQLiteOpenHelper
@@ -8,7 +9,14 @@ import net.zetetic.database.sqlcipher.SQLiteOpenHelper
 class SupportOpenHelperFactory(
     private val password: ByteArray?,
     private val enableWriteAheadLogging: Boolean = false,
-    private val hook: SQLiteDatabaseHook? = null,
+    private val hook: SQLiteDatabaseHook? = object : SQLiteDatabaseHook {
+        override fun preKey(p0: SQLiteConnection?) = Unit
+
+        override fun postKey(p0: SQLiteConnection?) {
+            p0?.executeRaw("PRAGMA cipher_page_size = 8192", emptyArray(), null)
+            p0?.executeRaw("PRAGMA cipher_profile='device'", emptyArray(), null)
+        }
+    },
     private val minimumSupportedDatabaseVersion: Int = 1
 ) : SupportSQLiteOpenHelper.Factory {
     override fun create(configuration: SupportSQLiteOpenHelper.Configuration): SupportSQLiteOpenHelper =

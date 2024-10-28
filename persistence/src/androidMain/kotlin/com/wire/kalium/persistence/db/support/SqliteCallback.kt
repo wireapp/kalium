@@ -22,7 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlSchema
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.db.AndroidSqliteDriver
 
 internal class SqliteCallback(
     schema: SqlSchema<QueryResult.Value<Unit>>,

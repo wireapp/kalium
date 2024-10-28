@@ -104,6 +104,7 @@ kotlin {
                 implementation(libs.androidCrypto)
                 implementation(libs.sqldelight.androidDriver)
                 implementation(libs.sqlite.androidx)
+                implementation(libs.sqlite.androidxFramework)
                 implementation(libs.sql.android.cipher)
             }
         }
