@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.right
 import com.wire.kalium.util.DelicateKaliumApi
 
 /**
