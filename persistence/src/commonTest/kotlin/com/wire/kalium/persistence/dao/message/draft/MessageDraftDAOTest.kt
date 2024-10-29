@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message.draft
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -153,6 +154,47 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         // Then
         val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
         assertEquals(null, result)
+    }
+
+    @Test
+    fun givenSavedDraft_whenUpsertingTheSameExactDraft_thenItShouldIgnoreAndNotNotifyOtherQueries() = runTest {
+        // Given
+        insertInitialData()
+        val draft = MESSAGE_DRAFT
+        messageDraftDAO.upsertMessageDraft(draft)
+
+        messageDraftDAO.observeMessageDrafts().test {
+            val initialValue = awaitItem()
+            assertEquals(listOf(draft), initialValue)
+
+            // When
+            messageDraftDAO.upsertMessageDraft(draft) // the same exact draft is being saved again
+
+            // Then
+            expectNoEvents() // other query should not be notified
+        }
+    }
+
+    @Test
+    fun givenSavedDraft_whenUpsertingUpdatedDraft_thenItShouldBeSavedAndOtherQueriesShouldBeUpdated() = runTest {
+        // Given
+        insertInitialData()
+        val draft = MESSAGE_DRAFT
+        val updatedDraft = MESSAGE_DRAFT.copy(text = MESSAGE_DRAFT.text + " :)")
+        messageDraftDAO.upsertMessageDraft(draft)
+
+        messageDraftDAO.observeMessageDrafts().test {
+            val initialValue = awaitItem()
+            assertEquals(listOf(draft), initialValue)
+
+            // When
+            messageDraftDAO.upsertMessageDraft(updatedDraft) // the same exact draft is being saved again
+
+            // Then
+            val updatedValue = awaitItem() // other query should be notified
+            assertEquals(listOf(updatedDraft), updatedValue)
+        }
+
     }
 
     private suspend fun insertInitialData() {
