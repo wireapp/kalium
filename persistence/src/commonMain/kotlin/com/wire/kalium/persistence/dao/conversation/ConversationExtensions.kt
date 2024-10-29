@@ -37,6 +37,7 @@ interface ConversationExtensions {
         val fromArchive: Boolean = false,
         val onlyInteractionEnabled: Boolean = false,
         val newActivitiesOnTop: Boolean = false,
+        val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.ALL,
     )
 }
 
@@ -71,6 +72,7 @@ internal class ConversationExtensionsImpl internal constructor(
                     onlyInteractionsEnabled = onlyInteractionEnabled,
                     searchQuery = searchQuery,
                     newActivitiesOnTop = newActivitiesOnTop,
+                    conversationFilter = conversationFilter.name,
                     limit = limit,
                     offset = offset,
                     mapper = mapper::fromViewToModel,

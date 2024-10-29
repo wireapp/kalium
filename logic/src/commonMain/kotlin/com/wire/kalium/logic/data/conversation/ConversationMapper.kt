@@ -51,6 +51,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo
+import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
@@ -670,4 +671,18 @@ internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.Verif
     ConversationEntity.VerificationStatus.VERIFIED -> Conversation.VerificationStatus.VERIFIED
     ConversationEntity.VerificationStatus.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
     ConversationEntity.VerificationStatus.DEGRADED -> Conversation.VerificationStatus.DEGRADED
+}
+
+internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) {
+    ConversationFilter.ALL -> ConversationFilterEntity.ALL
+    ConversationFilter.FAVORITES -> ConversationFilterEntity.FAVORITES
+    ConversationFilter.GROUPS -> ConversationFilterEntity.GROUPS
+    ConversationFilter.ONE_ON_ONE -> ConversationFilterEntity.ONE_ON_ONE
+}
+
+internal fun ConversationFilterEntity.toModel(): ConversationFilter = when (this) {
+    ConversationFilterEntity.ALL -> ConversationFilter.ALL
+    ConversationFilterEntity.FAVORITES -> ConversationFilter.FAVORITES
+    ConversationFilterEntity.GROUPS -> ConversationFilter.GROUPS
+    ConversationFilterEntity.ONE_ON_ONE -> ConversationFilter.ONE_ON_ONE
 }
