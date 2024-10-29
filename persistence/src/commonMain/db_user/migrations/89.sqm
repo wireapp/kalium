@@ -54,7 +54,7 @@ LEFT JOIN UnreadEvent
 LEFT JOIN MessageDraft
     ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
 LEFT JOIN Message AS LastMessage
-    ON LastMessage.conversation_id = ConversationDetails.qualifiedId
+    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
 LEFT JOIN User
     ON LastMessage.sender_user_id = User.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
