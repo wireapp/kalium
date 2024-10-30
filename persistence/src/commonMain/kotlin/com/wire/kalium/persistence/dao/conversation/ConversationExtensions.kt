@@ -37,6 +37,7 @@ interface ConversationExtensions {
         val fromArchive: Boolean = false,
         val onlyInteractionEnabled: Boolean = false,
         val newActivitiesOnTop: Boolean = false,
+        val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.ALL,
     )
 }
 
@@ -62,8 +63,20 @@ internal class ConversationExtensionsImpl internal constructor(
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
         QueryPagingSource(
             countQuery =
-            if (searchQuery.isBlank()) queries.countConversationDetailsWithEvents(fromArchive, onlyInteractionEnabled)
-            else queries.countConversationDetailsWithEventsFromSearch(fromArchive, onlyInteractionEnabled, searchQuery),
+            if (searchQuery.isBlank()) {
+                queries.countConversationDetailsWithEvents(
+                    fromArchive = fromArchive,
+                    onlyInteractionEnabled = onlyInteractionEnabled,
+                    conversationFilter = conversationFilter.name,
+                )
+            } else {
+                queries.countConversationDetailsWithEventsFromSearch(
+                    fromArchive = fromArchive,
+                    onlyInteractionEnabled = onlyInteractionEnabled,
+                    conversationFilter = conversationFilter.name,
+                    searchQuery = searchQuery
+                ),
+            }
             transacter = queries,
             context = coroutineContext,
             initialOffset = initialOffset,
@@ -72,6 +85,7 @@ internal class ConversationExtensionsImpl internal constructor(
                     queries.selectConversationDetailsWithEvents(
                         fromArchive = fromArchive,
                         onlyInteractionsEnabled = onlyInteractionEnabled,
+                        conversationFilter = conversationFilter.name,
                         newActivitiesOnTop = newActivitiesOnTop,
                         limit = limit,
                         offset = offset,
@@ -81,6 +95,7 @@ internal class ConversationExtensionsImpl internal constructor(
                     queries.selectConversationDetailsWithEventsFromSearch(
                         fromArchive = fromArchive,
                         onlyInteractionsEnabled = onlyInteractionEnabled,
+                        conversationFilter = conversationFilter.name,
                         searchQuery = searchQuery,
                         newActivitiesOnTop = newActivitiesOnTop,
                         limit = limit,
