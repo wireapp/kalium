@@ -1,3 +1,5 @@
+DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+
 CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
 SELECT
     ConversationDetails.*,
@@ -76,71 +78,3 @@ WHERE
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
 GROUP BY ConversationDetails.qualifiedId;
-
-selectAllConversationDetailsWithEvents:
-SELECT * FROM ConversationDetailsWithEvents
-WHERE archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
-    lastModifiedDate DESC,
-    name IS NULL,
-    name COLLATE NOCASE ASC;
-
-selectConversationDetailsWithEvents:
-    SELECT * FROM ConversationDetailsWithEvents
-    WHERE
-        archived = :fromArchive
-        AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    ORDER BY
-        CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
-        lastModifiedDate DESC,
-        name IS NULL,
-        name COLLATE NOCASE ASC
-    LIMIT :limit
-    OFFSET :offset;
-
-selectConversationDetailsWithEventsFromSearch:
-SELECT * FROM ConversationDetailsWithEvents
-WHERE
-    archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    AND name LIKE ('%' || :searchQuery || '%')
-ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
-    lastModifiedDate DESC,
-    name IS NULL,
-    name COLLATE NOCASE ASC
-LIMIT :limit
-OFFSET :offset;
-
-countConversationDetailsWithEvents:
-SELECT COUNT(*) FROM ConversationDetails
-WHERE
-    ConversationDetails.type IS NOT 'SELF'
-    AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
-    )
-    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
-    AND ConversationDetails.isActive
-    AND archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END;
-
-countConversationDetailsWithEventsFromSearch:
-SELECT COUNT(*) FROM ConversationDetails
-WHERE
-    ConversationDetails.type IS NOT 'SELF'
-    AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
-    )
-    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
-    AND ConversationDetails.isActive
-    AND archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    AND name LIKE ('%' || :searchQuery || '%');
