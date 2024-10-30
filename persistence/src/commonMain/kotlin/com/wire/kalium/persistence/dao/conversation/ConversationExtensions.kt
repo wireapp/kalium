@@ -66,17 +66,17 @@ internal class ConversationExtensionsImpl internal constructor(
             if (searchQuery.isBlank()) {
                 queries.countConversationDetailsWithEvents(
                     fromArchive = fromArchive,
-                    onlyInteractionEnabled = onlyInteractionEnabled,
+                    onlyInteractionsEnabled = onlyInteractionEnabled,
                     conversationFilter = conversationFilter.name,
                 )
             } else {
                 queries.countConversationDetailsWithEventsFromSearch(
                     fromArchive = fromArchive,
-                    onlyInteractionEnabled = onlyInteractionEnabled,
+                    onlyInteractionsEnabled = onlyInteractionEnabled,
                     conversationFilter = conversationFilter.name,
                     searchQuery = searchQuery
-                ),
-            }
+                )
+            },
             transacter = queries,
             context = coroutineContext,
             initialOffset = initialOffset,
