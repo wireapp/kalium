@@ -63,7 +63,6 @@ interface PendingProposalScheduler {
 }
 
 internal class PendingProposalSchedulerImpl(
-    private val kaliumConfigs: KaliumConfigs,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
     private val subconversationRepository: Lazy<SubconversationRepository>,
@@ -82,7 +81,7 @@ internal class PendingProposalSchedulerImpl(
         commitPendingProposalsScope.launch() {
             incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
                 ensureActive()
-                if (syncState == IncrementalSyncStatus.Live && kaliumConfigs.isMLSSupportEnabled) {
+                if (syncState == IncrementalSyncStatus.Live) {
                     startCommittingPendingProposals()
                 }
             }

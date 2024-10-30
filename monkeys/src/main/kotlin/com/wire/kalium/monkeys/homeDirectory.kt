@@ -32,7 +32,6 @@ fun coreLogic(
         rootPath, kaliumConfigs = KaliumConfigs(
             developmentApiEnabled = true,
             encryptProteusStorage = true,
-            isMLSSupportEnabled = true,
             wipeOnDeviceRemoval = true,
         ), userAgent = "Wire Infinite Monkeys", useInMemoryStorage = true
     )

@@ -24,9 +24,8 @@ interface FeatureSupport {
 
 @Suppress("MagicNumber")
 class FeatureSupportImpl(
-    kaliumConfigs: KaliumConfigs,
     apiVersion: Int
 ) : FeatureSupport {
 
-    override val isMLSSupported: Boolean = kaliumConfigs.isMLSSupportEnabled && apiVersion >= 5
+    override val isMLSSupported: Boolean = apiVersion >= 5
 }
