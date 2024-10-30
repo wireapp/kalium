@@ -25,7 +25,9 @@ import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
+import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -264,5 +266,13 @@ internal object TableMapper {
     val messageDraftsAdapter = MessageDraft.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         mention_listAdapter = MentionListAdapter()
+    )
+
+    val labeledConversationAdapter = LabeledConversation.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val conversationFolderAdapter = ConversationFolder.Adapter(
+        folder_typeAdapter = EnumColumnAdapter()
     )
 }

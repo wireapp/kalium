@@ -43,6 +43,10 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
             is Event.UserProperty.TypingIndicatorModeSet -> {
                 handleTypingIndicatorMode(event)
             }
+
+            is Event.UserProperty.FoldersUpdate -> {
+                handleFoldersUpdate(event)
+            }
         }
     }
 
@@ -64,5 +68,13 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
             .setTypingIndicatorStatus(event.value)
             .onSuccess { logger.logSuccess() }
             .onFailure { logger.logFailure(it) }
+    }
+
+    private fun handleFoldersUpdate(
+        event: Event.UserProperty.FoldersUpdate
+    ): Either<CoreFailure, Unit> {
+        // TODO KBX implement
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return Either.Right(Unit)
     }
 }

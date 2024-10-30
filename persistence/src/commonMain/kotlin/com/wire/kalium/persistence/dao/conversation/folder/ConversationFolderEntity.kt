@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.dao.conversation.folder
 
-package com.wire.kalium.network.api.base.authenticated.properties
+data class ConversationFolderEntity(
+    val id: String,
+    val name: String,
+    val conversations: List<String>,
+    val type: ConversationFolderTypeEntity
+)
 
-import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
-import com.wire.kalium.network.api.authenticated.properties.PropertyKey
-import com.wire.kalium.network.utils.NetworkResponse
-
-interface PropertiesApi {
-
-    suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit>
-    suspend fun deleteProperty(propertyKey: PropertyKey): NetworkResponse<Unit>
-    suspend fun getLabels(): NetworkResponse<LabelListResponseDTO>
-
+enum class ConversationFolderTypeEntity {
+    USER,
+    FAVORITE
 }

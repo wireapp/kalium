@@ -15,17 +15,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.conversation
 
-package com.wire.kalium.network.api.base.authenticated.properties
+import com.wire.kalium.network.api.authenticated.properties.LabelDTO
+import com.wire.kalium.network.api.authenticated.properties.LabelType
 
-import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
-import com.wire.kalium.network.api.authenticated.properties.PropertyKey
-import com.wire.kalium.network.utils.NetworkResponse
+data class ConversationFolder(
+    val conversationIdList: List<String>, // TODO federation is not supported
+    val id: String,
+    val name: String,
+    val type: FolderType
+)
 
-interface PropertiesApi {
+enum class FolderType {
+    USER,
+    FAVORITES,
+}
 
-    suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit>
-    suspend fun deleteProperty(propertyKey: PropertyKey): NetworkResponse<Unit>
-    suspend fun getLabels(): NetworkResponse<LabelListResponseDTO>
+fun LabelDTO.toFolder() = ConversationFolder(
+    conversationIdList = conversations,
+    id = id,
+    name = name,
+    type = type.toFolderType()
+)
 
+fun LabelType.toFolderType() = when (this) {
+    LabelType.USER -> FolderType.USER
+    LabelType.FAVORITE -> FolderType.FAVORITES
 }
