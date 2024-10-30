@@ -1,0 +1,4 @@
+CREATE INDEX call_status ON Call(status);
+CREATE INDEX unread_event_conversation ON UnreadEvent(conversation_id);
+CREATE INDEX unread_event_date ON UnreadEvent(creation_date);
+CREATE INDEX unread_event_type ON UnreadEvent(type);
