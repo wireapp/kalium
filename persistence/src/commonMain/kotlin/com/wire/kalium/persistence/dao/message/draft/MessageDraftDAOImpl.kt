@@ -61,13 +61,20 @@ class MessageDraftDAOImpl internal constructor(
                 }
             }
 
-            queries.upsertDraft(
-                conversation_id = messageDraft.conversationId,
-                text = messageDraft.text,
-                edit_message_id = messageDraft.editMessageId,
-                quoted_message_id = messageDraft.quotedMessageId,
-                mention_list = messageDraft.selectedMentionList
-            )
+            queries.transaction {
+                queries.upsertDraft(
+                    conversation_id = messageDraft.conversationId,
+                    text = messageDraft.text,
+                    edit_message_id = messageDraft.editMessageId,
+                    quoted_message_id = messageDraft.quotedMessageId,
+                    mention_list = messageDraft.selectedMentionList
+                )
+                val changes = queries.selectChanges().executeAsOne()
+                if (changes == 0L) {
+                    // rollback the transaction if no changes were made so that it doesn't notify other queries about changes if not needed
+                    this.rollback()
+                }
+            }
         }
 
     override suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity? =
