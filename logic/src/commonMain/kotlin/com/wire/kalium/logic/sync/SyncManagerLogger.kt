@@ -34,7 +34,7 @@ internal class SyncManagerLogger(
         logSyncStarted()
     }
 
-    fun logSyncStarted() {
+    private fun logSyncStarted() {
         logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
             KaliumLogLevel.INFO,
             SyncStatus.STARTED.name,
@@ -61,7 +61,7 @@ internal enum class SyncStatus {
     COMPLETED,
 }
 
-internal fun KaliumLogger.provideNewSyncManagerLogger(
+internal fun KaliumLogger.provideNewSyncManagerStartedLogger(
     syncId: String = uuid4().toString(),
     syncStartedMoment: Instant = Clock.System.now()
 ) = SyncManagerLogger(this, syncId, syncStartedMoment)
