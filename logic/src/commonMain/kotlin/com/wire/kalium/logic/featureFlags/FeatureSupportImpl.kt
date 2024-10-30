@@ -27,5 +27,5 @@ class FeatureSupportImpl(
     apiVersion: Int
 ) : FeatureSupport {
 
-    override val isMLSSupported: Boolean = apiVersion >= 5
+    override val isMLSSupported: Boolean = apiVersion >= 6
 }
