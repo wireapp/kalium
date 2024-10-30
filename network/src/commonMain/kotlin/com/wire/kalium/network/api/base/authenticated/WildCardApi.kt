@@ -15,33 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.authenticated
 
-package com.wire.kalium.logic.data.sync
+import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.http.HttpMethod
 
-import com.wire.kalium.logic.CoreFailure
-import kotlin.time.Duration
-
-sealed interface SlowSyncStatus {
-
-    data object Pending : SlowSyncStatus
-
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
-}
-
-enum class SlowSyncStep {
-    MIGRATION,
-    SELF_USER,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    LEGAL_HOLD,
+interface WildCardApi {
+    suspend fun customRequest(
+        httpMethod: HttpMethod,
+        requestPath: List<String>,
+        body: String?,
+        queryParam: Map<String, String>,
+        customHeader: Map<String, String>
+    ): NetworkResponse<String>
 }
