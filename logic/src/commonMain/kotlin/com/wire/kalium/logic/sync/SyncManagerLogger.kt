@@ -27,6 +27,7 @@ import kotlinx.datetime.Instant
 internal class SyncManagerLogger(
     private val logger: KaliumLogger,
     private val syncId: String,
+    private val syncType: SyncType,
     private val syncStartedMoment: Instant
 ) {
 
@@ -36,32 +37,45 @@ internal class SyncManagerLogger(
 
     private fun logSyncStarted() {
         logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
-            KaliumLogLevel.INFO,
-            SyncStatus.STARTED.name,
-            mapOf("syncId" to syncId)
+            level = KaliumLogLevel.INFO,
+            leadingMessage = "Started sync process",
+            jsonStringKeyValues = mapOf(
+                "syncId" to syncId,
+                "syncStatus" to SyncStatus.STARTED.name,
+                "syncType" to syncType.name
+            )
         )
     }
 
     fun logSyncCompleted() {
         val duration = Clock.System.now() - syncStartedMoment
+        val logMap = mapOf(
+            "syncId" to syncId,
+            "syncStatus" to SyncStatus.COMPLETED.name,
+            "syncType" to syncType.name,
+            "syncPerformanceData" to mapOf("timeTakenInMillis" to duration.inWholeMilliseconds)
+        )
+
         logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
-            KaliumLogLevel.INFO,
-            SyncStatus.COMPLETED.name,
-            mapOf(
-                "syncId" to syncId,
-                "timeTakenInMillis" to duration.inWholeMilliseconds
-            )
+            level = KaliumLogLevel.INFO,
+            leadingMessage = "Completed sync process",
+            jsonStringKeyValues = logMap
         )
     }
-
 }
 
 internal enum class SyncStatus {
     STARTED,
-    COMPLETED,
+    COMPLETED
+}
+
+internal enum class SyncType {
+    SLOW,
+    INCREMENTAL
 }
 
 internal fun KaliumLogger.provideNewSyncManagerStartedLogger(
+    syncType: SyncType,
     syncId: String = uuid4().toString(),
     syncStartedMoment: Instant = Clock.System.now()
-) = SyncManagerLogger(this, syncId, syncStartedMoment)
+) = SyncManagerLogger(this, syncId, syncType, syncStartedMoment)
