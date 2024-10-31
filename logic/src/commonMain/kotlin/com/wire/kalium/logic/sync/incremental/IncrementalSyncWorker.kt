@@ -61,7 +61,6 @@ internal class IncrementalSyncWorkerImpl(
             eventGatherer.currentSource.collect { send(it) }
         }
         launch {
-            // start
             val syncId = uuid4().toString()
             val syncLogger = kaliumLogger.provideNewSyncManagerStartedLogger(SyncType.INCREMENTAL, syncId)
             eventGatherer.gatherEvents().cancellable().collect {
@@ -73,7 +72,6 @@ internal class IncrementalSyncWorkerImpl(
             // When events are all consumed, cancel the source job to complete the channelFlow
             syncLogger.logSyncCompleted()
             sourceJob.cancel()
-            // finish
             logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
         }
     }

@@ -24,6 +24,10 @@ import com.wire.kalium.logic.logStructuredJson
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
+/**
+ * Logs the sync process by providing structured logs.
+ * It logs the sync process start and completion with the syncId as a unique identifier.
+ */
 internal class SyncManagerLogger(
     private val logger: KaliumLogger,
     private val syncId: String,
@@ -74,6 +78,12 @@ internal enum class SyncType {
     INCREMENTAL
 }
 
+/**
+ * Provides a new [SyncManagerLogger] instance with the given parameters.
+ * @param syncType the [SyncType] that will log.
+ * @param syncId the unique identifier for the sync process.
+ * @param syncStartedMoment the moment when the sync process started.
+ */
 internal fun KaliumLogger.provideNewSyncManagerStartedLogger(
     syncType: SyncType,
     syncId: String = uuid4().toString(),
