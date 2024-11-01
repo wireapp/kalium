@@ -190,6 +190,7 @@ internal class SlowSyncManager(
 
     private suspend fun performSlowSync(migrationSteps: List<SyncMigrationStep>) {
         val syncLogger = kaliumLogger.provideNewSyncManagerStartedLogger(SyncType.SLOW)
+        syncLogger.logSyncStarted()
         logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
         slowSyncWorker.slowSyncStepsFlow(migrationSteps).cancellable().collect { step ->
             logger.i("Performing SlowSyncStep $step")

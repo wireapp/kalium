@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.logStructuredJson
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
 
 /**
  * Logs the sync process by providing structured logs.
@@ -35,11 +36,7 @@ internal class SyncManagerLogger(
     private val syncStartedMoment: Instant
 ) {
 
-    init {
-        logSyncStarted()
-    }
-
-    private fun logSyncStarted() {
+    fun logSyncStarted() {
         logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
             level = KaliumLogLevel.INFO,
             leadingMessage = "Started sync process",
@@ -51,8 +48,7 @@ internal class SyncManagerLogger(
         )
     }
 
-    fun logSyncCompleted() {
-        val duration = Clock.System.now() - syncStartedMoment
+    fun logSyncCompleted(duration: Duration = Clock.System.now() - syncStartedMoment) {
         val logMap = mapOf(
             "syncId" to syncId,
             "syncStatus" to SyncStatus.COMPLETED.name,
