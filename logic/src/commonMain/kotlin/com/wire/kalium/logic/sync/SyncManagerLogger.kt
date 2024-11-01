@@ -36,6 +36,9 @@ internal class SyncManagerLogger(
     private val syncStartedMoment: Instant
 ) {
 
+    /**
+     * Logs the sync process start.
+     */
     fun logSyncStarted() {
         logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
             level = KaliumLogLevel.INFO,
@@ -50,6 +53,13 @@ internal class SyncManagerLogger(
         )
     }
 
+    /**
+     * Logs the sync process completion.
+     * Optionally, it can pass the duration of the sync process,
+     * useful for incremental sync that can happen between collecting states.
+     *
+     * @param duration optional the duration of the sync process.
+     */
     fun logSyncCompleted(duration: Duration = Clock.System.now() - syncStartedMoment) {
         val logMap = mapOf(
             "id" to syncId,
