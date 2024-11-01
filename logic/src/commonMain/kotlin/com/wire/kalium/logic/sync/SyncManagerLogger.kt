@@ -41,25 +41,27 @@ internal class SyncManagerLogger(
             level = KaliumLogLevel.INFO,
             leadingMessage = "Started sync process",
             jsonStringKeyValues = mapOf(
-                "syncId" to syncId,
-                "syncStatus" to SyncStatus.STARTED.name,
-                "syncType" to syncType.name
+                "syncMetadata" to mapOf(
+                    "id" to syncId,
+                    "status" to SyncStatus.STARTED.name,
+                    "type" to syncType.name
+                )
             )
         )
     }
 
     fun logSyncCompleted(duration: Duration = Clock.System.now() - syncStartedMoment) {
         val logMap = mapOf(
-            "syncId" to syncId,
-            "syncStatus" to SyncStatus.COMPLETED.name,
-            "syncType" to syncType.name,
-            "syncPerformanceData" to mapOf("timeTakenInMillis" to duration.inWholeMilliseconds)
+            "id" to syncId,
+            "status" to SyncStatus.COMPLETED.name,
+            "type" to syncType.name,
+            "performanceData" to mapOf("timeTakenInMillis" to duration.inWholeMilliseconds)
         )
 
         logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
             level = KaliumLogLevel.INFO,
             leadingMessage = "Completed sync process",
-            jsonStringKeyValues = logMap
+            jsonStringKeyValues = mapOf("syncMetadata" to logMap)
         )
     }
 }
