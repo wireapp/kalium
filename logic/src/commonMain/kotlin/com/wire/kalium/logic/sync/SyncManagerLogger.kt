@@ -80,7 +80,7 @@ internal enum class SyncType {
  * @param syncId the unique identifier for the sync process.
  * @param syncStartedMoment the moment when the sync process started.
  */
-internal fun KaliumLogger.provideNewSyncManagerStartedLogger(
+internal fun KaliumLogger.provideNewSyncManagerLogger(
     syncType: SyncType,
     syncId: String = uuid4().toString(),
     syncStartedMoment: Instant = Clock.System.now()

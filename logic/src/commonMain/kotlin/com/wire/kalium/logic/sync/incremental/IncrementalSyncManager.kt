@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
-import com.wire.kalium.logic.sync.provideNewSyncManagerStartedLogger
+import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
@@ -53,7 +53,6 @@ import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -188,8 +187,8 @@ internal class IncrementalSyncManager(
         incrementalSyncWorker
             .processEventsWhilePolicyAllowsFlow()
             .cancellable()
-            .runningFold(uuid4().toString() to Clock.System.now()) { syncData: Pair<String, Instant>, eventSource ->
-                val syncLogger = kaliumLogger.provideNewSyncManagerStartedLogger(SyncType.INCREMENTAL, syncData.first)
+            .runningFold(uuid4().toString() to Clock.System.now()) { syncData, eventSource ->
+                val syncLogger = kaliumLogger.provideNewSyncManagerLogger(SyncType.INCREMENTAL, syncData.first)
                 val newState = when (eventSource) {
                     EventSource.PENDING -> {
                         syncLogger.logSyncStarted()
@@ -197,7 +196,7 @@ internal class IncrementalSyncManager(
                     }
 
                     EventSource.LIVE -> {
-                        syncLogger.logSyncCompleted(Clock.System.now() - syncData.second)
+                        syncLogger.logSyncCompleted(duration = Clock.System.now() - syncData.second)
                         exponentialDurationHelper.reset()
                         IncrementalSyncStatus.Live
                     }
