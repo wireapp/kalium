@@ -31,7 +31,7 @@ message BackupData {
 message BackupInfo {
     required string platform = 1;
     required string version = 2;
-    required string userId = 3;
+    required ExportedQualifiedId userId = 3;
     required string creation_time = 4;
     required string clientId = 5;
 }

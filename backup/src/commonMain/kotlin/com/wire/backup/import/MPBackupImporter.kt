@@ -17,16 +17,63 @@
  */
 package com.wire.backup.import
 
-import com.wire.kalium.protobuf.backup.BackupData
+import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupData
+import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupMetadata
+import com.wire.backup.data.BackupUser
+import com.wire.backup.data.toModel
+import com.wire.kalium.protobuf.backup.ExportedMessage.Content
+import kotlinx.datetime.toInstant
 import pbandk.decodeFromByteArray
+import kotlin.js.JsExport
+import com.wire.kalium.protobuf.backup.BackupData as ProtoBackupData
 
+@JsExport
 class MPBackupImporter(val selfUserDomain: String) {
 
     @OptIn(ExperimentalStdlibApi::class)
     fun import(data: ByteArray): BackupImportResult = try {
         println("!!!BACKUP: ${data.toHexString()}")
-        BackupImportResult.Success(BackupData.decodeFromByteArray(data))
-    } catch (_: Exception) {
+        BackupImportResult.Success(
+            ProtoBackupData.decodeFromByteArray(data).run {
+                // TODO: Map all the stuff
+                BackupData(
+                    BackupMetadata(
+                        info.platform,
+                        info.version,
+                        info.userId.toModel(),
+                        info.creationTime.toInstant(),
+                        info.clientId
+                    ),
+                    users.map { user ->
+                        BackupUser(user.id.toModel(), user.name, user.handle)
+                    }.toTypedArray(),
+                    conversations.map { conversation ->
+                        BackupConversation(conversation.id.toModel(), conversation.name)
+                    }.toTypedArray(),
+                    messages.map { message ->
+                        val content = when (val proContent = message.content) {
+                            is Content.Text -> {
+                                BackupMessageContent.Text(proContent.value.content)
+                            }
+
+                            null -> TODO()
+                        }
+                        BackupMessage(
+                            id = message.id,
+                            conversationId = message.conversationId.toModel(),
+                            senderUserId = message.senderUserId.toModel(),
+                            senderClientId = message.senderClientId,
+                            content = content
+                        )
+                    }.toTypedArray()
+                )
+            }
+        )
+    } catch (e: Exception) {
+        println(e)
         BackupImportResult.ParsingFailure
     }
 }

@@ -17,14 +17,13 @@
  */
 package com.wire.backup
 
-import com.wire.backup.data.ExportMessage
+import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.export.MPBackupExporter
 import com.wire.backup.import.BackupImportResult
 import com.wire.backup.import.MPBackupImporter
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertIs
@@ -33,21 +32,20 @@ class BackupEndToEndTest {
 
     @Test
     fun givenBackedUpMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        val expectedMessage = ExportMessage.Text(
+        val expectedMessage = BackupMessage(
             "messageId",
-            ConversationId("value", "domain"),
-            UserId("user", "domain"),
-            Clock.System.now(),
-            "clientId",
-            "Hello from the backup!"
+            BackupQualifiedId("value", "domain"),
+            BackupQualifiedId("senderID", "senderDomain"),
+            "senderClientId",
+            BackupMessageContent.Text("Hello from the backup!")
         )
-        val exporter = MPBackupExporter(UserId("eghyue", "potato"))
-        exporter.add(expectedMessage)
+        val exporter = MPBackupExporter(BackupQualifiedId("eghyue", "potato"))
+        exporter.addMessage(expectedMessage)
         val encoded = exporter.serialize()
 
         val result = MPBackupImporter("potato").import(encoded)
         assertIs<BackupImportResult.Success>(result)
-        assertContentEquals(listOf(expectedMessage), result.backupData.messages)
+        assertContentEquals(arrayOf(expectedMessage), result.backupData.messages)
     }
 
     @Test

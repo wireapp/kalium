@@ -26,7 +26,7 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform { enableJs.set(false) }
+    multiplatform { enableJs.set(true) }
 }
 kotlin {
     val xcf = XCFramework()
@@ -37,7 +37,7 @@ kotlin {
             xcf.add(this)
         }
     }
-    wasmJs {
+    js {
         browser()
         binaries.library()
         generateTypeScriptDefinitions()

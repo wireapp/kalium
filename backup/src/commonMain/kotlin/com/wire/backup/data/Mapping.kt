@@ -15,19 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.backup.data
 
-import kotlinx.datetime.Instant
-import kotlin.js.JsExport
+import com.wire.kalium.protobuf.backup.ExportedQualifiedId
 
-@JsExport
-data class BackupMetadata(
-    val platform: String,
-    val version: String,
-    val userId: BackupQualifiedId,
-    val creationTime: Instant,
-    val clientId: String?
-)
-
-fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"
+internal fun BackupQualifiedId.toProtoModel() = ExportedQualifiedId(id, domain)
+internal fun ExportedQualifiedId.toModel() = BackupQualifiedId(value, domain)

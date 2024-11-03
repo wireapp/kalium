@@ -17,9 +17,11 @@
  */
 package com.wire.backup.import
 
-import com.wire.kalium.protobuf.backup.BackupData
+import com.wire.backup.data.BackupData
+import kotlin.js.JsExport
 
-sealed interface BackupImportResult {
-    data object ParsingFailure : BackupImportResult
-    data class Success(val backupData: BackupData) : BackupImportResult
+@JsExport
+sealed class BackupImportResult {
+    data object ParsingFailure : BackupImportResult()
+    data class Success(val backupData: BackupData) : BackupImportResult()
 }

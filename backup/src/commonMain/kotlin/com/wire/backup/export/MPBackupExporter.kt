@@ -17,28 +17,38 @@
  */
 package com.wire.backup.export
 
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupUser
+import com.wire.backup.data.toProtoModel
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportUser
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedMessage
+import com.wire.kalium.protobuf.backup.ExportedText
+import kotlinx.datetime.Clock
 import pbandk.encodeToByteArray
+import kotlin.js.JsExport
 
-class MPBackupExporter(val userId: UserId) {
-    private val allUsers = mutableListOf<ExportUser>()
-    private val allConversations = mutableListOf<ExportedConversation>()
-    private val allMessages = mutableListOf<ExportedMessage>()
+@JsExport
+class MPBackupExporter(
+    val selfUserId: BackupQualifiedId
+) {
+    private val allUsers = mutableListOf<BackupUser>()
+    private val allConversations = mutableListOf<BackupConversation>()
+    private val allMessages = mutableListOf<BackupMessage>()
 
-    fun add(user: ExportUser) {
+    fun addUser(user: BackupUser) {
         allUsers.add(user)
     }
 
-    fun add(conversation: ExportedConversation) {
+    fun addConversation(conversation: BackupConversation) {
         allConversations.add(conversation)
     }
 
-    fun add(message: ExportedMessage) {
+    fun addMessage(message: BackupMessage) {
         allMessages.add(message)
     }
 
@@ -48,13 +58,31 @@ class MPBackupExporter(val userId: UserId) {
             BackupInfo(
                 platform = "Common",
                 version = "1.0",
-                userId = "${userId.value}@${userId.domain}",
-                creationTime = "Clock.System.now()",
+                userId = selfUserId.toProtoModel(),
+                creationTime = Clock.System.now().toString(),
                 clientId = "lol"
             ),
-            allConversations,
-            allMessages,
-            allUsers,
+            allConversations.map { ExportedConversation(it.id.toProtoModel(), it.name) },
+            allMessages.map {
+                ExportedMessage(
+                    id = it.id,
+                    timeIso = Clock.System.now().toString(),
+                    senderUserId = it.senderUserId.toProtoModel(),
+                    senderClientId = it.senderClientId,
+                    conversationId = it.conversationId.toProtoModel(),
+                    content = when (val content = it.content) {
+                        is com.wire.backup.data.BackupMessageContent.Asset -> ExportedMessage.Content.Text(ExportedText("FAKE ASSET")) // TODO:
+                        is com.wire.backup.data.BackupMessageContent.Text -> ExportedMessage.Content.Text(ExportedText(content.text))
+                    }
+                )
+            },
+            allUsers.map {
+                ExportUser(
+                    id = it.id.toProtoModel(),
+                    name = it.name,
+                    handle = it.handle
+                )
+            },
         )
         return backupData.encodeToByteArray().also {
             println("!!!BACKUP: ${it.toHexString()}")

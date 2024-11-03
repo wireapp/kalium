@@ -25,7 +25,7 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableJs.set(false)
+        enableJs.set(true)
     }
 }
 
