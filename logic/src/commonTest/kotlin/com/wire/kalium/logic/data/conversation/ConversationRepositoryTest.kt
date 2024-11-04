@@ -766,6 +766,7 @@ class ConversationRepositoryTest {
             }
         }
 
+    // TODO: bring back once pagination is implemented
     @Ignore
     @Test
     fun givenAGroupConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() = runTest {
