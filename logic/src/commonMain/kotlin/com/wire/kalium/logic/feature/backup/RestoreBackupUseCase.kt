@@ -19,6 +19,9 @@
 
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.MPBackupImporter
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors
@@ -33,6 +36,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -64,6 +68,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerializationException
 import okio.Path
@@ -251,7 +256,7 @@ internal class RestoreBackupUseCaseImpl(
             }
 
     private fun isValidBackupAuthor(metadata: BackupInfo): Either<Failure, BackupInfo> =
-        if (metadata.userId == userId.toString() || metadata.userId == userId.value) {
+        if (metadata.userId.value == userId.toString() || metadata.userId.value == userId.value) {
             Either.Right(metadata)
         } else {
             Either.Left(Failure(InvalidUserId))
@@ -267,17 +272,18 @@ internal class RestoreBackupUseCaseImpl(
 
 private const val EXTRACTED_FILES_PATH = "extractedFiles"
 
+private fun BackupQualifiedId.toModel() = QualifiedID(id, domain)
 
-private fun ExportedMessage.toMigratedMessage(): MigratedMessage = MigratedMessage(
-    conversationId = ConversationId(conversationId.value, conversationId.domain),
-    senderUserId = UserId(senderUserId.value, senderUserId.domain),
+private fun BackupMessage.toMigratedMessage(): MigratedMessage = MigratedMessage(
+    conversationId = conversationId.toModel(),
+    senderUserId = senderUserId.toModel(),
     senderClientId = ClientId(senderClientId),
-    timestamp = Instant.parse(timeIso).toEpochMilliseconds(),
+    timestamp = Clock.System.now().toEpochMilliseconds(),
     content = "",
     unencryptedProto = ProtoContent.Readable(
         id,
         MessageContent.Text(
-            (this.content as ExportedMessage.Content.Text).value.content,
+            (this.content as BackupMessageContent.Text).text,
         ),
         expectsReadConfirmation = false, //   data.expectsReadConfirmation ?: false,
         legalHoldStatus =
