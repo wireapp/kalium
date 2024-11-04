@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-
 class HasConferenceCallingActivatedUseCaseTest {
 
     @Test
