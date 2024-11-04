@@ -19,6 +19,11 @@
 
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.backup.MPBackup
+import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.export.MPBackupExporter
 import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.backup.Passphrase
@@ -64,6 +69,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.FileNotFoundException
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -100,74 +106,18 @@ internal class CreateBackupUseCaseImpl(
         deletePreviousBackupFiles(backupFilePath)
         val clientId = clientIdProvider().nullableFold({ null }, { it.value })
 
-        val exporter = MPBackupExporter(userId)
-
-        conversationRepository.getConversationList().getOrNull()?.firstOrNull()?.let { conversationList ->
-            conversationList.forEach { conversation ->
-                messageRepository.getMessagesByConversationIdAndVisibility(
-                    conversation.id, 1000, 0,
-                    listOf(Message.Visibility.VISIBLE)
-                ).firstOrNull()?.let { messageList ->
-                    messageList.forEach { message ->
-                        when (message) {
-                            is Message.Regular -> when (message.content) {
-                                is MessageContent.Text -> exporter.add(
-                                    ExportedMessage(
-                                        senderUserId = ExportedQualifiedId(message.senderUserId.value, message.senderUserId.domain),
-                                        senderClientId = message.senderClientId.value,
-                                        content = ExportedMessage.Content.Text(
-                                            ExportedText(
-                                                (message.content as MessageContent.Text).value
-                                            )
-                                        ),
-                                        id = message.id,
-                                        conversationId = ExportedQualifiedId(conversation.id.value, conversation.id.domain),
-                                        timeIso = message.date.toString(),
-                                    )
-                                )
-
-                                else -> {}
-                            }
-
-                            else -> {
-
-                            }
-                        }
-
-                    }
-                }
-                exporter.add(
-                    ExportedConversation(
-                        ExportedQualifiedId(conversation.id.value, conversation.id.domain),
-                        conversation.name.orEmpty()
-                    )
-                )
-            }
+        try {
+            createBackupFile(userId, backupFilePath).fold(
+                { error -> CreateBackupResult.Failure(error) },
+                { (backupFilePath, backupSize) ->
+                    val isBackupEncrypted = password.isNotEmpty()
+                    if (isBackupEncrypted) {
+                        encryptAndCompressFile(backupFilePath, password)
+                    } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
+                })
+        } finally {
+            databaseExporter.deleteBackupDBFile()
         }
-
-        val sink = kaliumFileSystem.sink(backupFilePath)
-        val buffer = sink.buffer()
-        buffer.write(exporter.serialize())
-        buffer.flush()
-        buffer.close()
-        sink.close()
-
-//         val plainDBPath =
-//             databaseExporter.exportToPlainDB(securityHelper.userDBOrSecretNull(userId))?.toPath()
-//                 ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
-//
-//         try {
-//             createBackupFile(userId, plainDBPath, backupFilePath).fold(
-//                 { error -> CreateBackupResult.Failure(error) },
-//                 { (backupFilePath, backupSize) ->
-//                     val isBackupEncrypted = password.isNotEmpty()
-//                     if (isBackupEncrypted) {
-//                         encryptAndCompressFile(backupFilePath, password)
-//                     } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
-//                 })
-//         } finally {
-//             databaseExporter.deleteBackupDBFile()
-//         }
 
         println("KBX backupFilePath $backupFilePath")
         CreateBackupResult.Success(backupFilePath, 20_000, backupName)
@@ -215,35 +165,62 @@ internal class CreateBackupUseCaseImpl(
     private suspend fun encryptBackup(backupFileSource: Source, encryptedBackupSink: Sink, passphrase: Passphrase) =
         encryptBackupFile(backupFileSource, encryptedBackupSink, idMapper.toCryptoModel(userId), passphrase)
 
-    private suspend fun createMetadataFile(userId: UserId): Path {
-        val clientId = clientIdProvider().nullableFold({ null }, { it.value })
-        val metadata = BackupInfo(
-            clientPlatform,
-            BackupCoder.version,
-            userId.toString(),
-            "asdas",
-            "client"
-        )
-        val metadataJson = Json.encodeToString(metadata)
-
-        val metadataFilePath = kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME)
-        kaliumFileSystem.sink(metadataFilePath).buffer().use {
-            it.write(metadataJson.encodeToByteArray())
-        }
-        return metadataFilePath
-    }
-
     private suspend fun createBackupFile(
         userId: UserId,
-        plainDBPath: Path,
         backupZipFilePath: Path
     ): Either<CoreFailure, Pair<Path, Long>> {
         return try {
             val backupSink = kaliumFileSystem.sink(backupZipFilePath)
-            val backupMetadataPath = createMetadataFile(userId)
+            val exporter = MPBackupExporter(BackupQualifiedId(userId.value, userId.domain))
+
+            conversationRepository.getConversationList().getOrNull()?.firstOrNull()?.let { conversationList ->
+                conversationList.forEach { conversation ->
+                    messageRepository.getMessagesByConversationIdAndVisibility(
+                        conversation.id, 1000, 0,
+                        listOf(Message.Visibility.VISIBLE)
+                    ).firstOrNull()?.let { messageList ->
+                        messageList.forEach { message ->
+                            when (message) {
+                                is Message.Regular -> when (val content = message.content) {
+                                    is MessageContent.Text -> exporter.addMessage(
+                                        BackupMessage(
+                                            senderUserId = message.senderUserId.toBackup(),
+                                            senderClientId = message.senderClientId.value,
+                                            content = BackupMessageContent.Text(content.value),
+                                            id = message.id,
+                                            conversationId = conversation.id.toBackup(),
+                                        )
+                                    )
+
+                                    else -> {}
+                                }
+
+                                else -> {
+
+                                }
+                            }
+
+                        }
+                    }
+                    exporter.addConversation(
+                        BackupConversation(
+                            conversation.id.toBackup(),
+                            conversation.name.orEmpty()
+                        )
+                    )
+                }
+            }
+
+            val dataFilePath = backupZipFilePath.parent!! / "tempBackupExportDataThingy"
+            val sink = kaliumFileSystem.sink(dataFilePath)
+            val buffer = sink.buffer()
+            buffer.write(exporter.serialize())
+            buffer.flush()
+            buffer.close()
+            sink.close()
+
             val filesList = listOf(
-                kaliumFileSystem.source(backupMetadataPath) to BACKUP_METADATA_FILE_NAME,
-                kaliumFileSystem.source(plainDBPath) to BACKUP_USER_DB_NAME
+                kaliumFileSystem.source(dataFilePath) to MPBackup.ZIP_ENTRY_DATA
             )
 
             createCompressedFile(filesList, backupSink).flatMap { compressedFileSize ->
