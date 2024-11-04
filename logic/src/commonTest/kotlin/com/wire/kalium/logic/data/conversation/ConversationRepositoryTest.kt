@@ -790,10 +790,10 @@ class ConversationRepositoryTest {
         }
     }
 
-    @Ignore
-    @Test
-    fun givenAOneToOneConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() =
-        runTest {
+    // TODO: bring back once pagination is implemented
+//     @Test
+//     fun givenAOneToOneConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() =
+//         runTest {
 //             // given
 //             val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
 //             val conversationId = QualifiedID("some_value", "some_domain")
@@ -819,7 +819,7 @@ class ConversationRepositoryTest {
 //
 //                 awaitComplete()
 //             }
-        }
+//         }
 
     @Test
     fun givenAGroupConversationHasNewMessages_whenObservingConversationListDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
