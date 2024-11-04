@@ -25,13 +25,11 @@ import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.export.MPBackupExporter
-import com.wire.kalium.cryptography.backup.BackupCoder
+import com.wire.backup.dump.MPBackupExporter
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -44,7 +42,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -55,26 +52,16 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
-import com.wire.kalium.protobuf.backup.BackupInfo
-import com.wire.kalium.protobuf.backup.ExportedConversation
-import com.wire.kalium.protobuf.backup.ExportedMessage
-import com.wire.kalium.protobuf.backup.ExportedQualifiedId
-import com.wire.kalium.protobuf.backup.ExportedText
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.utils.io.writer
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import okio.FileNotFoundException
 import okio.Path
-import okio.Path.Companion.toPath
 import okio.Sink
 import okio.Source
 import okio.buffer
-import okio.use
 
 interface CreateBackupUseCase {
     /**
@@ -189,7 +176,7 @@ internal class CreateBackupUseCaseImpl(
                                             senderClientId = message.senderClientId.value,
                                             content = BackupMessageContent.Text(content.value),
                                             id = message.id,
-                                            creationDate = message.date,
+                                            creationDate = BackupDateTime(message.date.toEpochMilliseconds()),
                                             conversationId = conversation.id.toBackup(),
                                         )
                                     )

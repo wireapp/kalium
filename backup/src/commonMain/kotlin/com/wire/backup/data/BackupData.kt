@@ -58,7 +58,7 @@ data class BackupMessage(
 
 expect class BackupDateTime
 
-internal expect fun BackupDateTime(timestamp: Long): BackupDateTime
+expect fun BackupDateTime(timestamp: Long): BackupDateTime
 internal expect fun BackupDateTime.toLongMilliseconds(): Long
 
 @JsExport

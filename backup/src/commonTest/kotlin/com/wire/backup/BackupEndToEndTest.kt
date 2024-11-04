@@ -17,10 +17,11 @@
  */
 package com.wire.backup
 
+import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.export.MPBackupExporter
+import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.MPBackupImporter
 import kotlinx.coroutines.test.runTest
@@ -37,6 +38,7 @@ class BackupEndToEndTest {
             BackupQualifiedId("value", "domain"),
             BackupQualifiedId("senderID", "senderDomain"),
             "senderClientId",
+            BackupDateTime(24232L),
             BackupMessageContent.Text("Hello from the backup!")
         )
         val exporter = MPBackupExporter(BackupQualifiedId("eghyue", "potato"))
