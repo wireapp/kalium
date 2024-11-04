@@ -21,8 +21,8 @@ import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.export.MPBackupExporter
-import com.wire.backup.import.BackupImportResult
-import com.wire.backup.import.MPBackupImporter
+import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.MPBackupImporter
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

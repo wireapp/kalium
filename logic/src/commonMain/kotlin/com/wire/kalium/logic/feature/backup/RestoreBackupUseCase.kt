@@ -19,8 +19,8 @@
 
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.backup.import.BackupImportResult
-import com.wire.backup.import.MPBackupImporter
+import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.MPBackupImporter
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
