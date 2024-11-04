@@ -17,12 +17,14 @@
  */
 package com.wire.backup.data
 
+import kotlinx.datetime.Instant
+
 internal actual fun BackupDateTime(timestamp: Long): BackupDateTime {
-    return timestamp
+    return Instant.fromEpochMilliseconds(timestamp)
 }
 
-actual typealias BackupDateTime = Long
+actual typealias BackupDateTime = Instant
 
 internal actual fun BackupDateTime.toLongMilliseconds(): Long {
-    return this
+    return this.toEpochMilliseconds()
 }

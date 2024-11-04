@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.MPBackup
 import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
@@ -188,6 +189,7 @@ internal class CreateBackupUseCaseImpl(
                                             senderClientId = message.senderClientId.value,
                                             content = BackupMessageContent.Text(content.value),
                                             id = message.id,
+                                            creationDate = message.date,
                                             conversationId = conversation.id.toBackup(),
                                         )
                                     )
