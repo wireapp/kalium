@@ -19,6 +19,7 @@ package com.wire.backup.ingest
 
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupData
+import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupMetadata
@@ -44,7 +45,7 @@ class MPBackupImporter(val selfUserDomain: String) {
                         info.platform,
                         info.version,
                         info.userId.toModel(),
-                        info.creationTime.toInstant(),
+                        BackupDateTime(info.creationTime),
                         info.clientId
                     ),
                     users.map { user ->
@@ -66,6 +67,7 @@ class MPBackupImporter(val selfUserDomain: String) {
                             conversationId = message.conversationId.toModel(),
                             senderUserId = message.senderUserId.toModel(),
                             senderClientId = message.senderClientId,
+                            creationDate = BackupDateTime(message.timeIso),
                             content = content
                         )
                     }.toTypedArray()
@@ -73,6 +75,7 @@ class MPBackupImporter(val selfUserDomain: String) {
             }
         )
     } catch (e: Exception) {
+        e.printStackTrace()
         println(e)
         BackupImportResult.ParsingFailure
     }

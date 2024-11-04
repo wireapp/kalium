@@ -15,18 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.backup.data
 
-import kotlin.js.JsExport
+import kotlin.js.Date
 
 @JsExport
-data class BackupMetadata(
-    val platform: String,
-    val version: String,
-    val userId: BackupQualifiedId,
-    val creationTime: BackupDateTime,
-    val clientId: String?
-)
+actual data class BackupDateTime(val date: Date)
 
-fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"
+internal actual fun BackupDateTime(timestamp: Long): BackupDateTime {
+    return BackupDateTime(Date(timestamp))
+}
+
+internal actual fun BackupDateTime.toLongMilliseconds(): Long {
+    return date.getTime().toLong()
+}

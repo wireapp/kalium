@@ -21,6 +21,7 @@ import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
+import com.wire.backup.data.toLongMilliseconds
 import com.wire.backup.data.toProtoModel
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
@@ -59,14 +60,14 @@ class MPBackupExporter(
                 platform = "Common",
                 version = "1.0",
                 userId = selfUserId.toProtoModel(),
-                creationTime = Clock.System.now().toString(),
+                creationTime = Clock.System.now().toEpochMilliseconds(),
                 clientId = "lol"
             ),
             allConversations.map { ExportedConversation(it.id.toProtoModel(), it.name) },
             allMessages.map {
                 ExportedMessage(
                     id = it.id,
-                    timeIso = Clock.System.now().toString(),
+                    timeIso = it.creationDate.toLongMilliseconds(),
                     senderUserId = it.senderUserId.toProtoModel(),
                     senderClientId = it.senderClientId,
                     conversationId = it.conversationId.toProtoModel(),

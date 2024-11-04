@@ -32,7 +32,7 @@ message BackupInfo {
     required string platform = 1;
     required string version = 2;
     required ExportedQualifiedId userId = 3;
-    required string creation_time = 4;
+    required int64 creation_time = 4;
     required string clientId = 5;
 }
 
@@ -54,7 +54,7 @@ message ExportedConversation {
 
 message ExportedMessage {
     required string id = 1;
-    required string time_iso = 2;
+    required int64 time_iso = 2;
     required ExportedQualifiedId sender_user_id = 3;
     required string sender_client_id = 4;
     required ExportedQualifiedId conversation_id = 5;

@@ -52,8 +52,14 @@ data class BackupMessage(
     val conversationId: BackupQualifiedId,
     val senderUserId: BackupQualifiedId,
     val senderClientId: String,
+    val creationDate: BackupDateTime,
     val content: BackupMessageContent
 )
+
+expect class BackupDateTime
+
+internal expect fun BackupDateTime(timestamp: Long): BackupDateTime
+internal expect fun BackupDateTime.toLongMilliseconds(): Long
 
 @JsExport
 sealed class BackupMessageContent {
