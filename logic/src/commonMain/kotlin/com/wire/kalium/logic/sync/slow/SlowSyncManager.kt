@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
+import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
+import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.util.ExponentialDurationHelper
@@ -176,11 +178,14 @@ internal class SlowSyncManager(
     }
 
     private suspend fun performSlowSync(migrationSteps: List<SyncMigrationStep>) {
+        val syncLogger = kaliumLogger.provideNewSyncManagerLogger(SyncType.SLOW)
+        syncLogger.logSyncStarted()
         logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
         slowSyncWorker.slowSyncStepsFlow(migrationSteps).cancellable().collect { step ->
             logger.i("Performing SlowSyncStep $step")
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(step))
         }
+        syncLogger.logSyncCompleted()
         logger.i("SlowSync completed. Updating last completion instant")
         slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
         slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
