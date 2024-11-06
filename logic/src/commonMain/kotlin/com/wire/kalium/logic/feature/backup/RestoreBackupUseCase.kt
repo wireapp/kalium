@@ -96,7 +96,7 @@ internal class RestoreBackupUseCaseImpl(
                     }
                 }
                 .fold({ error ->
-                    kaliumLogger.e("$TAG Failed to restore the backup, reason: ${error.failure.cause}")
+                    kaliumLogger.e("$TAG Failed to restore the backup, reason: ${error.failure}")
                     error
                 }, {
                     kaliumLogger.i("$TAG Backup restored successfully")
