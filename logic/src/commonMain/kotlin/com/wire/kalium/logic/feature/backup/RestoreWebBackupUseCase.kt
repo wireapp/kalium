@@ -80,7 +80,7 @@ internal class RestoreWebBackupUseCaseImpl(
             } else {
                 Either.Left(IncompatibleBackup("invoke: The provided backup format is not supported"))
             }.fold({ error ->
-                kaliumLogger.e("$TAG Failed to restore the backup, reason: ${error}")
+                kaliumLogger.e("$TAG Failed to restore the backup, reason: $error")
                 RestoreBackupResult.Failure(error)
             }, {
                 kaliumLogger.i("$TAG Successfully restored the backup")
