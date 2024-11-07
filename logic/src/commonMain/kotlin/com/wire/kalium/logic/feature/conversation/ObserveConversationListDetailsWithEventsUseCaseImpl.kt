@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
+import com.wire.kalium.logic.data.conversation.ConversationFilter
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -28,14 +29,20 @@ import kotlinx.coroutines.flow.Flow
  * @see ConversationDetails
  */
 fun interface ObserveConversationListDetailsWithEventsUseCase {
-    suspend operator fun invoke(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>>
+    suspend operator fun invoke(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter,
+    ): Flow<List<ConversationDetailsWithEvents>>
 }
 
 internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
 ) : ObserveConversationListDetailsWithEventsUseCase {
 
-    override suspend operator fun invoke(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>> {
-        return conversationRepository.observeConversationListDetailsWithEvents(fromArchive)
+    override suspend operator fun invoke(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter,
+    ): Flow<List<ConversationDetailsWithEvents>> {
+        return conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter)
     }
 }

@@ -132,7 +132,10 @@ interface ConversationRepository {
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
-    suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean = false): Flow<List<ConversationDetailsWithEvents>>
+    suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean = false,
+        conversationFilter: ConversationFilter = ConversationFilter.ALL,
+    ): Flow<List<ConversationDetailsWithEvents>>
     suspend fun getConversationIds(
         type: Conversation.Type,
         protocol: Conversation.Protocol,
@@ -522,9 +525,12 @@ internal class ConversationDataSource internal constructor(
             conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
         }
 
-    override suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>> =
+    override suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter,
+    ): Flow<List<ConversationDetailsWithEvents>> =
         combine(
-            conversationDAO.getAllConversationDetails(fromArchive),
+            conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()
