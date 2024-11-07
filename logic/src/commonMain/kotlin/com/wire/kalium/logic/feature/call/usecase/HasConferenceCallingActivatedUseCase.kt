@@ -33,18 +33,19 @@ import kotlinx.coroutines.flow.zip
  * This can be used to inform user about the change, for example displaying a dialog about upgrading to enterprise edition.
  */
 interface HasConferenceCallingActivatedUseCase {
-    suspend operator fun invoke(): Flow<Any>
+    suspend operator fun invoke(): Flow<Boolean>
 }
 
 internal class HasConferenceCallingActivatedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
 ) : HasConferenceCallingActivatedUseCase {
-    override suspend fun invoke(): Flow<Any> {
+    override suspend fun invoke(): Flow<Boolean> {
         val enabledFlow = userConfigRepository.isConferenceCallingEnabledFlow()
             .map { isEnabled -> isEnabled.fold({ false }, { it }) }
         return enabledFlow
             .zip(enabledFlow.drop(1)) { old, new -> old to new }
             .filter { (old, new) -> !old && new }
+            .map { (_, new) -> new }
             .distinctUntilChanged()
     }
 }
