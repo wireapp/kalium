@@ -137,16 +137,6 @@ WHERE
     )
     AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
     AND archived = :fromArchive
-    AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
-        -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
-        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
-        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        -- When filter is FAVORITES (future implementation)
-        ELSE 1 = 0
-    END
     AND isActive
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
