@@ -31,7 +31,7 @@ import kotlin.test.assertTrue
 class HasConferenceCallingActivatedUseCaseTest {
 
     @Test
-    fun givenOnlyDefaultConferenceCallingValue_thenDoNotReturnAnything() = runTest {
+    fun givenOnlyDefaultConferenceCallingValue_whenNewValueIsNotPresent_thenDoNotReturnAnything() = runTest {
         // given
         val (_, useCase) = Arrangement()
             .withDefaultValue(listOf(false))
