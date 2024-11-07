@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
-import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.Companion.MESSAGE_DRAFT_ENTITY
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.Companion.MESSAGE_PREVIEW_ENTITY
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
@@ -427,6 +426,8 @@ class ConversationMapperTest {
         val OTHER_MEMBERS =
             listOf(ConversationMemberDTO.Other(service = null, id = UserId("other1", "domain1"), conversationRole = "wire_admin"))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
+        val MESSAGE_DRAFT_ENTITY = MessageDraftEntity(TestConversation.VIEW_ENTITY.id, "text", null, null, listOf())
+
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             MEMBERS_RESPONSE,

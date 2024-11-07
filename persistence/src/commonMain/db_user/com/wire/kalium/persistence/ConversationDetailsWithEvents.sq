@@ -88,10 +88,20 @@ ORDER BY
     name COLLATE NOCASE ASC;
 
 selectConversationDetailsWithEvents:
-    SELECT * FROM ConversationDetailsWithEvents
-    WHERE
-        archived = :fromArchive
-        AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
+SELECT * FROM ConversationDetailsWithEvents
+WHERE
+    archived = :fromArchive
+    AND CASE
+        -- When filter is ALL, do not apply additional filters on conversation type
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        -- When filter is FAVORITES (future implementation)
+        ELSE 1 = 0
+    END
+    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     ORDER BY
         CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
         lastModifiedDate DESC,
@@ -104,6 +114,16 @@ selectConversationDetailsWithEventsFromSearch:
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
     archived = :fromArchive
+    AND CASE
+        -- When filter is ALL, do not apply additional filters on conversation type
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        -- When filter is FAVORITES (future implementation)
+        ELSE 1 = 0
+    END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%')
 ORDER BY
@@ -127,6 +147,16 @@ WHERE
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
     AND archived = :fromArchive
+    AND CASE
+        -- When filter is ALL, do not apply additional filters on conversation type
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        -- When filter is FAVORITES (future implementation)
+        ELSE 1 = 0
+    END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END;
 
 countConversationDetailsWithEventsFromSearch:
@@ -142,5 +172,15 @@ WHERE
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
     AND archived = :fromArchive
+    AND CASE
+        -- When filter is ALL, do not apply additional filters on conversation type
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        -- When filter is FAVORITES (future implementation)
+        ELSE 1 = 0
+    END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%');

@@ -193,6 +193,8 @@ class UserDatabaseBuilder internal constructor(
             conversationDetailsCache,
             conversationCache,
             database.conversationsQueries,
+            database.conversationDetailsQueries,
+            database.conversationDetailsWithEventsQueries,
             database.membersQueries,
             database.unreadEventsQueries,
             queriesContext,
