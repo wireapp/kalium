@@ -20,8 +20,9 @@ package com.wire.kalium.logic.data.properties
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.ConversationFolder
-import com.wire.kalium.logic.data.conversation.toFolder
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
+import com.wire.kalium.logic.data.conversation.folders.toFolder
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -41,12 +42,13 @@ interface UserPropertyRepository {
     suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit>
     suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>
-    suspend fun getLabels(): Either<CoreFailure, List<ConversationFolder>>
+    suspend fun getConversationFolders(): Either<CoreFailure, List<FolderWithConversations>>
 }
 
 internal class UserPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
+    private val selfUserId: UserId
 ) : UserPropertyRepository {
     override suspend fun getReadReceiptsStatus(): Boolean =
         userConfigRepository.isReadReceiptsEnabled()
@@ -87,10 +89,8 @@ internal class UserPropertyDataSource(
         userConfigRepository.setTypingIndicatorStatus(false)
     }
 
-    override suspend fun getLabels(): Either<CoreFailure, List<ConversationFolder>> = wrapApiRequest {
+    override suspend fun getConversationFolders(): Either<CoreFailure, List<FolderWithConversations>> = wrapApiRequest {
         propertiesApi.getLabels()
     }
-        .map {
-            it.labels.map { label -> label.toFolder() }
-        }
+        .map { it.labels.map { label -> label.toFolder(selfUserId.domain) } }
 }

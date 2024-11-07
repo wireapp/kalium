@@ -17,29 +17,22 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.network.api.authenticated.properties.LabelDTO
-import com.wire.kalium.network.api.authenticated.properties.LabelType
+import com.wire.kalium.logic.data.id.QualifiedID
 
 data class ConversationFolder(
-    val conversationIdList: List<String>, // TODO federation is not supported
     val id: String,
     val name: String,
     val type: FolderType
 )
 
-enum class FolderType {
-    USER,
-    FAVORITES,
-}
-
-fun LabelDTO.toFolder() = ConversationFolder(
-    conversationIdList = conversations,
-    id = id,
-    name = name,
-    type = type.toFolderType()
+data class FolderWithConversations(
+    val id: String,
+    val name: String,
+    val type: FolderType,
+    val conversationIdList: List<QualifiedID>
 )
 
-fun LabelType.toFolderType() = when (this) {
-    LabelType.USER -> FolderType.USER
-    LabelType.FAVORITE -> FolderType.FAVORITES
+enum class FolderType {
+    USER,
+    FAVORITE,
 }

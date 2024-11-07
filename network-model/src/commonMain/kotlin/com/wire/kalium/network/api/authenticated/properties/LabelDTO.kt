@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.authenticated.properties
 
+import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -35,28 +36,30 @@ data class LabelDTO(
     @SerialName("id") val id: String,
     @SerialName("name") val name: String,
     @Serializable(with = LabelTypeSerializer::class)
-    @SerialName("type") val type: LabelType,
-    @SerialName("conversations") val conversations: List<String>
+    @SerialName("type") val type: LabelTypeDTO,
+    @Deprecated("Use qualifiedConversations instead")
+    @SerialName("conversations") val conversations: List<String>,
+    @SerialName("qualified_conversations") val qualifiedConversations: List<QualifiedID>?
 )
 
-enum class LabelType(val value: Int) {
+enum class LabelTypeDTO(val value: Int) {
     USER(0),
     FAVORITE(1)
 }
 
-object LabelTypeSerializer : KSerializer<LabelType> {
+object LabelTypeSerializer : KSerializer<LabelTypeDTO> {
     override val descriptor = PrimitiveSerialDescriptor("type", PrimitiveKind.INT)
 
-    override fun serialize(encoder: Encoder, value: LabelType) {
+    override fun serialize(encoder: Encoder, value: LabelTypeDTO) {
         encoder.encodeInt(value.value)
     }
 
-    override fun deserialize(decoder: Decoder): LabelType {
+    override fun deserialize(decoder: Decoder): LabelTypeDTO {
         val value = decoder.decodeInt()
         return if (value == 1) {
-            LabelType.FAVORITE
+            LabelTypeDTO.FAVORITE
         } else {
-            LabelType.USER
+            LabelTypeDTO.USER
         }
     }
 }

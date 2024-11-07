@@ -25,6 +25,10 @@ JOIN ConversationDetailsWithEvents
     ON LabeledConversation.conversation_id = ConversationDetailsWithEvents.qualifiedId
 WHERE LabeledConversation.folder_id = :folderId;
 
+getFavoriteFolder:
+SELECT * FROM ConversationFolder WHERE folder_type = 'FAVORITE'
+LIMIT 1;
+
 upsertFolder:
 INSERT INTO ConversationFolder(id, name, folder_type)
 VALUES( ?, ?, ?)

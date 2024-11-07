@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.functional.Either
@@ -31,7 +32,8 @@ import com.wire.kalium.logic.util.createEventProcessingLogger
 internal interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>
 
 internal class UserPropertiesEventReceiverImpl internal constructor(
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val conversationFolderRepository: ConversationFolderRepository
 ) : UserPropertiesEventReceiver {
 
     override suspend fun onEvent(event: Event.UserProperty, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
@@ -70,11 +72,13 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
             .onFailure { logger.logFailure(it) }
     }
 
-    private fun handleFoldersUpdate(
+    private suspend fun handleFoldersUpdate(
         event: Event.UserProperty.FoldersUpdate
     ): Either<CoreFailure, Unit> {
-        // TODO KBX implement
         val logger = kaliumLogger.createEventProcessingLogger(event)
-        return Either.Right(Unit)
+        return conversationFolderRepository
+            .updateConversationFolders(event.folders)
+            .onSuccess { logger.logSuccess() }
+            .onFailure { logger.logFailure(it) }
     }
 }

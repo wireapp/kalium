@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
-import com.wire.kalium.logic.data.conversation.toFolder
+import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
@@ -48,6 +48,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_RECEIPT_MODE
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_LABELS
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
@@ -247,7 +248,7 @@ class EventMapper(
 
             is EventContentDTO.FieldLabelListValue -> Event.UserProperty.FoldersUpdate(
                 id = id,
-                folders = fieldKeyValue.labels.map { it.toFolder() }
+                folders = fieldKeyValue.labels.map { it.toFolder(selfUserId.domain) }
             )
 
             is EventContentDTO.FieldUnknownValue -> unknown(

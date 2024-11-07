@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
 import com.wire.kalium.logic.data.conversation.ConversationFolder
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
@@ -712,12 +713,12 @@ sealed class Event(open val id: String) {
 
         data class FoldersUpdate(
             override val id: String,
-            val folders: List<ConversationFolder>,
+            val folders: List<FolderWithConversations>,
         ) : UserProperty(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserProperty.FoldersUpdate",
                 idKey to id.obfuscateId(),
-                "folders" to folders
+                "folders" to folders.map { it.id.obfuscateId() }
             )
         }
     }

@@ -22,4 +22,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface ConversationFolderDAO {
     suspend fun observerConversationFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>>
+    suspend fun getFavoriteConversationFolder(): ConversationFolderEntity
+    suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>)
 }

@@ -410,7 +410,7 @@ sealed class EventContentDTO {
     value class FieldUnknownValue(val value: String) : FieldKeyValue
 
     @Serializable
-    data class FieldLabelListValue(@SerialName("labels") val labels: List<LabelDTO>) : FieldKeyValue
+    data class FieldLabelListValue(@SerialName("labels") val labels: List<LabelDTO>) : FieldKeyValue// TODO NEED ALSO JSON OBJECT
 
     @Serializable
     @SerialName("unknown")
@@ -418,7 +418,6 @@ sealed class EventContentDTO {
 }
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
-@Serializer(EventContentDTO.FieldKeyValue::class)
 object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
     override val descriptor = buildSerialDescriptor("value", PolymorphicKind.SEALED)
     override fun serialize(encoder: Encoder, value: EventContentDTO.FieldKeyValue) {

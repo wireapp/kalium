@@ -17,11 +17,19 @@
  */
 package com.wire.kalium.persistence.dao.conversation.folder
 
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+
 data class ConversationFolderEntity(
     val id: String,
     val name: String,
-    val conversations: List<String>,
     val type: ConversationFolderTypeEntity
+)
+
+data class FolderWithConversationsEntity(
+    val id: String,
+    val name: String,
+    val type: ConversationFolderTypeEntity,
+    val conversationIdList: List<QualifiedIDEntity>
 )
 
 enum class ConversationFolderTypeEntity {

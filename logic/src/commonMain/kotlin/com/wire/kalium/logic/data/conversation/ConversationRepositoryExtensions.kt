@@ -40,8 +40,7 @@ interface ConversationRepositoryExtensions {
 
 class ConversationRepositoryExtensionsImpl internal constructor(
     private val conversationDAO: ConversationDAO,
-    private val conversationMapper: ConversationMapper,
-    private val messageMapper: MessageMapper,
+    private val conversationMapper: ConversationMapper
 ) : ConversationRepositoryExtensions {
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
@@ -61,27 +60,13 @@ class ConversationRepositoryExtensionsImpl internal constructor(
             )
         }
 
-        return pager.pagingDataFlow.map {
-            it.map {
-                ConversationDetailsWithEvents(
-                    conversationDetails = conversationMapper.fromDaoModelToDetails(it.conversationViewEntity),
-                    lastMessage = when {
-                        it.messageDraft != null -> messageMapper.fromDraftToMessagePreview(it.messageDraft!!)
-                        it.lastMessage != null -> messageMapper.fromEntityToMessagePreview(it.lastMessage!!)
-                        else -> null
-                    },
-                    unreadEventCount = it.unreadEvents.unreadEvents.mapKeys {
-                        when (it.key) {
-                            UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
-                            UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
-                            UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
-                            UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
-                            UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
-                        }
-                    },
-                    hasNewActivitiesToShow = it.hasNewActivitiesToShow,
-                )
-            }
+        return pager.pagingDataFlow.map { pagingData ->
+            pagingData
+                .map { conversationDetailsWithEventsEntity ->
+                    conversationMapper.toModelConversationWithEvents(
+                        conversationDetailsWithEventsEntity
+                    )
+                }
         }
     }
 }
