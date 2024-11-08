@@ -31,7 +31,7 @@ SELECT
     -- last message
     Message.id AS lastMessageId,
     Message.content_type AS lastMessageContentType,
-    Message.creation_date AS lastMessageDatfe,
+    Message.creation_date AS lastMessageDate,
     Message.visibility AS lastMessageVisibility,
     Message.sender_user_id AS lastMessageSenderUserId,
     (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
