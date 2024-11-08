@@ -15,12 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v7.unauthenticated
 
-package com.wire.kalium.network.api.v6.authenticated
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v6.unauthenticated.DomainLookupApiV6
 
-import com.wire.kalium.network.api.v5.authenticated.AccessTokenApiV5
-import io.ktor.client.HttpClient
-
-internal open class AccessTokenApiV6 internal constructor(
-    private val httpClient: HttpClient
-) : AccessTokenApiV5(httpClient)
+internal open class DomainLookupApiV7 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : DomainLookupApiV6(unauthenticatedNetworkClient)

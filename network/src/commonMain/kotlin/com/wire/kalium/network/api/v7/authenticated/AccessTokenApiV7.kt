@@ -16,11 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v6.authenticated
+package com.wire.kalium.network.api.v7.authenticated
 
-import com.wire.kalium.network.api.v5.authenticated.AccessTokenApiV5
+import com.wire.kalium.network.api.v6.authenticated.AccessTokenApiV6
 import io.ktor.client.HttpClient
 
-internal open class AccessTokenApiV6 internal constructor(
+internal open class AccessTokenApiV7 internal constructor(
     private val httpClient: HttpClient
-) : AccessTokenApiV5(httpClient)
+) : AccessTokenApiV6(httpClient)
