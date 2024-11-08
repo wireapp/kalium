@@ -94,7 +94,6 @@ copy_container_files "network/src/commonMain/kotlin/com/wire/kalium/network/api/
 
 echo
 
-# Add the new API version to DevelopmentApiVersions
 # Add the new API version to DevelopmentApiVersions if it does not already contain it
 if ! grep -q "$3" network/src/commonMain/kotlin/com/wire/kalium/network/BackendMetaDataUtil.kt; then
   sed -i '' "s/\(val DevelopmentApiVersions = setOf(.*\))/\1, $3)/" network/src/commonMain/kotlin/com/wire/kalium/network/BackendMetaDataUtil.kt
