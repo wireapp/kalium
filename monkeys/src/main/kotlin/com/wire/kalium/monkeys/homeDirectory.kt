@@ -29,12 +29,14 @@ fun coreLogic(
     rootPath: String,
 ): CoreLogic {
     val coreLogic = CoreLogic(
-        rootPath, kaliumConfigs = KaliumConfigs(
+        rootPath = rootPath,
+        kaliumConfigs = KaliumConfigs(
             developmentApiEnabled = true,
             encryptProteusStorage = true,
-            isMLSSupportEnabled = true,
             wipeOnDeviceRemoval = true,
-        ), userAgent = "Wire Infinite Monkeys", useInMemoryStorage = true
+        ),
+        userAgent = "Wire Infinite Monkeys",
+        useInMemoryStorage = true
     )
     coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
     return coreLogic

@@ -18,8 +18,10 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.util.DelicateKaliumApi
 
@@ -39,8 +41,12 @@ interface IsAllowedToRegisterMLSClientUseCase {
 internal class IsAllowedToRegisterMLSClientUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
+    private val userConfigRepository: UserConfigRepository
 ) : IsAllowedToRegisterMLSClientUseCase {
 
-    override suspend operator fun invoke(): Boolean =
-        featureSupport.isMLSSupported && mlsPublicKeysRepository.getKeys().isRight()
+    override suspend operator fun invoke(): Boolean {
+        return featureSupport.isMLSSupported &&
+                mlsPublicKeysRepository.getKeys().isRight() &&
+                userConfigRepository.isMLSEnabled().fold({ false }, { isEnabled -> isEnabled })
+    }
 }

@@ -95,7 +95,13 @@ internal class RestoreBackupUseCaseImpl(
                         importEncryptedBackup(extractedBackupRootPath, password)
                     }
                 }
-                .fold({ it }, { RestoreBackupResult.Success })
+                .fold({ error ->
+                    kaliumLogger.e("$TAG Failed to restore the backup, reason: ${error.failure}")
+                    error
+                }, {
+                    kaliumLogger.i("$TAG Backup restored successfully")
+                    RestoreBackupResult.Success
+                })
         }
 
     private suspend fun importUnencryptedBackup(
@@ -140,7 +146,7 @@ internal class RestoreBackupUseCaseImpl(
         val extractedFilesRootPath = createExtractedFilesRootPath()
         return extractFiles(tempCompressedFileSource, extractedFilesRootPath)
             .fold({
-                kaliumLogger.e("Failed to extract backup files")
+                kaliumLogger.e("$TAG Failed to extract backup files")
                 Either.Left(Failure(BackupIOFailure("Failed to extract backup files")))
             }, {
                 Either.Right(extractedFilesRootPath)
@@ -176,7 +182,7 @@ internal class RestoreBackupUseCaseImpl(
         return if (backupSize > 0) {
             // On successful decryption, we still need to extract the zip file to do sanity checks and get the database file
             extractFiles(kaliumFileSystem.source(extractedBackupPath), extractedBackupRootPath).fold({
-                kaliumLogger.e("Failed to extract encrypted backup files")
+                kaliumLogger.e("$TAG Failed to extract encrypted backup files")
                 Either.Left(Failure(BackupIOFailure("Failed to extract encrypted backup files")))
             }, {
                 kaliumFileSystem.delete(extractedBackupPath)

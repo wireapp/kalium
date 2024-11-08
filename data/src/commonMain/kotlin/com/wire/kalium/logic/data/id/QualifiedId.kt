@@ -33,7 +33,8 @@ data class QualifiedID(
     @SerialName("domain")
     val domain: String
 ) {
-    override fun toString(): String = if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
+    override fun toString(): String =
+        if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
 
     fun toLogString(): String = if (domain.isEmpty()) {
         value.obfuscateId()
@@ -43,6 +44,16 @@ data class QualifiedID(
 
     fun toPlainID(): PlainId = PlainId(value)
 
+    /**
+     * This checks if the domain in either instances is blank. If it is, it will compare only the value.
+     * To be used when when of the instance do not have domain due to the API limitations.
+     */
+    fun equalsIgnoringBlankDomain(other: QualifiedID): Boolean {
+        if (domain.isBlank() || other.domain.isBlank()) {
+            return value == other.value
+        }
+        return this == other
+    }
 }
 
 const val VALUE_DOMAIN_SEPARATOR = '@'
