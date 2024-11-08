@@ -20,6 +20,12 @@ package com.wire.kalium.network.api.authenticated.client
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonTransformingSerializer
 
 @Serializable
 data class ClientDTO(
@@ -30,10 +36,27 @@ data class ClientDTO(
     @SerialName("id") val clientId: String,
     @SerialName("type") val type: ClientTypeDTO,
     @SerialName("class") val deviceType: DeviceTypeDTO = DeviceTypeDTO.Unknown,
-    @SerialName("capabilities") val capabilities: Capabilities?,
+    @SerialName("capabilities")
+    @Serializable(with = CapabilitiesDeserializer::class)
+    val capabilities: List<ClientCapabilityDTO>,
     @SerialName("label") val label: String?,
     @SerialName("mls_public_keys") val mlsPublicKeys: Map<String, String>?
 )
+
+/**
+ * Sometimes the capabilities are wrapped in an object, sometimes they are just an array.
+ * See [documentation](https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/1309868033/API+changes+v6+v7)
+ */
+object CapabilitiesDeserializer :
+    JsonTransformingSerializer<List<ClientCapabilityDTO>>(ListSerializer(ClientCapabilityDTO.serializer())) {
+    override fun transformDeserialize(element: JsonElement): JsonElement {
+        return when {
+            element is JsonObject && element.containsKey("capabilities") -> element["capabilities"]!!
+            element is JsonArray -> element
+            else -> throw SerializationException("Unexpected JSON format for capabilities")
+        }
+    }
+}
 
 @Serializable
 data class ClientsOfUsersResponse(
