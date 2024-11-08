@@ -15,9 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-@file:Suppress("MagicNumber")
-
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
@@ -25,6 +22,8 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 
 val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
+// You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
+// bump API version and generate all needed classes
 val DevelopmentApiVersions = setOf(6)
 
 interface BackendMetaDataUtil {
@@ -45,8 +44,13 @@ object BackendMetaDataUtilImpl : BackendMetaDataUtil {
         developmentApiEnabled: Boolean
     ): ServerConfigDTO.MetaData {
 
-        val allSupportedApiVersions = if (developmentApiEnabled) supportedApiVersions + developmentApiVersions else supportedApiVersions
-        val apiVersion = commonApiVersion(versionInfoDTO, allSupportedApiVersions, developmentApiEnabled)?.let { maxCommonVersion ->
+        val allSupportedApiVersions =
+            if (developmentApiEnabled) supportedApiVersions + developmentApiVersions else supportedApiVersions
+        val apiVersion = commonApiVersion(
+            versionInfoDTO,
+            allSupportedApiVersions,
+            developmentApiEnabled
+        )?.let { maxCommonVersion ->
             ApiVersionDTO.Valid(maxCommonVersion)
         } ?: run {
             handleNoCommonVersion(versionInfoDTO.supported, allSupportedApiVersions)
@@ -59,16 +63,24 @@ object BackendMetaDataUtilImpl : BackendMetaDataUtil {
         )
     }
 
-    private fun commonApiVersion(serverVersion: VersionInfoDTO, supportedApiVersions: Set<Int>, developmentAPIEnabled: Boolean): Int? {
-        val serverSupportedApiVersions: List<Int> = if (developmentAPIEnabled && serverVersion.developmentSupported != null) {
-            serverVersion.supported + serverVersion.developmentSupported!!
-        } else {
-            serverVersion.supported
-        }
+    private fun commonApiVersion(
+        serverVersion: VersionInfoDTO,
+        supportedApiVersions: Set<Int>,
+        developmentAPIEnabled: Boolean
+    ): Int? {
+        val serverSupportedApiVersions: List<Int> =
+            if (developmentAPIEnabled && serverVersion.developmentSupported != null) {
+                serverVersion.supported + serverVersion.developmentSupported!!
+            } else {
+                serverVersion.supported
+            }
         return serverSupportedApiVersions.intersect(supportedApiVersions).maxOrNull()
     }
 
-    private fun handleNoCommonVersion(serverVersion: List<Int>, appVersion: Set<Int>): ApiVersionDTO.Invalid {
+    private fun handleNoCommonVersion(
+        serverVersion: List<Int>,
+        appVersion: Set<Int>
+    ): ApiVersionDTO.Invalid {
         return serverVersion.maxOrNull()?.let { maxBEVersion ->
             appVersion.maxOrNull()?.let { maxAppVersion ->
                 if (maxBEVersion > maxAppVersion) ApiVersionDTO.Invalid.New

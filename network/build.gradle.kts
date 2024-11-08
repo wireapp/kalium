@@ -111,3 +111,22 @@ android {
         it.enabled = false
     }
 }
+
+tasks.register<Exec>("generateNewApiVersion") {
+    group = "custom"
+    description = "Generates a new API version by calling the generate_new_api_version.sh script"
+
+    val previousApiVersion = project.findProperty("previousApiVersion") as String? ?: ""
+    val currentApiVersion = project.findProperty("currentApiVersion") as String? ?: ""
+    val newApiVersion = project.findProperty("newApiVersion") as String? ?: ""
+
+    doFirst {
+        if (previousApiVersion == "" || currentApiVersion == "" || newApiVersion == "") {
+            println("Usage: ./gradlew :moduleName:generateNewApiVersion -PpreviousApiVersion=<previous> -PcurrentApiVersion=<current> -PnewApiVersion=<new>")
+            println("Example: ./gradlew :moduleName:generateNewApiVersion -PpreviousApiVersion=5 -PcurrentApiVersion=6 -PnewApiVersion=7")
+            throw IllegalArgumentException("All parameters (previousApiVersion, currentApiVersion, newApiVersion) must be provided.")
+        }
+    }
+
+    commandLine("bash", "./../scripts/generate_new_api_version.sh", previousApiVersion, currentApiVersion, newApiVersion)
+}
