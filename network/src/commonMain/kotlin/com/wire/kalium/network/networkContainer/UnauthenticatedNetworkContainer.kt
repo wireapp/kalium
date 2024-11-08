@@ -34,7 +34,6 @@ import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
 import com.wire.kalium.network.api.v6.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV6
-import com.wire.kalium.network.api.v7.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV7
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
@@ -114,14 +113,6 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 6 -> UnauthenticatedNetworkContainerV6(
-                    backendLinks = serverConfigDTO,
-                    proxyCredentials = proxyCredentials,
-                    certificatePinning = certificatePinning,
-                    mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
-                )
-
-                7 -> UnauthenticatedNetworkContainerV7(
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
