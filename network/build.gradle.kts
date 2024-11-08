@@ -122,11 +122,26 @@ tasks.register<Exec>("generateNewApiVersion") {
 
     doFirst {
         if (previousApiVersion == "" || currentApiVersion == "" || newApiVersion == "") {
-            println("Usage: ./gradlew :moduleName:generateNewApiVersion -PpreviousApiVersion=<previous> -PcurrentApiVersion=<current> -PnewApiVersion=<new>")
-            println("Example: ./gradlew :moduleName:generateNewApiVersion -PpreviousApiVersion=5 -PcurrentApiVersion=6 -PnewApiVersion=7")
-            throw IllegalArgumentException("All parameters (previousApiVersion, currentApiVersion, newApiVersion) must be provided.")
+            println(
+                "Usage: ./gradlew :moduleName:generateNewApiVersion " +
+                        "-PpreviousApiVersion=<previous> -PcurrentApiVersion=<current> -PnewApiVersion=<new>"
+            )
+            println(
+                "Example: ./gradlew :moduleName:generateNewApiVersion " +
+                        "-PpreviousApiVersion=5 -PcurrentApiVersion=6 -PnewApiVersion=7"
+            )
+            throw IllegalArgumentException(
+                "All parameters (previousApiVersion, " +
+                        "currentApiVersion, newApiVersion) must be provided."
+            )
         }
     }
 
-    commandLine("bash", "./../scripts/generate_new_api_version.sh", previousApiVersion, currentApiVersion, newApiVersion)
+    commandLine(
+        "bash",
+        "./../scripts/generate_new_api_version.sh",
+        previousApiVersion,
+        currentApiVersion,
+        newApiVersion
+    )
 }

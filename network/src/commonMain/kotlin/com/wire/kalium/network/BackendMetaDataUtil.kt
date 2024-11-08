@@ -22,9 +22,10 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 
 val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
+val DevelopmentApiVersions = setOf(6)
+
 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
 // bump API version and generate all needed classes
-val DevelopmentApiVersions = setOf(6)
 
 interface BackendMetaDataUtil {
     fun calculateApiVersion(
