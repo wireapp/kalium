@@ -49,6 +49,8 @@ copy_api_files() {
       new_content=$(echo "$new_content" | sed "s/\(: \)\(.*\)$previousApiVersionUpper/\1\2$currentApiVersionUpper/g")
       # class names in inheritance changed from previous to current version
       new_content=$(echo "$new_content" | sed "s/\(: \)\(.*\)$previousApiVersionUpper/\1\2$currentApiVersionUpper/g")
+      # Make class definitions empty inside {}
+      new_content=$(echo "$new_content" | perl -0777 -pe "s|({[\W\w]*\})|\2\{\}|g")
       # New file name with newApiVersion
       new_filename=$(basename "$file" | sed "s/$currentApiVersionUpper/$newApiVersionUpper/g")
       echo "$new_content" >"$target_dir/$new_filename"
