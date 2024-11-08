@@ -1,3 +1,103 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
+import kotlin.Boolean;
+import kotlin.Float;
+import kotlin.Int;
+import kotlin.String;
+import kotlin.collections.List;
+import kotlinx.datetime.Instant;
+
+CREATE INDEX call_status ON Call(status);
+CREATE INDEX unread_event_conversation ON UnreadEvent(conversation_id);
+CREATE INDEX unread_event_date ON UnreadEvent(creation_date);
+CREATE INDEX unread_event_type ON UnreadEvent(type);
+
+CREATE TABLE LastMessage (
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      message_id TEXT NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id)
+);
+
+CREATE TRIGGER updateLastMessageAfterInsertingNewMessage
+AFTER INSERT ON Message
+WHEN
+    new.visibility IN ('VISIBLE', 'DELETED')
+    OR new.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+BEGIN
+    INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+    VALUES (new.conversation_id, new.id, new.creation_date)
+    ON CONFLICT(conversation_id)
+        DO UPDATE SET
+            message_id = excluded.message_id,
+            creation_date = excluded.creation_date
+        WHERE
+            excluded.creation_date > LastMessage.creation_date;
+END;
+
+CREATE TRIGGER updateLastMessageAfterDeletingLastMessage
+AFTER DELETE ON LastMessage
+BEGIN
+    INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+    SELECT conversation_id, id, creation_date
+    FROM Message
+    WHERE
+        old.conversation_id = Message.conversation_id
+		AND Message.visibility IN ('VISIBLE', 'DELETED')
+		AND Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+    ORDER BY creation_date DESC
+    LIMIT 1
+    ON CONFLICT(conversation_id)
+        DO UPDATE SET
+            message_id = excluded.message_id,
+            creation_date = excluded.creation_date
+        WHERE
+            excluded.creation_date > LastMessage.creation_date;
+END;
+
+CREATE TRIGGER updateLastMessageAfterUpdatingLastMessage
+AFTER UPDATE OF visibility, content_type, creation_date ON Message
+WHEN
+    new.creation_date >= (SELECT creation_date FROM LastMessage WHERE conversation_id = new.conversation_id LIMIT 1)
+BEGIN
+    INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+    SELECT conversation_id, id, creation_date
+    FROM Message
+    WHERE
+        old.conversation_id = Message.conversation_id
+		AND Message.visibility IN ('VISIBLE', 'DELETED')
+		AND Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+    ORDER BY creation_date DESC
+    LIMIT 1
+    ON CONFLICT(conversation_id)
+        DO UPDATE SET
+            message_id = excluded.message_id,
+            creation_date = excluded.creation_date
+        WHERE
+            excluded.creation_date > LastMessage.creation_date;
+END;
+
+-- populate LastMessage table with the last message of each conversation
+INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+SELECT conversation_id, id, creation_date
+FROM Message
+WHERE
+    visibility IN ('VISIBLE', 'DELETED')
+    AND content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+GROUP BY conversation_id
+HAVING creation_date = MAX(creation_date);
+
+DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+
 CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
 SELECT
     ConversationDetails.*,
@@ -77,71 +177,3 @@ WHERE
     )
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive;
-
-selectAllConversationDetailsWithEvents:
-SELECT * FROM ConversationDetailsWithEvents
-WHERE archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
-    lastModifiedDate DESC,
-    name IS NULL,
-    name COLLATE NOCASE ASC;
-
-selectConversationDetailsWithEvents:
-    SELECT * FROM ConversationDetailsWithEvents
-    WHERE
-        archived = :fromArchive
-        AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    ORDER BY
-        CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
-        lastModifiedDate DESC,
-        name IS NULL,
-        name COLLATE NOCASE ASC
-    LIMIT :limit
-    OFFSET :offset;
-
-selectConversationDetailsWithEventsFromSearch:
-SELECT * FROM ConversationDetailsWithEvents
-WHERE
-    archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    AND name LIKE ('%' || :searchQuery || '%')
-ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
-    lastModifiedDate DESC,
-    name IS NULL,
-    name COLLATE NOCASE ASC
-LIMIT :limit
-OFFSET :offset;
-
-countConversationDetailsWithEvents:
-SELECT COUNT(*) FROM ConversationDetails
-WHERE
-    ConversationDetails.type IS NOT 'SELF'
-    AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
-    )
-    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
-    AND ConversationDetails.isActive
-    AND archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END;
-
-countConversationDetailsWithEventsFromSearch:
-SELECT COUNT(*) FROM ConversationDetails
-WHERE
-    ConversationDetails.type IS NOT 'SELF'
-    AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
-    )
-    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
-    AND ConversationDetails.isActive
-    AND archived = :fromArchive
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    AND name LIKE ('%' || :searchQuery || '%');
