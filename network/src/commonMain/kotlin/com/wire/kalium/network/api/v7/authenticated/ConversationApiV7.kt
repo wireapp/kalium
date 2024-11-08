@@ -19,25 +19,8 @@
 package com.wire.kalium.network.api.v7.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
-import com.wire.kalium.network.api.model.ApiModelMapper
-import com.wire.kalium.network.api.model.ApiModelMapperImpl
-import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v6.authenticated.ConversationApiV6
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.get
 
 internal open class ConversationApiV7 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
-) : ConversationApiV6(authenticatedNetworkClient) {
-    override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse<ConversationResponseV6> {
-            httpClient.get("$PATH_CONVERSATIONS/$PATH_ONE_TO_ONE/${userId.domain}/${userId.value}")
-        }.mapSuccess {
-            apiModelMapper.fromApiV6(it)
-        }
-}
+) : ConversationApiV6(authenticatedNetworkClient)
