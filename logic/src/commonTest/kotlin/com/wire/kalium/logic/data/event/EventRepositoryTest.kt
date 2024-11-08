@@ -52,16 +52,18 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class EventRepositoryTest {
 
     @Test
     fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
         val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            TestConversation.NETWORK_ID,
-            UserId("value", "domain"),
-            Instant.UNIX_FIRST_DATE,
-            MessageEventData("text", "senderId", "recipient")
+            qualifiedConversation = TestConversation.NETWORK_ID,
+            qualifiedFrom = UserId("value", "domain"),
+            time = Instant.UNIX_FIRST_DATE,
+            data = MessageEventData("text", "senderId", "recipient")
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
@@ -136,6 +138,34 @@ class EventRepositoryTest {
             }
     }
 
+    @Test
+    fun givenAPIFailure_whenFetchingServerTime_thenReturnNull() = runTest {
+        val (_, eventRepository) = Arrangement()
+            .withGetServerTimeReturning(NetworkResponse.Error(KaliumException.NoNetwork()))
+            .arrange()
+
+        val result = eventRepository.fetchServerTime()
+
+        assertNull(result)
+    }
+
+
+    @Test
+    fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
+        val result = NetworkResponse.Success(
+            value = "123434545",
+            headers = mapOf(),
+            httpCode = HttpStatusCode.OK.value
+        )
+        val (_, eventRepository) = Arrangement()
+            .withGetServerTimeReturning(result)
+            .arrange()
+
+        val time = eventRepository.fetchServerTime()
+
+        assertNotNull(time)
+    }
+
     private companion object {
         const val LAST_PROCESSED_EVENT_ID_KEY = "last_processed_event_id"
     }
@@ -158,12 +188,6 @@ class EventRepositoryTest {
             }
         }
 
-        suspend fun withDeleteMetadataSucceeding() = apply {
-            coEvery {
-                metaDAO.deleteValue(any())
-            }.returns(Unit)
-        }
-
         suspend fun withLastStoredEventId(value: String?) = apply {
             coEvery {
                 metaDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
@@ -176,15 +200,15 @@ class EventRepositoryTest {
             }.returns(result)
         }
 
-        suspend fun withLastNotificationRemote(result: NetworkResponse<EventResponse>) = apply {
-            coEvery {
-                notificationApi.mostRecentNotification(any())
-            }.returns(result)
-        }
-
         suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponse>) = apply {
             coEvery {
                 notificationApi.oldestNotification(any())
+            }.returns(result)
+        }
+
+        suspend fun withGetServerTimeReturning(result: NetworkResponse<String>) = apply {
+            coEvery {
+                notificationApi.getServerTime(any())
             }.returns(result)
         }
 

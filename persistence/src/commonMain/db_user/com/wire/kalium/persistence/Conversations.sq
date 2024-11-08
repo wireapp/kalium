@@ -81,6 +81,7 @@ type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
 mls_epoch = excluded.mls_epoch,
+mls_group_state = excluded.mls_group_state,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
@@ -276,6 +277,130 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          AND Conversation.type IS 'CONNECTION_PENDING')
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
 LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+
+CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
+SELECT
+    ConversationDetails.*,
+    CASE
+        WHEN ConversationDetails.type = 'GROUP' THEN
+            CASE
+                WHEN ConversationDetails.selfRole IS NOT NULL THEN 1
+                ELSE 0
+            END
+        WHEN ConversationDetails.type = 'ONE_ON_ONE' THEN
+            CASE
+                WHEN userDefederated = 1 THEN 0
+                WHEN userDeleted = 1 THEN 0
+                WHEN connectionStatus = 'BLOCKED' THEN 0
+                WHEN legal_hold_status = 'DEGRADED' THEN 0
+                ELSE 1
+            END
+        ELSE 0
+    END AS interactionEnabled,
+    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
+    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
+    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
+    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
+    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
+    CASE
+        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
+        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
+           CASE
+                WHEN knocksCount + missedCallsCount + mentionsCount + repliesCount + messagesCount > 0 THEN 1 -- if any unread events, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN mentionsCount + repliesCount > 0 THEN 1 -- only if unread mentions or replies, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        ELSE 0
+    END AS hasNewActivitiesToShow,
+    LastMessagePreview.id AS lastMessageId,
+    LastMessagePreview.contentType AS lastMessageContentType,
+    LastMessagePreview.date AS lastMessageDate,
+    LastMessagePreview.visibility AS lastMessageVisibility,
+    LastMessagePreview.senderUserId AS lastMessageSenderUserId,
+    LastMessagePreview.isEphemeral AS lastMessageIsEphemeral,
+    LastMessagePreview.senderName AS lastMessageSenderName,
+    LastMessagePreview.senderConnectionStatus AS lastMessageSenderConnectionStatus,
+    LastMessagePreview.senderIsDeleted AS lastMessageSenderIsDeleted,
+    LastMessagePreview.selfUserId AS lastMessageSelfUserId,
+    LastMessagePreview.isSelfMessage AS lastMessageIsSelfMessage,
+    LastMessagePreview.memberChangeList AS lastMessageMemberChangeList,
+    LastMessagePreview.memberChangeType AS lastMessageMemberChangeType,
+    LastMessagePreview.updateConversationName AS lastMessageUpdateConversationName,
+    LastMessagePreview.conversationName AS lastMessageConversationName,
+    LastMessagePreview.isMentioningSelfUser AS lastMessageIsMentioningSelfUser,
+    LastMessagePreview.isQuotingSelfUser AS lastMessageIsQuotingSelfUser,
+    LastMessagePreview.text AS lastMessageText,
+    LastMessagePreview.assetMimeType AS lastMessageAssetMimeType,
+    LastMessagePreview.isUnread AS lastMessageIsUnread,
+    LastMessagePreview.shouldNotify AS lastMessageShouldNotify,
+    LastMessagePreview.mutedStatus AS lastMessageMutedStatus,
+    LastMessagePreview.conversationType AS lastMessageConversationType,
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.mention_list AS messageDraftMentionList
+FROM ConversationDetails
+LEFT JOIN UnreadEventCountsGrouped
+    ON ConversationDetails.qualifiedId = UnreadEventCountsGrouped.conversationId
+LEFT JOIN LastMessagePreview ON ConversationDetails.qualifiedId = LastMessagePreview.conversationId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
+LEFT JOIN MessageDraft ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
+WHERE
+    type IS NOT 'SELF'
+    AND (
+    type IS 'GROUP'
+    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+    OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND isActive;
+
+selectAllConversationDetailsWithEvents:
+SELECT * FROM ConversationDetailsWithEvents
+WHERE archived = :fromArchive
+    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
+ORDER BY
+    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
+    lastModifiedDate DESC,
+    name IS NULL,
+    name COLLATE NOCASE ASC;
+
+selectConversationDetailsWithEventsFromSearch:
+SELECT * FROM ConversationDetailsWithEvents
+WHERE
+    archived = :fromArchive
+    AND CASE
+        -- When filter is ALL, do not apply additional filters on conversation type
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        -- When filter is FAVORITES (future implementation)
+        ELSE 1 = 0
+    END
+    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
+    AND name LIKE ('%' || :searchQuery || '%')
+ORDER BY
+    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
+    lastModifiedDate DESC,
+    name IS NULL,
+    name COLLATE NOCASE ASC
+LIMIT :limit
+OFFSET :offset;
+
+countConversationDetailsWithEventsFromSearch:
+SELECT COUNT(*) FROM ConversationDetailsWithEvents
+WHERE
+    archived = :fromArchive
+    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
+    AND name LIKE ('%' || :searchQuery || '%');
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails

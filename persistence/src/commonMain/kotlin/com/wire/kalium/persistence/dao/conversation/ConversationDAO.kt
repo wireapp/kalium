@@ -31,6 +31,7 @@ data class ProposalTimerEntity(
 
 @Suppress("TooManyFunctions")
 interface ConversationDAO {
+    val platformExtensions: ConversationExtensions
     //region Get/Observe by ID
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
@@ -57,6 +58,11 @@ interface ConversationDAO {
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetailsWithEvents(
+        fromArchive: Boolean = false,
+        onlyInteractionEnabled: Boolean = false,
+        newActivitiesOnTop: Boolean = false,
+    ): Flow<List<ConversationDetailsWithEventsEntity>>
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,

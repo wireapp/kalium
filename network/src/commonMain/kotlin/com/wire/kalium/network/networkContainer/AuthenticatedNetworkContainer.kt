@@ -24,6 +24,7 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
@@ -55,6 +56,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
+import io.ktor.websocket.WebSocketSession
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
@@ -105,6 +107,8 @@ interface AuthenticatedNetworkContainer {
 
     val propertiesApi: PropertiesApi
 
+    val wildCardApi: WildCardApi
+
     companion object {
 
         @Suppress("LongParameterList", "LongMethod")
@@ -114,6 +118,7 @@ interface AuthenticatedNetworkContainer {
             userAgent: String,
             certificatePinning: CertificatePinning,
             mockEngine: HttpClientEngine?,
+            mockWebSocketSession: WebSocketSession?,
             kaliumLogger: KaliumLogger,
         ): AuthenticatedNetworkContainer {
 
@@ -124,14 +129,16 @@ interface AuthenticatedNetworkContainer {
                     sessionManager,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     sessionManager,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
@@ -139,7 +146,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 // this is intentional since we should drop support for api v3
@@ -149,7 +157,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
@@ -157,7 +166,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
@@ -165,7 +175,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 6 -> AuthenticatedNetworkContainerV6(
@@ -173,7 +184,8 @@ interface AuthenticatedNetworkContainer {
                     selfUserId,
                     certificatePinning,
                     mockEngine,
-                    kaliumLogger,
+                    mockWebSocketSession,
+                    kaliumLogger
                 )
 
                 else -> error("Unsupported version: $version")
@@ -194,6 +206,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine,
+    private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)?,
     private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
 
@@ -241,7 +254,8 @@ internal class AuthenticatedHttpClientProviderImpl(
             engine,
             bearerAuthProvider,
             sessionManager.serverConfig(),
-            kaliumLogger
+            kaliumLogger,
+            webSocketSessionProvider
         )
     }
     override val networkClientWithoutCompression by lazy {

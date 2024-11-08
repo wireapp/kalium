@@ -22,27 +22,24 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
@@ -85,6 +82,7 @@ interface EventRepository {
      * @return Either containing a [CoreFailure] or the oldest available event ID as a String.
      */
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
+    suspend fun fetchServerTime(): String?
 }
 
 class EventDataSource(
@@ -103,26 +101,31 @@ class EventDataSource(
         currentClientId().flatMap { clientId -> liveEventsFlow(clientId) }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
-        wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map {
-            it.map { webSocketEvent ->
-                when (webSocketEvent) {
-                    is WebSocketEvent.Open -> {
-                        flowOf(WebSocketEvent.Open())
-                    }
+        wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map { webSocketEventFlow ->
+            flow {
+                webSocketEventFlow.collect { webSocketEvent ->
+                    when (webSocketEvent) {
+                        is WebSocketEvent.Open -> {
+                            emit(WebSocketEvent.Open())
+                        }
 
-                    is WebSocketEvent.NonBinaryPayloadReceived -> {
-                        flowOf(WebSocketEvent.NonBinaryPayloadReceived<EventEnvelope>(webSocketEvent.payload))
-                    }
+                        is WebSocketEvent.NonBinaryPayloadReceived -> {
+                            emit(WebSocketEvent.NonBinaryPayloadReceived(webSocketEvent.payload))
+                        }
 
-                    is WebSocketEvent.Close -> {
-                        flowOf(WebSocketEvent.Close(webSocketEvent.cause))
-                    }
+                        is WebSocketEvent.Close -> {
+                            emit(WebSocketEvent.Close(webSocketEvent.cause))
+                        }
 
-                    is WebSocketEvent.BinaryPayloadReceived -> {
-                        eventMapper.fromDTO(webSocketEvent.payload, true).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                        is WebSocketEvent.BinaryPayloadReceived -> {
+                            val events = eventMapper.fromDTO(webSocketEvent.payload, true)
+                            events.forEach { eventEnvelope ->
+                                emit(WebSocketEvent.BinaryPayloadReceived(eventEnvelope))
+                            }
+                        }
                     }
                 }
-            }.flattenConcat()
+            }
         }
 
     private suspend fun pendingEventsFlow(
@@ -192,6 +195,15 @@ class EventDataSource(
                 notificationApi.oldestNotification(clientId.value)
             }
         }.map { it.id }
+
+    override suspend fun fetchServerTime(): String? {
+        val result = notificationApi.getServerTime(NOTIFICATIONS_QUERY_SIZE)
+        return if (result.isSuccessful()) {
+            result.value
+        } else {
+            null
+        }
+    }
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100

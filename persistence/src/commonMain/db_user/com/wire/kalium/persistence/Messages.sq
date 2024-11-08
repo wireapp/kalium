@@ -488,6 +488,9 @@ UPDATE Message
 SET id = :newId
 WHERE id = :oldId AND conversation_id = :conversationId;
 
+getMessage:
+SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
+
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
@@ -559,11 +562,9 @@ WHERE conversation_id = :conversation_id AND status = 'PENDING';
 selectPendingEphemeralMessages:
 SELECT * FROM MessageDetailsView
 WHERE expireAfterMillis NOT NULL
+AND selfDeletionEndDate NOT NULL
 AND visibility = "VISIBLE"
-AND (
-    selfDeletionEndDate IS NULL
-    OR selfDeletionEndDate > STRFTIME('%s', 'now') * 1000 -- Checks if message end date is higher than current time in millis
-);
+AND selfDeletionEndDate > STRFTIME('%s', 'now') * 1000; -- Checks if message end date is higher than current time in millis
 
 selectAlreadyEndedEphemeralMessages:
 SELECT * FROM MessageDetailsView

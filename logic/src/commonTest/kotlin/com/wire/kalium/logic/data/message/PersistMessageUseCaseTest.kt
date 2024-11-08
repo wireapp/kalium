@@ -52,7 +52,7 @@ class PersistMessageUseCaseTest {
         result.shouldFail()
 
         coVerify {
-            arrangement.messageRepository.persistMessage(any(), any(), any())
+            arrangement.messageRepository.persistMessage(any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -76,7 +76,7 @@ class PersistMessageUseCaseTest {
             result.shouldSucceed()
 
             coVerify {
-                arrangement.messageRepository.persistMessage(any(), any(), any())
+                arrangement.messageRepository.persistMessage(any(), any())
             }.wasInvoked(once)
 
             coVerify {
@@ -102,7 +102,7 @@ class PersistMessageUseCaseTest {
             result.shouldSucceed()
 
             coVerify {
-                arrangement.messageRepository.persistMessage(any(), any(), any())
+                arrangement.messageRepository.persistMessage(any(), any())
             }.wasInvoked(once)
 
             coVerify {
@@ -112,22 +112,6 @@ class PersistMessageUseCaseTest {
             coVerify {
                 arrangement.notificationEventsManager.scheduleRegularNotificationChecking()
             }.wasNotInvoked()
-        }
-
-    @Test
-    fun givenMissedCallMessage_whenRunningUseCase_thenCallPersistMessageWithUpdateConversationReadDateIsFalse() =
-        runTest {
-            val (arrangement, persistMessage) = Arrangement()
-                .withPersistMessageSuccess()
-                .arrange()
-            val missedCallMessage = TestMessage.MISSED_CALL_MESSAGE
-
-            val result = persistMessage.invoke(missedCallMessage)
-
-            result.shouldSucceed()
-            coVerify {
-                arrangement.messageRepository.persistMessage(any(), eq(false), any())
-            }.wasInvoked(once)
         }
 
     private class Arrangement {
@@ -145,13 +129,13 @@ class PersistMessageUseCaseTest {
 
         suspend fun withPersistMessageSuccess() = apply {
             coEvery {
-                messageRepository.persistMessage(any(), any(), any())
+                messageRepository.persistMessage(any(), any())
             }.returns(Either.Right(InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER))
         }
 
         suspend fun withPersistMessageFailure() = apply {
             coEvery {
-                messageRepository.persistMessage(any(), any(), any())
+                messageRepository.persistMessage(any(), any())
             }.returns(Either.Left(CoreFailure.InvalidEventSenderID))
         }
 

@@ -256,6 +256,8 @@ class UserDatabaseBuilder internal constructor(
 
     val messageDraftDAO = MessageDraftDAOImpl(
         database.messageDraftsQueries,
+        database.messagesQueries,
+        database.conversationsQueries,
         queriesContext
     )
 

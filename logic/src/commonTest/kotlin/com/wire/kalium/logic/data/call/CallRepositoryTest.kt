@@ -173,10 +173,8 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             false,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -192,7 +190,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -213,10 +211,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -242,7 +238,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -269,10 +265,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -288,7 +282,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -314,10 +308,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -343,7 +335,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -373,10 +365,8 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap(),
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -392,7 +382,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -427,7 +417,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -466,7 +456,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -504,7 +494,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -550,7 +540,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -587,7 +577,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.INCOMING,
-            callerId = callerId.value,
+            callerId = callerId,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -1474,10 +1464,60 @@ class CallRepositoryTest {
         assertEquals(activeSpeakers, callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.activeSpeakers)
     }
 
+    @Test
+    fun givenCallWithActiveSpeakers_whenGetFullParticipants_thenOnlySpeakingUsers() = runTest {
+        val (_, callRepository) = Arrangement().arrange()
+        val mutedParticipant = ParticipantMinimized(
+            id = QualifiedID("participantId", ""),
+            userId = QualifiedID("participantId", "participantDomain"),
+            clientId = "abcd0",
+            isMuted = true,
+            isCameraOn = false,
+            isSharingScreen = false,
+            hasEstablishedAudio = true
+        )
+        val unMutedParticipant = mutedParticipant.copy(
+            id = QualifiedID("anotherParticipantId", ""),
+            userId = QualifiedID("anotherParticipantId", "participantDomain"),
+            clientId = "abcd1",
+            isMuted = false
+        )
+        val activeSpeakers = mapOf(
+            mutedParticipant.userId to listOf(mutedParticipant.clientId),
+            unMutedParticipant.userId to listOf(unMutedParticipant.clientId),
+        )
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    Arrangement.conversationId to createCallMetadata().copy(
+                        participants = listOf(mutedParticipant, unMutedParticipant),
+                        maxParticipants = 0
+                    )
+                )
+            )
+        )
+
+        // when
+        callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId, activeSpeakers)
+
+        // then
+        val fullParticipants = callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.getFullParticipants()
+
+        assertEquals(
+            false,
+            fullParticipants?.first { it.id == mutedParticipant.id && it.clientId == mutedParticipant.clientId }?.isSpeaking
+        )
+        assertEquals(
+            true,
+            fullParticipants?.first { it.id == unMutedParticipant.id && it.clientId == unMutedParticipant.clientId }?.isSpeaking
+        )
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
-        callerId = "callerId@domain",
+        callerId = UserId("callerId", "domain"),
         participants = listOf(),
         isMuted = false,
         isCameraOn = false,
@@ -1502,6 +1542,7 @@ class CallRepositoryTest {
     )
 
     private fun createCallMetadata() = CallMetadata(
+        callerId = callerId,
         isMuted = true,
         isCameraOn = false,
         isCbrEnabled = false,
@@ -1767,8 +1808,6 @@ class CallRepositoryTest {
                 conversation = oneOnOneConversation,
                 otherUser = TestUser.OTHER,
                 userType = UserType.INTERNAL,
-                lastMessage = null,
-                unreadEventCount = emptyMap()
             )
 
             val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(

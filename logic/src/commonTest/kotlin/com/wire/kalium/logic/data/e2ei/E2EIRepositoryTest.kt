@@ -914,7 +914,7 @@ class E2EIRepositoryTest {
             arrangement.coreCryptoCentral.registerTrustAnchors(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
         }.wasInvoked(once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setShouldFetchE2EITrustAnchors(eq(false))
         }.wasInvoked(once)
     }
@@ -933,7 +933,7 @@ class E2EIRepositoryTest {
         // then
         result.shouldSucceed()
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.getShouldFetchE2EITrustAnchor()
         }.wasInvoked(once)
     }
@@ -1099,17 +1099,18 @@ class E2EIRepositoryTest {
             }.returns(result)
         }
 
-        fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
-            every {
+        suspend fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
+            coEvery {
                 userConfigRepository.getShouldFetchE2EITrustAnchor()
             }.returns(result)
         }
 
-        fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
-            every {
+        suspend fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
+            coEvery {
                 userConfigRepository.setShouldFetchE2EITrustAnchors(any())
             }.returns(Unit)
         }
+
 
         suspend fun withAcmeDirectoriesApiSucceed() = apply {
             coEvery {

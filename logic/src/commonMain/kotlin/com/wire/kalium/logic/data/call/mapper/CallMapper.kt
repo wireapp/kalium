@@ -180,7 +180,7 @@ class CallMapperImpl(
         isMuted = metadata?.isMuted ?: true,
         isCameraOn = metadata?.isCameraOn ?: false,
         isCbrEnabled = metadata?.isCbrEnabled ?: false,
-        callerId = callEntity.callerId,
+        callerId = metadata?.callerId ?: qualifiedIdMapper.fromStringToQualifiedID(callEntity.callerId),
         conversationName = metadata?.conversationName,
         conversationType = toConversationType(conversationType = callEntity.conversationType),
         callerName = metadata?.callerName,

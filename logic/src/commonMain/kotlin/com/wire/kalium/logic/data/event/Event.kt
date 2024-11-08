@@ -57,7 +57,7 @@ import kotlinx.serialization.json.JsonNull
  */
 data class EventEnvelope(
     val event: Event,
-    val deliveryInfo: EventDeliveryInfo,
+    val deliveryInfo: EventDeliveryInfo
 ) {
     override fun toString(): String {
         return super.toString()

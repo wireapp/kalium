@@ -190,7 +190,7 @@ class EndCallOnConversationChangeUseCaseTest {
         private val call = Call(
             conversationId = conversationId,
             status = CallStatus.ESTABLISHED,
-            callerId = "called-id",
+            callerId = UserId("called-id", "domain"),
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -248,8 +248,6 @@ class EndCallOnConversationChangeUseCaseTest {
         private val groupConversationDetail = ConversationDetails.Group(
             conversation = conversation,
             hasOngoingCall = true,
-            unreadEventCount = mapOf(),
-            lastMessage = null,
             isSelfUserMember = false,
             isSelfUserCreator = false,
             selfRole = null
@@ -258,8 +256,6 @@ class EndCallOnConversationChangeUseCaseTest {
         private val oneOnOneConversationDetail = ConversationDetails.OneOne(
             conversation = conversation,
             otherUser = otherUser,
-            unreadEventCount = mapOf(),
-            lastMessage = null,
             userType = UserType.ADMIN
         )
     }

@@ -15,25 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.mocks.mocks.domain
 
-package com.wire.kalium.mocks.responses.asset
+object DomainMocks {
 
-import com.wire.kalium.mocks.responses.ValidJsonProvider
-import com.wire.kalium.network.api.model.ErrorResponse
+    const val domain = "domain.com"
+    const val federatedDomain = "federated.com"
 
-object AssetDownloadResponseJson {
-    private val invalidJsonProvider = { serializable: ErrorResponse ->
-        """
-        |{
-        |   "code": "${serializable.code}",
-        |   "message": "${serializable.message}",
-        |   "label": "${serializable.label}"
-        |}
-        """.trimMargin()
-    }
-
-    val invalid = ValidJsonProvider(
-        ErrorResponse(code = 401, message = "Invalid Asset Token", label = "invalid_asset_token"),
-        invalidJsonProvider
-    )
 }

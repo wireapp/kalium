@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -54,6 +55,8 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
+import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
+import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -87,8 +90,9 @@ class DebugScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val eventProcessor: EventProcessor,
     private val legalHoldHandler: LegalHoldHandler,
+    private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
-    private val logger: KaliumLogger,
+    logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -179,7 +183,12 @@ class DebugScope internal constructor(
             messageSendingInterceptor,
             userRepository,
             staleEpochVerifier,
-            { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
+            { message, expirationData ->
+                ephemeralMessageDeletionHandler.enqueueSelfDeletion(
+                    message,
+                    expirationData
+                )
+            },
             scope
         )
 
@@ -207,5 +216,12 @@ class DebugScope internal constructor(
             deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
             selfUserId = userId,
             kaliumLogger = logger
+        )
+
+    val sendFCMTokenToServer: SendFCMTokenUseCase
+        get() = SendFCMTokenToAPIUseCaseImpl(
+            currentClientIdProvider,
+            clientRepository,
+            notificationTokenRepository,
         )
 }

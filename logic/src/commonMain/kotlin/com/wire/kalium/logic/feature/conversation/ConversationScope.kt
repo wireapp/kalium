@@ -71,12 +71,13 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
 class ConversationScope internal constructor(
-    private val conversationRepository: ConversationRepository,
+    internal val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
@@ -101,7 +102,8 @@ class ConversationScope internal constructor(
     private val scope: CoroutineScope,
     private val kaliumLogger: KaliumLogger,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-    private val serverConfigLinks: ServerConfig.Links
+    private val serverConfigLinks: ServerConfig.Links,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     val getConversations: GetConversationsUseCase
@@ -127,6 +129,9 @@ class ConversationScope internal constructor(
 
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
+
+    val getConversationProtocolInfo: GetConversationProtocolInfoUseCase
+        get() = GetConversationProtocolInfoUseCase(conversationRepository)
 
     val notifyConversationIsOpen: NotifyConversationIsOpenUseCase
         get() = NotifyConversationIsOpenUseCaseImpl(

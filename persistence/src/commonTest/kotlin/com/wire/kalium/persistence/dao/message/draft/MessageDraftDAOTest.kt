@@ -113,6 +113,48 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         assertEquals(null, removedResult)
     }
 
+    @Test
+    fun givenMessageIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
+        // Given
+        insertInitialData()
+        messageDAO.deleteMessage("editMessageId", conversationEntity1.id)
+
+        // When
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // Then
+        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenConversationIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
+        // Given
+        insertInitialData()
+        conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
+
+        // When
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // Then
+        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenQuotedMessageIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
+        // Given
+        insertInitialData()
+        messageDAO.deleteMessage("quotedMessageId", conversationEntity1.id)
+
+        // When
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // Then
+        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
+        assertEquals(null, result)
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1))
         conversationDAO.insertConversation(conversationEntity1)

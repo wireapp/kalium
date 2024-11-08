@@ -25,6 +25,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -51,7 +52,7 @@ import kotlinx.coroutines.withContext
  * but has not yet joined the corresponding MLS group.
  */
 internal interface JoinExistingMLSConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend operator fun invoke(conversationId: ConversationId, mlsPublicKeys: MLSPublicKeys? = null): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -65,7 +66,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 ) : JoinExistingMLSConversationUseCase {
     private val dispatcher = kaliumDispatcher.io
 
-    override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(conversationId: ConversationId, mlsPublicKeys: MLSPublicKeys?): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
@@ -76,15 +77,16 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    joinOrEstablishMLSGroupAndRetry(conversation)
+                    joinOrEstablishMLSGroupAndRetry(conversation, mlsPublicKeys)
                 }
             })
         }
 
     private suspend fun joinOrEstablishMLSGroupAndRetry(
-        conversation: Conversation
+        conversation: Conversation,
+        mlsPublicKeys: MLSPublicKeys?
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishMLSGroup(conversation)
+        joinOrEstablishMLSGroup(conversation, mlsPublicKeys)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if (failure.kaliumException.isMlsStaleMessage()) {
@@ -101,13 +103,15 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         // Re-fetch current epoch and try again
                         if (conversation.type == Conversation.Type.ONE_ON_ONE) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                conversationRepository.fetchMlsOneToOneConversation(it.first())
+                                conversationRepository.fetchMlsOneToOneConversation(it.first()).map {
+                                    it.mlsPublicKeys
+                                }
                             }
                         } else {
                             conversationRepository.fetchConversation(conversation.id)
                         }.flatMap {
                             conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(conversation)
+                                joinOrEstablishMLSGroup(conversation, null)
                             }
                         }
                     } else if (failure.kaliumException.isMlsMissingGroupInfo()) {
@@ -122,7 +126,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
     @Suppress("LongMethod")
-    private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
+    private suspend fun joinOrEstablishMLSGroup(conversation: Conversation, publicKeys: MLSPublicKeys?): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         val type = conversation.type
         return when {
@@ -202,7 +206,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
-                        members
+                        members,
+                        publicKeys
                     )
                 }.onSuccess {
                     kaliumLogger.logStructuredJson(

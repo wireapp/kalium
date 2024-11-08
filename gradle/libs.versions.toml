@@ -1,11 +1,11 @@
 [versions]
 kotlin = "2.0.10"
+ksp = "1.9.23-1.0.20"
 activity-compose = "1.9.0"
 app-compat = "1.6.1"
 android-paging3 = "3.2.1"
 cli-kt = "3.5.0"
 coroutines = "1.8.0"
-compose-compiler = "1.5.11"
 compose-ui = "1.6.6"
 compose-material = "1.6.6"
 cryptobox4j = "1.4.0"
@@ -33,10 +33,10 @@ moduleGraph = "0.7.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the workaround in the dev.mk file
 sqldelight = "2.0.1"
-sqlcipher-android = "4.5.6"
+sqlcipher-android = "4.6.1"
 pbandk = "0.14.2"
 turbine = "1.1.0"
-avs = "9.8.15"
+avs = "9.9.5"
 jna = "5.14.0"
 core-crypto = "1.0.2"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
@@ -52,7 +52,7 @@ protobufCodegen = "0.9.4"
 annotation = "1.7.1"
 mordant = "2.0.0-beta13"
 apache-tika = "2.9.2"
-mockk = "1.13.10"
+mockk = "1.13.13"
 faker = "1.16.0"
 robolectric = "4.12.1"
 stately = "2.0.7"
@@ -74,13 +74,13 @@ kalium-library = { id = "kalium.library" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin" }
-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-ksp = { id = "com.google.devtools.ksp", version = "2.0.10-1.0.24" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }

@@ -59,7 +59,7 @@ class PushTokenUpdaterTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.clientRepository.registerToken(any())
+            arrangement.clientRepository.registerToken(any(), any(), any(), any())
         }.wasNotInvoked()
 
         coVerify {
@@ -81,7 +81,7 @@ class PushTokenUpdaterTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.clientRepository.registerToken(any())
+            arrangement.clientRepository.registerToken(any(), any(), any(), any())
         }.wasNotInvoked()
 
         coVerify {
@@ -94,14 +94,27 @@ class PushTokenUpdaterTest {
         val (arrangement, pushTokenUpdater) = Arrangement()
             .withUpdateFirebaseTokenFlag(true)
             .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
-            .withNotificationToken(Either.Right(NotificationToken(MOCK_TOKEN, MOCK_TRANSPORT, MOCK_APP_ID)))
+            .withNotificationToken(
+                Either.Right(
+                    NotificationToken(
+                        MOCK_TOKEN,
+                        MOCK_TRANSPORT,
+                        MOCK_APP_ID
+                    )
+                )
+            )
             .withRegisterTokenResult(Either.Right(Unit))
             .arrange()
 
         pushTokenUpdater.monitorTokenChanges()
 
         coVerify {
-            arrangement.clientRepository.registerToken(eq(pushTokenRequestBody))
+            arrangement.clientRepository.registerToken(
+                eq(pushTokenRequestBody.senderId),
+                eq(pushTokenRequestBody.client),
+                eq(pushTokenRequestBody.token),
+                eq(pushTokenRequestBody.transport),
+            )
         }.wasInvoked(once)
 
         coVerify {
@@ -129,7 +142,8 @@ class PushTokenUpdaterTest {
         val clientRepository: ClientRepository = mock(ClientRepository::class)
 
         @Mock
-        val notificationTokenRepository: NotificationTokenRepository = mock(NotificationTokenRepository::class)
+        val notificationTokenRepository: NotificationTokenRepository =
+            mock(NotificationTokenRepository::class)
 
         @Mock
         val pushTokenRepository: PushTokenRepository = mock(PushTokenRepository::class)
@@ -148,7 +162,7 @@ class PushTokenUpdaterTest {
 
         suspend fun withRegisterTokenResult(result: Either<NetworkFailure, Unit>) = apply {
             coEvery {
-                clientRepository.registerToken(any())
+                clientRepository.registerToken(any(), any(), any(), any())
             }.returns(result)
         }
 
