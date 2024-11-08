@@ -123,11 +123,11 @@ tasks.register<Exec>("generateNewApiVersion") {
     doFirst {
         if (previousApiVersion == "" || currentApiVersion == "" || newApiVersion == "") {
             println(
-                "Usage: ./gradlew :moduleName:generateNewApiVersion " +
+                "Usage: ./gradlew :network:generateNewApiVersion " +
                         "-PpreviousApiVersion=<previous> -PcurrentApiVersion=<current> -PnewApiVersion=<new>"
             )
             println(
-                "Example: ./gradlew :moduleName:generateNewApiVersion " +
+                "Example: ./gradlew :network:generateNewApiVersion " +
                         "-PpreviousApiVersion=5 -PcurrentApiVersion=6 -PnewApiVersion=7"
             )
             throw IllegalArgumentException(
