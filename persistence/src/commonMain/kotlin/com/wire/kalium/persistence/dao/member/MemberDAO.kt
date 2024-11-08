@@ -123,7 +123,7 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun insertMembers(memberList: List<MemberEntity>, groupId: String) {
         withContext(coroutineContext) {
             conversationsQueries.selectByGroupId(groupId).executeAsOneOrNull()?.let {
-                nonSuspendInsertMembersWithQualifiedId(memberList, it.qualifiedId)
+                nonSuspendInsertMembersWithQualifiedId(memberList, it.qualified_id)
             }
         }
     }
