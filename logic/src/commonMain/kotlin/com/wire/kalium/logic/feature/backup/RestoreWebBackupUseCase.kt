@@ -79,7 +79,13 @@ internal class RestoreWebBackupUseCaseImpl(
                 importWebBackup(backupRootPath, this)
             } else {
                 Either.Left(IncompatibleBackup("invoke: The provided backup format is not supported"))
-            }.fold({ RestoreBackupResult.Failure(it) }, { RestoreBackupResult.Success })
+            }.fold({ error ->
+                kaliumLogger.e("$TAG Failed to restore the backup, reason: $error")
+                RestoreBackupResult.Failure(error)
+            }, {
+                kaliumLogger.i("$TAG Successfully restored the backup")
+                RestoreBackupResult.Success
+            })
         }
 
     private suspend fun importWebBackup(
