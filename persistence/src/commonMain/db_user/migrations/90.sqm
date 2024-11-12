@@ -91,7 +91,7 @@ BEGIN
 END;
 
 -- update last message after there was a foreign key updated to null by finding new last message for that conversation
--- this happens when a message is moved to another conversation or id of a message is changed
+-- this happens when last message is moved to another conversation or id of last message is changed
 CREATE TRIGGER updateLastMessageAfterForeignKeyUpdatedToNull
 AFTER UPDATE OF conversation_id ON LastMessage
 WHEN
