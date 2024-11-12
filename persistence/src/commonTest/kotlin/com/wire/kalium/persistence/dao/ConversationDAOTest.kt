@@ -155,9 +155,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingConversation_ThenConversationCanBeRetrievedByGroupID() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         insertTeamUserAndMember(team, user2, conversationEntity2.id)
-        val result =
-            conversationDAO.observeConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
-                .first()
+        val result = conversationDAO.observeConversationDetailsByGroupID(
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        ).first()
         assertEquals(conversationEntity2.toViewEntity(user2), result)
     }
 
@@ -505,7 +505,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // when
         conversationDAO.updateKeyingMaterial(conversationProtocolInfo.groupId, newUpdate)
         // then
-        assertEquals(expected, conversationDAO.observeConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
+        assertEquals(expected, conversationDAO.observeConversationDetailsByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
     }
 
     @Test
@@ -2240,7 +2240,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity4)
 
         // when
-        val result = conversationDAO.getConversationByGroupID("call_subconversation_groupid")
+        val result = conversationDAO.getConversationDetailsByGroupID("call_subconversation_groupid")
 
         // then
         assertEquals(

@@ -712,6 +712,7 @@ class UserSessionScope internal constructor(
             userStorage.database.memberDAO,
             authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
+            userStorage.database.messageDraftDAO,
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,

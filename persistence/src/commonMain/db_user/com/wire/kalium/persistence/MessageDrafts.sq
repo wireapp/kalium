@@ -22,13 +22,21 @@ upsertDraft:
 INSERT INTO MessageDraft(conversation_id, text, edit_message_id, quoted_message_id, mention_list)
 VALUES( ?, ?, ?, ?, ?)
 ON CONFLICT(conversation_id) DO UPDATE SET
-text = excluded.text,
-edit_message_id = excluded.edit_message_id,
-quoted_message_id = excluded.quoted_message_id,
-mention_list = excluded.mention_list;
+    text = excluded.text,
+    edit_message_id = excluded.edit_message_id,
+    quoted_message_id = excluded.quoted_message_id,
+    mention_list = excluded.mention_list
+WHERE -- execute the update only if any of the fields changed
+    MessageDraft.text != excluded.text
+    OR MessageDraft.edit_message_id != excluded.edit_message_id
+    OR MessageDraft.quoted_message_id != excluded.quoted_message_id
+    OR MessageDraft.mention_list != excluded.mention_list;
 
 getDraft:
 SELECT * FROM MessageDraft WHERE conversation_id = ?;
 
 getDrafts:
 SELECT * FROM MessageDraft;
+
+selectChanges:
+SELECT changes();
