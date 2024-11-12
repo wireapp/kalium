@@ -21,14 +21,19 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.util.serialization.LenientJsonSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 data class CallClient(
     @SerialName("userid") val userId: String,
     @SerialName("clientid") val clientId: String,
     @SerialName("in_subconv") val isMemberOfSubconversation: Boolean = false,
-    @SerialName("quality") val quality: CallQuality = CallQuality.ANY
-)
+    @Transient val callQuality: CallQuality = CallQuality.ANY
+) {
+    @SerialName("quality")
+    val quality
+        get() = callQuality.ordinal
+}
 
 @Serializable
 data class CallClientList(
@@ -37,7 +42,6 @@ data class CallClientList(
     fun toJsonString(): String = LenientJsonSerializer.json.encodeToString(serializer(), this)
 }
 
-@Serializable
 enum class CallQuality {
     ANY,
     LOW,

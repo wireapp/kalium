@@ -27,9 +27,5 @@ object LenientJsonSerializer {
     val json = Json {
         isLenient = true
         ignoreUnknownKeys = true
-
-        // If API returns null or unknown values for Enums, we can use default constructor parameter to override it
-        // https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json.md#coercing-input-values
-        coerceInputValues = true
     }
 }
