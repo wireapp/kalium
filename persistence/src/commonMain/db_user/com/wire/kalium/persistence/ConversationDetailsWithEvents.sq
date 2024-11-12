@@ -31,7 +31,7 @@ SELECT
     -- last message
     LastMessage.id AS lastMessageId,
     LastMessage.content_type AS lastMessageContentType,
-    LastMessage.creation_date AS lastMessageDate,
+    MAX(LastMessage.creation_date) AS lastMessageDate,
     LastMessage.visibility AS lastMessageVisibility,
     LastMessage.sender_user_id AS lastMessageSenderUserId,
     (LastMessage.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
@@ -52,13 +52,7 @@ LEFT JOIN UnreadEvent
 LEFT JOIN MessageDraft
     ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
 LEFT JOIN Message AS LastMessage
-    ON LastMessage.id = (
-            SELECT Message.id
-            FROM Message
-            WHERE ConversationDetails.qualifiedId = Message.conversation_id
-            ORDER BY Message.creation_date DESC
-            LIMIT 1
-        ) AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
+    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
 LEFT JOIN User
     ON LastMessage.sender_user_id = User.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
@@ -143,7 +137,16 @@ OFFSET :offset;
 countConversationDetailsWithEvents:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
-    archived = :fromArchive
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
+    AND ConversationDetails.isActive
+    AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
@@ -159,7 +162,16 @@ WHERE
 countConversationDetailsWithEventsFromSearch:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
-    archived = :fromArchive
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
+    AND ConversationDetails.isActive
+    AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
