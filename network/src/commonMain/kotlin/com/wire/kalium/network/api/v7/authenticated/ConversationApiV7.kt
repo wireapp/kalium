@@ -19,8 +19,43 @@
 package com.wire.kalium.network.api.v7.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.model.ApiModelMapper
+import com.wire.kalium.network.api.model.ApiModelMapperImpl
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v6.authenticated.ConversationApiV6
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class ConversationApiV7 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-) : ConversationApiV6(authenticatedNetworkClient)
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl(),
+) : ConversationApiV6(authenticatedNetworkClient) {
+    override suspend fun createOne2OneConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
+        httpClient.post(PATH_ONE_2_ONE_CONVERSATIONS) {
+            setBody(apiModelMapper.toApiV3(createConversationRequest))
+        }
+    }.mapSuccess {
+        apiModelMapper.fromApiV3(it)
+    }
+
+    override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
+        wrapKaliumResponse<ConversationResponseV6> {
+            httpClient.get("$PATH_ONE_2_ONE_CONVERSATIONS/${userId.domain}/${userId.value}")
+        }.mapSuccess {
+            apiModelMapper.fromApiV6(it)
+        }
+
+    protected companion object {
+        const val PATH_ONE_2_ONE_CONVERSATIONS = "one2one-conversations"
+    }
+}
