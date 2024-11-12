@@ -28,7 +28,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class HasConferenceCallingActivatedUseCaseTest {
+class ObserveConferenceCallingEnabledUseCaseTest {
 
     @Test
     fun givenOnlyDefaultConferenceCallingValue_whenNewValueIsNotPresent_thenDoNotReturnAnything() = runTest {
@@ -107,7 +107,7 @@ class HasConferenceCallingActivatedUseCaseTest {
             }.returns(values.map { Either.Right(it) }.asFlow())
         }
 
-        fun arrange(): Pair<Arrangement, HasConferenceCallingActivatedUseCase> =
-            this to HasConferenceCallingActivatedUseCaseImpl(userConfigRepository)
+        fun arrange(): Pair<Arrangement, ObserveConferenceCallingEnabledUseCase> =
+            this to ObserveConferenceCallingEnabledUseCaseImpl(userConfigRepository)
     }
 }

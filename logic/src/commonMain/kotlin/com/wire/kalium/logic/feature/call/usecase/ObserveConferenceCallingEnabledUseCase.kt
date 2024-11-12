@@ -32,13 +32,13 @@ import kotlinx.coroutines.flow.zip
  * capability has been enabled. Internally we rely on getting event [Event.FeatureConfig.ConferenceCallingUpdated].
  * This can be used to inform user about the change, for example displaying a dialog about upgrading to enterprise edition.
  */
-interface HasConferenceCallingActivatedUseCase {
+interface ObserveConferenceCallingEnabledUseCase {
     suspend operator fun invoke(): Flow<Boolean>
 }
 
-internal class HasConferenceCallingActivatedUseCaseImpl(
+internal class ObserveConferenceCallingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
-) : HasConferenceCallingActivatedUseCase {
+) : ObserveConferenceCallingEnabledUseCase {
     override suspend fun invoke(): Flow<Boolean> {
         val enabledFlow = userConfigRepository.isConferenceCallingEnabledFlow()
             .map { isEnabled -> isEnabled.fold({ false }, { it }) }

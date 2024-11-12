@@ -43,8 +43,8 @@ import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipa
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.HasConferenceCallingActivatedUseCase
-import com.wire.kalium.logic.feature.call.usecase.HasConferenceCallingActivatedUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCaseImpl
@@ -217,8 +217,8 @@ class CallsScope internal constructor(
 
     val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 
-    val hasConferenceCallingActivatedUseCase: HasConferenceCallingActivatedUseCase
-        get() = HasConferenceCallingActivatedUseCaseImpl(userConfigRepository)
+    val observeConferenceCallingEnabled: ObserveConferenceCallingEnabledUseCase
+        get() = ObserveConferenceCallingEnabledUseCaseImpl(userConfigRepository)
 
     val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
         get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
