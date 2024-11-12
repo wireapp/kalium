@@ -31,6 +31,7 @@ import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.Text
+import com.wire.kalium.protobuf.messages.UnknownStrategy
 import io.ktor.utils.io.core.toByteArray
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -91,7 +92,8 @@ class ProtoContentMapperTest {
         val assetName = "Mocked-Asset.bin"
         val mockedAsset = assetName.toByteArray()
         val protobuf = GenericMessage(
-            TEST_MESSAGE_UUID, GenericMessage.Content.Asset(
+            messageId = TEST_MESSAGE_UUID,
+            content = GenericMessage.Content.Asset(
                 Asset(
                     original = Asset.Original(
                         mimeType = "file/binary",
@@ -193,7 +195,12 @@ class ProtoContentMapperTest {
     fun givenEditedTextGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectEditedMessageId() {
         val replacedMessageId = "replacedMessageId"
         val textContent = MessageEdit.Content.Text(Text("textContent"))
-        val genericMessage = GenericMessage(TEST_MESSAGE_UUID, GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent)))
+        val genericMessage = GenericMessage(
+            messageId = TEST_MESSAGE_UUID,
+            content = GenericMessage.Content.Edited(
+                MessageEdit(replacedMessageId, textContent)
+            )
+        )
         val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
 
         val result = protoContentMapper.decodeFromProtobuf(protobufBlob)
@@ -208,7 +215,10 @@ class ProtoContentMapperTest {
     fun givenEditedTextGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectUpdatedContent() {
         val replacedMessageId = "replacedMessageId"
         val textContent = MessageEdit.Content.Text(Text("textContent"))
-        val genericMessage = GenericMessage(TEST_MESSAGE_UUID, GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent)))
+        val genericMessage = GenericMessage(
+            messageId = TEST_MESSAGE_UUID,
+            content = GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent))
+        )
         val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
 
         val result = protoContentMapper.decodeFromProtobuf(protobufBlob)
@@ -324,13 +334,69 @@ class ProtoContentMapperTest {
         val messageUid = "uid"
 
         val protobuf = GenericMessage(
-            messageUid,
-            GenericMessage.Content.Confirmation(Confirmation(Confirmation.Type.fromValue(-1), messageUid))
+            messageId = messageUid,
+            content = GenericMessage.Content.Confirmation(Confirmation(Confirmation.Type.fromValue(-1), messageUid))
         )
         val decoded = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(protobuf.encodeToByteArray()))
 
         assertIs<ProtoContent.Readable>(decoded)
         assertIs<MessageContent.Ignored>(decoded.messageContent)
+    }
+
+    @Test
+    fun givenNonParseableContentWithDefaultUnknownStrategy_whenMappingFromProto_thenShouldReturnIgnoredContent() {
+        val protobuf = GenericMessage(
+            messageId = "uid"
+        )
+
+        val decoded = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(protobuf.encodeToByteArray()))
+
+        assertIs<ProtoContent.Readable>(decoded)
+        assertIs<MessageContent.Ignored>(decoded.messageContent)
+    }
+
+    @Test
+    fun givenNonParseableContentWithUnknownStrategyIgnore_whenMappingFromProto_thenShouldReturnIgnoredContent() {
+        val protobuf = GenericMessage(
+            messageId = "uid",
+            unknownStrategy = UnknownStrategy.IGNORE
+        )
+
+        val decoded = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(protobuf.encodeToByteArray()))
+
+        assertIs<ProtoContent.Readable>(decoded)
+        assertIs<MessageContent.Ignored>(decoded.messageContent)
+    }
+
+    @Test
+    fun givenNonParseableContentWithUnknownStrategyDiscardAndWarn_whenMappingFromProto_thenShouldReturnUnknownContentWithoutByteData() {
+        val protobuf = GenericMessage(
+            messageId = "uid",
+            unknownStrategy = UnknownStrategy.DISCARD_AND_WARN
+        )
+
+        val decoded = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(protobuf.encodeToByteArray()))
+
+        assertIs<ProtoContent.Readable>(decoded)
+        val content = decoded.messageContent
+        assertIs<MessageContent.Unknown>(content)
+        assertEquals(content.encodedData, null)
+    }
+
+    @Test
+    fun givenNonParseableContentWithUnknownStrategyWarnUserAllowEntry_whenMappingFromProto_thenShouldReturnUnknownContentWithByteData() {
+        val protobuf = GenericMessage(
+            messageId = "uid",
+            unknownStrategy = UnknownStrategy.WARN_USER_ALLOW_RETRY
+        )
+        val protobufByteArray = protobuf.encodeToByteArray()
+
+        val decoded = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(protobufByteArray))
+
+        assertIs<ProtoContent.Readable>(decoded)
+        val content = decoded.messageContent
+        assertIs<MessageContent.Unknown>(content)
+        assertEquals(content.encodedData, protobufByteArray)
     }
 
     @Test
