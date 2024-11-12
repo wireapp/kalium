@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
-import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AppLockModel

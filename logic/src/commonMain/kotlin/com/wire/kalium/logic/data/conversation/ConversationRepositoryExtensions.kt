@@ -20,13 +20,10 @@ package com.wire.kalium.logic.data.conversation
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingData
 import app.cash.paging.map
-import com.wire.kalium.logic.data.message.MessageMapper
-import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
-import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

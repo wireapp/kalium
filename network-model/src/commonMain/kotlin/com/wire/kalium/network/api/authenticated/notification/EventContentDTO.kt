@@ -416,7 +416,6 @@ sealed class EventContentDTO {
     data class Unknown(val type: String) : EventContentDTO()
 }
 
-
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
 object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
     override val descriptor = buildSerialDescriptor("value", PolymorphicKind.SEALED)

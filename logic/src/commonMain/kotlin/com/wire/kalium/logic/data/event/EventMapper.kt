@@ -48,7 +48,6 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_RECEIPT_MODE
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
-import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_LABELS
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets

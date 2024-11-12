@@ -59,7 +59,7 @@ fun FolderType.toDao() = when (this) {
     FolderType.FAVORITE -> ConversationFolderTypeEntity.FAVORITE
 }
 
-fun ConversationFolderTypeEntity.toModel(): FolderType = when(this) {
+fun ConversationFolderTypeEntity.toModel(): FolderType = when (this) {
     ConversationFolderTypeEntity.USER -> FolderType.USER
     ConversationFolderTypeEntity.FAVORITE -> FolderType.FAVORITE
 }

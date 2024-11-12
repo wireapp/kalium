@@ -19,14 +19,8 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 
 internal interface SyncConversationFoldersUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
