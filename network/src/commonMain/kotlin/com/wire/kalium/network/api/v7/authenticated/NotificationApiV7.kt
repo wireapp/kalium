@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v6.authenticated.NotificationApiV6
 
 internal open class NotificationApiV7 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
     authenticatedWebSocketClient: AuthenticatedWebSocketClient,
     serverLinks: ServerConfigDTO.Links
 ) : NotificationApiV6(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks)

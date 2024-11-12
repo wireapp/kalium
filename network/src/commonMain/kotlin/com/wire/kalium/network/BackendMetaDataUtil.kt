@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("MagicNumber")
+
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
