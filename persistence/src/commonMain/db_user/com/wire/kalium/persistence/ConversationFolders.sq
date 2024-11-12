@@ -23,7 +23,9 @@ SELECT ConversationDetailsWithEvents.*
 FROM LabeledConversation
 JOIN ConversationDetailsWithEvents
     ON LabeledConversation.conversation_id = ConversationDetailsWithEvents.qualifiedId
-WHERE LabeledConversation.folder_id = :folderId;
+WHERE LabeledConversation.folder_id = :folderId
+ORDER BY
+    ConversationDetailsWithEvents.lastModifiedDate DESC;
 
 getFavoriteFolder:
 SELECT * FROM ConversationFolder WHERE folder_type = 'FAVORITE'

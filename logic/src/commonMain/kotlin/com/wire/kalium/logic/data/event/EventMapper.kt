@@ -248,7 +248,7 @@ class EventMapper(
 
             is EventContentDTO.FieldLabelListValue -> Event.UserProperty.FoldersUpdate(
                 id = id,
-                folders = fieldKeyValue.labels.map { it.toFolder(selfUserId.domain) }
+                folders = fieldKeyValue.value.labels.map { it.toFolder(selfUserId.domain) }
             )
 
             is EventContentDTO.FieldUnknownValue -> unknown(

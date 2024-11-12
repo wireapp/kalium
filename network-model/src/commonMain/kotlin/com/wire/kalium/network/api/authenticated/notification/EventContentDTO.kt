@@ -39,7 +39,7 @@ import com.wire.kalium.network.api.authenticated.notification.conversation.Messa
 import com.wire.kalium.network.api.authenticated.notification.team.TeamMemberIdData
 import com.wire.kalium.network.api.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.authenticated.notification.user.UserUpdateEventData
-import com.wire.kalium.network.api.authenticated.properties.LabelDTO
+import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.model.UserId
@@ -52,7 +52,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.Serializer
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -395,7 +394,6 @@ sealed class EventContentDTO {
         data class PropertiesDeleteDTO(
             @SerialName("key") val key: String,
         ) : UserProperty()
-
     }
 
     @Serializable(with = FieldKeyValueDeserializer::class)
@@ -410,12 +408,14 @@ sealed class EventContentDTO {
     value class FieldUnknownValue(val value: String) : FieldKeyValue
 
     @Serializable
-    data class FieldLabelListValue(@SerialName("labels") val labels: List<LabelDTO>) : FieldKeyValue// TODO NEED ALSO JSON OBJECT
+    @JvmInline
+    value class FieldLabelListValue(val value: LabelListResponseDTO) : FieldKeyValue
 
     @Serializable
     @SerialName("unknown")
     data class Unknown(val type: String) : EventContentDTO()
 }
+
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
 object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
