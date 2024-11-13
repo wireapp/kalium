@@ -24,6 +24,7 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -48,7 +49,6 @@ import com.wire.kalium.network.api.v0.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
-import com.wire.kalium.network.api.v6.authenticated.networkContainer.AuthenticatedNetworkContainerV6
 import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
@@ -109,6 +109,8 @@ interface AuthenticatedNetworkContainer {
     val propertiesApi: PropertiesApi
 
     val wildCardApi: WildCardApi
+
+    val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
 
     companion object {
 
@@ -180,7 +182,18 @@ interface AuthenticatedNetworkContainer {
                     kaliumLogger
                 )
 
-                6 -> AuthenticatedNetworkContainerV6(
+
+                //TODO revert object to v6
+                6 -> AuthenticatedNetworkContainerV7(
+                    sessionManager,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                7 -> AuthenticatedNetworkContainerV7(
                     sessionManager,
                     selfUserId,
                     certificatePinning,

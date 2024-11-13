@@ -298,6 +298,8 @@ import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
+import com.wire.kalium.logic.feature.team.migration.MigrateFromPersonalToTeamUseCase
+import com.wire.kalium.logic.feature.team.migration.MigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
@@ -782,16 +784,17 @@ class UserSessionScope internal constructor(
     )
 
     private val userRepository: UserRepository = UserDataSource(
-        userStorage.database.userDAO,
-        userStorage.database.metadataDAO,
-        userStorage.database.clientDAO,
-        authenticatedNetworkContainer.selfApi,
-        authenticatedNetworkContainer.userDetailsApi,
-        authenticatedNetworkContainer.teamsApi,
-        globalScope.sessionRepository,
-        userId,
-        selfTeamId,
-        legalHoldHandler
+        userDAO = userStorage.database.userDAO,
+        metadataDAO = userStorage.database.metadataDAO,
+        clientDAO = userStorage.database.clientDAO,
+        selfApi = authenticatedNetworkContainer.selfApi,
+        userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
+        upgradePersonalToTeamApi = authenticatedNetworkContainer.upgradePersonalToTeamApi,
+        teamsApi = authenticatedNetworkContainer.teamsApi,
+        sessionRepository = globalScope.sessionRepository,
+        selfUserId = userId,
+        selfTeamIdProvider = selfTeamId,
+        legalHoldHandler = legalHoldHandler,
     )
 
     private val accountRepository: AccountRepository
@@ -2073,6 +2076,9 @@ class UserSessionScope internal constructor(
             checkRevocationList,
             userScopedLogger
         )
+
+    val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase
+        get() = MigrateFromPersonalToTeamUseCaseImpl(userRepository)
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
