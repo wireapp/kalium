@@ -96,6 +96,21 @@ class ObserveConferenceCallingEnabledUseCaseTest {
         }
     }
 
+    @Test
+    fun givenDefaultConferenceCallingValueIsFalse_whenThreeNewValuesAreTrueFalseTrue_thenReturnTwoResults() = runTest {
+        // given
+        val (_, useCase) = Arrangement()
+            .withDefaultValue(listOf(false, true, false, true))
+            .arrange()
+
+        // when then
+        useCase().test {
+            awaitItem()
+            awaitItem()
+            awaitComplete()
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
