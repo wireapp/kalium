@@ -501,14 +501,11 @@ selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectLastMessagesByConversationIds:
-SELECT MessageDetailsView.* FROM MessageDetailsView
-JOIN (
-    SELECT conversationId, MAX(date) AS latest_date
-    FROM MessageDetailsView
-    WHERE conversationId IN :conversationIds
-    GROUP BY conversationId
-) AS lastMessage
-ON MessageDetailsView.conversationId = lastMessage.conversationId AND MessageDetailsView.date = lastMessage.latest_date;
+SELECT MessageDetailsView.*
+FROM LastMessage
+INNER JOIN MessageDetailsView
+ON MessageDetailsView.conversationId = LastMessage.conversation_id AND MessageDetailsView.id = LastMessage.message_id
+WHERE LastMessage.conversation_id IN :conversationIds;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
