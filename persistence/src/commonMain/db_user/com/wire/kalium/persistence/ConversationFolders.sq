@@ -7,7 +7,6 @@ CREATE TABLE ConversationFolder (
     folder_type TEXT AS ConversationFolderTypeEntity NOT NULL
 );
 
-
 CREATE TABLE LabeledConversation (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       folder_id TEXT NOT NULL,

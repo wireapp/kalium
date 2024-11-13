@@ -65,7 +65,7 @@ internal class ConversationFolderDataSource internal constructor(
     }
 
     override suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
-        conversationFolderDAO.observerConversationFromFolder(folderId).map { conversationDetailsWithEventsEntityList ->
+        conversationFolderDAO.observeConversationListFromFolder(folderId).map { conversationDetailsWithEventsEntityList ->
             conversationDetailsWithEventsEntityList.map {
                 conversationMapper.toModelConversationWithEvents(it)
             }

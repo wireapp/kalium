@@ -71,6 +71,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -131,7 +132,11 @@ interface ConversationRepository {
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
-    suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean = false): Flow<List<ConversationDetailsWithEvents>>
+    suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean = false,
+        conversationFilter: ConversationFilter = ConversationFilter.ALL
+    ): Flow<List<ConversationDetailsWithEvents>>
+
     suspend fun getConversationIds(
         type: Conversation.Type,
         protocol: Conversation.Protocol,
@@ -351,6 +356,7 @@ internal class ConversationDataSource internal constructor(
                 conversationMapper.fromConversationEntityType(it)
             }
         }
+
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeConversationDetailsById(conversationID.toDao())
             .wrapStorageRequest()
@@ -516,13 +522,16 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails(fromArchive).map { conversationViewEntityList ->
+        conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).map { conversationViewEntityList ->
             conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
         }
 
-    override suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>> =
+    override suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetailsWithEvents>> =
         combine(
-            conversationDAO.getAllConversationDetails(fromArchive),
+            conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()

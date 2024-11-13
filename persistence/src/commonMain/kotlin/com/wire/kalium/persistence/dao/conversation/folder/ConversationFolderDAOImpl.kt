@@ -33,7 +33,7 @@ class ConversationFolderDAOImpl internal constructor(
 ) : ConversationFolderDAO {
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
 
-    override suspend fun observerConversationFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
+    override suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationFoldersQueries.getConversationsFromFolder(
             folderId,
             conversationDetailsWithEventsMapper::fromViewToModel
@@ -52,10 +52,9 @@ class ConversationFolderDAOImpl internal constructor(
 
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =
         withContext(coroutineContext) {
+            // TODO KBX make it better to not have blinking effect on favorites list
             conversationFoldersQueries.transaction {
                 conversationFoldersQueries.clearFolders()
-            }
-            conversationFoldersQueries.transaction {
                 folderWithConversationsList.forEach { folderWithConversations ->
                     conversationFoldersQueries.upsertFolder(
                         folderWithConversations.id,

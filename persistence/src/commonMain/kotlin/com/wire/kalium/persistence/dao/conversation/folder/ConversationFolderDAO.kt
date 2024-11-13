@@ -21,7 +21,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEvent
 import kotlinx.coroutines.flow.Flow
 
 interface ConversationFolderDAO {
-    suspend fun observerConversationFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>>
+    suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>>
     suspend fun getFavoriteConversationFolder(): ConversationFolderEntity
     suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>)
 }

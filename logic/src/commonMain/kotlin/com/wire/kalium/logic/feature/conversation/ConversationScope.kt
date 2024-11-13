@@ -125,7 +125,7 @@ class ConversationScope internal constructor(
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
     val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
-        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository)
+        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository, conversationFolderRepository, getFavoriteFolder)
 
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
