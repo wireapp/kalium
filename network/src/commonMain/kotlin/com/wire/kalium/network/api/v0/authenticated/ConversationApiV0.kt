@@ -395,6 +395,7 @@ internal open class ConversationApiV0 internal constructor(
             httpClient.get("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
         }
 
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"

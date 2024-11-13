@@ -733,7 +733,7 @@ internal class UserDataSource internal constructor(
             .onSuccess {
                 kaliumLogger.d("Migrated user to team")
                 fetchSelfUser()
-                // TODO Invalidate team id in memory so UserSessionScope.selfTeamId got updated data
+                // TODO Invalidate team id in memory so UserSessionScope.selfTeamId got updated data WPB-12187
             }
             .onFailure { failure ->
                 kaliumLogger.e("Failed to migrate user to team: $failure")

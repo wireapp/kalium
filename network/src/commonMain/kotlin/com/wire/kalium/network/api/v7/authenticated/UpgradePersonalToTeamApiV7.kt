@@ -41,7 +41,7 @@ internal open class UpgradePersonalToTeamApiV7 internal constructor(
                         name = teamName,
                         iconAssetId = "default",
                         iconKey = "abc",
-                        currency = null,//TODO is this ok?
+                        currency = null,
                     )
                 )
             }
