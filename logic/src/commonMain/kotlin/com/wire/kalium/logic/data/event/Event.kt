@@ -45,7 +45,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
@@ -182,7 +182,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val senderUserId: UserId,
             val dateTime: Instant,
-            val conversation: ConversationResponse
+            val conversation: ConversationResponseV6
         ) : Conversation(id, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(

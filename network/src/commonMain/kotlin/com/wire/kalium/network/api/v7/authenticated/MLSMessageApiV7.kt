@@ -22,5 +22,5 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v6.authenticated.MLSMessageApiV6
 
 internal open class MLSMessageApiV7 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : MLSMessageApiV6(authenticatedNetworkClient)

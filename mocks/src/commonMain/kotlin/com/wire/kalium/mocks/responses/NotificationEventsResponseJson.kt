@@ -77,7 +77,7 @@ object NotificationEventsResponseJson {
                 type = ClientTypeDTO.Permanent,
                 deviceType = DeviceTypeDTO.Desktop,
                 label = "OS X 10.15 10.15",
-                capabilities = null,
+                capabilities = listOf(),
                 mlsPublicKeys = mapOf(Pair("key_variant", "public_key")),
             )
         ),
@@ -157,7 +157,7 @@ object NotificationEventsResponseJson {
         |     "id" : "${eventData.qualifiedFrom.value}",
         |     "domain" : "${eventData.qualifiedFrom.domain}"
         |  }, 
-        |  "data" : ${ConversationResponseJson.conversationResponseSerializer(eventData.data)},
+        |  "data" : ${ConversationResponseJson.conversationResponseSerializer(eventData.data.toV6())},
         |  "time" : "2022-04-12T13:57:02.414Z",
         |  "type" : "conversation.create"
         |}
