@@ -26,7 +26,6 @@ import io.mockative.mock
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class ObserveConferenceCallingEnabledUseCaseTest {
 
@@ -78,7 +77,7 @@ class ObserveConferenceCallingEnabledUseCaseTest {
 
         // when then
         useCase().test {
-            assertTrue(awaitItem())
+            awaitItem()
             awaitComplete()
         }
     }
@@ -92,7 +91,7 @@ class ObserveConferenceCallingEnabledUseCaseTest {
 
         // when then
         useCase().test {
-            assertTrue(awaitItem())
+            awaitItem()
             awaitComplete()
         }
     }

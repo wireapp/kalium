@@ -21,31 +21,29 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.zip
 
 /**
- * Returns [true] only when our conference calling setting changes from false to true, meaning our conference calling
+ * Returns [Unit] only when our conference calling setting changes from false to true, meaning our conference calling
  * capability has been enabled. Internally we rely on getting event [Event.FeatureConfig.ConferenceCallingUpdated].
  * This can be used to inform user about the change, for example displaying a dialog about upgrading to enterprise edition.
  */
 interface ObserveConferenceCallingEnabledUseCase {
-    suspend operator fun invoke(): Flow<Boolean>
+    suspend operator fun invoke(): Flow<Unit>
 }
 
 internal class ObserveConferenceCallingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
 ) : ObserveConferenceCallingEnabledUseCase {
-    override suspend fun invoke(): Flow<Boolean> {
+    override suspend fun invoke(): Flow<Unit> {
         val enabledFlow = userConfigRepository.isConferenceCallingEnabledFlow()
             .map { isEnabled -> isEnabled.fold({ false }, { it }) }
         return enabledFlow
             .zip(enabledFlow.drop(1)) { old, new -> old to new }
             .filter { (old, new) -> !old && new }
-            .map { (_, new) -> new }
-            .distinctUntilChanged()
+            .map { Unit }
     }
 }
