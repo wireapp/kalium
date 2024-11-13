@@ -21,6 +21,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Use case to migrate user personal account to team account.
+ * This needs at least API V7 to work.
+ */
 interface MigrateFromPersonalToTeamUseCase {
     suspend operator fun invoke(teamName: String): MigrateFromPersonalToTeamResult
 }
@@ -44,6 +48,7 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
                         teamId = success.teamId,
                         teamName = success.teamName,
                     )
-                })
+                }
+            )
     }
 }

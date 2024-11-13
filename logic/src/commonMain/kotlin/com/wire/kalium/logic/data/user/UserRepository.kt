@@ -239,9 +239,8 @@ internal class UserDataSource internal constructor(
                                 .flatMap {
                                     wrapStorageRequest {
                                         metadataDAO.insertValue(
-                                            Json.encodeToString(
-                                                userEntity.id
-                                            ), SELF_USER_ID_KEY
+                                            Json.encodeToString(userEntity.id),
+                                            SELF_USER_ID_KEY
                                         )
                                     }
                                 }
