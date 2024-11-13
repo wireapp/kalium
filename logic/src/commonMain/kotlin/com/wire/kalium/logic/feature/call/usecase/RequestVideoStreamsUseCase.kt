@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.id.ConversationId
@@ -42,7 +41,6 @@ class RequestVideoStreamsUseCase(
         conversationId: ConversationId,
         clients: List<CallClient>
     ) = withContext(dispatchers.io) {
-        callingLogger.i("Requesting video streams for conversationId: ${conversationId.toLogString()}")
         val callClients = CallClientList(clients = clients)
         callManager.value.requestVideoStreams(conversationId, callClients)
     }

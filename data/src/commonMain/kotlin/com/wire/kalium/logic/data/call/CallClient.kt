@@ -19,21 +19,24 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.util.serialization.LenientJsonSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.nullable
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class CallClient(
     @SerialName("userid") val userId: String,
     @SerialName("clientid") val clientId: String,
     @SerialName("in_subconv") val isMemberOfSubconversation: Boolean = false,
-    @Transient val callQuality: CallQuality = CallQuality.ANY
-) {
-    @SerialName("quality")
-    val quality
-        get() = callQuality.ordinal
-}
+    @SerialName("quality") @Serializable(with = CallQuality.CallQualityAsIntSerializer::class) val quality: CallQuality = CallQuality.LOW
+)
 
 @Serializable
 data class CallClientList(
@@ -45,5 +48,23 @@ data class CallClientList(
 enum class CallQuality {
     ANY,
     LOW,
-    HIGH
+    HIGH;
+
+    data object CallQualityAsIntSerializer : KSerializer<CallQuality> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("quality", PrimitiveKind.INT).nullable
+
+        override fun serialize(encoder: Encoder, value: CallQuality) {
+            encoder.encodeInt(value.ordinal)
+        }
+
+        @OptIn(ExperimentalSerializationApi::class)
+        override fun deserialize(decoder: Decoder): CallQuality {
+            val value = if (decoder.decodeNotNullMark()) decoder.decodeInt() else 0
+            return when (value) {
+                1 -> LOW
+                2 -> HIGH
+                else -> ANY
+            }
+        }
+    }
 }

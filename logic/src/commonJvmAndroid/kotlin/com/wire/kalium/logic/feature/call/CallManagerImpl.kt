@@ -463,11 +463,13 @@ class CallManagerImpl internal constructor(
         callClients: CallClientList
     ) {
         withCalling {
-            // Needed to support calls between federated and non federated environments
+            // Mapping Needed to support calls between federated and non federated environments (domain separation)
             val clients = callClients.clients.map { callClient ->
                 CallClient(
-                    federatedIdMapper.parseToFederatedId(callClient.userId),
-                    callClient.clientId
+                    userId = federatedIdMapper.parseToFederatedId(callClient.userId),
+                    clientId = callClient.clientId,
+                    isMemberOfSubconversation = callClient.isMemberOfSubconversation,
+                    quality = callClient.quality
                 )
             }
             val clientsJson = CallClientList(clients).toJsonString()

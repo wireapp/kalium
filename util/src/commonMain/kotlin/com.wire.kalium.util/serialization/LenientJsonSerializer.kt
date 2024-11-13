@@ -26,6 +26,7 @@ object LenientJsonSerializer {
 
     val json = Json {
         isLenient = true
+        encodeDefaults = true
         ignoreUnknownKeys = true
     }
 }
