@@ -97,7 +97,8 @@ object ConversationResponseJson {
     )
 
     val v6 = ValidJsonProvider(
-        conversationResponseV6, conversationResponseSerializerV6
+        conversationResponseV6,
+        conversationResponseSerializerV6
     )
 
     val v3 = ValidJsonProvider(
