@@ -591,7 +591,6 @@ class UserSessionScope internal constructor(
         kaliumLogger = userScopedLogger
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
-        kaliumConfigs,
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
 
@@ -708,6 +707,7 @@ class UserSessionScope internal constructor(
             userStorage.database.memberDAO,
             authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
+            userStorage.database.messageDraftDAO,
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
@@ -1225,7 +1225,6 @@ class UserSessionScope internal constructor(
 
     private val pendingProposalScheduler: PendingProposalScheduler =
         PendingProposalSchedulerImpl(
-            kaliumConfigs,
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository }
@@ -1979,7 +1978,11 @@ class UserSessionScope internal constructor(
 
     @OptIn(DelicateKaliumApi::class)
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
-        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, mlsPublicKeysRepository)
+        get() = IsAllowedToRegisterMLSClientUseCaseImpl(
+            featureSupport,
+            mlsPublicKeysRepository,
+            userConfigRepository
+        )
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(

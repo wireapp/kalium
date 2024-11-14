@@ -15,29 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.authenticated
 
-package com.wire.kalium.monkeys
+import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.http.HttpMethod
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-
-fun homeDirectory(): String {
-    return System.getProperty("user.home")
-}
-
-fun coreLogic(
-    rootPath: String,
-): CoreLogic {
-    val coreLogic = CoreLogic(
-        rootPath = rootPath,
-        kaliumConfigs = KaliumConfigs(
-            developmentApiEnabled = true,
-            encryptProteusStorage = true,
-            wipeOnDeviceRemoval = true,
-        ),
-        userAgent = "Wire Infinite Monkeys",
-        useInMemoryStorage = true
-    )
-    coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
-    return coreLogic
+interface WildCardApi {
+    suspend fun customRequest(
+        httpMethod: HttpMethod,
+        requestPath: List<String>,
+        body: String?,
+        queryParam: Map<String, String>,
+        customHeader: Map<String, String>
+    ): NetworkResponse<String>
 }

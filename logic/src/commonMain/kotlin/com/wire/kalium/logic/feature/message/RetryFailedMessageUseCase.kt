@@ -160,6 +160,7 @@ class RetryFailedMessageUseCase internal constructor(
                                 .map { updatedMessage } // we need to persist new asset remoteData and status
                         }
                     }
+                    .onSuccess { updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id) }
                     .onFailure {
                         kaliumLogger.e("Failed to retry sending asset message. Failure = $it")
                         updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)

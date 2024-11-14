@@ -231,7 +231,6 @@ class PocIntegrationTest {
             kaliumConfigs = KaliumConfigs(
                 developmentApiEnabled = true,
                 encryptProteusStorage = true,
-                isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
                 mockedRequests = mockedRequests,
                 mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,

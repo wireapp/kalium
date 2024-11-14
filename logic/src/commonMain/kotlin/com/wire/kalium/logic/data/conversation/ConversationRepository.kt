@@ -70,15 +70,20 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
@@ -127,11 +132,7 @@ interface ConversationRepository {
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
-    suspend fun observeConversationListDetailsWithEvents(
-        fromArchive: Boolean = false,
-        onlyInteractionsEnabled: Boolean = false,
-        newActivitiesOnTop: Boolean = false,
-    ): Flow<List<ConversationDetailsWithEvents>>
+    suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean = false): Flow<List<ConversationDetailsWithEvents>>
     suspend fun getConversationIds(
         type: Conversation.Type,
         protocol: Conversation.Protocol,
@@ -317,6 +318,7 @@ internal class ConversationDataSource internal constructor(
     private val memberDAO: MemberDAO,
     private val conversationApi: ConversationApi,
     private val messageDAO: MessageDAO,
+    private val messageDraftDAO: MessageDraftDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
@@ -520,17 +522,28 @@ internal class ConversationDataSource internal constructor(
             conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
         }
 
-    override suspend fun observeConversationListDetailsWithEvents(
-        fromArchive: Boolean,
-        onlyInteractionsEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
-    ): Flow<List<ConversationDetailsWithEvents>> =
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive, onlyInteractionsEnabled, newActivitiesOnTop)
-            .map { conversationDetailsWithEventsViewEntityList ->
-                conversationDetailsWithEventsViewEntityList.map { conversationDetailsWithEventsViewEntity ->
-                    conversationMapper.fromDaoModelToDetailsWithEvents(conversationDetailsWithEventsViewEntity)
-                }
+    override suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>> =
+        combine(
+            conversationDAO.getAllConversationDetails(fromArchive),
+            if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
+            messageDAO.observeConversationsUnreadEvents(),
+            messageDraftDAO.observeMessageDrafts()
+        ) { conversationList, lastMessageList, unreadEvents, drafts ->
+            val lastMessageMap = lastMessageList.associateBy { it.conversationId }
+            val messageDraftMap = drafts.filter { it.text.isNotBlank() }.associateBy { it.conversationId }
+            val unreadEventsMap = unreadEvents.associateBy { it.conversationId }
+
+            conversationList.map { conversation ->
+                conversationMapper.fromDaoModelToDetailsWithEvents(
+                    ConversationDetailsWithEventsEntity(
+                        conversationViewEntity = conversation,
+                        lastMessage = lastMessageMap[conversation.id],
+                        messageDraft = messageDraftMap[conversation.id],
+                        unreadEvents = unreadEventsMap[conversation.id] ?: ConversationUnreadEventEntity(conversation.id, mapOf()),
+                    )
+                )
             }
+        }
 
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, Conversation> =
         wrapApiRequest {
@@ -983,7 +996,7 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
-        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
+        wrapStorageRequest { conversationDAO.getConversationDetailsByGroupID(mlsGroupId.value) }
             .map { conversationMapper.fromDaoModelToDetails(it) }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =

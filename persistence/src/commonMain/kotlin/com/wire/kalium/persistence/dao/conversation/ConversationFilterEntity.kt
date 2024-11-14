@@ -15,29 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.dao.conversation
 
-package com.wire.kalium.monkeys
-
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-
-fun homeDirectory(): String {
-    return System.getProperty("user.home")
-}
-
-fun coreLogic(
-    rootPath: String,
-): CoreLogic {
-    val coreLogic = CoreLogic(
-        rootPath = rootPath,
-        kaliumConfigs = KaliumConfigs(
-            developmentApiEnabled = true,
-            encryptProteusStorage = true,
-            wipeOnDeviceRemoval = true,
-        ),
-        userAgent = "Wire Infinite Monkeys",
-        useInMemoryStorage = true
-    )
-    coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
-    return coreLogic
+enum class ConversationFilterEntity {
+    ALL,
+    FAVORITES,
+    GROUPS,
+    ONE_ON_ONE
 }

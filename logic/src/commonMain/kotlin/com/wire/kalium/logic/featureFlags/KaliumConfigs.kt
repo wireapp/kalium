@@ -26,7 +26,6 @@ import kotlin.time.Duration.Companion.hours
 data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
     val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
-    var isMLSSupportEnabled: Boolean = true,
     // Disabling db-encryption will crash on android-api level below 30
     val shouldEncryptData: Boolean = true,
     val encryptProteusStorage: Boolean = false,
