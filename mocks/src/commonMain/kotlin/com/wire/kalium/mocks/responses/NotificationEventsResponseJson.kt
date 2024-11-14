@@ -157,7 +157,7 @@ object NotificationEventsResponseJson {
         |     "id" : "${eventData.qualifiedFrom.value}",
         |     "domain" : "${eventData.qualifiedFrom.domain}"
         |  }, 
-        |  "data" : ${ConversationResponseJson.conversationResponseSerializer(eventData.data.toV6())},
+        |  "data" : ${ConversationResponseJson.conversationResponseSerializerV3(eventData.data)},
         |  "time" : "2022-04-12T13:57:02.414Z",
         |  "type" : "conversation.create"
         |}

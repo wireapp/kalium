@@ -43,8 +43,8 @@ import kotlinx.serialization.json.putJsonObject
 
 object ConversationResponseJson {
 
-    val conversationResponseSerializer = { it: ConversationResponseV6 ->
-        buildConversationResponse(it).toString()
+    val conversationResponseSerializerV6 = { it: ConversationResponseV6 ->
+        buildConversationResponseV6(it).toString()
     }
 
     val conversationResponseSerializerV3 = { it: ConversationResponse ->
@@ -55,7 +55,7 @@ object ConversationResponseJson {
         buildConversationResponseV3(it, useDeprecatedAccessRole = true).toString()
     }
 
-    private val conversationResponse = ConversationResponseV6(
+    private val conversationResponseV6 = ConversationResponseV6(
         conversation = ConversationResponse(
             "fdf23116-42a5-472c-8316-e10655f5d11e",
             ConversationMembersResponse(
@@ -97,23 +97,23 @@ object ConversationResponseJson {
     )
 
     val v6 = ValidJsonProvider(
-        conversationResponse, conversationResponseSerializer
+        conversationResponseV6, conversationResponseSerializerV6
     )
 
     val v3 = ValidJsonProvider(
-        conversationResponse.conversation,
+        conversationResponseV6.conversation,
         conversationResponseSerializerV3
     )
 
     fun v0(accessRole: Set<ConversationAccessRoleDTO>? = null) = ValidJsonProvider(
-        conversationResponse.conversation.copy(
-            accessRole = accessRole ?: conversationResponse.conversation.accessRole
+        conversationResponseV6.conversation.copy(
+            accessRole = accessRole ?: conversationResponseV6.conversation.accessRole
         ),
         conversationResponseSerializerWithDeprecatedAccessRole
     )
 }
 
-fun buildConversationResponse(
+fun buildConversationResponseV6(
     conversationResponse: ConversationResponseV6,
     useDeprecatedAccessRole: Boolean = false,
 ): JsonObject = buildJsonObject {

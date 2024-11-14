@@ -377,7 +377,7 @@ class EventMapper(
         eventContentDTO.qualifiedConversation.toModel(),
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
-        eventContentDTO.data.toV6()
+        eventContentDTO.data
     )
 
     fun conversationMemberJoin(
