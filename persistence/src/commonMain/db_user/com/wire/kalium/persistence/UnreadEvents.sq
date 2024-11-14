@@ -11,6 +11,9 @@ CREATE TABLE UnreadEvent (
     FOREIGN KEY (id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (id, conversation_id)
 );
+CREATE INDEX unread_event_conversation ON UnreadEvent(conversation_id);
+CREATE INDEX unread_event_date ON UnreadEvent(creation_date);
+CREATE INDEX unread_event_type ON UnreadEvent(type);
 
 deleteUnreadEvent:
 DELETE FROM UnreadEvent WHERE id = ? AND conversation_id = ?;

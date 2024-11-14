@@ -1,0 +1,208 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
+import kotlin.Boolean;
+import kotlin.Float;
+import kotlin.Int;
+import kotlin.String;
+import kotlin.collections.List;
+import kotlinx.datetime.Instant;
+
+CREATE INDEX call_status ON Call(status);
+CREATE INDEX unread_event_conversation ON UnreadEvent(conversation_id);
+CREATE INDEX unread_event_date ON UnreadEvent(creation_date);
+CREATE INDEX unread_event_type ON UnreadEvent(type);
+
+CREATE TABLE LastMessage (
+      conversation_id TEXT AS QualifiedIDEntity,
+      message_id TEXT,
+      creation_date INTEGER AS Instant,
+
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE SET NULL, -- there is a trigger to handle null values
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE SET NULL, -- there is a trigger to handle null values
+      PRIMARY KEY (conversation_id)
+);
+
+-- update last message when newly inserted message is newer than the current last message
+CREATE TRIGGER updateLastMessageAfterInsertingNewMessage
+AFTER INSERT ON Message
+WHEN
+    new.visibility IN ('VISIBLE', 'DELETED')
+    AND new.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+BEGIN
+    INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+    VALUES (new.conversation_id, new.id, new.creation_date)
+    ON CONFLICT(conversation_id)
+        DO UPDATE SET
+            message_id = excluded.message_id,
+            creation_date = excluded.creation_date
+        WHERE
+            excluded.creation_date > LastMessage.creation_date;
+END;
+
+-- update last message after deleting the current last message by finding new last message for the conversation
+CREATE TRIGGER updateLastMessageAfterDeletingLastMessage
+AFTER DELETE ON LastMessage
+BEGIN
+    INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+    SELECT conversation_id, id, creation_date
+    FROM Message
+    WHERE
+        old.conversation_id = Message.conversation_id
+		AND Message.visibility IN ('VISIBLE', 'DELETED')
+		AND Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+    ORDER BY creation_date DESC
+    LIMIT 1
+    ON CONFLICT(conversation_id)
+        DO UPDATE SET
+            message_id = excluded.message_id,
+            creation_date = excluded.creation_date
+        WHERE
+            excluded.creation_date > LastMessage.creation_date;
+END;
+
+-- update last message after a message got updated and now this one should be the new last message
+-- or if the current last message shouldn't be the last message anymore because of the visibility update for instance
+CREATE TRIGGER updateLastMessageAfterUpdatingMessage
+AFTER UPDATE OF id, conversation_id, visibility, content_type, creation_date ON Message
+WHEN
+    new.creation_date >= (SELECT creation_date FROM LastMessage WHERE conversation_id = new.conversation_id LIMIT 1)
+BEGIN
+    INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+    SELECT conversation_id, id, creation_date
+    FROM Message
+    WHERE
+        new.conversation_id = Message.conversation_id
+		AND Message.visibility IN ('VISIBLE', 'DELETED')
+		AND Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+    ORDER BY creation_date DESC
+    LIMIT 1
+    ON CONFLICT(conversation_id)
+        DO UPDATE SET
+            message_id = excluded.message_id,
+            creation_date = excluded.creation_date
+        WHERE
+            excluded.creation_date > LastMessage.creation_date;
+END;
+
+-- update last message after there was a foreign key updated to null by finding new last message for that conversation
+-- this happens when last message is moved to another conversation or id of last message is changed
+CREATE TRIGGER updateLastMessageAfterForeignKeyUpdatedToNull
+AFTER UPDATE OF conversation_id ON LastMessage
+WHEN
+    new.conversation_id IS NULL
+BEGIN
+    INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+    SELECT conversation_id, id, creation_date
+    FROM Message
+    WHERE
+        old.conversation_id = Message.conversation_id
+		AND Message.visibility IN ('VISIBLE', 'DELETED')
+		AND Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+    ORDER BY creation_date DESC
+    LIMIT 1
+    ON CONFLICT(conversation_id)
+        DO UPDATE SET
+            message_id = excluded.message_id,
+            creation_date = excluded.creation_date
+        WHERE
+            excluded.creation_date > LastMessage.creation_date;
+    DELETE FROM LastMessage WHERE conversation_id IS NULL;
+END;
+
+-- populate LastMessage table with the last message of each conversation
+INSERT INTO LastMessage(conversation_id, message_id, creation_date)
+SELECT conversation_id, id, creation_date
+FROM Message
+WHERE
+    visibility IN ('VISIBLE', 'DELETED')
+    AND content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
+GROUP BY conversation_id
+HAVING creation_date = MAX(creation_date);
+
+DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+
+CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
+SELECT
+    ConversationDetails.*,
+    -- unread events
+    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
+    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
+    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
+    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
+    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
+    CASE
+        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
+        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
+           CASE
+                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
+                ELSE 0
+            END
+        ELSE 0
+    END AS hasNewActivitiesToShow,
+    -- draft message
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.mention_list AS messageDraftMentionList,
+    -- last message
+    Message.id AS lastMessageId,
+    Message.content_type AS lastMessageContentType,
+    Message.creation_date AS lastMessageDate,
+    Message.visibility AS lastMessageVisibility,
+    Message.sender_user_id AS lastMessageSenderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
+    User.name AS lastMessageSenderName,
+    User.connection_status AS lastMessageSenderConnectionStatus,
+    User.deleted AS lastMessageSenderIsDeleted,
+    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
+    MemberChangeContent.member_change_list AS lastMessageMemberChangeList,
+    MemberChangeContent.member_change_type AS lastMessageMemberChangeType,
+    ConversationNameChangedContent.conversation_name AS lastMessageUpdateConversationName,
+    (Mention.user_id IS NOT NULL) AS lastMessageIsMentioningSelfUser,
+    TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
+    TextContent.text_body AS lastMessageText,
+    AssetContent.asset_mime_type AS lastMessageAssetMimeType
+FROM ConversationDetails
+LEFT JOIN UnreadEventCountsGrouped
+    ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
+LEFT JOIN MessageDraft
+    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
+LEFT JOIN LastMessage
+    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
+LEFT JOIN Message
+    ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
+LEFT JOIN User
+    ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
+    ON LastMessage.message_id = MemberChangeContent.message_id AND LastMessage.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention
+    ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
+    ON LastMessage.message_id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent
+    ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+WHERE
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
+    AND ConversationDetails.isActive;
