@@ -58,7 +58,10 @@ class PersistMigratedMessagesUseCaseTest {
         @Mock
         val migrationDAO: MigrationDAO = mock(MigrationDAO::class)
 
-        val genericMessage = GenericMessage("uuid", GenericMessage.Content.Text(Text("some_text")))
+        val genericMessage = GenericMessage(
+            messageId = "uuid",
+            content = GenericMessage.Content.Text(Text("some_text"))
+        )
 
         fun fakeMigratedMessage() = MigratedMessage(
             conversationId = TestConversation.ID,

@@ -160,8 +160,9 @@ class UserDatabaseBuilder internal constructor(
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
         MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
         MessageDraftAdapter = TableMapper.messageDraftsAdapter,
+        LastMessageAdapter = TableMapper.lastMessageAdapter,
         LabeledConversationAdapter = TableMapper.labeledConversationAdapter,
-        ConversationFolderAdapter = TableMapper.conversationFolderAdapter,
+        ConversationFolderAdapter = TableMapper.conversationFolderAdapter
     )
 
     init {
