@@ -35,7 +35,9 @@ data class CallClient(
     @SerialName("userid") val userId: String,
     @SerialName("clientid") val clientId: String,
     @SerialName("in_subconv") val isMemberOfSubconversation: Boolean = false,
-    @SerialName("quality") @Serializable(with = CallQuality.CallQualityAsIntSerializer::class) val quality: CallQuality = CallQuality.LOW
+    @SerialName("quality")
+    @Serializable(with = CallQuality.CallQualityAsIntSerializer::class)
+    val quality: CallQuality = CallQuality.LOW
 )
 
 @Serializable
