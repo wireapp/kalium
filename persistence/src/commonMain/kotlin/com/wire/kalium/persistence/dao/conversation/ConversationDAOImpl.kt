@@ -214,7 +214,10 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
-    override suspend fun getAllConversationDetails(fromArchive: Boolean, filter: ConversationFilterEntity): Flow<List<ConversationViewEntity>> {
+    override suspend fun getAllConversationDetails(
+        fromArchive: Boolean,
+        filter: ConversationFilterEntity
+    ): Flow<List<ConversationViewEntity>> {
         return conversationDetailsQueries.selectAllConversationDetails(fromArchive, filter.toString(), conversationMapper::fromViewToModel)
             .asFlow()
             .mapToList()
