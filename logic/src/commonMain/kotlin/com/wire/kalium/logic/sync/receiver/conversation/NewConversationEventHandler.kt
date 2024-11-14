@@ -55,7 +55,7 @@ internal class NewConversationEventHandlerImpl(
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
         conversationRepository
-            .persistConversation(event.conversation.conversation, selfUserTeamId?.value, true)
+            .persistConversation(event.conversation, selfUserTeamId?.value, true)
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(selfUserTeamId, event)
                     .flatMap {
@@ -66,7 +66,7 @@ internal class NewConversationEventHandlerImpl(
                     }
                     .flatMap {
                         userRepository.fetchUsersIfUnknownByIds(
-                            event.conversation.conversation.members.otherMembers.map {
+                            event.conversation.members.otherMembers.map {
                                 it.id.toModel()
                             }.toSet()
                         )
@@ -84,9 +84,9 @@ internal class NewConversationEventHandlerImpl(
         selfUserTeamId: TeamId?,
         event: Event.Conversation.NewConversation
     ) =
-        if (event.conversation.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
+        if (event.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
             val otherUserId =
-                event.conversation.conversation.members.otherMembers.first().id.toModel()
+                event.conversation.members.otherMembers.first().id.toModel()
             oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                 userId = otherUserId,
                 invalidateCurrentKnownProtocols = true
@@ -107,20 +107,20 @@ internal class NewConversationEventHandlerImpl(
         if (isNewUnhandledConversation) {
             newGroupConversationSystemMessagesCreator.conversationStarted(
                 event.senderUserId,
-                event.conversation.conversation,
+                event.conversation,
                 event.dateTime
             )
             newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 event.conversationId.toDao(),
-                event.conversation.conversation.members.otherMembers.map { it.id.toModel() },
+                event.conversation.members.otherMembers.map { it.id.toModel() },
                 event.dateTime
             )
             newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
-                event.conversation.conversation,
+                event.conversation,
                 event.dateTime
             )
             newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                event.conversation.conversation.id.toModel(),
+                event.conversation.id.toModel(),
                 event.dateTime
             )
         }
