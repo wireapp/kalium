@@ -28,8 +28,8 @@ ON CONFLICT(conversation_id) DO UPDATE SET
     mention_list = excluded.mention_list
 WHERE -- execute the update only if any of the fields changed
     MessageDraft.text != excluded.text
-    OR MessageDraft.edit_message_id != excluded.edit_message_id
-    OR MessageDraft.quoted_message_id != excluded.quoted_message_id
+    OR MessageDraft.edit_message_id IS NOT excluded.edit_message_id
+    OR MessageDraft.quoted_message_id IS NOT excluded.quoted_message_id
     OR MessageDraft.mention_list != excluded.mention_list;
 
 getDraft:
