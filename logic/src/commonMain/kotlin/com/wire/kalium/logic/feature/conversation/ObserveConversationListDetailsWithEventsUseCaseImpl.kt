@@ -46,10 +46,8 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
         conversationFilter: ConversationFilter
     ): Flow<List<ConversationDetailsWithEvents>> {
         return if (conversationFilter == ConversationFilter.FAVORITES) {
-            println("KBX ObserveConversationListDetailsWithEventsUseCaseImpl invoke")
             when (val result = getFavoriteFolder()) {
                 GetFavoriteFolderUseCase.Result.Failure -> {
-                    println("KBX failure $result")
                     flowOf(listOf())
                 }
 
