@@ -22,8 +22,6 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.ingest.BackupImportResult
-import com.wire.backup.ingest.MPBackupImporter
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
@@ -33,7 +31,6 @@ import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -46,11 +43,11 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_EXTENSION
 import com.wire.kalium.logic.feature.backup.BackupConstants.acceptedFileNames
 import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
-import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
-import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.DecryptionFailure
-import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
-import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.InvalidUserId
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure
+import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure.BackupIOFailure
+import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure.DecryptionFailure
+import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure.IncompatibleBackup
+import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure.InvalidUserId
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -62,14 +59,11 @@ import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.persistence.backup.DatabaseImporter
-import com.wire.kalium.protobuf.backup.BackupInfo
-import com.wire.kalium.protobuf.backup.ExportedMessage
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.SerializationException
 import okio.Path
 import okio.Source
@@ -95,6 +89,7 @@ internal class RestoreBackupUseCaseImpl(
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val restoreWebBackup: RestoreWebBackupUseCase,
+    private val universalBackupImporter: UniversalBackupImporter,
     private val persistMigratedMessages: PersistMigratedMessagesUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val idMapper: IdMapper = MapperProvider.idMapper()
@@ -102,23 +97,28 @@ internal class RestoreBackupUseCaseImpl(
 
     override suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult =
         withContext(dispatchers.io) {
-            val backupData = kaliumFileSystem.source(backupFilePath).buffer().readByteArray()
-            when (val result = MPBackupImporter(userId.domain).import(backupData)) {
-                BackupImportResult.ParsingFailure -> {
-                    Failure(IncompatibleBackup("Oopsie Doopsie! Backup format is not supported"))
+            extractCompressedBackup(backupFilePath.normalized())
+                .flatMap { extractedBackupRootPath ->
+                    if (password.isNullOrEmpty()) {
+                        // Check if contains new mp backup data
+                        if (universalBackupImporter.isMultiplatformBackup(extractedBackupRootPath)) {
+                            universalBackupImporter.import(extractedBackupRootPath)
+                        } else {
+                            oldBackupMetadata(extractedBackupRootPath).flatMap { metadata ->
+                                importUnencryptedBackup(extractedBackupRootPath, metadata)
+                            }
+                        }
+                    } else {
+                        importEncryptedBackup(extractedBackupRootPath, password)
+                    }
                 }
-
-                is BackupImportResult.Success -> {
-                    persistMigratedMessages(result.backupData.messages.map { it.toMigratedMessage() }, this)
-                    RestoreBackupResult.Success
-                }
-            }
+                .fold({ it }, { RestoreBackupResult.Success })
         }
 
     private suspend fun importUnencryptedBackup(
         extractedBackupRootPath: Path,
-        metadata: BackupInfo,
-    ): Either<Failure, Unit> = isValidBackupAuthor(metadata)
+        metadata: OldBackupMetadata,
+    ): Either<RestoreBackupResult.Failure, Unit> = isValidBackupAuthor(metadata)
         .flatMap { metaData ->
             if (metaData.platform == "Web") {
                 return when (val webBackup = restoreWebBackup(extractedBackupRootPath, metaData)) {
@@ -158,7 +158,7 @@ internal class RestoreBackupUseCaseImpl(
         return extractFiles(tempCompressedFileSource, extractedFilesRootPath)
             .fold({
                 kaliumLogger.e("Failed to extract backup files")
-                Either.Left(Failure(BackupIOFailure("Failed to extract backup files")))
+                Either.Left(BackupIOFailure("Failed to extract backup files"))
             }, {
                 Either.Right(extractedFilesRootPath)
             })
@@ -187,27 +187,27 @@ internal class RestoreBackupUseCaseImpl(
         )
 
         if (decodingError != null) {
-            return Either.Left(Failure(mappedDecodingError(decodingError)))
+            return Either.Left(mappedDecodingError(decodingError))
         }
 
         return if (backupSize > 0) {
             // On successful decryption, we still need to extract the zip file to do sanity checks and get the database file
             extractFiles(kaliumFileSystem.source(extractedBackupPath), extractedBackupRootPath).fold({
                 kaliumLogger.e("Failed to extract encrypted backup files")
-                Either.Left(Failure(BackupIOFailure("Failed to extract encrypted backup files")))
+                Either.Left(BackupIOFailure("Failed to extract encrypted backup files"))
             }, {
                 kaliumFileSystem.delete(extractedBackupPath)
-                backupMetadata(extractedBackupRootPath).flatMap { metadata ->
+                oldBackupMetadata(extractedBackupRootPath).flatMap { metadata ->
                     val isFromOtherClient = isFromOtherClient(metadata)
                     getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
                 }
             })
         } else {
-            Either.Left(Failure(RestoreBackupResult.BackupRestoreFailure.InvalidPassword))
+            Either.Left(RestoreBackupResult.Failure.InvalidPassword)
         }
     }
 
-    private fun mappedDecodingError(decodingError: HeaderDecodingErrors): RestoreBackupResult.BackupRestoreFailure =
+    private fun mappedDecodingError(decodingError: HeaderDecodingErrors): RestoreBackupResult.Failure =
         when (decodingError) {
             INVALID_USER_ID -> InvalidUserId
             INVALID_VERSION -> IncompatibleBackup("The provided backup version is lower than the minimum supported version")
@@ -219,7 +219,7 @@ internal class RestoreBackupUseCaseImpl(
             listDirectories(extractedBackupPath)
                 .firstOrNull { it.name.endsWith(".$BACKUP_ENCRYPTED_EXTENSION") }?.let {
                     Either.Right(it)
-                } ?: Either.Left(Failure(DecryptionFailure("No encrypted backup file found")))
+                } ?: Either.Left(DecryptionFailure("No encrypted backup file found"))
         }
 
     private fun extractFiles(inputSource: Source, extractedBackupRootPath: Path) =
@@ -231,39 +231,39 @@ internal class RestoreBackupUseCaseImpl(
     ): Either<Failure, Unit> {
         return getBackupDBPath(extractedBackupRootPath)?.let { dbPath ->
             importDBFile(dbPath, isFromOtherClient)
-        } ?: Either.Left(Failure(BackupIOFailure("No valid db file found in the backup")))
+        } ?: Either.Left(BackupIOFailure("No valid db file found in the backup"))
     }
 
     private suspend fun importDBFile(userDBPath: Path, isFromOtherClient: Boolean): Either<Failure, Unit> =
         wrapStorageRequest {
             databaseImporter.importFromFile(userDBPath.toString(), isFromOtherClient)
-        }.mapLeft { Failure(BackupIOFailure("There was an error when importing the DB")) }
+        }.mapLeft { BackupIOFailure("There was an error when importing the DB") }
 
     private suspend fun getBackupDBPath(extractedBackupRootFilesPath: Path): Path? =
         kaliumFileSystem.listDirectories(extractedBackupRootFilesPath).firstOrNull { it.name.contains(".db") }
 
-    private suspend fun backupMetadata(extractedBackupPath: Path): Either<Failure, BackupInfo> =
+    private suspend fun oldBackupMetadata(extractedBackupPath: Path): Either<Failure, OldBackupMetadata> =
         kaliumFileSystem.listDirectories(extractedBackupPath)
             .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
-            .let { it ?: return Either.Left(Failure(IncompatibleBackup("backupMetadata: No metadata file found"))) }
+            .let { it ?: return Either.Left(IncompatibleBackup("backupMetadata: No metadata file found")) }
             .let { metadataFile ->
                 try {
                     kaliumFileSystem.source(metadataFile).buffer()
                         .use { Either.Right(KtxSerializer.json.decodeFromString(it.readUtf8())) }
                 } catch (e: SerializationException) {
-                    Either.Left(Failure(IncompatibleBackup(e.toString())))
+                    Either.Left(IncompatibleBackup(e.toString()))
                 }
             }
 
-    private fun isValidBackupAuthor(metadata: BackupInfo): Either<Failure, BackupInfo> =
-        if (metadata.userId.value == userId.toString() || metadata.userId.value == userId.value) {
+    private fun isValidBackupAuthor(metadata: OldBackupMetadata): Either<Failure, OldBackupMetadata> =
+        if (metadata.userId == userId.toString() || metadata.userId == userId.value) {
             Either.Right(metadata)
         } else {
-            Either.Left(Failure(InvalidUserId))
+            Either.Left(InvalidUserId)
         }
 
-    private suspend fun isFromOtherClient(metadata: BackupInfo): Boolean =
-        true
+    private suspend fun isFromOtherClient(metadata: OldBackupMetadata): Boolean =
+        true // TODO: What?
 
     private companion object {
         const val TAG = "[RestoreBackupUseCase]"
@@ -289,7 +289,7 @@ private fun BackupMessage.toMigratedMessage(): MigratedMessage = MigratedMessage
         legalHoldStatus =
 //                 if (data.legalHoldStatus == 2) Conversation.LegalHoldStatus.ENABLED
 //                 else
-        Conversation.LegalHoldStatus.DISABLED
+            Conversation.LegalHoldStatus.DISABLED
     ),
     encryptedProto = null,
     null,

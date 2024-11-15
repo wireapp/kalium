@@ -26,7 +26,6 @@ import com.wire.backup.data.BackupMetadata
 import com.wire.backup.data.BackupUser
 import com.wire.backup.data.toModel
 import com.wire.kalium.protobuf.backup.ExportedMessage.Content
-import kotlinx.datetime.toInstant
 import pbandk.decodeFromByteArray
 import kotlin.js.JsExport
 import com.wire.kalium.protobuf.backup.BackupData as ProtoBackupData

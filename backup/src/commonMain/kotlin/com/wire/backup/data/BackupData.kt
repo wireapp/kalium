@@ -17,6 +17,8 @@
  */
 package com.wire.backup.data
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlin.js.JsExport
 
 @JsExport
@@ -28,8 +30,11 @@ class BackupData(
 )
 
 @JsExport
+@Serializable
 data class BackupQualifiedId(
+    @SerialName("id")
     val id: String,
+    @SerialName("domain")
     val domain: String,
 )
 
@@ -59,7 +64,7 @@ data class BackupMessage(
 expect class BackupDateTime
 
 expect fun BackupDateTime(timestamp: Long): BackupDateTime
-internal expect fun BackupDateTime.toLongMilliseconds(): Long
+expect fun BackupDateTime.toLongMilliseconds(): Long
 
 @JsExport
 sealed class BackupMessageContent {

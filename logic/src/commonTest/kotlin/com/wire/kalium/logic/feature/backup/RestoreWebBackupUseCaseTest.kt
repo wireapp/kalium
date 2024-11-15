@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.backup.data.BackupMetadata
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
@@ -56,7 +55,7 @@ class RestoreWebBackupUseCaseTest {
             .arrange()
 
         // when
-        val result = useCase(backupPath, metadata = backupMetadata)
+        val result = useCase(backupPath, metadata = oldBackupMetadata)
 
         // then
         assertTrue(result is RestoreBackupResult.Success)
@@ -78,11 +77,11 @@ class RestoreWebBackupUseCaseTest {
             .arrange()
 
         // when
-        val result = useCase(backupPath, metadata = backupMetadata.copy(version = "1"))
+        val result = useCase(backupPath, metadata = oldBackupMetadata.copy(version = "1"))
 
         // then
         assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup)
+        assertTrue(result.failure is RestoreBackupResult.Failure.IncompatibleBackup)
     }
 
     @Test
@@ -97,11 +96,11 @@ class RestoreWebBackupUseCaseTest {
             .arrange()
 
         // when
-        val result = useCase(backupPath, metadata = backupMetadata)
+        val result = useCase(backupPath, metadata = oldBackupMetadata)
 
         // then
         assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
+        assertTrue(result.failure is RestoreBackupResult.Failure.BackupIOFailure)
     }
 
     @Test
@@ -117,7 +116,7 @@ class RestoreWebBackupUseCaseTest {
             .arrange()
 
         // when
-        val result = useCase(backupPath, metadata = backupMetadata)
+        val result = useCase(backupPath, metadata = oldBackupMetadata)
 
         // then
         assertTrue(result is RestoreBackupResult.Success)
@@ -171,7 +170,7 @@ class RestoreWebBackupUseCaseTest {
                     BackupConstants.BACKUP_WEB_CONVERSATIONS_FILE_NAME
                 }
 
-                createFile(tempFilePath(metadataFileName), Json.encodeToString(backupMetadata))
+                createFile(tempFilePath(metadataFileName), Json.encodeToString(oldBackupMetadata))
                 createFile(tempFilePath(eventsFileName), JSON_WEB_EVENTS)
                 createFile(tempFilePath(conversationsFileName), JSON_WEB_CONVERSATIONS)
             }
@@ -196,7 +195,7 @@ class RestoreWebBackupUseCaseTest {
         val currentTestUserId = UserId("some-user-id", "some-domain")
         const val clientId = "dummy-client-id"
 
-        val backupMetadata = BackupMetadata(
+        val oldBackupMetadata = OldBackupMetadata(
             "Web",
             "19",
             currentTestUserId.toString(),

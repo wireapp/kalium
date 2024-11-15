@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.backup.data.BackupMetadata
 import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
@@ -105,7 +104,7 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertIs<RestoreBackupResult.Failure>(result)
-        assertIs<RestoreBackupResult.BackupRestoreFailure.InvalidUserId>(result.failure)
+        assertIs<RestoreBackupResult.Failure.InvalidUserId>(result.failure)
 
         coVerify {
             arrangement.databaseImporter.importFromFile(any(), any())
@@ -127,7 +126,7 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertIs<RestoreBackupResult.Failure>(result)
-        assertIs<RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup>(result.failure)
+        assertIs<RestoreBackupResult.Failure.IncompatibleBackup>(result.failure)
 
         coVerify {
             arrangement.databaseImporter.importFromFile(any(), any())
@@ -177,7 +176,7 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
+        assertTrue(result.failure is RestoreBackupResult.Failure.InvalidUserId)
         coVerify {
             arrangement.databaseImporter.importFromFile(any(), any())
         }.wasNotInvoked()
@@ -202,7 +201,7 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
+        assertTrue(result.failure is RestoreBackupResult.Failure.InvalidPassword)
         coVerify {
             arrangement.databaseImporter.importFromFile(any(), any())
         }.wasNotInvoked()
@@ -226,7 +225,7 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertIs<RestoreBackupResult.Failure>(result)
-        assertIs<RestoreBackupResult.BackupRestoreFailure.BackupIOFailure>(result.failure)
+        assertIs<RestoreBackupResult.Failure.BackupIOFailure>(result.failure)
         coVerify {
             arrangement.databaseImporter.importFromFile(any(), any())
         }.wasInvoked(once)
@@ -255,7 +254,7 @@ class RestoreBackupUseCaseTest {
             val clientId = "dummy-client-id"
             val creationTime = DateTimeUtil.currentIsoDateTimeString()
             val metadataJson = Json.encodeToString(
-                BackupMetadata(
+                OldBackupMetadata(
                     clientPlatform,
                     BackupCoder.version,
                     userId.toString(),

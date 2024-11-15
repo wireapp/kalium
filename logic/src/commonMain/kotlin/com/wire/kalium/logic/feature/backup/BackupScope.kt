@@ -68,6 +68,13 @@ class BackupScope internal constructor(
             userStorage.database.migrationDAO
         )
 
+    private val universalBackupImporter: UniversalBackupImporter
+        get() = UniversalBackupImporter(
+            userId = userId,
+            kaliumFileSystem = kaliumFileSystem,
+            migrationDAO = userStorage.database.migrationDAO,
+        )
+
     val restore: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
             userStorage.database.databaseImporter,
@@ -76,6 +83,7 @@ class BackupScope internal constructor(
             userRepository,
             clientIdProvider,
             restoreWeb,
+            universalBackupImporter,
             persistMigratedMessages
         )
 

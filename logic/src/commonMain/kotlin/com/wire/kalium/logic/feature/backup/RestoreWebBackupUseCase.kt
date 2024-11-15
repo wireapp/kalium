@@ -31,8 +31,8 @@ import com.wire.kalium.logic.data.web.toMigratedMessage
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_CONVERSATIONS_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_EVENTS_FILE_NAME
-import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
-import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
+import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure.BackupIOFailure
+import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure.IncompatibleBackup
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
@@ -42,7 +42,6 @@ import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.decodeBufferSequence
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
-import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -59,7 +58,7 @@ interface RestoreWebBackupUseCase {
      * @param metadata Containing information about backup files
      * @return A [RestoreBackupResult] indicating the success or failure of the operation.
      */
-    suspend operator fun invoke(backupRootPath: Path, metadata: BackupInfo): RestoreBackupResult
+    suspend operator fun invoke(backupRootPath: Path, metadata: OldBackupMetadata): RestoreBackupResult
 }
 
 @Suppress("TooManyFunctions", "LongParameterList", "NestedBlockDepth")
@@ -73,20 +72,20 @@ internal class RestoreWebBackupUseCaseImpl(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) : RestoreWebBackupUseCase {
 
-    override suspend operator fun invoke(backupRootPath: Path, metadata: BackupInfo): RestoreBackupResult =
+    override suspend operator fun invoke(backupRootPath: Path, metadata: OldBackupMetadata): RestoreBackupResult =
         withContext(dispatchers.io) {
             val version = metadata.version.toIntOrNull()
             if (version != null && version in OLDEST_SUPPORTED_WEB_VERSION..NEWEST_SUPPORTED_WEB_VERSION) {
                 importWebBackup(backupRootPath, this)
             } else {
                 Either.Left(IncompatibleBackup("invoke: The provided backup format is not supported"))
-            }.fold({ RestoreBackupResult.Failure(it) }, { RestoreBackupResult.Success })
+            }.fold({ it }, { RestoreBackupResult.Success })
         }
 
     private suspend fun importWebBackup(
         filePath: Path,
         coroutineScope: CoroutineScope
-    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
+    ): Either<RestoreBackupResult.Failure, Unit> {
         return importMessages(filePath, coroutineScope)
             .map { tryImportConversations(filePath) }
     }

@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.backup.MPBackup
+
 object BackupConstants {
     const val BACKUP_FILE_NAME_PREFIX = "WBX"
     const val BACKUP_ENCRYPTED_FILE_NAME = "user-backup.cc20"
@@ -42,7 +44,8 @@ object BackupConstants {
         BACKUP_METADATA_FILE_NAME,
         BACKUP_ENCRYPTED_FILE_NAME,
         BACKUP_WEB_EVENTS_FILE_NAME,
-        BACKUP_WEB_CONVERSATIONS_FILE_NAME
+        BACKUP_WEB_CONVERSATIONS_FILE_NAME,
+        MPBackup.ZIP_ENTRY_DATA
     )
 
     fun createBackupFileName(userHandle: String?, timestampIso: String) = // file names cannot have special characters

@@ -15,16 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.data
 
-import kotlinx.datetime.Instant
+package com.wire.kalium.logic.feature.backup
 
-actual fun BackupDateTime(timestamp: Long): BackupDateTime {
-    return Instant.fromEpochMilliseconds(timestamp)
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+@Serializable
+data class OldBackupMetadata(
+    @SerialName("platform")
+    val platform: String,
+    @SerialName("version")
+    val version: String,
+    @SerialName("user_id")
+    val userId: String,
+    @SerialName("creation_time")
+    val creationTime: String,
+    @SerialName("client_id")
+    val clientId: String?
+) {
+    override fun toString(): String = Json.encodeToString(this)
 }
 
-actual typealias BackupDateTime = Instant
-
-actual fun BackupDateTime.toLongMilliseconds(): Long {
-    return this.toEpochMilliseconds()
-}
+fun OldBackupMetadata.isWebBackup(): Boolean = platform == "Web"
