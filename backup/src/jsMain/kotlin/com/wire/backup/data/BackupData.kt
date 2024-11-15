@@ -22,8 +22,8 @@ import kotlin.js.Date
 @JsExport
 actual data class BackupDateTime(val date: Date)
 
-internal actual fun BackupDateTime(timestamp: Long): BackupDateTime {
-    return BackupDateTime(Date(timestamp))
+internal actual fun BackupDateTime(timestampMillis: Long): BackupDateTime {
+    return BackupDateTime(Date(timestampMillis))
 }
 
 internal actual fun BackupDateTime.toLongMilliseconds(): Long {

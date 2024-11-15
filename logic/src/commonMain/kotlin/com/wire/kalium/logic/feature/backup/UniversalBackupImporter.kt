@@ -23,7 +23,7 @@ import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.toLongMilliseconds
 import com.wire.backup.ingest.BackupImportResult
-import com.wire.backup.ingest.MPBackupImporter
+import com.wire.backup.ingest.MPBackupMapper
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -59,7 +59,7 @@ class UniversalBackupImporter(
     suspend fun import(extractedBackupRootPath: Path): Either<Failure, Unit> {
         val byteArray =
             kaliumFileSystem.source(extractedBackupRootPath / MPBackup.ZIP_ENTRY_DATA).buffer().readByteArray()
-        return when (val importResult = MPBackupImporter(userId.domain).import(byteArray)) {
+        return when (val importResult = MPBackupMapper(userId.domain).import(byteArray)) {
             BackupImportResult.ParsingFailure -> Either.Left(IncompatibleBackup("backupMetadata: Parsing failure"))
             is BackupImportResult.Success -> {
                 importData(importResult.backupData)

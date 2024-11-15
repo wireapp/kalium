@@ -58,33 +58,51 @@ kotlin {
                 implementation(libs.okio.core)
             }
         }
-
         val commonTest by getting {
             dependencies {
                 implementation(libs.coroutines.test)
             }
         }
+
+        val nonJsMain by creating {
+            dependsOn(commonMain)
+        }
+        val nonJsTest by creating {
+            dependsOn(commonTest)
+        }
+        val androidMain by getting {
+            dependsOn(nonJsMain)
+        }
+        val jvmMain by getting {
+            dependsOn(nonJsMain)
+        }
+
         val iosX64Main by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.iosX64)
             }
         }
         val iosArm64Main by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.iosArm64)
             }
         }
         val iosSimulatorArm64Main by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.iosSimulatorArm64)
             }
         }
         val macosX64Main by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.macX64)
             }
         }
         val macosArm64Main by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.macArm64)
             }

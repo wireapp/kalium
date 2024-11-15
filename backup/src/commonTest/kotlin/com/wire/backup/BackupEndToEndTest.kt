@@ -23,7 +23,7 @@ import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
-import com.wire.backup.ingest.MPBackupImporter
+import com.wire.backup.ingest.MPBackupMapper
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -45,14 +45,14 @@ class BackupEndToEndTest {
         exporter.addMessage(expectedMessage)
         val encoded = exporter.serialize()
 
-        val result = MPBackupImporter("potato").import(encoded)
+        val result = MPBackupMapper("potato").import(encoded)
         assertIs<BackupImportResult.Success>(result)
         assertContentEquals(arrayOf(expectedMessage), result.backupData.messages)
     }
 
     @Test
     fun givenBackUpDataIsUnrecognisable_whenRestoring_thenShouldReturnParsingError() = runTest {
-        val result = MPBackupImporter("potato").import(byteArrayOf(0x42, 0x42, 0x42))
+        val result = MPBackupMapper("potato").import(byteArrayOf(0x42, 0x42, 0x42))
         assertIs<BackupImportResult.ParsingFailure>(result)
     }
 }

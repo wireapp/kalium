@@ -15,14 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.data
+package com.wire.backup.ingest
 
-actual typealias BackupDateTime = Long
+import com.wire.kalium.protobuf.backup.BackupData
+import pbandk.decodeFromByteArray
 
-internal actual fun BackupDateTime(timestamp: Long): BackupDateTime {
-    return timestamp
-}
+@JsExport
+class MPBackupImporter(selfUserDomain: String) {
+    private val mapper = MPBackupMapper(selfUserDomain)
 
-internal actual fun BackupDateTime.toLongMilliseconds(): Long {
-    return this
+    @OptIn(ExperimentalStdlibApi::class)
+    fun import(data: ByteArray): BackupImportResult = try {
+        println("!!!BACKUP: ${data.toHexString()}")
+        BackupImportResult.Success(
+            mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(data))
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+        println(e)
+        BackupImportResult.ParsingFailure
+    }
 }

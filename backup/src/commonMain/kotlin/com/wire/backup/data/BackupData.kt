@@ -15,19 +15,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:OptIn(ExperimentalObjCRefinement::class, ExperimentalObjCName::class)
+
 package com.wire.backup.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.experimental.ExperimentalObjCName
+import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
+import kotlin.native.ObjCName
+import kotlin.native.ShouldRefineInSwift
+
 
 @JsExport
 class BackupData(
     val metadata: BackupMetadata,
+    @ShouldRefineInSwift
     val users: Array<BackupUser>,
+    @ShouldRefineInSwift
     val conversations: Array<BackupConversation>,
+    @ShouldRefineInSwift
     val messages: Array<BackupMessage>
-)
+) {
+    @ObjCName("users")
+    val userList: List<BackupUser> get() = users.toList()
+
+    @ObjCName("conversations")
+    val conversationList: List<BackupUser> get() = users.toList()
+
+    @ObjCName("messages")
+    val messageList: List<BackupUser> get() = users.toList()
+}
 
 @JsExport
 @Serializable
@@ -63,7 +82,7 @@ data class BackupMessage(
 
 expect class BackupDateTime
 
-expect fun BackupDateTime(timestamp: Long): BackupDateTime
+expect fun BackupDateTime(timestampMillis: Long): BackupDateTime
 expect fun BackupDateTime.toLongMilliseconds(): Long
 
 @JsExport
