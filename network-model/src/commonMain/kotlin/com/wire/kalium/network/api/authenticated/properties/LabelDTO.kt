@@ -42,24 +42,20 @@ data class LabelDTO(
     @SerialName("qualified_conversations") val qualifiedConversations: List<QualifiedID>?
 )
 
-enum class LabelTypeDTO(val value: Int) {
-    USER(0),
-    FAVORITE(1)
+enum class LabelTypeDTO {
+    USER,
+    FAVORITE
 }
 
 object LabelTypeSerializer : KSerializer<LabelTypeDTO> {
     override val descriptor = PrimitiveSerialDescriptor("type", PrimitiveKind.INT)
 
     override fun serialize(encoder: Encoder, value: LabelTypeDTO) {
-        encoder.encodeInt(value.value)
+        encoder.encodeInt(value.ordinal)
     }
 
     override fun deserialize(decoder: Decoder): LabelTypeDTO {
-        val value = decoder.decodeInt()
-        return if (value == 1) {
-            LabelTypeDTO.FAVORITE
-        } else {
-            LabelTypeDTO.USER
-        }
+        val ordinal = decoder.decodeInt()
+        return LabelTypeDTO.entries.getOrElse(ordinal) { LabelTypeDTO.USER }
     }
 }

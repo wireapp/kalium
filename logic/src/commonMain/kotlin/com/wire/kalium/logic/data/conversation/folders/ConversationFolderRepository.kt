@@ -40,7 +40,7 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-interface ConversationFolderRepository {
+internal interface ConversationFolderRepository {
 
     suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder>
     suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>>
@@ -67,16 +67,11 @@ internal class ConversationFolderDataSource internal constructor(
     override suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
         conversationFolderDAO.observeConversationListFromFolder(folderId).map { conversationDetailsWithEventsEntityList ->
             conversationDetailsWithEventsEntityList.map {
-                conversationMapper.toModelConversationWithEvents(it)
+                conversationMapper.fromDaoModelToDetailsWithEvents(it)
             }
         }
 
-    override suspend fun fetchConversationFolders(): Either<CoreFailure, Unit> {
-        kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).d("Fetching conversation folders")
-        return fetchAllFoldersFromAPI()
-    }
-
-    private suspend fun fetchAllFoldersFromAPI(): Either<NetworkFailure, Unit> = wrapApiRequest {
+    override suspend fun fetchConversationFolders(): Either<CoreFailure, Unit> = wrapApiRequest {
         kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).v("Fetching conversation folders")
         userPropertiesApi.getLabels()
     }

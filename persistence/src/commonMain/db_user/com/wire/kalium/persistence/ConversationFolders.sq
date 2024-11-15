@@ -23,8 +23,11 @@ FROM LabeledConversation
 JOIN ConversationDetailsWithEvents
     ON LabeledConversation.conversation_id = ConversationDetailsWithEvents.qualifiedId
 WHERE LabeledConversation.folder_id = :folderId
+    AND ConversationDetailsWithEvents.archived = 0
 ORDER BY
-    ConversationDetailsWithEvents.lastModifiedDate DESC;
+    ConversationDetailsWithEvents.lastModifiedDate DESC,
+    name IS NULL,
+    name COLLATE NOCASE ASC;
 
 getFavoriteFolder:
 SELECT * FROM ConversationFolder WHERE folder_type = 'FAVORITE'

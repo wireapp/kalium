@@ -60,7 +60,7 @@ class ConversationRepositoryExtensionsImpl internal constructor(
         return pager.pagingDataFlow.map { pagingData ->
             pagingData
                 .map { conversationDetailsWithEventsEntity ->
-                    conversationMapper.toModelConversationWithEvents(
+                    conversationMapper.fromDaoModelToDetailsWithEvents(
                         conversationDetailsWithEventsEntity
                     )
                 }

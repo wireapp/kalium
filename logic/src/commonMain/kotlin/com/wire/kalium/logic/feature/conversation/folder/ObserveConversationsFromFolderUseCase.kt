@@ -35,7 +35,6 @@ internal class ObserveConversationsFromFolderUseCaseImpl(
 ) : ObserveConversationsFromFolderUseCase {
 
     override suspend operator fun invoke(folderId: String): Flow<List<ConversationDetailsWithEvents>> {
-        return conversationFolderRepository.observeConversationsFromFolder(folderId).onEach {
-        }
+        return conversationFolderRepository.observeConversationsFromFolder(folderId)
     }
 }

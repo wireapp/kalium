@@ -131,7 +131,11 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
+    suspend fun observeConversationListDetails(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter = ConversationFilter.ALL
+    ): Flow<List<ConversationDetails>>
+
     suspend fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean = false,
         conversationFilter: ConversationFilter = ConversationFilter.ALL
@@ -521,8 +525,11 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).map { conversationViewEntityList ->
+    override suspend fun observeConversationListDetails(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetails>> =
+        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).map { conversationViewEntityList ->
             conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
         }
 

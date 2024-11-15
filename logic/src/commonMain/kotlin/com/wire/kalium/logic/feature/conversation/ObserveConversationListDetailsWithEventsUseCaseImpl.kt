@@ -48,7 +48,7 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
         return if (conversationFilter == ConversationFilter.FAVORITES) {
             when (val result = getFavoriteFolder()) {
                 GetFavoriteFolderUseCase.Result.Failure -> {
-                    flowOf(listOf())
+                    flowOf(emptyList())
                 }
 
                 is GetFavoriteFolderUseCase.Result.Success -> conversationFolderRepository.observeConversationsFromFolder(result.folder.id)

@@ -93,10 +93,6 @@ interface ConversationMapper {
     fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole>
     fun fromApiModelToAccessModel(accessList: Set<ConversationAccessDTO>): Set<Conversation.Access>
     fun fromApiModelToAccessRoleModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole>
-
-    fun toModelConversationWithEvents(
-        conversationDetailsWithEventsEntity: ConversationDetailsWithEventsEntity
-    ): ConversationDetailsWithEvents
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -340,6 +336,7 @@ internal class ConversationMapperImpl(
                 daoModel.lastMessage != null -> messageMapper.fromEntityToMessagePreview(daoModel.lastMessage!!)
                 else -> null
             },
+            hasNewActivitiesToShow = daoModel.hasNewActivitiesToShow
         )
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
@@ -533,34 +530,6 @@ internal class ConversationMapperImpl(
 
     override fun fromApiModelToAccessRoleModel(accessRoleList: Set<ConversationAccessRoleDTO>): Set<Conversation.AccessRole> =
         accessRoleList.map { it.toModel() }.toSet()
-
-    override fun toModelConversationWithEvents(
-        conversationDetailsWithEventsEntity: ConversationDetailsWithEventsEntity
-    ): ConversationDetailsWithEvents =
-        ConversationDetailsWithEvents(
-            conversationDetails = fromDaoModelToDetails(conversationDetailsWithEventsEntity.conversationViewEntity),
-            lastMessage = when {
-                conversationDetailsWithEventsEntity.messageDraft != null -> messageMapper.fromDraftToMessagePreview(
-                    conversationDetailsWithEventsEntity.messageDraft!!
-                )
-
-                conversationDetailsWithEventsEntity.lastMessage != null -> messageMapper.fromEntityToMessagePreview(
-                    conversationDetailsWithEventsEntity.lastMessage!!
-                )
-
-                else -> null
-            },
-            unreadEventCount = conversationDetailsWithEventsEntity.unreadEvents.unreadEvents.mapKeys {
-                when (it.key) {
-                    UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
-                    UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
-                    UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
-                    UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
-                    UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
-                }
-            },
-            hasNewActivitiesToShow = conversationDetailsWithEventsEntity.hasNewActivitiesToShow
-        )
 }
 
 internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
