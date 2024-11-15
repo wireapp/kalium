@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
@@ -132,11 +133,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_WhenReinserting_ThenGroupStateIsUpdated() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity2)
-        conversationDAO.insertConversation(conversationEntity2.copy(
-            protocolInfo = mlsProtocolInfo1.copy(
-                groupState = ConversationEntity.GroupState.PENDING_JOIN
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                protocolInfo = mlsProtocolInfo1.copy(
+                    groupState = ConversationEntity.GroupState.PENDING_JOIN
+                )
             )
-        ))
+        )
         val result = conversationDAO.getConversationById(conversationEntity2.id)
         assertEquals(ConversationEntity.GroupState.PENDING_JOIN, (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState)
     }
@@ -998,7 +1001,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
-        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).first().let {
+        conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(1, it.size)
             val result = it.first()
 
@@ -1033,7 +1036,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
-        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).first().let {
+        conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(1, it.size)
         }
         conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
@@ -1053,7 +1056,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
 
-        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).first().let {
+        conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
@@ -1076,7 +1079,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)
 
-        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).first().let {
+        conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(2, it.size)
         }
         conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
@@ -1097,7 +1100,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)
 
-        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).first().let {
+        conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(2, it.size)
         }
         conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
@@ -1114,10 +1117,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user1, conversation.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails(
-            fromArchive,
-            conversationFilter.toDao()
-        ).first()
+        val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
         val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
@@ -1135,10 +1135,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user1, conversation.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails(
-            fromArchive,
-            conversationFilter.toDao()
-        ).first()
+        val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
         val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
@@ -1171,10 +1168,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user1, conversation2.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails(
-            fromArchive,
-            conversationFilter.toDao()
-        ).first()
+        val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
         val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
@@ -1211,10 +1205,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user1, conversation2.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails(
-            fromArchive,
-            conversationFilter.toDao()
-        ).first()
+        val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
         val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
 
         // then
@@ -1292,7 +1283,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.getAllConversationDetails(
             fromArchive = false,
-            toDao = conversationFilter.toDao()
+            filter = ConversationFilterEntity.ALL
         ).first().let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
