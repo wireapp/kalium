@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.conversation.folder
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.onEach
 
 /**
  * This use case will observe and return the list of conversations from given folder.
