@@ -83,7 +83,7 @@ class ConversationFolderRepositoryTest {
 
         // then
         val emittedConversations = resultFlow.first()
-        assertEquals(arrangement.conversationMapper.toModelConversationWithEvents(conversations.first()), emittedConversations.first())
+        assertEquals(arrangement.conversationMapper.fromDaoModelToDetailsWithEvents(conversations.first()), emittedConversations.first())
     }
 
     @Test
