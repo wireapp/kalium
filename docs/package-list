@@ -450,6 +450,7 @@ com.wire.kalium.logic.data.client
 com.wire.kalium.logic.data.client.remote
 com.wire.kalium.logic.data.connection
 com.wire.kalium.logic.data.conversation
+com.wire.kalium.logic.data.conversation.folders
 com.wire.kalium.logic.data.conversation.mls
 com.wire.kalium.logic.data.e2ei
 com.wire.kalium.logic.data.event
@@ -497,6 +498,7 @@ com.wire.kalium.logic.feature.call.usecase.video
 com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
+com.wire.kalium.logic.feature.conversation.folder
 com.wire.kalium.logic.feature.conversation.guestroomlink
 com.wire.kalium.logic.feature.conversation.keyingmaterials
 com.wire.kalium.logic.feature.conversation.messagetimer
@@ -624,6 +626,7 @@ com.wire.kalium.persistence.dao.asset
 com.wire.kalium.persistence.dao.call
 com.wire.kalium.persistence.dao.client
 com.wire.kalium.persistence.dao.conversation
+com.wire.kalium.persistence.dao.conversation.folder
 com.wire.kalium.persistence.dao.member
 com.wire.kalium.persistence.dao.message
 com.wire.kalium.persistence.dao.message.draft
