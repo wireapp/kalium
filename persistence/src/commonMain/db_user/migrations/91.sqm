@@ -15,5 +15,5 @@ CREATE TABLE LabeledConversation (
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
       FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
-      PRIMARY KEY (conversation_id, folder_id)
+      PRIMARY KEY (folder_id, conversation_id)
 );
