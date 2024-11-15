@@ -49,7 +49,7 @@ import kotlin.test.assertEquals
 class ConversationFolderRepositoryTest {
 
     @Test
-    fun `given favorite folder exists when fetching favorite folder then should return folder successfully`() = runTest {
+    fun givenFavoriteFolderExistsWhenFetchingFavoriteFolderThenShouldReturnFolderSuccessfully() = runTest {
         // given
         val folder = ConversationFolderEntity(id = "folder1", name = "Favorites", type = ConversationFolderTypeEntity.FAVORITE)
         val arrangement = Arrangement().withFavoriteConversationFolder(folder)
@@ -65,7 +65,7 @@ class ConversationFolderRepositoryTest {
     }
 
     @Test
-    fun `given conversations in folder when observing conversations from folder then should emit conversations list`() = runTest {
+    fun givenConversationsInFolderWhenObservingConversationsFromFolderThenShouldEmitConversationsList() = runTest {
         // given
         val folderId = "folder1"
         val conversation = ConversationDetailsWithEventsEntity(
@@ -87,7 +87,7 @@ class ConversationFolderRepositoryTest {
     }
 
     @Test
-    fun `given folder data when updating conversation folders then folders should be updated in database successfully`() = runTest {
+    fun givenFolderDataWhenUpdatingConversationFoldersThenFoldersShouldBeUpdatedInDatabaseSuccessfully() = runTest {
         // given
         val folders = listOf(
             FolderWithConversations(
@@ -106,7 +106,7 @@ class ConversationFolderRepositoryTest {
     }
 
     @Test
-    fun `given network failure when fetching conversation folders then should return network failure`() = runTest {
+    fun givenNetworkFailureWhenFetchingConversationFoldersThenShouldReturnNetworkFailure() = runTest {
         // given
         val arrangement = Arrangement().withFetchConversationLabels(NetworkResponse.Error(KaliumException.NoNetwork()))
 
