@@ -57,7 +57,7 @@ interface ConversationDAO {
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetails(fromArchive: Boolean, filter: ConversationFilterEntity): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,

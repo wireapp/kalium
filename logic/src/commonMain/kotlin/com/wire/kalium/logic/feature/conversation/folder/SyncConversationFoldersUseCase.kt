@@ -16,33 +16,21 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.sync
+package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.logic.CoreFailure
-import kotlin.time.Duration
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.logic.functional.Either
 
-sealed interface SlowSyncStatus {
-
-    data object Pending : SlowSyncStatus
-
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
+internal interface SyncConversationFoldersUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
-enum class SlowSyncStep {
-    MIGRATION,
-    SELF_USER,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    LEGAL_HOLD,
-    CONVERSATION_FOLDERS,
+/**
+ * This use case will sync against the backend the conversation folders of the current user.
+ */
+internal class SyncConversationFoldersUseCaseImpl(
+    private val conversationRepository: ConversationFolderRepository,
+) : SyncConversationFoldersUseCase {
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = conversationRepository.fetchConversationFolders()
 }
