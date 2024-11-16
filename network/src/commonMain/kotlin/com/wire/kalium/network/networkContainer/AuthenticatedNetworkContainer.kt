@@ -201,15 +201,6 @@ interface AuthenticatedNetworkContainer {
                     kaliumLogger
                 )
 
-                7 -> AuthenticatedNetworkContainerV7(
-                    sessionManager,
-                    selfUserId,
-                    certificatePinning,
-                    mockEngine,
-                    mockWebSocketSession,
-                    kaliumLogger
-                )
-
                 else -> error("Unsupported version: $version")
             }
         }

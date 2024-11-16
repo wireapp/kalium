@@ -44,6 +44,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException.generic
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.CreateUserTeamDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
@@ -802,6 +803,36 @@ class UserRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenApiRequestSucceeds_whenPersonalUserUpgradesToTeam_thenShouldSucceed() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withMigrateUserToTeamSuccess()
+            .arrange()
+        // when
+        val result = userRepository.migrateUserToTeam("teamName")
+        // then
+        result.shouldSucceed()
+        coVerify {
+            arrangement.upgradePersonalToTeamApi.migrateToTeam(any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenApiRequestFails_whenPersonalUserUpgradesToTeam_thenShouldPropagateError() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withMigrateUserToTeamFailure()
+            .arrange()
+        // when
+        val result = userRepository.migrateUserToTeam("teamName")
+        // then
+        result.shouldFail()
+        coVerify {
+            arrangement.upgradePersonalToTeamApi.migrateToTeam(any())
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = mock(UserDAO::class)
@@ -1033,6 +1064,24 @@ class UserRepositoryTest {
             coEvery {
                 teamsApi.getTeamMember(any(), any())
             }.returns(NetworkResponse.Success(result, mapOf(), 200))
+        }
+
+        suspend fun withMigrateUserToTeamSuccess() = apply {
+            coEvery {
+                upgradePersonalToTeamApi.migrateToTeam(any())
+            }.returns(
+                NetworkResponse.Success(
+                    CreateUserTeamDTO("teamId", "teamName"),
+                    mapOf(),
+                    200
+                )
+            )
+        }
+
+        suspend fun withMigrateUserToTeamFailure() = apply {
+            coEvery {
+                upgradePersonalToTeamApi.migrateToTeam(any())
+            }.returns(NetworkResponse.Error(generic))
         }
 
         suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
