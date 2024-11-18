@@ -807,6 +807,7 @@ class UserRepositoryTest {
     fun givenApiRequestSucceeds_whenPersonalUserUpgradesToTeam_thenShouldSucceed() = runTest {
         // given
         val (arrangement, userRepository) = Arrangement()
+            .withRemoteGetSelfReturningDeletedUser()
             .withMigrateUserToTeamSuccess()
             .arrange()
         // when
