@@ -20,22 +20,41 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
+import com.wire.kalium.logic.data.conversation.ConversationFilter
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * This use case will observe and return the list of conversation details for the current user.
  * @see ConversationDetails
  */
 fun interface ObserveConversationListDetailsWithEventsUseCase {
-    suspend operator fun invoke(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>>
+    suspend operator fun invoke(fromArchive: Boolean, conversationFilter: ConversationFilter): Flow<List<ConversationDetailsWithEvents>>
 }
 
 internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
+    private val conversationFolderRepository: ConversationFolderRepository,
+    private val getFavoriteFolder: GetFavoriteFolderUseCase
 ) : ObserveConversationListDetailsWithEventsUseCase {
 
-    override suspend operator fun invoke(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>> {
-        return conversationRepository.observeConversationListDetailsWithEvents(fromArchive)
+    override suspend operator fun invoke(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetailsWithEvents>> {
+        return if (conversationFilter == ConversationFilter.FAVORITES) {
+            when (val result = getFavoriteFolder()) {
+                GetFavoriteFolderUseCase.Result.Failure -> {
+                    flowOf(emptyList())
+                }
+
+                is GetFavoriteFolderUseCase.Result.Success -> conversationFolderRepository.observeConversationsFromFolder(result.folder.id)
+            }
+        } else {
+            conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter)
+        }
     }
 }
