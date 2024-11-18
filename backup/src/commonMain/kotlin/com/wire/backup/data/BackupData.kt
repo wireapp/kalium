@@ -42,10 +42,10 @@ class BackupData(
     val userList: List<BackupUser> get() = users.toList()
 
     @ObjCName("conversations")
-    val conversationList: List<BackupUser> get() = users.toList()
+    val conversationList: List<BackupConversation> get() = conversations.toList()
 
     @ObjCName("messages")
-    val messageList: List<BackupUser> get() = users.toList()
+    val messageList: List<BackupMessage> get() = messages.toList()
 }
 
 @JsExport
