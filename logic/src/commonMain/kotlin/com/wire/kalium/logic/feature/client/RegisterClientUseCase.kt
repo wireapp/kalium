@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.logic.CoreCryptoMigrationFailure
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
@@ -146,8 +147,13 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                     verificationCode,
                     modelPostfix,
                 )
-            }.fold({
-                RegisterClientResult.Failure.Generic(it)
+            }.fold({ error ->
+                if (error is CoreCryptoMigrationFailure) {
+                    // todo(ym): here an error will/can happen from migration
+                    // todo(ym): raise a special exception for this case, after deleting the cbox and cc files.
+                    // todo(ym): remove the client id, retained client id from db, clean last prekey id
+                }
+                RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
                     // todo? separate this in mls client usesCase register! separate everything

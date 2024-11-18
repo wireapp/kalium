@@ -19,6 +19,7 @@
 package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.APINotSupported
@@ -250,10 +251,15 @@ interface E2EIFailure : CoreFailure {
     }
 }
 
-class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
+open class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
 
     val rootCause: Throwable get() = proteusException
 }
+
+/**
+ * CryptoBox to CoreCrypto storage migration failure.
+ */
+data class CoreCryptoMigrationFailure(private val exception: ProteusException) : ProteusFailure(exception)
 
 sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
     data object GenericEncryptionError : EncryptionFailure()
@@ -324,6 +330,13 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
 internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<ProteusFailure, T> {
     return try {
         Either.Right(proteusRequest())
+    } catch (e: ProteusStorageMigrationException) {
+        kaliumLogger.e(
+            """{ "ProteusStorageMigrationException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(CoreCryptoMigrationFailure(e))
     } catch (e: ProteusException) {
         kaliumLogger.e(
             """{ "ProteusException": "${e.message},"
