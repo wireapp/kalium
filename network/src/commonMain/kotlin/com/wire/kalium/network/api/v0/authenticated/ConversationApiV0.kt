@@ -82,12 +82,7 @@ internal open class ConversationApiV0 internal constructor(
     ): NetworkResponse<ConversationPagingResponse> =
         wrapKaliumResponse {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_LIST_IDS") {
-                setBody(
-                    PaginationRequest(
-                        pagingState = pagingState,
-                        size = MAX_CONVERSATION_DETAILS_COUNT
-                    )
-                )
+                setBody(PaginationRequest(pagingState = pagingState, size = MAX_CONVERSATION_DETAILS_COUNT))
             }
         }
 
@@ -163,11 +158,7 @@ internal open class ConversationApiV0 internal constructor(
                 HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberLeaveDTO> { response }
                     .mapSuccess { ConversationMemberRemovedResponse.Changed(it) }
 
-                HttpStatusCode.NoContent -> NetworkResponse.Success(
-                    ConversationMemberRemovedResponse.Unchanged,
-                    response
-                )
-
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedResponse.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }
@@ -194,11 +185,7 @@ internal open class ConversationApiV0 internal constructor(
             setBody(updateConversationAccessRequest)
         }.let { httpResponse ->
             when (httpResponse.status) {
-                HttpStatusCode.NoContent -> NetworkResponse.Success(
-                    UpdateConversationAccessResponse.AccessUnchanged,
-                    httpResponse
-                )
-
+                HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
                 else -> wrapKaliumResponse<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateConversationAccessResponse.AccessUpdated(it)
@@ -234,11 +221,7 @@ internal open class ConversationApiV0 internal constructor(
                 HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.ConversationRenameDTO> { response }
                     .mapSuccess { ConversationRenameResponse.Changed(it) }
 
-                HttpStatusCode.NoContent -> NetworkResponse.Success(
-                    ConversationRenameResponse.Unchanged,
-                    response
-                )
-
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationRenameResponse.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }
@@ -269,10 +252,7 @@ internal open class ConversationApiV0 internal constructor(
         }
     }
 
-    override suspend fun fetchLimitedInformationViaCode(
-        code: String,
-        key: String
-    ): NetworkResponse<ConversationCodeInfo> =
+    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
@@ -381,10 +361,9 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
-    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.delete("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
-        }
+    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.delete("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+    }
 
     override suspend fun updateMessageTimer(
         conversationId: ConversationId,
@@ -405,7 +384,6 @@ internal open class ConversationApiV0 internal constructor(
                 setBody(typingIndicatorMode)
             }
         }
-
     override suspend fun updateProtocol(
         conversationId: ConversationId,
         protocol: ConvProtocol
