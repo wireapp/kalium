@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
@@ -71,6 +72,7 @@ class SlowSyncWorkerTest {
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
             .withFetchLegalHoldStatusSuccess()
+            .withSyncFoldersSuccess()
             .arrange()
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
@@ -408,6 +410,7 @@ class SlowSyncWorkerTest {
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
             .withFetchLegalHoldStatusSuccess()
+            .withSyncFoldersSuccess()
             .arrange()
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
@@ -511,6 +514,9 @@ class SlowSyncWorkerTest {
         @Mock
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
 
+        @Mock
+        val syncConversationFoldersUseCase = mock(SyncConversationFoldersUseCase::class)
+
         init {
             runBlocking {
                 withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
@@ -529,6 +535,7 @@ class SlowSyncWorkerTest {
             updateSupportedProtocols = updateSupportedProtocols,
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
+            syncConversationFolders = syncConversationFoldersUseCase
         )
 
         suspend fun withSyncSelfUserFailure() = apply {
@@ -642,6 +649,12 @@ class SlowSyncWorkerTest {
         suspend fun withResolveOneOnOneConversationsSuccess() = apply {
             coEvery {
                 oneOnOneResolver.resolveAllOneOnOneConversations(any())
+            }.returns(success)
+        }
+
+        suspend fun withSyncFoldersSuccess() = apply {
+            coEvery {
+                syncConversationFoldersUseCase.invoke()
             }.returns(success)
         }
     }

@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
+import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
@@ -223,8 +224,8 @@ class EventMapper(
     ): Event {
         val fieldKeyValue = eventContentDTO.value
         val key = eventContentDTO.key
-        return when {
-            fieldKeyValue is EventContentDTO.FieldKeyNumberValue -> {
+        return when (fieldKeyValue) {
+            is EventContentDTO.FieldKeyNumberValue -> {
                 when (key) {
                     WIRE_RECEIPT_MODE.key -> ReadReceiptModeSet(
                         id,
@@ -244,7 +245,12 @@ class EventMapper(
                 }
             }
 
-            else -> unknown(
+            is EventContentDTO.FieldLabelListValue -> Event.UserProperty.FoldersUpdate(
+                id = id,
+                folders = fieldKeyValue.value.labels.map { it.toFolder(selfUserId.domain) }
+            )
+
+            is EventContentDTO.FieldUnknownValue -> unknown(
                 id = id,
                 eventContentDTO = eventContentDTO,
                 cause = "Unknown value type for key: ${eventContentDTO.key} "

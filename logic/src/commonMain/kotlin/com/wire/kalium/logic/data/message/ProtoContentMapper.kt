@@ -57,6 +57,7 @@ import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
+import com.wire.kalium.protobuf.messages.UnknownStrategy
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -82,7 +83,10 @@ class ProtoContentMapperImpl(
             is ProtoContent.Readable -> mapReadableContentToProtobuf(protoContent)
         }
 
-        val message = GenericMessage(protoContent.messageUid, messageContent)
+        val message = GenericMessage(
+            messageId = protoContent.messageUid,
+            content = messageContent
+        )
         return PlainMessageBlob(message.encodeToByteArray())
     }
 
@@ -374,8 +378,17 @@ class ProtoContentMapperImpl(
             }
 
             null -> {
-                kaliumLogger.w("Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
-                MessageContent.Ignored
+                kaliumLogger.w(
+                    "Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}" +
+                            " Message Unknown Strategy = ${genericMessage.unknownStrategy}"
+                )
+                when (genericMessage.unknownStrategy) {
+                    UnknownStrategy.DISCARD_AND_WARN -> MessageContent.Unknown()
+                    UnknownStrategy.WARN_USER_ALLOW_RETRY -> MessageContent.Unknown(encodedData = encodedContent.data)
+                    UnknownStrategy.IGNORE,
+                    is UnknownStrategy.UNRECOGNIZED,
+                    null -> MessageContent.Ignored
+                }
             }
         }
         return readableContent

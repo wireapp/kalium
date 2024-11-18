@@ -15,34 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.conversation
 
-package com.wire.kalium.logic.data.sync
+import com.wire.kalium.logic.data.id.QualifiedID
 
-import com.wire.kalium.logic.CoreFailure
-import kotlin.time.Duration
+data class ConversationFolder(
+    val id: String,
+    val name: String,
+    val type: FolderType
+)
 
-sealed interface SlowSyncStatus {
+data class FolderWithConversations(
+    val id: String,
+    val name: String,
+    val type: FolderType,
+    val conversationIdList: List<QualifiedID>
+)
 
-    data object Pending : SlowSyncStatus
-
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
-}
-
-enum class SlowSyncStep {
-    MIGRATION,
-    SELF_USER,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    LEGAL_HOLD,
-    CONVERSATION_FOLDERS,
+enum class FolderType {
+    USER,
+    FAVORITE,
 }

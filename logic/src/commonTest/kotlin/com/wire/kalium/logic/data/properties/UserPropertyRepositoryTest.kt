@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.properties
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -101,7 +102,9 @@ class UserPropertyRepositoryTest {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
-        private val userPropertyRepository = UserPropertyDataSource(propertiesApi, userConfigRepository)
+        private val selfUserId = TestUser.SELF.id
+
+        private val userPropertyRepository = UserPropertyDataSource(propertiesApi, userConfigRepository, selfUserId)
 
         suspend fun withUpdateReadReceiptsSuccess() = apply {
             coEvery {
