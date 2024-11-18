@@ -474,8 +474,7 @@ class CallManagerImpl internal constructor(
             }
             val clientsJson = CallClientList(clients).toJsonString()
             callingLogger.d(
-                "$TAG - wcall_request_video_streams() called -> Requesting video streams for conversation = " +
-                        "${conversationId.toLogString()} with clients = $clientsJson"
+                "$TAG - wcall_request_video_streams() called -> Requesting video streams for conversation = ${conversationId.toLogString()}"
             )
             val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
             calling.wcall_request_video_streams(
