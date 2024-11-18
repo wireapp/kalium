@@ -197,9 +197,13 @@ internal class RestoreBackupUseCaseImpl(
                 Either.Left(BackupIOFailure("Failed to extract encrypted backup files"))
             }, {
                 kaliumFileSystem.delete(extractedBackupPath)
-                oldBackupMetadata(extractedBackupRootPath).flatMap { metadata ->
-                    val isFromOtherClient = isFromOtherClient(metadata)
-                    getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
+                if (universalBackupImporter.isMultiplatformBackup(extractedBackupRootPath)) {
+                    universalBackupImporter.import(extractedBackupRootPath)
+                } else {
+                    oldBackupMetadata(extractedBackupRootPath).flatMap { metadata ->
+                        val isFromOtherClient = isFromOtherClient(metadata)
+                        getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
+                    }
                 }
             })
         } else {
