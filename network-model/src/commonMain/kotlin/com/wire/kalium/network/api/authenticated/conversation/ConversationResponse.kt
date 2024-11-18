@@ -106,6 +106,9 @@ data class ConversationResponse(
             fun fromId(id: Int): Type = values().first { type -> type.id == id }
         }
     }
+
+    fun toV6(): ConversationResponseV6 =
+        ConversationResponseV6(this, publicKeys ?: MLSPublicKeysDTO(null))
 }
 
 @Serializable
