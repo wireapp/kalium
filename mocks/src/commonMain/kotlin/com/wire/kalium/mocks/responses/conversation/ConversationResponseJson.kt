@@ -24,9 +24,11 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.authenticated.conversation.ServiceReferenceDTO
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.QualifiedID
@@ -41,94 +43,135 @@ import kotlinx.serialization.json.putJsonObject
 
 object ConversationResponseJson {
 
-    val conversationResponseSerializer = { it: ConversationResponse ->
-        buildConversationResponse(it).toString()
+    val conversationResponseSerializerV6 = { it: ConversationResponseV6 ->
+        buildConversationResponseV6(it).toString()
+    }
+
+    val conversationResponseSerializerV3 = { it: ConversationResponse ->
+        buildConversationResponseV3(it).toString()
     }
 
     val conversationResponseSerializerWithDeprecatedAccessRole = { it: ConversationResponse ->
-        buildConversationResponse(it, useDeprecatedAccessRole = true).toString()
+        buildConversationResponseV3(it, useDeprecatedAccessRole = true).toString()
     }
 
-    private val conversationResponse = ConversationResponse(
-        "fdf23116-42a5-472c-8316-e10655f5d11e",
-        ConversationMembersResponse(
-            ConversationMemberDTO.Self(
-                QualifiedIDSamples.one,
-                "wire_admin",
-                otrMutedRef = "2022-04-11T14:15:48.044Z",
-                otrMutedStatus = MutedStatus.fromOrdinal(0)
+    private val conversationResponseV6 = ConversationResponseV6(
+        conversation = ConversationResponse(
+            "fdf23116-42a5-472c-8316-e10655f5d11e",
+            ConversationMembersResponse(
+                ConversationMemberDTO.Self(
+                    QualifiedIDSamples.one,
+                    "wire_admin",
+                    otrMutedRef = "2022-04-11T14:15:48.044Z",
+                    otrMutedStatus = MutedStatus.fromOrdinal(0)
+                ),
+                listOf(
+                    ConversationMemberDTO.Other(
+                        id = QualifiedIDSamples.two,
+                        conversationRole = "wire_member"
+                    )
+                )
             ),
-            listOf(
-//                 ConversationMemberDTO.Other(id = QualifiedIDSamples.two, conversationRole = "wire_member")
-            )
-        ),
-        "group name",
-        QualifiedIDSamples.one,
-        "groupID",
-        0UL,
-        ConversationResponse.Type.GROUP,
-        null,
-        "teamID",
-        ConvProtocol.PROTEUS,
-        lastEventTime = "2022-03-30T15:36:00.000Z",
-        access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
-        accessRole = setOf(
-            ConversationAccessRoleDTO.GUEST,
-            ConversationAccessRoleDTO.TEAM_MEMBER,
-            ConversationAccessRoleDTO.NON_TEAM_MEMBER
-        ),
-        mlsCipherSuiteTag = null,
-        receiptMode = ReceiptMode.DISABLED
+            "group name",
+            QualifiedIDSamples.one,
+            "groupID",
+            0UL,
+            ConversationResponse.Type.GROUP,
+            null,
+            "teamID",
+            ConvProtocol.PROTEUS,
+            lastEventTime = "2022-03-30T15:36:00.000Z",
+            access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+            accessRole = setOf(
+                ConversationAccessRoleDTO.GUEST,
+                ConversationAccessRoleDTO.TEAM_MEMBER,
+                ConversationAccessRoleDTO.NON_TEAM_MEMBER
+            ),
+            mlsCipherSuiteTag = null,
+            receiptMode = ReceiptMode.DISABLED,
+
+            ),
+        publicKeys = MLSPublicKeysDTO(
+            removal = mapOf("ecdsa_secp256r1_sha256" to "string", "ed25519" to "string")
+        )
+    )
+
+    val v6 = ValidJsonProvider(
+        conversationResponseV6,
+        conversationResponseSerializerV6
     )
 
     val v3 = ValidJsonProvider(
-        conversationResponse, conversationResponseSerializer
+        conversationResponseV6.conversation,
+        conversationResponseSerializerV3
     )
 
     fun v0(accessRole: Set<ConversationAccessRoleDTO>? = null) = ValidJsonProvider(
-        conversationResponse.copy(
-            accessRole = accessRole ?: conversationResponse.accessRole
+        conversationResponseV6.conversation.copy(
+            accessRole = accessRole ?: conversationResponseV6.conversation.accessRole
         ),
         conversationResponseSerializerWithDeprecatedAccessRole
     )
 }
 
-fun buildConversationResponse(
+fun buildConversationResponseV6(
+    conversationResponse: ConversationResponseV6,
+    useDeprecatedAccessRole: Boolean = false,
+): JsonObject = buildJsonObject {
+    putJsonObject("conversation") {
+        putConversation(conversationResponse.conversation, useDeprecatedAccessRole)
+    }
+    putJsonObject("public_keys") {
+        conversationResponse.publicKeys.removal?.forEach { (key, value) ->
+            put(key, value)
+        }
+    }
+
+}
+
+fun buildConversationResponseV3(
     conversationResponse: ConversationResponse,
     useDeprecatedAccessRole: Boolean = false
-): JsonObject =
-    buildJsonObject {
-        put("creator", conversationResponse.creator)
-        putQualifiedId(conversationResponse.id)
-        conversationResponse.groupId?.let { put("group_id", it) }
-        putJsonObject("members") {
-            putSelfMember(conversationResponse.members.self)
-            putJsonArray("others") {
-                conversationResponse.members.otherMembers.forEach { otherMember ->
-                    addJsonObject {
-                        putOtherMember(otherMember)
-                    }
+): JsonObject = buildJsonObject {
+    putConversation(conversationResponse, useDeprecatedAccessRole)
+}
+
+private fun JsonObjectBuilder.putConversation(
+    conversationResponse: ConversationResponse,
+    useDeprecatedAccessRole: Boolean
+) {
+    put("creator", conversationResponse.creator)
+    putQualifiedId(conversationResponse.id)
+    conversationResponse.groupId?.let { put("group_id", it) }
+    putJsonObject("members") {
+        putSelfMember(conversationResponse.members.self)
+        putJsonArray("others") {
+            conversationResponse.members.otherMembers.forEach { otherMember ->
+                addJsonObject {
+                    putOtherMember(otherMember)
                 }
             }
         }
-        put("type", conversationResponse.type.ordinal)
-        put("protocol", conversationResponse.protocol.toString())
-        put("last_event_time", conversationResponse.lastEventTime)
-        putAccessSet(conversationResponse.access)
-        if (useDeprecatedAccessRole) {
-            conversationResponse.accessRole?.let { putDeprecatedAccessRoleSet(it) }
-        } else {
-            conversationResponse.accessRole?.let { putAccessRoleSet(it) }
-        }
-        conversationResponse.messageTimer?.let { put("message_timer", it) }
-        conversationResponse.name?.let { put("name", it) }
-        conversationResponse.teamId?.let { put("team", it) }
-        conversationResponse.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
     }
-
-fun JsonObjectBuilder.putAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) = putJsonArray("access_role") {
-    accessRole.forEach { add(it.toString()) }
+    put("type", conversationResponse.type.ordinal)
+    put("protocol", conversationResponse.protocol.toString())
+    put("last_event_time", conversationResponse.lastEventTime)
+    putAccessSet(conversationResponse.access)
+    if (useDeprecatedAccessRole) {
+        conversationResponse.accessRole?.let { putDeprecatedAccessRoleSet(it) }
+    } else {
+        conversationResponse.accessRole?.let { putAccessRoleSet(it) }
+    }
+    conversationResponse.messageTimer?.let { put("message_timer", it) }
+    conversationResponse.name?.let { put("name", it) }
+    conversationResponse.teamId?.let { put("team", it) }
+    conversationResponse.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
 }
+
+fun JsonObjectBuilder.putAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) =
+    putJsonArray("access_role") {
+        accessRole.forEach { add(it.toString()) }
+    }
 
 fun JsonObjectBuilder.putDeprecatedAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) =
     putJsonArray("access_role_v2") {

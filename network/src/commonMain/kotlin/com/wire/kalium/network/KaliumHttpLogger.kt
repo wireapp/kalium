@@ -24,7 +24,6 @@ import com.wire.kalium.network.utils.obfuscatePath
 import com.wire.kalium.network.utils.obfuscatedJsonMessage
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.request.HttpRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
@@ -41,7 +40,6 @@ import kotlinx.coroutines.Job
 
 internal class KaliumHttpLogger(
     private val level: LogLevel,
-    private val logger: Logger,
     private val kaliumLogger: KaliumLogger,
 ) {
     private val requestLog = mutableMapOf<String, Any>()
@@ -134,7 +132,7 @@ internal class KaliumHttpLogger(
         }
     }
 
-    suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel): Unit = with(logger) {
+    suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel) {
         responseHeaderMonitor.join()
 
         val text = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "\"response body omitted\""

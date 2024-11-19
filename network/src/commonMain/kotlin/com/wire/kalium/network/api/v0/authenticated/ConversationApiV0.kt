@@ -22,7 +22,6 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationPagingResponse
@@ -46,6 +45,7 @@ import com.wire.kalium.network.api.authenticated.conversation.model.Conversation
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.AddServiceResponse
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.JoinConversationRequestV0
@@ -111,14 +111,6 @@ internal open class ConversationApiV0 internal constructor(
         createConversationRequest: CreateConversationRequest
     ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
         httpClient.post(PATH_CONVERSATIONS) {
-            setBody(createConversationRequest)
-        }
-    }
-
-    override suspend fun createOne2OneConversation(
-        createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
-        httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
             setBody(createConversationRequest)
         }
     }
@@ -407,7 +399,6 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
         const val PATH_MEMBERS = "members"
-        const val PATH_ONE_2_ONE = "one2one"
         const val PATH_V2 = "v2"
         const val PATH_CONVERSATIONS_LIST = "list"
         const val PATH_LIST_IDS = "list-ids"

@@ -26,7 +26,9 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
@@ -34,11 +36,13 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
+import io.ktor.http.HttpStatusCode
 import io.ktor.util.reflect.instanceOf
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -119,6 +123,38 @@ class ConversationFolderRepositoryTest {
         }
     }
 
+    @Test
+    fun given404ErrorWhenFetchingFoldersThenShouldCreateEmptyLabelList() = runTest {
+        // given
+        val arrangement = Arrangement()
+            .withSetProperty(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
+            .withFetchConversationLabels(
+                NetworkResponse.Error(
+                    KaliumException.InvalidRequestError(
+                        errorResponse = ErrorResponse(
+                            code = HttpStatusCode.NotFound.value,
+                            message = "",
+                            label = ""
+                        )
+                    )
+                )
+            )
+
+        // when
+        val result = arrangement.repository.fetchConversationFolders()
+
+        // then
+        result.shouldSucceed()
+        coVerify {
+            arrangement.userPropertiesApi.setProperty(
+                eq(PropertyKey.WIRE_LABELS),
+                any()
+            )
+        }.wasInvoked()
+
+        coVerify { arrangement.conversationFolderDAO.updateConversationFolders(any()) }.wasInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -154,6 +190,11 @@ class ConversationFolderRepositoryTest {
 
         suspend fun withFetchConversationLabels(response: NetworkResponse<LabelListResponseDTO>): Arrangement {
             coEvery { userPropertiesApi.getLabels() }.returns(response)
+            return this
+        }
+
+        suspend fun withSetProperty(response: NetworkResponse<Unit>): Arrangement {
+            coEvery { userPropertiesApi.setProperty(any(), any()) }.returns(response)
             return this
         }
     }

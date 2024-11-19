@@ -30,7 +30,9 @@ data class ClientDTO(
     @SerialName("id") val clientId: String,
     @SerialName("type") val type: ClientTypeDTO,
     @SerialName("class") val deviceType: DeviceTypeDTO = DeviceTypeDTO.Unknown,
-    @SerialName("capabilities") val capabilities: Capabilities?,
+    @SerialName("capabilities")
+    @Serializable(with = CapabilitiesDeserializer::class)
+    val capabilities: List<ClientCapabilityDTO>,
     @SerialName("label") val label: String?,
     @SerialName("mls_public_keys") val mlsPublicKeys: Map<String, String>?
 )

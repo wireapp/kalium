@@ -18,7 +18,6 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.authenticated.client.Capabilities
 import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
@@ -38,7 +37,7 @@ object ListOfClientsResponseJson {
         |   "model": "${serializable.model}",
         |   "capabilities": {
         |     "capabilities": [
-        |        "${serializable.capabilities!!.capabilities[0]}"
+        |        "${serializable.capabilities[0]}"
         |     ]
         |  }
         |}]
@@ -54,7 +53,7 @@ object ListOfClientsResponseJson {
             lastActive = "2023-05-12T10:52:02.671Z",
             label = "label",
             cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
-            capabilities = Capabilities(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),
+            capabilities = listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
             model = "model",
             mlsPublicKeys = null
         ),

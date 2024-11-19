@@ -21,5 +21,5 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v5.authenticated.E2EIApiV5
 
 internal open class E2EIApiV6 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : E2EIApiV5(authenticatedNetworkClient)

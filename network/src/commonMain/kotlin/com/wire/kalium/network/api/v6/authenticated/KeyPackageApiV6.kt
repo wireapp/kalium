@@ -22,5 +22,5 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v5.authenticated.KeyPackageApiV5
 
 internal open class KeyPackageApiV6 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : KeyPackageApiV5(authenticatedNetworkClient)

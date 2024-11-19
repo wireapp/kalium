@@ -36,11 +36,11 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -257,7 +257,7 @@ class ClientRepositoryTest {
                     deviceType = DeviceTypeDTO.Desktop,
                     label = null,
                     model = "Mac ox",
-                    capabilities = null,
+                    capabilities = listOf(),
                     mlsPublicKeys = null,
                     cookie = null
                 ),
@@ -269,7 +269,7 @@ class ClientRepositoryTest {
                     deviceType = DeviceTypeDTO.Phone,
                     label = null,
                     model = "iphone 15",
-                    capabilities = null,
+                    capabilities = listOf(),
                     mlsPublicKeys = null,
                     cookie = null
                 )
