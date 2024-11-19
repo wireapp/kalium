@@ -43,7 +43,6 @@ internal class AddConversationToFavoritesUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
 ) : AddConversationToFavoritesUseCase {
     override suspend fun invoke(conversationId: ConversationId): AddConversationToFavoritesUseCase.Result {
-        println("KBX AddConversationToFavoritesUseCaseImpl.invoke")
         conversationFolderRepository.getFavoriteConversationFolder().fold(
             { return AddConversationToFavoritesUseCase.Result.Failure(it) },
             { folder ->

@@ -99,7 +99,6 @@ internal class ConversationFolderDataSource internal constructor(
             }
         }
         .onSuccess { labelsResponse ->
-            println("KBX label response ${labelsResponse}")
             val folders = labelsResponse.labels.map { it.toFolder(selfUserId.domain) }.toMutableList()
             val favoriteLabel = folders.firstOrNull { it.type == FolderType.FAVORITE }
 

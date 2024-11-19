@@ -77,16 +77,6 @@ internal open class ConversationApiV3 internal constructor(
         apiModelMapper.fromApiV3(it)
     }
 
-    override suspend fun createOne2OneConversation(
-        createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
-        httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
-            setBody(apiModelMapper.toApiV3(createConversationRequest))
-        }
-    }.mapSuccess {
-        apiModelMapper.fromApiV3(it)
-    }
-
     override suspend fun updateAccess(
         conversationId: ConversationId,
         updateConversationAccessRequest: UpdateConversationAccessRequest

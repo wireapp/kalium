@@ -74,7 +74,6 @@ class ConversationFolderDAOImpl internal constructor(
 
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =
         withContext(coroutineContext) {
-            // TODO KBX make it better to not have blinking effect on favorites list
             conversationFoldersQueries.transaction {
                 conversationFoldersQueries.clearFolders()
                 folderWithConversationsList.forEach { folderWithConversations ->

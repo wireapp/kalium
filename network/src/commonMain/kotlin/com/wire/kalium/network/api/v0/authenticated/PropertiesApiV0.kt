@@ -56,7 +56,6 @@ internal open class PropertiesApiV0 internal constructor(
     }
 
     override suspend fun updateLabels(labelList: LabelListResponseDTO): NetworkResponse<Unit> = wrapKaliumResponse {
-        println("KBX serialized labels ${KtxSerializer.json.encodeToString(labelList)}")
         httpClient.put("$PATH_PROPERTIES/$PATH_LABELS") { setBody(labelList) }
     }
 }
