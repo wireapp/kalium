@@ -44,9 +44,9 @@ import com.wire.kalium.logic.test_util.TestNetworkException.generic
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.authenticated.CreateUserTeamDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
+import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.authenticated.userDetails.QualifiedUserIdListRequest

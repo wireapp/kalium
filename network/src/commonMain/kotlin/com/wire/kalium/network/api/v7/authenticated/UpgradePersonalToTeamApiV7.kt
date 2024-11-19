@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.v7.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.CreateUserTeamDTO
+import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
 import com.wire.kalium.network.api.unauthenticated.register.NewBindingTeamDTO
 import com.wire.kalium.network.api.v6.authenticated.UpgradePersonalToTeamApiV6
 import com.wire.kalium.network.utils.NetworkResponse

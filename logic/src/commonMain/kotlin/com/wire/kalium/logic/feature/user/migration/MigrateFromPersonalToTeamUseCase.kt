@@ -30,7 +30,7 @@ interface MigrateFromPersonalToTeamUseCase {
 }
 
 sealed class MigrateFromPersonalToTeamResult {
-    data class Success(val teamId: String, val teamName: String) : MigrateFromPersonalToTeamResult()
+    data class Success(val teamName: String) : MigrateFromPersonalToTeamResult()
     data class Error(val failure: CoreFailure) : MigrateFromPersonalToTeamResult()
 }
 
@@ -44,10 +44,8 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
             .fold(
                 { error -> return MigrateFromPersonalToTeamResult.Error(error) },
                 { success ->
-                    MigrateFromPersonalToTeamResult.Success(
-                        teamId = success.teamId,
-                        teamName = success.teamName,
-                    )
+                    // TODO Invalidate team id in memory so UserSessionScope.selfTeamId got updated data WPB-12187
+                    MigrateFromPersonalToTeamResult.Success(teamName = success.teamName)
                 }
             )
     }

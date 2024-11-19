@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.authenticated.CreateUserTeamDTO
+import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
 import com.wire.kalium.network.api.model.ErrorResponse
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

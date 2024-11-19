@@ -58,7 +58,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.authenticated.CreateUserTeamDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
@@ -166,7 +165,7 @@ interface UserRepository {
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
     suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
     suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
-    suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeamDTO>
+    suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -651,12 +650,13 @@ internal class UserDataSource internal constructor(
         userDAO.getNameAndHandle(userId.toDao())
     }.map { NameAndHandle.fromEntity(it) }
 
-    override suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeamDTO> {
-        return wrapApiRequest { upgradePersonalToTeamApi.migrateToTeam(teamName) }
+    override suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam> {
+        return wrapApiRequest { upgradePersonalToTeamApi.migrateToTeam(teamName) }.map { dto ->
+            CreateUserTeam(dto.teamName)
+        }
             .onSuccess {
                 kaliumLogger.d("Migrated user to team")
                 fetchSelfUser()
-                // TODO Invalidate team id in memory so UserSessionScope.selfTeamId got updated data WPB-12187
             }
             .onFailure { failure ->
                 kaliumLogger.e("Failed to migrate user to team: $failure")

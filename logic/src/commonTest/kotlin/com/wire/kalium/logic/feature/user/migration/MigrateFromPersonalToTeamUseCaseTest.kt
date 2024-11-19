@@ -20,9 +20,9 @@ package com.wire.kalium.logic.feature.user.migration
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.user.CreateUserTeam
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.authenticated.CreateUserTeamDTO
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
@@ -101,9 +101,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
         suspend fun withSuccessRepository() = apply {
             coEvery { userRepository.migrateUserToTeam(any()) }.returns(
                 Either.Right(
-                    CreateUserTeamDTO(
-                        "teamId", "teamName"
-                    )
+                    CreateUserTeam("teamName")
                 )
             )
         }
@@ -140,7 +138,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
             )
         }
 
-        suspend fun withRepositoryReturning(result: Either<CoreFailure, CreateUserTeamDTO>) =
+        suspend fun withRepositoryReturning(result: Either<CoreFailure, CreateUserTeam>) =
             apply {
                 coEvery { userRepository.migrateUserToTeam(any()) }.returns(result)
             }

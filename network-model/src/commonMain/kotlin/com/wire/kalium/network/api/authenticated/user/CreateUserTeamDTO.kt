@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.api.authenticated
+package com.wire.kalium.network.api.authenticated.user
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
