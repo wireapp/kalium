@@ -16,17 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.cryptography.backup
+package com.wire.backup.file
 
 import com.ionspin.kotlin.crypto.pwhash.PasswordHash
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_ALG_DEFAULT
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
-import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
-import com.wire.kalium.cryptography.kaliumLogger
+import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.file.cryptography.BackupPassphrase
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
 import okio.Buffer
 import okio.IOException
 import okio.Source
@@ -34,7 +34,7 @@ import kotlin.random.Random
 import kotlin.random.nextUBytes
 
 @OptIn(ExperimentalUnsignedTypes::class)
-class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
+class BackupCoder(val userId: BackupQualifiedId, val passphrase: BackupPassphrase) {
 
     fun encodeHeader(): BackupHeader {
         val salt = Random.nextUBytes(crypto_pwhash_SALTBYTES)
@@ -46,7 +46,7 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
         val decodedHeader = encryptedDataSource.readBackupHeader()
 
         // Sanity checks
-        val expectedHashedUserId = hashUserId(userId, decodedHeader.salt, decodedHeader.opslimit, decodedHeader.memlimit)
+        val expectedHashedUserId = hashUserId(userId, decodedHeader.salt, decodedHeader.operationsLimit, decodedHeader.hashingMemoryLimit)
         val storedHashedUserId = decodedHeader.hashedUserId
         val decodingError = handleHeaderDecodingErrors(decodedHeader, expectedHashedUserId, storedHashedUserId)
         return decodingError to decodedHeader
@@ -59,15 +59,15 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
     ): HeaderDecodingErrors? =
         when {
             !expectedHashedUserId.contentEquals(storedHashedUserId.toUByteArray()) -> {
-                kaliumLogger.e("The hashed user id in the backup file header does not match the expected one")
+//                 kaliumLogger.e("The hashed user id in the backup file header does not match the expected one")
                 INVALID_USER_ID
             }
             decodedHeader.format != format -> {
-                kaliumLogger.e("The backup format found in the backup file header is not a valid one")
+//                 kaliumLogger.e("The backup format found in the backup file header is not a valid one")
                 INVALID_FORMAT
             }
             decodedHeader.version.toInt() < version.toInt() -> {
-                kaliumLogger.e("The backup version found in the backup file header is not a valid one")
+//                 kaliumLogger.e("The backup version found in the backup file header is not a valid one")
                 INVALID_VERSION
             }
             else -> null
@@ -115,8 +115,8 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
             version = version,
             salt = salt,
             hashedUserId = hashedUserId,
-            opslimit = opslimit,
-            memlimit = memlimit
+            operationsLimit = opslimit,
+            hashingMemoryLimit = memlimit
         )
     }
 
@@ -126,13 +126,13 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
             PWD_HASH_OUTPUT_BYTES,
             passphrase.password,
             header.salt,
-            header.opslimit.toULong(),
-            header.memlimit,
+            header.operationsLimit.toULong(),
+            header.hashingMemoryLimit,
             crypto_pwhash_ALG_DEFAULT
         )
     }
 
-    private fun hashUserId(userId: CryptoUserID, salt: UByteArray, opslimit: Int, memlimit: Int): UByteArray {
+    private fun hashUserId(userId: BackupQualifiedId, salt: UByteArray, opslimit: Int, memlimit: Int): UByteArray {
         return PasswordHash.pwhash(
             PWD_HASH_OUTPUT_BYTES,
             userId.toString(),

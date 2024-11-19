@@ -52,9 +52,6 @@ kotlin {
 
                 // Okio
                 implementation(libs.okio.core)
-
-                // Libsodium
-                implementation(libs.libsodiumBindingsMP)
             }
         }
         val commonTest by getting {

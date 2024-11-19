@@ -16,17 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.cryptography.utils
+package com.wire.backup.file.cryptography
 
 import com.ionspin.kotlin.crypto.secretstream.SecretStream
 import com.ionspin.kotlin.crypto.secretstream.SecretStreamCorruptedOrTamperedDataException
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
-import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.cryptography.backup.Passphrase
-import com.wire.kalium.cryptography.kaliumLogger
-import com.wire.kalium.cryptography.utils.LibsodiumInitializer.initializeLibsodiumIfNeeded
+import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.file.BackupCoder
+import com.wire.backup.file.cryptography.LibsodiumInitializer.initializeLibsodiumIfNeeded
 import okio.Buffer
 import okio.IOException
 import okio.Sink
@@ -41,8 +39,8 @@ object ChaCha20Encryptor {
     suspend fun encryptBackupFile(
         backupDataSource: Source,
         outputSink: Sink,
-        userId: CryptoUserID,
-        passphrase: Passphrase
+        userId: BackupQualifiedId,
+        passphrase: BackupPassphrase
     ): Long {
 
         initializeLibsodiumIfNeeded()
@@ -91,11 +89,11 @@ object ChaCha20Encryptor {
                 encryptedDataSize += encryptedData.size
             }
         } catch (e: IOException) {
-            kaliumLogger.e("There was an error encrypting backup data:\n $e}")
+//             kaliumLogger.e("There was an error encrypting backup data:\n $e}")
         } catch (e: IllegalStateException) {
-            kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
+//             kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
         } catch (e: SecretStreamCorruptedOrTamperedDataException) {
-            kaliumLogger.e("There was an error while encrypting the backup data with ChaCha20:\n $e}")
+//             kaliumLogger.e("There was an error while encrypting the backup data with ChaCha20:\n $e}")
         } finally {
             backupDataSource.close()
             outputBufferedSink.close()

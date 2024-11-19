@@ -27,7 +27,6 @@ import kotlin.js.JsExport
 import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
-
 @JsExport
 class BackupData(
     val metadata: BackupMetadata,
@@ -55,7 +54,19 @@ data class BackupQualifiedId(
     val id: String,
     @SerialName("domain")
     val domain: String,
-)
+) {
+    override fun toString() = "$id@$domain"
+
+    companion object {
+        private const val QUALIFIED_ID_COMPONENT_COUNT = 2
+
+        fun fromEncodedString(id: String): BackupQualifiedId? {
+            val components = id.split("@")
+            if (components.size != QUALIFIED_ID_COMPONENT_COUNT) return null
+            return BackupQualifiedId(components[0], components[1])
+        }
+    }
+}
 
 @JsExport
 data class BackupUser(

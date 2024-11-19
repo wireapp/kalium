@@ -26,8 +26,8 @@ import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.MPBackupExporter
-import com.wire.kalium.cryptography.backup.Passphrase
-import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
+import com.wire.backup.file.cryptography.BackupPassphrase
+import com.wire.backup.file.cryptography.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
@@ -116,7 +116,7 @@ internal class CreateBackupUseCaseImpl(
         val backupEncryptedDataSize = encryptBackup(
             kaliumFileSystem.source(backupFilePath),
             kaliumFileSystem.sink(encryptedBackupFilePath),
-            Passphrase(password)
+            BackupPassphrase(password)
         )
         if (backupEncryptedDataSize == 0L)
             return CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to encrypt backup file")))
@@ -150,7 +150,7 @@ internal class CreateBackupUseCaseImpl(
         kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME))
     }
 
-    private suspend fun encryptBackup(backupFileSource: Source, encryptedBackupSink: Sink, passphrase: Passphrase) =
+    private suspend fun encryptBackup(backupFileSource: Source, encryptedBackupSink: Sink, passphrase: BackupPassphrase) =
         encryptBackupFile(backupFileSource, encryptedBackupSink, idMapper.toCryptoModel(userId), passphrase)
 
     private suspend fun createBackupFile(

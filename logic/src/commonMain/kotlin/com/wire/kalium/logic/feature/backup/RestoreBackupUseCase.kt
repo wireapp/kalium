@@ -22,12 +22,12 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
-import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
-import com.wire.kalium.cryptography.backup.Passphrase
-import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
+import com.wire.backup.file.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
+import com.wire.backup.file.cryptography.BackupPassphrase
+import com.wire.backup.file.cryptography.ChaCha20Decryptor.decryptBackupFile
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -182,7 +182,7 @@ internal class RestoreBackupUseCaseImpl(
         val (decodingError, backupSize) = decryptBackupFile(
             backupSource,
             backupSink,
-            Passphrase(password),
+            BackupPassphrase(password),
             userIdEntity
         )
 

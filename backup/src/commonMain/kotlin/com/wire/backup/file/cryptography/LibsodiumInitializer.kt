@@ -16,6 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.cryptography.backup
+package com.wire.backup.file.cryptography
 
-data class Passphrase(val password: String)
+import com.ionspin.kotlin.crypto.LibsodiumInitializer
+
+object LibsodiumInitializer {
+    internal suspend fun initializeLibsodiumIfNeeded() {
+        if (!LibsodiumInitializer.isInitialized()) {
+            LibsodiumInitializer.initialize()
+        }
+    }
+}

@@ -16,14 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.cryptography.utils
+package com.wire.backup.file.cryptography
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
+import kotlin.js.JsExport
 
-object LibsodiumInitializer {
-    internal suspend fun initializeLibsodiumIfNeeded() {
-        if (!LibsodiumInitializer.isInitialized()) {
-            LibsodiumInitializer.initialize()
-        }
-    }
-}
+@JsExport
+data class BackupPassphrase(val password: String)

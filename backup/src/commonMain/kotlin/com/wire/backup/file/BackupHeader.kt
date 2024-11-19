@@ -15,19 +15,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.backup.file
 
-package com.wire.kalium.cryptography.backup
-
+import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_MEMLIMIT_MIN
 import okio.Buffer
 
+/**
+ * The unencrypted data we write on the beginning of the backup files.
+ *
+ */
 @OptIn(ExperimentalUnsignedTypes::class)
 data class BackupHeader(
     val format: String,
     val version: String,
     val salt: UByteArray,
     val hashedUserId: UByteArray,
-    val opslimit: Int,
-    val memlimit: Int
+    /**
+     * Represents the maximum amount of computations to perform. Raising this number will make the function require more CPU cycles to compute a key.
+     * See [Libsodium's Documentation](https://libsodium.gitbook.io/doc/password_hashing/default_phf#key-derivation).
+     */
+    val operationsLimit: Int,
+    /**
+     * Memory used by the hashing algorithm.
+     * See [Libsodium's Documentation](https://libsodium.gitbook.io/doc/password_hashing/default_phf#key-derivation).
+     * This value has to be bigger than [crypto_pwhash_MEMLIMIT_MIN].
+     */
+    val hashingMemoryLimit: Int
 ) {
 
     private val extraGap = byteArrayOf(0x00)
@@ -39,8 +52,8 @@ data class BackupHeader(
         buffer.write(version.encodeToByteArray())
         buffer.write(salt.toByteArray())
         buffer.write(hashedUserId.toByteArray())
-        buffer.writeInt(opslimit)
-        buffer.writeInt(memlimit)
+        buffer.writeInt(operationsLimit)
+        buffer.writeInt(hashingMemoryLimit)
 
         return buffer.readByteArray()
     }

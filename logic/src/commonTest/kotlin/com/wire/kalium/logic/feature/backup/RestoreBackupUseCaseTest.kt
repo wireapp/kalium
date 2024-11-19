@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.cryptography.backup.Passphrase
-import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
+import com.wire.backup.file.BackupCoder
+import com.wire.backup.file.cryptography.BackupPassphrase
+import com.wire.backup.file.cryptography.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
@@ -296,7 +296,7 @@ class RestoreBackupUseCaseTest {
             createCompressedBackup(compressedBackupFilePath, userId, withWrongMetadataFile, userDBSecret)
 
             val cryptoUserId = idMapper.toCryptoModel(userId)
-            val coder = BackupCoder(cryptoUserId, Passphrase(password))
+            val coder = BackupCoder(cryptoUserId, BackupPassphrase(password))
             val inputSource = source(compressedBackupFilePath)
             val outputSink = sink(encryptedBackupPath)
 

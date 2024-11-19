@@ -15,17 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.data
+package com.wire.backup.ingest
 
-import kotlin.js.Date
+import kotlin.js.JsExport
 
 @JsExport
-actual data class BackupDateTime(val date: Date)
-
-actual fun BackupDateTime(timestampMillis: Long): BackupDateTime {
-    return BackupDateTime(Date(timestampMillis))
-}
-
-actual fun BackupDateTime.toLongMilliseconds(): Long {
-    return date.getTime().toLong()
+sealed class BackupVerificationResult {
+    data object Valid : BackupVerificationResult()
+    sealed class Invalid : BackupVerificationResult() {
+        data object IncorrectUser : Invalid()
+        data object UnknownFormat : Invalid()
+    }
 }

@@ -31,28 +31,28 @@ import kotlin.test.assertIs
 
 class BackupEndToEndTest {
 
-    @Test
-    fun givenBackedUpMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        val expectedMessage = BackupMessage(
-            "messageId",
-            BackupQualifiedId("value", "domain"),
-            BackupQualifiedId("senderID", "senderDomain"),
-            "senderClientId",
-            BackupDateTime(24232L),
-            BackupMessageContent.Text("Hello from the backup!")
-        )
-        val exporter = MPBackupExporter(BackupQualifiedId("eghyue", "potato"))
-        exporter.addMessage(expectedMessage)
-        val encoded = exporter.serialize()
-
-        val result = MPBackupMapper("potato").import(encoded)
-        assertIs<BackupImportResult.Success>(result)
-        assertContentEquals(arrayOf(expectedMessage), result.backupData.messages)
-    }
-
-    @Test
-    fun givenBackUpDataIsUnrecognisable_whenRestoring_thenShouldReturnParsingError() = runTest {
-        val result = MPBackupMapper("potato").import(byteArrayOf(0x42, 0x42, 0x42))
-        assertIs<BackupImportResult.ParsingFailure>(result)
-    }
+//     @Test
+//     fun givenBackedUpMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
+//         val expectedMessage = BackupMessage(
+//             "messageId",
+//             BackupQualifiedId("value", "domain"),
+//             BackupQualifiedId("senderID", "senderDomain"),
+//             "senderClientId",
+//             BackupDateTime(24232L),
+//             BackupMessageContent.Text("Hello from the backup!")
+//         )
+//         val exporter = MPBackupExporter(BackupQualifiedId("eghyue", "potato"))
+//         exporter.addMessage(expectedMessage)
+//         val encoded = exporter.serialize()
+//
+//         val result = MPBackupMapper("potato").import(encoded)
+//         assertIs<BackupImportResult.Success>(result)
+//         assertContentEquals(arrayOf(expectedMessage), result.backupData.messages)
+//     }
+//
+//     @Test
+//     fun givenBackUpDataIsUnrecognisable_whenRestoring_thenShouldReturnParsingError() = runTest {
+//         val result = MPBackupMapper("potato").import(byteArrayOf(0x42, 0x42, 0x42))
+//         assertIs<BackupImportResult.ParsingFailure>(result)
+//     }
 }

@@ -15,20 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.backup.file.cryptography
 
-package com.wire.kalium.cryptography.utils
+import com.wire.backup.data.BackupQualifiedId
 
 import com.ionspin.kotlin.crypto.secretstream.SecretStream
 import com.ionspin.kotlin.crypto.secretstream.SecretStreamCorruptedOrTamperedDataException
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_ABYTES
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_HEADERBYTES
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
-import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.cryptography.backup.BackupHeader
-import com.wire.kalium.cryptography.backup.Passphrase
-import com.wire.kalium.cryptography.kaliumLogger
-import com.wire.kalium.cryptography.utils.LibsodiumInitializer.initializeLibsodiumIfNeeded
+import com.wire.backup.file.BackupCoder
+import com.wire.backup.file.BackupHeader
 import okio.Buffer
 import okio.IOException
 import okio.Sink
@@ -36,18 +33,18 @@ import okio.Source
 import okio.buffer
 
 @OptIn(ExperimentalUnsignedTypes::class)
-object ChaCha20Decryptor {
+internal object ChaCha20Decryptor {
 
     private const val ENCRYPT_BUFFER_SIZE = 4096L
 
     suspend fun decryptBackupFile(
         encryptedDataSource: Source,
         decryptedDataSink: Sink,
-        passphrase: Passphrase,
-        userId: CryptoUserID
+        passphrase: BackupPassphrase,
+        userId: BackupQualifiedId
     ): Pair<BackupHeader.HeaderDecodingErrors?, Long> {
 
-        initializeLibsodiumIfNeeded()
+        LibsodiumInitializer.initializeLibsodiumIfNeeded()
         var decryptedDataSize = 0L
         val decryptionBufferedSink = decryptedDataSink.buffer()
 
@@ -90,11 +87,11 @@ object ChaCha20Decryptor {
                 }
             }
         } catch (e: IOException) {
-            kaliumLogger.e("There was an error decrypting backup data:\n $e}")
+//             kaliumLogger.e("There was an error decrypting backup data:\n $e}")
         } catch (e: IllegalStateException) {
-            kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
+//             kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
         } catch (e: SecretStreamCorruptedOrTamperedDataException) {
-            kaliumLogger.e("Error while decrypting the backup data with ChaCha20. Probably the provided password is wrong:\n $e}")
+//             kaliumLogger.e("Error while decrypting the backup data with ChaCha20. Probably the provided password is wrong:\n $e}")
         } finally {
             encryptedDataSource.close()
             decryptionBufferedSink.close()

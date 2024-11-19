@@ -56,11 +56,15 @@ kotlin {
 
 //                 implementation(libs.kmpIo)
                 implementation(libs.okio.core)
+
+                // Libsodium
+                implementation(libs.libsodiumBindingsMP)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(libs.coroutines.test)
+                implementation(libs.okio.test)
             }
         }
 
