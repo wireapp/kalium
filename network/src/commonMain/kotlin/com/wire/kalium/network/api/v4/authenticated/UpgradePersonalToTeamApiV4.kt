@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.v2.authenticated.UpgradePersonalToTeamApiV2
+import com.wire.kalium.network.api.v3.authenticated.UpgradePersonalToTeamApiV3
 
 internal open class UpgradePersonalToTeamApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
