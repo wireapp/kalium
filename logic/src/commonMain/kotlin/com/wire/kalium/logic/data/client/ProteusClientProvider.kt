@@ -18,9 +18,11 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.cryptography.cryptoboxProteusClient
+import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
@@ -58,7 +60,8 @@ class ProteusClientProviderImpl(
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
     private val kaliumConfigs: KaliumConfigs,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
 ) : ProteusClientProvider {
 
     private var _proteusClient: ProteusClient? = null
@@ -109,7 +112,6 @@ class ProteusClientProviderImpl(
                     databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
                 )
             } catch (e: Exception) {
-
                 val logMap = mapOf(
                     "userId" to userId.value.obfuscateId(),
                     "exception" to e,
@@ -119,7 +121,7 @@ class ProteusClientProviderImpl(
                 kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
                 throw e
             }
-            central.proteusClient()
+            getCentralProteusClientOrError(central)
         } else {
             cryptoboxProteusClient(
                 rootDir = rootProteusPath,
@@ -127,6 +129,34 @@ class ProteusClientProviderImpl(
                 ioContext = dispatcher.io
             )
         }
+    }
+
+    private suspend fun getCentralProteusClientOrError(central: CoreCryptoCentral): ProteusClient {
+        return try {
+            central.proteusClient()
+        } catch (exception: ProteusStorageMigrationException) {
+            recoverFromFailedMigration()
+            val logMap = mapOf(
+                "userId" to userId.value.obfuscateId(),
+                "exception" to exception,
+                "message" to exception.message,
+                "stackTrace" to exception.stackTraceToString()
+            )
+            kaliumLogger.withTextTag(TAG).logStructuredJson(KaliumLogLevel.ERROR, "Proteus storage migration failed", logMap)
+            throw exception
+        }
+    }
+
+    private suspend fun recoverFromFailedMigration() {
+        kaliumLogger.withTextTag(TAG).w("Recovering from migration")
+        proteusMigrationRecoveryHandler.clearClientData()
+        kaliumLogger.d("Starting to clear local crypto files")
+        withContext(dispatcher.io) {
+            _proteusClient?.close()
+            _proteusClient = null
+            FileUtil.deleteDirectory(rootProteusPath)
+        }
+        kaliumLogger.d("Finished recover from failed migration, prompt user to register client again")
     }
 
     private companion object {

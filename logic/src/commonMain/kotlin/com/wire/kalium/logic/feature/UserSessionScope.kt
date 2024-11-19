@@ -51,6 +51,8 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
+import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
+import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
@@ -623,12 +625,19 @@ class UserSessionScope internal constructor(
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
         get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
+    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
+        ProteusMigrationRecoveryHandlerImpl(
+            clientRepository, pushTokenRepository, cachedClientIdClearer
+        )
+    }
+
     val proteusClientProvider: ProteusClientProvider by lazy {
         ProteusClientProviderImpl(
             rootProteusPath = rootPathsProvider.rootProteusPath(userId),
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
         )
     }
 
@@ -918,11 +927,12 @@ class UserSessionScope internal constructor(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    private val eventGatherer: EventGatherer get() = EventGathererImpl(
-        eventRepository = eventRepository,
-        incrementalSyncRepository = incrementalSyncRepository,
-        logger = userScopedLogger
-    )
+    private val eventGatherer: EventGatherer
+        get() = EventGathererImpl(
+            eventRepository = eventRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            logger = userScopedLogger
+        )
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
