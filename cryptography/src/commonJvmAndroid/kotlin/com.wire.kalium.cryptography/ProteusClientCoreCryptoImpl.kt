@@ -203,7 +203,9 @@ class ProteusClientCoreCryptoImpl private constructor(
         @Suppress("TooGenericExceptionCaught", "ThrowsCount")
         private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
             try {
+                throw RuntimeException("Some dummy exception for this block")
                 if (cryptoBoxFilesExists(File(rootDir))) {
+
                     kaliumLogger.i("migrating from crypto box at: $rootDir")
                     coreCrypto.proteusCryptoboxMigrate(rootDir)
                     kaliumLogger.i("migration successful")

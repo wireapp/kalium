@@ -37,6 +37,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -152,6 +153,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                     // todo(ym): here an error will/can happen from migration
                     // todo(ym): raise a special exception for this case, after deleting the cbox and cc files.
                     // todo(ym): remove the client id, retained client id from db, clean last prekey id
+                    kaliumLogger.e("Fatal !!! Migration failed, deleting local files")
                 }
                 RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->

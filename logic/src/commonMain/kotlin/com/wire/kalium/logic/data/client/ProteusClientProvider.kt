@@ -81,7 +81,15 @@ class ProteusClientProviderImpl(
             }
         }
     }
-
+    flowchart TD
+    A[ProteusClientProvider.kt] -- "Get Or Create" --> B{BuildFlag encrypt_proteus_storage true?}
+    B -- No ----> F[Create CBox Instance]
+    B -- Yes --> C[Create CC Instance]
+    C --> D{Are CBox files present?}
+    D --> E[Migrate and Delete CBox]
+    E --> G{Failed to Migrate}
+    G -- No --> H[Awesome!]
+    G -- Yes --> I[Perform Recover Flow]
     override suspend fun getOrError(): Either<CoreFailure, ProteusClient> {
         return mutex.withLock {
             withContext(dispatcher.io) {
