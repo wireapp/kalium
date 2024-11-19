@@ -17,9 +17,14 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MemberDetails
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
@@ -29,7 +34,10 @@ import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -38,69 +46,111 @@ import kotlin.test.assertEquals
 class GetRecentlyEndedCallMetadataUseCaseTest {
 
     @Test
-    fun givenCallAndEndCallReaction_whenUseCaseInvoked_thenCreatesProperMetadata() = runTest {
+    fun givenCallAndEndCallReaction_whenUseCaseInvoked_thenRecentlyCallMetadataIsProperlyUpdated() = runTest {
         // given
-        val (_, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement()
+            .withOutgoingCall()
             .withSelfUser()
             .withConversationMembers()
             .arrange()
 
         // when
-        val metadata = useCase(TestCall.oneOnOneEstablishedCall(), callEndedReason = 2)
+        useCase(
+            conversationId = ConversationId(value = "value", domain = "domain"),
+            callEndedReason = 2
+        )
 
         // then
-        assertEquals(2, metadata.callEndReason)
-        assertEquals(
-            RecentlyEndedCallMetadata.CallDetails(
-                isCallScreenShare = false,
-                callScreenShareUniques = 0,
-                isOutgoingCall = false,
-                callDurationInSeconds = 0L,
-                callParticipantsCount = 1,
-                conversationServices = 0,
-                callAVSwitchToggle = false,
-                callVideoEnabled = false
-            ), metadata.callDetails
-        )
-        assertEquals(
-            RecentlyEndedCallMetadata.ConversationDetails(
-                conversationType = Conversation.Type.ONE_ON_ONE,
-                conversationSize = 2,
-                conversationGuests = 0,
-                conversationGuestsPro = 0
-            ), metadata.conversationDetails
-        )
-        assertEquals(true, metadata.isTeamMember)
+        coVerify {
+            arrangement.callRepository.updateRecentlyEndedCall(DEFAULT_ENDED_CALL_METADATA)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenCallDetailsWithinConversationWithGuests_whenUseCaseInvoked_thenReturnCorrectMetadataGuestsCount() = runTest {
+    fun givenCallDetailsWithinConversationWithGuests_whenUseCaseInvoked_thenRecentlyEndedCallMetadataHasProperGuestsCount() = runTest {
         // given
-        val (_, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement()
+            .withOutgoingCall()
             .withSelfUser()
             .withConversationGuests()
             .arrange()
 
         // when
-        val metadata = useCase(TestCall.oneOnOneEstablishedCall(), callEndedReason = 2)
+        useCase(
+            conversationId = ConversationId(value = "value", domain = "domain"),
+            callEndedReason = 2
+        )
 
         // then
-        assertEquals(1, metadata.conversationDetails.conversationGuests)
+        coVerify {
+            arrangement.callRepository.updateRecentlyEndedCall(
+                DEFAULT_ENDED_CALL_METADATA.copy(
+                    conversationDetails = DEFAULT_ENDED_CALL_METADATA.conversationDetails.copy(
+                        conversationGuests = 1
+                    )
+                )
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCallDetailsWithinConversationWithGuests_whenUseCaseInvoked_thenRecentlyEndedCallMetadataHasProperGuestsProCount() = runTest {
+        // given
+        val (arrangement, useCase) = Arrangement()
+            .withOutgoingCall()
+            .withSelfUser()
+            .withConversationGuestsPro()
+            .arrange()
+
+        // when
+        useCase(
+            conversationId = ConversationId(value = "value", domain = "domain"),
+            callEndedReason = 2
+        )
+
+        // then
+        coVerify {
+            arrangement.callRepository.updateRecentlyEndedCall(
+                DEFAULT_ENDED_CALL_METADATA.copy(
+                    conversationDetails = DEFAULT_ENDED_CALL_METADATA.conversationDetails.copy(
+                        conversationGuests = 1,
+                        conversationGuestsPro = 1
+                    )
+                )
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenIncomingCallDetails_whenUseCaseInvoked_thenReturnCorrectMetadataIncomingCall() = runTest {
         // given
-        val (_, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement()
+            .withIncomingCall()
             .withSelfUser()
-            .withConversationGuests()
+            .withConversationMembers()
             .arrange()
 
         // when
-        val metadata = useCase(TestCall.oneOnOneEstablishedCall().copy(callerId = CALLER_ID.copy(value = "external")), callEndedReason = 2)
+        useCase(
+            conversationId = ConversationId(value = "value", domain = "domain"),
+            callEndedReason = 2
+        )
 
         // then
-        assertEquals(false, metadata.callDetails.isOutgoingCall)
+        val data = DEFAULT_ENDED_CALL_METADATA.copy(
+            callDetails = DEFAULT_ENDED_CALL_METADATA.callDetails.copy(
+                isOutgoingCall = false
+            )
+        )
+        coVerify {
+            arrangement.callRepository.updateRecentlyEndedCall(
+                DEFAULT_ENDED_CALL_METADATA.copy(
+                    callDetails = DEFAULT_ENDED_CALL_METADATA.callDetails.copy(
+                        isOutgoingCall = false
+                    )
+                )
+            )
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -109,6 +159,19 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
 
         @Mock
         val getSelf = mock(GetSelfUserUseCase::class)
+
+        @Mock
+        val callRepository = mock(CallRepository::class)
+
+        suspend fun withOutgoingCall() = apply {
+            coEvery { callRepository.observeCurrentCall(any()) }
+                .returns(flowOf(callWithOwner()))
+        }
+
+        suspend fun withIncomingCall() = apply {
+            coEvery { callRepository.observeCurrentCall(any()) }
+                .returns(flowOf(callWithOwner().copy(callerId = CALLER_ID.copy(value = "external"))))
+        }
 
         suspend fun withConversationMembers() = apply {
             coEvery { observeConversationMembers(any()) }.returns(
@@ -126,6 +189,17 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
                 flowOf(
                     listOf(
                         MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
+                        MemberDetails(TestUser.OTHER.copy(userType = UserType.GUEST, teamId = null), Conversation.Member.Role.Member)
+                    )
+                )
+            )
+        }
+
+        suspend fun withConversationGuestsPro() = apply {
+            coEvery { observeConversationMembers(any()) }.returns(
+                flowOf(
+                    listOf(
+                        MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
                         MemberDetails(TestUser.OTHER.copy(userType = UserType.GUEST), Conversation.Member.Role.Member)
                     )
                 )
@@ -136,9 +210,56 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
             coEvery { getSelf() }.returns(flowOf(TestUser.SELF))
         }
 
-        fun arrange(): Pair<Arrangement, GetRecentlyEndedCallMetadataUseCase> = this to GetRecentlyEndedCallMetadataUseCaseImpl(
-            observeConversationMembers = observeConversationMembers,
-            getSelf = getSelf
+        fun arrange(): Pair<Arrangement, CreateAndPersistRecentlyEndedCallMetadataUseCase> =
+            this to CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
+                callRepository = callRepository,
+                observeConversationMembers = observeConversationMembers,
+                getSelf = getSelf
+            )
+
+        private fun callWithOwner(): Call {
+            return TestCall.oneOnOneEstablishedCall()
+                .copy(
+                    callerId = CALLER_ID.copy(value = "ownerId"),
+                    participants = TestCall.oneOnOneEstablishedCall().participants.plus(
+                        Participant(
+                            id = CALLER_ID.copy(value = "ownerId"),
+                            clientId = "abcd",
+                            isMuted = true,
+                            isCameraOn = false,
+                            isSharingScreen = false,
+                            hasEstablishedAudio = true,
+                            name = "User Name",
+                            avatarAssetId = null,
+                            userType = UserType.OWNER,
+                            isSpeaking = false,
+                            accentId = 0
+                        )
+                    )
+                )
+        }
+    }
+
+    private companion object {
+        val DEFAULT_ENDED_CALL_METADATA = RecentlyEndedCallMetadata(
+            callEndReason = 2,
+            isTeamMember = true,
+            callDetails = RecentlyEndedCallMetadata.CallDetails(
+                isCallScreenShare = false,
+                callScreenShareUniques = 0,
+                isOutgoingCall = true,
+                callDurationInSeconds = 0L,
+                callParticipantsCount = 2,
+                conversationServices = 0,
+                callAVSwitchToggle = false,
+                callVideoEnabled = false
+            ),
+            conversationDetails = RecentlyEndedCallMetadata.ConversationDetails(
+                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationSize = 2,
+                conversationGuests = 0,
+                conversationGuestsPro = 0
+            )
         )
     }
 }

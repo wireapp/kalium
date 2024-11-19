@@ -18,7 +18,9 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
@@ -30,24 +32,32 @@ import kotlinx.coroutines.flow.firstOrNull
  * Given a call and raw call end reason create metadata containing all information regarding
  * a call.
  */
-interface GetRecentlyEndedCallMetadataUseCase {
-    suspend operator fun invoke(call: Call, callEndedReason: Int): RecentlyEndedCallMetadata
+interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
+    suspend operator fun invoke(conversationId: ConversationId, callEndedReason: Int)
 }
 
-class GetRecentlyEndedCallMetadataUseCaseImpl(
+class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
+    private val callRepository: CallRepository,
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val getSelf: GetSelfUserUseCase,
-) : GetRecentlyEndedCallMetadataUseCase {
-    override suspend fun invoke(call: Call, callEndedReason: Int): RecentlyEndedCallMetadata {
+) : CreateAndPersistRecentlyEndedCallMetadataUseCase {
+    override suspend fun invoke(conversationId: ConversationId, callEndedReason: Int) {
+        val call = callRepository.observeCurrentCall(conversationId).first()
+        call?.createMetadata(callEndedReason = callEndedReason)?.let { metadata ->
+            callRepository.updateRecentlyEndedCall(metadata)
+        }
+    }
+
+    private suspend fun Call.createMetadata(callEndedReason: Int): RecentlyEndedCallMetadata {
         val selfUser = getSelf().firstOrNull()
-        val selfCallUser = call.participants.firstOrNull { participant -> participant.userType == UserType.OWNER }
-        val conversationMembers = observeConversationMembers(call.conversationId).first()
+        val selfCallUser = participants.firstOrNull { participant -> participant.userType == UserType.OWNER }
+        val conversationMembers = observeConversationMembers(conversationId).first()
         val conversationServicesCount = conversationMembers.count { member -> member.user.userType == UserType.SERVICE }
         val guestsCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST }
         val guestsProCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST && member.user.teamId != null }
-        val uniqueScreenShares = call.participants.count { participant -> participant.isSharingScreen }
-        val isOutgoingCall = call.callerId.value == selfCallUser?.id?.value
-        val callDurationInSeconds = call.establishedTime?.let {
+        val uniqueScreenShares = participants.count { participant -> participant.isSharingScreen }
+        val isOutgoingCall = callerId.value == selfCallUser?.id?.value
+        val callDurationInSeconds = establishedTime?.let {
             DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentIsoDateTimeString()) / MILLIS_IN_SECOND
         } ?: 0L
 
@@ -58,13 +68,13 @@ class GetRecentlyEndedCallMetadataUseCaseImpl(
                 callScreenShareUniques = uniqueScreenShares,
                 isOutgoingCall = isOutgoingCall,
                 callDurationInSeconds = callDurationInSeconds,
-                callParticipantsCount = call.participants.size,
+                callParticipantsCount = participants.size,
                 conversationServices = conversationServicesCount,
                 callAVSwitchToggle = selfCallUser?.isCameraOn ?: false,
-                callVideoEnabled = call.isCameraOn
+                callVideoEnabled = isCameraOn
             ),
             conversationDetails = RecentlyEndedCallMetadata.ConversationDetails(
-                conversationType = call.conversationType,
+                conversationType = conversationType,
                 conversationSize = conversationMembers.size,
                 conversationGuests = guestsCount,
                 conversationGuestsPro = guestsProCount

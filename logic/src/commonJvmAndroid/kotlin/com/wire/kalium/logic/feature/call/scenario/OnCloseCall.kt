@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +42,8 @@ class OnCloseCall(
     private val callRepository: CallRepository,
     private val scope: CoroutineScope,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val networkStateObserver: NetworkStateObserver
+    private val networkStateObserver: NetworkStateObserver,
+    private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
 ) : CloseCallHandler {
     override fun onClosedCall(
         reason: Int,
@@ -79,13 +81,7 @@ class OnCloseCall(
                 status = callStatus
             )
 
-            callMetadata?.let {
-                callRepository.updateRecentlyEndedCall(
-                    conversationId = conversationIdWithDomain,
-                    callMetadata = callMetadata,
-                    callEndReason = reason
-                )
-            }
+            createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
 
             if (callMetadata?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)

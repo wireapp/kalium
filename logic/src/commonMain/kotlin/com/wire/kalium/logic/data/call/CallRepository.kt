@@ -137,8 +137,8 @@ interface CallRepository {
     fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
     suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
 
-    suspend fun updateRecentlyEndedCall(conversationId: ConversationId, callMetadata: CallMetadata, callEndReason: Int)
-    suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCall>
+    suspend fun updateRecentlyEndedCall(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
+    suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCallMetadata>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -167,7 +167,7 @@ internal class CallDataSource(
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
     private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
-    private val _recentlyEndedCallFlow = MutableSharedFlow<RecentlyEndedCall>(
+    private val _recentlyEndedCallFlow = MutableSharedFlow<RecentlyEndedCallMetadata>(
         extraBufferCapacity = 1
     )
 
@@ -175,17 +175,8 @@ internal class CallDataSource(
         it[conversationId]?.mapCallMetadataToCall(conversationId)
     }
 
-    override suspend fun updateRecentlyEndedCall(
-        conversationId: ConversationId,
-        callMetadata: CallMetadata,
-        callEndReason: Int
-    ) {
-        _recentlyEndedCallFlow.tryEmit(
-            RecentlyEndedCall(
-                call = callMetadata.mapCallMetadataToCall(conversationId),
-                callEndedCause = callEndReason
-            )
-        )
+    override suspend fun updateRecentlyEndedCall(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
+        _recentlyEndedCallFlow.tryEmit(recentlyEndedCallMetadata)
     }
 
     private fun CallMetadata.mapCallMetadataToCall(conversationId: ConversationId): Call {
@@ -206,7 +197,7 @@ internal class CallDataSource(
         )
     }
 
-    override suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCall> {
+    override suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCallMetadata> {
         return _recentlyEndedCallFlow
     }
 

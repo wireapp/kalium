@@ -18,22 +18,22 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.RecentlyEndedCall
+import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import kotlinx.coroutines.flow.Flow
 import com.wire.kalium.logic.data.id.ConversationId
 
 /**
- * Use case to observe recently ended call. This gives us the call that has been ended and also
- * raw cause of the end.
+ * Use case to observe recently ended call metadata. This gives us all metadata assigned to a call.
+ * Used mainly for analytics.
  */
 interface ObserveRecentlyEndedCallUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCall>
+    suspend operator fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCallMetadata>
 }
 
 class ObserveRecentlyEndedCallUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
 ) : ObserveRecentlyEndedCallUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCall> {
+    override suspend fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCallMetadata> {
         return callRepository.observeRecentlyEndedCall()
     }
 }
