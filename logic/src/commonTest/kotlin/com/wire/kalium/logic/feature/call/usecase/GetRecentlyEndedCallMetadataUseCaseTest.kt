@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MemberDetails
@@ -46,7 +48,7 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
             .arrange()
 
         // when
-        val metadata = useCase(TestCall.oneOnOneEstablishedCall(), callEndedReason = 2)
+        val metadata = useCase(callWithOwner(), callEndedReason = 2)
 
         // then
         assertEquals(2, metadata.callEndReason)
@@ -54,9 +56,9 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
             RecentlyEndedCallMetadata.CallDetails(
                 isCallScreenShare = false,
                 callScreenShareUniques = 0,
-                isOutgoingCall = false,
+                isOutgoingCall = true,
                 callDurationInSeconds = 0L,
-                callParticipantsCount = 1,
+                callParticipantsCount = 2,
                 conversationServices = 0,
                 callAVSwitchToggle = false,
                 callVideoEnabled = false
@@ -82,7 +84,7 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
             .arrange()
 
         // when
-        val metadata = useCase(TestCall.oneOnOneEstablishedCall(), callEndedReason = 2)
+        val metadata = useCase(callWithOwner(), callEndedReason = 2)
 
         // then
         assertEquals(1, metadata.conversationDetails.conversationGuests)
@@ -97,7 +99,7 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
             .arrange()
 
         // when
-        val metadata = useCase(TestCall.oneOnOneEstablishedCall().copy(callerId = CALLER_ID.copy(value = "external")), callEndedReason = 2)
+        val metadata = useCase(callWithOwner().copy(callerId = CALLER_ID.copy(value = "external")), callEndedReason = 2)
 
         // then
         assertEquals(false, metadata.callDetails.isOutgoingCall)
@@ -140,5 +142,29 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
             observeConversationMembers = observeConversationMembers,
             getSelf = getSelf
         )
+    }
+
+    private companion object {
+        fun callWithOwner(): Call {
+            return TestCall.oneOnOneEstablishedCall()
+                .copy(
+                    callerId = CALLER_ID.copy(value = "ownerId"),
+                    participants = TestCall.oneOnOneEstablishedCall().participants.plus(
+                        Participant(
+                            id = CALLER_ID.copy(value = "ownerId"),
+                            clientId = "abcd",
+                            isMuted = true,
+                            isCameraOn = false,
+                            isSharingScreen = false,
+                            hasEstablishedAudio = true,
+                            name = "User Name",
+                            avatarAssetId = null,
+                            userType = UserType.OWNER,
+                            isSpeaking = false,
+                            accentId = 0
+                        )
+                    )
+                )
+        }
     }
 }
