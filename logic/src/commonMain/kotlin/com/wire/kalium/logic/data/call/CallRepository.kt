@@ -74,6 +74,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -135,6 +136,9 @@ interface CallRepository {
     suspend fun advanceEpoch(conversationId: ConversationId)
     fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
     suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
+
+    suspend fun updateRecentlyEndedCall(conversationId: ConversationId, callMetadata: CallMetadata, callEndReason: Int)
+    suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCall>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -163,25 +167,47 @@ internal class CallDataSource(
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
     private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
+    private val _recentlyEndedCallFlow = MutableSharedFlow<RecentlyEndedCall>(
+        extraBufferCapacity = 1
+    )
 
     override suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?> = _callMetadataProfile.map {
-        it[conversationId]?.let { currentCall ->
-            Call(
-                conversationId = conversationId,
-                status = currentCall.callStatus,
-                isMuted = currentCall.isMuted,
-                isCameraOn = currentCall.isCameraOn,
-                isCbrEnabled = currentCall.isCbrEnabled,
-                callerId = currentCall.callerId,
-                conversationName = currentCall.conversationName,
-                conversationType = currentCall.conversationType,
-                callerName = currentCall.callerName,
-                callerTeamName = currentCall.callerTeamName,
-                establishedTime = currentCall.establishedTime,
-                participants = currentCall.getFullParticipants(),
-                maxParticipants = currentCall.maxParticipants
+        it[conversationId]?.mapCallMetadataToCall(conversationId)
+    }
+
+    override suspend fun updateRecentlyEndedCall(
+        conversationId: ConversationId,
+        callMetadata: CallMetadata,
+        callEndReason: Int
+    ) {
+        _recentlyEndedCallFlow.tryEmit(
+            RecentlyEndedCall(
+                call = callMetadata.mapCallMetadataToCall(conversationId),
+                callEndedCause = callEndReason
             )
-        }
+        )
+    }
+
+    private fun CallMetadata.mapCallMetadataToCall(conversationId: ConversationId): Call {
+        return Call(
+            conversationId = conversationId,
+            status = callStatus,
+            isMuted = isMuted,
+            isCameraOn = isCameraOn,
+            isCbrEnabled = isCbrEnabled,
+            callerId = callerId,
+            conversationName = conversationName,
+            conversationType = conversationType,
+            callerName = callerName,
+            callerTeamName = callerTeamName,
+            establishedTime = establishedTime,
+            participants = getFullParticipants(),
+            maxParticipants = maxParticipants
+        )
+    }
+
+    override suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCall> {
+        return _recentlyEndedCallFlow
     }
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {

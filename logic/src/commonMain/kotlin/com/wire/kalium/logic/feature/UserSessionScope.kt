@@ -178,6 +178,8 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
+import com.wire.kalium.logic.feature.call.usecase.GetRecentlyEndedCallMetadataUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetRecentlyEndedCallMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClientScope
@@ -2089,6 +2091,12 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository,
             checkRevocationList,
             userScopedLogger
+        )
+
+    val getRecentlyEndedCallMetadata: GetRecentlyEndedCallMetadataUseCase
+        get() = GetRecentlyEndedCallMetadataUseCaseImpl(
+            observeConversationMembers = conversations.observeConversationMembers,
+            getSelf = users.getSelfUser
         )
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase

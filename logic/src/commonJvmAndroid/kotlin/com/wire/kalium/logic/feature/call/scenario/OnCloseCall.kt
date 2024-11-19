@@ -62,6 +62,7 @@ class OnCloseCall(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {
+            val callMetadata = callRepository.getCallMetadataProfile()[conversationIdWithDomain]
 
             val isConnectedToInternet =
                 networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
@@ -78,7 +79,15 @@ class OnCloseCall(
                 status = callStatus
             )
 
-            if (callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.protocol is Conversation.ProtocolInfo.MLS) {
+            callMetadata?.let {
+                callRepository.updateRecentlyEndedCall(
+                    conversationId = conversationIdWithDomain,
+                    callMetadata = callMetadata,
+                    callEndReason = reason
+                )
+            }
+
+            if (callMetadata?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)
             }
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")

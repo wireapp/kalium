@@ -34,6 +34,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
@@ -335,6 +336,50 @@ class OnCloseCallTest {
 
             coVerify {
                 callRepository.persistMissedCall(conversationId)
+            }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenCloseCallInvoked_whenClosedCallMetadataIsPresent_thenUpdateRecentEndedCallInvoked() =
+        testScope.runTest {
+            val reason = CallClosedReason.CANCELLED.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.updateRecentlyEndedCall(any(), any(), any())
+            }.wasInvoked(once)
+        }
+
+    @Test
+    fun givenCloseCallInvoked_whenClosedCallMetadataIsAbsent_thenUpdateRecentEndedCallNotInvoked() =
+        testScope.runTest {
+            val reason = CallClosedReason.CANCELLED.avsValue
+
+            every {
+                callRepository.getCallMetadataProfile()
+            }.returns(CallMetadataProfile(emptyMap()))
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                callRepository.updateRecentlyEndedCall(any(), any(), any())
             }.wasNotInvoked()
         }
 
