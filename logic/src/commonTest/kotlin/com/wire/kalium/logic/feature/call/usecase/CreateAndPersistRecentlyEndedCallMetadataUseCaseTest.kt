@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
@@ -37,13 +36,11 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
-class GetRecentlyEndedCallMetadataUseCaseTest {
+class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
     @Test
     fun givenCallAndEndCallReaction_whenUseCaseInvoked_thenRecentlyCallMetadataIsProperlyUpdated() = runTest {
@@ -137,11 +134,6 @@ class GetRecentlyEndedCallMetadataUseCaseTest {
         )
 
         // then
-        val data = DEFAULT_ENDED_CALL_METADATA.copy(
-            callDetails = DEFAULT_ENDED_CALL_METADATA.callDetails.copy(
-                isOutgoingCall = false
-            )
-        )
         coVerify {
             arrangement.callRepository.updateRecentlyEndedCall(
                 DEFAULT_ENDED_CALL_METADATA.copy(

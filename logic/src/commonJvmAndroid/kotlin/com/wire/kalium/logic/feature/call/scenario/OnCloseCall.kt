@@ -81,12 +81,14 @@ class OnCloseCall(
                 status = callStatus
             )
 
-            createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
-
             if (callMetadata?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)
             }
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
+        }
+
+        scope.launch {
+            createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
         }
     }
 
