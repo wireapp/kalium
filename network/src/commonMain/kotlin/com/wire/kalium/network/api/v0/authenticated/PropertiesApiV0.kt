@@ -22,12 +22,14 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import kotlinx.serialization.encodeToString
 
 internal open class PropertiesApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -51,5 +53,10 @@ internal open class PropertiesApiV0 internal constructor(
 
     override suspend fun getLabels(): NetworkResponse<LabelListResponseDTO> = wrapKaliumResponse {
         httpClient.get("$PATH_PROPERTIES/$PATH_LABELS")
+    }
+
+    override suspend fun updateLabels(labelList: LabelListResponseDTO): NetworkResponse<Unit> = wrapKaliumResponse {
+        println("KBX serialized labels ${KtxSerializer.json.encodeToString(labelList)}")
+        httpClient.put("$PATH_PROPERTIES/$PATH_LABELS") { setBody(labelList) }
     }
 }

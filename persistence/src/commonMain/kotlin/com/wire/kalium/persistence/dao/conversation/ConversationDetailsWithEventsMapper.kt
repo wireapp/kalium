@@ -80,6 +80,7 @@ data object ConversationDetailsWithEventsMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
+        isFavorite: Long,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
         unreadMentionsCount: Long?,
@@ -154,6 +155,7 @@ data object ConversationDetailsWithEventsMapper {
             legalHoldStatus = legalHoldStatus,
             selfUserId = selfUserId,
             interactionEnabled = interactionEnabled,
+            isFavorite = isFavorite
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(
             conversationId = qualifiedId,
