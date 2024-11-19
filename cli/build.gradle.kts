@@ -44,6 +44,7 @@ tasks.jar {
 kotlin {
     applyDefaultHierarchyTemplate()
     val jvmTarget = jvm {
+        withJava()
         commonJvmConfig(includeNativeInterop = false)
         tasks.named("run", JavaExec::class) {
             isIgnoreExitValue = true
@@ -75,6 +76,7 @@ kotlin {
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.mordant)
+                implementation(libs.mordant.coroutines)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxIO)
             }
