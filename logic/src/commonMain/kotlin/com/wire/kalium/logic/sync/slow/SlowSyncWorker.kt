@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
@@ -71,6 +72,7 @@ internal class SlowSyncWorkerImpl(
     private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
+    private val syncConversationFolders: SyncConversationFoldersUseCase,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
@@ -102,6 +104,7 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
             .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
+            .continueWithStep(SlowSyncStep.CONVERSATION_FOLDERS, syncConversationFolders::invoke)
             .flatMap {
                 saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
             }

@@ -210,7 +210,7 @@ internal class SlowSyncManager(
          * Useful when a new step is added to Slow Sync, or when we fix some bug in Slow Sync,
          * and we'd like to get all users to take advantage of the fix.
          */
-        const val CURRENT_VERSION = 7
+        const val CURRENT_VERSION = 8
 
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes

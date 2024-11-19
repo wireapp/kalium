@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
@@ -28,7 +27,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionDaoTest : BaseDatabaseTest() {
 
     private val connection1 = connectionEntity("1")

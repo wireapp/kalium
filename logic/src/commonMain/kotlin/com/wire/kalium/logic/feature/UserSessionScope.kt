@@ -78,6 +78,8 @@ import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderDataSource
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
@@ -206,6 +208,8 @@ import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
+import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCase
+import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
@@ -615,7 +619,8 @@ class UserSessionScope internal constructor(
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
             authenticatedNetworkContainer.propertiesApi,
-            userConfigRepository
+            userConfigRepository,
+            userId
         )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
@@ -713,6 +718,13 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
+        )
+
+    private val conversationFolderRepository: ConversationFolderRepository
+        get() = ConversationFolderDataSource(
+            userStorage.database.conversationFolderDAO,
+            authenticatedNetworkContainer.propertiesApi,
+            userId
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -957,6 +969,9 @@ class UserSessionScope internal constructor(
             systemMessageInserter
         )
 
+    private val syncConversationFolders: SyncConversationFoldersUseCase
+        get() = SyncConversationFoldersUseCaseImpl(conversationFolderRepository)
+
     private val syncConnections: SyncConnectionsUseCase
         get() = SyncConnectionsUseCaseImpl(
             connectionRepository = connectionRepository
@@ -1075,7 +1090,8 @@ class UserSessionScope internal constructor(
             syncContacts,
             joinExistingMLSConversations,
             fetchLegalHoldForSelfUserFromRemoteUseCase,
-            oneOnOneResolver
+            oneOnOneResolver,
+            syncConversationFolders
         )
     }
 
@@ -1589,7 +1605,7 @@ class UserSessionScope internal constructor(
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
-        get() = UserPropertiesEventReceiverImpl(userConfigRepository)
+        get() = UserPropertiesEventReceiverImpl(userConfigRepository, conversationFolderRepository)
 
     private val federationEventReceiver: FederationEventReceiver
         get() = FederationEventReceiverImpl(
@@ -1757,6 +1773,7 @@ class UserSessionScope internal constructor(
             conversationGroupRepository,
             connectionRepository,
             userRepository,
+            conversationFolderRepository,
             syncManager,
             mlsConversationRepository,
             clientIdProvider,

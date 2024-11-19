@@ -25,9 +25,9 @@ import kotlinx.serialization.modules.polymorphic
 internal val eventSerializationModule = SerializersModule {
     polymorphic(EventContentDTO::class) {
         polymorphic(FeatureConfigData::class) {
-            default { FeatureConfigData.Unknown.serializer() }
+            defaultDeserializer { FeatureConfigData.Unknown.serializer() }
         }
 
-        default { EventContentDTO.Unknown.serializer() }
+        defaultDeserializer { EventContentDTO.Unknown.serializer() }
     }
 }
