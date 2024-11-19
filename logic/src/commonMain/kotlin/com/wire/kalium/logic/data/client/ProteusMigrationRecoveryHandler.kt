@@ -41,8 +41,8 @@ internal class ProteusMigrationRecoveryHandlerImpl(
         try {
             kaliumLogger.d("Starting to clear client cached clientId")
             cachedClientIdClearer()
-            kaliumLogger.d("Starting to clear current client id")
-            clientRepository.clearCurrentClientId()
+//             kaliumLogger.d("Starting to clear current client id")
+//             clientRepository.clearCurrentClientId()
             kaliumLogger.d("Starting to clear retained client id")
             clientRepository.clearRetainedClientId()
             kaliumLogger.d("Starting to clear firebase token")
