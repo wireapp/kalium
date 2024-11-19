@@ -22,5 +22,5 @@ import com.wire.kalium.network.api.v4.authenticated.AccessTokenApiV4
 import io.ktor.client.HttpClient
 
 internal open class AccessTokenApiV5 internal constructor(
-    private val httpClient: HttpClient
+    httpClient: HttpClient
 ) : AccessTokenApiV4(httpClient)
