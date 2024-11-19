@@ -59,10 +59,17 @@ internal class NewConversationEventHandlerImpl(
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(selfUserTeamId, event)
                     .flatMap {
-                        conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
+                        conversationRepository.updateConversationModifiedDate(
+                            event.conversationId,
+                            DateTimeUtil.currentInstant()
+                        )
                     }
                     .flatMap {
-                        userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
+                        userRepository.fetchUsersIfUnknownByIds(
+                            event.conversation.members.otherMembers.map {
+                                it.id.toModel()
+                            }.toSet()
+                        )
                     }
                     .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
@@ -73,9 +80,13 @@ internal class NewConversationEventHandlerImpl(
             }
     }
 
-    private suspend fun resolveConversationIfOneOnOne(selfUserTeamId: TeamId?, event: Event.Conversation.NewConversation) =
+    private suspend fun resolveConversationIfOneOnOne(
+        selfUserTeamId: TeamId?,
+        event: Event.Conversation.NewConversation
+    ) =
         if (event.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
-            val otherUserId = event.conversation.members.otherMembers.first().id.toModel()
+            val otherUserId =
+                event.conversation.members.otherMembers.first().id.toModel()
             oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                 userId = otherUserId,
                 invalidateCurrentKnownProtocols = true
@@ -94,13 +105,20 @@ internal class NewConversationEventHandlerImpl(
         event: Event.Conversation.NewConversation
     ) {
         if (isNewUnhandledConversation) {
-            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation, event.dateTime)
+            newGroupConversationSystemMessagesCreator.conversationStarted(
+                event.senderUserId,
+                event.conversation,
+                event.dateTime
+            )
             newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 event.conversationId.toDao(),
                 event.conversation.members.otherMembers.map { it.id.toModel() },
                 event.dateTime
             )
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation, event.dateTime)
+            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
+                event.conversation,
+                event.dateTime
+            )
             newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                 event.conversation.id.toModel(),
                 event.dateTime
