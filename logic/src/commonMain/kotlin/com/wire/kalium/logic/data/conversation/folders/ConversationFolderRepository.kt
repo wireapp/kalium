@@ -27,9 +27,11 @@ import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -57,6 +59,7 @@ internal class ConversationFolderDataSource internal constructor(
     private val conversationFolderDAO: ConversationFolderDAO,
     private val userPropertiesApi: PropertiesApi,
     private val selfUserId: QualifiedID,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) : ConversationFolderRepository {
 
@@ -72,7 +75,7 @@ internal class ConversationFolderDataSource internal constructor(
     override suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
         conversationFolderDAO.observeConversationListFromFolder(folderId).map { conversationDetailsWithEventsEntityList ->
             conversationDetailsWithEventsEntityList.map {
-                conversationMapper.fromDaoModelToDetailsWithEvents(it)
+                conversationMapper.fromDaoModelToDetailsWithEvents(it, selfTeamIdProvider().getOrNull())
             }
         }
 

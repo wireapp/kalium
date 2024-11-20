@@ -720,9 +720,10 @@ class UserSessionScope internal constructor(
 
     private val conversationFolderRepository: ConversationFolderRepository
         get() = ConversationFolderDataSource(
-            userStorage.database.conversationFolderDAO,
-            authenticatedNetworkContainer.propertiesApi,
-            userId
+            conversationFolderDAO = userStorage.database.conversationFolderDAO,
+            userPropertiesApi = authenticatedNetworkContainer.propertiesApi,
+            selfUserId = userId,
+            selfTeamIdProvider = selfTeamId
         )
 
     private val conversationGroupRepository: ConversationGroupRepository

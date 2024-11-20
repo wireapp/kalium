@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.conversation
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingData
 import app.cash.paging.map
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
@@ -37,7 +39,8 @@ interface ConversationRepositoryExtensions {
 
 class ConversationRepositoryExtensionsImpl internal constructor(
     private val conversationDAO: ConversationDAO,
-    private val conversationMapper: ConversationMapper
+    private val conversationMapper: ConversationMapper,
+    private val selfTeamIdProvider: SelfTeamIdProvider
 ) : ConversationRepositoryExtensions {
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
@@ -61,7 +64,8 @@ class ConversationRepositoryExtensionsImpl internal constructor(
             pagingData
                 .map { conversationDetailsWithEventsEntity ->
                     conversationMapper.fromDaoModelToDetailsWithEvents(
-                        conversationDetailsWithEventsEntity
+                        daoModel = conversationDetailsWithEventsEntity,
+                        selfUserTeamId = selfTeamIdProvider().getOrNull()
                     )
                 }
         }

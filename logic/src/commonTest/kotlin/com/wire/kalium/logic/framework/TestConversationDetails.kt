@@ -45,8 +45,8 @@ object TestConversationDetails {
 
     val CONVERSATION_GROUP = ConversationDetails.Group(
         conversation = TestConversation.GROUP(),
-        isSelfUserCreator = true,
         isSelfUserMember = true,
+        selfUserTeamId = null,
         selfRole = Conversation.Member.Role.Member
     )
 

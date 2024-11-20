@@ -68,8 +68,11 @@ interface ConversationMapper {
     fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
-    fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails
-    fun fromDaoModelToDetailsWithEvents(daoModel: ConversationDetailsWithEventsEntity): ConversationDetailsWithEvents
+    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, selfUserTeamId: TeamId?): ConversationDetails
+    fun fromDaoModelToDetailsWithEvents(
+        daoModel: ConversationDetailsWithEventsEntity,
+        selfUserTeamId: TeamId?
+    ): ConversationDetailsWithEvents
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -233,7 +236,10 @@ internal class ConversationMapperImpl(
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails =
+    override fun fromDaoModelToDetails(
+        daoModel: ConversationViewEntity,
+        selfUserTeamId: TeamId?
+    ): ConversationDetails =
         with(daoModel) {
             when (type) {
                 ConversationEntity.Type.SELF -> {
@@ -271,7 +277,7 @@ internal class ConversationMapperImpl(
                         conversation = fromConversationViewToEntity(daoModel),
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         isSelfUserMember = isMember,
-                        isSelfUserCreator = isCreator == 1L,
+                        selfUserTeamId = selfUserTeamId,
                         selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) }
                     )
                 }
@@ -318,9 +324,12 @@ internal class ConversationMapperImpl(
             }
         }
 
-    override fun fromDaoModelToDetailsWithEvents(daoModel: ConversationDetailsWithEventsEntity): ConversationDetailsWithEvents =
-        ConversationDetailsWithEvents(
-            conversationDetails = fromDaoModelToDetails(daoModel.conversationViewEntity),
+    override fun fromDaoModelToDetailsWithEvents(
+        daoModel: ConversationDetailsWithEventsEntity,
+        selfUserTeamId: TeamId?
+    ): ConversationDetailsWithEvents {
+        return ConversationDetailsWithEvents(
+            conversationDetails = fromDaoModelToDetails(daoModel.conversationViewEntity, selfUserTeamId),
             unreadEventCount = daoModel.unreadEvents.unreadEvents.mapKeys {
                 when (it.key) {
                     UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
@@ -338,6 +347,7 @@ internal class ConversationMapperImpl(
             },
             hasNewActivitiesToShow = daoModel.hasNewActivitiesToShow
         )
+    }
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
         ProposalTimer(idMapper.fromGroupIDEntity(daoModel.groupID), daoModel.firingDate)

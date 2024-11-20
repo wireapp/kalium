@@ -299,7 +299,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         override val conversation: Conversation,
         val hasOngoingCall: Boolean = false,
         val isSelfUserMember: Boolean,
-        val isSelfUserCreator: Boolean,
+        val selfUserTeamId: TeamId?,
         val selfRole: Conversation.Member.Role?
 //         val isTeamAdmin: Boolean, TODO kubaz
     ) : ConversationDetails(conversation)

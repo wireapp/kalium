@@ -385,7 +385,7 @@ class ConversationMapperTest {
             messageDraft = messageDraft,
             unreadEvents = ConversationUnreadEventEntity(TestConversation.VIEW_ENTITY.id, mapOf()),
         )
-        assertion(conversationMapper.fromDaoModelToDetailsWithEvents(conversation).lastMessage)
+        assertion(conversationMapper.fromDaoModelToDetailsWithEvents(conversation, selfUserTeamId = null).lastMessage)
     }
 
     @Test

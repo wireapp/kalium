@@ -174,7 +174,7 @@ class CallRepositoryTest {
                             Arrangement.groupConversation,
                             false,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
+                            selfUserTeamId = null,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -212,7 +212,7 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
+                            selfUserTeamId = null,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -266,7 +266,7 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
+                            selfUserTeamId = null,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -309,7 +309,7 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
+                            selfUserTeamId = null,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -366,7 +366,7 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
+                            selfUserTeamId = null,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )

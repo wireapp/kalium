@@ -22,6 +22,7 @@ import app.cash.paging.Pager
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingSource
 import app.cash.paging.PagingState
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestMessage
@@ -91,9 +92,12 @@ class ConversationRepositoryExtensionsTest {
         private val conversationMapper: ConversationMapper = mock(ConversationMapper::class)
 
         @Mock
+        private val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+
+        @Mock
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
         private val conversationRepositoryExtensions: ConversationRepositoryExtensions by lazy {
-            ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
+            ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper, selfTeamIdProvider)
         }
 
         init {
@@ -101,7 +105,7 @@ class ConversationRepositoryExtensionsTest {
                 messageMapper.fromEntityToMessage(any())
             }.returns(TestMessage.TEXT_MESSAGE)
             every {
-                conversationMapper.fromDaoModelToDetails(any())
+                conversationMapper.fromDaoModelToDetails(any(), any())
             }.returns(TestConversationDetails.CONVERSATION_GROUP)
             every {
                 conversationDAO.platformExtensions

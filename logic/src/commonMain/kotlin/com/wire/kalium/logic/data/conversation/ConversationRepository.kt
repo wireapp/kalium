@@ -337,8 +337,11 @@ internal class ConversationDataSource internal constructor(
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationRepository {
-    override val extensions: ConversationRepositoryExtensions =
-        ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
+    override val extensions: ConversationRepositoryExtensions = ConversationRepositoryExtensionsImpl(
+        conversationDAO = conversationDAO,
+        conversationMapper = conversationMapper,
+        selfTeamIdProvider = selfTeamIdProvider
+    )
 
     // region Get/Observe by id
 
@@ -366,7 +369,7 @@ internal class ConversationDataSource internal constructor(
             .map { eitherConversationView ->
                 eitherConversationView.flatMap {
                     try {
-                        Either.Right(conversationMapper.fromDaoModelToDetails(it))
+                        Either.Right(conversationMapper.fromDaoModelToDetails(it, selfTeamIdProvider().getOrNull()))
                     } catch (error: IllegalArgumentException) {
                         kaliumLogger.e("require field in conversation Details", error)
                         Either.Left(StorageFailure.DataNotFound)
@@ -529,7 +532,9 @@ internal class ConversationDataSource internal constructor(
         conversationFilter: ConversationFilter
     ): Flow<List<ConversationDetails>> =
         conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).map { conversationViewEntityList ->
-            conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
+            conversationViewEntityList.map { conversationViewEntity ->
+                conversationMapper.fromDaoModelToDetails(conversationViewEntity, selfTeamIdProvider().getOrNull())
+            }
         }
 
     override suspend fun observeConversationListDetailsWithEvents(
@@ -553,7 +558,8 @@ internal class ConversationDataSource internal constructor(
                         lastMessage = lastMessageMap[conversation.id],
                         messageDraft = messageDraftMap[conversation.id],
                         unreadEvents = unreadEventsMap[conversation.id] ?: ConversationUnreadEventEntity(conversation.id, mapOf()),
-                    )
+                    ),
+                    selfTeamIdProvider().getOrNull()
                 )
             }
         }
@@ -1010,7 +1016,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
         wrapStorageRequest { conversationDAO.getConversationDetailsByGroupID(mlsGroupId.value) }
-            .map { conversationMapper.fromDaoModelToDetails(it) }
+            .map { conversationMapper.fromDaoModelToDetails(it, selfTeamIdProvider().getOrNull()) }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         conversationDAO.observeUnreadArchivedConversationsCount()

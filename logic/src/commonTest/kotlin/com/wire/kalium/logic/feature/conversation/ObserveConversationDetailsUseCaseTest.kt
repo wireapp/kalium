@@ -81,7 +81,7 @@ class ObserveConversationDetailsUseCaseTest {
                     ConversationDetails.Group(
                         conversation,
                         isSelfUserMember = true,
-                        isSelfUserCreator = true,
+                        selfUserTeamId = null,
                         selfRole = Conversation.Member.Role.Member
                     )
                 ),
@@ -89,7 +89,7 @@ class ObserveConversationDetailsUseCaseTest {
                     ConversationDetails.Group(
                         conversation.copy(name = "New Name"),
                         isSelfUserMember = true,
-                        isSelfUserCreator = true,
+                        selfUserTeamId = null,
                         selfRole = Conversation.Member.Role.Member
                     )
                 )

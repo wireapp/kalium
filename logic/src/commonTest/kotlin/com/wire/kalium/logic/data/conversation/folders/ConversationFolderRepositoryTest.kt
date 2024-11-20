@@ -20,9 +20,11 @@ package com.wire.kalium.logic.data.conversation.folders
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
@@ -81,13 +83,17 @@ class ConversationFolderRepositoryTest {
 
         val conversations = listOf(conversation)
         val arrangement = Arrangement().withConversationsFromFolder(folderId, conversations)
+            .withEmptySelfTeamId()
 
         // when
         val resultFlow = arrangement.repository.observeConversationsFromFolder(folderId)
 
         // then
         val emittedConversations = resultFlow.first()
-        assertEquals(arrangement.conversationMapper.fromDaoModelToDetailsWithEvents(conversations.first()), emittedConversations.first())
+        assertEquals(
+            arrangement.conversationMapper.fromDaoModelToDetailsWithEvents(conversations.first(), selfUserTeamId = null),
+            emittedConversations.first()
+        )
     }
 
     @Test
@@ -163,6 +169,9 @@ class ConversationFolderRepositoryTest {
         @Mock
         val userPropertiesApi = mock(PropertiesApi::class)
 
+        @Mock
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
+
         private val selfUserId = TestUser.SELF.id
 
         val conversationMapper = MapperProvider.conversationMapper(selfUserId)
@@ -170,7 +179,8 @@ class ConversationFolderRepositoryTest {
         val repository = ConversationFolderDataSource(
             conversationFolderDAO = conversationFolderDAO,
             userPropertiesApi = userPropertiesApi,
-            selfUserId = selfUserId
+            selfUserId = selfUserId,
+            selfTeamIdProvider = selfTeamIdProvider
         )
 
         suspend fun withFavoriteConversationFolder(folder: ConversationFolderEntity): Arrangement {
@@ -180,6 +190,11 @@ class ConversationFolderRepositoryTest {
 
         suspend fun withConversationsFromFolder(folderId: String, conversations: List<ConversationDetailsWithEventsEntity>): Arrangement {
             coEvery { conversationFolderDAO.observeConversationListFromFolder(folderId) }.returns(flowOf(conversations))
+            return this
+        }
+
+        suspend fun withEmptySelfTeamId(): Arrangement {
+            coEvery { selfTeamIdProvider() }.returns(Either.Right(null))
             return this
         }
 
