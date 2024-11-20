@@ -35,7 +35,7 @@ import kotlin.test.assertTrue
 class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
 
     @Test
-    fun `given API version below minimum when invoking then returns false`() = runTest {
+    fun givenAPIVersionBelowMinimum_whenInvoking_thenReturnsFalse() = runTest {
         // Given
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturning(Either.Right(6))
@@ -52,7 +52,7 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     }
 
     @Test
-    fun `given API version equal to minimum when invoking then returns true`() = runBlocking {
+    fun givenAPIVersionEqualToMinimum_whenInvoking_thenReturnsTrue() = runBlocking {
         // Given
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturning(Either.Right(7))
@@ -69,7 +69,7 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     }
 
     @Test
-    fun `given API version above minimum when invoking then returns true`() = runBlocking {
+    fun givenAPIVersionAboveMinimum_whenInvoking_thenReturnsTrue() = runBlocking {
         // Given
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturning(Either.Right(8))
@@ -86,7 +86,7 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     }
 
     @Test
-    fun `given error fetching API version when invoking then returns false`() = runTest {
+    fun givenErrorFetchingAPIVersion_whenInvoking_thenReturnsFalse() = runTest {
         // Given
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturning(Either.Left(CoreFailure.SyncEventOrClientNotFound))
