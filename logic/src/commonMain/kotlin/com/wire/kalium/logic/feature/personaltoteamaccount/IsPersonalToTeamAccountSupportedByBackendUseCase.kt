@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.personaltoteamaccount
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi.Companion.MIN_API_VERSION
 
 /**
  * Use case to check if the backend supports personal to team account migration.
@@ -36,7 +35,7 @@ internal class IsPersonalToTeamAccountSupportedByBackendUseCaseImpl(
     override suspend fun invoke(): Boolean {
         return serverConfigRepository.commonApiVersion(userId.domain).fold(
             { false },
-            { it >= MIN_API_VERSION }
+            { it >= serverConfigRepository.minimumApiVersionForPersonalToTeamAccountMigration }
         )
     }
 }

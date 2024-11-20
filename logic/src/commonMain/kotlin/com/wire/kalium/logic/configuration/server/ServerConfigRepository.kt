@@ -31,8 +31,9 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi.Companion.MIN_API_VERSION
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -40,6 +41,8 @@ import io.ktor.http.Url
 import kotlinx.coroutines.withContext
 
 interface ServerConfigRepository {
+    val minimumApiVersionForPersonalToTeamAccountMigration: Int
+
     suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>
     suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>
 
@@ -72,6 +75,8 @@ internal class ServerConfigDataSource(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ServerConfigRepository {
+
+    override val minimumApiVersionForPersonalToTeamAccountMigration = MIN_API_VERSION
 
     override suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
         wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(serverLinks)) }.fold({
@@ -128,8 +133,8 @@ internal class ServerConfigDataSource(
             }
 
     override suspend fun updateConfigApiVersion(serverConfig: ServerConfig): Either<CoreFailure, Unit> =
-    fetchMetadata(serverConfig.links)
-    .flatMap { wrapStorageRequest { dao.updateApiVersion(serverConfig.id, it.commonApiVersion.version) } }
+        fetchMetadata(serverConfig.links)
+            .flatMap { wrapStorageRequest { dao.updateApiVersion(serverConfig.id, it.commonApiVersion.version) } }
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(userId.toDao()) }

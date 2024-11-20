@@ -24,6 +24,7 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
@@ -38,7 +39,8 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     fun givenAPIVersionBelowMinimum_whenInvoking_thenReturnsFalse() = runTest {
         // Given
         val (arrangement, useCase) = Arrangement()
-            .withRepositoryReturning(Either.Right(6))
+            .withRepositoryReturningMinimumApiVersion()
+            .withRepositoryReturningCommonApiVersion(Either.Right(6))
             .arrange()
 
         // When
@@ -55,7 +57,8 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     fun givenAPIVersionEqualToMinimum_whenInvoking_thenReturnsTrue() = runBlocking {
         // Given
         val (arrangement, useCase) = Arrangement()
-            .withRepositoryReturning(Either.Right(7))
+            .withRepositoryReturningMinimumApiVersion()
+            .withRepositoryReturningCommonApiVersion(Either.Right(7))
             .arrange()
 
         // When
@@ -72,7 +75,8 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     fun givenAPIVersionAboveMinimum_whenInvoking_thenReturnsTrue() = runBlocking {
         // Given
         val (arrangement, useCase) = Arrangement()
-            .withRepositoryReturning(Either.Right(8))
+            .withRepositoryReturningMinimumApiVersion()
+            .withRepositoryReturningCommonApiVersion(Either.Right(8))
             .arrange()
 
         // When
@@ -89,7 +93,8 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     fun givenErrorFetchingAPIVersion_whenInvoking_thenReturnsFalse() = runTest {
         // Given
         val (arrangement, useCase) = Arrangement()
-            .withRepositoryReturning(Either.Left(CoreFailure.SyncEventOrClientNotFound))
+            .withRepositoryReturningMinimumApiVersion()
+            .withRepositoryReturningCommonApiVersion(Either.Left(CoreFailure.SyncEventOrClientNotFound))
             .arrange()
 
         // When
@@ -107,15 +112,25 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
         @Mock
         val serverConfigRepository = mock(ServerConfigRepository::class)
 
-        suspend fun withRepositoryReturning(value: Either<CoreFailure, Int>) = apply {
+        suspend fun withRepositoryReturningCommonApiVersion(value: Either<CoreFailure, Int>) = apply {
             coEvery {
                 serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
             }.returns(value)
+        }
+
+        fun withRepositoryReturningMinimumApiVersion() = apply {
+            every {
+                serverConfigRepository.minimumApiVersionForPersonalToTeamAccountMigration
+            }.returns(MIN_API_VERSION)
         }
 
         fun arrange() = this to IsPersonalToTeamAccountSupportedByBackendUseCaseImpl(
             serverConfigRepository = serverConfigRepository,
             userId = TestUser.USER_ID
         )
+    }
+
+    companion object {
+        private const val MIN_API_VERSION = 7
     }
 }
