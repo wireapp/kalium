@@ -51,6 +51,8 @@ copy_api_files() {
       new_content=$(echo "$new_content" | sed "s/\(: \)\(.*\)$previousApiVersionUpper/\1\2$currentApiVersionUpper/g")
       # Make class definitions empty inside {}
       new_content=$(echo "$new_content" | perl -0777 -pe "s|({[\W\w]*\})|\2|g")
+      # Remove all private val or val
+      new_content=$(echo "$new_content" | sed "s/\(private \)*val //g")
       # New file name with newApiVersion
       new_filename=$(basename "$file" | sed "s/$currentApiVersionUpper/$newApiVersionUpper/g")
       echo "$new_content" >"$target_dir/$new_filename"
@@ -106,4 +108,5 @@ fi
 
 echo "!!!!!!!"
 echo "You must add the new API version to the list of supported API versions in the AuthenticatedNetworkContainer.create() and UnauthenticatedNetworkContainer.create() methods."
+echo "Check the generated files for unused parameters."
 echo "!!!!!!!"
