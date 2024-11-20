@@ -44,7 +44,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
     override suspend fun invoke(conversationId: ConversationId, callEndedReason: Int) {
         val call = callRepository.observeCurrentCall(conversationId).first()
         call?.createMetadata(callEndedReason = callEndedReason)?.let { metadata ->
-            callRepository.updateRecentlyEndedCall(metadata)
+            callRepository.updateRecentlyEndedCallMetadata(metadata)
         }
     }
 

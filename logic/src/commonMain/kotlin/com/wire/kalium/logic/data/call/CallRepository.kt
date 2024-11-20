@@ -137,8 +137,8 @@ interface CallRepository {
     fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
     suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
 
-    suspend fun updateRecentlyEndedCall(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
-    suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCallMetadata>
+    suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
+    suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -175,7 +175,7 @@ internal class CallDataSource(
         it[conversationId]?.mapCallMetadataToCall(conversationId)
     }
 
-    override suspend fun updateRecentlyEndedCall(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
+    override suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
         _recentlyEndedCallFlow.tryEmit(recentlyEndedCallMetadata)
     }
 
@@ -197,7 +197,7 @@ internal class CallDataSource(
         )
     }
 
-    override suspend fun observeRecentlyEndedCall(): Flow<RecentlyEndedCallMetadata> {
+    override suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata> {
         return _recentlyEndedCallFlow
     }
 

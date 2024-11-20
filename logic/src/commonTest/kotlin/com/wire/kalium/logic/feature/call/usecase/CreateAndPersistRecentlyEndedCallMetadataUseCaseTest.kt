@@ -59,7 +59,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // then
         coVerify {
-            arrangement.callRepository.updateRecentlyEndedCall(DEFAULT_ENDED_CALL_METADATA)
+            arrangement.callRepository.updateRecentlyEndedCallMetadata(DEFAULT_ENDED_CALL_METADATA)
         }.wasInvoked(exactly = once)
     }
 
@@ -80,7 +80,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // then
         coVerify {
-            arrangement.callRepository.updateRecentlyEndedCall(
+            arrangement.callRepository.updateRecentlyEndedCallMetadata(
                 DEFAULT_ENDED_CALL_METADATA.copy(
                     conversationDetails = DEFAULT_ENDED_CALL_METADATA.conversationDetails.copy(
                         conversationGuests = 1
@@ -107,7 +107,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // then
         coVerify {
-            arrangement.callRepository.updateRecentlyEndedCall(
+            arrangement.callRepository.updateRecentlyEndedCallMetadata(
                 DEFAULT_ENDED_CALL_METADATA.copy(
                     conversationDetails = DEFAULT_ENDED_CALL_METADATA.conversationDetails.copy(
                         conversationGuests = 1,
@@ -135,7 +135,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // then
         coVerify {
-            arrangement.callRepository.updateRecentlyEndedCall(
+            arrangement.callRepository.updateRecentlyEndedCallMetadata(
                 DEFAULT_ENDED_CALL_METADATA.copy(
                     callDetails = DEFAULT_ENDED_CALL_METADATA.callDetails.copy(
                         isOutgoingCall = false

@@ -26,14 +26,14 @@ import com.wire.kalium.logic.data.id.ConversationId
  * Use case to observe recently ended call metadata. This gives us all metadata assigned to a call.
  * Used mainly for analytics.
  */
-interface ObserveRecentlyEndedCallUseCase {
+interface ObserveRecentlyEndedCallMetadataUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCallMetadata>
 }
 
-class ObserveRecentlyEndedCallUseCaseImpl internal constructor(
+class ObserveRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
-) : ObserveRecentlyEndedCallUseCase {
+) : ObserveRecentlyEndedCallMetadataUseCase {
     override suspend fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCallMetadata> {
-        return callRepository.observeRecentlyEndedCall()
+        return callRepository.observeRecentlyEndedCallMetadata()
     }
 }
