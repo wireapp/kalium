@@ -34,7 +34,7 @@ interface GetRecentlyEndedCallMetadataUseCase {
     suspend operator fun invoke(call: Call, callEndedReason: Int): RecentlyEndedCallMetadata
 }
 
-class GetRecentlyEndedCallMetadataUseCaseImpl(
+class GetRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val getSelf: GetSelfUserUseCase,
 ) : GetRecentlyEndedCallMetadataUseCase {
