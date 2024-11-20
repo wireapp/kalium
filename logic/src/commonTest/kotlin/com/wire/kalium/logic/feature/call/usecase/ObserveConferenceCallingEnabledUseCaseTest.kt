@@ -117,7 +117,7 @@ class ObserveConferenceCallingEnabledUseCaseTest {
 
         fun withDefaultValue(values: List<Boolean>) = apply {
             every {
-                userConfigRepository.isConferenceCallingEnabledFlow()
+                userConfigRepository.observeConferenceCallingEnabled()
             }.returns(values.map { Either.Right(it) }.asFlow())
         }
 

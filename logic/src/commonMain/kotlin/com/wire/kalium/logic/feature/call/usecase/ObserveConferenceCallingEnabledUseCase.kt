@@ -39,7 +39,7 @@ internal class ObserveConferenceCallingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
 ) : ObserveConferenceCallingEnabledUseCase {
     override suspend fun invoke(): Flow<Unit> {
-        val enabledFlow = userConfigRepository.isConferenceCallingEnabledFlow()
+        val enabledFlow = userConfigRepository.observeConferenceCallingEnabled()
             .map { isEnabled -> isEnabled.fold({ false }, { it }) }
         return enabledFlow
             .zip(enabledFlow.drop(1)) { old, new -> old to new }
