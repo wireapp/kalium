@@ -20,14 +20,13 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.runBlocking
 
 /**
  * Handles the migration of Proteus storage.
  * Meaning, when migration is performed in case there is an error, this handler will be responsible for handling it.
  */
 interface ProteusMigrationRecoveryHandler {
-    suspend fun clearClientData()
+    suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
 }
 
 internal class ProteusMigrationRecoveryHandlerImpl(
@@ -36,19 +35,24 @@ internal class ProteusMigrationRecoveryHandlerImpl(
     private val cachedClientIdClearer: CachedClientIdClearer,
 ) : ProteusMigrationRecoveryHandler {
 
-    override suspend fun clearClientData(): Unit = runBlocking {
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun clearClientData(clearLocalFiles: suspend () -> Unit) {
         // pending? remove most recent prekey id
+        kaliumLogger.withTextTag(TAG).i("Starting the recovery from failed Proteus storage migration")
         try {
-            kaliumLogger.d("Starting to clear client cached clientId")
             cachedClientIdClearer()
-//             kaliumLogger.d("Starting to clear current client id")
 //             clientRepository.clearCurrentClientId()
-            kaliumLogger.d("Starting to clear retained client id")
             clientRepository.clearRetainedClientId()
-            kaliumLogger.d("Starting to clear firebase token")
             pushTokenRepository.setUpdateFirebaseTokenFlag(true)
+            clearLocalFiles()
         } catch (e: Exception) {
-            kaliumLogger.e("Error clearing client data: $e")
+            kaliumLogger.e("$TAG - Fatal, error while clearing client data: $e")
+        } finally {
+            kaliumLogger.withTextTag(TAG).i("Finished the recovery from failed Proteus storage migration")
         }
+    }
+
+    private companion object {
+        const val TAG = "ProteusMigrationRecoveryHandler"
     }
 }

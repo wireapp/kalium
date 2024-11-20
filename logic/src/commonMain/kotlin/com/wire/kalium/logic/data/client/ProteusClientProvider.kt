@@ -68,13 +68,7 @@ class ProteusClientProviderImpl(
     private val mutex = Mutex()
 
     override suspend fun clearLocalFiles() {
-        mutex.withLock {
-            withContext(dispatcher.io) {
-                _proteusClient?.close()
-                _proteusClient = null
-                FileUtil.deleteDirectory(rootProteusPath)
-            }
-        }
+        mutex.withLock { removeLocalFiles() }
     }
 
     override suspend fun getOrCreate(): ProteusClient {
@@ -135,7 +129,7 @@ class ProteusClientProviderImpl(
         return try {
             central.proteusClient()
         } catch (exception: ProteusStorageMigrationException) {
-            recoverFromFailedMigration()
+            proteusMigrationRecoveryHandler.clearClientData { removeLocalFiles() }
             val logMap = mapOf(
                 "userId" to userId.value.obfuscateId(),
                 "exception" to exception,
@@ -147,16 +141,16 @@ class ProteusClientProviderImpl(
         }
     }
 
-    private suspend fun recoverFromFailedMigration() {
-        kaliumLogger.withTextTag(TAG).w("Recovering from migration")
-        proteusMigrationRecoveryHandler.clearClientData()
-        kaliumLogger.d("Starting to clear local crypto files")
+    /**
+     * Actually deletes the proteus local files.
+     * Important! The caller should have a mutex, DON'T dead lock it here.
+     */
+    private suspend fun removeLocalFiles() {
         withContext(dispatcher.io) {
             _proteusClient?.close()
             _proteusClient = null
             FileUtil.deleteDirectory(rootProteusPath)
         }
-        kaliumLogger.d("Finished recover from failed migration, prompt user to register client again")
     }
 
     private companion object {
