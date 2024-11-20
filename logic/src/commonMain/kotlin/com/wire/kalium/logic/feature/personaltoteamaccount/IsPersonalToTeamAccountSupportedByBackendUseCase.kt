@@ -21,6 +21,9 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Use case to check if the backend supports personal to team account migration.
+ */
 interface IsPersonalToTeamAccountSupportedByBackendUseCase {
     suspend operator fun invoke(): Boolean
 }
