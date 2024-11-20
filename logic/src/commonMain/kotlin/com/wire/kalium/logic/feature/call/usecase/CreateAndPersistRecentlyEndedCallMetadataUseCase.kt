@@ -36,7 +36,7 @@ interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
     suspend operator fun invoke(conversationId: ConversationId, callEndedReason: Int)
 }
 
-class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
+class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val getSelf: GetSelfUserUseCase,
