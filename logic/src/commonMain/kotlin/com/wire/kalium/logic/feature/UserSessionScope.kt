@@ -178,8 +178,8 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
-import com.wire.kalium.logic.feature.call.usecase.GetRecentlyEndedCallMetadataUseCase
-import com.wire.kalium.logic.feature.call.usecase.GetRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClientScope
@@ -1265,7 +1265,8 @@ class UserSessionScope internal constructor(
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             getCallConversationType = getCallConversationType,
             networkStateObserver = networkStateObserver,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
         )
     }
 
@@ -2093,8 +2094,9 @@ class UserSessionScope internal constructor(
             userScopedLogger
         )
 
-    val getRecentlyEndedCallMetadata: GetRecentlyEndedCallMetadataUseCase
-        get() = GetRecentlyEndedCallMetadataUseCaseImpl(
+    private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
+        get() = CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
+            callRepository = callRepository,
             observeConversationMembers = conversations.observeConversationMembers,
             getSelf = users.getSelfUser
         )

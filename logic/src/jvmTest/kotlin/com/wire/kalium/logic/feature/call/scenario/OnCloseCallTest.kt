@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.types.Uint32_t
-import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
@@ -29,6 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
@@ -56,6 +56,9 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
+    @Mock
+    val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
+
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -70,7 +73,8 @@ class OnCloseCallTest {
             callRepository,
             testScope,
             qualifiedIdMapper,
-            networkStateObserver
+            networkStateObserver,
+            createAndPersistRecentlyEndedCallMetadata
         )
 
         every {
@@ -340,7 +344,7 @@ class OnCloseCallTest {
         }
 
     @Test
-    fun givenCloseCallInvoked_whenClosedCallMetadataIsPresent_thenUpdateRecentEndedCallInvoked() =
+    fun givenClosedCall_whenOnCloseCallInvoked_thenCreateAndPersistRecentlyEndedCallIsInvoked() =
         testScope.runTest {
             val reason = CallClosedReason.CANCELLED.avsValue
 
@@ -355,32 +359,8 @@ class OnCloseCallTest {
             yield()
 
             coVerify {
-                callRepository.updateRecentlyEndedCall(any(), any(), any())
+                createAndPersistRecentlyEndedCallMetadata(any(), any())
             }.wasInvoked(once)
-        }
-
-    @Test
-    fun givenCloseCallInvoked_whenClosedCallMetadataIsAbsent_thenUpdateRecentEndedCallNotInvoked() =
-        testScope.runTest {
-            val reason = CallClosedReason.CANCELLED.avsValue
-
-            every {
-                callRepository.getCallMetadataProfile()
-            }.returns(CallMetadataProfile(emptyMap()))
-
-            onCloseCall.onClosedCall(
-                reason,
-                conversationIdString,
-                time,
-                userIdString,
-                clientId,
-                null
-            )
-            yield()
-
-            coVerify {
-                callRepository.updateRecentlyEndedCall(any(), any(), any())
-            }.wasNotInvoked()
         }
 
     companion object {
