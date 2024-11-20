@@ -46,6 +46,7 @@ message GenericMessage {
         ButtonActionConfirmation buttonActionConfirmation = 22;
         DataTransfer dataTransfer = 23; // client-side synchronization across devices of the same user
     }
+    optional UnknownStrategy unknownStrategy = 24 [default = IGNORE];
 }
 
 message QualifiedUserId {
@@ -359,4 +360,10 @@ enum LegalHoldStatus {
     UNKNOWN = 0;
     DISABLED = 1;
     ENABLED = 2;
+}
+
+enum UnknownStrategy {
+    IGNORE = 0;                 // Ignore the message completely.
+    DISCARD_AND_WARN = 1;       // Warn the user, but discard the message, as it may not be helpful in the future
+    WARN_USER_ALLOW_RETRY = 2;  // Warn the user. Client has freedom to store it and retry in the future.
 }

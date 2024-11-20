@@ -22,5 +22,5 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v5.authenticated.MLSPublicKeyApiV5
 
 internal open class MLSPublicKeyApiV6 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : MLSPublicKeyApiV5(authenticatedNetworkClient)

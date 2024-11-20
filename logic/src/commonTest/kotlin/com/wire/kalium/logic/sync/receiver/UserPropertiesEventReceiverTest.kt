@@ -19,10 +19,13 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -46,18 +49,42 @@ class UserPropertiesEventReceiverTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenFoldersUpdateEvent_repositoryIsInvoked() = runTest {
+        val event = TestEvent.foldersUpdate()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateConversationFolders()
+            .arrange()
+
+        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+
+        coVerify {
+            arrangement.conversationFolderRepository.updateConversationFolders(any())
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
+        @Mock
+        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+
         private val userPropertiesEventReceiver: UserPropertiesEventReceiver = UserPropertiesEventReceiverImpl(
-            userConfigRepository = userConfigRepository
+            userConfigRepository = userConfigRepository,
+            conversationFolderRepository = conversationFolderRepository
         )
 
         fun withUpdateReadReceiptsSuccess() = apply {
             every {
                 userConfigRepository.setReadReceiptsStatus(any())
+            }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withUpdateConversationFolders() = apply {
+            coEvery {
+                conversationFolderRepository.updateConversationFolders(any())
             }.returns(Either.Right(Unit))
         }
 

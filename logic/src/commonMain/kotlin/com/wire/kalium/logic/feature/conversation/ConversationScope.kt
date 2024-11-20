@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -48,6 +49,10 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -81,6 +86,7 @@ class ConversationScope internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
+    private val conversationFolderRepository: ConversationFolderRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -119,7 +125,7 @@ class ConversationScope internal constructor(
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
     val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
-        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository)
+        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository, conversationFolderRepository, getFavoriteFolder)
 
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
@@ -343,4 +349,9 @@ class ConversationScope internal constructor(
         get() = ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
     val syncConversationCode: SyncConversationCodeUseCase
         get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
+    val observeConversationsFromFolder: ObserveConversationsFromFolderUseCase
+        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository)
+    val getFavoriteFolder: GetFavoriteFolderUseCase
+        get() = GetFavoriteFolderUseCaseImpl(conversationFolderRepository)
+
 }

@@ -35,9 +35,7 @@ sealed class WebSocketEvent<BinaryPayloadType> {
 
             other as NonBinaryPayloadReceived<*>
 
-            if (!payload.contentEquals(other.payload)) return false
-
-            return true
+            return payload.contentEquals(other.payload)
         }
 
         override fun hashCode(): Int {
