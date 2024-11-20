@@ -28,7 +28,7 @@ interface IsPersonalToTeamAccountSupportedByBackendUseCase {
     suspend operator fun invoke(): Boolean
 }
 
-class IsPersonalToTeamAccountSupportedByBackendUseCaseImpl(
+internal class IsPersonalToTeamAccountSupportedByBackendUseCaseImpl(
     val serverConfigRepository: ServerConfigRepository,
     val userId: UserId
 ) : IsPersonalToTeamAccountSupportedByBackendUseCase {
