@@ -93,6 +93,7 @@ interface UserConfigRepository {
     suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
+    fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit>
     fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
@@ -301,6 +302,9 @@ internal class UserConfigDataSource internal constructor(
         wrapStorageRequest {
             userConfigStorage.isConferenceCallingEnabled()
         }
+
+    override fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigStorage.isConferenceCallingEnabledFlow().wrapStorageRequest()
 
     override fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.persistUseSftForOneOnOneCalls(shouldUse)
