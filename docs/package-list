@@ -536,6 +536,7 @@ com.wire.kalium.logic.feature.team
 com.wire.kalium.logic.feature.user
 com.wire.kalium.logic.feature.user.e2ei
 com.wire.kalium.logic.feature.user.guestroomlink
+com.wire.kalium.logic.feature.user.migration
 com.wire.kalium.logic.feature.user.readReceipts
 com.wire.kalium.logic.feature.user.screenshotCensoring
 com.wire.kalium.logic.feature.user.typingIndicator
