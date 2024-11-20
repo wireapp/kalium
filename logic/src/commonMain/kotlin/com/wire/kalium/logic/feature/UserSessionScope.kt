@@ -627,7 +627,7 @@ class UserSessionScope internal constructor(
 
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
         ProteusMigrationRecoveryHandlerImpl(
-            clientRepository, pushTokenRepository, cachedClientIdClearer
+            logoutRepository, clientRepository, pushTokenRepository, cachedClientIdClearer
         )
     }
 

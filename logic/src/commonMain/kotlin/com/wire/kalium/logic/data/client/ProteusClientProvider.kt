@@ -143,7 +143,7 @@ class ProteusClientProviderImpl(
 
     /**
      * Actually deletes the proteus local files.
-     * Important! The caller should have a mutex, DON'T dead lock it here.
+     * Important! It is the caller responsibility to use the mutex, DON'T add a mutex here or it will be dead lock it.
      */
     private suspend fun removeLocalFiles() {
         withContext(dispatcher.io) {

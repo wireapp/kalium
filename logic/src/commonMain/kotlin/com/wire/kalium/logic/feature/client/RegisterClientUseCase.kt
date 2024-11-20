@@ -148,10 +148,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                     modelPostfix,
                 )
             }.fold({ error ->
-                kaliumLogger.withTextTag(TAG).w("Oh no !!! Migration failed, deleting local files, error is $error")
-                // todo(ym): here an error will/can happen from migration
-                // todo(ym): raise a special exception for this case, after deleting the cbox and cc files.
-                // todo(ym): remove the client id, retained client id from db, clean last prekey id
+                kaliumLogger.withTextTag(TAG).e("There was an error while registering the client $error")
                 RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
