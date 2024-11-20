@@ -48,10 +48,8 @@ import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
@@ -69,6 +67,8 @@ import com.wire.kalium.network.api.authenticated.conversation.model.Conversation
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -80,8 +80,8 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -100,7 +100,6 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.EqualsMatcher
@@ -120,7 +119,6 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import com.wire.kalium.network.api.model.ConversationId as APIConversationId
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
@@ -1516,7 +1514,7 @@ class ConversationRepositoryTest {
 
         suspend fun withConversations(conversations: List<ConversationViewEntity>) = apply {
             coEvery {
-                conversationDAO.getAllConversationDetails(any())
+                conversationDAO.getAllConversationDetails(any(), any())
             }.returns(flowOf(conversations))
         }
 

@@ -27,7 +27,7 @@ val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
-val DevelopmentApiVersions = setOf(6)
+val DevelopmentApiVersions = setOf(6, 7)
 
 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
 // bump API version and generate all needed classes

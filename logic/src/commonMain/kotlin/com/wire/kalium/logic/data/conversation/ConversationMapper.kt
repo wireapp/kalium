@@ -336,6 +336,7 @@ internal class ConversationMapperImpl(
                 daoModel.lastMessage != null -> messageMapper.fromEntityToMessagePreview(daoModel.lastMessage!!)
                 else -> null
             },
+            hasNewActivitiesToShow = daoModel.hasNewActivitiesToShow
         )
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =

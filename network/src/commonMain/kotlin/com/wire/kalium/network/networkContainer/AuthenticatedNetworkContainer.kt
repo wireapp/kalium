@@ -49,6 +49,7 @@ import com.wire.kalium.network.api.v2.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
 import com.wire.kalium.network.api.v6.authenticated.networkContainer.AuthenticatedNetworkContainerV6
+import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.HttpClient
@@ -180,6 +181,15 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 6 -> AuthenticatedNetworkContainerV6(
+                    sessionManager,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                7 -> AuthenticatedNetworkContainerV7(
                     sessionManager,
                     selfUserId,
                     certificatePinning,

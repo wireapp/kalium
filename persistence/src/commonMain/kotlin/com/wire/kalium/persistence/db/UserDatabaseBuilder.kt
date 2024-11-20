@@ -58,6 +58,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -157,7 +159,10 @@ class UserDatabaseBuilder internal constructor(
         TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
         MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
-        MessageDraftAdapter = TableMapper.messageDraftsAdapter
+        MessageDraftAdapter = TableMapper.messageDraftsAdapter,
+        LastMessageAdapter = TableMapper.lastMessageAdapter,
+        LabeledConversationAdapter = TableMapper.labeledConversationAdapter,
+        ConversationFolderAdapter = TableMapper.conversationFolderAdapter
     )
 
     init {
@@ -198,6 +203,12 @@ class UserDatabaseBuilder internal constructor(
             database.membersQueries,
             database.unreadEventsQueries,
             queriesContext,
+        )
+
+    val conversationFolderDAO: ConversationFolderDAO
+        get() = ConversationFolderDAOImpl(
+            database.conversationFoldersQueries,
+            queriesContext
         )
 
     private val conversationMembersCache =
