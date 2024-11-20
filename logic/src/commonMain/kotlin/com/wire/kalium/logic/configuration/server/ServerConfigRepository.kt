@@ -39,7 +39,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.Url
 import kotlinx.coroutines.withContext
 
-internal interface ServerConfigRepository {
+interface ServerConfigRepository {
     suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>
     suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>
 
@@ -62,6 +62,7 @@ internal interface ServerConfigRepository {
      * Return the server links and metadata for the given userId
      */
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
+    suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -133,6 +134,10 @@ internal class ServerConfigDataSource(
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
+
+    override suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int> = wrapStorageRequest {
+        dao.getCommonApiVersion(domain)
+    }
 
     private suspend fun fetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig.MetaData> =
         wrapApiRequest { versionApi.fetchApiVersion(Url(serverLinks.api)) }

@@ -67,6 +67,8 @@ import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.personaltoteamaccount.IsPersonalToTeamAccountSupportedByBackendUseCase
+import com.wire.kalium.logic.feature.personaltoteamaccount.IsPersonalToTeamAccountSupportedByBackendUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
@@ -223,4 +225,9 @@ class UserScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
     }
+    val isPersonalToTeamAccountSupportedByBackend: IsPersonalToTeamAccountSupportedByBackendUseCase
+        get() = IsPersonalToTeamAccountSupportedByBackendUseCaseImpl(
+            serverConfigRepository = serverConfigRepository,
+            userId = selfUserId
+        )
 }
