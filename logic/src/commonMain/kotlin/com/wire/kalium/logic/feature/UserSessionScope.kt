@@ -560,6 +560,10 @@ class UserSessionScope internal constructor(
         }
     }
 
+    private val invalidateTeamId = {
+        _teamId = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
+    }
+
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val accessTokenRepository: AccessTokenRepository
@@ -2095,7 +2099,7 @@ class UserSessionScope internal constructor(
         )
 
     val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase
-        get() = MigrateFromPersonalToTeamUseCaseImpl(userRepository)
+        get() = MigrateFromPersonalToTeamUseCaseImpl(userId, userRepository, invalidateTeamId)
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
