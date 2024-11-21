@@ -17,18 +17,17 @@
  */
 package com.wire.kalium.logic.feature.personaltoteamaccount
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.utils.TestRequestHandler.Companion.TEST_BACKEND_CONFIG
 import io.mockative.Mock
 import io.mockative.coEvery
-import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
-import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -43,7 +42,7 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturningMinimumApiVersion()
             .withTeamId(null)
-            .withRepositoryReturningCommonApiVersion(Either.Right(6))
+            .withServerConfig(6)
             .arrange()
 
         // When
@@ -51,29 +50,24 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
 
         // Then
         assertFalse(result)
-        coVerify {
-            arrangement.serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
-        }.wasInvoked(once)
     }
 
     @Test
-    fun givenAPIVersionEqualToMinimumAndUserNotInATeam_whenInvoking_thenReturnsTrue() = runBlocking {
-        // Given
-        val (arrangement, useCase) = Arrangement()
-            .withRepositoryReturningMinimumApiVersion()
-            .withTeamId(null)
-            .withRepositoryReturningCommonApiVersion(Either.Right(7))
-            .arrange()
+    fun givenAPIVersionEqualToMinimumAndUserNotInATeam_whenInvoking_thenReturnsTrue() =
+        runBlocking {
+            // Given
+            val (arrangement, useCase) = Arrangement()
+                .withRepositoryReturningMinimumApiVersion()
+                .withServerConfig(7)
+                .withTeamId(null)
+                .arrange()
 
-        // When
-        val result = useCase.invoke()
+            // When
+            val result = useCase.invoke()
 
-        // Then
-        assertTrue(result)
-        coVerify {
-            arrangement.serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
-        }.wasInvoked(once)
-    }
+            // Then
+            assertTrue(result)
+        }
 
     @Test
     fun givenAPIVersionAboveMinimumAndUserInATeam_whenInvoking_thenReturnsFalse() = runBlocking {
@@ -81,7 +75,7 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturningMinimumApiVersion()
             .withTeamId(TeamId("teamId"))
-            .withRepositoryReturningCommonApiVersion(Either.Right(8))
+            .withServerConfig(9)
             .arrange()
 
         // When
@@ -89,27 +83,6 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
 
         // Then
         assertFalse(result)
-        coVerify {
-            arrangement.serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
-        }.wasInvoked(once)
-    }
-
-    @Test
-    fun givenErrorFetchingAPIVersion_whenInvoking_thenReturnsFalse() = runTest {
-        // Given
-        val (arrangement, useCase) = Arrangement()
-            .withRepositoryReturningMinimumApiVersion()
-            .withRepositoryReturningCommonApiVersion(Either.Left(CoreFailure.SyncEventOrClientNotFound))
-            .arrange()
-
-        // When
-        val result = useCase.invoke()
-
-        // Then
-        assertFalse(result)
-        coVerify {
-            arrangement.serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
-        }.wasInvoked(once)
     }
 
     private class Arrangement {
@@ -118,13 +91,10 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
         val serverConfigRepository = mock(ServerConfigRepository::class)
 
         @Mock
-        val userRepository = mock(UserRepository::class)
+        val sessionManager = mock(SessionManager::class)
 
-        suspend fun withRepositoryReturningCommonApiVersion(value: Either<CoreFailure, Int>) = apply {
-            coEvery {
-                serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
-            }.returns(value)
-        }
+        @Mock
+        val userRepository = mock(UserRepository::class)
 
         suspend fun withTeamId(result: TeamId?) = apply {
             coEvery {
@@ -138,10 +108,21 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
             }.returns(MIN_API_VERSION)
         }
 
+        fun withServerConfig(apiVersion: Int) = apply {
+            val backendConfig = TEST_BACKEND_CONFIG.copy(
+                metaData = TEST_BACKEND_CONFIG.metaData.copy(
+                    commonApiVersion = ApiVersionDTO.Valid(apiVersion)
+                )
+            )
+            every {
+                sessionManager.serverConfig()
+            }.returns(backendConfig)
+        }
+
         fun arrange() = this to CanMigrateFromPersonalToTeamUseCaseImpl(
+            sessionManager = sessionManager,
             serverConfigRepository = serverConfigRepository,
-            userRepository = userRepository,
-            userId = TestUser.USER_ID
+            userRepository = userRepository
         )
     }
 

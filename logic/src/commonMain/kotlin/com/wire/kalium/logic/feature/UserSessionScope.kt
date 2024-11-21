@@ -1889,6 +1889,7 @@ class UserSessionScope internal constructor(
             isE2EIEnabled,
             certificateRevocationListRepository,
             incrementalSyncRepository,
+            sessionManager,
             checkRevocationList,
             syncFeatureConfigsUseCase,
             userScopedLogger

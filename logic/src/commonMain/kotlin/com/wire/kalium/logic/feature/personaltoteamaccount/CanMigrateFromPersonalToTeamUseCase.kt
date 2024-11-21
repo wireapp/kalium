@@ -18,9 +18,8 @@
 package com.wire.kalium.logic.feature.personaltoteamaccount
 
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.network.session.SessionManager
 
 /**
  * Use case to check if the user can migrate from personal to team account.
@@ -31,20 +30,13 @@ interface CanMigrateFromPersonalToTeamUseCase {
 }
 
 internal class CanMigrateFromPersonalToTeamUseCaseImpl(
+    val sessionManager: SessionManager,
     val serverConfigRepository: ServerConfigRepository,
-    val userId: UserId,
     val userRepository: UserRepository
 ) : CanMigrateFromPersonalToTeamUseCase {
     override suspend fun invoke(): Boolean {
-        return serverConfigRepository.commonApiVersion(userId.domain).fold(
-            { false },
-            {
-                val minApi = serverConfigRepository.minimumApiVersionForPersonalToTeamAccountMigration
-                if (userRepository.getSelfUser()?.teamId == null && it >= minApi) {
-                    return true
-                }
-                false
-            }
-        )
+        val commonApiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version
+        val minApi = serverConfigRepository.minimumApiVersionForPersonalToTeamAccountMigration
+        return userRepository.getSelfUser()?.teamId == null && commonApiVersion >= minApi
     }
 }

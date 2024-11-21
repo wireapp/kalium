@@ -83,6 +83,7 @@ import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicator
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCase
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.MetadataDAO
 
 @Suppress("LongParameterList")
@@ -111,6 +112,7 @@ class UserScope internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val sessionManager: SessionManager,
     private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger
@@ -210,13 +212,14 @@ class UserScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase get() =
-        SyncCertificateRevocationListUseCase(
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            incrementalSyncRepository = incrementalSyncRepository,
-            revocationListChecker = checkRevocationList,
-            kaliumLogger = userScopedLogger,
-        )
+    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase
+        get() =
+            SyncCertificateRevocationListUseCase(
+                certificateRevocationListRepository = certificateRevocationListRepository,
+                incrementalSyncRepository = incrementalSyncRepository,
+                revocationListChecker = checkRevocationList,
+                kaliumLogger = userScopedLogger,
+            )
 
     val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
         FeatureFlagSyncWorkerImpl(
@@ -225,10 +228,11 @@ class UserScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
     }
-    val isPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase
-        get() = CanMigrateFromPersonalToTeamUseCaseImpl(
+    val isPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase by lazy {
+        CanMigrateFromPersonalToTeamUseCaseImpl(
+            sessionManager = sessionManager,
             serverConfigRepository = serverConfigRepository,
-            userId = selfUserId,
             userRepository = userRepository
         )
+    }
 }
