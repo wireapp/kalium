@@ -1890,6 +1890,7 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository,
             incrementalSyncRepository,
             sessionManager,
+            selfTeamId,
             checkRevocationList,
             syncFeatureConfigsUseCase,
             userScopedLogger

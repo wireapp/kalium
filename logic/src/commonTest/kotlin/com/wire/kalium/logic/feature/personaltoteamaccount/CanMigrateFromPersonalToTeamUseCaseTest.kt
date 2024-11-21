@@ -17,10 +17,11 @@
  */
 package com.wire.kalium.logic.feature.personaltoteamaccount
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.TestRequestHandler.Companion.TEST_BACKEND_CONFIG
@@ -28,7 +29,6 @@ import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -39,9 +39,9 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
     @Test
     fun givenAPIVersionBelowMinimumAndUserNotInATeam_whenInvoking_thenReturnsFalse() = runTest {
         // Given
-        val (arrangement, useCase) = Arrangement()
+        val (_, useCase) = Arrangement()
             .withRepositoryReturningMinimumApiVersion()
-            .withTeamId(null)
+            .withTeamId(Either.Right(null))
             .withServerConfig(6)
             .arrange()
 
@@ -54,12 +54,12 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
 
     @Test
     fun givenAPIVersionEqualToMinimumAndUserNotInATeam_whenInvoking_thenReturnsTrue() =
-        runBlocking {
+        runTest {
             // Given
-            val (arrangement, useCase) = Arrangement()
+            val (_, useCase) = Arrangement()
                 .withRepositoryReturningMinimumApiVersion()
                 .withServerConfig(7)
-                .withTeamId(null)
+                .withTeamId(Either.Right(null))
                 .arrange()
 
             // When
@@ -70,11 +70,28 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
         }
 
     @Test
-    fun givenAPIVersionAboveMinimumAndUserInATeam_whenInvoking_thenReturnsFalse() = runBlocking {
+    fun givenAPIVersionAboveMinimumAndUserInATeam_whenInvoking_thenReturnsFalse() = runTest {
         // Given
-        val (arrangement, useCase) = Arrangement()
+        val (_, useCase) = Arrangement()
             .withRepositoryReturningMinimumApiVersion()
-            .withTeamId(TeamId("teamId"))
+            .withTeamId(Either.Right(TeamId("teamId")))
+            .withServerConfig(9)
+            .arrange()
+
+        // When
+        val result = useCase.invoke()
+
+        // Then
+        assertFalse(result)
+    }
+
+
+    @Test
+    fun givenSelfTeamIdProviderFailure_whenInvoking_thenReturnsFalse() = runTest {
+        // Given
+        val (_, useCase) = Arrangement()
+            .withRepositoryReturningMinimumApiVersion()
+            .withTeamId(Either.Left(CoreFailure.MissingClientRegistration))
             .withServerConfig(9)
             .arrange()
 
@@ -94,12 +111,12 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
         val sessionManager = mock(SessionManager::class)
 
         @Mock
-        val userRepository = mock(UserRepository::class)
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
-        suspend fun withTeamId(result: TeamId?) = apply {
+        suspend fun withTeamId(result: Either<CoreFailure, TeamId?>) = apply {
             coEvery {
-                userRepository.getSelfUser()
-            }.returns(TestUser.SELF.copy(teamId = result))
+                selfTeamIdProvider()
+            }.returns(result)
         }
 
         fun withRepositoryReturningMinimumApiVersion() = apply {
@@ -122,7 +139,7 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
         fun arrange() = this to CanMigrateFromPersonalToTeamUseCaseImpl(
             sessionManager = sessionManager,
             serverConfigRepository = serverConfigRepository,
-            userRepository = userRepository
+            selfTeamIdProvider = selfTeamIdProvider
         )
     }
 

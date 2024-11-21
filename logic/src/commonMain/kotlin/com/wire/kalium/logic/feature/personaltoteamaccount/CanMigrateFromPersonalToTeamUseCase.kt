@@ -21,7 +21,8 @@
 package com.wire.kalium.logic.feature.personaltoteamaccount
 
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.session.SessionManager
 
 /**
@@ -35,11 +36,14 @@ interface CanMigrateFromPersonalToTeamUseCase {
 internal class CanMigrateFromPersonalToTeamUseCaseImpl(
     val sessionManager: SessionManager,
     val serverConfigRepository: ServerConfigRepository,
-    val userRepository: UserRepository
+    val selfTeamIdProvider: SelfTeamIdProvider
 ) : CanMigrateFromPersonalToTeamUseCase {
     override suspend fun invoke(): Boolean {
         val commonApiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version
         val minApi = serverConfigRepository.minimumApiVersionForPersonalToTeamAccountMigration
-        return userRepository.getSelfUser()?.teamId == null && commonApiVersion >= minApi
+        return selfTeamIdProvider().fold(
+            { false },
+            { teamId -> teamId == null && commonApiVersion >= minApi }
+        )
     }
 }

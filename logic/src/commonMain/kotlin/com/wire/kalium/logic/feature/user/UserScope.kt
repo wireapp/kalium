@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -113,6 +114,7 @@ class UserScope internal constructor(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val sessionManager: SessionManager,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger
@@ -232,7 +234,7 @@ class UserScope internal constructor(
         CanMigrateFromPersonalToTeamUseCaseImpl(
             sessionManager = sessionManager,
             serverConfigRepository = serverConfigRepository,
-            userRepository = userRepository
+            selfTeamIdProvider = selfTeamIdProvider
         )
     }
 }
