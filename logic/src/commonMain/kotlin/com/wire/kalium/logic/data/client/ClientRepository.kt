@@ -113,6 +113,9 @@ interface ClientRepository {
     suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient): Either<CoreFailure, Unit>
     suspend fun clearNewClients()
     suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>>
+    suspend fun markMigrationToCCForClientIdFailed(clientId: ClientId)
+    suspend fun getClientIdWithMigrationToCCFailure(): ClientId?
+    suspend fun clearMigrationTOCCFailed()
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -335,4 +338,15 @@ class ClientDataSource(
         newClientDAO.observeNewClients()
             .map { it.map { clientMapper.fromNewClientEntity(it) } }
             .wrapStorageRequest()
+
+    override suspend fun markMigrationToCCForClientIdFailed(clientId: ClientId) {
+        clientRegistrationStorage.markMigrationToCCForClientIdFailed(clientId.value)
+    }
+
+    override suspend fun getClientIdWithMigrationToCCFailure(): ClientId? =
+        clientRegistrationStorage.getClientIdWithMigrationToCCFailure()?.let { ClientId(it) }
+
+    override suspend fun clearMigrationTOCCFailed() {
+        clientRegistrationStorage.clearMigrationTOCCFailed()
+    }
 }

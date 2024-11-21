@@ -47,7 +47,9 @@ internal class VerifyExistingClientUseCaseImpl @OptIn(DelicateKaliumApi::class) 
 
     @OptIn(DelicateKaliumApi::class)
     override suspend fun invoke(clientId: ClientId): VerifyExistingClientResult {
-        return clientRepository.selfListOfClients()
+        return if (clientRepository.getClientIdWithMigrationToCCFailure() != null) {
+            VerifyExistingClientResult.Failure.ClientFailedToMigrateToCoreCrypto
+        } else clientRepository.selfListOfClients()
             .fold({
                 VerifyExistingClientResult.Failure.Generic(it)
             }, { listOfRegisteredClients ->
@@ -75,6 +77,7 @@ sealed class VerifyExistingClientResult {
     data class Success(val client: Client) : VerifyExistingClientResult()
 
     sealed class Failure : VerifyExistingClientResult() {
+        data object ClientFailedToMigrateToCoreCrypto : Failure()
         data object ClientNotRegistered : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
         class E2EICertificateRequired(val client: Client, val userId: UserId) : Failure()

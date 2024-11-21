@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.client
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -39,6 +40,9 @@ interface ClientRegistrationStorage {
     suspend fun clearClientRegistrationBlockedByE2EI()
     suspend fun clearHasRegisteredMLSClient()
     suspend fun isBlockedByE2EI(): Boolean
+    suspend fun markMigrationToCCForClientIdFailed(clientId: String)
+    suspend fun getClientIdWithMigrationToCCFailure(): String?
+    suspend fun clearMigrationTOCCFailed()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -65,6 +69,18 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
 
     override suspend fun isBlockedByE2EI(): Boolean = metadataDAO.valueByKey(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).toBoolean()
 
+    override suspend fun markMigrationToCCForClientIdFailed(clientId: String) {
+        metadataDAO.insertValue(clientId, FAILED_TO_MIGRATE_TO_CC_CLIENT_ID)
+    }
+
+    override suspend fun getClientIdWithMigrationToCCFailure(): String? {
+        return metadataDAO.valueByKeyFlow(FAILED_TO_MIGRATE_TO_CC_CLIENT_ID).firstOrNull()
+    }
+
+    override suspend fun clearMigrationTOCCFailed() {
+        metadataDAO.deleteValue(FAILED_TO_MIGRATE_TO_CC_CLIENT_ID)
+    }
+
     override suspend fun setClientRegistrationBlockedByE2EI() =
         metadataDAO.insertValue(true.toString(), CLIENT_REGISTRATION_BLOCKED_BY_E2EI)
 
@@ -73,6 +89,7 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
     override suspend fun clearHasRegisteredMLSClient() = metadataDAO.deleteValue(HAS_REGISTERED_MLS_CLIENT_KEY)
 
     companion object {
+        const val FAILED_TO_MIGRATE_TO_CC_CLIENT_ID = "failed_to_migrate_to_cc_client_id"
         private const val REGISTERED_CLIENT_ID_KEY = "registered_client_id"
         const val RETAINED_CLIENT_ID_KEY = "retained_client_id"
         private const val HAS_REGISTERED_MLS_CLIENT_KEY = "has_registered_mls_client"

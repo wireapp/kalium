@@ -213,7 +213,8 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     private val loadToken: suspend () -> BearerTokens? = {
         sessionManager.session()?.let { session ->
-            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+            kaliumLogger.i("Auth tokens are being loaded ${session.accessToken} and ${session.refreshToken}")
+            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken) //90e280f713dd1315
         }
     }
 

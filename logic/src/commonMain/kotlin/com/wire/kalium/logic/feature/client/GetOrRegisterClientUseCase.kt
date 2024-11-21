@@ -66,7 +66,8 @@ internal class GetOrRegisterClientUseCaseImpl(
                     when (val result = verifyExistingClientUseCase(retainedClientId)) {
                         is VerifyExistingClientResult.Success -> RegisterClientResult.Success(result.client)
                         is VerifyExistingClientResult.Failure.Generic -> RegisterClientResult.Failure.Generic(result.genericFailure)
-                        is VerifyExistingClientResult.Failure.ClientNotRegistered -> {
+                        is VerifyExistingClientResult.Failure.ClientFailedToMigrateToCoreCrypto,
+                        VerifyExistingClientResult.Failure.ClientNotRegistered -> {
                             clearOldClientRelatedData()
                             null
                         }
@@ -86,7 +87,11 @@ internal class GetOrRegisterClientUseCaseImpl(
                 upgradeCurrentSessionAndPersistClient(result.client.id)
             }
 
-            is RegisterClientResult.Success -> upgradeCurrentSessionAndPersistClient(result.client.id)
+            is RegisterClientResult.Success -> {
+                clientRepository.clearMigrationTOCCFailed()
+                upgradeCurrentSessionAndPersistClient(result.client.id)
+            }
+
             else -> Unit
         }
 
@@ -102,10 +107,10 @@ internal class GetOrRegisterClientUseCaseImpl(
     }
 
     private suspend fun clearOldClientRelatedData() {
-        cachedClientIdClearer()
         clearClientData()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearRetainedClientId()
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
+        cachedClientIdClearer()
     }
 }

@@ -152,4 +152,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     val updateClientVerificationStatus: UpdateClientVerificationStatusUseCase
         get() = UpdateClientVerificationStatusUseCase(clientRepository)
 
+    val getFailedToMigrateClientId: GetFailedToMigrateClientIdUseCase
+        get() = GetFailedToMigrateClientIdUseCase(clientRepository)
+
 }
