@@ -336,6 +336,8 @@ import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlag
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCaseImpl
+import com.wire.kalium.logic.feature.user.migration.MigrateFromPersonalToTeamUseCase
+import com.wire.kalium.logic.feature.user.migration.MigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCase
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCase
@@ -794,16 +796,17 @@ class UserSessionScope internal constructor(
     )
 
     private val userRepository: UserRepository = UserDataSource(
-        userStorage.database.userDAO,
-        userStorage.database.metadataDAO,
-        userStorage.database.clientDAO,
-        authenticatedNetworkContainer.selfApi,
-        authenticatedNetworkContainer.userDetailsApi,
-        authenticatedNetworkContainer.teamsApi,
-        globalScope.sessionRepository,
-        userId,
-        selfTeamId,
-        legalHoldHandler
+        userDAO = userStorage.database.userDAO,
+        metadataDAO = userStorage.database.metadataDAO,
+        clientDAO = userStorage.database.clientDAO,
+        selfApi = authenticatedNetworkContainer.selfApi,
+        userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
+        upgradePersonalToTeamApi = authenticatedNetworkContainer.upgradePersonalToTeamApi,
+        teamsApi = authenticatedNetworkContainer.teamsApi,
+        sessionRepository = globalScope.sessionRepository,
+        selfUserId = userId,
+        selfTeamIdProvider = selfTeamId,
+        legalHoldHandler = legalHoldHandler,
     )
 
     private val accountRepository: AccountRepository
@@ -2090,6 +2093,9 @@ class UserSessionScope internal constructor(
             checkRevocationList,
             userScopedLogger
         )
+
+    val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase
+        get() = MigrateFromPersonalToTeamUseCaseImpl(userRepository)
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
