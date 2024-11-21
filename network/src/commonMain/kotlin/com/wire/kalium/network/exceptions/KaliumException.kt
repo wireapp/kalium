@@ -71,14 +71,9 @@ sealed class KaliumException : Exception() {
     data class RedirectError(val errorResponse: ErrorResponse) : KaliumException()
 
     /**
-     * http error 400 .. 499 except 404
+     * http error 400 .. 499
      */
     data class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException()
-
-    /**
-     * http error 404
-     */
-    data class NotFoundError(val errorResponse: ErrorResponse) : KaliumException()
 
     /**
      * http error 500 .. 599
