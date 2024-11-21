@@ -249,7 +249,6 @@ class EndCallOnConversationChangeUseCaseTest {
             conversation = conversation,
             hasOngoingCall = true,
             isSelfUserMember = false,
-            isSelfUserCreator = false,
             selfRole = null
         )
 
