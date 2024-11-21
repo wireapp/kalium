@@ -19,13 +19,12 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will remove a conversation from the favorites folder.
@@ -45,12 +44,15 @@ interface RemoveConversationFromFavoritesUseCase {
 
 internal class RemoveConversationFromFavoritesUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RemoveConversationFromFavoritesUseCase {
-    override suspend fun invoke(conversationId: ConversationId): RemoveConversationFromFavoritesUseCase.Result {
+    override suspend fun invoke(
+        conversationId: ConversationId
+    ): RemoveConversationFromFavoritesUseCase.Result = withContext(dispatchers.io) {
         conversationFolderRepository.getFavoriteConversationFolder().fold(
-            { return RemoveConversationFromFavoritesUseCase.Result.Failure(it) },
+            { RemoveConversationFromFavoritesUseCase.Result.Failure(it) },
             { folder ->
-                return conversationFolderRepository.removeConversationFromFolder(conversationId, folder.id)
+                conversationFolderRepository.removeConversationFromFolder(conversationId, folder.id)
                     .fold({
                         RemoveConversationFromFavoritesUseCase.Result.Failure(it)
                     }, {

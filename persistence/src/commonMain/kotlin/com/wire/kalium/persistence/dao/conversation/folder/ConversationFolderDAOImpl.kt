@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao.conversation.folder
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationFoldersQueries
+import com.wire.kalium.persistence.GetFolderWithConversations
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
@@ -35,25 +36,28 @@ class ConversationFolderDAOImpl internal constructor(
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
 
     override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(coroutineContext) {
-        val folderMap = mutableMapOf<String, FolderWithConversationsEntity>()
+        val labeledConversationList = conversationFoldersQueries.getFolderWithConversations().executeAsList().map(::toEntity)
 
-        conversationFoldersQueries.getFolderWithConversations { folderId, folderName, folderType, conversationId ->
-            val folder = folderMap.getOrPut(folderId) {
-                FolderWithConversationsEntity(
-                    id = folderId,
-                    name = folderName,
-                    type = folderType,
-                    conversationIdList = mutableListOf()
-                )
-            }
-
-            if (conversationId != null) {
-                (folder.conversationIdList as MutableList).add(conversationId)
-            }
+        val folderMap = labeledConversationList.groupBy { it.folderId }.mapValues { entry ->
+            val folderId = entry.key
+            val firstRow = entry.value.first()
+            FolderWithConversationsEntity(
+                id = folderId,
+                name = firstRow.folderName,
+                type = firstRow.folderType,
+                conversationIdList = entry.value.mapNotNull { it.conversationId }
+            )
         }
 
         folderMap.values.toList()
     }
+
+    private fun toEntity(row: GetFolderWithConversations) = LabeledConversationEntity(
+        folderId = row.label_id,
+        folderName = row.label_name,
+        folderType = row.label_type,
+        conversationId = row.conversation_id
+    )
 
     override suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationFoldersQueries.getConversationsFromFolder(

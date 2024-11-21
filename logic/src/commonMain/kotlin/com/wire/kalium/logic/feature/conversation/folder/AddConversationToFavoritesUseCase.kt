@@ -22,6 +22,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will add a conversation to the favorites folder.
@@ -41,12 +44,18 @@ interface AddConversationToFavoritesUseCase {
 
 internal class AddConversationToFavoritesUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : AddConversationToFavoritesUseCase {
-    override suspend fun invoke(conversationId: ConversationId): AddConversationToFavoritesUseCase.Result {
+    override suspend fun invoke(
+        conversationId: ConversationId
+    ): AddConversationToFavoritesUseCase.Result = withContext(dispatchers.io) {
         conversationFolderRepository.getFavoriteConversationFolder().fold(
-            { return AddConversationToFavoritesUseCase.Result.Failure(it) },
+            { AddConversationToFavoritesUseCase.Result.Failure(it) },
             { folder ->
-                return conversationFolderRepository.addConversationToFolder(conversationId, folder.id)
+                conversationFolderRepository.addConversationToFolder(
+                    conversationId,
+                    folder.id
+                )
                     .fold({
                         AddConversationToFavoritesUseCase.Result.Failure(it)
                     }, {
