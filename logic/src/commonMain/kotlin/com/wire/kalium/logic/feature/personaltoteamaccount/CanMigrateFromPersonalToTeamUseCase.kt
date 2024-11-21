@@ -19,23 +19,32 @@ package com.wire.kalium.logic.feature.personaltoteamaccount
 
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 
 /**
- * Use case to check if the backend supports personal to team account migration.
+ * Use case to check if the user can migrate from personal to team account.
+ * The user can migrate if the user is not in a team and the server supports the migration.
  */
-interface IsPersonalToTeamAccountSupportedByBackendUseCase {
+interface CanMigrateFromPersonalToTeamUseCase {
     suspend operator fun invoke(): Boolean
 }
 
-internal class IsPersonalToTeamAccountSupportedByBackendUseCaseImpl(
+internal class CanMigrateFromPersonalToTeamUseCaseImpl(
     val serverConfigRepository: ServerConfigRepository,
-    val userId: UserId
-) : IsPersonalToTeamAccountSupportedByBackendUseCase {
+    val userId: UserId,
+    val userRepository: UserRepository
+) : CanMigrateFromPersonalToTeamUseCase {
     override suspend fun invoke(): Boolean {
         return serverConfigRepository.commonApiVersion(userId.domain).fold(
             { false },
-            { it >= serverConfigRepository.minimumApiVersionForPersonalToTeamAccountMigration }
+            {
+                val minApi = serverConfigRepository.minimumApiVersionForPersonalToTeamAccountMigration
+                if (userRepository.getSelfUser()?.teamId == null && it >= minApi) {
+                    return true
+                }
+                false
+            }
         )
     }
 }

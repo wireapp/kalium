@@ -19,6 +19,8 @@ package com.wire.kalium.logic.feature.personaltoteamaccount
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -33,13 +35,14 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
+class CanMigrateFromPersonalToTeamUseCaseTest {
 
     @Test
-    fun givenAPIVersionBelowMinimum_whenInvoking_thenReturnsFalse() = runTest {
+    fun givenAPIVersionBelowMinimumAndUserNotInATeam_whenInvoking_thenReturnsFalse() = runTest {
         // Given
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturningMinimumApiVersion()
+            .withTeamId(null)
             .withRepositoryReturningCommonApiVersion(Either.Right(6))
             .arrange()
 
@@ -54,10 +57,11 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     }
 
     @Test
-    fun givenAPIVersionEqualToMinimum_whenInvoking_thenReturnsTrue() = runBlocking {
+    fun givenAPIVersionEqualToMinimumAndUserNotInATeam_whenInvoking_thenReturnsTrue() = runBlocking {
         // Given
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturningMinimumApiVersion()
+            .withTeamId(null)
             .withRepositoryReturningCommonApiVersion(Either.Right(7))
             .arrange()
 
@@ -72,10 +76,11 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
     }
 
     @Test
-    fun givenAPIVersionAboveMinimum_whenInvoking_thenReturnsTrue() = runBlocking {
+    fun givenAPIVersionAboveMinimumAndUserInATeam_whenInvoking_thenReturnsFalse() = runBlocking {
         // Given
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturningMinimumApiVersion()
+            .withTeamId(TeamId("teamId"))
             .withRepositoryReturningCommonApiVersion(Either.Right(8))
             .arrange()
 
@@ -83,7 +88,7 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
         val result = useCase.invoke()
 
         // Then
-        assertTrue(result)
+        assertFalse(result)
         coVerify {
             arrangement.serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
         }.wasInvoked(once)
@@ -112,10 +117,19 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
         @Mock
         val serverConfigRepository = mock(ServerConfigRepository::class)
 
+        @Mock
+        val userRepository = mock(UserRepository::class)
+
         suspend fun withRepositoryReturningCommonApiVersion(value: Either<CoreFailure, Int>) = apply {
             coEvery {
                 serverConfigRepository.commonApiVersion(TestUser.USER_ID.domain)
             }.returns(value)
+        }
+
+        suspend fun withTeamId(result: TeamId?) = apply {
+            coEvery {
+                userRepository.getSelfUser()
+            }.returns(TestUser.SELF.copy(teamId = result))
         }
 
         fun withRepositoryReturningMinimumApiVersion() = apply {
@@ -124,8 +138,9 @@ class IsPersonalToTeamAccountSupportedByBackendUseCaseTest {
             }.returns(MIN_API_VERSION)
         }
 
-        fun arrange() = this to IsPersonalToTeamAccountSupportedByBackendUseCaseImpl(
+        fun arrange() = this to CanMigrateFromPersonalToTeamUseCaseImpl(
             serverConfigRepository = serverConfigRepository,
+            userRepository = userRepository,
             userId = TestUser.USER_ID
         )
     }
