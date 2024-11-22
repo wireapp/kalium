@@ -626,9 +626,7 @@ class UserSessionScope internal constructor(
         get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
-        ProteusMigrationRecoveryHandlerImpl(
-            logoutRepository, clientRepository, pushTokenRepository, cachedClientIdClearer
-        )
+        ProteusMigrationRecoveryHandlerImpl(lazy { logout })
     }
 
     val proteusClientProvider: ProteusClientProvider by lazy {

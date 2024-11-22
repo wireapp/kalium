@@ -17,9 +17,8 @@
  */
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.logic.data.logout.LogoutRepository
-import com.wire.kalium.logic.data.notification.PushTokenRepository
-import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.kaliumLogger
 
 /**
@@ -31,10 +30,7 @@ interface ProteusMigrationRecoveryHandler {
 }
 
 internal class ProteusMigrationRecoveryHandlerImpl(
-    private val logoutRepository: LogoutRepository,
-    private val clientRepository: ClientRepository,
-    private val pushTokenRepository: PushTokenRepository,
-    private val cachedClientIdClearer: CachedClientIdClearer,
+    private val logoutUseCase: Lazy<LogoutUseCase>
 ) : ProteusMigrationRecoveryHandler {
 
     @Suppress("TooGenericExceptionCaught")
@@ -42,12 +38,8 @@ internal class ProteusMigrationRecoveryHandlerImpl(
         // pending? remove most recent prekey id
         kaliumLogger.withTextTag(TAG).i("Starting the recovery from failed Proteus storage migration")
         try {
-            cachedClientIdClearer()
+            logoutUseCase.value(LogoutReason.REMOVED_CLIENT, true)
             clearLocalFiles()
-//             logoutRepository.clearClientRelatedLocalMetadata()
-//             clientRepository.clearCurrentClientId()
-            clientRepository.clearRetainedClientId()
-            pushTokenRepository.setUpdateFirebaseTokenFlag(true)
         } catch (e: Exception) {
             kaliumLogger.e("$TAG - Fatal, error while clearing client data: $e")
         } finally {

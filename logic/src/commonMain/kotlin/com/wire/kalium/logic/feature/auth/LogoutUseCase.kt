@@ -106,6 +106,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 }
 
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
+                LogoutReason.MIGRATION_TO_CC_FAILED -> prepareForCoreCryptoRecovery()
             }
 
             userConfigRepository.clearE2EISettings()
@@ -113,6 +114,13 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             userSessionScopeProvider.delete(userId)
             logoutCallback(userId, reason)
         }.let { if (waitUntilCompletes) it.join() else it }
+    }
+
+    private suspend fun prepareForCoreCryptoRecovery() {
+        clearClientDataUseCase()
+        logoutRepository.clearClientRelatedLocalMetadata()
+        clientRepository.clearRetainedClientId()
+        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 
     private suspend fun clearCurrentClientIdAndFirebaseTokenFlag() {
