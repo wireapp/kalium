@@ -44,7 +44,7 @@ abstract class CommonMPBackupImporter(selfUserDomain: String) {
         BackupImportResult.Success(
             mapper.fromProtoToBackupModel(ProtoBackupData.decodeFromByteArray(data))
         )
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         e.printStackTrace()
         println(e)
         BackupImportResult.ParsingFailure
