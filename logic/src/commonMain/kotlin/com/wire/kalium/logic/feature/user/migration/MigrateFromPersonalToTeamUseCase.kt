@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 
 /**
  * Use case to migrate user personal account to team account.
