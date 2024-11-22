@@ -30,8 +30,8 @@ import kotlin.native.ShouldRefineInSwift
  */
 @OptIn(ExperimentalObjCRefinement::class)
 @JsExport
-abstract class CommonMPBackupImporter(selfUserDomain: String) {
-    private val mapper = MPBackupMapper(selfUserDomain)
+abstract class CommonMPBackupImporter {
+    private val mapper = MPBackupMapper()
 
     /**
      * Attempts to deserialize backed-up data.
