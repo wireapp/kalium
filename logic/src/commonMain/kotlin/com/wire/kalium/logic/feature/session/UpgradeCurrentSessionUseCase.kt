@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
@@ -44,6 +45,7 @@ internal class UpgradeCurrentSessionUseCaseImpl(
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit> =
         wrapStorageRequest { sessionManager.session()?.refreshToken }
             .flatMap { currentRefreshToken ->
+                kaliumLogger.i("Current refresh token: $currentRefreshToken")
                 accessTokenRefresher.refreshTokenAndPersistSession(currentRefreshToken, clientId.value)
             }.map {
                 authenticatedNetworkContainer.clearCachedToken()

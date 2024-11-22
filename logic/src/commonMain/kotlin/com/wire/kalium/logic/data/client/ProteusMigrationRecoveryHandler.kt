@@ -21,27 +21,27 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.kaliumLogger
 
-/**
- * Handles the migration of Proteus storage.
- * Meaning, when migration is performed in case there is an error, this handler will be responsible for handling it.
- */
 interface ProteusMigrationRecoveryHandler {
-    suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
+    suspend fun clearClientData()
 }
 
 internal class ProteusMigrationRecoveryHandlerImpl(
     private val logoutUseCase: Lazy<LogoutUseCase>
 ) : ProteusMigrationRecoveryHandler {
 
+    /**
+     * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
+     * It will perform a logout, using [LogoutReason.MIGRATION_TO_CC_FAILED] as the reason.
+     *
+     * This achieves that the client data is cleared and the user is logged out without content.
+     */
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun clearClientData(clearLocalFiles: suspend () -> Unit) {
-        // pending? remove most recent prekey id
-        kaliumLogger.withTextTag(TAG).i("Starting the recovery from failed Proteus storage migration")
+    override suspend fun clearClientData() {
         try {
-            logoutUseCase.value(LogoutReason.REMOVED_CLIENT, true)
-            clearLocalFiles()
+            kaliumLogger.withTextTag(TAG).i("Starting the recovery from failed Proteus storage migration")
+            logoutUseCase.value(LogoutReason.MIGRATION_TO_CC_FAILED, true)
         } catch (e: Exception) {
-            kaliumLogger.e("$TAG - Fatal, error while clearing client data: $e")
+            kaliumLogger.withTextTag(TAG).e("Fatal, error while clearing client data: $e")
         } finally {
             kaliumLogger.withTextTag(TAG).i("Finished the recovery from failed Proteus storage migration")
         }
