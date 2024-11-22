@@ -43,5 +43,5 @@ enum class LogoutReason {
     /**
      * The migration to CC failed.
      */
-    MIGRATION_TO_CC_FAILED;
+    MIGRATION_TO_CC_FAILED
 }

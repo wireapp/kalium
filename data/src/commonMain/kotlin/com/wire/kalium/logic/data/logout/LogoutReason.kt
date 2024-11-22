@@ -52,5 +52,5 @@ enum class LogoutReason {
      * The migration to CC failed.
      * This will trigger a cleanup of the local client data and prepare for a fresh start without losing data.
      */
-    MIGRATION_TO_CC_FAILED;
+    MIGRATION_TO_CC_FAILED
 }

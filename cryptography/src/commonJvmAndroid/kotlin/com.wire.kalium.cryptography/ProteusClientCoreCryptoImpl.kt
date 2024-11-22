@@ -205,6 +205,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                 if (cryptoBoxFilesExists(File(rootDir))) {
                     kaliumLogger.i("migrating from crypto box at: $rootDir")
                     coreCrypto.proteusCryptoboxMigrate(rootDir)
+                    @Suppress("TooGenericExceptionThrown") // remove this, before merging, just for testing.
                     throw RuntimeException("Some dummy exception for this block") // remove this, before merging, just for testing.
                     kaliumLogger.i("migration successful")
 
