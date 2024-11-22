@@ -1,0 +1,68 @@
+/*
+ * Wire
+ * Copyright (C) 2021 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
+ */
+
+syntax = "proto2";
+
+option java_package = "com.wire.kalium.protobuf.backup";
+
+message BackupData {
+    required BackupInfo info = 1;
+    repeated ExportedConversation conversations = 2;
+    repeated ExportedMessage messages = 3;
+    repeated ExportUser users = 4;
+}
+
+message BackupInfo {
+    required string platform = 1;
+    required string version = 2;
+    required ExportedQualifiedId userId = 3;
+    required int64 creation_time = 4;
+    required string clientId = 5;
+}
+
+message ExportUser {
+    required ExportedQualifiedId id = 1;
+    required string name = 2;
+    required string handle = 3;
+}
+
+message ExportedQualifiedId {
+    required string value = 1;
+    required string domain = 2;
+}
+
+message ExportedConversation {
+    required ExportedQualifiedId id = 1;
+    required string name = 2;
+}
+
+message ExportedMessage {
+    required string id = 1;
+    required int64 time_iso = 2;
+    required ExportedQualifiedId sender_user_id = 3;
+    required string sender_client_id = 4;
+    required ExportedQualifiedId conversation_id = 5;
+    oneof content {
+        ExportedText text = 6;
+    }
+}
+
+message ExportedText {
+    required string content = 1;
+}
