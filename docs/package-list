@@ -519,6 +519,7 @@ com.wire.kalium.logic.feature.message.receipt
 com.wire.kalium.logic.feature.migration
 com.wire.kalium.logic.feature.mlsmigration
 com.wire.kalium.logic.feature.notificationToken
+com.wire.kalium.logic.feature.personaltoteamaccount
 com.wire.kalium.logic.feature.proteus
 com.wire.kalium.logic.feature.protocol
 com.wire.kalium.logic.feature.publicuser
