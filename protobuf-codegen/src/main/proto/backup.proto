@@ -60,9 +60,35 @@ message ExportedMessage {
     required ExportedQualifiedId conversation_id = 5;
     oneof content {
         ExportedText text = 6;
+        ExportedAsset asset = 7;
+        ExportedLocation location = 8;
     }
 }
 
 message ExportedText {
     required string content = 1;
+}
+
+enum ExportedEncryptionAlgorithm {
+    BACKUP_AES_CBC = 0;
+    BACKUP_AES_GCM = 1;
+}
+
+message ExportedAsset {
+    required string mimetype = 1;
+    required int64 size = 2;
+    optional string name = 3;
+    required bytes otr_key = 4;
+    required bytes sha256 = 5;
+    required string asset_id = 6;
+    optional string asset_token = 7;
+    optional string asset_domain = 8;
+    optional ExportedEncryptionAlgorithm encryption = 9;
+}
+
+message ExportedLocation {
+    required float longitude = 1;
+    required float latitude = 2;
+    optional string name = 3;
+    optional int32 zoom = 4;
 }

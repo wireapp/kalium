@@ -24,7 +24,7 @@ import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
 @OptIn(ExperimentalObjCName::class)
-actual class MPBackupImporter(selfUserDomain: String) : CommonMPBackupImporter(selfUserDomain) {
+actual class MPBackupImporter : CommonMPBackupImporter() {
 
     /**
      * Imports a backup from the specified root path.
