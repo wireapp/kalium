@@ -33,7 +33,7 @@ internal class ProteusMigrationRecoveryHandlerImpl(
      * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
      * It will perform a logout, using [LogoutReason.MIGRATION_TO_CC_FAILED] as the reason.
      *
-     * This achieves that the client data is cleared and the user is logged out without content.
+     * This achieves that the client data is cleared and the user is logged out without losing content.
      */
     @Suppress("TooGenericExceptionCaught")
     override suspend fun clearClientData() {
