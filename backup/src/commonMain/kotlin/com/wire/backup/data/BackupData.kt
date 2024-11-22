@@ -88,7 +88,9 @@ data class BackupMessage(
     val senderUserId: BackupQualifiedId,
     val senderClientId: String,
     val creationDate: BackupDateTime,
-    val content: BackupMessageContent
+    val content: BackupMessageContent,
+    @Deprecated("Used only by the Webteam in order to simplify debugging", ReplaceWith(""))
+    val webPrimaryKey: Int? = null,
 )
 
 expect class BackupDateTime

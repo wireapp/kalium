@@ -84,7 +84,8 @@ internal class MPBackupMapper {
                     content.zoom
                 )
             )
-        }
+        },
+        webPk = it.webPrimaryKey?.toLong()
     )
 
     fun mapConversationToProtobuf(it: BackupConversation) = ExportedConversation(it.id.toProtoModel(), it.name)
@@ -150,7 +151,8 @@ internal class MPBackupMapper {
             senderUserId = message.senderUserId.toModel(),
             senderClientId = message.senderClientId,
             creationDate = BackupDateTime(message.timeIso),
-            content = content
+            content = content,
+            webPrimaryKey = message.webPk?.toInt()
         )
     }
 
