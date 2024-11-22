@@ -88,7 +88,7 @@ internal class GetOrRegisterClientUseCaseImpl(
             }
 
             is RegisterClientResult.Success -> {
-                clientRepository.clearMigrationTOCCFailed()
+                resolveMigrationToCCErrors(result.client.id)
                 upgradeCurrentSessionAndPersistClient(result.client.id)
             }
 
@@ -103,6 +103,13 @@ internal class GetOrRegisterClientUseCaseImpl(
         upgradeCurrentSessionUseCase(clientId).flatMap {
             kaliumLogger.i("Persist client ${clientId.value.obfuscateId()}")
             clientRepository.persistClientId(clientId)
+        }
+    }
+
+    private suspend fun resolveMigrationToCCErrors(clientId: ClientId) {
+        if (clientRepository.getClientIdWithMigrationToCCFailure() != null) {
+            clientRepository.persistClientId(clientId)
+            clientRepository.clearMigrationTOCCFailed()
         }
     }
 
