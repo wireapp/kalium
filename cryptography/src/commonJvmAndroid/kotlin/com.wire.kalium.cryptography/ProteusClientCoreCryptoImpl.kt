@@ -205,7 +205,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                 if (cryptoBoxFilesExists(File(rootDir))) {
                     kaliumLogger.i("migrating from crypto box at: $rootDir")
                     coreCrypto.proteusCryptoboxMigrate(rootDir)
-                    throw RuntimeException("Some dummy exception for this block")
+                    throw RuntimeException("Some dummy exception for this block") // remove this, before merging, just for testing.
                     kaliumLogger.i("migration successful")
 
                     if (deleteCryptoBoxFiles(rootDir)) {
@@ -215,7 +215,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                     }
                 }
             } catch (exception: Exception) {
-                kaliumLogger.e("Failed to migrate from crypto box at $rootDir, exception: $exception")
+                kaliumLogger.e("Failed to migrate from crypto box to core crypto, exception: $exception")
                 throw ProteusStorageMigrationException("Failed to migrate from crypto box at $rootDir", exception)
             }
         }
