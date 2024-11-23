@@ -27,6 +27,7 @@ import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.use
+import java.io.File
 
 @Suppress("TooManyFunctions")
 actual class KaliumFileSystemImpl actual constructor(
@@ -151,4 +152,15 @@ actual class KaliumFileSystemImpl actual constructor(
      * @return the list of paths found.
      */
     override suspend fun listDirectories(dir: Path): List<Path> = SYSTEM.list(dir)
+
+    /**
+     * Returns the size of the file at the specified path.
+     * @param path The path to the file whose size is being determined.
+     * @return The size of the file in bytes.
+     */
+    override fun fileSize(path: Path): Long {
+//         val file = File(path.toString())
+//         return if (file.exists() && file.isFile) file.length() else 0
+        return SYSTEM.metadata(path).size ?: 0L
+    }
 }

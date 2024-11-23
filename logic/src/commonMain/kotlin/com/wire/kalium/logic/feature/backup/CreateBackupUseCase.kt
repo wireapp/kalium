@@ -26,11 +26,11 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
@@ -63,7 +63,7 @@ interface CreateBackupUseCase {
      * with the provided password if it is not empty. Otherwise, the file will be unencrypted.
      * @param password The password to encrypt the backup file with. If empty, the file will be unencrypted.
      */
-    suspend operator fun invoke(password: String): CreateBackupResult
+    suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult
 }
 
 @Suppress("LongParameterList")
@@ -78,32 +78,33 @@ internal class CreateBackupUseCaseImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : CreateBackupUseCase {
 
-    override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.default) {
-        val userHandle = userRepository.getSelfUser()?.handle?.replace(".", "-")
-        val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
-        val backupName = createBackupFileName(userHandle, timeStamp)
-        val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
-        deletePreviousBackupFiles(backupFilePath)
+    override suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult =
+        withContext(dispatchers.default) {
+            val userHandle = userRepository.getSelfUser()?.handle?.replace(".", "-")
+            val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
+            val backupName = createBackupFileName(userHandle, timeStamp)
+            val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
+            deletePreviousBackupFiles(backupFilePath)
 
-        val plainDBPath =
-            databaseExporter.exportToPlainDB(securityHelper.userDBOrSecretNull(userId))?.toPath()
-                ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
+            val plainDBPath =
+                databaseExporter.exportToPlainDB(securityHelper.userDBOrSecretNull(userId))?.toPath()
+                    ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
 
-        try {
-            createBackupFile(userId, plainDBPath, backupFilePath).fold(
-                { error -> CreateBackupResult.Failure(error) },
-                { (backupFilePath, backupSize) ->
-                    val isBackupEncrypted = password.isNotEmpty()
-                    if (isBackupEncrypted) {
-                        encryptAndCompressFile(backupFilePath, password)
-                    } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
-                })
-        } finally {
-            databaseExporter.deleteBackupDBFile()
+            try {
+                createBackupFile(userId, plainDBPath, backupFilePath, onProgress).fold(
+                    { error -> CreateBackupResult.Failure(error) },
+                    { (backupFilePath, backupSize) ->
+                        val isBackupEncrypted = password.isNotEmpty()
+                        if (isBackupEncrypted) {
+                            encryptAndCompressFile(backupFilePath, password, onProgress)
+                        } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
+                    })
+            } finally {
+                databaseExporter.deleteBackupDBFile()
+            }
         }
-    }
 
-    private suspend fun encryptAndCompressFile(backupFilePath: Path, password: String): CreateBackupResult {
+    private suspend fun encryptAndCompressFile(backupFilePath: Path, password: String, onProgress: (Float) -> Unit): CreateBackupResult {
         val encryptedBackupFilePath = kaliumFileSystem.tempFilePath(BACKUP_ENCRYPTED_FILE_NAME)
         val backupEncryptedDataSize = encryptBackup(
             kaliumFileSystem.source(backupFilePath),
@@ -117,7 +118,9 @@ internal class CreateBackupUseCaseImpl(
 
         return createCompressedFile(
             listOf(kaliumFileSystem.source(encryptedBackupFilePath) to encryptedBackupFilePath.name),
-            kaliumFileSystem.sink(finalBackupFilePath)
+            kaliumFileSystem.sink(finalBackupFilePath),
+            kaliumFileSystem.fileSize(encryptedBackupFilePath),
+            onProgress
         ).fold({
             CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to compress encrypted backup file")))
         }, { backupEncryptedCompressedDataSize ->
@@ -167,7 +170,8 @@ internal class CreateBackupUseCaseImpl(
     private suspend fun createBackupFile(
         userId: UserId,
         plainDBPath: Path,
-        backupZipFilePath: Path
+        backupZipFilePath: Path,
+        onProgress: (Float) -> Unit
     ): Either<CoreFailure, Pair<Path, Long>> {
         return try {
             val backupSink = kaliumFileSystem.sink(backupZipFilePath)
@@ -176,8 +180,9 @@ internal class CreateBackupUseCaseImpl(
                 kaliumFileSystem.source(backupMetadataPath) to BACKUP_METADATA_FILE_NAME,
                 kaliumFileSystem.source(plainDBPath) to BACKUP_USER_DB_NAME
             )
+            val totalBytes = listOf(backupZipFilePath, plainDBPath).sumOf { kaliumFileSystem.fileSize(it) }
 
-            createCompressedFile(filesList, backupSink).flatMap { compressedFileSize ->
+            createCompressedFile(filesList, backupSink, totalBytes, onProgress).flatMap { compressedFileSize ->
                 Either.Right(backupZipFilePath to compressedFileSize)
             }
         } catch (e: FileNotFoundException) {

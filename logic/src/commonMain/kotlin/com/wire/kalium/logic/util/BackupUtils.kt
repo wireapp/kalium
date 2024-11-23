@@ -26,7 +26,13 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
-expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long>
+expect fun createCompressedFile(
+    files: List<Pair<Source, String>>,
+    outputSink: Sink,
+    totalBytes: Long,
+    onProgress: (Float) -> Unit
+): Either<CoreFailure, Long>
+
 expect fun extractCompressedFile(
     inputSource: Source,
     outputRootPath: Path,

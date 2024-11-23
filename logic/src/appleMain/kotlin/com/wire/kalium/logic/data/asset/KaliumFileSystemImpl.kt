@@ -151,4 +151,7 @@ actual class KaliumFileSystemImpl actual constructor(
      * @return the list of paths found.
      */
     override suspend fun listDirectories(dir: Path): List<Path> = SYSTEM.list(dir)
+    override fun fileSize(path: Path): Long {
+        return SYSTEM.metadata(path).size ?: 0L
+    }
 }
