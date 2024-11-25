@@ -42,6 +42,7 @@ internal class ProteusMigrationRecoveryHandlerImpl(
             logoutUseCase.value(LogoutReason.MIGRATION_TO_CC_FAILED, true)
         } catch (e: Exception) {
             kaliumLogger.withTextTag(TAG).e("Fatal, error while clearing client data: $e")
+            throw e
         } finally {
             kaliumLogger.withTextTag(TAG).i("Finished the recovery from failed Proteus storage migration")
         }
