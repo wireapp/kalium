@@ -55,6 +55,20 @@ class IsFederationSearchAllowedUseCaseTest {
     }
 
     @Test
+    fun givenMLSIsConfiguredAndAMLSTeamWithEmptyKeys_whenInvokingIsFederationSearchAllowed_thenReturnTrue() = runTest {
+        val (arrangement, isFederationSearchAllowedUseCase) = Arrangement()
+            .withEmptyMlsKeys()
+            .arrange()
+
+        val isAllowed = isFederationSearchAllowedUseCase(conversationId = null)
+
+        assertEquals(true, isAllowed)
+        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
+        coVerify { arrangement.getDefaultProtocol.invoke() }.wasNotInvoked()
+        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
+    }
+
+    @Test
     fun givenMLSIsConfiguredAndAMLSTeam_whenInvokingIsFederationSearchAllowed_thenReturnTrue() = runTest {
         val (arrangement, isFederationSearchAllowedUseCase) = Arrangement()
             .withMLSConfiguredForBackend(isConfigured = true)
@@ -66,21 +80,6 @@ class IsFederationSearchAllowedUseCaseTest {
         assertEquals(true, isAllowed)
         coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
         coVerify { arrangement.getDefaultProtocol.invoke() }.wasInvoked(once)
-        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenMLSIsConfiguredAndAMLSTeamWithEmptyKeys_whenInvokingIsFederationSearchAllowed_thenReturnTrue() = runTest {
-        val (arrangement, isFederationSearchAllowedUseCase) = Arrangement()
-            .withEmptyMlsKeys()
-            .withDefaultProtocol(SupportedProtocol.MLS)
-            .arrange()
-
-        val isAllowed = isFederationSearchAllowedUseCase(conversationId = null)
-
-        assertEquals(true, isAllowed)
-        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
-        coVerify { arrangement.getDefaultProtocol.invoke() }.wasNotInvoked()
         coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
     }
 
