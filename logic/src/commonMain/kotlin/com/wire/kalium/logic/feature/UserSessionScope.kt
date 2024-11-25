@@ -51,8 +51,8 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
-import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
-import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandlerImpl
+import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandler
+import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource

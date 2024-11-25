@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
+import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandler
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
