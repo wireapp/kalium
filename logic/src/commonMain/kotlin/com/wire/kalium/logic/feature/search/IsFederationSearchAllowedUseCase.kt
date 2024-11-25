@@ -19,11 +19,12 @@ package com.wire.kalium.logic.feature.search
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
-import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -45,10 +46,20 @@ internal fun IsFederationSearchAllowedUseCase(
 ) = object : IsFederationSearchAllowedUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId?): Boolean = withContext(dispatcher.io) {
-        val isMlsConfiguredForBackend = mlsPublicKeysRepository.getKeys().isRight()
+        val isMlsConfiguredForBackend = hasMLSKeysConfiguredForBackend()
         when (isMlsConfiguredForBackend) {
             true -> isConversationProtocolAbleToFederate(conversationId)
             false -> true
+        }
+    }
+
+    private suspend fun hasMLSKeysConfiguredForBackend(): Boolean {
+        return when (val mlsKeysResult = mlsPublicKeysRepository.getKeys()) {
+            is Either.Left -> false
+            is Either.Right -> {
+                val mlsKeys: MLSPublicKeys = mlsKeysResult.value
+                mlsKeys.removal != null && mlsKeys.removal?.isNotEmpty() == true
+            }
         }
     }
 

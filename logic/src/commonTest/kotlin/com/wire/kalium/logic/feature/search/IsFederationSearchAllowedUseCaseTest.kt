@@ -50,6 +50,8 @@ class IsFederationSearchAllowedUseCaseTest {
 
         assertEquals(true, isAllowed)
         coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
+        coVerify { arrangement.getDefaultProtocol.invoke() }.wasNotInvoked()
+        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -64,6 +66,21 @@ class IsFederationSearchAllowedUseCaseTest {
         assertEquals(true, isAllowed)
         coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
         coVerify { arrangement.getDefaultProtocol.invoke() }.wasInvoked(once)
+        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMLSIsConfiguredAndAMLSTeamWithEmptyKeys_whenInvokingIsFederationSearchAllowed_thenReturnTrue() = runTest {
+        val (arrangement, isFederationSearchAllowedUseCase) = Arrangement()
+            .withEmptyMlsKeys()
+            .withDefaultProtocol(SupportedProtocol.MLS)
+            .arrange()
+
+        val isAllowed = isFederationSearchAllowedUseCase(conversationId = null)
+
+        assertEquals(true, isAllowed)
+        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
+        coVerify { arrangement.getDefaultProtocol.invoke() }.wasNotInvoked()
         coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
     }
 
@@ -110,6 +127,12 @@ class IsFederationSearchAllowedUseCaseTest {
         @Mock
         val getConversationProtocolInfo = mock(GetConversationProtocolInfoUseCase::class)
 
+        private val MLS_PUBLIC_KEY = MLSPublicKeys(
+            removal = mapOf(
+                "ed25519" to "gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw="
+            )
+        )
+
         fun withDefaultProtocol(protocol: SupportedProtocol) = apply {
             every { getDefaultProtocol.invoke() }.returns(protocol)
         }
@@ -121,11 +144,15 @@ class IsFederationSearchAllowedUseCaseTest {
         suspend fun withMLSConfiguredForBackend(isConfigured: Boolean = true) = apply {
             coEvery { mlsPublicKeysRepository.getKeys() }.returns(
                 if (isConfigured) {
-                    Either.Right(MLSPublicKeys(emptyMap()))
+                    Either.Right(MLS_PUBLIC_KEY)
                 } else {
                     Either.Left(CoreFailure.Unknown(RuntimeException("MLS is not configured")))
                 }
             )
+        }
+
+        suspend fun withEmptyMlsKeys() = apply {
+            coEvery { mlsPublicKeysRepository.getKeys() }.returns(Either.Right(MLSPublicKeys(emptyMap())))
         }
 
         fun arrange() = this to IsFederationSearchAllowedUseCase(
