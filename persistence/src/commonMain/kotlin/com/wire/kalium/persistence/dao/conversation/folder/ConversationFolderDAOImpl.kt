@@ -19,6 +19,8 @@ package com.wire.kalium.persistence.dao.conversation.folder
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationFoldersQueries
+import com.wire.kalium.persistence.GetAllFoldersWithConversations
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
 import com.wire.kalium.persistence.util.mapToList
@@ -32,6 +34,30 @@ class ConversationFolderDAOImpl internal constructor(
     private val coroutineContext: CoroutineContext,
 ) : ConversationFolderDAO {
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
+
+    override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(coroutineContext) {
+        val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().executeAsList().map(::toEntity)
+
+        val folderMap = labeledConversationList.groupBy { it.folderId }.mapValues { entry ->
+            val folderId = entry.key
+            val firstRow = entry.value.first()
+            FolderWithConversationsEntity(
+                id = folderId,
+                name = firstRow.folderName,
+                type = firstRow.folderType,
+                conversationIdList = entry.value.mapNotNull { it.conversationId }
+            )
+        }
+
+        folderMap.values.toList()
+    }
+
+    private fun toEntity(row: GetAllFoldersWithConversations) = LabeledConversationEntity(
+        folderId = row.label_id,
+        folderName = row.label_name,
+        folderType = row.label_type,
+        conversationId = row.conversation_id
+    )
 
     override suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationFoldersQueries.getConversationsFromFolder(
@@ -52,7 +78,6 @@ class ConversationFolderDAOImpl internal constructor(
 
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =
         withContext(coroutineContext) {
-            // TODO KBX make it better to not have blinking effect on favorites list
             conversationFoldersQueries.transaction {
                 conversationFoldersQueries.clearFolders()
                 folderWithConversationsList.forEach { folderWithConversations ->
@@ -70,4 +95,12 @@ class ConversationFolderDAOImpl internal constructor(
                 }
             }
         }
+
+    override suspend fun addConversationToFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(coroutineContext) {
+        conversationFoldersQueries.insertLabeledConversation(conversationId, folderId)
+    }
+
+    override suspend fun removeConversationFromFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(coroutineContext) {
+        conversationFoldersQueries.deleteLabeledConversation(conversationId, folderId)
+    }
 }
