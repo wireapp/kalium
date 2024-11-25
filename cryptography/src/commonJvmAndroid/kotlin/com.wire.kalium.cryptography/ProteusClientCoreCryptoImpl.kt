@@ -199,14 +199,12 @@ class ProteusClientCoreCryptoImpl private constructor(
             }
         }
 
-        @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+        @Suppress("TooGenericExceptionCaught")
         private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
             try {
                 if (cryptoBoxFilesExists(File(rootDir))) {
                     kaliumLogger.i("migrating from crypto box at: $rootDir")
                     coreCrypto.proteusCryptoboxMigrate(rootDir)
-                    @Suppress("TooGenericExceptionThrown") // remove this, before merging, just for testing.
-                    throw RuntimeException("Some dummy exception for this block") // remove this, before merging, just for testing.
                     kaliumLogger.i("migration successful")
 
                     if (deleteCryptoBoxFiles(rootDir)) {
