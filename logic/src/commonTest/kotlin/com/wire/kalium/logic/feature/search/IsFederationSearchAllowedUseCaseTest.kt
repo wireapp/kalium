@@ -98,41 +98,43 @@ class IsFederationSearchAllowedUseCaseTest {
         coVerify { arrangement.getDefaultProtocol.invoke() }.wasInvoked(once)
         coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasInvoked(once)
     }
-}
 
-private class Arrangement {
+    private class Arrangement {
 
-    @Mock
-    val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
+        @Mock
+        val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
 
-    @Mock
-    val getDefaultProtocol = mock(GetDefaultProtocolUseCase::class)
+        @Mock
+        val getDefaultProtocol = mock(GetDefaultProtocolUseCase::class)
 
-    @Mock
-    val getConversationProtocolInfo = mock(GetConversationProtocolInfoUseCase::class)
+        @Mock
+        val getConversationProtocolInfo = mock(GetConversationProtocolInfoUseCase::class)
 
-    fun withDefaultProtocol(protocol: SupportedProtocol) = apply {
-        every { getDefaultProtocol.invoke() }.returns(protocol)
-    }
+        fun withDefaultProtocol(protocol: SupportedProtocol) = apply {
+            every { getDefaultProtocol.invoke() }.returns(protocol)
+        }
 
-    suspend fun withConversationProtocolInfo(protocolInfo: GetConversationProtocolInfoUseCase.Result) = apply {
-        coEvery { getConversationProtocolInfo(any()) }.returns(protocolInfo)
-    }
+        suspend fun withConversationProtocolInfo(protocolInfo: GetConversationProtocolInfoUseCase.Result) = apply {
+            coEvery { getConversationProtocolInfo(any()) }.returns(protocolInfo)
+        }
 
-    suspend fun withMLSConfiguredForBackend(isConfigured: Boolean = true) = apply {
-        coEvery { mlsPublicKeysRepository.getKeys() }.returns(
-            if (isConfigured) {
-                Either.Right(MLSPublicKeys(emptyMap()))
-            } else {
-                Either.Left(CoreFailure.Unknown(RuntimeException("MLS is not configured")))
-            }
+        suspend fun withMLSConfiguredForBackend(isConfigured: Boolean = true) = apply {
+            coEvery { mlsPublicKeysRepository.getKeys() }.returns(
+                if (isConfigured) {
+                    Either.Right(MLSPublicKeys(emptyMap()))
+                } else {
+                    Either.Left(CoreFailure.Unknown(RuntimeException("MLS is not configured")))
+                }
+            )
+        }
+
+        fun arrange() = this to IsFederationSearchAllowedUseCase(
+            mlsPublicKeysRepository = mlsPublicKeysRepository,
+            getDefaultProtocol = getDefaultProtocol,
+            getConversationProtocolInfo = getConversationProtocolInfo,
+            dispatcher = KaliumDispatcherImpl
         )
     }
-
-    fun arrange() = this to IsFederationSearchAllowedUseCase(
-        mlsPublicKeysRepository = mlsPublicKeysRepository,
-        getDefaultProtocol = getDefaultProtocol,
-        getConversationProtocolInfo = getConversationProtocolInfo,
-        dispatcher = KaliumDispatcherImpl
-    )
 }
+
+
