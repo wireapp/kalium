@@ -17,7 +17,7 @@ CREATE TABLE LabeledConversation (
       PRIMARY KEY (folder_id, conversation_id)
 );
 
-getFolderWithConversations:
+getAllFoldersWithConversations:
 SELECT
     conversationFolder.id AS label_id,
     conversationFolder.name AS label_name,

@@ -19,7 +19,7 @@ package com.wire.kalium.persistence.dao.conversation.folder
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationFoldersQueries
-import com.wire.kalium.persistence.GetFolderWithConversations
+import com.wire.kalium.persistence.GetAllFoldersWithConversations
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
@@ -36,7 +36,7 @@ class ConversationFolderDAOImpl internal constructor(
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
 
     override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(coroutineContext) {
-        val labeledConversationList = conversationFoldersQueries.getFolderWithConversations().executeAsList().map(::toEntity)
+        val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().executeAsList().map(::toEntity)
 
         val folderMap = labeledConversationList.groupBy { it.folderId }.mapValues { entry ->
             val folderId = entry.key
@@ -52,7 +52,7 @@ class ConversationFolderDAOImpl internal constructor(
         folderMap.values.toList()
     }
 
-    private fun toEntity(row: GetFolderWithConversations) = LabeledConversationEntity(
+    private fun toEntity(row: GetAllFoldersWithConversations) = LabeledConversationEntity(
         folderId = row.label_id,
         folderName = row.label_name,
         folderType = row.label_type,

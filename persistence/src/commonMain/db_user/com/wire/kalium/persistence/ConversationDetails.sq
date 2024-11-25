@@ -109,14 +109,7 @@ CASE
         END
     ELSE 0
 END AS interactionEnabled,
-CASE WHEN EXISTS (
-        SELECT 1
-        FROM LabeledConversation lc
-        JOIN ConversationFolder cf ON lc.folder_id = cf.id
-        WHERE lc.conversation_id = Conversation.qualified_id
-          AND cf.folder_type = 'FAVORITE'
-    )
-    THEN 1 ELSE 0 END AS isFavorite
+LabeledConversation.folder_id IS NOT NULL AS isFavorite
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -131,7 +124,9 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          OR Connection.status = 'NOT_CONNECTED'
          AND Conversation.type IS 'CONNECTION_PENDING')
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
-LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1)
+LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type = 'FAVORITE'
+LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id;
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails

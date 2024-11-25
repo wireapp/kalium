@@ -41,6 +41,7 @@ class AddConversationToFavoritesUseCaseTest {
         val (arrangement, addConversationToFavoritesUseCase) = Arrangement()
             .withFavoriteFolder(Either.Right(TestFolder.FAVORITE))
             .withAddConversationToFolder(Either.Right(Unit))
+            .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
         val result = addConversationToFavoritesUseCase(TestConversation.ID)
@@ -63,6 +64,7 @@ class AddConversationToFavoritesUseCaseTest {
     fun givenValidConversation_WhenFavoriteFolderNotFound_ThenReturnFailure() = runTest {
         val (arrangement, addConversationToFavoritesUseCase) = Arrangement()
             .withFavoriteFolder(Either.Left(CoreFailure.Unknown(null)))
+            .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
         val result = addConversationToFavoritesUseCase(TestConversation.ID)
@@ -79,6 +81,7 @@ class AddConversationToFavoritesUseCaseTest {
         val (arrangement, addConversationToFavoritesUseCase) = Arrangement()
             .withFavoriteFolder(Either.Right(TestFolder.FAVORITE))
             .withAddConversationToFolder(Either.Left(CoreFailure.Unknown(null)))
+            .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
         val result = addConversationToFavoritesUseCase(TestConversation.ID)
@@ -114,6 +117,12 @@ class AddConversationToFavoritesUseCaseTest {
         suspend fun withAddConversationToFolder(either: Either<CoreFailure, Unit>) = apply {
             coEvery {
                 conversationFolderRepository.addConversationToFolder(any(), any())
+            }.returns(either)
+        }
+
+        suspend fun withSyncConversationFoldersFromLocal(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationFolderRepository.syncConversationFoldersFromLocal()
             }.returns(either)
         }
 

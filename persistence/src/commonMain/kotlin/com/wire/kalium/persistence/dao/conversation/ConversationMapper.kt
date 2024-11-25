@@ -76,7 +76,7 @@ data object ConversationMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
-        isFavorite: Long,
+        isFavorite: Boolean,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
@@ -127,7 +127,7 @@ data object ConversationMapper {
         proteusVerificationStatus = proteusVerificationStatus,
         legalHoldStatus = legalHoldStatus,
         accentId = accentId,
-        isFavorite = isFavorite == 1L
+        isFavorite = isFavorite
     )
 
     @Suppress("LongParameterList", "UnusedParameter")

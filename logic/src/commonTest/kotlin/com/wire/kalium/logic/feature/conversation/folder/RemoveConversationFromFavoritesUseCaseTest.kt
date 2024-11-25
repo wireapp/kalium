@@ -42,6 +42,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
         val (arrangement, removeConversationUseCase) = Arrangement()
             .withFavoriteFolder(Either.Right(TestFolder.FAVORITE))
             .withRemoveConversationFromFolder(testConversationId, TestFolder.FAVORITE.id, Either.Right(Unit))
+            .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
         val result = removeConversationUseCase(testConversationId)
@@ -63,6 +64,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
 
         val (arrangement, removeConversationUseCase) = Arrangement()
             .withFavoriteFolder(Either.Left(CoreFailure.Unknown(null)))
+            .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
         val result = removeConversationUseCase(testConversationId)
@@ -81,6 +83,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
         val (arrangement, removeConversationUseCase) = Arrangement()
             .withFavoriteFolder(Either.Right(TestFolder.FAVORITE))
             .withRemoveConversationFromFolder(testConversationId, TestFolder.FAVORITE.id, Either.Left(CoreFailure.Unknown(null)))
+            .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
         val result = removeConversationUseCase(testConversationId)
@@ -117,6 +120,12 @@ class RemoveConversationFromFavoritesUseCaseTest {
         ) = apply {
             coEvery {
                 conversationFolderRepository.removeConversationFromFolder(conversationId, folderId)
+            }.returns(either)
+        }
+
+        suspend fun withSyncConversationFoldersFromLocal(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationFolderRepository.syncConversationFoldersFromLocal()
             }.returns(either)
         }
 

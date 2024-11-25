@@ -131,9 +131,6 @@ internal class ConversationFolderDataSource internal constructor(
         return wrapStorageRequest {
             conversationFolderDAO.addConversationToFolder(conversationId.toDao(), folderId)
         }
-            .flatMap {
-                syncConversationFoldersFromLocal()
-            }
     }
 
     override suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit> {
@@ -141,8 +138,6 @@ internal class ConversationFolderDataSource internal constructor(
             .v("Removing conversation ${conversationId.toLogString()} from folder ${folderId.obfuscateId()}")
         return wrapStorageRequest {
             conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId)
-        }.flatMap {
-            syncConversationFoldersFromLocal()
         }
     }
 

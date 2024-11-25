@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.conversation.folder
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -56,6 +57,9 @@ internal class AddConversationToFavoritesUseCaseImpl(
                     conversationId,
                     folder.id
                 )
+                    .flatMap {
+                        conversationFolderRepository.syncConversationFoldersFromLocal()
+                    }
                     .fold({
                         AddConversationToFavoritesUseCase.Result.Failure(it)
                     }, {

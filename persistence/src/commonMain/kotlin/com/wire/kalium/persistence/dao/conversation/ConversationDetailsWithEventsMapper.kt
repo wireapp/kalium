@@ -80,7 +80,7 @@ data object ConversationDetailsWithEventsMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
-        isFavorite: Long,
+        isFavorite: Boolean,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
         unreadMentionsCount: Long?,
