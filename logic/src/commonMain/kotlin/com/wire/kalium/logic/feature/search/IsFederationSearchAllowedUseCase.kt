@@ -40,16 +40,21 @@ internal fun IsFederationSearchAllowedUseCase(
     dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) = object : IsFederationSearchAllowedUseCase {
 
+    /**
+     * Check if FederatedSearchIsAllowed according to MLS configuration and protocol if a conversation is provided.
+     */
     override suspend operator fun invoke(conversationId: ConversationId?): Boolean = withContext(dispatcher.io) {
-        val isMLSConfigured = mlsPublicKeysRepository.getKeys().isRight()
-
-//         when ()
-
-
-        true
+        val isMlsConfiguredForBackend = mlsPublicKeysRepository.getKeys().isRight()
+        when (isMlsConfiguredForBackend) {
+            true -> isConversationProtocolAbleToFederate(conversationId)
+            false -> true
+        }
     }
 
-    private suspend fun isProtocolAbleToFederate(conversationId: ConversationId?): Boolean {
+    /**
+     * Check if the protocol for the conversation is able to federate.
+     */
+    private suspend fun isConversationProtocolAbleToFederate(conversationId: ConversationId?): Boolean {
         val isProteusTeam = getDefaultProtocol() == SupportedProtocol.PROTEUS
         val isOtherDomainAllowed: Boolean = conversationId?.let {
             when (val result = getConversationProtocolInfo(it)) {
@@ -59,7 +64,6 @@ internal fun IsFederationSearchAllowedUseCase(
                     !isProteusTeam && result.protocolInfo !is Conversation.ProtocolInfo.Proteus
             }
         } ?: !isProteusTeam
-
         return isOtherDomainAllowed
     }
 
