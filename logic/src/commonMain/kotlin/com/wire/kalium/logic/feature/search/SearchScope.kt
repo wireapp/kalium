@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUse
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
+@Suppress("LongParameterList")
 class SearchScope internal constructor(
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val getDefaultProtocol: GetDefaultProtocolUseCase,

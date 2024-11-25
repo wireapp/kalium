@@ -28,6 +28,10 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+/**
+ * Check if FederatedSearchIsAllowed according to MLS configuration of the backend
+ * and the conversation  protocol if a [ConversationId] is provided.
+ */
 interface IsFederationSearchAllowedUseCase {
     suspend operator fun invoke(conversationId: ConversationId?): Boolean
 }
@@ -40,9 +44,6 @@ internal fun IsFederationSearchAllowedUseCase(
     dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) = object : IsFederationSearchAllowedUseCase {
 
-    /**
-     * Check if FederatedSearchIsAllowed according to MLS configuration and protocol if a conversation is provided.
-     */
     override suspend operator fun invoke(conversationId: ConversationId?): Boolean = withContext(dispatcher.io) {
         val isMlsConfiguredForBackend = mlsPublicKeysRepository.getKeys().isRight()
         when (isMlsConfiguredForBackend) {
@@ -52,7 +53,7 @@ internal fun IsFederationSearchAllowedUseCase(
     }
 
     /**
-     * Check if the protocol for the conversation is able to federate.
+     * MLS is enabled, then we need to check if the protocol for the conversation is able to federate.
      */
     private suspend fun isConversationProtocolAbleToFederate(conversationId: ConversationId?): Boolean {
         val isProteusTeam = getDefaultProtocol() == SupportedProtocol.PROTEUS
