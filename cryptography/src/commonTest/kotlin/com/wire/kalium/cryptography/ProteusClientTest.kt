@@ -68,7 +68,6 @@ class ProteusClientTest : BaseProteusClientTest() {
         val previousFingerprint = unencryptedAliceClient.getLocalFingerprint()
         val encryptedAliceClient = createProteusClient(proteusStoreRef, PROTEUS_DB_SECRET)
 
-
         assertEquals(previousFingerprint.decodeToString(), encryptedAliceClient.getLocalFingerprint().decodeToString())
     }
 
