@@ -153,7 +153,6 @@ class ProteusClientProviderImpl(
         }
     }
 
-
     private companion object {
         const val TAG = "ProteusClientProvider"
     }
