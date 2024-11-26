@@ -112,9 +112,29 @@ sealed class BackupMessageContent {
         val assetToken: String?,
         val assetDomain: String?,
         val encryption: EncryptionAlgorithm?,
+        val metaData: AssetMetadata?,
     ) : BackupMessageContent() {
         enum class EncryptionAlgorithm {
             AES_GCM, AES_CBC
+        }
+
+        sealed class AssetMetadata {
+            data class Image(
+                val width: Int,
+                val height: Int,
+                val tag: String?
+            ) : AssetMetadata()
+
+            data class Video(
+                val width: Int?,
+                val height: Int?,
+                val duration: Long?,
+            ) : AssetMetadata()
+
+            data class Audio(
+                val normalization: ByteArray?,
+                val duration: Long?,
+            ) : AssetMetadata()
         }
 
         override fun equals(other: Any?): Boolean {
@@ -129,6 +149,7 @@ sealed class BackupMessageContent {
             if (assetToken != other.assetToken) return false
             if (assetDomain != other.assetDomain) return false
             if (encryption != other.encryption) return false
+            if (metaData != other.metaData) return false
 
             return true
         }
@@ -140,6 +161,7 @@ sealed class BackupMessageContent {
             result = 31 * result + (assetToken?.hashCode() ?: 0)
             result = 31 * result + (assetDomain?.hashCode() ?: 0)
             result = 31 * result + (encryption?.hashCode() ?: 0)
+            result = 31 * result + (metaData?.hashCode() ?: 0)
             return result
         }
     }

@@ -30,12 +30,15 @@ import com.wire.backup.data.toModel
 import com.wire.backup.data.toProtoModel
 import com.wire.kalium.protobuf.backup.ExportUser
 import com.wire.kalium.protobuf.backup.ExportedAsset
+import com.wire.kalium.protobuf.backup.ExportedAudioMetaData
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedEncryptionAlgorithm
+import com.wire.kalium.protobuf.backup.ExportedImageMetaData
 import com.wire.kalium.protobuf.backup.ExportedLocation
 import com.wire.kalium.protobuf.backup.ExportedMessage
 import com.wire.kalium.protobuf.backup.ExportedMessage.Content
 import com.wire.kalium.protobuf.backup.ExportedText
+import com.wire.kalium.protobuf.backup.ExportedVideoMetaData
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.backup.BackupData as ProtoBackupData
 
@@ -47,6 +50,7 @@ internal class MPBackupMapper {
         handle = it.handle
     )
 
+    @Suppress("LongMethod")
     fun mapMessageToProtobuf(it: BackupMessage) = ExportedMessage(
         id = it.id,
         timeIso = it.creationDate.toLongMilliseconds(),
@@ -69,6 +73,35 @@ internal class MPBackupMapper {
                             EncryptionAlgorithm.AES_GCM -> ExportedEncryptionAlgorithm.BACKUP_AES_GCM
                             EncryptionAlgorithm.AES_CBC -> ExportedEncryptionAlgorithm.BACKUP_AES_CBC
                             null -> null
+                        },
+                        content.metaData?.let {
+                            when (it) {
+                                is BackupMessageContent.Asset.AssetMetadata.Audio ->
+                                    ExportedAsset.MetaData.Audio(
+                                        ExportedAudioMetaData(
+                                            it.duration,
+                                            it.normalization?.let { ByteArr(it) }
+                                        )
+                                    )
+
+                                is BackupMessageContent.Asset.AssetMetadata.Image ->
+                                    ExportedAsset.MetaData.Image(
+                                        ExportedImageMetaData(
+                                            it.width,
+                                            it.height,
+                                            it.tag
+                                        )
+                                    )
+
+                                is BackupMessageContent.Asset.AssetMetadata.Video ->
+                                    ExportedAsset.MetaData.Video(
+                                        ExportedVideoMetaData(
+                                            it.width,
+                                            it.height,
+                                            it.duration
+                                        )
+                                    )
+                            }
                         }
                     )
                 )
@@ -132,6 +165,21 @@ internal class MPBackupMapper {
                         ExportedEncryptionAlgorithm.BACKUP_AES_CBC -> EncryptionAlgorithm.AES_CBC
                         ExportedEncryptionAlgorithm.BACKUP_AES_GCM -> EncryptionAlgorithm.AES_GCM
                         is ExportedEncryptionAlgorithm.UNRECOGNIZED -> null
+                    }
+                },
+                protoContent.value.metaData?.let {
+                    when (it) {
+                        is ExportedAsset.MetaData.Audio -> BackupMessageContent.Asset.AssetMetadata.Audio(
+                            it.value.normalizedLoudness?.array, it.value.durationInMillis
+                        )
+
+                        is ExportedAsset.MetaData.Image -> BackupMessageContent.Asset.AssetMetadata.Image(
+                            it.value.width, it.value.height, it.value.tag
+                        )
+
+                        is ExportedAsset.MetaData.Video -> BackupMessageContent.Asset.AssetMetadata.Video(
+                            it.value.width, it.value.height, it.value.durationInMillis
+                        )
                     }
                 }
             )
