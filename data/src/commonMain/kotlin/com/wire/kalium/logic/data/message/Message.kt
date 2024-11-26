@@ -29,6 +29,7 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -476,8 +477,8 @@ sealed interface Message {
 
     @Serializable
     data class ExpirationData(
-        val expireAfter: Duration,
-        val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted
+        @SerialName("expire_after") val expireAfter: Duration,
+        @SerialName("self_deletion_status") val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted
     ) {
 
         @Serializable
@@ -487,7 +488,7 @@ sealed interface Message {
             data object NotStarted : SelfDeletionStatus()
 
             @Serializable
-            data class Started(val selfDeletionEndDate: Instant) : SelfDeletionStatus()
+            data class Started(@SerialName("self_deletion_end_date") val selfDeletionEndDate: Instant) : SelfDeletionStatus()
 
             fun toLogMap(): Map<String, String> = when (this) {
                 is NotStarted -> mutableMapOf(

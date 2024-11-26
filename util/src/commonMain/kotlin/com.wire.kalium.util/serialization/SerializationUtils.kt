@@ -95,4 +95,3 @@ object AnyPrimitiveValueSerializer : KSerializer<Any> {
         return requireNotNull(jsonPrimitive.toAnyOrNull()) { "value cannot be null" }
     }
 }
-

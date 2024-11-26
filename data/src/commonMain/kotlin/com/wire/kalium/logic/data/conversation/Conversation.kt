@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
@@ -260,7 +261,10 @@ data class Conversation(
     }
 
     @Serializable
-    data class Member(val id: UserId, val role: Role) {
+    data class Member(
+        @SerialName("id") val id: UserId,
+        @SerialName("role") val role: Role
+    ) {
 
         @Serializable
         sealed class Role {
@@ -272,7 +276,7 @@ data class Conversation(
             data object Admin : Role()
 
             @Serializable
-            data class Unknown(val name: String) : Role()
+            data class Unknown(@SerialName("name") val name: String) : Role()
 
             override fun toString(): String =
                 when (this) {

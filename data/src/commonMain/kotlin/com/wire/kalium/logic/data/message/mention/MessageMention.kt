@@ -19,12 +19,13 @@
 package com.wire.kalium.logic.data.message.mention
 
 import com.wire.kalium.logic.data.user.UserId
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class MessageMention(
-    val start: Int,
-    val length: Int,
-    val userId: UserId,
-    val isSelfMention: Boolean
+    @SerialName("start") val start: Int,
+    @SerialName("length") val length: Int,
+    @SerialName("userId") val userId: UserId,
+    @SerialName("isSelfMention") val isSelfMention: Boolean
 )
