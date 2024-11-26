@@ -15,33 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.client
 
-package com.wire.kalium.persistence.model
+import com.wire.kalium.logic.data.logout.LogoutReason
 
-enum class LogoutReason {
-    /**
-     * User initiated the logout manually.
-     */
-    SELF_HARD_LOGOUT,
-
-    SELF_SOFT_LOGOUT,
-    /**
-     * User deleted this client from another client.
-     */
-    REMOVED_CLIENT,
-
-    /**
-     * User delete their account.
-     */
-    DELETED_ACCOUNT,
-
-    /**
-     * Session Expired.
-     */
-    SESSION_EXPIRED,
-
-    /**
-     * The migration to CC failed.
-     */
-    MIGRATION_TO_CC_FAILED
+/**
+ * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
+ * It will perform a logout, using [LogoutReason.MIGRATION_TO_CC_FAILED] as the reason.
+ *
+ * This achieves that the client data is cleared and the user is logged out without losing content.
+ */
+interface ProteusMigrationRecoveryHandler {
+    suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
 }
