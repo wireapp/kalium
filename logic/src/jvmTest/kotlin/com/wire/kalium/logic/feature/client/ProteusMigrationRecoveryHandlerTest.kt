@@ -17,7 +17,8 @@ class ProteusMigrationRecoveryHandlerTest {
         val (arrangement, proteusMigrationRecoveryHandler) = Arrangement().arrange()
 
         // when
-        proteusMigrationRecoveryHandler.clearClientData()
+        val clearLocalFiles: suspend () -> Unit = { }
+        proteusMigrationRecoveryHandler.clearClientData(clearLocalFiles)
 
         // then
         coVerify { arrangement.logoutUseCase(LogoutReason.MIGRATION_TO_CC_FAILED, true) }.wasInvoked(once)

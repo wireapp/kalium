@@ -19,7 +19,7 @@ import kotlin.io.path.createDirectory
 import kotlin.io.path.createFile
 import kotlin.io.path.exists
 
-class ProteusClientProviderImplTest {
+class ProteusClientProviderTest {
 
     @Test
     fun givenGettingOrCreatingAProteusClient_whenMigrationPerformedAndFails_thenCatchErrorAndStartRecovery() = runTest {
@@ -32,7 +32,7 @@ class ProteusClientProviderImplTest {
         try {
             proteusClientProvider.getOrCreate()
         } catch (e: ProteusStorageMigrationException) {
-            coVerify { arrangement.proteusMigrationRecoveryHandler.clearClientData() }.wasInvoked(once)
+            coVerify { arrangement.proteusMigrationRecoveryHandler.clearClientData(any()) }.wasInvoked(once)
         }
     }
 
