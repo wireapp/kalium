@@ -61,6 +61,13 @@ fun ConversationFolderEntity.toModel() = ConversationFolder(
     type = type.toModel()
 )
 
+fun FolderWithConversationsEntity.toModel() = FolderWithConversations(
+    id = id,
+    name = name,
+    type = type.toModel(),
+    conversationIdList = conversationIdList.map { it.toModel() }
+)
+
 fun FolderWithConversations.toDao() = FolderWithConversationsEntity(
     id = id,
     name = name,
