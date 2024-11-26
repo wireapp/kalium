@@ -2384,7 +2384,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            accentId = 1
+            accentId = 1,
+            isFavorite = false
         )
     }
 

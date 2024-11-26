@@ -30,6 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ConversationFolderDAOTest : BaseDatabaseTest() {
 
@@ -84,6 +85,126 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
         val result = db.conversationFolderDAO.getFavoriteConversationFolder()
 
         assertEquals(folderId, result.id)
+    }
+
+    @Test
+    fun givenMultipleFolders_whenRetrievingFolders_shouldReturnCorrectData() = runTest {
+        db.conversationDAO.insertConversation(conversationEntity1)
+        db.userDAO.upsertUser(userEntity1)
+        db.memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val folder1 = folderWithConversationsEntity(
+            id = "folderId1",
+            name = "Folder 1",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        val folder2 = folderWithConversationsEntity(
+            id = "folderId2",
+            name = "Folder 2",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf()
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(folder1, folder2))
+        val result = db.conversationFolderDAO.getFoldersWithConversations()
+
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.id == "folderId1" && it.name == "Folder 1" })
+        assertTrue(result.any { it.id == "folderId2" && it.name == "Folder 2" })
+    }
+
+    @Test
+    fun givenFolderWithConversation_whenRemovingConversation_thenFolderShouldBeEmpty() = runTest {
+        db.conversationDAO.insertConversation(conversationEntity1)
+        db.userDAO.upsertUser(userEntity1)
+        db.memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val folderId = "folderId1"
+        val folder = folderWithConversationsEntity(
+            id = folderId,
+            name = "Test Folder",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(folder))
+        db.conversationFolderDAO.removeConversationFromFolder(conversationEntity1.id, folderId)
+
+        val result = db.conversationFolderDAO.observeConversationListFromFolder(folderId).first()
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun givenFolderWithConversations_whenDeletingFolder_thenFolderShouldBeRemoved() = runTest {
+        db.conversationDAO.insertConversation(conversationEntity1)
+        db.userDAO.upsertUser(userEntity1)
+        db.memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val folder = folderWithConversationsEntity(
+            id = "folderId1",
+            name = "Folder 1",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(folder))
+        db.conversationFolderDAO.updateConversationFolders(listOf()) // Clear folders
+
+        val result = db.conversationFolderDAO.getFoldersWithConversations()
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun givenEmptyFolder_whenAddingToDatabase_thenShouldBeRetrievable() = runTest {
+        val folder = folderWithConversationsEntity(
+            id = "folderId1",
+            name = "Empty Folder",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf()
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(folder))
+
+        val result = db.conversationFolderDAO.getFoldersWithConversations()
+
+        assertEquals(1, result.size)
+        assertEquals("folderId1", result.first().id)
+        assertTrue(result.first().conversationIdList.isEmpty())
+    }
+
+    @Test
+    fun givenConversationAddedToUserAndFavoriteFolders_whenRetrievingFolders_thenShouldBeInBothFolders() = runTest {
+        db.conversationDAO.insertConversation(conversationEntity1)
+        db.userDAO.upsertUser(userEntity1)
+        db.memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val userFolder = folderWithConversationsEntity(
+            id = "userFolderId",
+            name = "User Folder",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        val favoriteFolder = folderWithConversationsEntity(
+            id = "favoriteFolderId",
+            name = "Favorites",
+            type = ConversationFolderTypeEntity.FAVORITE,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(userFolder, favoriteFolder))
+
+        val userFolderResult = db.conversationFolderDAO.observeConversationListFromFolder("userFolderId").first()
+        assertEquals(1, userFolderResult.size)
+        assertEquals(conversationEntity1.id, userFolderResult.first().conversationViewEntity.id)
+
+        val favoriteFolderResult = db.conversationFolderDAO.observeConversationListFromFolder("favoriteFolderId").first()
+        assertEquals(1, favoriteFolderResult.size)
+        assertEquals(conversationEntity1.id, favoriteFolderResult.first().conversationViewEntity.id)
     }
 
     companion object {

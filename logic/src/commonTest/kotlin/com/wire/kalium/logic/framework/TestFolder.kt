@@ -15,31 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.dao.conversation.folder
+package com.wire.kalium.logic.framework
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.logic.data.conversation.ConversationFolder
+import com.wire.kalium.logic.data.conversation.FolderType
 
-data class ConversationFolderEntity(
-    val id: String,
-    val name: String,
-    val type: ConversationFolderTypeEntity
-)
+object TestFolder {
 
-data class FolderWithConversationsEntity(
-    val id: String,
-    val name: String,
-    val type: ConversationFolderTypeEntity,
-    val conversationIdList: List<QualifiedIDEntity>
-)
+    val USER = ConversationFolder(
+        id = "folderId",
+        name = "friends",
+        type = FolderType.USER
+    )
 
-data class LabeledConversationEntity(
-    val folderId: String,
-    val folderName: String,
-    val folderType: ConversationFolderTypeEntity,
-    val conversationId: QualifiedIDEntity?
-)
-
-enum class ConversationFolderTypeEntity {
-    USER,
-    FAVORITE
+    val FAVORITE = ConversationFolder(
+        id = "favoriteFolderId",
+        name = "",
+        type = FolderType.FAVORITE
+    )
 }
