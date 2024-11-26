@@ -170,15 +170,20 @@ internal class MPBackupMapper {
                 protoContent.value.metaData?.let {
                     when (it) {
                         is ExportedAsset.MetaData.Audio -> BackupMessageContent.Asset.AssetMetadata.Audio(
-                            it.value.normalizedLoudness?.array, it.value.durationInMillis
+                            it.value.normalizedLoudness?.array,
+                            it.value.durationInMillis
                         )
 
                         is ExportedAsset.MetaData.Image -> BackupMessageContent.Asset.AssetMetadata.Image(
-                            it.value.width, it.value.height, it.value.tag
+                            it.value.width,
+                            it.value.height,
+                            it.value.tag
                         )
 
                         is ExportedAsset.MetaData.Video -> BackupMessageContent.Asset.AssetMetadata.Video(
-                            it.value.width, it.value.height, it.value.durationInMillis
+                            it.value.width,
+                            it.value.height,
+                            it.value.durationInMillis
                         )
                     }
                 }
