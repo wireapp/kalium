@@ -26,5 +26,5 @@ import com.wire.kalium.logic.data.logout.LogoutReason
  * This achieves that the client data is cleared and the user is logged out without losing content.
  */
 interface ProteusMigrationRecoveryHandler {
-    suspend fun clearClientData()
+    suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
 }

@@ -68,13 +68,7 @@ class ProteusClientProviderImpl(
     private val mutex = Mutex()
 
     override suspend fun clearLocalFiles() {
-        mutex.withLock {
-            withContext(dispatcher.io) {
-                _proteusClient?.close()
-                _proteusClient = null
-                FileUtil.deleteDirectory(rootProteusPath)
-            }
-        }
+        mutex.withLock { removeLocalFiles() }
     }
 
     override suspend fun getOrCreate(): ProteusClient {
@@ -135,7 +129,7 @@ class ProteusClientProviderImpl(
         return try {
             central.proteusClient()
         } catch (exception: ProteusStorageMigrationException) {
-            proteusMigrationRecoveryHandler.clearClientData()
+            proteusMigrationRecoveryHandler.clearClientData { removeLocalFiles() }
             val logMap = mapOf(
                 "userId" to userId.value.obfuscateId(),
                 "exception" to exception,
@@ -146,6 +140,19 @@ class ProteusClientProviderImpl(
             throw exception
         }
     }
+
+    /**
+     * Actually deletes the proteus local files.
+     * Important! It is the caller responsibility to use the mutex, DON'T add a mutex here or it will be dead lock it.
+     */
+    private suspend fun removeLocalFiles() {
+        withContext(dispatcher.io) {
+            _proteusClient?.close()
+            _proteusClient = null
+            FileUtil.deleteDirectory(rootProteusPath)
+        }
+    }
+
 
     private companion object {
         const val TAG = "ProteusClientProvider"

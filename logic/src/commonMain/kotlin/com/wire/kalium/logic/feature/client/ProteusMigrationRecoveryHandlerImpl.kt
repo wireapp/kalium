@@ -33,9 +33,10 @@ internal class ProteusMigrationRecoveryHandlerImpl(
      * This achieves that the client data is cleared and the user is logged out without losing content.
      */
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun clearClientData() {
+    override suspend fun clearClientData(clearLocalFiles: suspend () -> Unit) {
         try {
             kaliumLogger.withTextTag(TAG).i("Starting the recovery from failed Proteus storage migration")
+            clearLocalFiles()
             logoutUseCase.value(LogoutReason.MIGRATION_TO_CC_FAILED, true)
         } catch (e: Exception) {
             kaliumLogger.withTextTag(TAG).e("Fatal, error while clearing client data: $e")
