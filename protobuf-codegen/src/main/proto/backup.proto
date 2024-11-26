@@ -106,7 +106,7 @@ message ExportedVideoMetaData {
 
 message ExportedAudioMetaData {
     optional uint64 duration_in_millis = 1;
-    optional bytes normalized_loudness = 3; // each byte represent one loudness value as a byte (char) value.
+    optional bytes normalized_loudness = 2; // each byte represent one loudness value as a byte (char) value.
 }
 
 message ExportedLocation {
