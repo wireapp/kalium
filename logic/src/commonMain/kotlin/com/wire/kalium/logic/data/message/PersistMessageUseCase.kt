@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 
@@ -44,17 +45,23 @@ internal class PersistMessageUseCaseImpl(
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
         val isSelfSender = message.isSelfTheSender(selfUserId)
-
+        println("MessageSending 2.0 Try to persist message")
         return messageRepository.persistMessage(
             message = modifiedMessage,
             updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
         ).onSuccess {
+            println("MessageSending 2.1 Successfully persisted message")
             val isConversationMuted = it == InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
 
             if (!isConversationMuted && !isSelfSender && message.content.shouldNotifyUser()) {
                 notificationEventsManager.scheduleRegularNotificationChecking()
             }
-        }.map { }
+        }.onFailure {
+            println("MessageSending 2.2 Error persisting message $it")
+        }.map {
+            println("MessageSending 2.3 Result of persisting message $it")
+            Unit
+        }
     }
 
     private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId

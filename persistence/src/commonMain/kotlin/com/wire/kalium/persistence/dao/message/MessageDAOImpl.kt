@@ -91,20 +91,28 @@ internal class MessageDAOImpl internal constructor(
         message: MessageEntity,
         updateConversationModifiedDate: Boolean
     ) = withContext(coroutineContext) {
+        println("MessageSending 4.0 Start transaction")
         queries.transactionWithResult {
             val messageCreationInstant = message.date
 
+            println("MessageSending 4.1 Before inserting in DB")
             insertInDB(message)
+            println("MessageSending 4.2 Message inserted in DB")
 
             val needsToBeNotified = nonSuspendNeedsToBeNotified(message.id, message.conversationId)
+            println("MessageSending 4.3 Needs to be notified? $needsToBeNotified")
             if (!needsToBeNotified) {
+                println("MessageSending 4.3.1 Update notification date")
                 conversationsQueries.updateConversationNotificationsDate(messageCreationInstant, message.conversationId)
             }
 
+            println("MessageSending 4.4 Needs to update conversation modified date? $updateConversationModifiedDate")
             if (updateConversationModifiedDate) {
+                println("MessageSending 4.4.1 Update conversation modified date")
                 conversationsQueries.updateConversationModifiedDate(messageCreationInstant, message.conversationId)
             }
 
+            println("MessageSending 4.5 End with result.")
             if (needsToBeNotified) InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER
             else InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
         }
@@ -141,12 +149,16 @@ internal class MessageDAOImpl internal constructor(
      * Be careful and run this operation in ONE wrapping transaction.
      */
     private fun insertInDB(message: MessageEntity) {
+        println("MessageSending 5.0 Start DB insertion ")
         // do not add withContext
         if (!updateIdIfAlreadyExists(message)) {
+            println("MessageSending 5.1 Check condition ")
             if (isValidAssetMessageUpdate(message)) {
+                println("MessageSending 5.2 Update asset message ")
                 updateAssetMessage(message)
                 return
             } else {
+                println("MessageSending 5.3 Insert message or ignore ")
                 insertMessageOrIgnore(message)
             }
         }

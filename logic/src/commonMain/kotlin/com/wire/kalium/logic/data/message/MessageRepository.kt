@@ -322,6 +322,7 @@ internal class MessageDataSource internal constructor(
         message: Message.Standalone,
         updateConversationModifiedDate: Boolean,
     ): Either<CoreFailure, InsertMessageResult> = wrapStorageRequest {
+        println("MessageSending 3.0 Persist message.")
         messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
             updateConversationModifiedDate

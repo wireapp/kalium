@@ -74,10 +74,11 @@ class SendTextMessageUseCase internal constructor(
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
+        println("MessageSending 1.0 Try to send message")
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
-
+        println("MessageSending 1.1 After slow sync")
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
         val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
@@ -85,8 +86,9 @@ class SendTextMessageUseCase internal constructor(
             .duration
 
         val previews = uploadLinkPreviewImages(linkPreviews)
-
+        println("MessageSending 1.2 Create all message data")
         provideClientId().flatMap { clientId ->
+            println("MessageSending 1.3 Got client id")
             val message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Text(
@@ -111,10 +113,13 @@ class SendTextMessageUseCase internal constructor(
                 expirationData = messageTimer?.let { Message.ExpirationData(it) },
                 isSelfMessage = true
             )
+            println("MessageSending 1.4 Start persisting message")
             persistMessage(message).flatMap {
+                println("MessageSending 1.5 Start sending message")
                 messageSender.sendMessage(message)
             }
         }.onFailure {
+            println("MessageSending 1.3.1 Exception while getting client id $it")
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                 failure = it,
                 conversationId = conversationId,
