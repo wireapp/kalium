@@ -20,8 +20,10 @@ package com.wire.kalium.logic.feature.user.migration
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.user.CreateUserTeam
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -29,20 +31,30 @@ import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
+import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class MigrateFromPersonalToTeamUseCaseTest {
 
     @Test
     fun givenRepositorySucceeds_whenMigratingUserToTeam_thenShouldPropagateSuccess() = runTest {
-        val (_, useCase) = Arrangement().withSuccessRepository().arrange()
+        val (arrangement, useCase) = Arrangement()
+            .withUpdateTeamIdReturning(Either.Right(Unit))
+            .withMigrationSuccess()
+            .arrange()
 
         val result = useCase(teamName = "teamName")
 
+        coVerify {
+            arrangement.userRepository.updateTeamId(any(), any())
+        }.wasInvoked(exactly = once)
+        assertTrue(arrangement.isCachedTeamIdInvalidated)
         assertIs<MigrateFromPersonalToTeamResult.Success>(result)
     }
 
@@ -50,7 +62,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
     fun givenRepositoryFailsWithNoNetworkConnection_whenMigratingUserToTeam_thenShouldPropagateFailure() =
         runTest {
             val coreFailure = NetworkFailure.NoNetworkConnection(null)
-            val (_, useCase) = Arrangement().withRepositoryReturning(Either.Left(coreFailure))
+            val (_, useCase) = Arrangement().withMigrationReturning(Either.Left(coreFailure))
                 .arrange()
 
             val result = useCase(teamName = "teamName")
@@ -73,7 +85,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
     @Test
     fun givenRepositoryFailsWithNotFound_whenMigratingUserToTeam_thenShouldPropagateFailure() =
         runTest {
-            val (_, useCase) = Arrangement().withNotFoundRepository().arrange()
+            val (_, useCase) = Arrangement().withMigrationFailure().arrange()
 
             val result = useCase(teamName = "teamName")
 
@@ -94,10 +106,12 @@ class MigrateFromPersonalToTeamUseCaseTest {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
 
-        suspend fun withSuccessRepository() = apply {
+        var isCachedTeamIdInvalidated = false
+
+        suspend fun withMigrationSuccess() = apply {
             coEvery { userRepository.migrateUserToTeam(any()) }.returns(
                 Either.Right(
-                    CreateUserTeam("teamName")
+                    CreateUserTeam("teamId", "teamName")
                 )
             )
         }
@@ -118,7 +132,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
             )
         }
 
-        suspend fun withNotFoundRepository() = apply {
+        suspend fun withMigrationFailure() = apply {
             coEvery { userRepository.migrateUserToTeam(any()) }.returns(
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
@@ -134,13 +148,20 @@ class MigrateFromPersonalToTeamUseCaseTest {
             )
         }
 
-        suspend fun withRepositoryReturning(result: Either<CoreFailure, CreateUserTeam>) = apply {
+        suspend fun withMigrationReturning(result: Either<CoreFailure, CreateUserTeam>) = apply {
             coEvery { userRepository.migrateUserToTeam(any()) }.returns(result)
         }
 
+        suspend fun withUpdateTeamIdReturning(result: Either<StorageFailure, Unit>) = apply {
+            coEvery { userRepository.updateTeamId(any(), any()) }.returns(result)
+        }
+
         fun arrange() = this to MigrateFromPersonalToTeamUseCaseImpl(
-            userRepository = userRepository
+            selfUserId = TestUser.SELF.id,
+            userRepository = userRepository,
+            invalidateTeamId = {
+                isCachedTeamIdInvalidated = true
+            }
         )
     }
-
 }

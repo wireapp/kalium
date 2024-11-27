@@ -51,6 +51,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
+import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
@@ -189,6 +190,7 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
@@ -560,6 +562,10 @@ class UserSessionScope internal constructor(
         }
     }
 
+    private val invalidateTeamId = {
+        _teamId = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
+    }
+
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val accessTokenRepository: AccessTokenRepository
@@ -629,12 +635,17 @@ class UserSessionScope internal constructor(
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
         get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
+    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
+        ProteusMigrationRecoveryHandlerImpl(lazy { logout })
+    }
+
     val proteusClientProvider: ProteusClientProvider by lazy {
         ProteusClientProviderImpl(
             rootProteusPath = rootPathsProvider.rootProteusPath(userId),
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
         )
     }
 
@@ -932,11 +943,12 @@ class UserSessionScope internal constructor(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    private val eventGatherer: EventGatherer get() = EventGathererImpl(
-        eventRepository = eventRepository,
-        incrementalSyncRepository = incrementalSyncRepository,
-        logger = userScopedLogger
-    )
+    private val eventGatherer: EventGatherer
+        get() = EventGathererImpl(
+            eventRepository = eventRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            logger = userScopedLogger
+        )
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
@@ -2097,7 +2109,7 @@ class UserSessionScope internal constructor(
         )
 
     val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase
-        get() = MigrateFromPersonalToTeamUseCaseImpl(userRepository)
+        get() = MigrateFromPersonalToTeamUseCaseImpl(userId, userRepository, invalidateTeamId)
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)

@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.user.migration
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
@@ -32,7 +34,7 @@ interface MigrateFromPersonalToTeamUseCase {
 }
 
 sealed class MigrateFromPersonalToTeamResult {
-    data class Success(val teamName: String) : MigrateFromPersonalToTeamResult()
+    data object Success : MigrateFromPersonalToTeamResult()
     data class Error(val failure: MigrateFromPersonalToTeamFailure) :
         MigrateFromPersonalToTeamResult()
 }
@@ -50,7 +52,9 @@ sealed class MigrateFromPersonalToTeamFailure {
 }
 
 internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
+    private val selfUserId: UserId,
     private val userRepository: UserRepository,
+    private val invalidateTeamId: () -> Unit
 ) : MigrateFromPersonalToTeamUseCase {
     override suspend operator fun invoke(
         teamName: String,
@@ -88,9 +92,10 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
                     )
                 }
             }
-        }, { success ->
-            // TODO Invalidate team id in memory so UserSessionScope.selfTeamId got updated data WPB-12187
-            MigrateFromPersonalToTeamResult.Success(teamName = success.teamName)
+        }, { user ->
+            userRepository.updateTeamId(selfUserId, TeamId(user.teamId))
+                    invalidateTeamId()
+            MigrateFromPersonalToTeamResult.Success
         })
     }
 }
