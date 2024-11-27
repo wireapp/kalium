@@ -33,7 +33,8 @@ interface MigrateFromPersonalToTeamUseCase {
 
 sealed class MigrateFromPersonalToTeamResult {
     data class Success(val teamName: String) : MigrateFromPersonalToTeamResult()
-    data class Error(val failure: MigrateFromPersonalToTeamFailure) : MigrateFromPersonalToTeamResult()
+    data class Error(val failure: MigrateFromPersonalToTeamFailure) :
+        MigrateFromPersonalToTeamResult()
 }
 
 sealed class MigrateFromPersonalToTeamFailure {
@@ -44,6 +45,7 @@ sealed class MigrateFromPersonalToTeamFailure {
             const val ERROR_LABEL = "user-already-in-a-team"
         }
     }
+
     data object NoNetwork : MigrateFromPersonalToTeamFailure()
 }
 
@@ -53,24 +55,42 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
     override suspend operator fun invoke(
         teamName: String,
     ): MigrateFromPersonalToTeamResult {
-        return userRepository.migrateUserToTeam(teamName)
-            .fold(
-                { error ->
-                    if (error is NetworkFailure.ServerMiscommunication && error.kaliumException is KaliumException.InvalidRequestError) {
+        return userRepository.migrateUserToTeam(teamName).fold({ error ->
+            return when (error) {
+                is NetworkFailure.ServerMiscommunication -> {
+                    if (error.kaliumException is KaliumException.InvalidRequestError) {
                         val response = error.kaliumException.errorResponse
-                        if(response.label == MigrateFromPersonalToTeamFailure.UserAlreadyInTeam.ERROR_LABEL) {
-                            return MigrateFromPersonalToTeamResult.Error(MigrateFromPersonalToTeamFailure.UserAlreadyInTeam())
+                        if (response.label == MigrateFromPersonalToTeamFailure.UserAlreadyInTeam.ERROR_LABEL) {
+                            MigrateFromPersonalToTeamResult.Error(
+                                MigrateFromPersonalToTeamFailure.UserAlreadyInTeam()
+                            )
+                        } else {
+                            MigrateFromPersonalToTeamResult.Error(
+                                MigrateFromPersonalToTeamFailure.UnknownError(error)
+                            )
                         }
+                    } else {
+                        MigrateFromPersonalToTeamResult.Error(
+                            MigrateFromPersonalToTeamFailure.UnknownError(error)
+                        )
                     }
-                    if(error is NetworkFailure.NoNetworkConnection) {
-                        return MigrateFromPersonalToTeamResult.Error(MigrateFromPersonalToTeamFailure.NoNetwork)
-                    }
-                    return MigrateFromPersonalToTeamResult.Error(MigrateFromPersonalToTeamFailure.UnknownError(error))
-                },
-                { success ->
-                    // TODO Invalidate team id in memory so UserSessionScope.selfTeamId got updated data WPB-12187
-                    MigrateFromPersonalToTeamResult.Success(teamName = success.teamName)
                 }
-            )
+
+                is NetworkFailure.NoNetworkConnection -> {
+                    MigrateFromPersonalToTeamResult.Error(MigrateFromPersonalToTeamFailure.NoNetwork)
+                }
+
+                else -> {
+                    MigrateFromPersonalToTeamResult.Error(
+                        MigrateFromPersonalToTeamFailure.UnknownError(
+                            error
+                        )
+                    )
+                }
+            }
+        }, { success ->
+            // TODO Invalidate team id in memory so UserSessionScope.selfTeamId got updated data WPB-12187
+            MigrateFromPersonalToTeamResult.Success(teamName = success.teamName)
+        })
     }
 }
