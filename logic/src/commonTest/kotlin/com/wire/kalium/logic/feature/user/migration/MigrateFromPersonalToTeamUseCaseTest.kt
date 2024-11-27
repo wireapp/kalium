@@ -56,7 +56,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
             val result = useCase(teamName = "teamName")
 
             assertIs<MigrateFromPersonalToTeamResult.Error>(result)
-            assertIs<NetworkFailure.NoNetworkConnection>(result.failure)
+            assertIs<MigrateFromPersonalToTeamFailure.NoNetwork>(result.failure)
         }
 
     @Test
@@ -67,13 +67,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
             val result = useCase(teamName = "teamName")
 
             assertIs<MigrateFromPersonalToTeamResult.Error>(result)
-            assertIs<NetworkFailure.ServerMiscommunication>(result.failure)
-            val serverMiscommunication = result.failure as NetworkFailure.ServerMiscommunication
-            val invalidRequestError =
-                serverMiscommunication.kaliumException as KaliumException.InvalidRequestError
-            val errorLabel = invalidRequestError.errorResponse.label
-
-            assertEquals("user-already-in-a-team", errorLabel)
+            assertIs<MigrateFromPersonalToTeamFailure.UserAlreadyInTeam>(result.failure)
         }
 
     @Test
@@ -84,8 +78,10 @@ class MigrateFromPersonalToTeamUseCaseTest {
             val result = useCase(teamName = "teamName")
 
             assertIs<MigrateFromPersonalToTeamResult.Error>(result)
-            assertIs<NetworkFailure.ServerMiscommunication>(result.failure)
-            val serverMiscommunication = result.failure as NetworkFailure.ServerMiscommunication
+            assertIs<MigrateFromPersonalToTeamFailure.UnknownError>(result.failure)
+            val coreFailure =
+                (result.failure as MigrateFromPersonalToTeamFailure.UnknownError).coreFailure
+            val serverMiscommunication = coreFailure as NetworkFailure.ServerMiscommunication
             val invalidRequestError =
                 serverMiscommunication.kaliumException as KaliumException.InvalidRequestError
             val errorLabel = invalidRequestError.errorResponse.label
@@ -138,10 +134,9 @@ class MigrateFromPersonalToTeamUseCaseTest {
             )
         }
 
-        suspend fun withRepositoryReturning(result: Either<CoreFailure, CreateUserTeam>) =
-            apply {
-                coEvery { userRepository.migrateUserToTeam(any()) }.returns(result)
-            }
+        suspend fun withRepositoryReturning(result: Either<CoreFailure, CreateUserTeam>) = apply {
+            coEvery { userRepository.migrateUserToTeam(any()) }.returns(result)
+        }
 
         fun arrange() = this to MigrateFromPersonalToTeamUseCaseImpl(
             userRepository = userRepository
