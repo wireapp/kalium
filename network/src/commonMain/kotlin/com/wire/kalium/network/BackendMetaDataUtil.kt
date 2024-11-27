@@ -23,11 +23,11 @@ import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
-val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
+val SupportedApiVersions = setOf(0, 1, 2, 4, 5, 6)
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
-val DevelopmentApiVersions = setOf(6, 7)
+val DevelopmentApiVersions = setOf(7)
 
 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
 // bump API version and generate all needed classes
