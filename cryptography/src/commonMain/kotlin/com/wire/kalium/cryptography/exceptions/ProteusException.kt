@@ -18,7 +18,7 @@
 
 package com.wire.kalium.cryptography.exceptions
 
-class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
+open class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
 
     constructor(message: String?, code: Int, cause: Throwable? = null) : this(message, fromNativeCode(code), cause)
 
@@ -191,3 +191,6 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
         }
     }
 }
+
+class ProteusStorageMigrationException(override val message: String, val rootCause: Throwable? = null) :
+    ProteusException(message, Int.MIN_VALUE, null)

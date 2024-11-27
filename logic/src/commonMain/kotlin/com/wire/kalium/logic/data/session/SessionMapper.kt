@@ -106,6 +106,7 @@ internal class SessionMapperImpl : SessionMapper {
             LogoutReason.REMOVED_CLIENT -> LogoutReasonEntity.REMOVED_CLIENT
             LogoutReason.DELETED_ACCOUNT -> LogoutReasonEntity.DELETED_ACCOUNT
             LogoutReason.SESSION_EXPIRED -> LogoutReasonEntity.SESSION_EXPIRED
+            LogoutReason.MIGRATION_TO_CC_FAILED -> LogoutReasonEntity.MIGRATION_TO_CC_FAILED
         }
 
     override fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity? =
@@ -131,6 +132,7 @@ internal class SessionMapperImpl : SessionMapper {
             LogoutReasonEntity.REMOVED_CLIENT -> LogoutReason.REMOVED_CLIENT
             LogoutReasonEntity.DELETED_ACCOUNT -> LogoutReason.DELETED_ACCOUNT
             LogoutReasonEntity.SESSION_EXPIRED -> LogoutReason.SESSION_EXPIRED
+            LogoutReasonEntity.MIGRATION_TO_CC_FAILED -> LogoutReason.MIGRATION_TO_CC_FAILED
         }
 
     override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =

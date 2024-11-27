@@ -22,6 +22,7 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.client.toByteArray
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
@@ -46,6 +47,7 @@ class ProteusClientCoreCryptoImpl private constructor(
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = wrapException {
         coreCrypto.proteusFingerprintRemote(sessionId.value).toByteArray()
     }
+
     override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray = wrapException {
         coreCrypto.proteusFingerprintPrekeybundle(preKey.encodedData.decodeBase64Bytes()).toByteArray()
     }
@@ -157,30 +159,42 @@ class ProteusClientCoreCryptoImpl private constructor(
                 acc && File(rootDir).resolve(file).deleteRecursively()
             }
 
-        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
-            if (cryptoBoxFilesExists(File(rootDir))) {
-                kaliumLogger.i("migrating from crypto box at: $rootDir")
-                coreCrypto.proteusCryptoboxMigrate(rootDir)
-                kaliumLogger.i("migration successful")
-
-                if (deleteCryptoBoxFiles(rootDir)) {
-                    kaliumLogger.i("successfully deleted old crypto box files")
-                } else {
-                    kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
-                }
-            }
-        }
-
-        @Suppress("TooGenericExceptionCaught")
+        @Suppress("TooGenericExceptionCaught", "ThrowsCount")
         suspend operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientCoreCryptoImpl {
             try {
                 migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
                 coreCrypto.proteusInit()
                 return ProteusClientCoreCryptoImpl(coreCrypto)
+            } catch (exception: ProteusStorageMigrationException) {
+                throw exception
             } catch (e: CoreCryptoException) {
-                throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
+                throw ProteusException(
+                    message = e.message,
+                    code = ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()),
+                    cause = e.cause
+                )
             } catch (e: Exception) {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            }
+        }
+
+        @Suppress("TooGenericExceptionCaught")
+        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
+            try {
+                if (cryptoBoxFilesExists(File(rootDir))) {
+                    kaliumLogger.i("migrating from crypto box at: $rootDir")
+                    coreCrypto.proteusCryptoboxMigrate(rootDir)
+                    kaliumLogger.i("migration successful")
+
+                    if (deleteCryptoBoxFiles(rootDir)) {
+                        kaliumLogger.i("successfully deleted old crypto box files")
+                    } else {
+                        kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
+                    }
+                }
+            } catch (exception: Exception) {
+                kaliumLogger.e("Failed to migrate from crypto box to core crypto, exception: $exception")
+                throw ProteusStorageMigrationException("Failed to migrate from crypto box at $rootDir", exception)
             }
         }
     }

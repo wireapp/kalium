@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -144,8 +145,9 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                     cookieLabel,
                     verificationCode
                 )
-            }.fold({
-                RegisterClientResult.Failure.Generic(it)
+            }.fold({ error ->
+                kaliumLogger.withTextTag(TAG).e("There was an error while registering the client $error")
+                RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
                     // todo? separate this in mls client usesCase register! separate everything
@@ -236,5 +238,9 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                 )
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "RegisterClientUseCase"
     }
 }
