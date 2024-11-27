@@ -11,11 +11,11 @@ class SupportOpenHelperFactory(
     private val enableWriteAheadLogging: Boolean = false,
     private val hook: SQLiteDatabaseHook? = object : SQLiteDatabaseHook {
         override fun preKey(connection: SQLiteConnection?) {
-            connection?.executeRaw("PRAGMA cipher_profile = device;", emptyArray(), null)
+            // nop
         }
 
         override fun postKey(connection: SQLiteConnection?) {
-            // nop
+            connection?.executeRaw("PRAGMA cipher_profile = device;", emptyArray(), null)
         }
     },
     private val minimumSupportedDatabaseVersion: Int = 1
