@@ -1887,6 +1887,9 @@ class UserSessionScope internal constructor(
 
     val search: SearchScope by lazy {
         SearchScope(
+            mlsPublicKeysRepository = mlsPublicKeysRepository,
+            getDefaultProtocol = getDefaultProtocol,
+            getConversationProtocolInfo = conversations.getConversationProtocolInfo,
             searchUserRepository = searchUserRepository,
             selfUserId = userId,
             sessionRepository = globalScope.sessionRepository,
