@@ -89,6 +89,7 @@ message ExportedAsset {
         ExportedImageMetaData image = 10;
         ExportedVideoMetaData video = 11;
         ExportedAudioMetaData audio = 12;
+        ExportedGenericMetaData generic = 13;
     }
 }
 
@@ -107,6 +108,10 @@ message ExportedVideoMetaData {
 message ExportedAudioMetaData {
     optional uint64 duration_in_millis = 1;
     optional bytes normalized_loudness = 2; // each byte represent one loudness value as a byte (char) value.
+}
+
+message ExportedGenericMetaData {
+    optional string name = 1;
 }
 
 message ExportedLocation {

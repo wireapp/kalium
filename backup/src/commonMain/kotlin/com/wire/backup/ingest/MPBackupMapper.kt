@@ -34,6 +34,7 @@ import com.wire.kalium.protobuf.backup.ExportedAsset
 import com.wire.kalium.protobuf.backup.ExportedAudioMetaData
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedEncryptionAlgorithm
+import com.wire.kalium.protobuf.backup.ExportedGenericMetaData
 import com.wire.kalium.protobuf.backup.ExportedImageMetaData
 import com.wire.kalium.protobuf.backup.ExportedLocation
 import com.wire.kalium.protobuf.backup.ExportedMessage
@@ -104,6 +105,9 @@ internal class MPBackupMapper {
                                                 it.duration
                                             )
                                         )
+
+                                    is BackupMessageContent.Asset.AssetMetadata.Generic ->
+                                        ExportedAsset.MetaData.Generic(ExportedGenericMetaData(it.name))
                                 }
                             }
                         )
@@ -150,6 +154,7 @@ internal class MPBackupMapper {
         )
     }
 
+    @Suppress("LongMethod")
     private fun fromMessageProtoToBackupModel(message: ExportedMessage): BackupMessage {
         val content = when (val protoContent = message.content) {
             is Content.Text -> {
@@ -189,6 +194,10 @@ internal class MPBackupMapper {
                             it.value.width,
                             it.value.height,
                             it.value.durationInMillis
+                        )
+
+                        is ExportedAsset.MetaData.Generic -> BackupMessageContent.Asset.AssetMetadata.Generic(
+                            it.value.name
                         )
                     }
                 }

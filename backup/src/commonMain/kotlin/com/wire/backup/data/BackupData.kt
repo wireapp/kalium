@@ -135,6 +135,10 @@ sealed class BackupMessageContent {
                 val normalization: ByteArray?,
                 val duration: Long?,
             ) : AssetMetadata()
+
+            data class Generic(
+                val name: String?,
+            ) : AssetMetadata()
         }
 
         override fun equals(other: Any?): Boolean {
