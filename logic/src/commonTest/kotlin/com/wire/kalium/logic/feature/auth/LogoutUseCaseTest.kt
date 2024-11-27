@@ -51,7 +51,6 @@ import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.time
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -340,6 +339,39 @@ class LogoutUseCaseTest {
         coVerify {
             arrangement.endCall.invoke(any())
         }.wasInvoked(exactly = calls.size.time)
+    }
+
+    @Test
+    fun givenAMigrationFailedLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
+        val reason = LogoutReason.MIGRATION_TO_CC_FAILED
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.logoutRepository.clearClientRelatedLocalMetadata()
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.clientRepository.clearRetainedClientId()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
