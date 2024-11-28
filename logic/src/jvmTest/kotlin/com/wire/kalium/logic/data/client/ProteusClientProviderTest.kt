@@ -29,12 +29,11 @@ class ProteusClientProviderTest {
             .arrange()
 
         // when - then
-        val clearLocalFiles = suspend { }
         try {
             proteusClientProvider.getOrCreate()
         } catch (e: ProteusStorageMigrationException) {
             verify(arrangement.proteusMigrationRecoveryHandler)
-                .coroutine { clearClientData(clearLocalFiles) }
+                .coroutine { clearClientData({}) }
                 .wasInvoked(exactly = once)
         }
     }
