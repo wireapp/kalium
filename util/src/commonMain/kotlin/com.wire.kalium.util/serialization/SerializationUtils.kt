@@ -18,11 +18,20 @@
 
 package com.wire.kalium.util.serialization
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 
 // See: https://github.com/Kotlin/kotlinx.serialization/issues/746#issuecomment-737000705
 
@@ -59,4 +68,30 @@ fun Map<*, *>.toJsonObject(): JsonObject {
         }
     }
     return JsonObject(map)
+}
+
+private fun JsonElement.toAnyOrNull(): Any? {
+    return when (this) {
+        is JsonNull -> null
+        is JsonPrimitive -> toAnyValue()
+        is JsonObject -> this.map { it.key to it.value.toAnyOrNull() }.toMap()
+        is JsonArray -> this.map { it.toAnyOrNull() }
+    }
+}
+
+private fun JsonPrimitive.toAnyValue(): Any? {
+    return this.booleanOrNull ?: this.intOrNull ?: this.longOrNull ?: this.floatOrNull ?: this.doubleOrNull ?: this.contentOrNull
+}
+
+object AnyPrimitiveValueSerializer : KSerializer<Any> {
+    private val delegateSerializer = JsonElement.serializer()
+    override val descriptor = delegateSerializer.descriptor
+    override fun serialize(encoder: Encoder, value: Any) {
+        encoder.encodeSerializableValue(delegateSerializer, value.toJsonElement())
+    }
+
+    override fun deserialize(decoder: Decoder): Any {
+        val jsonPrimitive = decoder.decodeSerializableValue(delegateSerializer)
+        return requireNotNull(jsonPrimitive.toAnyOrNull()) { "value cannot be null" }
+    }
 }
