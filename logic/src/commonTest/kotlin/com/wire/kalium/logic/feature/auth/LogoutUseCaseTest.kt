@@ -369,19 +369,18 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
-            arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.logoutRepository.clearClientRelatedLocalMetadata()
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.clientRepository.clearRetainedClientId()
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
-        }.wasInvoked(exactly = once)
+        verify(arrangement.clearClientDataUseCase)
+            .coroutine { invoke() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.logoutRepository)
+            .coroutine { clearClientRelatedLocalMetadata() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.clientRepository)
+            .coroutine { clearRetainedClientId() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.pushTokenRepository)
+            .coroutine { setUpdateFirebaseTokenFlag(eq(true)) }
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
