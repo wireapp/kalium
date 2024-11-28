@@ -177,10 +177,10 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
-import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
-import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClientScope
@@ -2115,7 +2115,7 @@ class UserSessionScope internal constructor(
         get() = CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
             callRepository = callRepository,
             observeConversationMembers = conversations.observeConversationMembers,
-            getSelf = users.getSelfUser
+            selfTeamIdProvider = selfTeamId
         )
 
     val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase

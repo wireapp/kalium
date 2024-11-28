@@ -24,16 +24,18 @@ import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.flowOf
@@ -47,7 +49,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withOutgoingCall()
-            .withSelfUser()
+            .withSelfTeamIdPresent()
             .withConversationMembers()
             .arrange()
 
@@ -68,7 +70,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withOutgoingCall()
-            .withSelfUser()
+            .withSelfTeamIdPresent()
             .withConversationGuests()
             .arrange()
 
@@ -95,7 +97,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withOutgoingCall()
-            .withSelfUser()
+            .withSelfTeamIdPresent()
             .withConversationGuestsPro()
             .arrange()
 
@@ -123,7 +125,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withIncomingCall()
-            .withSelfUser()
+            .withSelfTeamIdPresent()
             .withConversationMembers()
             .arrange()
 
@@ -150,7 +152,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
 
         @Mock
-        val getSelf = mock(GetSelfUserUseCase::class)
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
         val callRepository = mock(CallRepository::class)
@@ -198,15 +200,15 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
             )
         }
 
-        suspend fun withSelfUser() = apply {
-            coEvery { getSelf() }.returns(flowOf(TestUser.SELF))
+        suspend fun withSelfTeamIdPresent() = apply {
+            coEvery { selfTeamIdProvider() }.returns(Either.Right(TestUser.SELF.teamId))
         }
 
         fun arrange(): Pair<Arrangement, CreateAndPersistRecentlyEndedCallMetadataUseCase> =
             this to CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
                 callRepository = callRepository,
                 observeConversationMembers = observeConversationMembers,
-                getSelf = getSelf
+                selfTeamIdProvider = selfTeamIdProvider
             )
 
         private fun callWithOwner(): Call {

@@ -21,12 +21,12 @@ import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Given a call and raw call end reason create metadata containing all information regarding
@@ -39,7 +39,7 @@ interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
 class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val observeConversationMembers: ObserveConversationMembersUseCase,
-    private val getSelf: GetSelfUserUseCase,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : CreateAndPersistRecentlyEndedCallMetadataUseCase {
     override suspend fun invoke(conversationId: ConversationId, callEndedReason: Int) {
         val call = callRepository.observeCurrentCall(conversationId).first()
@@ -49,7 +49,6 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     }
 
     private suspend fun Call.createMetadata(callEndedReason: Int): RecentlyEndedCallMetadata {
-        val selfUser = getSelf().firstOrNull()
         val selfCallUser = participants.firstOrNull { participant -> participant.userType == UserType.OWNER }
         val conversationMembers = observeConversationMembers(conversationId).first()
         val conversationServicesCount = conversationMembers.count { member -> member.user.userType == UserType.SERVICE }
@@ -79,7 +78,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
                 conversationGuests = guestsCount,
                 conversationGuestsPro = guestsProCount
             ),
-            isTeamMember = selfUser?.teamId != null
+            isTeamMember = selfTeamIdProvider().getOrNull() != null
         )
     }
 
