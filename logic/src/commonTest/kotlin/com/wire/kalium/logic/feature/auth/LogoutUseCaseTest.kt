@@ -379,7 +379,7 @@ class LogoutUseCaseTest {
             .coroutine { clearRetainedClientId() }
             .wasInvoked(exactly = once)
         verify(arrangement.pushTokenRepository)
-            .coroutine { setUpdateFirebaseTokenFlag(eq(true)) }
+            .coroutine { setUpdateFirebaseTokenFlag(true) }
             .wasInvoked(exactly = once)
     }
 

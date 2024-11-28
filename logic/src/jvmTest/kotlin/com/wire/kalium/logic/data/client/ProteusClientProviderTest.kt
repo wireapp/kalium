@@ -8,10 +8,10 @@ import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
+import io.mockative.given
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.nio.file.Paths
@@ -32,7 +32,9 @@ class ProteusClientProviderTest {
         try {
             proteusClientProvider.getOrCreate()
         } catch (e: ProteusStorageMigrationException) {
-            coVerify { arrangement.proteusMigrationRecoveryHandler.clearClientData(any()) }.wasInvoked(once)
+            verify(arrangement.proteusMigrationRecoveryHandler)
+                .coroutine { clearClientData(any()) }
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -45,7 +47,10 @@ class ProteusClientProviderTest {
         val proteusMigrationRecoveryHandler = mock(ProteusMigrationRecoveryHandler::class)
 
         init {
-            every { passphraseStorage.getPassphrase(any()) }.returns("passphrase")
+            given(passphraseStorage)
+                .suspendFunction(passphraseStorage::getPassphrase)
+                .whenInvokedWith(any())
+                .thenReturn("passphrase")
         }
 
         /**
