@@ -126,6 +126,7 @@ interface ServerConfigurationDAO {
     fun configById(id: String): ServerConfigEntity?
     suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
     suspend fun updateApiVersion(id: String, commonApiVersion: Int)
+    suspend fun getCommonApiVersion(domain: String): Int
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
     suspend fun setFederationToTrue(id: String)
@@ -211,6 +212,10 @@ internal class ServerConfigurationDAOImpl internal constructor(
 
     override suspend fun updateApiVersion(id: String, commonApiVersion: Int) = withContext(queriesContext) {
         queries.updateApiVersion(commonApiVersion, id)
+    }
+
+    override suspend fun getCommonApiVersion(domain: String): Int = withContext(queriesContext) {
+        queries.getCommonApiVersionByDomain(domain).executeAsOne()
     }
 
     override suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =

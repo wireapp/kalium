@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.authenticated.properties.LabelDTO
@@ -36,15 +37,35 @@ fun LabelDTO.toFolder(selfDomain: String) = FolderWithConversations(
     type = type.toFolderType()
 )
 
+fun FolderWithConversations.toLabel() = LabelDTO(
+    id = id,
+    name = name,
+    qualifiedConversations = conversationIdList.map { it.toApi() },
+    conversations = conversationIdList.map { it.value },
+    type = type.toLabel()
+)
+
 fun LabelTypeDTO.toFolderType() = when (this) {
     LabelTypeDTO.USER -> FolderType.USER
     LabelTypeDTO.FAVORITE -> FolderType.FAVORITE
+}
+
+fun FolderType.toLabel() = when (this) {
+    FolderType.USER -> LabelTypeDTO.USER
+    FolderType.FAVORITE -> LabelTypeDTO.FAVORITE
 }
 
 fun ConversationFolderEntity.toModel() = ConversationFolder(
     id = id,
     name = name,
     type = type.toModel()
+)
+
+fun FolderWithConversationsEntity.toModel() = FolderWithConversations(
+    id = id,
+    name = name,
+    type = type.toModel(),
+    conversationIdList = conversationIdList.map { it.toModel() }
 )
 
 fun FolderWithConversations.toDao() = FolderWithConversationsEntity(

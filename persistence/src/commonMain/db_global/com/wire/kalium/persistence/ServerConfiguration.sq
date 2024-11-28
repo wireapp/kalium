@@ -35,6 +35,9 @@ UPDATE ServerConfiguration SET commonApiVersion = ? WHERE id = ?;
 updateApiVersionAndDomain:
 UPDATE ServerConfiguration SET commonApiVersion = ?, domain = ? WHERE id = ?;
 
+getCommonApiVersionByDomain:
+SELECT commonApiVersion FROM ServerConfiguration WHERE domain = ?;
+
 updateLastBlackListCheckByIds:
 UPDATE ServerConfiguration SET lastBlackListCheck = ? WHERE id IN ?;
 

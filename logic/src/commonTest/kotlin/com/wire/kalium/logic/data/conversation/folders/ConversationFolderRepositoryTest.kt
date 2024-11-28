@@ -20,13 +20,16 @@ package com.wire.kalium.logic.data.conversation.folders
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
@@ -34,11 +37,13 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
+import io.ktor.http.HttpStatusCode
 import io.ktor.util.reflect.instanceOf
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -119,6 +124,98 @@ class ConversationFolderRepositoryTest {
         }
     }
 
+    @Test
+    fun given404ErrorWhenFetchingFoldersThenShouldCreateEmptyLabelList() = runTest {
+        // given
+        val arrangement = Arrangement()
+            .withSetProperty(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
+            .withFetchConversationLabels(
+                NetworkResponse.Error(
+                    KaliumException.InvalidRequestError(
+                        errorResponse = ErrorResponse(
+                            code = HttpStatusCode.NotFound.value,
+                            message = "",
+                            label = ""
+                        )
+                    )
+                )
+            )
+
+        // when
+        val result = arrangement.repository.fetchConversationFolders()
+
+        // then
+        result.shouldSucceed()
+        coVerify {
+            arrangement.userPropertiesApi.setProperty(
+                eq(PropertyKey.WIRE_LABELS),
+                any()
+            )
+        }.wasInvoked()
+
+        coVerify { arrangement.conversationFolderDAO.updateConversationFolders(any()) }.wasInvoked()
+    }
+
+    @Test
+    fun givenValidConversationAndFolderWhenAddingConversationThenShouldAddSuccessfully() = runTest {
+        // given
+        val folderId = "folder1"
+        val conversationId = TestConversation.ID
+        val arrangement = Arrangement()
+            .withAddConversationToFolder()
+            .withGetFoldersWithConversations()
+            .withUpdateLabels(NetworkResponse.Success(Unit, mapOf(), 200))
+
+        // when
+        val result = arrangement.repository.addConversationToFolder(conversationId, folderId)
+
+        // then
+        result.shouldSucceed()
+        coVerify { arrangement.conversationFolderDAO.addConversationToFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
+    }
+
+    @Test
+    fun givenValidConversationAndFolderWhenRemovingConversationThenShouldRemoveSuccessfully() = runTest {
+        // given
+        val folderId = "folder1"
+        val conversationId = TestConversation.ID
+        val arrangement = Arrangement()
+            .withRemoveConversationFromFolder()
+            .withGetFoldersWithConversations()
+            .withUpdateLabels(NetworkResponse.Success(Unit, mapOf(), 200))
+
+        // when
+        val result = arrangement.repository.removeConversationFromFolder(conversationId, folderId)
+
+        // then
+        result.shouldSucceed()
+        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
+    }
+
+    @Test
+    fun givenLocalFoldersWhenSyncingFoldersThenShouldUpdateSuccessfully() = runTest {
+        // given
+        val folders = listOf(
+            FolderWithConversations(
+                id = "folder1",
+                name = "Favorites",
+                type = FolderType.FAVORITE,
+                conversationIdList = emptyList()
+            )
+        )
+        val arrangement = Arrangement()
+            .withGetFoldersWithConversations(folders)
+            .withUpdateLabels(NetworkResponse.Success(Unit, mapOf(), 200))
+
+        // when
+        val result = arrangement.repository.syncConversationFoldersFromLocal()
+
+        // then
+        result.shouldSucceed()
+        coVerify { arrangement.userPropertiesApi.updateLabels(any()) }.wasInvoked()
+        coVerify { arrangement.conversationFolderDAO.getFoldersWithConversations() }.wasInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -154,6 +251,31 @@ class ConversationFolderRepositoryTest {
 
         suspend fun withFetchConversationLabels(response: NetworkResponse<LabelListResponseDTO>): Arrangement {
             coEvery { userPropertiesApi.getLabels() }.returns(response)
+            return this
+        }
+
+        suspend fun withSetProperty(response: NetworkResponse<Unit>): Arrangement {
+            coEvery { userPropertiesApi.setProperty(any(), any()) }.returns(response)
+            return this
+        }
+
+        suspend fun withUpdateLabels(response: NetworkResponse<Unit>): Arrangement {
+            coEvery { userPropertiesApi.updateLabels(any()) }.returns(response)
+            return this
+        }
+
+        suspend fun withGetFoldersWithConversations(folders: List<FolderWithConversations> = emptyList()): Arrangement {
+            coEvery { conversationFolderDAO.getFoldersWithConversations() }.returns(folders.map { it.toDao() })
+            return this
+        }
+
+        suspend fun withAddConversationToFolder(): Arrangement {
+            coEvery { conversationFolderDAO.addConversationToFolder(any(), any()) }.returns(Unit)
+            return this
+        }
+
+        suspend fun withRemoveConversationFromFolder(): Arrangement {
+            coEvery { conversationFolderDAO.removeConversationFromFolder(any(), any()) }.returns(Unit)
             return this
         }
     }

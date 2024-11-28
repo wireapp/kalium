@@ -74,6 +74,7 @@ data class ConversationViewEntity(
     val proteusVerificationStatus: ConversationEntity.VerificationStatus,
     val legalHoldStatus: ConversationEntity.LegalHoldStatus,
     val accentId: Int?,
+    val isFavorite: Boolean,
 ) {
     val isMember: Boolean get() = selfRole != null
 }

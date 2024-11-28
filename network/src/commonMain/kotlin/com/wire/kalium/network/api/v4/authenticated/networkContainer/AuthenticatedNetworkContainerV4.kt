@@ -22,6 +22,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -60,6 +61,7 @@ import com.wire.kalium.network.api.v4.authenticated.PreKeyApiV4
 import com.wire.kalium.network.api.v4.authenticated.PropertiesApiV4
 import com.wire.kalium.network.api.v4.authenticated.SelfApiV4
 import com.wire.kalium.network.api.v4.authenticated.TeamsApiV4
+import com.wire.kalium.network.api.v4.authenticated.UpgradePersonalToTeamApiV4
 import com.wire.kalium.network.api.v4.authenticated.UserDetailsApiV4
 import com.wire.kalium.network.api.v4.authenticated.UserSearchApiV4
 import com.wire.kalium.network.api.vcommon.WildCardApiImpl
@@ -139,4 +141,9 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
     override val propertiesApi: PropertiesApi get() = PropertiesApiV4(networkClient)
 
     override val wildCardApi: WildCardApi get() = WildCardApiImpl(networkClient)
+
+    override val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
+        get() = UpgradePersonalToTeamApiV4(
+            networkClient
+        )
 }

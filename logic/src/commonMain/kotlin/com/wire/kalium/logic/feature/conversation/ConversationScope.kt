@@ -49,10 +49,14 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
+import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -353,5 +357,8 @@ class ConversationScope internal constructor(
         get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository)
     val getFavoriteFolder: GetFavoriteFolderUseCase
         get() = GetFavoriteFolderUseCaseImpl(conversationFolderRepository)
-
+    val addConversationToFavorites: AddConversationToFavoritesUseCase
+        get() = AddConversationToFavoritesUseCaseImpl(conversationFolderRepository)
+    val removeConversationFromFavorites: RemoveConversationFromFavoritesUseCase
+        get() = RemoveConversationFromFavoritesUseCaseImpl(conversationFolderRepository)
 }

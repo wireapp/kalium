@@ -17,6 +17,19 @@ CREATE TABLE LabeledConversation (
       PRIMARY KEY (folder_id, conversation_id)
 );
 
+getAllFoldersWithConversations:
+SELECT
+    conversationFolder.id AS label_id,
+    conversationFolder.name AS label_name,
+    conversationFolder.folder_type AS label_type,
+    labeledConversation.conversation_id
+FROM
+    ConversationFolder conversationFolder
+LEFT JOIN
+    LabeledConversation labeledConversation ON conversationFolder.id = labeledConversation.folder_id
+ORDER BY
+    conversationFolder.id;
+
 getConversationsFromFolder:
 SELECT ConversationDetailsWithEvents.*
 FROM LabeledConversation
@@ -43,6 +56,9 @@ folder_type = excluded.folder_type;
 insertLabeledConversation:
 INSERT OR IGNORE INTO LabeledConversation(conversation_id, folder_id)
 VALUES(?, ?);
+
+deleteLabeledConversation:
+DELETE FROM LabeledConversation WHERE conversation_id = ? AND folder_id = ?;
 
 clearFolders:
 DELETE FROM ConversationFolder;

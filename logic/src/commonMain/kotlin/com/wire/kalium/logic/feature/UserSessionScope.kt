@@ -51,6 +51,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
+import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
@@ -191,6 +192,7 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
@@ -338,6 +340,8 @@ import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlag
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCaseImpl
+import com.wire.kalium.logic.feature.user.migration.MigrateFromPersonalToTeamUseCase
+import com.wire.kalium.logic.feature.user.migration.MigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCase
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCase
@@ -560,6 +564,10 @@ class UserSessionScope internal constructor(
         }
     }
 
+    private val invalidateTeamId = {
+        _teamId = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
+    }
+
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val accessTokenRepository: AccessTokenRepository
@@ -629,12 +637,17 @@ class UserSessionScope internal constructor(
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
         get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
+    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
+        ProteusMigrationRecoveryHandlerImpl(lazy { logout })
+    }
+
     val proteusClientProvider: ProteusClientProvider by lazy {
         ProteusClientProviderImpl(
             rootProteusPath = rootPathsProvider.rootProteusPath(userId),
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
         )
     }
 
@@ -796,16 +809,17 @@ class UserSessionScope internal constructor(
     )
 
     private val userRepository: UserRepository = UserDataSource(
-        userStorage.database.userDAO,
-        userStorage.database.metadataDAO,
-        userStorage.database.clientDAO,
-        authenticatedNetworkContainer.selfApi,
-        authenticatedNetworkContainer.userDetailsApi,
-        authenticatedNetworkContainer.teamsApi,
-        globalScope.sessionRepository,
-        userId,
-        selfTeamId,
-        legalHoldHandler
+        userDAO = userStorage.database.userDAO,
+        metadataDAO = userStorage.database.metadataDAO,
+        clientDAO = userStorage.database.clientDAO,
+        selfApi = authenticatedNetworkContainer.selfApi,
+        userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
+        upgradePersonalToTeamApi = authenticatedNetworkContainer.upgradePersonalToTeamApi,
+        teamsApi = authenticatedNetworkContainer.teamsApi,
+        sessionRepository = globalScope.sessionRepository,
+        selfUserId = userId,
+        selfTeamIdProvider = selfTeamId,
+        legalHoldHandler = legalHoldHandler,
     )
 
     private val accountRepository: AccountRepository
@@ -931,11 +945,12 @@ class UserSessionScope internal constructor(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    private val eventGatherer: EventGatherer get() = EventGathererImpl(
-        eventRepository = eventRepository,
-        incrementalSyncRepository = incrementalSyncRepository,
-        logger = userScopedLogger
-    )
+    private val eventGatherer: EventGatherer
+        get() = EventGathererImpl(
+            eventRepository = eventRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            logger = userScopedLogger
+        )
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
@@ -1889,6 +1904,8 @@ class UserSessionScope internal constructor(
             isE2EIEnabled,
             certificateRevocationListRepository,
             incrementalSyncRepository,
+            sessionManager,
+            selfTeamId,
             checkRevocationList,
             syncFeatureConfigsUseCase,
             userScopedLogger
@@ -2100,6 +2117,9 @@ class UserSessionScope internal constructor(
             observeConversationMembers = conversations.observeConversationMembers,
             getSelf = users.getSelfUser
         )
+
+    val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase
+        get() = MigrateFromPersonalToTeamUseCaseImpl(userId, userRepository, invalidateTeamId)
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)

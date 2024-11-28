@@ -21,6 +21,7 @@ package com.wire.kalium.logic
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 
 sealed interface CoreFailure {
 
@@ -368,12 +370,13 @@ internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailur
 }
 
 internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
-    return try {
+    val result = try {
         storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
     } catch (e: Exception) {
-        kaliumLogger.e(e.stackTraceToString())
         Either.Left(StorageFailure.Generic(e))
     }
+    result.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
+    return result
 }
 
 /**
@@ -404,8 +407,9 @@ internal fun <T : Any> Flow<T?>.wrapStorageRequest(): Flow<Either<StorageFailure
     this.map {
         it?.let { data -> Either.Right(data) } ?: Either.Left<StorageFailure>(StorageFailure.DataNotFound)
     }.catch { e ->
-        kaliumLogger.e(e.stackTraceToString())
         emit(Either.Left(StorageFailure.Generic(e)))
+    }.onEach {
+        it.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
     }
 
 internal inline fun <T : Any> wrapFlowStorageRequest(storageRequest: () -> Flow<T?>): Flow<Either<StorageFailure, T>> {
@@ -413,12 +417,12 @@ internal inline fun <T : Any> wrapFlowStorageRequest(storageRequest: () -> Flow<
         storageRequest().map {
             it?.let { data -> Either.Right(data) } ?: Either.Left<StorageFailure>(StorageFailure.DataNotFound)
         }.catch { e ->
-            kaliumLogger.e(e.stackTraceToString())
             emit(Either.Left(StorageFailure.Generic(e)))
         }
     } catch (e: Exception) {
-        kaliumLogger.e(e.stackTraceToString())
         flowOf(Either.Left(StorageFailure.Generic(e)))
+    }.onEach {
+        it.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
     }
 }
 
@@ -427,12 +431,12 @@ internal inline fun <T : Any> wrapNullableFlowStorageRequest(storageRequest: () 
         storageRequest().map {
             Either.Right(it) as Either<StorageFailure, T?>
         }.catch { e ->
-            kaliumLogger.e(e.stackTraceToString())
-            emit(Either.Left(StorageFailure.Generic(e)))
+            emit(Either.Left<StorageFailure>(StorageFailure.Generic(e)))
         }
     } catch (e: Exception) {
-        kaliumLogger.e(e.stackTraceToString())
-        flowOf(Either.Left(StorageFailure.Generic(e)))
+        flowOf(Either.Left<StorageFailure>(StorageFailure.Generic(e)))
+    }.onEach {
+        it.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
     }
 }
 
