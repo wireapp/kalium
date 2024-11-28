@@ -8,11 +8,20 @@ import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mock
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+=======
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
+import io.mockative.given
+import kotlinx.coroutines.test.runTest
+import org.junit.Ignore
+>>>>>>> c5c2468502 (chore: bulletproofing crypto box to cc migration (WPB-14250) (🍒4.6) (#3136))
 import org.junit.Test
 import java.nio.file.Paths
 import kotlin.io.path.createDirectory
@@ -21,6 +30,10 @@ import kotlin.io.path.exists
 
 class ProteusClientProviderTest {
 
+<<<<<<< HEAD
+=======
+    @Ignore("Old version of the testing library, wont fix")
+>>>>>>> c5c2468502 (chore: bulletproofing crypto box to cc migration (WPB-14250) (🍒4.6) (#3136))
     @Test
     fun givenGettingOrCreatingAProteusClient_whenMigrationPerformedAndFails_thenCatchErrorAndStartRecovery() = runTest {
         // given
@@ -32,7 +45,13 @@ class ProteusClientProviderTest {
         try {
             proteusClientProvider.getOrCreate()
         } catch (e: ProteusStorageMigrationException) {
+<<<<<<< HEAD
             coVerify { arrangement.proteusMigrationRecoveryHandler.clearClientData(any()) }.wasInvoked(once)
+=======
+            verify(arrangement.proteusMigrationRecoveryHandler)
+                .coroutine { clearClientData({}) }
+                .wasInvoked(exactly = once)
+>>>>>>> c5c2468502 (chore: bulletproofing crypto box to cc migration (WPB-14250) (🍒4.6) (#3136))
         }
     }
 
@@ -45,7 +64,14 @@ class ProteusClientProviderTest {
         val proteusMigrationRecoveryHandler = mock(ProteusMigrationRecoveryHandler::class)
 
         init {
+<<<<<<< HEAD
             every { passphraseStorage.getPassphrase(any()) }.returns("passphrase")
+=======
+            given(passphraseStorage)
+                .suspendFunction(passphraseStorage::getPassphrase)
+                .whenInvokedWith(any<String>())
+                .thenReturn("passphrase")
+>>>>>>> c5c2468502 (chore: bulletproofing crypto box to cc migration (WPB-14250) (🍒4.6) (#3136))
         }
 
         /**

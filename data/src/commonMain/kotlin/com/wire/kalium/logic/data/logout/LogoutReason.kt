@@ -52,5 +52,9 @@ enum class LogoutReason {
      * The migration to CC failed.
      * This will trigger a cleanup of the local client data and prepare for a fresh start without losing data.
      */
+<<<<<<< HEAD:data/src/commonMain/kotlin/com/wire/kalium/logic/data/logout/LogoutReason.kt
     MIGRATION_TO_CC_FAILED
+=======
+    MIGRATION_TO_CC_FAILED;
+>>>>>>> c5c2468502 (chore: bulletproofing crypto box to cc migration (WPB-14250) (🍒4.6) (#3136)):logic/src/commonMain/kotlin/com/wire/kalium/logic/data/logout/LogoutReason.kt
 }

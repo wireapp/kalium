@@ -374,6 +374,38 @@ class LogoutUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAMigrationFailedLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
+        val reason = LogoutReason.MIGRATION_TO_CC_FAILED
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        verify(arrangement.clearClientDataUseCase)
+            .coroutine { invoke() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.logoutRepository)
+            .coroutine { clearClientRelatedLocalMetadata() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.clientRepository)
+            .coroutine { clearRetainedClientId() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.pushTokenRepository)
+            .coroutine { setUpdateFirebaseTokenFlag(true) }
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val logoutRepository = mock(LogoutRepository::class)

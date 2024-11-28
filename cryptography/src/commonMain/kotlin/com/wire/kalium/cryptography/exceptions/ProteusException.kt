@@ -18,7 +18,11 @@
 
 package com.wire.kalium.cryptography.exceptions
 
+<<<<<<< HEAD
 open class ProteusException(message: String?, val code: Code, val intCode: Int?, cause: Throwable? = null) : Exception(message, cause) {
+=======
+open class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
+>>>>>>> c5c2468502 (chore: bulletproofing crypto box to cc migration (WPB-14250) (🍒4.6) (#3136))
 
     constructor(message: String?, code: Int, cause: Throwable? = null) : this(
         message,

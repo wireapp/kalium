@@ -191,11 +191,34 @@ class ProteusClientCoreCryptoImpl private constructor(
                 throw ProteusException(
                     message = e.message,
                     code = ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()),
+<<<<<<< HEAD
                     intCode = coreCrypto.proteusLastErrorCode().toInt(),
+=======
+>>>>>>> c5c2468502 (chore: bulletproofing crypto box to cc migration (WPB-14250) (🍒4.6) (#3136))
                     cause = e.cause
                 )
             } catch (e: Exception) {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
+            }
+        }
+
+        @Suppress("TooGenericExceptionCaught")
+        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
+            try {
+                if (cryptoBoxFilesExists(File(rootDir))) {
+                    kaliumLogger.i("migrating from crypto box at: $rootDir")
+                    coreCrypto.proteusCryptoboxMigrate(rootDir)
+                    kaliumLogger.i("migration successful")
+
+                    if (deleteCryptoBoxFiles(rootDir)) {
+                        kaliumLogger.i("successfully deleted old crypto box files")
+                    } else {
+                        kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
+                    }
+                }
+            } catch (exception: Exception) {
+                kaliumLogger.e("Failed to migrate from crypto box to core crypto, exception: $exception")
+                throw ProteusStorageMigrationException("Failed to migrate from crypto box at $rootDir", exception)
             }
         }
 
