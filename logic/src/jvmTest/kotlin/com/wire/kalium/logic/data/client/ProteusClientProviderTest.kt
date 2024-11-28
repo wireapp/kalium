@@ -50,7 +50,7 @@ class ProteusClientProviderTest {
         init {
             given(passphraseStorage)
                 .suspendFunction(passphraseStorage::getPassphrase)
-                .whenInvokedWith(any())
+                .whenInvokedWith(any<String>())
                 .thenReturn("passphrase")
         }
 
