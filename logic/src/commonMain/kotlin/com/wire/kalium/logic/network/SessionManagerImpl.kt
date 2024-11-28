@@ -50,6 +50,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
+// TODO: Move this class to logic module
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LongParameterList")
 class SessionManagerImpl internal constructor(

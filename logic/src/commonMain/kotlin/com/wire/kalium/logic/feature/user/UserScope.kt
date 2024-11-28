@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.user
 
@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -67,6 +68,8 @@ import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCase
+import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
@@ -81,6 +84,7 @@ import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicator
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCase
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.MetadataDAO
 
 @Suppress("LongParameterList")
@@ -109,6 +113,8 @@ class UserScope internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val sessionManager: SessionManager,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger
@@ -208,19 +214,27 @@ class UserScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase get() =
-        SyncCertificateRevocationListUseCase(
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            incrementalSyncRepository = incrementalSyncRepository,
-            revocationListChecker = checkRevocationList,
-            kaliumLogger = userScopedLogger,
-        )
+    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase
+        get() =
+            SyncCertificateRevocationListUseCase(
+                certificateRevocationListRepository = certificateRevocationListRepository,
+                incrementalSyncRepository = incrementalSyncRepository,
+                revocationListChecker = checkRevocationList,
+                kaliumLogger = userScopedLogger,
+            )
 
     val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
         FeatureFlagSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
             syncFeatureConfigs = syncFeatureConfigs,
             kaliumLogger = userScopedLogger,
+        )
+    }
+    val isPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase by lazy {
+        CanMigrateFromPersonalToTeamUseCaseImpl(
+            sessionManager = sessionManager,
+            serverConfigRepository = serverConfigRepository,
+            selfTeamIdProvider = selfTeamIdProvider
         )
     }
 }

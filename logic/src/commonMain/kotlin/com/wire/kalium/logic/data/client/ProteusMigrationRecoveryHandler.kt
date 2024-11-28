@@ -15,31 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.dao.conversation.folder
+package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.logic.data.logout.LogoutReason
 
-data class ConversationFolderEntity(
-    val id: String,
-    val name: String,
-    val type: ConversationFolderTypeEntity
-)
-
-data class FolderWithConversationsEntity(
-    val id: String,
-    val name: String,
-    val type: ConversationFolderTypeEntity,
-    val conversationIdList: List<QualifiedIDEntity>
-)
-
-data class LabeledConversationEntity(
-    val folderId: String,
-    val folderName: String,
-    val folderType: ConversationFolderTypeEntity,
-    val conversationId: QualifiedIDEntity?
-)
-
-enum class ConversationFolderTypeEntity {
-    USER,
-    FAVORITE
+/**
+ * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
+ * It will perform a logout, using [LogoutReason.MIGRATION_TO_CC_FAILED] as the reason.
+ *
+ * This achieves that the client data is cleared and the user is logged out without losing content.
+ */
+interface ProteusMigrationRecoveryHandler {
+    suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
 }

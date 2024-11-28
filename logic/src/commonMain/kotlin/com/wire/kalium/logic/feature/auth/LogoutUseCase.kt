@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -106,6 +107,9 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 }
 
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
+                LogoutReason.MIGRATION_TO_CC_FAILED -> prepareForCoreCryptoMigrationRecovery()
+            }.also {
+                kaliumLogger.withTextTag(TAG).d("Logout reason: $reason")
             }
 
             userConfigRepository.clearE2EISettings()
@@ -113,6 +117,13 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             userSessionScopeProvider.delete(userId)
             logoutCallback(userId, reason)
         }.let { if (waitUntilCompletes) it.join() else it }
+    }
+
+    private suspend fun prepareForCoreCryptoMigrationRecovery() {
+        clearClientDataUseCase()
+        logoutRepository.clearClientRelatedLocalMetadata()
+        clientRepository.clearRetainedClientId()
+        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 
     private suspend fun clearCurrentClientIdAndFirebaseTokenFlag() {
@@ -146,5 +157,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     companion object {
         const val CLEAR_DATA_DELAY = 1000L
+        const val TAG = "LogoutUseCase"
     }
 }

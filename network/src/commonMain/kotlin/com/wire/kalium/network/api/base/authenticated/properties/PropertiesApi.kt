@@ -27,5 +27,6 @@ interface PropertiesApi {
     suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit>
     suspend fun deleteProperty(propertyKey: PropertyKey): NetworkResponse<Unit>
     suspend fun getLabels(): NetworkResponse<LabelListResponseDTO>
+    suspend fun updateLabels(labelList: LabelListResponseDTO): NetworkResponse<Unit>
 
 }

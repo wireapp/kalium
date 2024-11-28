@@ -166,6 +166,7 @@ interface UserRepository {
     suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
     suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
     suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
+    suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -652,7 +653,7 @@ internal class UserDataSource internal constructor(
 
     override suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam> {
         return wrapApiRequest { upgradePersonalToTeamApi.migrateToTeam(teamName) }.map { dto ->
-            CreateUserTeam(dto.teamName)
+            CreateUserTeam(dto.teamId, dto.teamName)
         }
             .onSuccess {
                 kaliumLogger.d("Migrated user to team")
@@ -661,6 +662,10 @@ internal class UserDataSource internal constructor(
             .onFailure { failure ->
                 kaliumLogger.e("Failed to migrate user to team: $failure")
             }
+    }
+
+    override suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userDAO.updateTeamId(userId.toDao(), teamId.value)
     }
 
     companion object {
