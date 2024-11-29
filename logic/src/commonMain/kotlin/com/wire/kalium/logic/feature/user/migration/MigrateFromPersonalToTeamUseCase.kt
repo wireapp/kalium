@@ -20,8 +20,10 @@ package com.wire.kalium.logic.feature.user.migration
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.network.exceptions.KaliumException
 
 /**
  * Use case to migrate user personal account to team account.
@@ -33,7 +35,20 @@ interface MigrateFromPersonalToTeamUseCase {
 
 sealed class MigrateFromPersonalToTeamResult {
     data object Success : MigrateFromPersonalToTeamResult()
-    data class Error(val failure: CoreFailure) : MigrateFromPersonalToTeamResult()
+    data class Error(val failure: MigrateFromPersonalToTeamFailure) :
+        MigrateFromPersonalToTeamResult()
+}
+
+sealed class MigrateFromPersonalToTeamFailure {
+
+    data class UnknownError(val coreFailure: CoreFailure) : MigrateFromPersonalToTeamFailure()
+    class UserAlreadyInTeam : MigrateFromPersonalToTeamFailure() {
+        companion object {
+            const val ERROR_LABEL = "user-already-in-a-team"
+        }
+    }
+
+    data object NoNetwork : MigrateFromPersonalToTeamFailure()
 }
 
 internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
@@ -44,14 +59,43 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
     override suspend operator fun invoke(
         teamName: String,
     ): MigrateFromPersonalToTeamResult {
-        return userRepository.migrateUserToTeam(teamName)
-            .fold(
-                { error -> return MigrateFromPersonalToTeamResult.Error(error) },
-                { user ->
-                    userRepository.updateTeamId(selfUserId, TeamId(user.teamId))
-                    invalidateTeamId()
-                    MigrateFromPersonalToTeamResult.Success
+        return userRepository.migrateUserToTeam(teamName).fold({ error ->
+            return when (error) {
+                is NetworkFailure.ServerMiscommunication -> {
+                    if (error.kaliumException is KaliumException.InvalidRequestError) {
+                        val response = error.kaliumException.errorResponse
+                        if (response.label == MigrateFromPersonalToTeamFailure.UserAlreadyInTeam.ERROR_LABEL) {
+                            MigrateFromPersonalToTeamResult.Error(
+                                MigrateFromPersonalToTeamFailure.UserAlreadyInTeam()
+                            )
+                        } else {
+                            MigrateFromPersonalToTeamResult.Error(
+                                MigrateFromPersonalToTeamFailure.UnknownError(error)
+                            )
+                        }
+                    } else {
+                        MigrateFromPersonalToTeamResult.Error(
+                            MigrateFromPersonalToTeamFailure.UnknownError(error)
+                        )
+                    }
                 }
-            )
+
+                is NetworkFailure.NoNetworkConnection -> {
+                    MigrateFromPersonalToTeamResult.Error(MigrateFromPersonalToTeamFailure.NoNetwork)
+                }
+
+                else -> {
+                    MigrateFromPersonalToTeamResult.Error(
+                        MigrateFromPersonalToTeamFailure.UnknownError(
+                            error
+                        )
+                    )
+                }
+            }
+        }, { user ->
+            userRepository.updateTeamId(selfUserId, TeamId(user.teamId))
+                    invalidateTeamId()
+            MigrateFromPersonalToTeamResult.Success
+        })
     }
 }
