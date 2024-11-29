@@ -59,10 +59,10 @@ class MigrateFromPersonalToTeamUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryFailsWithNoNetworkConnection_whenMigratingUserToTeam_thenShouldPropagateFailure() =
+    fun givenRepositoryFailsWithNoNetworkConnection_whenMigratingUserToTeam_thenShouldPropagateNoNetworkFailure() =
         runTest {
-            val coreFailure = NetworkFailure.NoNetworkConnection(null)
-            val (_, useCase) = Arrangement().withMigrationReturning(Either.Left(coreFailure))
+            val (_, useCase) = Arrangement()
+                .withMigrationNoNetworkFailure()
                 .arrange()
 
             val result = useCase(teamName = "teamName")
@@ -72,9 +72,11 @@ class MigrateFromPersonalToTeamUseCaseTest {
         }
 
     @Test
-    fun givenRepositoryFailsWithUserAlreadyInTeam_whenMigratingUserToTeam_thenShouldPropagateFailure() =
+    fun givenRepositoryFailsWithUserAlreadyInTeam_whenMigratingUserToTeam_thenShouldPropagateUserAlreadyInTeamFailure() =
         runTest {
-            val (_, useCase) = Arrangement().withUserAlreadyInTeamRepository().arrange()
+            val (_, useCase) = Arrangement()
+                .withUserAlreadyInTeamFailure()
+                .arrange()
 
             val result = useCase(teamName = "teamName")
 
@@ -83,9 +85,11 @@ class MigrateFromPersonalToTeamUseCaseTest {
         }
 
     @Test
-    fun givenRepositoryFailsWithNotFound_whenMigratingUserToTeam_thenShouldPropagateFailure() =
+    fun givenRepositoryFailsWithUnknownError_whenMigratingUserToTeam_thenShouldPropagateUnknownFailure() =
         runTest {
-            val (_, useCase) = Arrangement().withMigrationFailure().arrange()
+            val (_, useCase) = Arrangement()
+                .withMigrationUserNotFoundFailure()
+                .arrange()
 
             val result = useCase(teamName = "teamName")
 
@@ -116,37 +120,38 @@ class MigrateFromPersonalToTeamUseCaseTest {
             )
         }
 
-        suspend fun withUserAlreadyInTeamRepository() = apply {
-            coEvery { userRepository.migrateUserToTeam(any()) }.returns(
-                Either.Left(
-                    NetworkFailure.ServerMiscommunication(
-                        KaliumException.InvalidRequestError(
-                            ErrorResponse(
-                                HttpStatusCode.Forbidden.value,
-                                message = "Switching teams is not allowed",
-                                label = "user-already-in-a-team",
-                            )
+        suspend fun withUserAlreadyInTeamFailure() = withMigrationReturning(
+            Either.Left(
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(
+                            HttpStatusCode.Forbidden.value,
+                            message = "Switching teams is not allowed",
+                            label = "user-already-in-a-team",
                         )
                     )
                 )
             )
-        }
+        )
 
-        suspend fun withMigrationFailure() = apply {
-            coEvery { userRepository.migrateUserToTeam(any()) }.returns(
-                Either.Left(
-                    NetworkFailure.ServerMiscommunication(
-                        KaliumException.InvalidRequestError(
-                            ErrorResponse(
-                                HttpStatusCode.NotFound.value,
-                                message = "User not found",
-                                label = "not-found",
-                            )
+
+        suspend fun withMigrationUserNotFoundFailure() = withMigrationReturning(
+            Either.Left(
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(
+                            HttpStatusCode.NotFound.value,
+                            message = "User not found",
+                            label = "not-found",
                         )
                     )
                 )
             )
-        }
+        )
+
+        suspend fun withMigrationNoNetworkFailure() = withMigrationReturning(
+            Either.Left(NetworkFailure.NoNetworkConnection(null))
+        )
 
         suspend fun withMigrationReturning(result: Either<CoreFailure, CreateUserTeam>) = apply {
             coEvery { userRepository.migrateUserToTeam(any()) }.returns(result)
@@ -156,12 +161,10 @@ class MigrateFromPersonalToTeamUseCaseTest {
             coEvery { userRepository.updateTeamId(any(), any()) }.returns(result)
         }
 
-        fun arrange() = this to MigrateFromPersonalToTeamUseCaseImpl(
-            selfUserId = TestUser.SELF.id,
+        fun arrange() = this to MigrateFromPersonalToTeamUseCaseImpl(selfUserId = TestUser.SELF.id,
             userRepository = userRepository,
             invalidateTeamId = {
                 isCachedTeamIdInvalidated = true
-            }
-        )
+            })
     }
 }
