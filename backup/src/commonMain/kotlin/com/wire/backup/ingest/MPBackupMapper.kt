@@ -17,6 +17,7 @@
  */
 package com.wire.backup.ingest
 
+import co.touchlab.kermit.Logger
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupData
 import com.wire.backup.data.BackupDateTime
@@ -30,12 +31,16 @@ import com.wire.backup.data.toModel
 import com.wire.backup.data.toProtoModel
 import com.wire.kalium.protobuf.backup.ExportUser
 import com.wire.kalium.protobuf.backup.ExportedAsset
+import com.wire.kalium.protobuf.backup.ExportedAudioMetaData
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedEncryptionAlgorithm
+import com.wire.kalium.protobuf.backup.ExportedGenericMetaData
+import com.wire.kalium.protobuf.backup.ExportedImageMetaData
 import com.wire.kalium.protobuf.backup.ExportedLocation
 import com.wire.kalium.protobuf.backup.ExportedMessage
 import com.wire.kalium.protobuf.backup.ExportedMessage.Content
 import com.wire.kalium.protobuf.backup.ExportedText
+import com.wire.kalium.protobuf.backup.ExportedVideoMetaData
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.backup.BackupData as ProtoBackupData
 
@@ -47,46 +52,83 @@ internal class MPBackupMapper {
         handle = it.handle
     )
 
-    fun mapMessageToProtobuf(it: BackupMessage) = ExportedMessage(
-        id = it.id,
-        timeIso = it.creationDate.toLongMilliseconds(),
-        senderUserId = it.senderUserId.toProtoModel(),
-        senderClientId = it.senderClientId,
-        conversationId = it.conversationId.toProtoModel(),
-        content = when (val content = it.content) {
-            is BackupMessageContent.Asset ->
-                Content.Asset(
-                    ExportedAsset(
-                        content.mimeType,
-                        content.size.toLong(),
+    @Suppress("LongMethod")
+    fun mapMessageToProtobuf(it: BackupMessage): ExportedMessage {
+        return ExportedMessage(
+            id = it.id,
+            timeIso = it.creationDate.toLongMilliseconds(),
+            senderUserId = it.senderUserId.toProtoModel(),
+            senderClientId = it.senderClientId,
+            conversationId = it.conversationId.toProtoModel(),
+            content = when (val content = it.content) {
+                is BackupMessageContent.Asset -> {
+                    Logger.d("MPBackupMapper") { "Mapping asset message to protobuf: ${content.metaData}" }
+                    Content.Asset(
+                        ExportedAsset(
+                            content.mimeType,
+                            content.size.toLong(),
+                            content.name,
+                            ByteArr(content.otrKey),
+                            ByteArr(content.sha256),
+                            content.assetId,
+                            content.assetToken,
+                            content.assetDomain,
+                            when (content.encryption) {
+                                EncryptionAlgorithm.AES_GCM -> ExportedEncryptionAlgorithm.BACKUP_AES_GCM
+                                EncryptionAlgorithm.AES_CBC -> ExportedEncryptionAlgorithm.BACKUP_AES_CBC
+                                null -> null
+                            },
+                            content.metaData?.let {
+                                when (it) {
+                                    is BackupMessageContent.Asset.AssetMetadata.Audio ->
+                                        ExportedAsset.MetaData.Audio(
+                                            ExportedAudioMetaData(
+                                                it.duration,
+                                                it.normalization?.let { ByteArr(it) }
+                                            )
+                                        )
+
+                                    is BackupMessageContent.Asset.AssetMetadata.Image ->
+                                        ExportedAsset.MetaData.Image(
+                                            ExportedImageMetaData(
+                                                it.width,
+                                                it.height,
+                                                it.tag
+                                            )
+                                        )
+
+                                    is BackupMessageContent.Asset.AssetMetadata.Video ->
+                                        ExportedAsset.MetaData.Video(
+                                            ExportedVideoMetaData(
+                                                it.width,
+                                                it.height,
+                                                it.duration
+                                            )
+                                        )
+
+                                    is BackupMessageContent.Asset.AssetMetadata.Generic ->
+                                        ExportedAsset.MetaData.Generic(ExportedGenericMetaData(it.name))
+                                }
+                            }
+                        )
+                    )
+                }
+
+                is BackupMessageContent.Text ->
+                    Content.Text(ExportedText(content.text))
+
+                is BackupMessageContent.Location -> Content.Location(
+                    ExportedLocation(
+                        content.longitude,
+                        content.latitude,
                         content.name,
-                        ByteArr(content.otrKey),
-                        ByteArr(content.sha256),
-                        content.assetId,
-                        content.assetToken,
-                        content.assetDomain,
-                        when (content.encryption) {
-                            EncryptionAlgorithm.AES_GCM -> ExportedEncryptionAlgorithm.BACKUP_AES_GCM
-                            EncryptionAlgorithm.AES_CBC -> ExportedEncryptionAlgorithm.BACKUP_AES_CBC
-                            null -> null
-                        }
+                        content.zoom
                     )
                 )
-
-            is BackupMessageContent.Text ->
-                Content.Text(ExportedText(content.text))
-
-            is BackupMessageContent.Location -> Content.Location(
-                ExportedLocation(
-                    content.longitude,
-                    content.latitude,
-                    content.name,
-                    content.zoom
-                )
-            )
-        },
-        webPk = it.webPrimaryKey?.toLong()
-    )
+            },
+            webPk = it.webPrimaryKey?.toLong()
+        )
+    }
 
     fun mapConversationToProtobuf(it: BackupConversation) = ExportedConversation(it.id.toProtoModel(), it.name)
 
@@ -112,6 +154,7 @@ internal class MPBackupMapper {
         )
     }
 
+    @Suppress("LongMethod")
     private fun fromMessageProtoToBackupModel(message: ExportedMessage): BackupMessage {
         val content = when (val protoContent = message.content) {
             is Content.Text -> {
@@ -132,6 +175,30 @@ internal class MPBackupMapper {
                         ExportedEncryptionAlgorithm.BACKUP_AES_CBC -> EncryptionAlgorithm.AES_CBC
                         ExportedEncryptionAlgorithm.BACKUP_AES_GCM -> EncryptionAlgorithm.AES_GCM
                         is ExportedEncryptionAlgorithm.UNRECOGNIZED -> null
+                    }
+                },
+                protoContent.value.metaData?.let {
+                    when (it) {
+                        is ExportedAsset.MetaData.Audio -> BackupMessageContent.Asset.AssetMetadata.Audio(
+                            it.value.normalizedLoudness?.array,
+                            it.value.durationInMillis
+                        )
+
+                        is ExportedAsset.MetaData.Image -> BackupMessageContent.Asset.AssetMetadata.Image(
+                            it.value.width,
+                            it.value.height,
+                            it.value.tag
+                        )
+
+                        is ExportedAsset.MetaData.Video -> BackupMessageContent.Asset.AssetMetadata.Video(
+                            it.value.width,
+                            it.value.height,
+                            it.value.durationInMillis
+                        )
+
+                        is ExportedAsset.MetaData.Generic -> BackupMessageContent.Asset.AssetMetadata.Generic(
+                            it.value.name
+                        )
                     }
                 }
             )

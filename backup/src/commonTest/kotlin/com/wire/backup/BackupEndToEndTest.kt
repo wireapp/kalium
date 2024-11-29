@@ -41,14 +41,19 @@ class BackupEndToEndTest {
     fun givenBackedUpAssetMessage_whenRestoring_thenShouldReadTheSameContent() = runTest {
         val content = BackupMessageContent.Asset(
             mimeType = "image/jpeg",
-            size = 42,
+            size = 64,
             name = "pudim.jpg",
             otrKey = byteArrayOf(31),
             sha256 = byteArrayOf(33),
             assetId = "assetId",
             assetToken = "token",
             assetDomain = "domain",
-            encryption = BackupMessageContent.Asset.EncryptionAlgorithm.AES_GCM
+            encryption = BackupMessageContent.Asset.EncryptionAlgorithm.AES_GCM,
+            metaData = BackupMessageContent.Asset.AssetMetadata.Video(
+                duration = 42,
+                width = 800,
+                height = 600,
+            )
         )
         shouldBackupAndRestoreSameContent(content)
     }

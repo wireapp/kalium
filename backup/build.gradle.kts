@@ -59,6 +59,7 @@ kotlin {
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
+                api(libs.kermit)
             }
         }
         val commonTest by getting {
