@@ -887,21 +887,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest(dispatcher) {
-        // given
-        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = selfUserId.value))
-        teamDAO.insertTeam(team)
-        userDAO.upsertUser(user2)
-        insertTeamUserAndMember(team, user2, conversationEntity3.id)
-
-        // when
-        val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
-
-        // then
-        assertEquals(1L, result?.isCreator)
-    }
-
-    @Test
     fun givenMixedConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity6)
@@ -2358,7 +2343,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userDeleted = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.deleted else null,
             connectionStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.connectionStatus else null,
             otherUserId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.id else null,
-            isCreator = 0L,
             lastNotificationDate = lastNotificationDate,
             protocolInfo = protocolInfo,
             accessList = access,

@@ -49,7 +49,6 @@ data object ConversationMapper {
         connectionStatus: ConnectionEntity.State?,
         otherUserId: QualifiedIDEntity?,
         otherUserActiveConversationId: QualifiedIDEntity?,
-        isCreator: Long,
         isActive: Long,
         accentId: Int?,
         lastNotifiedMessageDate: Instant?,
@@ -90,7 +89,6 @@ data object ConversationMapper {
             mlsLastKeyingMaterialUpdateDate,
             mlsCipherSuite
         ),
-        isCreator = isCreator,
         mutedStatus = mutedStatus,
         mutedTime = mutedTime,
         creatorId = creatorId,
