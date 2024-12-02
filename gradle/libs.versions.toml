@@ -35,7 +35,7 @@ moduleGraph = "0.7.0"
 # and delete the workaround in the dev.mk file
 sqldelight = "2.0.1"
 sqlcipher-android = "4.5.6"
-pbandk = "0.14.2"
+pbandk = "0.15.0"
 turbine = "1.1.0"
 avs = "10.0.1"
 jna = "5.14.0"

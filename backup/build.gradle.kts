@@ -77,36 +77,42 @@ kotlin {
         val androidMain by getting {
             dependsOn(nonJsMain)
         }
+        val androidInstrumentedTest by getting {
+            dependsOn(nonJsTest)
+        }
         val jvmMain by getting {
             dependsOn(nonJsMain)
         }
-
-        val iosX64Main by getting {
+        val jvmTest by getting {
+            dependsOn(nonJsTest)
+        }
+        val appleMain by getting {
             dependsOn(nonJsMain)
+        }
+        val appleTest by getting {
+            dependsOn(nonJsTest)
+        }
+        val iosX64Main by getting {
             dependencies {
                 implementation(libs.pbandk.runtime.iosX64)
             }
         }
         val iosArm64Main by getting {
-            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.iosArm64)
             }
         }
         val iosSimulatorArm64Main by getting {
-            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.iosSimulatorArm64)
             }
         }
         val macosX64Main by getting {
-            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.macX64)
             }
         }
         val macosArm64Main by getting {
-            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.pbandk.runtime.macArm64)
             }
