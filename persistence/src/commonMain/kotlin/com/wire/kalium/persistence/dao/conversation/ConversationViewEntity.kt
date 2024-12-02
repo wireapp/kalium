@@ -47,7 +47,6 @@ data class ConversationViewEntity(
     val userDefederated: Boolean?,
     val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
     val otherUserId: QualifiedIDEntity?,
-    val isCreator: Long,
     val lastNotificationDate: Instant?,
     val selfRole: MemberEntity.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
