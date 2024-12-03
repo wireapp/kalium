@@ -28,8 +28,8 @@ insert:
 INSERT OR FAIL INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxyHost, apiProxyNeedsAuthentication, apiProxyPort)
 VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?);
 
-updateApiVersion:
-UPDATE ServerConfiguration SET commonApiVersion = ? WHERE id = ?;
+updateServerMetaData:
+UPDATE ServerConfiguration SET federation = ? AND commonApiVersion = ? WHERE id = ?;
 
 /** this function will be used when a config get updated from v0 where domain can be null */
 updateApiVersionAndDomain:

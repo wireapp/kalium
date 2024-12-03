@@ -42,7 +42,7 @@ value class GlobalDatabaseSecret(val value: ByteArray)
 class GlobalDatabaseBuilder internal constructor(
     private val sqlDriver: SqlDriver,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    protected val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
 
     internal val database: GlobalDatabase = GlobalDatabase(

@@ -19,13 +19,14 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import kotlinx.coroutines.test.TestDispatcher
 
 actual abstract class GlobalDBBaseTest {
     actual fun deleteDatabase() {
         TODO("Not yet implemented")
     }
 
-    actual fun createDatabase(): GlobalDatabaseBuilder {
+    actual fun createDatabase(dispatcher: TestDispatcher): GlobalDatabaseBuilder {
         TODO("Not yet implemented")
     }
 }
