@@ -79,6 +79,7 @@ class ConversationFolderDAOImpl internal constructor(
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =
         withContext(coroutineContext) {
             conversationFoldersQueries.transaction {
+                conversationFoldersQueries.clearLabeledConversations()
                 conversationFoldersQueries.clearFolders()
                 folderWithConversationsList.forEach { folderWithConversations ->
                     conversationFoldersQueries.upsertFolder(

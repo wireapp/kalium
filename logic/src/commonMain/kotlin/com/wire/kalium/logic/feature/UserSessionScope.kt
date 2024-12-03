@@ -1102,8 +1102,7 @@ class UserSessionScope internal constructor(
             syncContacts,
             joinExistingMLSConversations,
             fetchLegalHoldForSelfUserFromRemoteUseCase,
-            oneOnOneResolver,
-            syncConversationFolders
+            oneOnOneResolver
         )
     }
 

@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.conversation.folder
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase.Result
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -41,7 +43,13 @@ internal class GetFavoriteFolderUseCaseImpl(
 ) : GetFavoriteFolderUseCase {
 
     override suspend operator fun invoke(): Result {
-        return conversationFolderRepository.getFavoriteConversationFolder().fold(
+        return conversationFolderRepository.getFavoriteConversationFolder()
+            .flatMapLeft {
+                conversationFolderRepository.fetchConversationFolders().flatMap {
+                    conversationFolderRepository.getFavoriteConversationFolder()
+                }
+            }
+            .fold(
             { Result.Failure },
             { Result.Success(it) }
         )

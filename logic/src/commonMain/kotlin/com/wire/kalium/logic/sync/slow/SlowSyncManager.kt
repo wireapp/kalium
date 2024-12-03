@@ -211,6 +211,7 @@ internal class SlowSyncManager(
          * and we'd like to get all users to take advantage of the fix.
          */
         const val CURRENT_VERSION = 8
+        // because we already had version 9, the next version should be 10
 
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes

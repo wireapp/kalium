@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
-import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
@@ -41,7 +40,6 @@ import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
@@ -73,7 +71,6 @@ internal class SlowSyncWorkerImpl(
     private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val syncConversationFolders: SyncConversationFoldersUseCase,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
@@ -107,9 +104,6 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
             .flatMap {
                 saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
-            }
-            .onSuccess {
-                syncConversationFolders()
             }
             .onFailure {
                 throw KaliumSyncException("Failure during SlowSync", it)
