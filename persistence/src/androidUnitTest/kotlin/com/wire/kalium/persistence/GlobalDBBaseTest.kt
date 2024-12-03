@@ -26,7 +26,7 @@ actual abstract class GlobalDBBaseTest {
         TODO("Not yet implemented")
     }
 
-    actual fun createDatabase(dispatcher: TestDispatcher): GlobalDatabaseBuilder {
+    actual fun createDatabase(): GlobalDatabaseBuilder {
         TODO("Not yet implemented")
     }
 }

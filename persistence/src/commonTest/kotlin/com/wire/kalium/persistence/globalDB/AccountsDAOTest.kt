@@ -29,10 +29,15 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,12 +47,11 @@ import kotlin.test.assertNull
 class AccountsDAOTest : GlobalDBBaseTest() {
 
     lateinit var globalDatabaseBuilder: GlobalDatabaseBuilder
-    private val dispatcher: TestDispatcher = StandardTestDispatcher()
 
     @BeforeTest
     fun setUp() = runTest {
         deleteDatabase()
-        globalDatabaseBuilder = createDatabase(dispatcher)
+        globalDatabaseBuilder = createDatabase()
 
         with(SERVER_CONFIG) {
             globalDatabaseBuilder.serverConfigurationDAO.insert(

@@ -51,18 +51,15 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     private val config3 = newServerConfig(id = 3)
 
     lateinit var globalDatabaseBuilder: GlobalDatabaseBuilder
-    private val dispatcher: TestDispatcher = StandardTestDispatcher()
 
     @BeforeTest
     fun setup() {
-        Dispatchers.setMain(dispatcher)
-        globalDatabaseBuilder = createDatabase(dispatcher)
+        globalDatabaseBuilder = createDatabase()
     }
 
     @AfterTest
     fun nuke() {
         deleteDatabase()
-        Dispatchers.resetMain()
     }
 
     @Test

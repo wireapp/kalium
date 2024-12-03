@@ -19,10 +19,8 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
 
 expect abstract class GlobalDBBaseTest() {
         fun deleteDatabase()
-        fun createDatabase(dispatcher: TestDispatcher): GlobalDatabaseBuilder
+        fun createDatabase(): GlobalDatabaseBuilder
 }

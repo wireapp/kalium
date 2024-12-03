@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.test.TestDispatcher
 
 actual abstract class GlobalDBBaseTest {
 
@@ -35,7 +34,7 @@ actual abstract class GlobalDBBaseTest {
         context.deleteDatabase(FileNameUtil.globalDBName())
     }
 
-    actual fun createDatabase(dispatcher: TestDispatcher): GlobalDatabaseBuilder = globalDatabaseProvider(
+    actual fun createDatabase(): GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
         queriesContext = KaliumDispatcherImpl.unconfined,
         passphrase = GlobalDatabaseSecret("test_db_secret".toByteArray()),

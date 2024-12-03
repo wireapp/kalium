@@ -27,13 +27,14 @@ import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
 
 actual abstract class GlobalDBBaseTest {
+    private val dispatcher: TestDispatcher = StandardTestDispatcher()
     private val databaseFile = Files.createTempDirectory("test-storage").toFile().resolve("test-kalium.db")
 
     actual fun deleteDatabase() {
         databaseFile.delete()
     }
 
-    actual fun createDatabase(dispatcher: TestDispatcher): GlobalDatabaseBuilder {
+    actual fun createDatabase(): GlobalDatabaseBuilder {
         return globalDatabaseProvider(
             platformDatabaseData = PlatformDatabaseData(
                 StorageData.FileBacked(databaseFile)

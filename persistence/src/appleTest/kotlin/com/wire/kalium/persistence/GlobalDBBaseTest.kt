@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
@@ -38,7 +37,7 @@ actual abstract class GlobalDBBaseTest {
         deleteDatabase(FileNameUtil.globalDBName(), storePath)
     }
 
-    actual fun createDatabase(dispatcher: TestDispatcher): GlobalDatabaseBuilder {
+    actual fun createDatabase(): GlobalDatabaseBuilder {
         return globalDatabaseProvider(
             PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false
         )
