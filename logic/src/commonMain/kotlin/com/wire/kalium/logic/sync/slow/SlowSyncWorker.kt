@@ -41,6 +41,7 @@ import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
@@ -104,9 +105,11 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
             .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
-            .continueWithStep(SlowSyncStep.CONVERSATION_FOLDERS, syncConversationFolders::invoke)
             .flatMap {
                 saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
+            }
+            .onSuccess {
+                syncConversationFolders()
             }
             .onFailure {
                 throw KaliumSyncException("Failure during SlowSync", it)
