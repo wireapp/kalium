@@ -78,7 +78,7 @@ class CustomServerConfigRepositoryTest {
             arrangement.serverConfigurationDAO.insert(any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.serverConfigurationDAO.updateApiVersion(any(), any())
+            arrangement.serverConfigurationDAO.updateServerMetaData(any(), any(), any())
         }.wasInvoked(exactly = once)
         coVerify {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
@@ -106,7 +106,7 @@ class CustomServerConfigRepositoryTest {
             arrangement.serverConfigurationDAO.insert(any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.serverConfigurationDAO.updateApiVersion(any(), any())
+            arrangement.serverConfigurationDAO.updateServerMetaData(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
@@ -145,7 +145,7 @@ class CustomServerConfigRepositoryTest {
             arrangement.serverConfigurationDAO.insert(any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.serverConfigurationDAO.updateApiVersion(any(), any())
+            arrangement.serverConfigurationDAO.updateServerMetaData(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
