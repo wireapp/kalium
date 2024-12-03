@@ -39,7 +39,7 @@ actual suspend fun coreCryptoCentral(
         key = databaseKey
     )
     coreCrypto.setCallbacks(Callbacks())
-    setLogger(CoreCryptoLoggerImpl(), CoreCryptoLogLevel.INFO)
+    setLogger(CoreCryptoLoggerImpl(), CoreCryptoLogLevel.TRACE)
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
         rootDir = rootDir
@@ -48,7 +48,16 @@ actual suspend fun coreCryptoCentral(
 
 private class CoreCryptoLoggerImpl : CoreCryptoLogger {
     override fun log(level: CoreCryptoLogLevel, message: String, context: String?) {
-        kaliumLogger.i("CoreCrypto: $message. $context")
+        when (level) {
+            CoreCryptoLogLevel.TRACE -> kaliumLogger.v("$message. $context")
+            CoreCryptoLogLevel.DEBUG -> kaliumLogger.d("$message. $context")
+            CoreCryptoLogLevel.INFO -> kaliumLogger.i("$message. $context")
+            CoreCryptoLogLevel.WARN -> kaliumLogger.w("$message. $context")
+            CoreCryptoLogLevel.ERROR -> kaliumLogger.e("$message. $context")
+            CoreCryptoLogLevel.OFF -> {
+                // nop
+            }
+        }
     }
 }
 
