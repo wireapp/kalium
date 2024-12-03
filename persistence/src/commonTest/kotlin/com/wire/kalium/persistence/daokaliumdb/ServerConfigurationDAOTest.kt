@@ -152,7 +152,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertEquals(expect, actual)
     }
 
-    //     @Ignore
     @Test
     fun givenNewApiVersion_thenItCanBeUpdated() = runTest {
         val oldConfig = config1.copy(
