@@ -29,7 +29,7 @@ INSERT OR FAIL INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocke
 VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?);
 
 updateServerMetaData:
-UPDATE ServerConfiguration SET federation = ? AND commonApiVersion = ? WHERE id = ?;
+UPDATE ServerConfiguration SET federation = ?, commonApiVersion = ? WHERE id = ?;
 
 /** this function will be used when a config get updated from v0 where domain can be null */
 updateApiVersionAndDomain:

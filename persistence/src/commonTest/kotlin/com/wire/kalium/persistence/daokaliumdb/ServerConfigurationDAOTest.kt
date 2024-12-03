@@ -30,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -151,7 +152,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertEquals(expect, actual)
     }
 
-//     @Ignore
+    //     @Ignore
     @Test
     fun givenNewApiVersion_thenItCanBeUpdated() = runTest {
         val oldConfig = config1.copy(
@@ -174,7 +175,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
             federation = true,
             commonApiVersion = 2
         )
-        dispatcher.scheduler.advanceTimeBy(100000)
         globalDatabaseBuilder.serverConfigurationDAO.configById(oldConfig.id)
             .also { actual ->
                 assertEquals(expected.metaData.federation, actual!!.metaData.federation)
