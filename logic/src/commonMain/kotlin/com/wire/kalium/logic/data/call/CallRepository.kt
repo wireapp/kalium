@@ -460,8 +460,8 @@ internal class CallDataSource(
                         participants = participants,
                         maxParticipants = max(call.maxParticipants, participants.size + 1),
                         users = updatedUsers,
-                        sharingScreenMetadata = updateSharingScreenMetadata(
-                            metadata = call.sharingScreenMetadata,
+                        screenShareMetadata = updateScreenSharingMetadata(
+                            metadata = call.screenShareMetadata,
                             usersCurrentlySharingScreen = sharingScreenParticipantIds
                         )
                     )
@@ -497,10 +497,10 @@ internal class CallDataSource(
      * 2. **Update Active Shares**: Filter out inactive shares and add any new ones, associating them with the current start time.
      * 3. **Track Unique Users**: Append ids to current set in order to keep track of unique users.
      */
-    private fun updateSharingScreenMetadata(
-        metadata: CallSharingScreenMetadata,
+    private fun updateScreenSharingMetadata(
+        metadata: CallScreenSharingMetadata,
         usersCurrentlySharingScreen: List<QualifiedID>
-    ): CallSharingScreenMetadata {
+    ): CallScreenSharingMetadata {
         val now = DateTimeUtil.currentInstant()
 
         val alreadyEndedScreenSharesTimeInMillis = metadata.activeScreenShares

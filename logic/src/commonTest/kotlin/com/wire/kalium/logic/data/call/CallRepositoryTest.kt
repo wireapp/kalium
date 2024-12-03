@@ -1534,8 +1534,8 @@ class CallRepositoryTest {
 
         // then
         assertNotNull(callMetadata)
-        assertEquals(0L, callMetadata.sharingScreenMetadata.completedScreenShareDurationInMillis)
-        assertTrue(callMetadata.sharingScreenMetadata.activeScreenShares.containsKey(otherParticipant.id))
+        assertEquals(0L, callMetadata.screenShareMetadata.completedScreenShareDurationInMillis)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.containsKey(otherParticipant.id))
     }
 
     @Test
@@ -1565,8 +1565,8 @@ class CallRepositoryTest {
 
         // then
         assertNotNull(callMetadata)
-        assertTrue(callMetadata.sharingScreenMetadata.activeScreenShares.size == 1)
-        assertTrue(callMetadata.sharingScreenMetadata.activeScreenShares.containsKey(thirdParticipant.id))
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.size == 1)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.containsKey(thirdParticipant.id))
     }
 
     @Test
@@ -1595,7 +1595,7 @@ class CallRepositoryTest {
 
         // then
         assertNotNull(callMetadata)
-        assertTrue(callMetadata.sharingScreenMetadata.activeScreenShares.isEmpty())
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.isEmpty())
     }
 
     @Test
@@ -1629,8 +1629,8 @@ class CallRepositoryTest {
 
             // then
             assertNotNull(callMetadata)
-            assertTrue(callMetadata.sharingScreenMetadata.uniqueSharingUsers.size == 1)
-            assertTrue(callMetadata.sharingScreenMetadata.uniqueSharingUsers.contains(otherParticipant.id.toString()))
+            assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.size == 1)
+            assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.contains(otherParticipant.id.toString()))
         }
 
     @Test
@@ -1656,10 +1656,10 @@ class CallRepositoryTest {
 
         // then
         assertNotNull(callMetadata)
-        assertTrue(callMetadata.sharingScreenMetadata.uniqueSharingUsers.size == 2)
+        assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.size == 2)
         assertEquals(
             setOf(secondParticipant.id.toString(), thirdParticipant.id.toString()),
-            callMetadata.sharingScreenMetadata.uniqueSharingUsers
+            callMetadata.screenShareMetadata.uniqueSharingUsers
         )
     }
 

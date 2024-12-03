@@ -48,7 +48,7 @@ data class CallMetadata(
     val protocol: Conversation.ProtocolInfo,
     val activeSpeakers: Map<UserId, List<String>> = mapOf(),
     val users: List<OtherUserMinimized> = listOf(),
-    val sharingScreenMetadata: CallSharingScreenMetadata = CallSharingScreenMetadata()
+    val screenShareMetadata: CallScreenSharingMetadata = CallScreenSharingMetadata()
 ) {
     fun getFullParticipants(): List<Participant> = participants.map { participant ->
         val user = users.firstOrNull { it.id == participant.userId }
@@ -74,7 +74,7 @@ data class CallMetadata(
  * [completedScreenShareDurationInMillis] - total time of already ended screen shares in milliseconds
  * [uniqueSharingUsers] - set of users that were sharing a screen at least once
  */
-data class CallSharingScreenMetadata(
+data class CallScreenSharingMetadata(
     val activeScreenShares: Map<QualifiedID, Instant> = emptyMap(),
     val completedScreenShareDurationInMillis: Long = 0L,
     val uniqueSharingUsers: Set<String> = emptySet()
