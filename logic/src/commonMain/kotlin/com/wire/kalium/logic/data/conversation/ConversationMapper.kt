@@ -677,15 +677,16 @@ internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.Verif
 }
 
 internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) {
-    ConversationFilter.ALL -> ConversationFilterEntity.ALL
-    ConversationFilter.FAVORITES -> ConversationFilterEntity.FAVORITES
-    ConversationFilter.GROUPS -> ConversationFilterEntity.GROUPS
-    ConversationFilter.ONE_ON_ONE -> ConversationFilterEntity.ONE_ON_ONE
+    ConversationFilter.All -> ConversationFilterEntity.ALL
+    ConversationFilter.Favorites -> ConversationFilterEntity.FAVORITES
+    ConversationFilter.Groups -> ConversationFilterEntity.GROUPS
+    ConversationFilter.OneOnOne -> ConversationFilterEntity.ONE_ON_ONE
+    is ConversationFilter.Folder -> ConversationFilterEntity.ALL // TODO think how to secure that
 }
 
 internal fun ConversationFilterEntity.toModel(): ConversationFilter = when (this) {
-    ConversationFilterEntity.ALL -> ConversationFilter.ALL
-    ConversationFilterEntity.FAVORITES -> ConversationFilter.FAVORITES
-    ConversationFilterEntity.GROUPS -> ConversationFilter.GROUPS
-    ConversationFilterEntity.ONE_ON_ONE -> ConversationFilter.ONE_ON_ONE
+    ConversationFilterEntity.ALL -> ConversationFilter.All
+    ConversationFilterEntity.FAVORITES -> ConversationFilter.Favorites
+    ConversationFilterEntity.GROUPS -> ConversationFilter.Groups
+    ConversationFilterEntity.ONE_ON_ONE -> ConversationFilter.OneOnOne
 }

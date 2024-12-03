@@ -18,7 +18,9 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.QualifiedID
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class ConversationFolder(
     val id: String,
     val name: String,

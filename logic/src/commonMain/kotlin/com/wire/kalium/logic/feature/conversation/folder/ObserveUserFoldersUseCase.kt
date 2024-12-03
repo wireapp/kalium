@@ -17,27 +17,30 @@
  */
 package com.wire.kalium.logic.feature.conversation.folder
 
-import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
+import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 
 /**
- * This use case will observe and return the list of conversations from given folder.
- * @see ConversationDetailsWithEvents
+ * This use case will observe and return the list of all user folders.
+ * @see ConversationFolder
  */
-fun interface ObserveConversationsFromFolderUseCase {
-    suspend operator fun invoke(folderId: String): Flow<List<ConversationDetailsWithEvents>>
+fun interface ObserveUserFoldersUseCase {
+    suspend operator fun invoke(): Flow<List<ConversationFolder>>
 }
 
-internal class ObserveConversationsFromFolderUseCaseImpl(
+internal class ObserveUserFoldersUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) : ObserveConversationsFromFolderUseCase {
+//     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+) : ObserveUserFoldersUseCase {
 
-    override suspend operator fun invoke(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
-        conversationFolderRepository.observeConversationsFromFolder(folderId)
-            .flowOn(dispatchers.io)
+    override suspend operator fun invoke(): Flow<List<ConversationFolder>> {
+        return conversationFolderRepository.observeUserFolders()
+            .mapToRightOr(emptyList())
+//             .flowOn(dispatchers.io)
+    }
 }
