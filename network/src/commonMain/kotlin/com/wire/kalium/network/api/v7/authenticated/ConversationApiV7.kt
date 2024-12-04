@@ -19,16 +19,23 @@
 package com.wire.kalium.network.api.v7.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.network.api.model.ApiModelMapper
 import com.wire.kalium.network.api.model.ApiModelMapperImpl
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.ServiceAddedResponse
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v6.authenticated.ConversationApiV6
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import okio.IOException
 
 internal open class ConversationApiV7 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -42,7 +49,21 @@ internal open class ConversationApiV7 internal constructor(
             apiModelMapper.fromApiV6(it)
         }
 
+    override suspend fun addService(
+        addServiceRequest: AddServiceRequest,
+        conversationId: ConversationId
+    ): NetworkResponse<ServiceAddedResponse> = try {
+        httpClient.post("$PATH_BOT/$PATH_CONVERSATIONS/${conversationId.value}") {
+            setBody(addServiceRequest)
+        }.let { response ->
+            handleServiceAddedResponse(response)
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
     protected companion object {
         const val PATH_ONE_2_ONE_CONVERSATIONS = "one2one-conversations"
+        const val PATH_BOT = "bot"
     }
 }
