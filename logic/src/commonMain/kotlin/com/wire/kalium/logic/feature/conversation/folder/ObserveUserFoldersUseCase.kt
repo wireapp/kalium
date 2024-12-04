@@ -35,12 +35,12 @@ fun interface ObserveUserFoldersUseCase {
 
 internal class ObserveUserFoldersUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-//     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveUserFoldersUseCase {
 
     override suspend operator fun invoke(): Flow<List<ConversationFolder>> {
         return conversationFolderRepository.observeUserFolders()
             .mapToRightOr(emptyList())
-//             .flowOn(dispatchers.io)
+            .flowOn(dispatchers.io)
     }
 }

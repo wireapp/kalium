@@ -18,13 +18,14 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.QualifiedID
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ConversationFolder(
-    val id: String,
-    val name: String,
-    val type: FolderType
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("folder_type") val type: FolderType
 )
 
 data class FolderWithConversations(
