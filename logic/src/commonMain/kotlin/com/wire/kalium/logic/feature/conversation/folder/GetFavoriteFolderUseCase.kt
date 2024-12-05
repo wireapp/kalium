@@ -47,7 +47,7 @@ internal class GetFavoriteFolderUseCaseImpl(
     override suspend operator fun invoke(): Result {
         return conversationFolderRepository.getFavoriteConversationFolder()
             .flatMapLeft {
-                if(it is StorageFailure.DataNotFound) {
+                if (it is StorageFailure.DataNotFound) {
                     conversationFolderRepository.fetchConversationFolders().flatMap {
                         conversationFolderRepository.getFavoriteConversationFolder()
                     }
@@ -56,8 +56,8 @@ internal class GetFavoriteFolderUseCaseImpl(
                 }
             }
             .fold(
-            { Result.Failure },
-            { Result.Success(it) }
-        )
+                { Result.Failure },
+                { Result.Success(it) }
+            )
     }
 }

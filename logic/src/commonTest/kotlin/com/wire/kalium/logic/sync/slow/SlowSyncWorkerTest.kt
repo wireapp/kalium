@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
-import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
