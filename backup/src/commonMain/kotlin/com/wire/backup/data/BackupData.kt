@@ -88,7 +88,9 @@ data class BackupMessage(
     val senderUserId: BackupQualifiedId,
     val senderClientId: String,
     val creationDate: BackupDateTime,
-    val content: BackupMessageContent
+    val content: BackupMessageContent,
+    @Deprecated("Used only by the Webteam in order to simplify debugging", ReplaceWith(""))
+    val webPrimaryKey: Int? = null,
 )
 
 expect class BackupDateTime
@@ -100,6 +102,78 @@ expect fun BackupDateTime.toLongMilliseconds(): Long
 sealed class BackupMessageContent {
     data class Text(val text: String) : BackupMessageContent()
 
-    // TODO: Not _yet_ implemented
-    data class Asset(val todo: String) : BackupMessageContent()
+    data class Asset(
+        val mimeType: String,
+        val size: Int,
+        val name: String?,
+        val otrKey: ByteArray,
+        val sha256: ByteArray,
+        val assetId: String,
+        val assetToken: String?,
+        val assetDomain: String?,
+        val encryption: EncryptionAlgorithm?,
+        val metaData: AssetMetadata?,
+    ) : BackupMessageContent() {
+        enum class EncryptionAlgorithm {
+            AES_GCM, AES_CBC
+        }
+
+        sealed class AssetMetadata {
+            data class Image(
+                val width: Int,
+                val height: Int,
+                val tag: String?
+            ) : AssetMetadata()
+
+            data class Video(
+                val width: Int?,
+                val height: Int?,
+                val duration: Long?,
+            ) : AssetMetadata()
+
+            data class Audio(
+                val normalization: ByteArray?,
+                val duration: Long?,
+            ) : AssetMetadata()
+
+            data class Generic(
+                val name: String?,
+            ) : AssetMetadata()
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as Asset
+
+            if (!otrKey.contentEquals(other.otrKey)) return false
+            if (!sha256.contentEquals(other.sha256)) return false
+            if (assetId != other.assetId) return false
+            if (assetToken != other.assetToken) return false
+            if (assetDomain != other.assetDomain) return false
+            if (encryption != other.encryption) return false
+            if (metaData != other.metaData) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = otrKey.contentHashCode()
+            result = 31 * result + sha256.contentHashCode()
+            result = 31 * result + assetId.hashCode()
+            result = 31 * result + (assetToken?.hashCode() ?: 0)
+            result = 31 * result + (assetDomain?.hashCode() ?: 0)
+            result = 31 * result + (encryption?.hashCode() ?: 0)
+            result = 31 * result + (metaData?.hashCode() ?: 0)
+            return result
+        }
+    }
+
+    data class Location(
+        val longitude: Float,
+        val latitude: Float,
+        val name: String?,
+        val zoom: Int?,
+    ) : BackupMessageContent()
 }

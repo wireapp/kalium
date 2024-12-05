@@ -19,17 +19,12 @@ package com.wire.backup.dump
 
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
-import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
-import com.wire.backup.data.toLongMilliseconds
 import com.wire.backup.data.toProtoModel
+import com.wire.backup.ingest.MPBackupMapper
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
-import com.wire.kalium.protobuf.backup.ExportUser
-import com.wire.kalium.protobuf.backup.ExportedConversation
-import com.wire.kalium.protobuf.backup.ExportedMessage
-import com.wire.kalium.protobuf.backup.ExportedText
 import kotlinx.datetime.Clock
 import pbandk.encodeToByteArray
 import kotlin.experimental.ExperimentalObjCName
@@ -47,6 +42,7 @@ import kotlin.native.ShouldRefineInSwift
 abstract class CommonMPBackupExporter(
     private val selfUserId: BackupQualifiedId
 ) {
+    private val mapper = MPBackupMapper()
     private val allUsers = mutableListOf<BackupUser>()
     private val allConversations = mutableListOf<BackupConversation>()
     private val allMessages = mutableListOf<BackupMessage>()
@@ -80,28 +76,14 @@ abstract class CommonMPBackupExporter(
                 creationTime = Clock.System.now().toEpochMilliseconds(),
                 clientId = "lol"
             ),
-            allConversations.map { ExportedConversation(it.id.toProtoModel(), it.name) },
+            allConversations.map {
+                mapper.mapConversationToProtobuf(it)
+            },
             allMessages.map {
-                ExportedMessage(
-                    id = it.id,
-                    timeIso = it.creationDate.toLongMilliseconds(),
-                    senderUserId = it.senderUserId.toProtoModel(),
-                    senderClientId = it.senderClientId,
-                    conversationId = it.conversationId.toProtoModel(),
-                    content = when (val content = it.content) {
-                        is BackupMessageContent.Asset ->
-                            ExportedMessage.Content.Text(ExportedText("FAKE ASSET")) // TODO: Support assets
-                        is BackupMessageContent.Text ->
-                            ExportedMessage.Content.Text(ExportedText(content.text))
-                    }
-                )
+                mapper.mapMessageToProtobuf(it)
             },
             allUsers.map {
-                ExportUser(
-                    id = it.id.toProtoModel(),
-                    name = it.name,
-                    handle = it.handle
-                )
+                mapper.mapUserToProtobuf(it)
             },
         )
         return backupData.encodeToByteArray().also {
