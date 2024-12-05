@@ -72,7 +72,6 @@ class SlowSyncWorkerTest {
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
             .withFetchLegalHoldStatusSuccess()
-            .withSyncFoldersSuccess()
             .arrange()
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
@@ -410,7 +409,6 @@ class SlowSyncWorkerTest {
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
             .withFetchLegalHoldStatusSuccess()
-            .withSyncFoldersSuccess()
             .arrange()
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
@@ -514,9 +512,6 @@ class SlowSyncWorkerTest {
         @Mock
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
 
-        @Mock
-        val syncConversationFoldersUseCase = mock(SyncConversationFoldersUseCase::class)
-
         init {
             runBlocking {
                 withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
@@ -534,8 +529,7 @@ class SlowSyncWorkerTest {
             joinMLSConversations = joinMLSConversations,
             updateSupportedProtocols = updateSupportedProtocols,
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
-            oneOnOneResolver = oneOnOneResolver,
-            syncConversationFolders = syncConversationFoldersUseCase
+            oneOnOneResolver = oneOnOneResolver
         )
 
         suspend fun withSyncSelfUserFailure() = apply {
@@ -649,12 +643,6 @@ class SlowSyncWorkerTest {
         suspend fun withResolveOneOnOneConversationsSuccess() = apply {
             coEvery {
                 oneOnOneResolver.resolveAllOneOnOneConversations(any())
-            }.returns(success)
-        }
-
-        suspend fun withSyncFoldersSuccess() = apply {
-            coEvery {
-                syncConversationFoldersUseCase.invoke()
             }.returns(success)
         }
     }
