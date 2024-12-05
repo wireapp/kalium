@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallMetadata
+import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MemberDetails
@@ -27,9 +29,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
-import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.framework.TestUser.OTHER_MINIMIZED
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -55,7 +57,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // when
         useCase(
-            conversationId = ConversationId(value = "value", domain = "domain"),
+            conversationId = CONVERSATION_ID,
             callEndedReason = 2
         )
 
@@ -76,7 +78,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // when
         useCase(
-            conversationId = ConversationId(value = "value", domain = "domain"),
+            conversationId = CONVERSATION_ID,
             callEndedReason = 2
         )
 
@@ -103,7 +105,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // when
         useCase(
-            conversationId = ConversationId(value = "value", domain = "domain"),
+            conversationId = CONVERSATION_ID,
             callEndedReason = 2
         )
 
@@ -131,7 +133,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         // when
         useCase(
-            conversationId = ConversationId(value = "value", domain = "domain"),
+            conversationId = CONVERSATION_ID,
             callEndedReason = 2
         )
 
@@ -157,14 +159,14 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         @Mock
         val callRepository = mock(CallRepository::class)
 
-        suspend fun withOutgoingCall() = apply {
-            coEvery { callRepository.observeCurrentCall(any()) }
-                .returns(flowOf(callWithOwner()))
+        fun withOutgoingCall() = apply {
+            every { callRepository.getCallMetadataProfile() }
+                .returns(CallMetadataProfile(mapOf(CONVERSATION_ID to callMetadata())))
         }
 
-        suspend fun withIncomingCall() = apply {
-            coEvery { callRepository.observeCurrentCall(any()) }
-                .returns(flowOf(callWithOwner().copy(callerId = CALLER_ID.copy(value = "external"))))
+        fun withIncomingCall() = apply {
+            every { callRepository.getCallMetadataProfile() }
+                .returns(CallMetadataProfile(mapOf(CONVERSATION_ID to callMetadata().copy(callerId = CALLER_ID.copy(value = "external")))))
         }
 
         suspend fun withConversationMembers() = apply {
@@ -211,35 +213,55 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                 selfTeamIdProvider = selfTeamIdProvider
             )
 
-        private fun callWithOwner(): Call {
-            return TestCall.oneOnOneEstablishedCall()
-                .copy(
-                    callerId = CALLER_ID.copy(value = "ownerId"),
-                    participants = TestCall.oneOnOneEstablishedCall().participants.plus(
-                        Participant(
-                            id = CALLER_ID.copy(value = "ownerId"),
-                            clientId = "abcd",
-                            isMuted = true,
-                            isCameraOn = false,
-                            isSharingScreen = false,
-                            hasEstablishedAudio = true,
-                            name = "User Name",
-                            avatarAssetId = null,
-                            userType = UserType.OWNER,
-                            isSpeaking = false,
-                            accentId = 0
-                        )
+        private fun callMetadata(): CallMetadata {
+            return CallMetadata(
+                callerId = CALLER_ID.copy(value = "ownerId"),
+                isMuted = true,
+                isCameraOn = false,
+                isCbrEnabled = false,
+                conversationName = null,
+                users = listOf(
+                    OTHER_MINIMIZED.copy(id = CALLER_ID.copy(value = "ownerId"), userType = UserType.OWNER),
+                    OTHER_MINIMIZED
+                ),
+                participants = listOf(
+                    ParticipantMinimized(
+                        id = CALLER_ID.copy(value = "ownerId"),
+                        userId = CALLER_ID.copy(value = "ownerId"),
+                        clientId = "abcd",
+                        isMuted = true,
+                        isCameraOn = false,
+                        isSharingScreen = false,
+                        hasEstablishedAudio = true
+                    ),
+                    ParticipantMinimized(
+                        id = CALLER_ID,
+                        userId = CALLER_ID,
+                        clientId = "abcd",
+                        isMuted = true,
+                        isCameraOn = false,
+                        isSharingScreen = false,
+                        hasEstablishedAudio = true
                     )
-                )
+                ),
+                conversationType = Conversation.Type.ONE_ON_ONE,
+                callerName = "User Name",
+                callerTeamName = null,
+                callStatus = CallStatus.ESTABLISHED,
+                protocol = Conversation.ProtocolInfo.Proteus,
+                activeSpeakers = mapOf()
+            )
         }
     }
 
     private companion object {
+        val CONVERSATION_ID = ConversationId(value = "value", domain = "domain")
         val DEFAULT_ENDED_CALL_METADATA = RecentlyEndedCallMetadata(
             callEndReason = 2,
             isTeamMember = true,
             callDetails = RecentlyEndedCallMetadata.CallDetails(
                 isCallScreenShare = false,
+                screenShareDurationInSeconds = 0L,
                 callScreenShareUniques = 0,
                 isOutgoingCall = true,
                 callDurationInSeconds = 0L,

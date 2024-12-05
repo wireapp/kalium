@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallScreenSharingMetadata
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -42,19 +43,20 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : CreateAndPersistRecentlyEndedCallMetadataUseCase {
     override suspend fun invoke(conversationId: ConversationId, callEndedReason: Int) {
-        val call = callRepository.observeCurrentCall(conversationId).first()
-        call?.createMetadata(callEndedReason = callEndedReason)?.let { metadata ->
+        callRepository.getCallMetadataProfile()[conversationId]?.createMetadata(
+            conversationId = conversationId,
+            callEndedReason = callEndedReason
+        )?.let { metadata ->
             callRepository.updateRecentlyEndedCallMetadata(metadata)
         }
     }
 
-    private suspend fun Call.createMetadata(callEndedReason: Int): RecentlyEndedCallMetadata {
-        val selfCallUser = participants.firstOrNull { participant -> participant.userType == UserType.OWNER }
+    private suspend fun CallMetadata.createMetadata(conversationId: ConversationId, callEndedReason: Int): RecentlyEndedCallMetadata {
+        val selfCallUser = getFullParticipants().firstOrNull { participant -> participant.userType == UserType.OWNER }
         val conversationMembers = observeConversationMembers(conversationId).first()
         val conversationServicesCount = conversationMembers.count { member -> member.user.userType == UserType.SERVICE }
         val guestsCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST }
         val guestsProCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST && member.user.teamId != null }
-        val uniqueScreenShares = participants.count { participant -> participant.isSharingScreen }
         val isOutgoingCall = callerId.value == selfCallUser?.id?.value
         val callDurationInSeconds = establishedTime?.let {
             DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentIsoDateTimeString()) / MILLIS_IN_SECOND
@@ -64,7 +66,8 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
             callEndReason = callEndedReason,
             callDetails = RecentlyEndedCallMetadata.CallDetails(
                 isCallScreenShare = selfCallUser?.isSharingScreen ?: false,
-                callScreenShareUniques = uniqueScreenShares,
+                screenShareDurationInSeconds = screenShareMetadata.totalDurationInSeconds(),
+                callScreenShareUniques = screenShareMetadata.uniqueSharingUsers.size,
                 isOutgoingCall = isOutgoingCall,
                 callDurationInSeconds = callDurationInSeconds,
                 callParticipantsCount = participants.size,
@@ -80,6 +83,14 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
             ),
             isTeamMember = selfTeamIdProvider().getOrNull() != null
         )
+    }
+
+    private fun CallScreenSharingMetadata.totalDurationInSeconds(): Long {
+        val now = DateTimeUtil.currentInstant()
+        val activeScreenSharesDurationInSeconds =
+            activeScreenShares.values.sumOf { startTime -> DateTimeUtil.calculateMillisDifference(startTime, now) }
+
+        return (activeScreenSharesDurationInSeconds + completedScreenShareDurationInMillis) / MILLIS_IN_SECOND
     }
 
     private companion object {

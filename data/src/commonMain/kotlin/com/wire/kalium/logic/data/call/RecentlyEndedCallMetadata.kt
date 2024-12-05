@@ -27,6 +27,7 @@ data class RecentlyEndedCallMetadata(
 ) {
     data class CallDetails(
         val isCallScreenShare: Boolean,
+        val screenShareDurationInSeconds: Long,
         val callScreenShareUniques: Int,
         val isOutgoingCall: Boolean,
         val callDurationInSeconds: Long,
