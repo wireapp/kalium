@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.callerId
+import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.participant
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -84,6 +85,7 @@ import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -174,7 +176,6 @@ class CallRepositoryTest {
                             Arrangement.groupConversation,
                             false,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -212,7 +213,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -266,7 +266,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -309,7 +308,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -366,7 +364,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -1511,6 +1508,158 @@ class CallRepositoryTest {
         assertEquals(
             true,
             fullParticipants?.first { it.id == unMutedParticipant.id && it.clientId == unMutedParticipant.clientId }?.isSpeaking
+        )
+    }
+
+    @Test
+    fun givenCallWithParticipantsNotSharingScreen_whenOneStartsToShare_thenSharingMetadataHasProperValues() = runTest {
+        // given
+        val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, otherParticipant)
+        val (_, callRepository) = Arrangement()
+            .givenGetKnownUserMinimizedSucceeds()
+            .arrange()
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, otherParticipant.copy(isSharingScreen = true))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertEquals(0L, callMetadata.screenShareMetadata.completedScreenShareDurationInMillis)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.containsKey(otherParticipant.id))
+    }
+
+    @Test
+    fun givenCallWithParticipantsNotSharingScreen_whenTwoStartsAndOneStops_thenSharingMetadataHasProperValues() = runTest {
+        // given
+        val (_, callRepository) = Arrangement()
+            .arrange()
+        val secondParticipant = participant.copy(id = QualifiedID("secondParticipantId", "participantDomain"))
+        val thirdParticipant = participant.copy(id = QualifiedID("thirdParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, secondParticipant, thirdParticipant)
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, secondParticipant.copy(isSharingScreen = true), thirdParticipant.copy(isSharingScreen = true))
+        )
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, secondParticipant, thirdParticipant.copy(isSharingScreen = true))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.size == 1)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.containsKey(thirdParticipant.id))
+    }
+
+    @Test
+    fun givenCallWithParticipantsSharingScreen_whenOneStopsToShare_thenSharingMetadataHasProperValues() = runTest {
+        // given
+        val (_, callRepository) = Arrangement()
+            .arrange()
+        val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, otherParticipant)
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, otherParticipant.copy(isSharingScreen = true))
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, otherParticipant.copy(isSharingScreen = false))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.isEmpty())
+    }
+
+    @Test
+    fun givenCallWithParticipantsSharingScreen_whenTheSameParticipantIsSharingMultipleTime_thenSharingMetadataHasUserIdOnlyOnce() =
+        runTest {
+            // given
+            val (_, callRepository) = Arrangement()
+                .arrange()
+            val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+            val participantsList = listOf(participant, otherParticipant)
+            callRepository.updateCallMetadataProfileFlow(
+                callMetadataProfile = CallMetadataProfile(
+                    data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+                )
+            )
+
+            // when
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                listOf(participant, otherParticipant.copy(isSharingScreen = true))
+            )
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                listOf(participant, otherParticipant.copy(isSharingScreen = false))
+            )
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                listOf(participant, otherParticipant.copy(isSharingScreen = true))
+            )
+            val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+            // then
+            assertNotNull(callMetadata)
+            assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.size == 1)
+            assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.contains(otherParticipant.id.toString()))
+        }
+
+    @Test
+    fun givenCallWithParticipantsSharingScreen_whenTwoParticipantsAreSharing_thenSharingMetadataHasBothOfUsersIds() = runTest {
+        // given
+        val (_, callRepository) = Arrangement()
+            .arrange()
+        val secondParticipant = participant.copy(id = QualifiedID("secondParticipantId", "participantDomain"))
+        val thirdParticipant = participant.copy(id = QualifiedID("thirdParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, secondParticipant, thirdParticipant)
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, secondParticipant.copy(isSharingScreen = true), thirdParticipant.copy(isSharingScreen = true))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.size == 2)
+        assertEquals(
+            setOf(secondParticipant.id.toString(), thirdParticipant.id.toString()),
+            callMetadata.screenShareMetadata.uniqueSharingUsers
         )
     }
 
