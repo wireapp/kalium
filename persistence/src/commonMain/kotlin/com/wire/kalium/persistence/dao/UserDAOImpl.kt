@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.cache.FlowCache
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -145,12 +146,14 @@ class UserMapper {
         userId: QualifiedIDEntity,
         name: String?,
         assetId: QualifiedIDEntity?,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        accentId: Int
     ) = UserEntityMinimized(
         userId,
         name,
         assetId,
-        userTypeEntity
+        userTypeEntity,
+        accentId
     )
 }
 
@@ -281,15 +284,15 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
         withContext(queriesContext) {
-            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
-                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType, accentId ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
             }.executeAsOneOrNull()
         }
 
     override suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized> =
         withContext(queriesContext) {
-            userQueries.selectMinimizedByQualifiedId(qualifiedIDs) { qualifiedId, name, completeAssetId, userType ->
-                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            userQueries.selectMinimizedByQualifiedId(qualifiedIDs) { qualifiedId, name, completeAssetId, userType, accentId ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
             }.executeAsList()
         }
 
@@ -465,5 +468,13 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity? = withContext(queriesContext) {
         userQueries.selectOneOnOnConversationId(userId).executeAsOneOrNull()?.active_one_on_one_conversation_id
+    }
+
+    override suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity? = withContext(queriesContext) {
+        userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).executeAsOneOrNull()
+    }
+
+    override suspend fun updateTeamId(userId: UserIDEntity, teamId: String) {
+        userQueries.updateTeamId(teamId, userId)
     }
 }

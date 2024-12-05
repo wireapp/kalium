@@ -22,6 +22,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
+import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
@@ -59,8 +61,10 @@ import com.wire.kalium.network.api.v5.authenticated.PreKeyApiV5
 import com.wire.kalium.network.api.v5.authenticated.PropertiesApiV5
 import com.wire.kalium.network.api.v5.authenticated.SelfApiV5
 import com.wire.kalium.network.api.v5.authenticated.TeamsApiV5
+import com.wire.kalium.network.api.v5.authenticated.UpgradePersonalToTeamApiV5
 import com.wire.kalium.network.api.v5.authenticated.UserDetailsApiV5
 import com.wire.kalium.network.api.v5.authenticated.UserSearchApiV5
+import com.wire.kalium.network.api.vcommon.WildCardApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderImpl
@@ -68,6 +72,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.websocket.WebSocketSession
 
 @Suppress("LongParameterList")
 internal class AuthenticatedNetworkContainerV5 internal constructor(
@@ -75,6 +80,7 @@ internal class AuthenticatedNetworkContainerV5 internal constructor(
     private val selfUserId: UserId,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?,
+    mockWebSocketSession: WebSocketSession?,
     kaliumLogger: KaliumLogger,
     engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
@@ -86,7 +92,12 @@ internal class AuthenticatedNetworkContainerV5 internal constructor(
         sessionManager = sessionManager,
         accessTokenApi = { httpClient -> AccessTokenApiV5(httpClient) },
         engine = engine,
-        kaliumLogger = kaliumLogger
+        kaliumLogger = kaliumLogger,
+        webSocketSessionProvider = if (mockWebSocketSession != null) {
+            { _, _ -> mockWebSocketSession }
+        } else {
+            null
+        }
     ) {
 
     override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV5(networkClient.httpClient)
@@ -128,4 +139,11 @@ internal class AuthenticatedNetworkContainerV5 internal constructor(
     override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV5(networkClient)
 
     override val propertiesApi: PropertiesApi get() = PropertiesApiV5(networkClient)
+
+    override val wildCardApi: WildCardApi get() = WildCardApiImpl(networkClient)
+
+    override val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
+        get() = UpgradePersonalToTeamApiV5(
+            networkClient
+        )
 }

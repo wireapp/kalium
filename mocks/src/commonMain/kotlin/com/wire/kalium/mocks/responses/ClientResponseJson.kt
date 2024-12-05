@@ -18,7 +18,6 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.authenticated.client.Capabilities
 import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
@@ -36,14 +35,51 @@ object ClientResponseJson {
         |   "label": "${serializable.label}",
         |   "cookie": "${serializable.cookie}",
         |   "model": "${serializable.model}",
-        |   "capabilities": {
-        |     "capabilities": [
-        |        "${serializable.capabilities!!.capabilities[0]}"
-        |     ]
-        |  }
+        |   "capabilities": [
+        |      "${serializable.capabilities[0]}"
+        |   ],
+        |  "mls_public_keys": ${serializable.mlsPublicKeys}
         |}
         """.trimMargin()
     }
+
+    // This is backwards compatible with the old format till v5 API get deprecated
+    private val jsonProviderCapabilitiesObject = { serializable: ClientDTO ->
+        """
+        |{
+        |   "id": "${serializable.clientId}",
+        |   "type": "${serializable.type}",
+        |   "time": "${serializable.registrationTime}",
+        |   "last_active": "${serializable.lastActive}",
+        |   "class": "${serializable.deviceType}",
+        |   "label": "${serializable.label}",
+        |   "cookie": "${serializable.cookie}",
+        |   "model": "${serializable.model}",
+        |   "capabilities": {
+        |     "capabilities": [
+        |        "${serializable.capabilities[0]}"
+        |     ]
+        |  }
+        |  "mls_public_keys": ${serializable.mlsPublicKeys}
+        |}
+        """.trimMargin()
+    }
+
+    val validCapabilitiesObject = ValidJsonProvider(
+        ClientDTO(
+            clientId = "defkrr8e7grgsoufhg8",
+            type = ClientTypeDTO.Permanent,
+            deviceType = DeviceTypeDTO.Phone,
+            registrationTime = "2021-05-12T10:52:02.671Z",
+            lastActive = "2021-05-12T10:52:02.671Z",
+            label = "label",
+            cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
+            capabilities = listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
+            model = "model",
+            mlsPublicKeys = null
+        ),
+        jsonProviderCapabilitiesObject
+    )
 
     val valid = ValidJsonProvider(
         ClientDTO(
@@ -54,7 +90,7 @@ object ClientResponseJson {
             lastActive = "2021-05-12T10:52:02.671Z",
             label = "label",
             cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
-            capabilities = Capabilities(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),
+            capabilities = listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
             model = "model",
             mlsPublicKeys = null
         ),

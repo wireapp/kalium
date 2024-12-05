@@ -16,7 +16,7 @@ pipeline {
                 }
             }
             steps {
-                withMaven(jdk: 'AdoptiumJDK17', maven: 'M3', mavenLocalRepo: '.repository') {
+                withMaven(jdk: 'JDK17', maven: 'M3', mavenLocalRepo: '.repository') {
                     sh 'PATH=$HOME/.cargo/bin:$PATH make'
                     sh 'sudo cp $WORKSPACE/native/libs/lib* /usr/lib/'
                     sh './gradlew clean'
@@ -25,7 +25,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                withMaven(jdk: 'AdoptiumJDK17', maven: 'M3', mavenLocalRepo: '.repository') {
+                withMaven(jdk: 'JDK17', maven: 'M3', mavenLocalRepo: '.repository') {
                     withCredentials([usernamePassword(credentialsId: 'READ_PACKAGES_GITHUB_TOKEN', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
                         sh './gradlew :testservice:shadowJar'
                     }

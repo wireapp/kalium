@@ -1,0 +1,64 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity;
+
+CREATE TABLE ConversationFolder (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    folder_type TEXT AS ConversationFolderTypeEntity NOT NULL
+);
+
+CREATE TABLE LabeledConversation (
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      folder_id TEXT NOT NULL,
+
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+      PRIMARY KEY (folder_id, conversation_id)
+);
+
+getAllFoldersWithConversations:
+SELECT
+    conversationFolder.id AS label_id,
+    conversationFolder.name AS label_name,
+    conversationFolder.folder_type AS label_type,
+    labeledConversation.conversation_id
+FROM
+    ConversationFolder conversationFolder
+LEFT JOIN
+    LabeledConversation labeledConversation ON conversationFolder.id = labeledConversation.folder_id
+ORDER BY
+    conversationFolder.id;
+
+getConversationsFromFolder:
+SELECT ConversationDetailsWithEvents.*
+FROM LabeledConversation
+JOIN ConversationDetailsWithEvents
+    ON LabeledConversation.conversation_id = ConversationDetailsWithEvents.qualifiedId
+WHERE LabeledConversation.folder_id = :folderId
+    AND ConversationDetailsWithEvents.archived = 0
+ORDER BY
+    ConversationDetailsWithEvents.lastModifiedDate DESC,
+    name IS NULL,
+    name COLLATE NOCASE ASC;
+
+getFavoriteFolder:
+SELECT * FROM ConversationFolder WHERE folder_type = 'FAVORITE'
+LIMIT 1;
+
+upsertFolder:
+INSERT INTO ConversationFolder(id, name, folder_type)
+VALUES( ?, ?, ?)
+ON CONFLICT(id) DO UPDATE SET
+name = excluded.name,
+folder_type = excluded.folder_type;
+
+insertLabeledConversation:
+INSERT OR IGNORE INTO LabeledConversation(conversation_id, folder_id)
+VALUES(?, ?);
+
+deleteLabeledConversation:
+DELETE FROM LabeledConversation WHERE conversation_id = ? AND folder_id = ?;
+
+clearFolders:
+DELETE FROM ConversationFolder;

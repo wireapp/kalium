@@ -145,6 +145,11 @@ interface UserConfigStorage {
      */
     fun isConferenceCallingEnabled(): Boolean
 
+    /**
+     * Get a flow of saved flag to know if conference calling is enabled or not
+     */
+    fun isConferenceCallingEnabledFlow(): Flow<Boolean>
+
     fun persistUseSftForOneOnOneCalls(shouldUse: Boolean)
 
     fun shouldUseSftForOneOnOneCalls(): Boolean
@@ -178,8 +183,6 @@ interface UserConfigStorage {
     fun getE2EINotificationTime(): Long?
     fun e2EINotificationTimeFlow(): Flow<Long?>
     fun updateE2EINotificationTime(timeStamp: Long)
-    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
-    fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
 }
 
 @Serializable
@@ -322,6 +325,12 @@ class UserConfigStorageImpl(
         )
 
     private val appLockFlow =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+
+    private val conferenceCallingEnabledFlow =
         MutableSharedFlow<Unit>(
             extraBufferCapacity = 1,
             onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -499,6 +508,7 @@ class UserConfigStorageImpl(
 
     override fun persistConferenceCalling(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
+        conferenceCallingEnabledFlow.tryEmit(Unit)
     }
 
     override fun isConferenceCallingEnabled(): Boolean =
@@ -506,6 +516,10 @@ class UserConfigStorageImpl(
             ENABLE_CONFERENCE_CALLING,
             DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         )
+
+    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> = conferenceCallingEnabledFlow
+        .map { isConferenceCallingEnabled() }
+        .onStart { emit(isConferenceCallingEnabled()) }
 
     override fun persistUseSftForOneOnOneCalls(shouldUse: Boolean) {
         kaliumPreferences.putBoolean(USE_SFT_FOR_ONE_ON_ONE_CALLS, shouldUse)
@@ -576,13 +590,6 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
-        kaliumPreferences.putBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, shouldFetch)
-    }
-
-    override fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
-        kaliumPreferences.getBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, true)
-
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
@@ -601,6 +608,5 @@ class UserConfigStorageImpl(
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
         const val APP_LOCK = "app_lock"
         const val DEFAULT_PROTOCOL = "default_protocol"
-        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
     }
 }

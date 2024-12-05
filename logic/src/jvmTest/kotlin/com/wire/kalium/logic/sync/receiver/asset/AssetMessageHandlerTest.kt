@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
@@ -243,6 +243,224 @@ class AssetMessageHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenValidPreviewAssetMessageStoredAndExtensionIsAllowed_whenHandlingTheUpdate_itIsCorrectlyProcessedAndVisible() = runTest {
+        // Given
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
+        val updateAssetMessage = COMPLETE_ASSET_MESSAGE
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png", "zip"))
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withValidateAssetFileType(true)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .withSuccessfulPersistMessageUseCase(updateAssetMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateAssetMessage)
+
+        // Then
+        assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
+        assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
+        coVerify {
+            arrangement.persistMessage(
+                matches {
+                    it.id == updateAssetMessage.id
+                            && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
+                            && it.visibility == Message.Visibility.VISIBLE
+                })
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                eq(previewAssetMessage.conversationId),
+                eq(previewAssetMessage.id)
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.validateAssetFileTypeUseCase(
+                fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
+                mimeType = eq("application/zip"),
+                allowedExtension = eq(isFileSharingEnabled.allowedType)
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidPreviewAssetMessageStoredAndExtensionIsNotAllowed_whenHandlingTheUpdate_itIsProcessedButNoVisible() = runTest {
+        // Given
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
+        val updateAssetMessage = COMPLETE_ASSET_MESSAGE
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png"))
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withValidateAssetFileType(true)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .withSuccessfulPersistMessageUseCase(updateAssetMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateAssetMessage)
+
+        // Then
+        assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
+        assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
+        coVerify {
+            arrangement.persistMessage(matches {
+                it.id == updateAssetMessage.id
+                        && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
+                        && it.visibility == updateAssetMessage.visibility
+            })
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                conversationId = eq(previewAssetMessage.conversationId),
+                messageUuid = eq(previewAssetMessage.id)
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.validateAssetFileTypeUseCase(
+                fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
+                mimeType = eq("application/zip"),
+                allowedExtension = eq(isFileSharingEnabled.allowedType)
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidPreviewAssetMessageStoredButFileSharingRestricted_whenHandlingTheUpdate_itIsProcessedButNoVisible() = runTest {
+        // Given
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
+        val updateAssetMessage = COMPLETE_ASSET_MESSAGE
+        val isFileSharingEnabled = FileSharingStatus.Value.Disabled
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withValidateAssetFileType(true)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .withSuccessfulPersistMessageUseCase(updateAssetMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateAssetMessage)
+
+        // Then
+        assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
+        assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
+        coVerify {
+            arrangement.persistMessage(matches {
+                it.id == updateAssetMessage.id
+                        && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
+                        && it.visibility == updateAssetMessage.visibility
+            })
+        }.wasInvoked(exactly = once)
+
+        coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
+            .wasNotInvoked()
+
+        coVerify {
+            arrangement.validateAssetFileTypeUseCase(
+                fileName = any<String>(),
+                mimeType = any<String>(),
+                allowedExtension = any<List<String>>()
+            )
+        }
+        coVerify { arrangement.validateAssetFileTypeUseCase(any<String>(), any<String>(), any<List<String>>()) }
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenFileWithNullNameAndCompleteData_whenProcessingCheckAPreviousAssetWithTheSameIDIsRestricted_thenDoNotStore() = runTest {
+        // Given
+        val messageCOntant = MessageContent.Asset(
+            AssetContent(
+                sizeInBytes = 100,
+                name = null,
+                mimeType = "",
+                metadata = null,
+                remoteData = AssetContent.RemoteData(
+                    otrKey = "otrKey".toByteArray(),
+                    sha256 = "sha256".toByteArray(),
+                    assetId = "some-asset-id",
+                    assetDomain = "some-asset-domain",
+                    assetToken = "some-asset-token",
+                    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+                ),
+            )
+
+        )
+        val assetMessage = COMPLETE_ASSET_MESSAGE.copy(content = messageCOntant)
+
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(
+            visibility = Message.Visibility.HIDDEN,
+            content = MessageContent.RestrictedAsset("application/zip", 500, "some-asset-name.zip.")
+        )
+
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png", "zip"))
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .withValidateAssetFileType(true)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(assetMessage)
+
+        // Then
+        coVerify { arrangement.persistMessage(any()) }
+            .wasNotInvoked()
+
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                eq(assetMessage.conversationId), eq(assetMessage.id)
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenFileWithNullNameAndCompleteData_whenProcessingCheckAPreviousAssetWithTheSameIDIsMissing_thenStoreAsRestricted() = runTest {
+        // Given
+        val messageCOntant = MessageContent.Asset(
+            AssetContent(
+                sizeInBytes = 100,
+                name = null,
+                mimeType = "",
+                metadata = null,
+                remoteData = AssetContent.RemoteData(
+                    otrKey = "otrKey".toByteArray(),
+                    sha256 = "sha256".toByteArray(),
+                    assetId = "some-asset-id",
+                    assetDomain = "some-asset-domain",
+                    assetToken = "some-asset-token",
+                    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+                ),
+            )
+
+        )
+        val assetMessage = COMPLETE_ASSET_MESSAGE.copy(content = messageCOntant)
+
+        val storedMessage = assetMessage.copy(content = MessageContent.RestrictedAsset(mimeType = "", sizeInBytes = 100, name = ""))
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledSome(listOf("txt", "png", "zip"))
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(null)
+            .withSuccessfulPersistMessageUseCase(storedMessage)
+            .withValidateAssetFileType(true)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(assetMessage)
+
+        // Then
+        coVerify { arrangement.persistMessage(any()) }
+            .wasInvoked(exactly = once)
+
+        coVerify { arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id)) }
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -255,14 +473,14 @@ class AssetMessageHandlerTest {
         val userConfigRepository = mock(UserConfigRepository::class)
 
         @Mock
-        val validateAssetMimeType = mock(ValidateAssetMimeTypeUseCase::class)
+        val validateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
 
         private val assetMessageHandlerImpl =
-            AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
+            AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetFileTypeUseCase)
 
-        fun withValidateAssetMime(result: Boolean) = apply {
+        fun withValidateAssetFileType(result: Boolean) = apply {
             every {
-                validateAssetMimeType.invoke(any(), any())
+                validateAssetFileTypeUseCase.invoke(any(), any(), any())
             }.returns(result)
         }
 

@@ -19,10 +19,16 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
+import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.Companion.MESSAGE_PREVIEW_ENTITY
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.MessagePreview
+import com.wire.kalium.logic.data.message.MessagePreviewContent
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
@@ -35,7 +41,11 @@ import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
+import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
@@ -45,6 +55,7 @@ import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class ConversationMapperTest {
 
@@ -69,6 +80,9 @@ class ConversationMapperTest {
     @Mock
     val conversationMemberMapper = mock(ConversationRoleMapper::class)
 
+    @Mock
+    val messageMapper = mock(MessageMapper::class)
+
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
@@ -81,7 +95,8 @@ class ConversationMapperTest {
             userAvailabilityStatusMapper,
             domainUserTypeMapper,
             connectionStatusMapper,
-            conversationMemberMapper
+            conversationMemberMapper,
+            messageMapper,
         )
     }
 
@@ -234,6 +249,170 @@ class ConversationMapperTest {
         assertEquals(ConversationEntity.Type.GROUP, result)
     }
 
+    @Test
+    fun givenAccessList_whenMappingFromModelToDAOAccess_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessList = setOf(
+            Conversation.Access.PRIVATE,
+            Conversation.Access.CODE,
+            Conversation.Access.INVITE,
+            Conversation.Access.LINK,
+            Conversation.Access.SELF_INVITE
+        )
+
+        val expected = listOf(
+            ConversationEntity.Access.PRIVATE,
+            ConversationEntity.Access.CODE,
+            ConversationEntity.Access.INVITE,
+            ConversationEntity.Access.LINK,
+            ConversationEntity.Access.SELF_INVITE
+        )
+
+        // when
+        val result = conversationMapper.fromModelToDAOAccess(accessList)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAccessRoleList_whenMappingFromModelToDAOAccessRole_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessRoleList = setOf(
+            Conversation.AccessRole.SERVICE,
+            Conversation.AccessRole.GUEST,
+            Conversation.AccessRole.TEAM_MEMBER,
+            Conversation.AccessRole.NON_TEAM_MEMBER,
+            Conversation.AccessRole.EXTERNAL
+        )
+
+        val expected = listOf(
+            ConversationEntity.AccessRole.SERVICE,
+            ConversationEntity.AccessRole.GUEST,
+            ConversationEntity.AccessRole.TEAM_MEMBER,
+            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
+            ConversationEntity.AccessRole.EXTERNAL
+        )
+
+        // when
+        val result = conversationMapper.fromModelToDAOAccessRole(accessRoleList)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAccessList_whenMappingFromApiModelToAccessModel_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessList = setOf(
+            ConversationAccessDTO.PRIVATE,
+            ConversationAccessDTO.CODE,
+            ConversationAccessDTO.INVITE,
+            ConversationAccessDTO.LINK,
+            ConversationAccessDTO.SELF_INVITE
+        )
+
+        val expected = setOf(
+            Conversation.Access.PRIVATE,
+            Conversation.Access.CODE,
+            Conversation.Access.INVITE,
+            Conversation.Access.LINK,
+            Conversation.Access.SELF_INVITE
+        )
+
+        // when
+        val result = conversationMapper.fromApiModelToAccessModel(accessList)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAccessRoleList_whenMappingFromApiModelToAccessModel_thenCorrectValuesShouldBeReturned() {
+        // given
+        val accessRoleList = setOf(
+            ConversationAccessRoleDTO.SERVICE,
+            ConversationAccessRoleDTO.GUEST,
+            ConversationAccessRoleDTO.TEAM_MEMBER,
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER,
+            ConversationAccessRoleDTO.EXTERNAL
+        )
+
+        val expected = setOf(
+            Conversation.AccessRole.SERVICE,
+            Conversation.AccessRole.GUEST,
+            Conversation.AccessRole.TEAM_MEMBER,
+            Conversation.AccessRole.NON_TEAM_MEMBER,
+            Conversation.AccessRole.EXTERNAL
+        )
+
+        // when
+        val result = conversationMapper.fromApiModelToAccessRoleModel(accessRoleList)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    private fun mockPreviewMessage(content: MessagePreviewContent) = MessagePreview(
+        id = MESSAGE_PREVIEW_ENTITY.id,
+        conversationId = TestConversation.CONVERSATION.id,
+        content = content,
+        visibility = Message.Visibility.VISIBLE,
+        isSelfMessage = false,
+        senderUserId = TestUser.OTHER.id,
+    )
+    private fun testConversationLastMessage(
+        lastMessage: MessagePreviewEntity? = null,
+        messageDraft: MessageDraftEntity? = null,
+        archived: Boolean = false,
+        assertion: (MessagePreview?) -> Unit
+    ) {
+        every {
+            protocolInfoMapper.fromEntity(any())
+        }.returns(Conversation.ProtocolInfo.Proteus)
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(MutedConversationStatus.AllAllowed)
+        every {
+            messageMapper.fromEntityToMessagePreview(any())
+        }.returns(mockPreviewMessage(MessagePreviewContent.WithUser.Text("sender", "message")))
+        every {
+            messageMapper.fromDraftToMessagePreview(any())
+        }.returns(mockPreviewMessage(MessagePreviewContent.Draft("draft")))
+        val conversation = ConversationDetailsWithEventsEntity(
+            conversationViewEntity = TestConversation.VIEW_ENTITY.copy(archived = archived),
+            lastMessage = lastMessage,
+            messageDraft = messageDraft,
+            unreadEvents = ConversationUnreadEventEntity(TestConversation.VIEW_ENTITY.id, mapOf()),
+        )
+        assertion(conversationMapper.fromDaoModelToDetailsWithEvents(conversation).lastMessage)
+    }
+
+    @Test
+    fun givenConversationWithDraftAndLastMessage_whenMappingFromDAODetailsWithEventsToModel_thenReturnProperLastMessage() =
+        testConversationLastMessage(
+            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+            messageDraft = MESSAGE_DRAFT_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+        ) { lastMessage -> assertIs<MessagePreviewContent.Draft>(lastMessage?.content) } // draft is always newer than last message
+
+    @Test
+    fun givenConversationWithLastMessage_whenMappingFromDAODetailsWithEventsToModel_thenReturnProperLastMessage() =
+        testConversationLastMessage(
+            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+        ) { lastMessage -> assertIs<MessagePreviewContent.WithUser.Text>(lastMessage?.content) }
+
+    @Test
+    fun givenConversationWithNoLastMessageAndDraft_whenMappingFromDAODetailsWithEventsToModel_thenReturnProperLastMessage() =
+        testConversationLastMessage { lastMessage -> assertEquals(null, lastMessage) }
+
+    @Test
+    fun givenArchivedConversationWithDraftAndLastMessage_whenMappingFromDAODetailsWithEventsToModel_thenReturnProperLastMessage() =
+        testConversationLastMessage(
+            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+            messageDraft = MESSAGE_DRAFT_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+            archived = true,
+        ) { lastMessage -> assertEquals(null, lastMessage) } // do not return last message if conversation is archived
+
     private companion object {
         val ORIGINAL_CONVERSATION_ID = ConversationId("original", "oDomain")
         val SELF_USER_TEAM_ID = TeamId("teamID")
@@ -247,6 +426,8 @@ class ConversationMapperTest {
         val OTHER_MEMBERS =
             listOf(ConversationMemberDTO.Other(service = null, id = UserId("other1", "domain1"), conversationRole = "wire_admin"))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
+        val MESSAGE_DRAFT_ENTITY = MessageDraftEntity(TestConversation.VIEW_ENTITY.id, "text", null, null, listOf())
+
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             MEMBERS_RESPONSE,

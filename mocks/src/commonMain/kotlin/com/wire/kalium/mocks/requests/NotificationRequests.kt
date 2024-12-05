@@ -31,6 +31,7 @@ object NotificationRequests {
      */
     private const val PATH_LAST_NOTIFICATIONS = "${CommonResponses.BASE_PATH_V1}notifications/last"
     private const val PATH_PUSH_TOKENS = "${CommonResponses.BASE_PATH_V1}push/tokens"
+    private const val PATH_NOTIFICATIONS = "${CommonResponses.BASE_PATH_V1}notifications"
 
     /**
      * Request / Responses
@@ -58,8 +59,16 @@ object NotificationRequests {
         statusCode = HttpStatusCode.OK,
     )
 
+    private val notificationsListRequestResponseSuccess = TestRequestHandler(
+        path = PATH_NOTIFICATIONS,
+        httpMethod = HttpMethod.Get,
+        responseBody = NotificationEventsResponseJson.notificationResponseWithEmptyEvents.toJsonString(),
+        statusCode = HttpStatusCode.OK,
+    )
+
     val notificationsRequestResponseSuccess = listOf(
         pushTokenApiRequestSuccess,
-        lastNotificationsApiRequestSuccess
+        lastNotificationsApiRequestSuccess,
+        notificationsListRequestResponseSuccess
     )
 }

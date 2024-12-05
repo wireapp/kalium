@@ -64,10 +64,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails =
             ConversationDetails.Group(
                 groupConversation,
-                lastMessage = null,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
-                unreadEventCount = emptyMap(),
                 selfRole = Conversation.Member.Role.Member
             )
 
@@ -101,19 +98,13 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails1 =
             ConversationDetails.Group(
                 groupConversation1,
-                lastMessage = null,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
-                unreadEventCount = emptyMap(),
                 selfRole = Conversation.Member.Role.Member
             )
         val groupConversationDetails2 =
             ConversationDetails.Group(
                 groupConversation2,
-                lastMessage = null,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
-                unreadEventCount = emptyMap(),
                 selfRole = Conversation.Member.Role.Member
             )
 
@@ -146,10 +137,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val groupConversationDetails = ConversationDetails.Group(
             conversation = groupConversation,
-            lastMessage = null,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
-            unreadEventCount = emptyMap(),
             selfRole = Conversation.Member.Role.Member
         )
 
@@ -182,10 +170,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationUpdates = listOf(
             ConversationDetails.Group(
                 groupConversation,
-                lastMessage = null,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
-                unreadEventCount = emptyMap(),
                 selfRole = Conversation.Member.Role.Member
             )
         )
@@ -194,15 +179,11 @@ class ObserveConversationListDetailsUseCaseTest {
             oneOnOneConversation,
             TestUser.OTHER,
             UserType.INTERNAL,
-            lastMessage = null,
-            unreadEventCount = emptyMap()
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
             UserType.INTERNAL,
-            lastMessage = null,
-            unreadEventCount = emptyMap()
         )
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
@@ -236,10 +217,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
-            lastMessage = null,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
-            unreadEventCount = emptyMap(),
             selfRole = Conversation.Member.Role.Member
         )
 
@@ -273,10 +251,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
-            lastMessage = null,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
-            unreadEventCount = emptyMap(),
             selfRole = Conversation.Member.Role.Member
         )
 
@@ -304,10 +279,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
-            lastMessage = null,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
-            unreadEventCount = emptyMap(),
             selfRole = Conversation.Member.Role.Member
         )
 

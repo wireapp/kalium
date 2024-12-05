@@ -47,7 +47,6 @@ data class ConversationViewEntity(
     val userDefederated: Boolean?,
     val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
     val otherUserId: QualifiedIDEntity?,
-    val isCreator: Long,
     val lastNotificationDate: Instant?,
     val selfRole: MemberEntity.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
@@ -72,7 +71,9 @@ data class ConversationViewEntity(
     val userSupportedProtocols: Set<SupportedProtocolEntity>?,
     val userActiveOneOnOneConversationId: ConversationIDEntity?,
     val proteusVerificationStatus: ConversationEntity.VerificationStatus,
-    val legalHoldStatus: ConversationEntity.LegalHoldStatus
+    val legalHoldStatus: ConversationEntity.LegalHoldStatus,
+    val accentId: Int?,
+    val isFavorite: Boolean,
 ) {
     val isMember: Boolean get() = selfRole != null
 }

@@ -22,6 +22,8 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.FolderType
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
@@ -33,6 +35,8 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
@@ -139,6 +143,14 @@ object TestEvent {
         senderUserId = TestUser.USER_ID
     )
 
+    fun accessUpdate(eventId: String = "eventId") = Event.Conversation.AccessUpdate(
+        id = eventId,
+        conversationId = TestConversation.ID,
+        access = setOf(Conversation.Access.PRIVATE),
+        accessRole = setOf(Conversation.AccessRole.TEAM_MEMBER, Conversation.AccessRole.SERVICE),
+        qualifiedFrom = TestUser.USER_ID
+    )
+
     fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
         eventId,
         teamId = "teamId",
@@ -157,6 +169,18 @@ object TestEvent {
     fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(
         id = eventId,
         value = true
+    )
+
+    fun foldersUpdate(eventId: String = "eventId") = Event.UserProperty.FoldersUpdate(
+        id = eventId,
+        folders = listOf(
+            FolderWithConversations(
+                id = "folder1",
+                name = "Favorites",
+                type = FolderType.FAVORITE,
+                conversationIdList = listOf(TestConversation.ID)
+            )
+        )
     )
 
     fun newMessageEvent(
@@ -200,13 +224,6 @@ object TestEvent {
         timestampIso = "2022-03-30T15:36:00.000Z"
     )
 
-    fun newAccessUpdateEvent() = Event.Conversation.AccessUpdate(
-        id = "eventId",
-        conversationId = TestConversation.ID,
-        data = TestConversation.CONVERSATION_RESPONSE,
-        qualifiedFrom = TestUser.USER_ID,
-    )
-
     fun codeUpdated() = Event.Conversation.CodeUpdated(
         id = "eventId",
         conversationId = TestConversation.ID,
@@ -248,7 +265,10 @@ object TestEvent {
         id = "eventId",
     )
 
-    fun Event.wrapInEnvelope(isTransient: Boolean = false, source: EventSource = EventSource.LIVE): EventEnvelope {
+    fun Event.wrapInEnvelope(
+        isTransient: Boolean = false,
+        source: EventSource = EventSource.LIVE
+    ): EventEnvelope {
         return EventEnvelope(this, EventDeliveryInfo(isTransient, source))
     }
 

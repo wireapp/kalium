@@ -18,10 +18,11 @@
 package com.wire.kalium.persistence.dao.message.draft
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageDraftsQueries
+import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftMapper.toDao
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -30,18 +31,50 @@ import kotlin.coroutines.CoroutineContext
 
 class MessageDraftDAOImpl internal constructor(
     private val queries: MessageDraftsQueries,
+    private val messagesQueries: MessagesQueries,
+    private val conversationsQueries: ConversationsQueries,
     private val coroutineContext: CoroutineContext,
 ) : MessageDraftDAO {
 
     override suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity) =
         withContext(coroutineContext) {
-            queries.upsertDraft(
-                conversation_id = messageDraft.conversationId,
-                text = messageDraft.text,
-                edit_message_id = messageDraft.editMessageId,
-                quoted_message_id = messageDraft.quotedMessageId,
-                mention_list = messageDraft.selectedMentionList
-            )
+            val conversationExists = conversationsQueries.selectConversationByQualifiedId(messageDraft.conversationId)
+                .executeAsOneOrNull() != null
+
+            if (!conversationExists) {
+                return@withContext
+            }
+
+            if (messageDraft.editMessageId != null) {
+                val messageExists = messagesQueries.getMessage(messageDraft.editMessageId, messageDraft.conversationId)
+                    .executeAsOneOrNull() != null
+                if (!messageExists) {
+                    return@withContext
+                }
+            }
+
+            if (messageDraft.quotedMessageId != null) {
+                val quotedMessageExists = messagesQueries.getMessage(messageDraft.quotedMessageId, messageDraft.conversationId)
+                    .executeAsOneOrNull() != null
+                if (!quotedMessageExists) {
+                    return@withContext
+                }
+            }
+
+            queries.transaction {
+                queries.upsertDraft(
+                    conversation_id = messageDraft.conversationId,
+                    text = messageDraft.text,
+                    edit_message_id = messageDraft.editMessageId,
+                    quoted_message_id = messageDraft.quotedMessageId,
+                    mention_list = messageDraft.selectedMentionList
+                )
+                val changes = queries.selectChanges().executeAsOne()
+                if (changes == 0L) {
+                    // rollback the transaction if no changes were made so that it doesn't notify other queries about changes if not needed
+                    this.rollback()
+                }
+            }
         }
 
     override suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity? =
@@ -57,19 +90,4 @@ class MessageDraftDAOImpl internal constructor(
         .asFlow()
         .flowOn(coroutineContext)
         .mapToList()
-
-    private fun toDao(
-        conversationId: QualifiedIDEntity,
-        text: String?,
-        editMessageId: String?,
-        quotedMessageId: String?,
-        mentionList: List<MessageEntity.Mention>
-    ): MessageDraftEntity =
-        MessageDraftEntity(
-            conversationId = conversationId,
-            text = text.orEmpty(),
-            editMessageId = editMessageId,
-            quotedMessageId = quotedMessageId,
-            selectedMentionList = mentionList
-        )
 }

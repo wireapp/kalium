@@ -49,17 +49,17 @@ private val DisableLogging = AttributeKey<Unit>("DisableLogging")
  * A client's logging plugin.
  */
 @Suppress("TooGenericExceptionCaught", "EmptyFinallyBlock")
-public class KaliumKtorCustomLogging private constructor(
-    public val logger: Logger,
-    public val kaliumLogger: KaliumLogger,
-    public var level: LogLevel,
-    public var filters: List<(HttpRequestBuilder) -> Boolean> = emptyList()
+class KaliumKtorCustomLogging private constructor(
+    val logger: Logger,
+    val kaliumLogger: KaliumLogger,
+    var level: LogLevel,
+    var filters: List<(HttpRequestBuilder) -> Boolean> = emptyList()
 ) {
 
     /**
      * [Logging] plugin configuration
      */
-    public class Config {
+    class Config {
         /**
          * filters
          */
@@ -70,7 +70,7 @@ public class KaliumKtorCustomLogging private constructor(
         /**
          * [Logger] instance to use
          */
-        public var logger: Logger
+        var logger: Logger
             get() = _logger ?: Logger.DEFAULT
             set(value) {
                 _logger = value
@@ -79,7 +79,7 @@ public class KaliumKtorCustomLogging private constructor(
         /**
          * log [LogLevel]
          */
-        public var level: LogLevel = LogLevel.HEADERS
+        var level: LogLevel = LogLevel.HEADERS
 
         /**
          * [KaliumLogger] instance to use
@@ -89,7 +89,7 @@ public class KaliumKtorCustomLogging private constructor(
         /**
          * Log messages for calls matching a [predicate]
          */
-        public fun filter(predicate: (HttpRequestBuilder) -> Boolean) {
+        fun filter(predicate: (HttpRequestBuilder) -> Boolean) {
             filters.add(predicate)
         }
     }
@@ -171,7 +171,7 @@ public class KaliumKtorCustomLogging private constructor(
     }
 
     private fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
-        val logger = KaliumHttpLogger(level, logger, kaliumLogger)
+        val logger = KaliumHttpLogger(level, kaliumLogger)
         request.attributes.put(KaliumHttpCustomLogger, logger)
 
         logger.logRequest(request)
@@ -181,7 +181,7 @@ public class KaliumKtorCustomLogging private constructor(
         return null
     }
 
-    public companion object : HttpClientPlugin<Config, KaliumKtorCustomLogging> {
+    companion object : HttpClientPlugin<Config, KaliumKtorCustomLogging> {
         override val key: AttributeKey<KaliumKtorCustomLogging> = AttributeKey("ClientLogging")
 
         override fun prepare(block: Config.() -> Unit): KaliumKtorCustomLogging {
@@ -214,7 +214,7 @@ public class KaliumKtorCustomLogging private constructor(
  * Configure and install [Logging] in [HttpClient].
  */
 @Suppress("FunctionNaming")
-public fun HttpClientConfig<*>.Logging(block: Logging.Config.() -> Unit = {}) {
+fun HttpClientConfig<*>.Logging(block: Logging.Config.() -> Unit = {}) {
     install(Logging, block)
 }
 

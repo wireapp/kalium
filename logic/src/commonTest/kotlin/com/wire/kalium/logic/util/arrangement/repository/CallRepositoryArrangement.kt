@@ -17,17 +17,30 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestCall
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.doesNothing
+import io.mockative.every
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal interface CallRepositoryArrangement {
     val callRepository: CallRepository
 
     suspend fun withEstablishedCallsFlow(calls: List<Call>)
+    suspend fun withEstablishedCall()
+    suspend fun withoutAnyEstablishedCall()
+    suspend fun withCallsFlow(flow: Flow<List<Call>>)
+    suspend fun withUpdateIsCameraOnById(conversationId: ConversationId = any<ConversationId>(), isCameraOn: Boolean = any())
 }
 
 internal open class CallRepositoryArrangementImpl : CallRepositoryArrangement {
@@ -39,5 +52,42 @@ internal open class CallRepositoryArrangementImpl : CallRepositoryArrangement {
         coEvery {
             callRepository.establishedCallsFlow()
         }.returns(flowOf(calls))
+    }
+
+    override suspend fun withEstablishedCall() {
+        coEvery {
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(listOf(CallRepositoryArrangementImpl.call)))
+    }
+
+    override suspend fun withoutAnyEstablishedCall() {
+        coEvery {
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(listOf()))
+    }
+
+    override suspend fun withCallsFlow(flow: Flow<List<Call>>) {
+        coEvery { callRepository.callsFlow() }.returns(flow)
+    }
+
+    override suspend fun withUpdateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean) {
+        every { callRepository.updateIsCameraOnById(conversationId, isCameraOn) }.doesNothing()
+    }
+
+    companion object {
+        val call = Call(
+            conversationId = ConversationId("conversationId", "domain"),
+            status = CallStatus.ESTABLISHED,
+            callerId = TestCall.CALLER_ID,
+            participants = listOf(),
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            maxParticipants = 0,
+            conversationName = "ONE_ON_ONE Name",
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            callerName = "otherUsername",
+            callerTeamName = "team_1"
+        )
     }
 }

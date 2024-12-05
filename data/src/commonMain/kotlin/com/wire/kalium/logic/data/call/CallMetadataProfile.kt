@@ -20,9 +20,11 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import kotlinx.datetime.Instant
 
 data class CallMetadataProfile(
     val data: Map<ConversationId, CallMetadata>
@@ -31,6 +33,7 @@ data class CallMetadataProfile(
 }
 
 data class CallMetadata(
+    val callerId: QualifiedID,
     val isMuted: Boolean,
     val isCameraOn: Boolean,
     val isCbrEnabled: Boolean,
@@ -44,11 +47,12 @@ data class CallMetadata(
     val maxParticipants: Int = 0, // Was used for tracking
     val protocol: Conversation.ProtocolInfo,
     val activeSpeakers: Map<UserId, List<String>> = mapOf(),
-    val users: List<OtherUserMinimized> = listOf()
+    val users: List<OtherUserMinimized> = listOf(),
+    val screenShareMetadata: CallScreenSharingMetadata = CallScreenSharingMetadata()
 ) {
     fun getFullParticipants(): List<Participant> = participants.map { participant ->
         val user = users.firstOrNull { it.id == participant.userId }
-        val isSpeaking = (activeSpeakers[participant.id]?.contains(participant.clientId) ?: false) && !participant.isMuted
+        val isSpeaking = (activeSpeakers[participant.userId]?.contains(participant.clientId) ?: false) && !participant.isMuted
         Participant(
             id = participant.id,
             clientId = participant.clientId,
@@ -59,7 +63,19 @@ data class CallMetadata(
             isSharingScreen = participant.isSharingScreen,
             hasEstablishedAudio = participant.hasEstablishedAudio,
             avatarAssetId = user?.completePicture,
-            userType = user?.userType ?: UserType.NONE
+            userType = user?.userType ?: UserType.NONE,
+            accentId = user?.accentId ?: 0
         )
     }
 }
+
+/**
+ * [activeScreenShares] - map of user ids that share screen with the start timestamp
+ * [completedScreenShareDurationInMillis] - total time of already ended screen shares in milliseconds
+ * [uniqueSharingUsers] - set of users that were sharing a screen at least once
+ */
+data class CallScreenSharingMetadata(
+    val activeScreenShares: Map<QualifiedID, Instant> = emptyMap(),
+    val completedScreenShareDurationInMillis: Long = 0L,
+    val uniqueSharingUsers: Set<String> = emptySet()
+)

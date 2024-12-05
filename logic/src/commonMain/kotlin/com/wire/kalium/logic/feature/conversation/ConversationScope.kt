@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -48,6 +49,14 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
+import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -71,15 +80,17 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
 class ConversationScope internal constructor(
-    private val conversationRepository: ConversationRepository,
+    internal val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
+    private val conversationFolderRepository: ConversationFolderRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -101,7 +112,8 @@ class ConversationScope internal constructor(
     private val scope: CoroutineScope,
     private val kaliumLogger: KaliumLogger,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-    private val serverConfigLinks: ServerConfig.Links
+    private val serverConfigLinks: ServerConfig.Links,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     val getConversations: GetConversationsUseCase
@@ -116,6 +128,9 @@ class ConversationScope internal constructor(
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
+    val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
+        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository, conversationFolderRepository, getFavoriteFolder)
+
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
 
@@ -127,6 +142,9 @@ class ConversationScope internal constructor(
 
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
+
+    val getConversationProtocolInfo: GetConversationProtocolInfoUseCase
+        get() = GetConversationProtocolInfoUseCase(conversationRepository)
 
     val notifyConversationIsOpen: NotifyConversationIsOpenUseCase
         get() = NotifyConversationIsOpenUseCaseImpl(
@@ -335,4 +353,12 @@ class ConversationScope internal constructor(
         get() = ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
     val syncConversationCode: SyncConversationCodeUseCase
         get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
+    val observeConversationsFromFolder: ObserveConversationsFromFolderUseCase
+        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository)
+    val getFavoriteFolder: GetFavoriteFolderUseCase
+        get() = GetFavoriteFolderUseCaseImpl(conversationFolderRepository)
+    val addConversationToFavorites: AddConversationToFavoritesUseCase
+        get() = AddConversationToFavoritesUseCaseImpl(conversationFolderRepository)
+    val removeConversationFromFavorites: RemoveConversationFromFavoritesUseCase
+        get() = RemoveConversationFromFavoritesUseCaseImpl(conversationFolderRepository)
 }

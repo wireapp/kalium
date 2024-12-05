@@ -91,12 +91,14 @@ object TestCall {
             )
         ),
         activeSpeakers = mapOf(QualifiedID("participantId", "participantDomain") to listOf("abcd")),
+        callerId = CALLER_ID,
         users = listOf(
             OtherUserMinimized(
                 id = QualifiedID("participantId", "participantDomain"),
                 name = "User Name",
                 completePicture = null,
-                userType = UserType.ADMIN
+                userType = UserType.ADMIN,
+                accentId = 0
             )
         )
     )
@@ -107,7 +109,7 @@ object TestCall {
         isMuted = true,
         isCameraOn = false,
         isCbrEnabled = false,
-        callerId = CALLER_ID.toString(),
+        callerId = CALLER_ID,
         conversationName = CONVERSATION_NAME,
         conversationType = Conversation.Type.ONE_ON_ONE,
         callerName = CALLER_NAME,
@@ -124,7 +126,8 @@ object TestCall {
                 name = "User Name",
                 avatarAssetId = null,
                 userType = UserType.ADMIN,
-                isSpeaking = false
+                isSpeaking = false,
+                accentId = 0
             )
         ),
         maxParticipants = 0
@@ -137,11 +140,11 @@ object TestCall {
             false,
             false,
             false,
-            "client1",
+            UserId("client1", "domain"),
             "ONE_ON_ONE Name ${convId.value}",
             Conversation.Type.ONE_ON_ONE,
             null,
-            null
+            null,
         )
 
     fun groupIncomingCall(convId: ConversationId) =
@@ -151,7 +154,7 @@ object TestCall {
             false,
             false,
             false,
-            "client1",
+            UserId("client1", "domain"),
             "ONE_ON_ONE Name ${convId.value}",
             Conversation.Type.GROUP,
             null,

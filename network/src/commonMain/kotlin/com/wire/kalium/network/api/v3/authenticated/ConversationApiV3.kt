@@ -20,7 +20,10 @@ package com.wire.kalium.network.api.v3.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTOV3
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
+import com.wire.kalium.network.api.authenticated.conversation.ConversationsDetailsRequest
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
@@ -44,6 +47,23 @@ internal open class ConversationApiV3 internal constructor(
     private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
 ) : ConversationApiV2(authenticatedNetworkClient) {
 
+    override suspend fun fetchConversationsListDetails(
+        conversationsIds: List<ConversationId>
+    ): NetworkResponse<ConversationResponseDTO> =
+        wrapKaliumResponse<ConversationResponseDTOV3> {
+            httpClient.post("$PATH_CONVERSATIONS/$PATH_CONVERSATIONS_LIST") {
+                setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
+            }
+        }.mapSuccess {
+            ConversationResponseDTO(
+                conversationsFound = it.conversationsFound.map { conversationFound ->
+                    apiModelMapper.fromApiV3(conversationFound)
+                },
+                conversationsNotFound = it.conversationsNotFound,
+                conversationsFailed = it.conversationsFailed
+            )
+        }
+
     /**
      * returns 201 when a new conversation is created or 200 if the conversation already existed
      */
@@ -51,16 +71,6 @@ internal open class ConversationApiV3 internal constructor(
         createConversationRequest: CreateConversationRequest
     ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
         httpClient.post(PATH_CONVERSATIONS) {
-            setBody(apiModelMapper.toApiV3(createConversationRequest))
-        }
-    }.mapSuccess {
-        apiModelMapper.fromApiV3(it)
-    }
-
-    override suspend fun createOne2OneConversation(
-        createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
-        httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
             setBody(apiModelMapper.toApiV3(createConversationRequest))
         }
     }.mapSuccess {

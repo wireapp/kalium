@@ -34,15 +34,26 @@ import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventRec
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EventProcessorTest {
 
     @Test
@@ -50,7 +61,7 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.memberJoin()
 
-        val (arrangement, eventProcessor) = Arrangement().arrange {
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
         }
 
@@ -68,7 +79,7 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.memberJoin()
 
-        val (arrangement, eventProcessor) = Arrangement()
+        val (arrangement, eventProcessor) = Arrangement(this)
             .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
             .arrange()
 
@@ -87,7 +98,7 @@ class EventProcessorTest {
         val event = TestEvent.memberJoin()
         val failure = CoreFailure.MissingClientRegistration
 
-        val (arrangement, eventProcessor) = Arrangement().arrange {
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withConversationEventReceiverFailingWith(failure)
             withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
         }
@@ -107,7 +118,7 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.newConnection()
 
-        val (arrangement, eventProcessor) = Arrangement().arrange {
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
         }
 
@@ -126,7 +137,7 @@ class EventProcessorTest {
         val event = TestEvent.newConnection()
         val failure = CoreFailure.MissingClientRegistration
 
-        val (arrangement, eventProcessor) = Arrangement().arrange {
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withUserEventReceiverFailingWith(failure)
             withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
         }
@@ -146,7 +157,7 @@ class EventProcessorTest {
         // Given
         val envelope = TestEvent.newConnection().wrapInEnvelope(isTransient = false)
 
-        val (arrangement, eventProcessor) = Arrangement().arrange {
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withUpdateLastProcessedEventId(envelope.event.id, Either.Right(Unit))
         }
 
@@ -164,7 +175,7 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.newConnection().wrapInEnvelope(isTransient = true)
 
-        val (arrangement, eventProcessor) = Arrangement().arrange()
+        val (arrangement, eventProcessor) = Arrangement(this).arrange()
 
         // When
         eventProcessor.processEvent(event)
@@ -180,7 +191,7 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.userPropertyReadReceiptMode()
 
-        val (arrangement, eventProcessor) = Arrangement().arrange {
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
         }
 
@@ -197,7 +208,7 @@ class EventProcessorTest {
         val event = TestEvent.userPropertyReadReceiptMode()
         val failure = CoreFailure.MissingClientRegistration
 
-        val (arrangement, eventProcessor) = Arrangement().arrange {
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withUserPropertiesEventReceiverFailingWith(failure)
             withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
         }
@@ -212,7 +223,88 @@ class EventProcessorTest {
         }.wasNotInvoked()
     }
 
-    private class Arrangement : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
+    @Test
+    fun givenEvent_whenCallerIsCancelled_thenShouldStillProcessNormally() = runTest {
+        val event = TestEvent.userPropertyReadReceiptMode()
+
+        val callerScope = CoroutineScope(Job())
+
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+            withUserPropertiesEventReceiverInvoking {
+                callerScope.cancel() // Cancel during event processing
+                Either.Right(Unit)
+            }
+        }
+
+        callerScope.launch {
+            eventProcessor.processEvent(event.wrapInEnvelope())
+        }.join()
+        advanceUntilIdle()
+        assertFalse(callerScope.isActive)
+        // Then
+        coVerify {
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenEvent_whenProcessingScopeIsCancelledMidwayThrough_thenShouldProceedAnywayAndCancellationIsPropagated() = runTest {
+        val event = TestEvent.userPropertyReadReceiptMode()
+
+        val processingScope = CoroutineScope(Job())
+
+        val (arrangement, eventProcessor) = Arrangement(processingScope).arrange {
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+            withUserPropertiesEventReceiverInvoking {
+                processingScope.cancel() // Cancel during event processing
+                Either.Right(Unit)
+            }
+        }
+
+        assertFailsWith(CancellationException::class) {
+            eventProcessor.processEvent(event.wrapInEnvelope())
+            advanceUntilIdle()
+        }
+        // Then
+        coVerify {
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenEvent_whenProcessingScopeIsAlreadyCancelled_thenShouldNotProcessAndPropagateCancellation() = runTest {
+        val event = TestEvent.userPropertyReadReceiptMode()
+
+        val processingScope = CoroutineScope(Job())
+        processingScope.cancel()
+
+        val (arrangement, eventProcessor) = Arrangement(processingScope).arrange {
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+        }
+
+        assertFailsWith(CancellationException::class) {
+            eventProcessor.processEvent(event.wrapInEnvelope())
+            advanceUntilIdle()
+        }
+        // Then
+        coVerify {
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasNotInvoked()
+    }
+
+    private class Arrangement(
+        val processingScope: CoroutineScope
+    ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
 
         @Mock
         val eventRepository = mock(EventRepository::class)
@@ -276,6 +368,12 @@ class EventProcessorTest {
             }.returns(result)
         }
 
+        suspend fun withUserPropertiesEventReceiverInvoking(invocation: () -> Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                userPropertiesEventReceiver.onEvent(any(), any())
+            }.invokes(invocation)
+        }
+
         suspend fun withUserPropertiesEventReceiverSucceeding() = withUserPropertiesEventReceiverReturning(Either.Right(Unit))
 
         suspend fun withUserPropertiesEventReceiverFailingWith(failure: CoreFailure) = withUserPropertiesEventReceiverReturning(
@@ -295,7 +393,8 @@ class EventProcessorTest {
                 teamEventReceiver,
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
-                federationEventReceiver
+                federationEventReceiver,
+                processingScope
             )
         }
     }

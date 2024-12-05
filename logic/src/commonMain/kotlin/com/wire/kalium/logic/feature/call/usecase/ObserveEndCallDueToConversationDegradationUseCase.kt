@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 
 /**
@@ -34,5 +35,7 @@ internal class ObserveEndCallDueToConversationDegradationUseCaseImpl(
     private val endCallListener: EndCallResultListener
 ) : ObserveEndCallDueToConversationDegradationUseCase {
     override suspend fun invoke(): Flow<Unit> =
-        endCallListener.observeCallEndedBecauseOfVerificationDegraded().map { Unit }
+        endCallListener.observeCallEndedResult()
+            .filterIsInstance(EndCallResult.VerificationDegraded::class)
+            .map { Unit }
 }

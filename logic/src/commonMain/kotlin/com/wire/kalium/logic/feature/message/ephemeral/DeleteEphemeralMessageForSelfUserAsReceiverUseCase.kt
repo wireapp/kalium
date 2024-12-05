@@ -62,30 +62,34 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
+
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
-        messageRepository.markMessageAsDeleted(messageId, conversationId).flatMap {
-            currentClientIdProvider().flatMap { currentClientId ->
-                messageRepository.getMessageById(conversationId, messageId)
-                    .flatMap { message ->
-                        sendDeleteMessageToSelf(
-                            message.id,
-                            conversationId,
-                            currentClientId
-                        ).flatMap {
-                            sendDeleteMessageToOriginalSender(
-                                message.id,
-                                message.conversationId,
-                                message.senderUserId,
-                                currentClientId
-                            )
-                        }.onSuccess {
-                            deleteMessageAssetIfExists(message)
-                        }.flatMap {
-                            messageRepository.deleteMessage(messageId, conversationId)
-                        }
+        messageRepository.getMessageById(conversationId, messageId)
+            .onSuccess { message ->
+                deleteMessageAssetLocallyIfExists(message)
+            }
+            .flatMap { message ->
+                messageRepository.markMessageAsDeleted(messageId, conversationId)
+                    .flatMap {
+                        currentClientIdProvider()
+                            .flatMap { currentClientId ->
+                                sendDeleteMessageToSelf(
+                                    message.id,
+                                    conversationId,
+                                    currentClientId
+                                ).flatMap {
+                                    sendDeleteMessageToOriginalSender(
+                                        message.id,
+                                        message.conversationId,
+                                        message.senderUserId,
+                                        currentClientId
+                                    )
+                                }.flatMap {
+                                    messageRepository.deleteMessage(messageId, conversationId)
+                                }
+                            }
                     }
             }
-        }
 
     private suspend fun sendDeleteMessageToSelf(
         messageToDelete: String,
@@ -131,13 +135,9 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
         )
     }
 
-    private suspend fun deleteMessageAssetIfExists(message: Message) {
+    private suspend fun deleteMessageAssetLocallyIfExists(message: Message) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-            assetRepository.deleteAsset(
-                assetToRemove.assetId,
-                assetToRemove.assetDomain,
-                assetToRemove.assetToken
-            ).onFailure {
+            assetRepository.deleteAssetLocally(assetToRemove.assetId).onFailure {
                 kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
             }
         }

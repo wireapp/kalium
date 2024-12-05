@@ -1,11 +1,12 @@
 [versions]
 kotlin = "1.9.23"
+ksp = "1.9.23-1.0.20"
 activity-compose = "1.9.0"
 app-compat = "1.6.1"
 android-paging3 = "3.2.1"
 cli-kt = "3.5.0"
-coroutines = "1.8.0"
-compose-compiler = "1.5.11"
+coroutines = "1.8.1"
+compose-compiler = "1.5.13"
 compose-ui = "1.6.6"
 compose-material = "1.6.6"
 cryptobox4j = "1.4.0"
@@ -16,12 +17,12 @@ okio = "3.9.0"
 ok-http = "4.12.0"
 mockative = "2.2.0"
 android-work = "2.9.0"
-android-test-runner = "1.5.2"
-android-test-core-ktx = "1.5.0"
-android-test-rules = "1.5.0"
-android-test-core = "1.5.0"
+android-test-runner = "1.6.2"
+android-test-core-ktx = "1.6.1"
+android-test-rules = "1.6.1"
+android-test-core = "1.6.1"
 androidx-arch = "2.2.0"
-androidx-test-orchestrator = "1.4.2"
+androidx-test-orchestrator = "1.5.1"
 androidx-sqlite = "2.4.0"
 benasher-uuid = "0.8.0"
 ktx-datetime = { strictly = "0.5.0" }
@@ -36,20 +37,20 @@ sqldelight = "2.0.2"
 sqlcipher-android = "4.5.6"
 pbandk = "0.14.2"
 turbine = "1.1.0"
-avs = "9.8.15"
+avs = "10.0.1"
 jna = "5.14.0"
-core-crypto = "1.0.0-rc.56-hotfix.2"
+core-crypto = "1.0.2"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
-desugar-jdk = "2.0.4"
+desugar-jdk = "2.1.3"
 kermit = "2.0.3"
 detekt = "1.23.6"
-agp = "8.3.2"
+agp = "8.5.2"
 dokka = "1.8.20"
 carthage = "0.0.1"
 libsodiumBindings = "0.8.7"
 protobufCodegen = "0.9.4"
-annotation = "1.7.1"
+annotation = "1.9.1"
 mordant = "2.0.0-beta13"
 apache-tika = "2.9.2"
 mockk = "1.13.10"
@@ -66,6 +67,7 @@ benchmark = "0.4.10"
 jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.45.3.0"
+kotlinx-io = "0.5.3"
 
 [plugins]
 # Home-made convention plugins
@@ -78,7 +80,7 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-ksp = { id = "com.google.devtools.ksp", version = "1.9.23-1.0.20" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
@@ -102,6 +104,7 @@ ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json"
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
 ktx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "ktx-atomicfu" }
 ktxReactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
+ktxIO = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io"}
 
 # android dependencies
 appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }

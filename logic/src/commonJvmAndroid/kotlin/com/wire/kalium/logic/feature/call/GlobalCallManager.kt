@@ -26,6 +26,7 @@ import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -41,6 +42,7 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.CurrentPlatform
+import com.wire.kalium.logic.util.DummyCallManager
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformType
 import com.wire.kalium.network.NetworkStateObserver
@@ -83,6 +85,7 @@ actual class GlobalCallManager(
         currentClientIdProvider: CurrentClientIdProvider,
         selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
+        userConfigRepository: UserConfigRepository,
         messageSender: MessageSender,
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
@@ -93,26 +96,31 @@ actual class GlobalCallManager(
         networkStateObserver: NetworkStateObserver,
         kaliumConfigs: KaliumConfigs
     ): CallManager {
-        return callManagerHolder.computeIfAbsent(userId) {
-            CallManagerImpl(
-                calling = calling,
-                callRepository = callRepository,
-                userRepository = userRepository,
-                currentClientIdProvider = currentClientIdProvider,
-                selfConversationIdProvider = selfConversationIdProvider,
-                callMapper = callMapper,
-                messageSender = messageSender,
-                conversationRepository = conversationRepository,
-                federatedIdMapper = federatedIdMapper,
-                qualifiedIdMapper = qualifiedIdMapper,
-                videoStateChecker = videoStateChecker,
-                conversationClientsInCallUpdater = conversationClientsInCallUpdater,
-                getCallConversationType = getCallConversationType,
-                networkStateObserver = networkStateObserver,
-                mediaManagerService = mediaManager,
-                flowManagerService = flowManager,
-                kaliumConfigs = kaliumConfigs
-            )
+        if (kaliumConfigs.enableCalling) {
+            return callManagerHolder.computeIfAbsent(userId) {
+                CallManagerImpl(
+                    calling = calling,
+                    callRepository = callRepository,
+                    userRepository = userRepository,
+                    currentClientIdProvider = currentClientIdProvider,
+                    selfConversationIdProvider = selfConversationIdProvider,
+                    callMapper = callMapper,
+                    messageSender = messageSender,
+                    conversationRepository = conversationRepository,
+                    federatedIdMapper = federatedIdMapper,
+                    qualifiedIdMapper = qualifiedIdMapper,
+                    videoStateChecker = videoStateChecker,
+                    conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+                    getCallConversationType = getCallConversationType,
+                    networkStateObserver = networkStateObserver,
+                    mediaManagerService = mediaManager,
+                    flowManagerService = flowManager,
+                    userConfigRepository = userConfigRepository,
+                    kaliumConfigs = kaliumConfigs
+                )
+            }
+        } else {
+            return DummyCallManager()
         }
     }
 

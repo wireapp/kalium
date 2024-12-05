@@ -96,22 +96,6 @@ class PendingProposalSchedulerTest {
     }
 
     @Test
-    fun givenMLSSupportIsDisabled_whenSyncIsLive_thenPendingProposalIsNotCommitted() = runTest(TestKaliumDispatcher.default) {
-        val (arrangement, _) = Arrangement()
-            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
-            .withCommitPendingProposalsSuccessful()
-            .arrange()
-
-        arrangement.kaliumConfigs.isMLSSupportEnabled = false
-        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-        yield()
-
-        coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
-        }.wasNotInvoked()
-    }
-
-    @Test
     fun givenNonExpiredProposalTimer_whenSyncFinishes_thenPendingProposalIsNotCommitted() = runTest(TestKaliumDispatcher.default) {
         val (arrangement, _) = Arrangement()
             .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
@@ -182,8 +166,6 @@ class PendingProposalSchedulerTest {
 
     private class Arrangement {
 
-        val kaliumConfigs = KaliumConfigs()
-
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
@@ -193,7 +175,6 @@ class PendingProposalSchedulerTest {
         val subconversationRepository = mock(SubconversationRepository::class)
 
         val pendingProposalScheduler = PendingProposalSchedulerImpl(
-            kaliumConfigs,
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },

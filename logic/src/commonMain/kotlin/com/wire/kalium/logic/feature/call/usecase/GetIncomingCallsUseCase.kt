@@ -82,9 +82,7 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
                         val callIds = calls.map { call -> call.conversationId }.joinToString()
                         logger.d("$TAG; Found calls: $callIds")
                     }
-                    .distinctUntilChanged { old, new ->
-                        old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
-                    }
+                    .distinctUntilChanged()
             }
 
     private fun Flow<List<Call>>.onlyCallsInNotMutedConversations(): Flow<List<Call>> =

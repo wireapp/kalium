@@ -25,6 +25,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -36,9 +37,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
-import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -57,8 +56,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -67,28 +64,32 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateConversation
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
-import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
+import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface ConversationRepository {
+    val extensions: ConversationRepositoryExtensions
+
     // region Get/Observe by id
 
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
@@ -129,7 +130,16 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
+    suspend fun observeConversationListDetails(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter = ConversationFilter.ALL
+    ): Flow<List<ConversationDetails>>
+
+    suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean = false,
+        conversationFilter: ConversationFilter = ConversationFilter.ALL
+    ): Flow<List<ConversationDetailsWithEvents>>
+
     suspend fun getConversationIds(
         type: Conversation.Type,
         protocol: Conversation.Protocol,
@@ -303,6 +313,7 @@ interface ConversationRepository {
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
 
     suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
+    suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -314,19 +325,20 @@ internal class ConversationDataSource internal constructor(
     private val memberDAO: MemberDAO,
     private val conversationApi: ConversationApi,
     private val messageDAO: MessageDAO,
+    private val messageDraftDAO: MessageDraftDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
-    private val messageDraftDAO: MessageDraftDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationRepository {
+    override val extensions: ConversationRepositoryExtensions =
+        ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
 
     // region Get/Observe by id
 
@@ -347,14 +359,14 @@ internal class ConversationDataSource internal constructor(
                 conversationMapper.fromConversationEntityType(it)
             }
         }
+
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeConversationDetailsById(conversationID.toDao())
             .wrapStorageRequest()
-            // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
             .map { eitherConversationView ->
                 eitherConversationView.flatMap {
                     try {
-                        Either.Right(conversationMapper.fromDaoModelToDetails(it, null, mapOf()))
+                        Either.Right(conversationMapper.fromDaoModelToDetails(it))
                     } catch (error: IllegalArgumentException) {
                         kaliumLogger.e("require field in conversation Details", error)
                         Either.Left(StorageFailure.DataNotFound)
@@ -512,30 +524,36 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>> =
+    override suspend fun observeConversationListDetails(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetails>> =
+        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).map { conversationViewEntityList ->
+            conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
+        }
+
+    override suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetailsWithEvents>> =
         combine(
-            conversationDAO.getAllConversationDetails(fromArchive),
+            conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()
         ) { conversationList, lastMessageList, unreadEvents, drafts ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             val messageDraftMap = drafts.filter { it.text.isNotBlank() }.associateBy { it.conversationId }
+            val unreadEventsMap = unreadEvents.associateBy { it.conversationId }
 
             conversationList.map { conversation ->
-                conversationMapper.fromDaoModelToDetails(
-                    conversation,
-                    lastMessage = messageDraftMap[conversation.id]?.let { messageMapper.fromDraftToMessagePreview(it) }
-                        ?: lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    unreadEventCount = unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
-                        when (it.key) {
-                            UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
-                            UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
-                            UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
-                            UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
-                            UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
-                        }
-                    }
+                conversationMapper.fromDaoModelToDetailsWithEvents(
+                    ConversationDetailsWithEventsEntity(
+                        conversationViewEntity = conversation,
+                        lastMessage = lastMessageMap[conversation.id],
+                        messageDraft = messageDraftMap[conversation.id],
+                        unreadEvents = unreadEventsMap[conversation.id] ?: ConversationUnreadEventEntity(conversation.id, mapOf()),
+                    )
                 )
             }
         }
@@ -544,6 +562,7 @@ internal class ConversationDataSource internal constructor(
         wrapApiRequest {
             conversationApi.fetchMlsOneToOneConversation(userId.toApi())
         }.map { conversationResponse ->
+            // question: do we need to do this? since it's one on one!
             addOtherMemberIfMissing(conversationResponse, userId)
         }.flatMap { conversationResponse ->
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
@@ -552,7 +571,9 @@ internal class ConversationDataSource internal constructor(
                 selfUserTeamId = selfUserTeamId
             ).map { conversationResponse }
         }.flatMap { response ->
-            this.getConversationById(response.id.toModel())
+            this.getConversationById(response.id.toModel()).map {
+                it.copy(mlsPublicKeys = conversationMapper.fromApiModel(response.publicKeys))
+            }
         }
 
     private fun addOtherMemberIfMissing(
@@ -988,8 +1009,8 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
-        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
-            .map { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
+        wrapStorageRequest { conversationDAO.getConversationDetailsByGroupID(mlsGroupId.value) }
+            .map { conversationMapper.fromDaoModelToDetails(it) }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         conversationDAO.observeUnreadArchivedConversationsCount()
@@ -1101,6 +1122,13 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest {
             conversationDAO.selectGroupStatusMembersNamesAndHandles(groupID.value)
         }.map { EpochChangesData.fromEntity(it) }
+
+    override suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>> =
+        wrapStorageRequest {
+            memberDAO.selectMembersNameAndHandle(conversationId.toDao())
+                .mapValues { NameAndHandle.fromEntity(it.value) }
+                .mapKeys { it.key.toModel() }
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

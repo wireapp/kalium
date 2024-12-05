@@ -193,6 +193,7 @@ internal class MessageInsertExtensionImpl(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 unknown_encoded_data = content.encodedData,
+                error_code = content.code?.toLong()
             )
 
             is MessageEntityContent.MemberChange -> messagesQueries.insertMemberChangeMessage(

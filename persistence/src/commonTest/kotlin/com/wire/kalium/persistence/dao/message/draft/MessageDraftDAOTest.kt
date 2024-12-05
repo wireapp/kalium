@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message.draft
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -32,6 +33,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 @Suppress("LargeClass")
 class MessageDraftDAOTest : BaseDatabaseTest() {
@@ -68,7 +71,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAlreadyExistingMessageDraft_whenUpserting_thenItShouldBeProperlyUpdatedInDb() = runTest {
+    fun givenAlreadyExistingMessageDraft_whenUpsertingTextChange_thenItShouldBeProperlyUpdatedInDb() = runTest {
         // Given
         insertInitialData()
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(text = "@John I need"))
@@ -79,6 +82,98 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         // Then
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
         assertEquals(MESSAGE_DRAFT, result)
+    }
+
+    @Test
+    fun givenAlreadyExistingMessageDraft_whenUpsertingDifferentQuotedMessageId_thenItShouldBeProperlyUpdatedInDb() = runTest {
+        // given
+        val newQuotedMessageId = "newQuotedMessageId"
+        insertInitialData()
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // when
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(quotedMessageId = newQuotedMessageId))
+
+        // then
+        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
+        assertNotNull(result)
+        assertEquals(newQuotedMessageId, result.quotedMessageId)
+    }
+
+    @Test
+    fun givenAlreadyExistingMessageDraft_whenUpsertingNullQuotedMessageId_thenItShouldBeProperlyUpdatedInDb() = runTest {
+        // given
+        insertInitialData()
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // when
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(quotedMessageId = null))
+
+        // then
+        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
+        assertNotNull(result)
+        assertNull(result.quotedMessageId)
+    }
+
+    @Test
+    fun givenAlreadyExistingMessageDraftWithoutQuotedMessageId_whenUpsertingQuotedMessageId_thenItShouldBeProperlyUpdatedInDb() = runTest{
+        // given
+        insertInitialData()
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(quotedMessageId = null))
+
+        // when
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // then
+        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
+        assertNotNull(result)
+        assertEquals(MESSAGE_DRAFT.quotedMessageId, result.quotedMessageId)
+    }
+
+    @Test
+    fun givenAlreadyExistingMessageDraft_whenUpsertingDifferentEditMessageId_thenItShouldBeProperlyUpdatedInDb() = runTest {
+        // given
+        val newEditMessageId = "newEditMessageId"
+        insertInitialData()
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // when
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(editMessageId = newEditMessageId))
+
+        // then
+        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
+        assertNotNull(result)
+        assertEquals(newEditMessageId, result.editMessageId)
+    }
+
+    @Test
+    fun givenAlreadyExistingMessageDraft_whenUpsertingNullEditMessageId_thenItShouldBeProperlyUpdatedInDb() = runTest {
+        // given
+        insertInitialData()
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // when
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(editMessageId = null))
+
+        // then
+        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
+        assertNotNull(result)
+        assertNull(result.editMessageId)
+    }
+
+    @Test
+    fun givenAlreadyExistingMessageDraft_whenUpsertingEmptyMentionList_thenItShouldBeProperlyUpdatedInDb() = runTest {
+        // given
+        insertInitialData()
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // when
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(selectedMentionList = emptyList()))
+
+        // then
+        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
+        assertNotNull(result)
+        assertEquals(emptyList(), result.selectedMentionList)
     }
 
     @Test
@@ -113,6 +208,89 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         assertEquals(null, removedResult)
     }
 
+    @Test
+    fun givenMessageIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
+        // Given
+        insertInitialData()
+        messageDAO.deleteMessage("editMessageId", conversationEntity1.id)
+
+        // When
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // Then
+        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenConversationIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
+        // Given
+        insertInitialData()
+        conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
+
+        // When
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // Then
+        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenQuotedMessageIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
+        // Given
+        insertInitialData()
+        messageDAO.deleteMessage("quotedMessageId", conversationEntity1.id)
+
+        // When
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
+
+        // Then
+        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenSavedDraft_whenUpsertingTheSameExactDraft_thenItShouldIgnoreAndNotNotifyOtherQueries() = runTest {
+        // Given
+        insertInitialData()
+        val draft = MESSAGE_DRAFT
+        messageDraftDAO.upsertMessageDraft(draft)
+
+        messageDraftDAO.observeMessageDrafts().test {
+            val initialValue = awaitItem()
+            assertEquals(listOf(draft), initialValue)
+
+            // When
+            messageDraftDAO.upsertMessageDraft(draft) // the same exact draft is being saved again
+
+            // Then
+            expectNoEvents() // other query should not be notified
+        }
+    }
+
+    @Test
+    fun givenSavedDraft_whenUpsertingUpdatedDraft_thenItShouldBeSavedAndOtherQueriesShouldBeUpdated() = runTest {
+        // Given
+        insertInitialData()
+        val draft = MESSAGE_DRAFT
+        val updatedDraft = MESSAGE_DRAFT.copy(text = MESSAGE_DRAFT.text + " :)")
+        messageDraftDAO.upsertMessageDraft(draft)
+
+        messageDraftDAO.observeMessageDrafts().test {
+            val initialValue = awaitItem()
+            assertEquals(listOf(draft), initialValue)
+
+            // When
+            messageDraftDAO.upsertMessageDraft(updatedDraft) // the same exact draft is being saved again
+
+            // Then
+            val updatedValue = awaitItem() // other query should be notified
+            assertEquals(listOf(updatedDraft), updatedValue)
+        }
+
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1))
         conversationDAO.insertConversation(conversationEntity1)
@@ -125,7 +303,21 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         )
         messageDAO.insertOrIgnoreMessage(
             newRegularMessageEntity(
+                id = "newEditMessageId",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id
+            )
+        )
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
                 id = "quotedMessageId",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id
+            )
+        )
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "newQuotedMessageId",
                 conversationId = conversationEntity1.id,
                 senderUserId = userEntity1.id
             )

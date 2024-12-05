@@ -160,6 +160,7 @@ CREATE TABLE MessageFailedToDecryptContent (
 
       unknown_encoded_data BLOB,
       is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
+      error_code INTEGER,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -410,8 +411,8 @@ INSERT OR IGNORE INTO MessageUnknownContent(message_id, conversation_id, unknown
 VALUES(?, ?, ?, ?);
 
 insertFailedDecryptionMessageContent:
-INSERT OR IGNORE INTO MessageFailedToDecryptContent(message_id, conversation_id, unknown_encoded_data)
-VALUES(?, ?, ?);
+INSERT OR IGNORE INTO MessageFailedToDecryptContent(message_id, conversation_id, unknown_encoded_data, error_code)
+VALUES(?, ?, ?, ?);
 
 insertMissedCallMessage:
 INSERT OR IGNORE INTO MessageMissedCallContent(message_id, conversation_id, caller_id)
@@ -487,6 +488,9 @@ UPDATE Message
 SET id = :newId
 WHERE id = :oldId AND conversation_id = :conversationId;
 
+getMessage:
+SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
+
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
@@ -497,14 +501,11 @@ selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectLastMessagesByConversationIds:
-SELECT MessageDetailsView.* FROM MessageDetailsView
-JOIN (
-    SELECT conversationId, MAX(date) AS latest_date
-    FROM MessageDetailsView
-    WHERE conversationId IN :conversationIds
-    GROUP BY conversationId
-) AS lastMessage
-ON MessageDetailsView.conversationId = lastMessage.conversationId AND MessageDetailsView.date = lastMessage.latest_date;
+SELECT MessageDetailsView.*
+FROM LastMessage
+INNER JOIN MessageDetailsView
+ON MessageDetailsView.conversationId = LastMessage.conversation_id AND MessageDetailsView.id = LastMessage.message_id
+WHERE LastMessage.conversation_id IN :conversationIds;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
@@ -558,11 +559,9 @@ WHERE conversation_id = :conversation_id AND status = 'PENDING';
 selectPendingEphemeralMessages:
 SELECT * FROM MessageDetailsView
 WHERE expireAfterMillis NOT NULL
+AND selfDeletionEndDate NOT NULL
 AND visibility = "VISIBLE"
-AND (
-    selfDeletionEndDate IS NULL
-    OR selfDeletionEndDate > STRFTIME('%s', 'now') * 1000 -- Checks if message end date is higher than current time in millis
-);
+AND selfDeletionEndDate > STRFTIME('%s', 'now') * 1000; -- Checks if message end date is higher than current time in millis
 
 selectAlreadyEndedEphemeralMessages:
 SELECT * FROM MessageDetailsView

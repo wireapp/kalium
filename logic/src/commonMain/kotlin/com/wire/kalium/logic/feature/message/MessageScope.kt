@@ -60,13 +60,15 @@ import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandlerImpl
+import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCase
+import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
@@ -160,8 +162,8 @@ class MessageScope internal constructor(
             protoContentMapper = protoContentMapper
         )
 
-    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
-        get() = ValidateAssetMimeTypeUseCaseImpl()
+    private val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase
+        get() = ValidateAssetFileTypeUseCaseImpl()
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor
@@ -177,12 +179,17 @@ class MessageScope internal constructor(
             kaliumLogger = kaliumLogger
         )
 
+    private val sendDeliverSignalUseCase: SendDeliverSignalUseCase = SendDeliverSignalUseCaseImpl(
+        selfUserId = selfUserId,
+        messageSender = messageSender,
+        currentClientIdProvider = currentClientIdProvider,
+        kaliumLogger = kaliumLogger
+    )
+
     internal val confirmationDeliveryHandler: ConfirmationDeliveryHandler = ConfirmationDeliveryHandlerImpl(
         syncManager = syncManager,
-        selfUserId = selfUserId,
-        currentClientIdProvider = currentClientIdProvider,
         conversationRepository = conversationRepository,
-        messageSender = messageSender,
+        sendDeliverSignalUseCase = sendDeliverSignalUseCase,
         kaliumLogger = kaliumLogger,
     )
 

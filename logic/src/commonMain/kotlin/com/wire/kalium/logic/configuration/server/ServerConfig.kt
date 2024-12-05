@@ -134,6 +134,19 @@ data class ServerConfig(
             isOnPremises = false,
             apiProxy = null
         )
+
+        val DUMMY = Links(
+            api = """https://dummy-nginz-https.zinfra.io""",
+            accounts = """https://wire-account-dummy.zinfra.io""",
+            webSocket = """https://dummy-nginz-ssl.zinfra.io""",
+            teams = """https://wire-teams-dummy.zinfra.io""",
+            blackList = """https://clientblacklist.wire.com/dummy""",
+            website = """https://dummy.wire.com""",
+            title = "dummy",
+            isOnPremises = false,
+            apiProxy = null
+        )
+
         val DEFAULT = PRODUCTION
 
         private const val FORGOT_PASSWORD_PATH = "forgot"

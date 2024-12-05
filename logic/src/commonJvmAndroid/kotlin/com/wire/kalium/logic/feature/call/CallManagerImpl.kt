@@ -32,8 +32,10 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
+import com.wire.kalium.logic.data.call.CallHelperImpl
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
@@ -76,6 +78,8 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.util.ServerTimeHandler
+import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher
@@ -111,11 +115,13 @@ class CallManagerImpl internal constructor(
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val networkStateObserver: NetworkStateObserver,
     private val getCallConversationType: GetCallConversationTypeProvider,
+    private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
+    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
@@ -209,8 +215,12 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
                     .keepingStrongReference(),
-                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper, networkStateObserver)
-                    .keepingStrongReference(),
+                closeCallHandler = OnCloseCall(
+                    callRepository = callRepository,
+                    networkStateObserver = networkStateObserver,
+                    scope = scope,
+                    qualifiedIdMapper = qualifiedIdMapper
+                ).keepingStrongReference(),
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
                     .keepingStrongReference(),
@@ -248,8 +258,6 @@ class CallManagerImpl internal constructor(
         )
 
         if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {
-            val currTime = System.currentTimeMillis()
-
             val targetConversationId = if (message.isSelfMessage) {
                 content.conversationId ?: message.conversationId
             } else {
@@ -263,7 +271,7 @@ class CallManagerImpl internal constructor(
                 inst = deferredHandle.await(),
                 msg = msg,
                 len = msg.size,
-                curr_time = Uint32_t(value = currTime / 1000),
+                curr_time = Uint32_t(value = serverTimeHandler.toServerTimestamp()),
                 msg_time = Uint32_t(value = message.date.epochSeconds),
                 convId = federatedIdMapper.parseToFederatedId(targetConversationId),
                 userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
@@ -295,7 +303,7 @@ class CallManagerImpl internal constructor(
             isMuted = false,
             isCameraOn = isCameraOn,
             isCbrEnabled = isAudioCbr,
-            callerId = userId.await().toString()
+            callerId = userId.await()
         )
 
         withCalling {
@@ -455,14 +463,19 @@ class CallManagerImpl internal constructor(
         callClients: CallClientList
     ) {
         withCalling {
-            // Needed to support calls between federated and non federated environments
+            // Mapping Needed to support calls between federated and non federated environments (domain separation)
             val clients = callClients.clients.map { callClient ->
                 CallClient(
-                    federatedIdMapper.parseToFederatedId(callClient.userId),
-                    callClient.clientId
+                    userId = federatedIdMapper.parseToFederatedId(callClient.userId),
+                    clientId = callClient.clientId,
+                    isMemberOfSubconversation = callClient.isMemberOfSubconversation,
+                    quality = callClient.quality
                 )
             }
             val clientsJson = CallClientList(clients).toJsonString()
+            callingLogger.d(
+                "$TAG - wcall_request_video_streams() called -> Requesting video streams for conversation = ${conversationId.toLogString()}"
+            )
             val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
             calling.wcall_request_video_streams(
                 inst = it,
@@ -532,6 +545,9 @@ class CallManagerImpl internal constructor(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
+                    userConfigRepository = userConfigRepository,
+                    callHelper = CallHelperImpl(),
+                    endCall = { endCall(it) },
                     callingScope = scope
                 ).keepingStrongReference()
 

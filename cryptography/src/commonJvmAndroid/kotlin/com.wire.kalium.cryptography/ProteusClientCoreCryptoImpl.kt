@@ -22,14 +22,20 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.client.toByteArray
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(
     private val coreCrypto: CoreCrypto,
 ) : ProteusClient {
+
+    private val mutex = Mutex()
+    private val existingSessionsCache = mutableSetOf<CryptoSessionId>()
 
     override suspend fun close() {
         coreCrypto.close()
@@ -46,6 +52,7 @@ class ProteusClientCoreCryptoImpl private constructor(
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = wrapException {
         coreCrypto.proteusFingerprintRemote(sessionId.value).toByteArray()
     }
+
     override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray = wrapException {
         coreCrypto.proteusFingerprintPrekeybundle(preKey.encodedData.decodeBase64Bytes()).toByteArray()
     }
@@ -62,9 +69,16 @@ class ProteusClientCoreCryptoImpl private constructor(
         return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId().toInt(), coreCrypto.proteusLastResortPrekey()) }
     }
 
-    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        return wrapException {
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = mutex.withLock {
+        if (existingSessionsCache.contains(sessionId)) {
+            return@withLock true
+        }
+        wrapException {
             coreCrypto.proteusSessionExists(sessionId.value)
+        }.also { exists ->
+            if (exists) {
+                existingSessionsCache.add(sessionId)
+            }
         }
     }
 
@@ -72,19 +86,20 @@ class ProteusClientCoreCryptoImpl private constructor(
         wrapException { coreCrypto.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.encodedData.decodeBase64Bytes()) }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun <T : Any> decrypt(
+        message: ByteArray,
+        sessionId: CryptoSessionId,
+        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+    ): T {
         val sessionExists = doesSessionExist(sessionId)
 
         return wrapException {
-            if (sessionExists) {
-                val decryptedMessage = coreCrypto.proteusDecrypt(sessionId.value, message)
-                coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
+            val decryptedMessage = if (sessionExists) {
+                coreCrypto.proteusDecrypt(sessionId.value, message)
             } else {
-                val decryptedMessage = coreCrypto.proteusSessionFromMessage(sessionId.value, message)
-                coreCrypto.proteusSessionSave(sessionId.value)
-                decryptedMessage
+                coreCrypto.proteusSessionFromMessage(sessionId.value, message)
             }
+            handleDecryptedMessage(decryptedMessage)
         }
     }
 
@@ -119,7 +134,8 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
     }
 
-    override suspend fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) = mutex.withLock {
+        existingSessionsCache.remove(sessionId)
         wrapException {
             coreCrypto.proteusSessionDelete(sessionId.value)
         }
@@ -130,9 +146,15 @@ class ProteusClientCoreCryptoImpl private constructor(
         try {
             return b()
         } catch (e: CoreCryptoException) {
-            throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e)
+            val proteusLastErrorCode = coreCrypto.proteusLastErrorCode()
+            throw ProteusException(
+                e.message,
+                ProteusException.fromProteusCode(proteusLastErrorCode.toInt()),
+                proteusLastErrorCode.toInt(),
+                e
+            )
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
     }
 
@@ -157,30 +179,43 @@ class ProteusClientCoreCryptoImpl private constructor(
                 acc && File(rootDir).resolve(file).deleteRecursively()
             }
 
-        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
-            if (cryptoBoxFilesExists(File(rootDir))) {
-                kaliumLogger.i("migrating from crypto box at: $rootDir")
-                coreCrypto.proteusCryptoboxMigrate(rootDir)
-                kaliumLogger.i("migration successful")
-
-                if (deleteCryptoBoxFiles(rootDir)) {
-                    kaliumLogger.i("successfully deleted old crypto box files")
-                } else {
-                    kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
-                }
-            }
-        }
-
-        @Suppress("TooGenericExceptionCaught")
+        @Suppress("TooGenericExceptionCaught", "ThrowsCount")
         suspend operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientCoreCryptoImpl {
             try {
                 migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
                 coreCrypto.proteusInit()
                 return ProteusClientCoreCryptoImpl(coreCrypto)
+            } catch (exception: ProteusStorageMigrationException) {
+                throw exception
             } catch (e: CoreCryptoException) {
-                throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
+                throw ProteusException(
+                    message = e.message,
+                    code = ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()),
+                    intCode = coreCrypto.proteusLastErrorCode().toInt(),
+                    cause = e.cause
+                )
             } catch (e: Exception) {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
+            }
+        }
+
+        @Suppress("TooGenericExceptionCaught")
+        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
+            try {
+                if (cryptoBoxFilesExists(File(rootDir))) {
+                    kaliumLogger.i("migrating from crypto box at: $rootDir")
+                    coreCrypto.proteusCryptoboxMigrate(rootDir)
+                    kaliumLogger.i("migration successful")
+
+                    if (deleteCryptoBoxFiles(rootDir)) {
+                        kaliumLogger.i("successfully deleted old crypto box files")
+                    } else {
+                        kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
+                    }
+                }
+            } catch (exception: Exception) {
+                kaliumLogger.e("Failed to migrate from crypto box to core crypto, exception: $exception")
+                throw ProteusStorageMigrationException("Failed to migrate from crypto box at $rootDir", exception)
             }
         }
     }

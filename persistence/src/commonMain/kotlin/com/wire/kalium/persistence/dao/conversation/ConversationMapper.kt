@@ -27,8 +27,9 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
 
-internal class ConversationMapper {
-    @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
+data object ConversationMapper {
+    // suppressed because the method cannot be shortened and there are unused parameters because sql view returns some duplicated fields
+    @Suppress("LongParameterList", "LongMethod", "UnusedParameter")
     fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,
@@ -37,7 +38,7 @@ internal class ConversationMapper {
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
-        lastModifiedDate_: Instant?,
+        lastModifiedDate: Instant?,
         lastReadDate: Instant,
         userAvailabilityStatus: UserAvailabilityStatusEntity?,
         userType: UserTypeEntity?,
@@ -48,8 +49,8 @@ internal class ConversationMapper {
         connectionStatus: ConnectionEntity.State?,
         otherUserId: QualifiedIDEntity?,
         otherUserActiveConversationId: QualifiedIDEntity?,
-        isCreator: Long,
         isActive: Long,
+        accentId: Int?,
         lastNotifiedMessageDate: Instant?,
         selfRole: MemberEntity.Role?,
         protocol: ConversationEntity.Protocol,
@@ -60,11 +61,9 @@ internal class ConversationMapper {
         mlsGroupState: ConversationEntity.GroupState,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>,
-        teamId_: String?,
         mlsProposalTimer: String?,
         mutedTime: Long,
         creatorId: String,
-        lastModifiedDate: Instant,
         receiptMode: ConversationEntity.ReceiptMode,
         messageTimer: Long?,
         userMessageTimer: Long?,
@@ -74,6 +73,9 @@ internal class ConversationMapper {
         mlsVerificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        selfUserId: QualifiedIDEntity?,
+        interactionEnabled: Long,
+        isFavorite: Boolean,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
@@ -87,7 +89,6 @@ internal class ConversationMapper {
             mlsLastKeyingMaterialUpdateDate,
             mlsCipherSuite
         ),
-        isCreator = isCreator,
         mutedStatus = mutedStatus,
         mutedTime = mutedTime,
         creatorId = creatorId,
@@ -122,7 +123,9 @@ internal class ConversationMapper {
         userSupportedProtocols = userSupportedProtocols,
         userActiveOneOnOneConversationId = otherUserActiveConversationId,
         proteusVerificationStatus = proteusVerificationStatus,
-        legalHoldStatus = legalHoldStatus
+        legalHoldStatus = legalHoldStatus,
+        accentId = accentId,
+        isFavorite = isFavorite
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -158,7 +161,7 @@ internal class ConversationMapper {
         verificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         degradedConversationNotified: Boolean,
-        legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,

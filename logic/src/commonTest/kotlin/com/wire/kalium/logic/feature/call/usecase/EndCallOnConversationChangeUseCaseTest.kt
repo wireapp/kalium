@@ -176,7 +176,7 @@ class EndCallOnConversationChangeUseCaseTest {
                 endCall.invoke(eq(conversationId))
             }.returns(Unit)
             coEvery {
-                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded(eq(conversationId))
+                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded()
             }.returns(Unit)
 
             withEstablishedCallsFlow(listOf(call))
@@ -190,7 +190,7 @@ class EndCallOnConversationChangeUseCaseTest {
         private val call = Call(
             conversationId = conversationId,
             status = CallStatus.ESTABLISHED,
-            callerId = "called-id",
+            callerId = UserId("called-id", "domain"),
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -248,18 +248,13 @@ class EndCallOnConversationChangeUseCaseTest {
         private val groupConversationDetail = ConversationDetails.Group(
             conversation = conversation,
             hasOngoingCall = true,
-            unreadEventCount = mapOf(),
-            lastMessage = null,
             isSelfUserMember = false,
-            isSelfUserCreator = false,
             selfRole = null
         )
 
         private val oneOnOneConversationDetail = ConversationDetails.OneOne(
             conversation = conversation,
             otherUser = otherUser,
-            unreadEventCount = mapOf(),
-            lastMessage = null,
             userType = UserType.ADMIN
         )
     }

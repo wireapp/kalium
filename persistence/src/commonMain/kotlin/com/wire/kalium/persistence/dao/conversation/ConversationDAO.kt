@@ -31,6 +31,7 @@ data class ProposalTimerEntity(
 
 @Suppress("TooManyFunctions")
 interface ConversationDAO {
+    val platformExtensions: ConversationExtensions
     //region Get/Observe by ID
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
@@ -56,7 +57,12 @@ interface ConversationDAO {
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetails(fromArchive: Boolean, filter: ConversationFilterEntity): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetailsWithEvents(
+        fromArchive: Boolean = false,
+        onlyInteractionEnabled: Boolean = false,
+        newActivitiesOnTop: Boolean = false,
+    ): Flow<List<ConversationDetailsWithEventsEntity>>
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,
@@ -72,7 +78,7 @@ interface ConversationDAO {
 
     suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
-    suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
+    suspend fun observeConversationDetailsByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
@@ -126,7 +132,7 @@ interface ConversationDAO {
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
     suspend fun updateMlsVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
-    suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity?
+    suspend fun getConversationDetailsByGroupID(groupID: String): ConversationViewEntity?
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
     suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean)

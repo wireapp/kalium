@@ -33,17 +33,16 @@ import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ConversationApiV3Test : ApiTest() {
 
     @Test
-    fun givenACreateNewConversationRequest_whenCallingCreateNewConversaton_thenTheRequestShouldBeConfiguredOK() = runTest {
+    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             CREATE_CONVERSATION_RESPONSE,
             statusCode = HttpStatusCode.Created,
@@ -58,6 +57,28 @@ internal class ConversationApiV3Test : ApiTest() {
         val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
 
         assertTrue(result.isSuccessful())
+    }
+
+    @Test
+    fun givenCreateNewConversationRequest_whenCallingCreateNewConversation_thenDeprecatedResponseShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            CREATE_CONVERSATION_RESPONSE_WITH_SERVICES.rawJson,
+            statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertJson()
+                assertPost()
+                assertPathEqual(PATH_CONVERSATIONS)
+                assertJsonBodyContent(CREATE_CONVERSATION_REQUEST_WITH_SERVICES.rawJson)
+            }
+        )
+
+        val conversationApi: ConversationApi = ConversationApiV3(networkClient)
+        val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST_WITH_SERVICES.serializableData)
+
+        assertEquals(
+            setOf(ConversationAccessRoleDTO.SERVICE),
+            (result as NetworkResponse.Success).value.accessRole
+        )
     }
 
     @Test
@@ -126,7 +147,15 @@ internal class ConversationApiV3Test : ApiTest() {
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v3.rawJson
-        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
+        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3()
         val ACCESS_ROLE_UPDATE_REQUEST = UpdateConversationAccessRequestJson.v3
+
+        val CREATE_CONVERSATION_RESPONSE_WITH_SERVICES = ConversationResponseJson.v0(
+            accessRole = setOf(ConversationAccessRoleDTO.SERVICE)
+        )
+
+        val CREATE_CONVERSATION_REQUEST_WITH_SERVICES = CreateConversationRequestJson.v3(
+            accessRole = listOf(ConversationAccessRoleDTO.SERVICE)
+        )
     }
 }

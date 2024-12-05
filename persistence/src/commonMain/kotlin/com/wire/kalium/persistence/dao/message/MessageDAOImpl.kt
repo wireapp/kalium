@@ -89,16 +89,10 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
-        updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean
     ) = withContext(coroutineContext) {
         queries.transactionWithResult {
             val messageCreationInstant = message.date
-
-            if (updateConversationReadDate) {
-                conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
-                unreadEventsQueries.deleteUnreadEvents(message.date, message.conversationId)
-            }
 
             insertInDB(message)
 
@@ -380,7 +374,7 @@ internal class MessageDAOImpl internal constructor(
         messagePreviewQueries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
-        return unreadEventsQueries.getConversationsUnreadEvents(unreadEventMapper::toConversationUnreadEntity)
+        return unreadEventsQueries.getConversationsUnreadEventCountsGrouped(unreadEventMapper::toConversationUnreadEntity)
             .asFlow().mapToList()
     }
 

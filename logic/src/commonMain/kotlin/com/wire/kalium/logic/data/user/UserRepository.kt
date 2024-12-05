@@ -25,6 +25,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -63,6 +64,7 @@ import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
@@ -162,6 +164,9 @@ interface UserRepository {
 
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
     suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
+    suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
+    suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
+    suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -171,6 +176,7 @@ internal class UserDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
+    private val upgradePersonalToTeamApi: UpgradePersonalToTeamApi,
     private val teamsApi: TeamsApi,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
@@ -639,6 +645,27 @@ internal class UserDataSource internal constructor(
 
     override suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId> = wrapStorageRequest {
         userDAO.getOneOnOnConversationId(userId.toDao())?.toModel()
+    }
+
+    override suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle> = wrapStorageRequest {
+        userDAO.getNameAndHandle(userId.toDao())
+    }.map { NameAndHandle.fromEntity(it) }
+
+    override suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam> {
+        return wrapApiRequest { upgradePersonalToTeamApi.migrateToTeam(teamName) }.map { dto ->
+            CreateUserTeam(dto.teamId, dto.teamName)
+        }
+            .onSuccess {
+                kaliumLogger.d("Migrated user to team")
+                fetchSelfUser()
+            }
+            .onFailure { failure ->
+                kaliumLogger.e("Failed to migrate user to team: $failure")
+            }
+    }
+
+    override suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userDAO.updateTeamId(userId.toDao(), teamId.value)
     }
 
     companion object {

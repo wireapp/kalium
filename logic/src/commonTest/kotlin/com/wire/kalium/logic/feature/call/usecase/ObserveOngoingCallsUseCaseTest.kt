@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.framework.TestCall
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
@@ -85,7 +86,7 @@ class ObserveOngoingCallsUseCaseTest {
             isMuted = false,
             isCameraOn = false,
             isCbrEnabled = false,
-            callerId = "callerId",
+            callerId = TestCall.CALLER_ID,
             conversationName = null,
             conversationType = Conversation.Type.GROUP,
             callerName = null,

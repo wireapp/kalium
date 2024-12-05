@@ -35,9 +35,7 @@ sealed class WebSocketEvent<BinaryPayloadType> {
 
             other as NonBinaryPayloadReceived<*>
 
-            if (!payload.contentEquals(other.payload)) return false
-
-            return true
+            return payload.contentEquals(other.payload)
         }
 
         override fun hashCode(): Int {
@@ -60,6 +58,7 @@ interface NotificationApi {
      */
     suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
+    suspend fun getServerTime(querySize: Int): NetworkResponse<String>
     suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>>
 
 }

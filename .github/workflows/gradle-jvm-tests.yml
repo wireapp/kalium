@@ -80,14 +80,14 @@ jobs:
           sudo apt-get install -y python3-pip
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.11.0
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2.17.1
         if: always()
         with:
           files: |
             **/build/test-results/**/*.xml
 
       - name: Upload test report to codecov
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
         with:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: "build/reports/kover/report.xml"
@@ -112,7 +112,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.1.7
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R

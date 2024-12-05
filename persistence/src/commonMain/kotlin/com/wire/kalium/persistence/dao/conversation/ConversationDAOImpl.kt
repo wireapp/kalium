@@ -20,6 +20,8 @@ package com.wire.kalium.persistence.dao.conversation
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.ConversationDetailsQueries
+import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.cache.FlowCache
@@ -49,15 +51,21 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 // TODO: Refactor. We can split this into smaller DAOs.
 //       For example, one for Members, one for Protocol/MLS-related things, etc.
 //       Even if they operate on the same table underneath, these DAOs can represent/do different things.
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class ConversationDAOImpl internal constructor(
     private val conversationDetailsCache: FlowCache<ConversationIDEntity, ConversationViewEntity?>,
     private val conversationCache: FlowCache<ConversationIDEntity, ConversationEntity?>,
     private val conversationQueries: ConversationsQueries,
+    private val conversationDetailsQueries: ConversationDetailsQueries,
+    private val conversationDetailsWithEventsQueries: ConversationDetailsWithEventsQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val coroutineContext: CoroutineContext,
 ) : ConversationDAO {
+    private val conversationMapper = ConversationMapper
+    private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
+    override val platformExtensions: ConversationExtensions =
+        ConversationExtensionsImpl(conversationDetailsWithEventsQueries, conversationDetailsWithEventsMapper, coroutineContext)
 
     // region Get/Observe by ID
 
@@ -78,7 +86,7 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun observeConversationDetailsById(
         conversationId: QualifiedIDEntity
     ): Flow<ConversationViewEntity?> = conversationDetailsCache.get(conversationId) {
-        conversationQueries.selectByQualifiedId(conversationId, conversationMapper::fromViewToModel)
+        conversationDetailsQueries.selectConversationDetailsByQualifiedId(conversationId, conversationMapper::fromViewToModel)
             .asFlow()
             .mapToOneOrNull()
     }
@@ -90,7 +98,6 @@ internal class ConversationDAOImpl internal constructor(
 
     // endregion
 
-    private val conversationMapper = ConversationMapper()
     override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) = withContext(coroutineContext) {
         conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
     }
@@ -207,9 +214,27 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
-    override suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>> {
-        return conversationQueries.selectAllConversationDetails(fromArchive, conversationMapper::fromViewToModel)
+    override suspend fun getAllConversationDetails(
+        fromArchive: Boolean,
+        filter: ConversationFilterEntity
+    ): Flow<List<ConversationViewEntity>> {
+        return conversationDetailsQueries.selectAllConversationDetails(fromArchive, filter.toString(), conversationMapper::fromViewToModel)
             .asFlow()
+            .mapToList()
+            .flowOn(coroutineContext)
+    }
+
+    override suspend fun getAllConversationDetailsWithEvents(
+        fromArchive: Boolean,
+        onlyInteractionEnabled: Boolean,
+        newActivitiesOnTop: Boolean,
+    ): Flow<List<ConversationDetailsWithEventsEntity>> {
+        return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
+            fromArchive = fromArchive,
+            onlyInteractionsEnabled = onlyInteractionEnabled,
+            newActivitiesOnTop = newActivitiesOnTop,
+            mapper = conversationDetailsWithEventsMapper::fromViewToModel
+        ).asFlow()
             .mapToList()
             .flowOn(coroutineContext)
     }
@@ -257,15 +282,15 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
-    override suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
-        return conversationQueries.selectByGroupId(groupID, conversationMapper::fromViewToModel)
+    override suspend fun observeConversationDetailsByGroupID(groupID: String): Flow<ConversationViewEntity?> {
+        return conversationDetailsQueries.selectConversationDetailsByGroupId(groupID, conversationMapper::fromViewToModel)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToOneOrNull()
     }
 
-    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity? {
-        return conversationQueries.selectByGroupId(groupID, conversationMapper::fromViewToModel)
+    override suspend fun getConversationDetailsByGroupID(groupID: String): ConversationViewEntity? {
+        return conversationDetailsQueries.selectConversationDetailsByGroupId(groupID, conversationMapper::fromViewToModel)
             .executeAsOneOrNull()
     }
 

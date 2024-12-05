@@ -32,6 +32,7 @@ kotlin {
                 implementation(project(":logic"))
                 implementation(project(":persistence"))
                 implementation(project(":mocks"))
+                implementation(project(":cryptography"))
                 implementation(libs.kotlin.test)
                 implementation(libs.settings.kmpTest)
 

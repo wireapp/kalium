@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.authenticated.conversation
 
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
@@ -83,10 +84,13 @@ data class ConversationResponse(
     val access: Set<ConversationAccessDTO>,
 
     @SerialName("access_role_v2")
-    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+    val accessRole: Set<ConversationAccessRoleDTO>?,
 
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode
+    val receiptMode: ReceiptMode,
+
+    @SerialName("public_keys")
+    val publicKeys: MLSPublicKeysDTO? = null
 ) {
 
     @Suppress("MagicNumber")
@@ -102,6 +106,9 @@ data class ConversationResponse(
             fun fromId(id: Int): Type = values().first { type -> type.id == id }
         }
     }
+
+    fun toV6(): ConversationResponseV6 =
+        ConversationResponseV6(this, publicKeys ?: MLSPublicKeysDTO(null))
 }
 
 @Serializable
@@ -145,11 +152,22 @@ data class ConversationResponseV3(
     @SerialName("access")
     val access: Set<ConversationAccessDTO>,
 
+    @SerialName("access_role")
+    val accessRole: Set<ConversationAccessRoleDTO>?,
+
     @SerialName("access_role_v2")
-    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+    val accessRoleV2: Set<ConversationAccessRoleDTO>?,
 
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode,
+)
+
+@Serializable
+data class ConversationResponseV6(
+    @SerialName("conversation")
+    val conversation: ConversationResponse,
+    @SerialName("public_keys")
+    val publicKeys: MLSPublicKeysDTO
 )
 
 @Serializable

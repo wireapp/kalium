@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -135,6 +136,7 @@ data class UserEntityMinimized(
     val name: String?,
     val completeAssetId: UserAssetIdEntity?,
     val userType: UserTypeEntity,
+    val accentId: Int
 )
 
 data class BotIdEntity(
@@ -313,4 +315,6 @@ interface UserDAO {
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean
     suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity?
     suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized>
+    suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
+    suspend fun updateTeamId(userId: UserIDEntity, teamId: String)
 }

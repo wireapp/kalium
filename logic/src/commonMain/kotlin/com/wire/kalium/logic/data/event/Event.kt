@@ -23,10 +23,13 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation.Access
+import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
@@ -55,7 +58,7 @@ import kotlinx.serialization.json.JsonNull
  */
 data class EventEnvelope(
     val event: Event,
-    val deliveryInfo: EventDeliveryInfo,
+    val deliveryInfo: EventDeliveryInfo
 ) {
     override fun toString(): String {
         return super.toString()
@@ -124,7 +127,8 @@ sealed class Event(open val id: String) {
         data class AccessUpdate(
             override val id: String,
             override val conversationId: ConversationId,
-            val data: ConversationResponse,
+            val access: Set<Access>,
+            val accessRole: Set<AccessRole>,
             val qualifiedFrom: UserId,
         ) : Conversation(id, conversationId) {
 
@@ -387,14 +391,16 @@ sealed class Event(open val id: String) {
             val uri: String?,
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeUpdated")
+            override fun toLogMap(): Map<String, Any?> =
+                mapOf(typeKey to "Conversation.CodeUpdated")
         }
 
         data class CodeDeleted(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeDeleted")
+            override fun toLogMap(): Map<String, Any?> =
+                mapOf(typeKey to "Conversation.CodeDeleted")
         }
 
         data class TypingIndicator(
@@ -703,6 +709,17 @@ sealed class Event(open val id: String) {
                 typeKey to "User.UserProperty.TypingIndicatorModeSet",
                 idKey to id.obfuscateId(),
                 "value" to "$value"
+            )
+        }
+
+        data class FoldersUpdate(
+            override val id: String,
+            val folders: List<FolderWithConversations>,
+        ) : UserProperty(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.FoldersUpdate",
+                idKey to id.obfuscateId(),
+                "folders" to folders.map { it.id.obfuscateId() }
             )
         }
     }
