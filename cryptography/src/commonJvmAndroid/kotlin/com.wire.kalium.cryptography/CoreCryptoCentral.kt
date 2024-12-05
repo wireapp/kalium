@@ -39,7 +39,7 @@ actual suspend fun coreCryptoCentral(
         key = databaseKey
     )
     coreCrypto.setCallbacks(Callbacks())
-    setLogger(CoreCryptoLoggerImpl(), CoreCryptoLogLevel.TRACE)
+    setLogger(CoreCryptoLoggerImpl(), CoreCryptoLogLevel.INFO)
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
         rootDir = rootDir
