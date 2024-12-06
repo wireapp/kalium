@@ -62,3 +62,6 @@ DELETE FROM LabeledConversation WHERE conversation_id = ? AND folder_id = ?;
 
 clearFolders:
 DELETE FROM ConversationFolder;
+
+clearLabeledConversations:
+DELETE FROM LabeledConversation;
