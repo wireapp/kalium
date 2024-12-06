@@ -101,7 +101,8 @@ sealed class ClientCapabilityDTO {
 
 object ClientCapabilityDTOSerializer : KSerializer<ClientCapabilityDTO> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(
-        "ClientCapabilityDTO", PrimitiveKind.STRING
+        serialName = "ClientCapabilityDTO",
+        kind = PrimitiveKind.STRING
     )
 
     override fun serialize(encoder: Encoder, value: ClientCapabilityDTO) {
