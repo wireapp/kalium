@@ -75,6 +75,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
@@ -119,6 +120,7 @@ class CallManagerImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
+    private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
@@ -219,7 +221,8 @@ class CallManagerImpl internal constructor(
                     callRepository = callRepository,
                     networkStateObserver = networkStateObserver,
                     scope = scope,
-                    qualifiedIdMapper = qualifiedIdMapper
+                    qualifiedIdMapper = qualifiedIdMapper,
+                    createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
                 ).keepingStrongReference(),
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)

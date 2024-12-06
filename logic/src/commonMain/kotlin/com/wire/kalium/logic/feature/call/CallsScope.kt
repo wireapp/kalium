@@ -63,6 +63,8 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOutgoingCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveOutgoingCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveRecentlyEndedCallMetadataUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveRecentlyEndedCallMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveSpeakerUseCase
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.RequestVideoStreamsUseCase
@@ -232,4 +234,9 @@ class CallsScope internal constructor(
     val updateNextTimeCallFeedback: UpdateNextTimeCallFeedbackUseCase by lazy {
         UpdateNextTimeCallFeedbackUseCase(userConfigRepository)
     }
+
+    val observeRecentlyEndedCallMetadata: ObserveRecentlyEndedCallMetadataUseCase
+        get() = ObserveRecentlyEndedCallMetadataUseCaseImpl(
+            callRepository = callRepository
+        )
 }

@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.CurrentPlatform
@@ -94,7 +95,8 @@ actual class GlobalCallManager(
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
         networkStateObserver: NetworkStateObserver,
-        kaliumConfigs: KaliumConfigs
+        kaliumConfigs: KaliumConfigs,
+        createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
     ): CallManager {
         if (kaliumConfigs.enableCalling) {
             return callManagerHolder.computeIfAbsent(userId) {
@@ -116,7 +118,8 @@ actual class GlobalCallManager(
                     mediaManagerService = mediaManager,
                     flowManagerService = flowManager,
                     userConfigRepository = userConfigRepository,
-                    kaliumConfigs = kaliumConfigs
+                    kaliumConfigs = kaliumConfigs,
+                    createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
                 )
             }
         } else {

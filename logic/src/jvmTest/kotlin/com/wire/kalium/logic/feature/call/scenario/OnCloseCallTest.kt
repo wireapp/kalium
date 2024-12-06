@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.types.Uint32_t
-import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
@@ -29,11 +28,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
@@ -55,6 +56,9 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
+    @Mock
+    val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
+
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -69,7 +73,8 @@ class OnCloseCallTest {
             callRepository,
             testScope,
             qualifiedIdMapper,
-            networkStateObserver
+            networkStateObserver,
+            createAndPersistRecentlyEndedCallMetadata
         )
 
         every {
@@ -336,6 +341,26 @@ class OnCloseCallTest {
             coVerify {
                 callRepository.persistMissedCall(conversationId)
             }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenClosedCall_whenOnCloseCallInvoked_thenCreateAndPersistRecentlyEndedCallIsInvoked() =
+        testScope.runTest {
+            val reason = CallClosedReason.CANCELLED.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                createAndPersistRecentlyEndedCallMetadata(any(), any())
+            }.wasInvoked(once)
         }
 
     companion object {
