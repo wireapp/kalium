@@ -272,7 +272,6 @@ internal class ConversationMapperImpl(
                         conversation = fromConversationViewToEntity(daoModel),
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         isSelfUserMember = isMember,
-                        isSelfUserCreator = isCreator == 1L,
                         selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                         isFavorite = isFavorite
                     )

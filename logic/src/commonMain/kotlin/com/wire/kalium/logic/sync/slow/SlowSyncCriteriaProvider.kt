@@ -116,6 +116,7 @@ internal class SlowSlowSyncCriteriaProviderImpl(
             LogoutReason.SESSION_EXPIRED -> "Logout: SESSION_EXPIRED"
             LogoutReason.REMOVED_CLIENT -> "Logout: REMOVED_CLIENT"
             LogoutReason.DELETED_ACCOUNT -> "Logout: DELETED_ACCOUNT"
+            LogoutReason.MIGRATION_TO_CC_FAILED -> "Logout: MIGRATION_TO_CC_FAILED"
             null -> null
         }?.let { MissingRequirement(it) }
 

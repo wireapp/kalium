@@ -18,22 +18,29 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 /**
  * Conversation muting settings type
  */
-sealed class MutedConversationStatus(open val status: Int = 0) {
+@Serializable
+sealed class MutedConversationStatus(@SerialName("status") open val status: Int = 0) {
     /**
      * 0 -> All notifications are displayed
      */
+    @Serializable
     data object AllAllowed : MutedConversationStatus(0)
 
     /**
      * 1 -> Only mentions and replies are displayed (normal messages muted)
      */
+    @Serializable
     data object OnlyMentionsAndRepliesAllowed : MutedConversationStatus(1)
 
     /**
      * 3 -> No notifications are displayed
      */
+    @Serializable
     data object AllMuted : MutedConversationStatus(3)
 }

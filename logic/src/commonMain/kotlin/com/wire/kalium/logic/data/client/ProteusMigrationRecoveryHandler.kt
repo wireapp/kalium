@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.client
 
-package com.wire.kalium.logic.data.message.mention
+import com.wire.kalium.logic.data.logout.LogoutReason
 
-import com.wire.kalium.logic.data.user.UserId
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class MessageMention(
-    @SerialName("start") val start: Int,
-    @SerialName("length") val length: Int,
-    @SerialName("userId") val userId: UserId,
-    @SerialName("isSelfMention") val isSelfMention: Boolean
-)
+/**
+ * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
+ * It will perform a logout, using [LogoutReason.MIGRATION_TO_CC_FAILED] as the reason.
+ *
+ * This achieves that the client data is cleared and the user is logged out without losing content.
+ */
+interface ProteusMigrationRecoveryHandler {
+    suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
+}

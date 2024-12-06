@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toCrypto
@@ -441,6 +442,8 @@ internal class CallDataSource(
 
                 val currentParticipantIds = call.participants.map { it.userId }.toSet()
                 val newParticipantIds = participants.map { it.userId }.toSet()
+                val sharingScreenParticipantIds = participants.filter { it.isSharingScreen }
+                    .map { participant -> participant.id }
 
                 val updatedUsers = call.users.toMutableList()
 
@@ -456,7 +459,11 @@ internal class CallDataSource(
                     this[conversationId] = call.copy(
                         participants = participants,
                         maxParticipants = max(call.maxParticipants, participants.size + 1),
-                        users = updatedUsers
+                        users = updatedUsers,
+                        screenShareMetadata = updateScreenSharingMetadata(
+                            metadata = call.screenShareMetadata,
+                            usersCurrentlySharingScreen = sharingScreenParticipantIds
+                        )
                     )
                 }
 
@@ -477,6 +484,43 @@ internal class CallDataSource(
                 }
             }
         }
+    }
+
+    /**
+     * Manages call sharing metadata for analytical purposes by tracking the following:
+     * - **Active Screen Shares**: Maintains a record of currently active screen shares with their start times (local to the device).
+     * - **Completed Screen Share Duration**: Accumulates the total duration of screen shares that have already ended.
+     * - **Unique Sharing Users**: Keeps a unique list of all users who have shared their screen during the call.
+     *
+     * To update the metadata, the following steps are performed:
+     * 1. **Calculate Ended Screen Share Time**: Determine the total time for users who stopped sharing since the last update.
+     * 2. **Update Active Shares**: Filter out inactive shares and add any new ones, associating them with the current start time.
+     * 3. **Track Unique Users**: Append ids to current set in order to keep track of unique users.
+     */
+    private fun updateScreenSharingMetadata(
+        metadata: CallScreenSharingMetadata,
+        usersCurrentlySharingScreen: List<QualifiedID>
+    ): CallScreenSharingMetadata {
+        val now = DateTimeUtil.currentInstant()
+
+        val alreadyEndedScreenSharesTimeInMillis = metadata.activeScreenShares
+            .filterKeys { id -> id !in usersCurrentlySharingScreen }
+            .values
+            .sumOf { startTime -> DateTimeUtil.calculateMillisDifference(startTime, now) }
+
+        val updatedShares = metadata.activeScreenShares
+            .filterKeys { id -> id in usersCurrentlySharingScreen }
+            .plus(
+                usersCurrentlySharingScreen
+                    .filterNot { id -> metadata.activeScreenShares.containsKey(id) }
+                    .associateWith { now }
+            )
+
+        return metadata.copy(
+            activeScreenShares = updatedShares,
+            completedScreenShareDurationInMillis = metadata.completedScreenShareDurationInMillis + alreadyEndedScreenSharesTimeInMillis,
+            uniqueSharingUsers = metadata.uniqueSharingUsers.plus(usersCurrentlySharingScreen.map { id -> id.toString() })
+        )
     }
 
     private fun clearStaleParticipantTimeout(participant: ParticipantMinimized) {

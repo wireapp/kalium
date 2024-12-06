@@ -65,7 +65,6 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
                 selfRole = Conversation.Member.Role.Member
             )
 
@@ -100,14 +99,12 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation1,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
                 selfRole = Conversation.Member.Role.Member
             )
         val groupConversationDetails2 =
             ConversationDetails.Group(
                 groupConversation2,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
                 selfRole = Conversation.Member.Role.Member
             )
 
@@ -141,7 +138,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             conversation = groupConversation,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
             selfRole = Conversation.Member.Role.Member
         )
 
@@ -175,7 +171,6 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation,
                 isSelfUserMember = true,
-                isSelfUserCreator = true,
                 selfRole = Conversation.Member.Role.Member
             )
         )
@@ -223,7 +218,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
             selfRole = Conversation.Member.Role.Member
         )
 
@@ -258,7 +252,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
             selfRole = Conversation.Member.Role.Member
         )
 
@@ -287,7 +280,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             isSelfUserMember = true,
-            isSelfUserCreator = true,
             selfRole = Conversation.Member.Role.Member
         )
 
