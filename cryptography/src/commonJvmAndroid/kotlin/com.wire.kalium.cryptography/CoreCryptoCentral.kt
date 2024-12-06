@@ -20,7 +20,10 @@ package com.wire.kalium.cryptography
 import com.wire.crypto.ClientId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
+import com.wire.crypto.CoreCryptoLogLevel
+import com.wire.crypto.CoreCryptoLogger
 import com.wire.crypto.coreCryptoDeferredInit
+import com.wire.crypto.setLogger
 import com.wire.kalium.cryptography.MLSClientImpl.Companion.toCrlRegistration
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import java.io.File
@@ -36,10 +39,26 @@ actual suspend fun coreCryptoCentral(
         key = databaseKey
     )
     coreCrypto.setCallbacks(Callbacks())
+    setLogger(CoreCryptoLoggerImpl(), CoreCryptoLogLevel.INFO)
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
         rootDir = rootDir
     )
+}
+
+private class CoreCryptoLoggerImpl : CoreCryptoLogger {
+    override fun log(level: CoreCryptoLogLevel, message: String, context: String?) {
+        when (level) {
+            CoreCryptoLogLevel.TRACE -> kaliumLogger.v("$message. $context")
+            CoreCryptoLogLevel.DEBUG -> kaliumLogger.d("$message. $context")
+            CoreCryptoLogLevel.INFO -> kaliumLogger.i("$message. $context")
+            CoreCryptoLogLevel.WARN -> kaliumLogger.w("$message. $context")
+            CoreCryptoLogLevel.ERROR -> kaliumLogger.e("$message. $context")
+            CoreCryptoLogLevel.OFF -> {
+                // nop
+            }
+        }
+    }
 }
 
 private class Callbacks : CoreCryptoCallbacks {
