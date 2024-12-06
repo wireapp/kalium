@@ -132,12 +132,12 @@ interface ConversationRepository {
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter = ConversationFilter.ALL
+        conversationFilter: ConversationFilter = ConversationFilter.All
     ): Flow<List<ConversationDetails>>
 
     suspend fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean = false,
-        conversationFilter: ConversationFilter = ConversationFilter.ALL
+        conversationFilter: ConversationFilter = ConversationFilter.All
     ): Flow<List<ConversationDetailsWithEvents>>
 
     suspend fun getConversationIds(

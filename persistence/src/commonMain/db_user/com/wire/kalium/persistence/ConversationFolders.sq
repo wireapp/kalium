@@ -17,6 +17,10 @@ CREATE TABLE LabeledConversation (
       PRIMARY KEY (folder_id, conversation_id)
 );
 
+getUserFolders:
+SELECT * FROM ConversationFolder
+WHERE folder_type != 'FAVORITE';
+
 getAllFoldersWithConversations:
 SELECT
     conversationFolder.id AS label_id,
@@ -59,6 +63,9 @@ VALUES(?, ?);
 
 deleteLabeledConversation:
 DELETE FROM LabeledConversation WHERE conversation_id = ? AND folder_id = ?;
+
+clearLabeledConversations:
+DELETE FROM LabeledConversation;
 
 clearFolders:
 DELETE FROM ConversationFolder;
