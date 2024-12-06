@@ -48,6 +48,12 @@ kotlin {
 
             }
         }
+        val commonTest by getting {
+            dependencies {
+                // mocks
+                implementation(project(":mocks"))
+            }
+        }
     }
 }
 
