@@ -108,6 +108,7 @@ object ClientCapabilityDTOSerializer : KSerializer<ClientCapabilityDTO> {
         when (value) {
             is ClientCapabilityDTO.LegalHoldImplicitConsent ->
                 encoder.encodeString("legalhold-implicit-consent")
+
             is ClientCapabilityDTO.Unknown ->
                 encoder.encodeString(value.name)
         }
