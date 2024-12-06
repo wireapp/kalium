@@ -20,10 +20,10 @@ package com.wire.backup.ingest
 import kotlin.js.JsExport
 
 @JsExport
-sealed class BackupVerificationResult {
-    data class Valid internal constructor(
+public sealed class BackupVerificationResult {
+    public data class Valid internal constructor(
         val isEncrypted: Boolean,
-        val
+        val matchesUserID: Boolean
     ) : BackupVerificationResult()
-    data object InvalidFileFormat : BackupVerificationResult()
+    public data object InvalidFileFormat : BackupVerificationResult()
 }

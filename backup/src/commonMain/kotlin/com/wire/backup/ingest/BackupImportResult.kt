@@ -21,7 +21,7 @@ import com.wire.backup.data.BackupData
 import kotlin.js.JsExport
 
 @JsExport
-sealed class BackupImportResult {
-    data object ParsingFailure : BackupImportResult()
-    data class Success(val backupData: BackupData) : BackupImportResult()
+public sealed class BackupImportResult {
+    public data object ParsingFailure : BackupImportResult()
+    public data class Success(val backupData: BackupData) : BackupImportResult()
 }

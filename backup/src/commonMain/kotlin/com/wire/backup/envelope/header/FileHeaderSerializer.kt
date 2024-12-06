@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.file.header
+package com.wire.backup.envelope.header
 
 import okio.Buffer
 import okio.Source
@@ -27,17 +27,24 @@ import okio.Source
  * See [the file specifications](https://github.com/wireapp/kalium/blob/d14e6cfd1bb9297234233efd24602d380ff3ecb3/backup/README.md)
  */
 internal interface FileHeaderSerializer {
+    /**
+     * Converts a [BackupHeader] into a byte buffer format, which can be stored in the beginning of a Backup file.
+     */
     fun headerToBytes(header: BackupHeader): Buffer
-    fun parseHeader(source: Source): ParseResult
+
+    /**
+     * Consumes the first relevant bytes of the [source], parses and returns a [HeaderParseResult].
+     */
+    fun parseHeader(source: Source): HeaderParseResult
 }
 
-internal interface ParseResult {
-    data class Success(val header: BackupHeader) : ParseResult
-    sealed interface Failure : ParseResult {
+internal sealed interface HeaderParseResult {
+    data class Success(val header: BackupHeader) : HeaderParseResult
+    sealed interface Failure : HeaderParseResult {
         /**
          * The initial bytes do not correspond to the [DefaultFileHeaderSerializer.FORMAT_IDENTIFIER_MAGIC_NUMBER].
          */
-        data class UnknownFormat(val readFormat: String) : Failure
+        data object UnknownFormat : Failure
 
         /**
          * The [version] found in the backup is not supported. Either too old, or too new.
@@ -46,8 +53,24 @@ internal interface ParseResult {
     }
 }
 
-internal class DefaultFileHeaderSerializer : FileHeaderSerializer {
+internal object DefaultFileHeaderSerializer : FileHeaderSerializer {
 
+    const val FORMAT_IDENTIFIER_MAGIC_NUMBER = "WBUX"
+    const val CURRENT_HEADER_VERSION = 4
+    private val SUPPORTED_VERSIONS = 4..4
+
+
+    /**
+     * The total amount of bytes reserved for the header in the beginning of the file.
+     * Although the current fields occupy just around 100 bytes, we choose to reserve the first 1024 bytes for the header.
+     * This way we can add extra fields in the future without breaking the format and requiring a file format version bump.
+     */
+    private const val TOTAL_HEADER_SIZE = 1024L
+
+    /**
+     * We leave an unreadable char in the beginning, so it isn't identified as a text-file by some software / OS
+     */
+    private const val SIZE_OF_GAP_AFTER_FORMAT_FIELD = 1L
 
     override fun headerToBytes(header: BackupHeader): Buffer {
         val headerBytes = Buffer()
@@ -71,16 +94,15 @@ internal class DefaultFileHeaderSerializer : FileHeaderSerializer {
         return headerBytes
     }
 
-    override fun parseHeader(source: Source): ParseResult {
+    override fun parseHeader(source: Source): HeaderParseResult {
         val headerBytes = Buffer()
-        source.read(headerBytes, TOTAL_HEADER_SIZE)
+        if (source.read(headerBytes, TOTAL_HEADER_SIZE) != TOTAL_HEADER_SIZE) return HeaderParseResult.Failure.UnknownFormat
         val format = FileHeaderField.String.format.read(headerBytes)
-        if (format != FORMAT_IDENTIFIER_MAGIC_NUMBER) return ParseResult.Failure.UnknownFormat(format)
+        if (format != FORMAT_IDENTIFIER_MAGIC_NUMBER) return HeaderParseResult.Failure.UnknownFormat
         headerBytes.skip(SIZE_OF_GAP_AFTER_FORMAT_FIELD)
-
         val version = FileHeaderField.UShort.version.read(headerBytes).toInt()
         if (version !in SUPPORTED_VERSIONS) {
-            return ParseResult.Failure.UnsupportedVersion(version)
+            return HeaderParseResult.Failure.UnsupportedVersion(version)
         }
 
         val salt = FileHeaderField.UByteArray.salt.read(headerBytes)
@@ -92,22 +114,6 @@ internal class DefaultFileHeaderSerializer : FileHeaderSerializer {
 
         val hashData = HashData(hashedUserId, salt, opsLimit, memLimit)
         val header = BackupHeader(version, isEncrypted, hashData, chaCha20HeaderData)
-        return ParseResult.Success(header)
-    }
-
-    private companion object {
-        /**
-         * The total amount of bytes reserved for the header in the beginning of the file.
-         * Although the current fields occupy just around 100 bytes, we choose to reserve the first 1024 bytes for the header.
-         * This way we can add extra fields in the future without breaking the format and requiring a file format version bump.
-         */
-        const val TOTAL_HEADER_SIZE = 1024L
-        const val FORMAT_IDENTIFIER_MAGIC_NUMBER = "WBUX"
-
-        /**
-         * We leave an unreadable char in the beginning, so it isn't identified as a text-file by some software / OS
-         */
-        private const val SIZE_OF_GAP_AFTER_FORMAT_FIELD = 1L
-        val SUPPORTED_VERSIONS = 4..4
+        return HeaderParseResult.Success(header)
     }
 }

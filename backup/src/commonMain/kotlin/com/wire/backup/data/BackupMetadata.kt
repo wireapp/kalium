@@ -21,7 +21,7 @@ package com.wire.backup.data
 import kotlin.js.JsExport
 
 @JsExport
-data class BackupMetadata(
+public data class BackupMetadata(
     val version: String,
     val userId: BackupQualifiedId,
     val creationTime: BackupDateTime,

@@ -17,10 +17,9 @@
  */
 @file:OptIn(ExperimentalUnsignedTypes::class)
 
-package com.wire.backup.file.header
+package com.wire.backup.envelope.header
 
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_MEMLIMIT_MIN
-import com.wire.backup.file.header.EncryptionSalt.Encrypted.Companion.SALT_SIZE_IN_BYTES
 import okio.Buffer
 
 /**
@@ -33,27 +32,7 @@ internal data class BackupHeader(
     val isEncrypted: Boolean,
     val hashData: HashData,
     val chaCha20Header: UByteArray
-) {
-
-    private val extraGap = byteArrayOf(0x00)
-
-    fun toByteArray(): ByteArray {
-        val buffer = Buffer()
-        buffer.write(format.encodeToByteArray())
-        buffer.write(extraGap)
-        buffer.writeShort(version.toInt())
-        buffer.write(encryptionSalt.toByteArray())
-        buffer.write(hashedUserId.toByteArray())
-        buffer.writeInt(operationsLimit)
-        buffer.writeInt(hashingMemoryLimit)
-
-        return buffer.readByteArray()
-    }
-
-    enum class HeaderDecodingErrors {
-        INVALID_USER_ID, INVALID_VERSION, INVALID_FORMAT
-    }
-}
+)
 
 internal data class HashData(
     /**

@@ -16,9 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.backup.file.cryptography
+package com.wire.backup.envelope.cryptography
 
 import kotlin.js.JsExport
 
 @JsExport
-data class BackupPassphrase(val password: String)
+public data class BackupPassphrase(val value: String)
