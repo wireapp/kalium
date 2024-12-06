@@ -136,11 +136,6 @@ internal class ServerConfigDataSource(
                 storeConfig(links, metaData)
             }
 
-<<<<<<< HEAD
-    override suspend fun updateConfigApiVersion(serverConfig: ServerConfig): Either<CoreFailure, Unit> =
-        fetchMetadata(serverConfig.links)
-            .flatMap { wrapStorageRequest { dao.updateApiVersion(serverConfig.id, it.commonApiVersion.version) } }
-=======
     override suspend fun updateConfigMetaData(serverConfig: ServerConfig): Either<CoreFailure, Unit> =
         fetchMetadata(serverConfig.links)
             .flatMap { newMetaData ->
@@ -152,7 +147,6 @@ internal class ServerConfigDataSource(
                     )
                 }
             }
->>>>>>> 790b885dcf (fix: update federation flag when fetching server config [WPB-14728] (#3143))
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(userId.toDao()) }
