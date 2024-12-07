@@ -19,4 +19,4 @@ package com.wire.backup.dump
 
 import com.wire.backup.data.BackupQualifiedId
 
-actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId)
+public actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId)

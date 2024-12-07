@@ -39,7 +39,7 @@ import kotlin.native.ShouldRefineInSwift
  */
 @OptIn(ExperimentalObjCName::class, ExperimentalObjCRefinement::class)
 @JsExport
-abstract class CommonMPBackupExporter(
+public abstract class CommonMPBackupExporter(
     private val selfUserId: BackupQualifiedId
 ) {
     private val mapper = MPBackupMapper()
@@ -51,23 +51,23 @@ abstract class CommonMPBackupExporter(
     //       Unfortunately the IDE doesn't understand this right now and
     //       keeps complaining if making the other way around
     @ObjCName("add")
-    fun addUser(user: BackupUser) {
+    public fun addUser(user: BackupUser) {
         allUsers.add(user)
     }
 
     @ObjCName("add")
-    fun addConversation(conversation: BackupConversation) {
+    public fun addConversation(conversation: BackupConversation) {
         allConversations.add(conversation)
     }
 
     @ObjCName("add")
-    fun addMessage(message: BackupMessage) {
+    public fun addMessage(message: BackupMessage) {
         allMessages.add(message)
     }
 
     @OptIn(ExperimentalStdlibApi::class)
     @ShouldRefineInSwift // Hidden in Swift
-    fun serialize(): ByteArray {
+    public fun serialize(): ByteArray {
         val backupData = BackupData(
             BackupInfo(
                 platform = "Common",
@@ -92,4 +92,4 @@ abstract class CommonMPBackupExporter(
     }
 }
 
-expect class MPBackupExporter : CommonMPBackupExporter
+public expect class MPBackupExporter : CommonMPBackupExporter

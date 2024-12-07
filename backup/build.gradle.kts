@@ -31,6 +31,10 @@ kaliumLibrary {
 
 @Suppress("UnusedPrivateProperty")
 kotlin {
+    // Makes visibility modifiers mandatory
+    // Useful for a library that will be called by other clients
+    // This way we need to think before putting "public" in things, and we can be reminded by the compiler to use "internal" more often
+    explicitApi()
     val xcf = XCFramework()
     val appleTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64(), macosArm64(), macosX64())
     appleTargets.forEach {
@@ -45,6 +49,9 @@ kotlin {
         generateTypeScriptDefinitions()
     }
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+        }
         val commonMain by getting {
             dependencies {
                 implementation(project(":data"))

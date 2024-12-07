@@ -15,13 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.ingest
 
-import com.wire.backup.data.BackupData
+package com.wire.backup.envelope.cryptography
+
 import kotlin.js.JsExport
 
 @JsExport
-public sealed class BackupImportResult {
-    public data object ParsingFailure : BackupImportResult()
-    public data class Success(val backupData: BackupData) : BackupImportResult()
-}
+public data class BackupPassphrase(val value: String)
