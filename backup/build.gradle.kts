@@ -49,6 +49,9 @@ kotlin {
         generateTypeScriptDefinitions()
     }
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+        }
         val commonMain by getting {
             dependencies {
                 implementation(project(":data"))
