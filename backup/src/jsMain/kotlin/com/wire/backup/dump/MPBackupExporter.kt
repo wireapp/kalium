@@ -21,4 +21,4 @@ import com.wire.backup.data.BackupQualifiedId
 
 // JS uses the common one. Only handles Bytes / ByteArrays.
 @JsExport
-actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId)
+public actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId)

@@ -20,6 +20,6 @@ package com.wire.backup
 import kotlin.js.JsExport
 
 @JsExport
-object MPBackup {
-    const val ZIP_ENTRY_DATA = "data.wmbu"
+public object MPBackup {
+    public const val ZIP_ENTRY_DATA: String = "data.wmbu"
 }

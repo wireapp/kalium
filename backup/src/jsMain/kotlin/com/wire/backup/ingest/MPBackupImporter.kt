@@ -18,4 +18,4 @@
 package com.wire.backup.ingest
 
 @JsExport
-actual class MPBackupImporter : CommonMPBackupImporter()
+public actual class MPBackupImporter : CommonMPBackupImporter()
