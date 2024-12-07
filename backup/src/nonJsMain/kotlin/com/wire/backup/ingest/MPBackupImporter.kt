@@ -24,7 +24,7 @@ import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
 @OptIn(ExperimentalObjCName::class)
-actual class MPBackupImporter : CommonMPBackupImporter() {
+public actual class MPBackupImporter : CommonMPBackupImporter() {
 
     /**
      * Imports a backup from the specified root path.
@@ -32,7 +32,7 @@ actual class MPBackupImporter : CommonMPBackupImporter() {
      * @param multiplatformBackupFilePath the path to the decrypted, unzipped backup data file
      */
     @ObjCName("importFile")
-    fun importFromFile(multiplatformBackupFilePath: String): BackupImportResult {
+    public fun importFromFile(multiplatformBackupFilePath: String): BackupImportResult {
         return FileSystem.SYSTEM.read(multiplatformBackupFilePath.toPath()) {
             importBackup(readByteArray())
         }

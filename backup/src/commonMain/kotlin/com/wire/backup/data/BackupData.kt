@@ -28,39 +28,39 @@ import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
 @JsExport
-class BackupData(
-    val metadata: BackupMetadata,
+public class BackupData(
+    public val metadata: BackupMetadata,
     @ShouldRefineInSwift
-    val users: Array<BackupUser>,
+    public val users: Array<BackupUser>,
     @ShouldRefineInSwift
-    val conversations: Array<BackupConversation>,
+    public val conversations: Array<BackupConversation>,
     @ShouldRefineInSwift
-    val messages: Array<BackupMessage>
+    public val messages: Array<BackupMessage>
 ) {
     @ObjCName("users")
-    val userList: List<BackupUser> get() = users.toList()
+    public val userList: List<BackupUser> get() = users.toList()
 
     @ObjCName("conversations")
-    val conversationList: List<BackupConversation> get() = conversations.toList()
+    public val conversationList: List<BackupConversation> get() = conversations.toList()
 
     @ObjCName("messages")
-    val messageList: List<BackupMessage> get() = messages.toList()
+    public val messageList: List<BackupMessage> get() = messages.toList()
 }
 
 @JsExport
 @Serializable
-data class BackupQualifiedId(
+public data class BackupQualifiedId(
     @SerialName("id")
     val id: String,
     @SerialName("domain")
     val domain: String,
 ) {
-    override fun toString() = "$id@$domain"
+    override fun toString(): String = "$id@$domain"
 
-    companion object {
+    public companion object {
         private const val QUALIFIED_ID_COMPONENT_COUNT = 2
 
-        fun fromEncodedString(id: String): BackupQualifiedId? {
+        public fun fromEncodedString(id: String): BackupQualifiedId? {
             val components = id.split("@")
             if (components.size != QUALIFIED_ID_COMPONENT_COUNT) return null
             return BackupQualifiedId(components[0], components[1])
@@ -69,20 +69,20 @@ data class BackupQualifiedId(
 }
 
 @JsExport
-data class BackupUser(
+public data class BackupUser(
     val id: BackupQualifiedId,
     val name: String,
     val handle: String,
 )
 
 @JsExport
-data class BackupConversation(
+public data class BackupConversation(
     val id: BackupQualifiedId,
     val name: String,
 )
 
 @JsExport
-data class BackupMessage(
+public data class BackupMessage(
     val id: String,
     val conversationId: BackupQualifiedId,
     val senderUserId: BackupQualifiedId,
@@ -93,16 +93,16 @@ data class BackupMessage(
     val webPrimaryKey: Int? = null,
 )
 
-expect class BackupDateTime
+public expect class BackupDateTime
 
-expect fun BackupDateTime(timestampMillis: Long): BackupDateTime
-expect fun BackupDateTime.toLongMilliseconds(): Long
+public expect fun BackupDateTime(timestampMillis: Long): BackupDateTime
+public expect fun BackupDateTime.toLongMilliseconds(): Long
 
 @JsExport
-sealed class BackupMessageContent {
-    data class Text(val text: String) : BackupMessageContent()
+public sealed class BackupMessageContent {
+    public data class Text(val text: String) : BackupMessageContent()
 
-    data class Asset(
+    public data class Asset(
         val mimeType: String,
         val size: Int,
         val name: String?,
@@ -114,29 +114,29 @@ sealed class BackupMessageContent {
         val encryption: EncryptionAlgorithm?,
         val metaData: AssetMetadata?,
     ) : BackupMessageContent() {
-        enum class EncryptionAlgorithm {
+        public enum class EncryptionAlgorithm {
             AES_GCM, AES_CBC
         }
 
-        sealed class AssetMetadata {
-            data class Image(
+        public sealed class AssetMetadata {
+            public data class Image(
                 val width: Int,
                 val height: Int,
                 val tag: String?
             ) : AssetMetadata()
 
-            data class Video(
+            public data class Video(
                 val width: Int?,
                 val height: Int?,
                 val duration: Long?,
             ) : AssetMetadata()
 
-            data class Audio(
+            public data class Audio(
                 val normalization: ByteArray?,
                 val duration: Long?,
             ) : AssetMetadata()
 
-            data class Generic(
+            public data class Generic(
                 val name: String?,
             ) : AssetMetadata()
         }
@@ -170,7 +170,7 @@ sealed class BackupMessageContent {
         }
     }
 
-    data class Location(
+    public data class Location(
         val longitude: Float,
         val latitude: Float,
         val name: String?,
