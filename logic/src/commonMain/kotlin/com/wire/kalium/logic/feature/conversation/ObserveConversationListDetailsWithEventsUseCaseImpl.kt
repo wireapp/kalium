@@ -45,7 +45,7 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
         fromArchive: Boolean,
         conversationFilter: ConversationFilter
     ): Flow<List<ConversationDetailsWithEvents>> {
-        return if (conversationFilter == ConversationFilter.FAVORITES) {
+        return if (conversationFilter == ConversationFilter.Favorites) {
             when (val result = getFavoriteFolder()) {
                 GetFavoriteFolderUseCase.Result.Failure -> {
                     flowOf(emptyList())
