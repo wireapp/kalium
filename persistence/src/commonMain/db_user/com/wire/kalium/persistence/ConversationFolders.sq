@@ -69,3 +69,6 @@ DELETE FROM LabeledConversation;
 
 clearFolders:
 DELETE FROM ConversationFolder;
+
+clearLabeledConversations:
+DELETE FROM LabeledConversation;

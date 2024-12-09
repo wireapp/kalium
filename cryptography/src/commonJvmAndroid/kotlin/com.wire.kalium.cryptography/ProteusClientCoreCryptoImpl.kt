@@ -28,6 +28,7 @@ import io.ktor.util.encodeBase64
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import com.wire.crypto.ProteusException as ProteusExceptionNative
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(
@@ -145,13 +146,12 @@ class ProteusClientCoreCryptoImpl private constructor(
     private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
-        } catch (e: CoreCryptoException) {
-            val proteusLastErrorCode = coreCrypto.proteusLastErrorCode()
+        } catch (e: CoreCryptoException.Proteus) {
             throw ProteusException(
-                e.message,
-                ProteusException.fromProteusCode(proteusLastErrorCode.toInt()),
-                proteusLastErrorCode.toInt(),
-                e
+                message = e.message,
+                code = mapProteusExceptionToErrorCode(e.v1),
+                intCode = mapProteusExceptionToRawIntErrorCode(e.v1),
+                cause = e
             )
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
@@ -187,11 +187,11 @@ class ProteusClientCoreCryptoImpl private constructor(
                 return ProteusClientCoreCryptoImpl(coreCrypto)
             } catch (exception: ProteusStorageMigrationException) {
                 throw exception
-            } catch (e: CoreCryptoException) {
+            } catch (e: CoreCryptoException.Proteus) {
                 throw ProteusException(
                     message = e.message,
-                    code = ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()),
-                    intCode = coreCrypto.proteusLastErrorCode().toInt(),
+                    code = mapProteusExceptionToErrorCode(e.v1),
+                    intCode = mapProteusExceptionToRawIntErrorCode(e.v1),
                     cause = e.cause
                 )
             } catch (e: Exception) {
@@ -216,6 +216,25 @@ class ProteusClientCoreCryptoImpl private constructor(
             } catch (exception: Exception) {
                 kaliumLogger.e("Failed to migrate from crypto box to core crypto, exception: $exception")
                 throw ProteusStorageMigrationException("Failed to migrate from crypto box at $rootDir", exception)
+            }
+        }
+
+        private fun mapProteusExceptionToErrorCode(proteusException: ProteusExceptionNative): ProteusException.Code {
+            return when (proteusException) {
+                is ProteusExceptionNative.SessionNotFound -> ProteusException.Code.SESSION_NOT_FOUND
+                is ProteusExceptionNative.DuplicateMessage -> ProteusException.Code.DUPLICATE_MESSAGE
+                is ProteusExceptionNative.RemoteIdentityChanged -> ProteusException.Code.REMOTE_IDENTITY_CHANGED
+                is ProteusExceptionNative.Other -> ProteusException.fromProteusCode(proteusException.v1.toInt())
+            }
+        }
+
+        @Suppress("MagicNumber")
+        private fun mapProteusExceptionToRawIntErrorCode(proteusException: ProteusExceptionNative): Int {
+            return when (proteusException) {
+                is ProteusExceptionNative.SessionNotFound -> 102
+                is ProteusExceptionNative.DuplicateMessage -> 209
+                is ProteusExceptionNative.RemoteIdentityChanged -> 204
+                is ProteusExceptionNative.Other -> proteusException.v1.toInt()
             }
         }
     }

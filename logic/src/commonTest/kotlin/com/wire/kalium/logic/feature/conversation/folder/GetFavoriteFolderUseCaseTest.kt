@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase.Result
@@ -28,6 +29,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -53,7 +55,7 @@ class GetFavoriteFolderUseCaseTest {
     }
 
     @Test
-    fun givenFavoriteFolderDoesNotExist_WhenInvoked_ThenReturnFailure() = runTest {
+    fun givenFavoriteFolderReturnsFailure_WhenInvoked_ThenReturnFailure() = runTest {
         val (arrangement, getFavoriteFolderUseCase) = Arrangement()
             .withFavoriteFolder(Either.Left(CoreFailure.Unknown(null)))
             .arrange()
@@ -64,6 +66,25 @@ class GetFavoriteFolderUseCaseTest {
 
         coVerify {
             arrangement.conversationFolderRepository.getFavoriteConversationFolder()
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenFavoriteFolderDoesNotExist_WhenInvoked_ThenFetchConversationFoldersIsTriggered() = runTest {
+        val (arrangement, getFavoriteFolderUseCase) = Arrangement()
+            .withFavoriteFolder(Either.Left(StorageFailure.DataNotFound))
+            .withFetchConversationFolders(Either.Right(Unit))
+            .arrange()
+
+        val result = getFavoriteFolderUseCase()
+
+        assertIs<Result.Failure>(result)
+
+        coVerify {
+            arrangement.conversationFolderRepository.getFavoriteConversationFolder()
+        }.wasInvoked(exactly = twice)
+        coVerify {
+            arrangement.conversationFolderRepository.fetchConversationFolders()
         }.wasInvoked(exactly = once)
     }
 
@@ -78,6 +99,12 @@ class GetFavoriteFolderUseCaseTest {
         suspend fun withFavoriteFolder(either: Either<CoreFailure, ConversationFolder>) = apply {
             coEvery {
                 conversationFolderRepository.getFavoriteConversationFolder()
+            }.returns(either)
+        }
+
+        suspend fun withFetchConversationFolders(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationFolderRepository.fetchConversationFolders()
             }.returns(either)
         }
 
