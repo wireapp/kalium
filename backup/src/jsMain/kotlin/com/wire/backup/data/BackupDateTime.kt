@@ -20,7 +20,7 @@ package com.wire.backup.data
 import kotlin.js.Date
 
 @JsExport
-actual data class BackupDateTime(val date: Date) {
+public actual data class BackupDateTime(val date: Date) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class.js != other::class.js) return false
@@ -35,10 +35,10 @@ actual data class BackupDateTime(val date: Date) {
     }
 }
 
-actual fun BackupDateTime(timestampMillis: Long): BackupDateTime {
+public actual fun BackupDateTime(timestampMillis: Long): BackupDateTime {
     return BackupDateTime(Date(timestampMillis))
 }
 
-actual fun BackupDateTime.toLongMilliseconds(): Long {
+public actual fun BackupDateTime.toLongMilliseconds(): Long {
     return date.getTime().toLong()
 }

@@ -30,7 +30,7 @@ import kotlin.native.ShouldRefineInSwift
  */
 @OptIn(ExperimentalObjCRefinement::class)
 @JsExport
-abstract class CommonMPBackupImporter {
+public abstract class CommonMPBackupImporter {
     private val mapper = MPBackupMapper()
 
     /**
@@ -39,7 +39,7 @@ abstract class CommonMPBackupImporter {
     @OptIn(ExperimentalStdlibApi::class)
     @ShouldRefineInSwift // Function not visible in Swift
     @Suppress("TooGenericExceptionCaught")
-    fun importBackup(data: ByteArray): BackupImportResult = try {
+    public fun importBackup(data: ByteArray): BackupImportResult = try {
         println("XPlatform Backup POC. Imported data bytes: ${data.toHexString()}")
         BackupImportResult.Success(
             mapper.fromProtoToBackupModel(ProtoBackupData.decodeFromByteArray(data))
@@ -51,4 +51,4 @@ abstract class CommonMPBackupImporter {
     }
 }
 
-expect class MPBackupImporter : CommonMPBackupImporter
+public expect class MPBackupImporter : CommonMPBackupImporter

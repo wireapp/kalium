@@ -19,12 +19,12 @@ package com.wire.backup.data
 
 import kotlinx.datetime.Instant
 
-actual data class BackupDateTime(val instant: Instant)
+public actual data class BackupDateTime(val instant: Instant)
 
-actual fun BackupDateTime(timestampMillis: Long): BackupDateTime {
+public actual fun BackupDateTime(timestampMillis: Long): BackupDateTime {
     return BackupDateTime(Instant.fromEpochMilliseconds(timestampMillis))
 }
 
-actual fun BackupDateTime.toLongMilliseconds(): Long {
+public actual fun BackupDateTime.toLongMilliseconds(): Long {
     return this.instant.toEpochMilliseconds()
 }
