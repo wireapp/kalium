@@ -62,12 +62,13 @@ class XChaChaPoly1305EncryptedStreamTest {
     }
 
     @Test
-    fun givenEncryptedMessagesOfMultipleSizesAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+    fun givenEncryptedMessagesOfMultipleSizesAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest() {
         // Test with a single byte, one less than a whole message size, exactly one message size, one byte extra, multiple pages, etc.
         for (size in setOf(1, 4095, 4096, 4097, 8191, 8192, 8193)) {
-            println("Testing with message of size: $size")
-            val message = Random.Default.nextBytes(size)
-            testCorrectDecryptionOfMessage(message)
+            launch {
+                val message = Random.Default.nextBytes(size)
+                testCorrectDecryptionOfMessage(message)
+            }
         }
     }
 
