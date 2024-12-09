@@ -317,6 +317,25 @@ class UserDatabaseBuilder internal constructor(
     fun dbFileLocation(): String? = getDatabaseAbsoluteFileLocation(platformDatabaseData, userId)
 
     /**
+     * Changes the profiling of the encrypted database (cipher_profile)
+     * @param enabled true to enable profiling, false to disable
+     */
+    fun changeProfiling(enabled: Boolean) {
+        if (isEncrypted) {
+            val cipherProfileValue = if (enabled) "logcat" else "off"
+            sqlDriver.executeQuery(
+                identifier = null,
+                sql = "PRAGMA cipher_profile='$cipherProfileValue'",
+                mapper = {
+                    it.next()
+                    it.getLong(0).let { QueryResult.Value<Long?>(it) }
+                },
+                parameters = 0,
+            )
+        }
+    }
+
+    /**
      * drops DB connection and delete the DB file
      */
     fun nuke(): Boolean {
