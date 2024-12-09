@@ -154,6 +154,7 @@ interface ServerConfigurationDAO {
     )
 }
 
+@Suppress("TooManyFunctions")
 internal class ServerConfigurationDAOImpl internal constructor(
     private val queries: ServerConfigurationQueries,
     private val queriesContext: CoroutineContext,
