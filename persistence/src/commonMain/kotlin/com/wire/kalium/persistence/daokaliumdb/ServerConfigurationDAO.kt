@@ -129,6 +129,7 @@ interface ServerConfigurationDAO {
     suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int)
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
+    suspend fun teamUrlForUser(userId: UserIDEntity): String?
     suspend fun setFederationToTrue(id: String)
     suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
     suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String)
@@ -239,5 +240,9 @@ internal class ServerConfigurationDAOImpl internal constructor(
 
     override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {
         queries.updateLastBlackListCheckByIds(date, configIds)
+    }
+
+    override suspend fun teamUrlForUser(userId: UserIDEntity): String? = withContext(queriesContext) {
+        queries.getTeamUrlByUser(userId).executeAsOneOrNull()
     }
 }
