@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-@Suppress("FunctionParameterNaming", "LongParameterList", "TooManyFunctions")
+@Suppress("FunctionParameterNaming", "LongParameterList")
 internal object ServerConfigMapper {
 
     @Suppress("UNUSED_PARAMETER")
@@ -118,6 +118,7 @@ internal object ServerConfigMapper {
     )
 }
 
+@Suppress("TooManyFunctions")
 interface ServerConfigurationDAO {
     suspend fun deleteById(id: String)
     suspend fun insert(insertData: InsertData)
