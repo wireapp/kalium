@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-@Suppress("FunctionParameterNaming", "LongParameterList")
+@Suppress("FunctionParameterNaming", "LongParameterList", "TooManyFunctions")
 internal object ServerConfigMapper {
 
     @Suppress("UNUSED_PARAMETER")
