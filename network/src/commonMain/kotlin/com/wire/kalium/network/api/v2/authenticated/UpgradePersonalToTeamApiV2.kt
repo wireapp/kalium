@@ -15,18 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.util.serialization
 
-import kotlinx.serialization.json.Json
+package com.wire.kalium.network.api.v2.authenticated
 
-/**
- * The json serializer for shared usage.
- */
-object LenientJsonSerializer {
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v0.authenticated.UpgradePersonalToTeamApiV0
 
-    val json = Json {
-        isLenient = true
-        encodeDefaults = true
-        ignoreUnknownKeys = true
-    }
-}
+internal open class UpgradePersonalToTeamApiV2 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+) : UpgradePersonalToTeamApiV0(authenticatedNetworkClient)

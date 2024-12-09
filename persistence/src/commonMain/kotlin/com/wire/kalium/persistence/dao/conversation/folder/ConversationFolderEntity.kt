@@ -32,6 +32,13 @@ data class FolderWithConversationsEntity(
     val conversationIdList: List<QualifiedIDEntity>
 )
 
+data class LabeledConversationEntity(
+    val folderId: String,
+    val folderName: String,
+    val folderType: ConversationFolderTypeEntity,
+    val conversationId: QualifiedIDEntity?
+)
+
 enum class ConversationFolderTypeEntity {
     USER,
     FAVORITE

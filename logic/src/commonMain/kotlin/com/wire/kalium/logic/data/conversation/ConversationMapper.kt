@@ -263,6 +263,7 @@ internal class ConversationMapperImpl(
                             activeOneOnOneConversationId = userActiveOneOnOneConversationId?.toModel()
                         ),
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                        isFavorite = isFavorite
                     )
                 }
 
@@ -271,8 +272,8 @@ internal class ConversationMapperImpl(
                         conversation = fromConversationViewToEntity(daoModel),
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         isSelfUserMember = isMember,
-                        isSelfUserCreator = isCreator == 1L,
-                        selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) }
+                        selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
+                        isFavorite = isFavorite
                     )
                 }
 

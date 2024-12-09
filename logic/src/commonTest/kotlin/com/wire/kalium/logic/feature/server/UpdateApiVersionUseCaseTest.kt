@@ -77,7 +77,7 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
             }
 
         updateApiVersionsUseCase()
@@ -88,7 +88,7 @@ class UpdateApiVersionUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.serverConfigRepository1.updateConfigApiVersion(eq(serverConfig1))
+            arrangement.serverConfigRepository1.updateConfigMetaData(eq(serverConfig1))
         }.wasInvoked(exactly = once)
     }
 
@@ -111,7 +111,7 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
             }
 
         updateApiVersionsUseCase()
@@ -122,7 +122,7 @@ class UpdateApiVersionUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.serverConfigRepository1.updateConfigApiVersion(any())
+            arrangement.serverConfigRepository1.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -145,7 +145,7 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
                 withProxyCredForUser(userId1.toDao(), ProxyCredentialsEntity("user", "pass"))
             }
 
@@ -158,7 +158,7 @@ class UpdateApiVersionUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.serverConfigRepository1.updateConfigApiVersion(any())
+            arrangement.serverConfigRepository1.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -190,8 +190,8 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
-                withUpdateConfigApiVersion(serverConfig2, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig2, Either.Right(Unit))
                 withProxyCredForUser(userId2.toDao(), ProxyCredentialsEntity("user", "pass"))
             }
 
@@ -208,11 +208,11 @@ class UpdateApiVersionUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.serverConfigRepository1.updateConfigApiVersion(any())
+            arrangement.serverConfigRepository1.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.serverConfigRepository2.updateConfigApiVersion(any())
+            arrangement.serverConfigRepository2.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
 
     }
@@ -249,16 +249,16 @@ class UpdateApiVersionUseCaseTest {
             }.returns(result)
         }
 
-        suspend fun withUpdateConfigApiVersion(
+        suspend fun withUpdateConfigMetaData(
             serverConfig: ServerConfig,
             result: Either<CoreFailure, Unit>
         ) {
             when (serverConfig.id) {
                 serverConfig1.id ->
-                    coEvery { serverConfigRepository1.updateConfigApiVersion(any()) }
+                    coEvery { serverConfigRepository1.updateConfigMetaData(any()) }
                         .returns(result)
 
-                serverConfig2.id -> coEvery { serverConfigRepository2.updateConfigApiVersion(any()) }
+                serverConfig2.id -> coEvery { serverConfigRepository2.updateConfigMetaData(any()) }
                     .returns(result)
 
                 else -> throw IllegalArgumentException("Unexpected server config: $serverConfig")

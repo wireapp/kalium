@@ -149,7 +149,6 @@ object TestConversation {
         userDeleted = false,
         connectionStatus = null,
         otherUserId = null,
-        isCreator = 0L,
         lastNotificationDate = null,
         protocolInfo = protocolInfo,
         creatorId = "someValue",
@@ -176,7 +175,8 @@ object TestConversation {
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-        accentId = null
+        accentId = null,
+        isFavorite = false
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -314,7 +314,6 @@ object TestConversation {
         userDeleted = false,
         connectionStatus = null,
         otherUserId = null,
-        isCreator = 0L,
         lastNotificationDate = null,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
@@ -341,7 +340,8 @@ object TestConversation {
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-        accentId = null
+        accentId = null,
+        isFavorite = false
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(

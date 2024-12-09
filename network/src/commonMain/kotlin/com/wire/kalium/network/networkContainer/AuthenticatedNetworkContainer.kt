@@ -24,6 +24,7 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -109,6 +110,8 @@ interface AuthenticatedNetworkContainer {
     val propertiesApi: PropertiesApi
 
     val wildCardApi: WildCardApi
+
+    val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
 
     companion object {
 
@@ -198,6 +201,8 @@ interface AuthenticatedNetworkContainer {
                     kaliumLogger
                 )
 
+                // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
+                // bump API version and generate all needed classes
                 else -> error("Unsupported version: $version")
             }
         }

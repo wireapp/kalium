@@ -58,10 +58,6 @@ CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
     WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
 END AS otherUserActiveConversationId,
-CASE
-    WHEN (SelfUser.id LIKE (Conversation.creator_id || '@%')) THEN 1
-    ELSE 0
-END AS isCreator,
 CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
     ELSE 1
@@ -108,7 +104,8 @@ CASE
             ELSE 1
         END
     ELSE 0
-END AS interactionEnabled
+END AS interactionEnabled,
+LabeledConversation.folder_id IS NOT NULL AS isFavorite
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -123,7 +120,9 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          OR Connection.status = 'NOT_CONNECTED'
          AND Conversation.type IS 'CONNECTION_PENDING')
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
-LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1)
+LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type = 'FAVORITE'
+LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id;
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails

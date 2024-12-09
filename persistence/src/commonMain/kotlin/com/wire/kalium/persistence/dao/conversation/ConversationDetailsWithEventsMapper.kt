@@ -53,7 +53,6 @@ data object ConversationDetailsWithEventsMapper {
         connectionStatus: ConnectionEntity.State?,
         otherUserId: QualifiedIDEntity?,
         otherUserActiveConversationId: QualifiedIDEntity?,
-        isCreator: Long,
         isActive: Long,
         accentId: Int?,
         lastNotifiedMessageDate: Instant?,
@@ -80,6 +79,7 @@ data object ConversationDetailsWithEventsMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
+        isFavorite: Boolean,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
         unreadMentionsCount: Long?,
@@ -127,7 +127,6 @@ data object ConversationDetailsWithEventsMapper {
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
             otherUserActiveConversationId = otherUserActiveConversationId,
-            isCreator = isCreator,
             isActive = isActive,
             accentId = accentId,
             lastNotifiedMessageDate = lastNotifiedMessageDate,
@@ -154,6 +153,7 @@ data object ConversationDetailsWithEventsMapper {
             legalHoldStatus = legalHoldStatus,
             selfUserId = selfUserId,
             interactionEnabled = interactionEnabled,
+            isFavorite = isFavorite
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(
             conversationId = qualifiedId,

@@ -473,4 +473,8 @@ class UserDAOImpl internal constructor(
     override suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity? = withContext(queriesContext) {
         userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).executeAsOneOrNull()
     }
+
+    override suspend fun updateTeamId(userId: UserIDEntity, teamId: String) {
+        userQueries.updateTeamId(teamId, userId)
+    }
 }

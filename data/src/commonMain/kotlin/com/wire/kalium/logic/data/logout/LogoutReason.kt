@@ -46,5 +46,11 @@ enum class LogoutReason {
     /**
      * Session Expired.
      */
-    SESSION_EXPIRED;
+    SESSION_EXPIRED,
+
+    /**
+     * The migration to CC failed.
+     * This will trigger a cleanup of the local client data and prepare for a fresh start without losing data.
+     */
+    MIGRATION_TO_CC_FAILED
 }

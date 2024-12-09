@@ -52,4 +52,8 @@ internal open class PropertiesApiV0 internal constructor(
     override suspend fun getLabels(): NetworkResponse<LabelListResponseDTO> = wrapKaliumResponse {
         httpClient.get("$PATH_PROPERTIES/$PATH_LABELS")
     }
+
+    override suspend fun updateLabels(labelList: LabelListResponseDTO): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put("$PATH_PROPERTIES/$PATH_LABELS") { setBody(labelList) }
+    }
 }
