@@ -35,6 +35,12 @@ import okio.buffer
 import kotlin.random.Random
 import kotlin.random.nextUBytes
 
+/**
+ * Provides functions to encrypt and decrypt streams of data.
+ * Streams of data: big amounts of data, that can be split into smaller chunks / messages.
+ * For example, a huge file can be read in chunks, encrypted in chunks and then decrypted in chunks.
+ * This is done using [Source] and [Sink].
+ */
 internal interface EncryptedStream<AuthenticationData> {
     /**
      * Encrypts the [source] data using the provided [authenticationData].
@@ -57,6 +63,11 @@ internal interface EncryptedStream<AuthenticationData> {
         encryptionHeader: UByteArray
     ): DecryptionResult
 
+    /**
+     * Implementation of [EncryptedStream] that relies on Libsodium's
+     * [SecretStream](https://libsodium.gitbook.io/doc/secret-key_cryptography/secretstream).
+     * It will encrypt the whole [Source] into an output [Sink] in smaller messages of [INDIVIDUAL_PLAINTEXT_MESSAGE_SIZE].
+     */
     companion object XChaCha20Poly1305 : EncryptedStream<XChaChaPoly1305AuthenticationData> {
         private const val KEY_LENGTH = crypto_stream_chacha20_KEYBYTES
         private const val INDIVIDUAL_PLAINTEXT_MESSAGE_SIZE = 4096L
@@ -168,16 +179,20 @@ internal sealed interface DecryptionResult {
 
 /**
  * @param passphrase the password created by the user when encrypting
- * @param salt the random bytes to spice things up
+ * @param salt the random bytes to spice things up, can be created with [XChaChaPoly1305AuthenticationData.newSalt].
  * @param additionalData extra data that can be used and can be validated
- * together with the encrypted data. For example, we can use a hash of the non-encrypted
+ * together with the encrypted data.
+ *
+ * It _is_ optional and an empty array can be used, if no extra plaintext data needs to be validated.
+ *
+ * For the purposes of backup, we can use a hash of the non-encrypted
  * bytes of the file as additional data. This way, if these bytes were tempered with, the decryption
- * will also fail. Don't trust the
+ * will also fail. The idea is to do not trust any fruit from the poisoned tree.
  */
 internal data class XChaChaPoly1305AuthenticationData(
     val passphrase: BackupPassphrase,
     val salt: UByteArray,
-    val additionalData: UByteArray,
+    val additionalData: UByteArray = ubyteArrayOf(),
     val hashOpsLimit: ULong = HASH_OPS_LIMIT,
     val hashMemLimit: Int = HASH_MEM_LIMIT,
 ) {
