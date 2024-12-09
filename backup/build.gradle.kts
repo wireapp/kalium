@@ -29,6 +29,13 @@ kaliumLibrary {
     multiplatform { enableJs.set(true) }
 }
 
+android {
+    // Because of native libraries, we can only test Android code on instrumentation tests
+    testOptions.unitTests.all {
+        it.enabled = false
+    }
+}
+
 @Suppress("UnusedPrivateProperty")
 kotlin {
     // Makes visibility modifiers mandatory
