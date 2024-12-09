@@ -56,6 +56,9 @@ SELECT * FROM ServerConfiguration WHERE title = ? AND apiBaseUrl = ? AND webSock
 getByUser:
 SELECT * FROM ServerConfiguration WHERE id = (SELECT server_config_id FROM Accounts WHERE id = :userId);
 
+getTeamUrlByUser:
+SELECT teamsUrl FROM ServerConfiguration WHERE id = (SELECT server_config_id FROM Accounts WHERE id = :userId);
+
 getServerConfigsWithAccIdWithLastCheckBeforeDate:
 SELECT sc.*, acc.id
     FROM  Accounts AS acc LEFT JOIN ServerConfiguration AS sc ON acc.server_config_id == sc.id
