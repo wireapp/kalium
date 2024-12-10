@@ -118,7 +118,8 @@ class UserDatabaseBuilder internal constructor(
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
+    private val cipherProfile: String? = null,
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -317,12 +318,12 @@ class UserDatabaseBuilder internal constructor(
     fun dbFileLocation(): String? = getDatabaseAbsoluteFileLocation(platformDatabaseData, userId)
 
     /**
-     * Changes the profiling of the encrypted database (cipher_profile)
+     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
      * @param enabled true to enable profiling, false to disable
      */
     fun changeProfiling(enabled: Boolean) {
-        if (isEncrypted) {
-            val cipherProfileValue = if (enabled) "logcat" else "off"
+        if (isEncrypted && cipherProfile != null) {
+            val cipherProfileValue = if (enabled) cipherProfile else "off"
             sqlDriver.executeQuery(
                 identifier = null,
                 sql = "PRAGMA cipher_profile='$cipherProfileValue'",

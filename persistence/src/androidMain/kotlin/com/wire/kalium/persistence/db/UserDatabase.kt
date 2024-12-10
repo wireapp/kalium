@@ -51,7 +51,14 @@ actual fun userDatabaseBuilder(
     ) {
         isWALEnabled = enableWAL
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, isEncryptionEnabled)
+    return UserDatabaseBuilder(
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = platformDatabaseData,
+        isEncrypted = isEncryptionEnabled,
+        cipherProfile = "logcat",
+    )
 }
 
 actual fun userDatabaseDriverByPath(
