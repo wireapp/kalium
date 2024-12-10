@@ -66,7 +66,8 @@ internal class ClearConversationContentUseCaseImpl(
                             id = uuid4().toString(),
                             content = MessageContent.Cleared(
                                 conversationId = conversationId,
-                                time = DateTimeUtil.currentInstant()
+                                time = DateTimeUtil.currentInstant(),
+                                needToRemoveLocally = false // TODO Handle in upcoming tasks
                             ),
                             // sending the message to clear this conversation
                             conversationId = selfConversationId,

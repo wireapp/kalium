@@ -259,7 +259,8 @@ sealed interface MessageContent {
 
     data class Cleared(
         val conversationId: ConversationId,
-        val time: Instant
+        val time: Instant,
+        val needToRemoveLocally: Boolean
     ) : Signaling
 
     // server message content types
