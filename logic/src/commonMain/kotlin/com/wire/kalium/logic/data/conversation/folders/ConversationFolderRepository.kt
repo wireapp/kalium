@@ -74,7 +74,7 @@ internal class ConversationFolderDataSource internal constructor(
         }
 
     override suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder> = wrapStorageRequest {
-        conversationFolderDAO.getFavoriteConversationFolder().toModel()
+        conversationFolderDAO.getFavoriteConversationFolder()?.toModel()
     }
 
     override suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>> =

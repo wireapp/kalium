@@ -45,16 +45,26 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
         fromArchive: Boolean,
         conversationFilter: ConversationFilter
     ): Flow<List<ConversationDetailsWithEvents>> {
-        return if (conversationFilter == ConversationFilter.Favorites) {
-            when (val result = getFavoriteFolder()) {
-                GetFavoriteFolderUseCase.Result.Failure -> {
-                    flowOf(emptyList())
-                }
+        return when (conversationFilter) {
+            ConversationFilter.Favorites -> {
+                when (val result = getFavoriteFolder()) {
+                    GetFavoriteFolderUseCase.Result.Failure -> {
+                        flowOf(emptyList())
+                    }
 
-                is GetFavoriteFolderUseCase.Result.Success -> conversationFolderRepository.observeConversationsFromFolder(result.folder.id)
+                    is GetFavoriteFolderUseCase.Result.Success ->
+                        conversationFolderRepository.observeConversationsFromFolder(result.folder.id)
+                }
             }
-        } else {
-            conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter)
+
+            is ConversationFilter.Folder -> {
+                conversationFolderRepository.observeConversationsFromFolder(conversationFilter.folderId)
+            }
+
+            ConversationFilter.All,
+            ConversationFilter.Groups,
+            ConversationFilter.OneOnOne ->
+                conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter)
         }
     }
 }

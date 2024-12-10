@@ -85,11 +85,11 @@ class ConversationFolderDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
-    override suspend fun getFavoriteConversationFolder(): ConversationFolderEntity {
+    override suspend fun getFavoriteConversationFolder(): ConversationFolderEntity? {
         return conversationFoldersQueries.getFavoriteFolder { id, name, folderType ->
             ConversationFolderEntity(id, name, folderType)
         }
-            .executeAsOne()
+            .executeAsOneOrNull()
     }
 
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =
