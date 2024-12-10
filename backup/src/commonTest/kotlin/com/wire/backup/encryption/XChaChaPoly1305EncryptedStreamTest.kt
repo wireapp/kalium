@@ -62,20 +62,44 @@ class XChaChaPoly1305EncryptedStreamTest {
         assertContentEquals(originalBufferData, decryptedBuffer.readByteArray())
     }
 
-    /**
-     * Disabled for now as it takes more than 5s to run this on CI / JavaScript / Browser and throws a timeout exception
-     * TODO: Refactor and either split into individual tests, or find a way to increase timeout on browser tests. 5s is too short!
-     */
+    private suspend fun testWithRandomMessageOfSpecificSize(size: Int) {
+        val message = Random.Default.nextBytes(size)
+        testCorrectDecryptionOfMessage(message)
+    }
+
     @Test
-    @Ignore
-    fun givenEncryptedMessagesOfMultipleSizesAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
-        // Test with a single byte, one less than a whole message size, exactly one message size, one byte extra, multiple pages, etc.
-        for (size in setOf(1, 4095, 4096, 4097, 8191, 8192, 8193)) {
-            launch {
-                val message = Random.Default.nextBytes(size)
-                testCorrectDecryptionOfMessage(message)
-            }
-        }
+    fun givenEncryptedMessagesOfSizeOneAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+        testWithRandomMessageOfSpecificSize(1)
+    }
+
+    @Test
+    fun givenEncryptedMessageOfSizeSmallerThanAPageAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+        testWithRandomMessageOfSpecificSize(4095)
+    }
+
+    @Test
+    fun givenEncryptedMessageWithExactlyOnePageOfSizeAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+        testWithRandomMessageOfSpecificSize(4096)
+    }
+
+    @Test
+    fun givenEncryptedMessageSlightlyBiggerThanAPageAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+        testWithRandomMessageOfSpecificSize(4097)
+    }
+
+    @Test
+    fun givenEncryptedMessageSmallerThanTwoPagesAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+        testWithRandomMessageOfSpecificSize(8191)
+    }
+
+    @Test
+    fun givenEncryptedMessageExactlyTwoPagesLongAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+        testWithRandomMessageOfSpecificSize(8192)
+    }
+
+    @Test
+    fun givenEncryptedMessageBiggerThanTwoPagesAndCorrectAuthentication_whenDecrypting_thenShouldReturnOriginalMessage() = runTest {
+        testWithRandomMessageOfSpecificSize(8193)
     }
 
     @Test
