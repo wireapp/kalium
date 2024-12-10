@@ -112,6 +112,7 @@ internal expect fun userDatabaseDriverByPath(
     enableWAL: Boolean
 ): SqlDriver
 
+@Suppress("LongParameterList")
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     internal val sqlDriver: SqlDriver,

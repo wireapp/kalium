@@ -22,6 +22,10 @@ import com.wire.kalium.logic.di.UserStorage
 class ChangeProfilingUseCase(
     private val userStorage: UserStorage,
 ) {
+    /**
+     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
+     * @param enabled true to enable profiling, false to disable
+     */
     operator fun invoke(enabled: Boolean) {
         userStorage.database.changeProfiling(enabled)
     }
