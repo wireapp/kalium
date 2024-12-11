@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -92,6 +93,7 @@ class DebugScope internal constructor(
     private val legalHoldHandler: LegalHoldHandler,
     private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
+    userStorage: UserStorage,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
@@ -224,4 +226,6 @@ class DebugScope internal constructor(
             clientRepository,
             notificationTokenRepository,
         )
+
+    val changeProfiling: ChangeProfilingUseCase = ChangeProfilingUseCase(userStorage)
 }
