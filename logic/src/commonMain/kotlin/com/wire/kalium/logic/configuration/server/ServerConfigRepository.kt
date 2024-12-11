@@ -66,6 +66,7 @@ interface ServerConfigRepository {
      */
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
     suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int>
+    suspend fun getTeamUrlForUser(userId: UserId): String?
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -165,4 +166,6 @@ internal class ServerConfigDataSource(
                     is ApiVersionDTO.Valid -> Either.Right(it)
                 }
             }.map { serverConfigMapper.fromDTO(it) }
+
+    override suspend fun getTeamUrlForUser(userId: UserId): String? = dao.teamUrlForUser(userId.toDao())
 }
