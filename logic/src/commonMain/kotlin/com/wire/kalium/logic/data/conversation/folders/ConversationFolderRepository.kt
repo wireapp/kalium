@@ -34,6 +34,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -57,6 +58,7 @@ internal interface ConversationFolderRepository {
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
+    suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
 }
 
 internal class ConversationFolderDataSource internal constructor(
@@ -72,7 +74,7 @@ internal class ConversationFolderDataSource internal constructor(
         }
 
     override suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder> = wrapStorageRequest {
-        conversationFolderDAO.getFavoriteConversationFolder().toModel()
+        conversationFolderDAO.getFavoriteConversationFolder()?.toModel()
     }
 
     override suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
@@ -151,5 +153,11 @@ internal class ConversationFolderDataSource internal constructor(
                     )
                 }
             }
+    }
+
+    override suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
+        return conversationFolderDAO.observeUserFolders()
+            .wrapStorageRequest()
+            .mapRight { folderEntities -> folderEntities.map { it.toModel() } }
     }
 }
