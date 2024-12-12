@@ -114,7 +114,7 @@ data class ConversationResponse(
 @Serializable
 data class ConversationResponseV3(
     @SerialName("creator")
-    val creator: String,
+    val creator: String?,
 
     @SerialName("members")
     val members: ConversationMembersResponse,
