@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.9.23"
+kotlin = "2.1.0"
 ksp = "1.9.23-1.0.20"
 activity-compose = "1.9.0"
 app-compat = "1.6.1"
