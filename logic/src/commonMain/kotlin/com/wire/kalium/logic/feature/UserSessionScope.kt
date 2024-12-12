@@ -1831,6 +1831,7 @@ class UserSessionScope internal constructor(
             legalHoldHandler,
             notificationTokenRepository,
             this,
+            userStorage,
             userScopedLogger,
         )
     }
