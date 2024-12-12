@@ -243,7 +243,7 @@ class SearchUseCaseTest {
 
     private class Arrangement : SearchRepositoryArrangement by SearchRepositoryArrangementImpl() {
 
-        private val searchUseCase: SearchUsersUseCase = SearchUsersUseCase(
+        private val searchUseCase: SearchUsersUseCase = SearchUsersUseCaseImpl(
             searchUserRepository = searchUserRepository,
             selfUserId = selfUserID,
             maxRemoteSearchResultCount = 30
