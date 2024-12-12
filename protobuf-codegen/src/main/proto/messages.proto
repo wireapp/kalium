@@ -185,6 +185,7 @@ message Cleared {
     required int64 cleared_timestamp = 2;
     // only optional to maintain backwards compatibility
     optional QualifiedConversationId qualified_conversation_id = 3;
+    optional bool needToRemoveLocally = 4 [default = false];
 }
 
 message MessageHide {
