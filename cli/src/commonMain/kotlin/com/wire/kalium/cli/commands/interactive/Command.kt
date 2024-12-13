@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cli.commands
+package com.wire.kalium.cli.commands.interactive
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.message.UnreadEventType
@@ -45,7 +45,7 @@ sealed class Command(
             }
 
         suspend fun prepare() {
-            conversations = userSession.conversations.observeConversationListDetails(includeArchived = true).first()
+            conversations = userSession.conversations.observeConversationListDetails(fromArchive = false).first()
             updateFilter()
         }
 
