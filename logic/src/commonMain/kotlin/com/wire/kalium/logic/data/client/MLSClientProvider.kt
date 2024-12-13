@@ -130,6 +130,9 @@ class MLSClientProviderImpl(
     }
 
     override suspend fun getOrFetchMLSConfig(): Either<CoreFailure, SupportedCipherSuite> {
+        if (!userConfigRepository.isMLSEnabled().getOrElse(true)) {
+            return CoreFailure.Unknown(Exception("MLS not enabled in config")).left()
+        }
         return userConfigRepository.getSupportedCipherSuite().flatMapLeft<CoreFailure, SupportedCipherSuite> {
             featureConfigRepository.getFeatureConfigs().map {
                 it.mlsModel.supportedCipherSuite
