@@ -291,6 +291,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
+import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
 import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -1830,6 +1831,7 @@ class UserSessionScope internal constructor(
             legalHoldHandler,
             notificationTokenRepository,
             this,
+            userStorage,
             userScopedLogger,
         )
     }
@@ -2143,6 +2145,13 @@ class UserSessionScope internal constructor(
             observeSyncStateUseCase = observeSyncState,
             kaliumLogger = userScopedLogger,
         )
+
+    val getTeamUrlUseCase: GetTeamUrlUseCase by lazy {
+        GetTeamUrlUseCase(
+            userId,
+            authenticationScope.serverConfigRepository,
+        )
+    }
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
