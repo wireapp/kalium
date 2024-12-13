@@ -15,24 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.conversation
+package com.wire.kalium.logic.feature.server
 
-import kotlinx.serialization.Serializable
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.user.UserId
 
-@Serializable
-sealed class ConversationFilter {
-    @Serializable
-    data object All : ConversationFilter()
-
-    @Serializable
-    data object Favorites : ConversationFilter()
-
-    @Serializable
-    data object Groups : ConversationFilter()
-
-    @Serializable
-    data object OneOnOne : ConversationFilter()
-
-    @Serializable
-    data class Folder(val folderName: String, val folderId: String) : ConversationFilter()
+/**
+ * Use case to get the team url for the current user.
+ */
+class GetTeamUrlUseCase internal constructor(
+    private val selfUserId: UserId,
+    private val serverConfigRepository: ServerConfigRepository
+) {
+    suspend operator fun invoke(): String = serverConfigRepository.getTeamUrlForUser(selfUserId) ?: ""
 }

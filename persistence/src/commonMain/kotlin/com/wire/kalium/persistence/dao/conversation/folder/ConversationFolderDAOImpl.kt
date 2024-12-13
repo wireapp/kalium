@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.dao.conversation.folder
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationFoldersQueries
 import com.wire.kalium.persistence.GetAllFoldersWithConversations
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -26,6 +27,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEvent
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -34,6 +36,14 @@ class ConversationFolderDAOImpl internal constructor(
     private val coroutineContext: CoroutineContext,
 ) : ConversationFolderDAO {
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
+
+    override suspend fun observeUserFolders(): Flow<List<ConversationFolderEntity>> {
+        return conversationFoldersQueries.getUserFolders()
+            .asFlow()
+            .mapToList()
+            .map { it.map(::toEntity) }
+            .flowOn(coroutineContext)
+    }
 
     override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(coroutineContext) {
         val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().executeAsList().map(::toEntity)
@@ -59,6 +69,12 @@ class ConversationFolderDAOImpl internal constructor(
         conversationId = row.conversation_id
     )
 
+    private fun toEntity(row: ConversationFolder) = ConversationFolderEntity(
+        id = row.id,
+        name = row.name,
+        type = row.folder_type
+    )
+
     override suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationFoldersQueries.getConversationsFromFolder(
             folderId,
@@ -69,11 +85,11 @@ class ConversationFolderDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
-    override suspend fun getFavoriteConversationFolder(): ConversationFolderEntity {
+    override suspend fun getFavoriteConversationFolder(): ConversationFolderEntity? {
         return conversationFoldersQueries.getFavoriteFolder { id, name, folderType ->
             ConversationFolderEntity(id, name, folderType)
         }
-            .executeAsOne()
+            .executeAsOneOrNull()
     }
 
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =
