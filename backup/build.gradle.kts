@@ -56,8 +56,12 @@ kotlin {
         generateTypeScriptDefinitions()
     }
     sourceSets {
+        val androidUnitTest by getting { }
+        remove(androidUnitTest) // Android Unit tests are removed, as we run Instrumentation tests for encryption/file manipulation, etc.
         all {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
         }
         val commonMain by getting {
             dependencies {

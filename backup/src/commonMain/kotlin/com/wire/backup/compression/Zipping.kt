@@ -15,17 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.dump
+package com.wire.backup.compression
 
-import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.filesystem.EntryStorage
+import com.wire.backup.filesystem.BackupEntry
+import okio.Source
 
-// JS uses the common one. Only handles Bytes / ByteArrays.
-
-@JsExport
-public actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId) {
-    override val storage: EntryStorage
-        get() = TODO("Not yet implemented")
+internal interface Zipper {
+    fun compress(data: List<BackupEntry>): Source
 }
-
-public actual class ExportResult

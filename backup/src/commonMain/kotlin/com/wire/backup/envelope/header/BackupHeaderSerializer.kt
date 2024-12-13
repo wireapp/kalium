@@ -66,8 +66,8 @@ internal interface BackupHeaderSerializer {
             BackupHeaderField.UShort.version.write(header.version.toUShort(), headerBytes)
             BackupHeaderField.UByteArray.salt.write(header.hashData.salt, headerBytes)
             BackupHeaderField.UByteArray.hashedUserId.write(header.hashData.hashedUserId, headerBytes)
-            BackupHeaderField.UInt.opsLimit.write(header.hashData.operationsLimit, headerBytes)
-            BackupHeaderField.UInt.memLimit.write(header.hashData.hashingMemoryLimit, headerBytes)
+            BackupHeaderField.UInt.opsLimit.write(header.hashData.operationsLimit.toUInt(), headerBytes)
+            BackupHeaderField.UInt.memLimit.write(header.hashData.hashingMemoryLimit.toUInt(), headerBytes)
             BackupHeaderField.Boolean.isEncrypted.write(header.isEncrypted, headerBytes)
 
             val remainingReservedSpaceSize = HEADER_SIZE - headerBytes.size
@@ -96,7 +96,7 @@ internal interface BackupHeaderSerializer {
                     val memLimit = BackupHeaderField.UInt.memLimit.read(headerBytes)
                     val isEncrypted = BackupHeaderField.Boolean.isEncrypted.read(headerBytes)
 
-                    val hashData = HashData(hashedUserId, salt, opsLimit, memLimit)
+                    val hashData = HashData(hashedUserId, salt, opsLimit.toULong(), memLimit.toInt())
                     val header = BackupHeader(version, isEncrypted, hashData)
                     HeaderParseResult.Success(header)
                 }

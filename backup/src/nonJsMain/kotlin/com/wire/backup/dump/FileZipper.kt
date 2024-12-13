@@ -17,15 +17,10 @@
  */
 package com.wire.backup.dump
 
-import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.filesystem.EntryStorage
-
-// JS uses the common one. Only handles Bytes / ByteArrays.
-
-@JsExport
-public actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId) {
-    override val storage: EntryStorage
-        get() = TODO("Not yet implemented")
+public fun interface FileZipper {
+    /**
+     * Joins all file entries into a single zip archive.
+     * Returns the path to the zipped archived.
+     */
+    public fun zip(entries: List<String>): String
 }
-
-public actual class ExportResult

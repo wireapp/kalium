@@ -50,14 +50,14 @@ class XChaChaPoly1305EncryptedStreamTest {
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
         )
 
         val decryptedBuffer = Buffer()
-        val result = stream.decrypt(encryptedBuffer, decryptedBuffer, authenticationData, encryptionHeader)
+        val result = stream.decrypt(encryptedBuffer, decryptedBuffer, authenticationData)
         assertEquals(DecryptionResult.Success, result)
         assertContentEquals(originalBufferData, decryptedBuffer.readByteArray())
     }
@@ -112,7 +112,7 @@ class XChaChaPoly1305EncryptedStreamTest {
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
@@ -123,7 +123,6 @@ class XChaChaPoly1305EncryptedStreamTest {
             authenticationData.copy(
                 additionalData = "INCORRECT".encodeToByteArray().toUByteArray(),
             ),
-            encryptionHeader,
         )
         assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
     }
@@ -138,7 +137,7 @@ class XChaChaPoly1305EncryptedStreamTest {
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
@@ -153,7 +152,6 @@ class XChaChaPoly1305EncryptedStreamTest {
             authenticationData.copy(
                 salt = wrongSalt,
             ),
-            encryptionHeader,
         )
         assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
     }
@@ -168,7 +166,7 @@ class XChaChaPoly1305EncryptedStreamTest {
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
@@ -179,33 +177,6 @@ class XChaChaPoly1305EncryptedStreamTest {
             authenticationData.copy(
                 passphrase = BackupPassphrase("WRONG PASSWORD"),
             ),
-            encryptionHeader,
-        )
-        assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
-    }
-
-    @Test
-    fun givenEncryptedMessageAndWrongHeader_whenDecrypting_thenShouldFailDecryption() = runTest {
-        val originalBuffer = Buffer()
-        originalBuffer.writeUtf8("Hello Alice!")
-
-        val encryptedBuffer = Buffer()
-        val passphrase = BackupPassphrase("password")
-        val salt = XChaChaPoly1305AuthenticationData.newSalt()
-        val additionalData = "additionalData".encodeToByteArray().toUByteArray()
-        val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
-            originalBuffer,
-            encryptedBuffer,
-            authenticationData
-        )
-
-        encryptionHeader[0] = (encryptionHeader[0] + 0x01U).toUByte()
-
-        val result = stream.decrypt(
-            encryptedBuffer, Buffer(),
-            authenticationData,
-            encryptionHeader,
         )
         assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
     }

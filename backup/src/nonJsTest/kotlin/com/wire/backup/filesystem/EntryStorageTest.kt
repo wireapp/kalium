@@ -15,17 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.dump
+package com.wire.backup.filesystem
 
-import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.filesystem.EntryStorage
+import okio.FileSystem
+import okio.SYSTEM
 
-// JS uses the common one. Only handles Bytes / ByteArrays.
-
-@JsExport
-public actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId) {
-    override val storage: EntryStorage
-        get() = TODO("Not yet implemented")
+internal actual fun createTestStorage(): EntryStorage {
+    return FileBasedEntryStorage(FileSystem.SYSTEM, FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "kalium-test-backup")
 }
-
-public actual class ExportResult

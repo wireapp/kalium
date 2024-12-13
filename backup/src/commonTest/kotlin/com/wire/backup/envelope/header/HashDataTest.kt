@@ -96,7 +96,7 @@ class HashDataTest {
                 hashedUserId = UByteArray(HASHED_USER_ID_SIZE_IN_BYTES) { 1U },
                 salt = UByteArray(SALT_SIZE_IN_BYTES) { 2U },
                 operationsLimit = 8U,
-                hashingMemoryLimit = MINIMUM_MEMORY_LIMIT - 1U
+                hashingMemoryLimit = MINIMUM_MEMORY_LIMIT - 1
             )
         }
         assertContains(exception.message!!, "Memory Limit")

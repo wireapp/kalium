@@ -28,6 +28,8 @@ import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 import com.ionspin.kotlin.crypto.stream.crypto_stream_chacha20_KEYBYTES
 import com.wire.backup.envelope.cryptography.BackupPassphrase
+import com.wire.backup.hash.HASH_MEM_LIMIT
+import com.wire.backup.hash.HASH_OPS_LIMIT
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -48,11 +50,10 @@ internal interface EncryptedStream<AuthenticationData> {
      * @return a [UByteArray] containing the extra data that might be needed for decryption depending on the implementation.
      * @see decrypt
      */
-    suspend fun encrypt(source: Source, outputSink: Sink, authenticationData: AuthenticationData): UByteArray
+    suspend fun encrypt(source: Source, outputSink: Sink, authenticationData: AuthenticationData)
 
     /**
-     * Decrypts the [source] data using the provided [authenticationData] and [encryptionHeader].
-     * @param encryptionHeader the result of the [encrypt] function.
+     * Decrypts the [source] data using the provided [authenticationData].
      * The result is fed into the [outputSink].
      * @see encrypt
      */
@@ -60,7 +61,6 @@ internal interface EncryptedStream<AuthenticationData> {
         source: Source,
         outputSink: Sink,
         authenticationData: AuthenticationData,
-        encryptionHeader: UByteArray
     ): DecryptionResult
 
     /**
@@ -69,17 +69,12 @@ internal interface EncryptedStream<AuthenticationData> {
      * It will encrypt the whole [Source] into an output [Sink] in smaller messages of [INDIVIDUAL_PLAINTEXT_MESSAGE_SIZE].
      */
     companion object XChaCha20Poly1305 : EncryptedStream<XChaChaPoly1305AuthenticationData> {
+        const val XCHACHA_20_POLY_1305_HEADER_LENGTH = 24
         private const val KEY_LENGTH = crypto_stream_chacha20_KEYBYTES
         private const val INDIVIDUAL_PLAINTEXT_MESSAGE_SIZE = 4096L
         private val INDIVIDUAL_ENCRYPTED_MESSAGE_SIZE = INDIVIDUAL_PLAINTEXT_MESSAGE_SIZE + crypto_secretstream_xchacha20poly1305_ABYTES
 
-        private suspend fun initializeLibSodiumIfNeeded() {
-            if (!LibsodiumInitializer.isInitialized()) {
-                LibsodiumInitializer.initialize()
-            }
-        }
-
-        override suspend fun encrypt(source: Source, outputSink: Sink, authenticationData: XChaChaPoly1305AuthenticationData): UByteArray {
+        override suspend fun encrypt(source: Source, outputSink: Sink, authenticationData: XChaChaPoly1305AuthenticationData) {
             initializeLibSodiumIfNeeded()
             val key = generateChaCha20Key(authenticationData)
             val stateHeader = SecretStream.xChaCha20Poly1305InitPush(key)
@@ -87,6 +82,7 @@ internal interface EncryptedStream<AuthenticationData> {
             val chaChaHeader = stateHeader.header
             val readBuffer = Buffer()
             val output = outputSink.buffer()
+            output.write(chaChaHeader.toByteArray())
 
             // iterate with stuff
             var readBytes: Long
@@ -114,14 +110,12 @@ internal interface EncryptedStream<AuthenticationData> {
             source.close()
             output.close()
             outputSink.close()
-            return chaChaHeader
         }
 
         override suspend fun decrypt(
             source: Source,
             outputSink: Sink,
             authenticationData: XChaChaPoly1305AuthenticationData,
-            encryptionHeader: UByteArray
         ): DecryptionResult {
             initializeLibSodiumIfNeeded()
             var decryptedDataSize = 0L
@@ -129,8 +123,9 @@ internal interface EncryptedStream<AuthenticationData> {
             val readBuffer = Buffer()
             val key = generateChaCha20Key(authenticationData)
             return try {
-
-                val stateHeader = SecretStream.xChaCha20Poly1305InitPull(key, encryptionHeader)
+                val headerBuffer = Buffer()
+                source.read(headerBuffer, XCHACHA_20_POLY_1305_HEADER_LENGTH.toLong())
+                val stateHeader = SecretStream.xChaCha20Poly1305InitPull(key, headerBuffer.readByteArray().toUByteArray())
                 var hasReadLastMessage = false
                 while (!hasReadLastMessage) {
                     val readBytes = source.read(readBuffer, INDIVIDUAL_ENCRYPTED_MESSAGE_SIZE)
@@ -197,13 +192,7 @@ internal data class XChaChaPoly1305AuthenticationData(
     val hashMemLimit: Int = HASH_MEM_LIMIT,
 ) {
     companion object {
-        const val SALT_LENGTH = crypto_pwhash_SALTBYTES
-
-        // crypto_pwhash_argon2i_OPSLIMIT_INTERACTIVE
-        private const val HASH_OPS_LIMIT = 4UL
-
-        // crypto_pwhash_argon2i_MEMLIMIT_INTERACTIVE
-        private const val HASH_MEM_LIMIT = 33554432
-        fun newSalt() = Random.nextUBytes(SALT_LENGTH)
+        private const val SALT_LENGTH = crypto_pwhash_SALTBYTES
+        fun newSalt() = Random.nextUBytes(SALT_LENGTH).toUByteArray()
     }
 }
