@@ -656,7 +656,9 @@ internal class MLSConversationDataSource(
                 kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
                 keyPackageRepository
                     .replaceKeyPackages(clientId, rotateBundle.newKeyPackages, CipherSuite.fromTag(mlsClient.getDefaultCipherSuite()))
-                    .flatMapLeft { E2EIFailure.RotationAndMigration(it).left() }
+                    .flatMapLeft {
+                        return E2EIFailure.RotationAndMigration(it).left()
+                    }
             }
             kaliumLogger.w("send migration commits after key rotations")
             kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
