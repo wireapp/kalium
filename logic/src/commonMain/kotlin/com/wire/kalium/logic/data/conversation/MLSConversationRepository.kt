@@ -481,7 +481,7 @@ internal class MLSConversationDataSource(
                     val keyPackages = result.successfullyFetchedKeyPackages
                     val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
                     wrapMLSRequest {
-                        if (userIdList.isEmpty()) {
+                        if (clientKeyPackageList.isEmpty()) {
                             // We are creating a group with only our self client which technically
                             // doesn't need be added with a commit, but our backend API requires one,
                             // so we create a commit by updating our key material.
@@ -566,6 +566,7 @@ internal class MLSConversationDataSource(
 
             keys.flatMap { externalSenders ->
                 establishMLSGroup(
+                    mlsClient = mlsClient,
                     groupID = groupID,
                     members = members,
                     externalSenders = externalSenders,
@@ -583,6 +584,7 @@ internal class MLSConversationDataSource(
             conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
                 val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
                 establishMLSGroup(
+                    mlsClient = mlsClient,
                     groupID = groupID,
                     members = emptyList(),
                     externalSenders = externalSenderKey.value,
@@ -593,45 +595,44 @@ internal class MLSConversationDataSource(
     }
 
     private suspend fun establishMLSGroup(
+        mlsClient: MLSClient,
         groupID: GroupID,
         members: List<UserId>,
         externalSenders: ByteArray,
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         kaliumLogger.d("establish MLS group: $groupID")
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.createConversation(
-                    idMapper.toCryptoModel(groupID),
-                    externalSenders
-                )
-            }.flatMapLeft {
-                if (it is MLSFailure.ConversationAlreadyExists) {
-                    Either.Right(Unit)
-                } else {
-                    Either.Left(it)
-                }
-            }.flatMap {
-                internalAddMemberToMLSGroup(
-                    groupID = groupID,
-                    userIdList = members,
-                    retryOnStaleMessage = false,
-                    allowPartialMemberList = allowPartialMemberList,
-                    cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
-                ).onFailure {
-                    wrapMLSRequest {
-                        mlsClient.wipeConversation(groupID.toCrypto())
-                    }
-                }
-            }.flatMap { additionResult ->
-                wrapStorageRequest {
-                    conversationDAO.updateMlsGroupStateAndCipherSuite(
-                        ConversationEntity.GroupState.ESTABLISHED,
-                        ConversationEntity.CipherSuite.fromTag(mlsClient.getDefaultCipherSuite().toInt()),
-                        idMapper.toGroupIDEntity(groupID)
-                    )
-                }.map { additionResult }
+        wrapMLSRequest {
+            mlsClient.createConversation(
+                idMapper.toCryptoModel(groupID),
+                externalSenders
+            )
+        }.flatMapLeft {
+            if (it is MLSFailure.ConversationAlreadyExists) {
+                Either.Right(Unit)
+            } else {
+                Either.Left(it)
             }
+        }.flatMap {
+            internalAddMemberToMLSGroup(
+                groupID = groupID,
+                userIdList = members,
+                retryOnStaleMessage = false,
+                allowPartialMemberList = allowPartialMemberList,
+                cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
+            ).onFailure {
+                wrapMLSRequest {
+                    mlsClient.wipeConversation(groupID.toCrypto())
+                }
+            }
+        }.flatMap { additionResult ->
+            wrapStorageRequest {
+                conversationDAO.updateMlsGroupStateAndCipherSuite(
+                    ConversationEntity.GroupState.ESTABLISHED,
+                    ConversationEntity.CipherSuite.fromTag(mlsClient.getDefaultCipherSuite().toInt()),
+                    idMapper.toGroupIDEntity(groupID)
+                )
+            }.map { additionResult }
         }
     }
 
@@ -655,9 +656,7 @@ internal class MLSConversationDataSource(
                 kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
                 keyPackageRepository
                     .replaceKeyPackages(clientId, rotateBundle.newKeyPackages, CipherSuite.fromTag(mlsClient.getDefaultCipherSuite()))
-                    .flatMapLeft {
-                    return E2EIFailure.RotationAndMigration(it).left()
-                }
+                    .flatMapLeft { E2EIFailure.RotationAndMigration(it).left() }
             }
             kaliumLogger.w("send migration commits after key rotations")
             kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
