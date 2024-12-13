@@ -177,7 +177,7 @@ internal class CallDataSource(
     }
 
     override suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
-        _recentlyEndedCallFlow.tryEmit(recentlyEndedCallMetadata)
+        _recentlyEndedCallFlow.emit(recentlyEndedCallMetadata)
     }
 
     private fun CallMetadata.mapCallMetadataToCall(conversationId: ConversationId): Call {
