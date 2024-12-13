@@ -41,10 +41,10 @@ internal class ClearConversationContentHandlerImpl(
         message: Message.Signaling,
         messageContent: MessageContent.Cleared
     ) {
-        val isMessageComingFromOtherClient = message.senderUserId != selfUserId
+        val isMessageComingFromAnotherUser = message.senderUserId != selfUserId
         val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
 
-        if (isMessageComingFromOtherClient) {
+        if (isMessageComingFromAnotherUser) {
             when {
                 !messageContent.needToRemoveLocally && !isMessageDestinedForSelfConversation -> return
                 messageContent.needToRemoveLocally && !isMessageDestinedForSelfConversation -> conversationRepository.deleteConversation(
