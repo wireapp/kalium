@@ -466,19 +466,14 @@ class CallManagerImpl internal constructor(
         callClients: CallClientList
     ) {
         withCalling {
-            // Mapping Needed to support calls between federated and non federated environments (domain separation)
+            // Needed to support calls between federated and non federated environments
             val clients = callClients.clients.map { callClient ->
                 CallClient(
-                    userId = federatedIdMapper.parseToFederatedId(callClient.userId),
-                    clientId = callClient.clientId,
-                    isMemberOfSubconversation = callClient.isMemberOfSubconversation,
-                    quality = callClient.quality
+                    federatedIdMapper.parseToFederatedId(callClient.userId),
+                    callClient.clientId
                 )
             }
             val clientsJson = CallClientList(clients).toJsonString()
-            callingLogger.d(
-                "$TAG - wcall_request_video_streams() called -> Requesting video streams for conversation = ${conversationId.toLogString()}"
-            )
             val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
             calling.wcall_request_video_streams(
                 inst = it,

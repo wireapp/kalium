@@ -57,15 +57,16 @@ interface ServerConfigRepository {
     suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig>
 
     /**
-     * update the api version of a locally stored config
+     * update the api version and federation status of a locally stored config
      */
-    suspend fun updateConfigApiVersion(serverConfig: ServerConfig): Either<CoreFailure, Unit>
+    suspend fun updateConfigMetaData(serverConfig: ServerConfig): Either<CoreFailure, Unit>
 
     /**
      * Return the server links and metadata for the given userId
      */
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
     suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int>
+    suspend fun getTeamUrlForUser(userId: UserId): String?
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -92,7 +93,11 @@ internal class ServerConfigDataSource(
                 val storedConfigId = dao.configByLinks(serverConfigMapper.toEntity(links))?.id
                 if (storedConfigId != null) {
                     // if already exists then just update it
-                    dao.updateApiVersion(storedConfigId, metadata.commonApiVersion.version)
+                    dao.updateServerMetaData(
+                        id = storedConfigId,
+                        federation = metadata.federation,
+                        commonApiVersion = metadata.commonApiVersion.version
+                    )
                     if (metadata.federation) dao.setFederationToTrue(storedConfigId)
                     storedConfigId
                 } else {
@@ -132,9 +137,17 @@ internal class ServerConfigDataSource(
                 storeConfig(links, metaData)
             }
 
-    override suspend fun updateConfigApiVersion(serverConfig: ServerConfig): Either<CoreFailure, Unit> =
+    override suspend fun updateConfigMetaData(serverConfig: ServerConfig): Either<CoreFailure, Unit> =
         fetchMetadata(serverConfig.links)
-            .flatMap { wrapStorageRequest { dao.updateApiVersion(serverConfig.id, it.commonApiVersion.version) } }
+            .flatMap { newMetaData ->
+                wrapStorageRequest {
+                    dao.updateServerMetaData(
+                        id = serverConfig.id,
+                        federation = newMetaData.federation,
+                        commonApiVersion = newMetaData.commonApiVersion.version
+                    )
+                }
+            }
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(userId.toDao()) }
@@ -153,4 +166,6 @@ internal class ServerConfigDataSource(
                     is ApiVersionDTO.Valid -> Either.Right(it)
                 }
             }.map { serverConfigMapper.fromDTO(it) }
+
+    override suspend fun getTeamUrlForUser(userId: UserId): String? = dao.teamUrlForUser(userId.toDao())
 }

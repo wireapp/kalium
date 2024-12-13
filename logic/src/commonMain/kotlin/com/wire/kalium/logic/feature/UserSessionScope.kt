@@ -212,8 +212,6 @@ import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
-import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCase
-import com.wire.kalium.logic.feature.conversation.folder.SyncConversationFoldersUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
@@ -295,6 +293,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
+import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
 import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -983,9 +982,6 @@ class UserSessionScope internal constructor(
             systemMessageInserter
         )
 
-    private val syncConversationFolders: SyncConversationFoldersUseCase
-        get() = SyncConversationFoldersUseCaseImpl(conversationFolderRepository)
-
     private val syncConnections: SyncConnectionsUseCase
         get() = SyncConnectionsUseCaseImpl(
             connectionRepository = connectionRepository
@@ -1104,8 +1100,7 @@ class UserSessionScope internal constructor(
             syncContacts,
             joinExistingMLSConversations,
             fetchLegalHoldForSelfUserFromRemoteUseCase,
-            oneOnOneResolver,
-            syncConversationFolders
+            oneOnOneResolver
         )
     }
 
@@ -1839,6 +1834,7 @@ class UserSessionScope internal constructor(
             legalHoldHandler,
             notificationTokenRepository,
             this,
+            userStorage,
             userScopedLogger,
         )
     }
@@ -2159,6 +2155,13 @@ class UserSessionScope internal constructor(
             observeSyncStateUseCase = observeSyncState,
             kaliumLogger = userScopedLogger,
         )
+
+    val getTeamUrlUseCase: GetTeamUrlUseCase by lazy {
+        GetTeamUrlUseCase(
+            userId,
+            authenticationScope.serverConfigRepository,
+        )
+    }
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

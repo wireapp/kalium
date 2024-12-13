@@ -176,19 +176,25 @@ open class ProteusException(message: String?, val code: Code, val intCode: Int?,
             }
         }
 
-        // Mapping source:
-        // https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs
-        // https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md
+        /**
+         * Those error codes are mapped directly from [com.wire.crypto.ProteusException]:
+         * - [Code.SESSION_NOT_FOUND]
+         * - [Code.REMOTE_IDENTITY_CHANGED]
+         * - [Code.DUPLICATE_MESSAGE]
+         *
+         * See the mapping: [com.wire.kalium.cryptography.ProteusClientCoreCryptoImpl.Companion.mapProteusExceptionToErrorCode]
+         *
+         * [Mapping sources](https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs)
+         *
+         * [Mapping source README](https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md)
+         */
         fun fromProteusCode(code: Int): Code {
             @Suppress("MagicNumber")
             return when (code) {
                 501 -> Code.STORAGE_ERROR
-                102 -> Code.SESSION_NOT_FOUND
                 3, 301, 302, 303 -> Code.DECODE_ERROR
-                204 -> Code.REMOTE_IDENTITY_CHANGED
                 206, 207, 210 -> Code.INVALID_SIGNATURE
                 200, 201, 202, 205, 213 -> Code.INVALID_MESSAGE
-                209 -> Code.DUPLICATE_MESSAGE
                 211, 212 -> Code.TOO_DISTANT_FUTURE
                 208 -> Code.OUTDATED_MESSAGE
                 300 -> Code.IDENTITY_ERROR

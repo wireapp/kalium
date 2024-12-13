@@ -306,7 +306,7 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
-    private suspend fun handleServiceAddedResponse(
+    protected suspend fun handleServiceAddedResponse(
         httpResponse: HttpResponse
     ): NetworkResponse<ServiceAddedResponse> =
         when (httpResponse.status) {
