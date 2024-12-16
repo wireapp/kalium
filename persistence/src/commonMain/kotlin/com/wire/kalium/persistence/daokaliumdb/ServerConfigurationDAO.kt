@@ -118,6 +118,7 @@ internal object ServerConfigMapper {
     )
 }
 
+@Suppress("TooManyFunctions")
 interface ServerConfigurationDAO {
     suspend fun deleteById(id: String)
     suspend fun insert(insertData: InsertData)
@@ -125,10 +126,11 @@ interface ServerConfigurationDAO {
     suspend fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
     suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
-    suspend fun updateApiVersion(id: String, commonApiVersion: Int)
     suspend fun getCommonApiVersion(domain: String): Int
+    suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int)
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
+    suspend fun teamUrlForUser(userId: UserIDEntity): String?
     suspend fun setFederationToTrue(id: String)
     suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
     suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String)
@@ -152,6 +154,7 @@ interface ServerConfigurationDAO {
     )
 }
 
+@Suppress("TooManyFunctions")
 internal class ServerConfigurationDAOImpl internal constructor(
     private val queries: ServerConfigurationQueries,
     private val queriesContext: CoroutineContext,
@@ -210,8 +213,10 @@ internal class ServerConfigurationDAOImpl internal constructor(
         }.executeAsOneOrNull()
     }
 
-    override suspend fun updateApiVersion(id: String, commonApiVersion: Int) = withContext(queriesContext) {
-        queries.updateApiVersion(commonApiVersion, id)
+    override suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int) {
+        withContext(queriesContext) {
+            queries.updateServerMetaData(federation, commonApiVersion, id)
+        }
     }
 
     override suspend fun getCommonApiVersion(domain: String): Int = withContext(queriesContext) {
@@ -237,5 +242,9 @@ internal class ServerConfigurationDAOImpl internal constructor(
 
     override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {
         queries.updateLastBlackListCheckByIds(date, configIds)
+    }
+
+    override suspend fun teamUrlForUser(userId: UserIDEntity): String? = withContext(queriesContext) {
+        queries.getTeamUrlByUser(userId).executeAsOneOrNull()
     }
 }

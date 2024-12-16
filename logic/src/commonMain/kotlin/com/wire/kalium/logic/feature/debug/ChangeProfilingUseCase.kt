@@ -15,18 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.util.serialization
+package com.wire.kalium.logic.feature.debug
 
-import kotlinx.serialization.json.Json
+import com.wire.kalium.logic.di.UserStorage
 
-/**
- * The json serializer for shared usage.
- */
-object LenientJsonSerializer {
-
-    val json = Json {
-        isLenient = true
-        encodeDefaults = true
-        ignoreUnknownKeys = true
+class ChangeProfilingUseCase(
+    private val userStorage: UserStorage,
+) {
+    /**
+     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
+     * @param enabled true to enable profiling, false to disable
+     */
+    operator fun invoke(enabled: Boolean) {
+        userStorage.database.changeProfiling(enabled)
     }
 }

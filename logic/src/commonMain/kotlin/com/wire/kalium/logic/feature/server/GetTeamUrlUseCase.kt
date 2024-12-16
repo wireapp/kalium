@@ -15,33 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.server
 
-package com.wire.kalium.logic.data.sync
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.user.UserId
 
-import com.wire.kalium.logic.CoreFailure
-import kotlin.time.Duration
-
-sealed interface SlowSyncStatus {
-
-    data object Pending : SlowSyncStatus
-
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
-}
-
-enum class SlowSyncStep {
-    MIGRATION,
-    SELF_USER,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    LEGAL_HOLD
+/**
+ * Use case to get the team url for the current user.
+ */
+class GetTeamUrlUseCase internal constructor(
+    private val selfUserId: UserId,
+    private val serverConfigRepository: ServerConfigRepository
+) {
+    suspend operator fun invoke(): String = serverConfigRepository.getTeamUrlForUser(selfUserId) ?: ""
 }
