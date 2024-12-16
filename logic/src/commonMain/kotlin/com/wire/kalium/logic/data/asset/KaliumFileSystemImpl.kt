@@ -129,4 +129,11 @@ interface KaliumFileSystem {
      * @return the list of paths found.
      */
     suspend fun listDirectories(dir: Path): List<Path>
+
+    /**
+     * Returns the size of the file at the specified path.
+     * @param path The path to the file whose size is being determined.
+     * @return The size of the file in bytes.
+     */
+    fun fileSize(path: Path): Long
 }
