@@ -1674,7 +1674,8 @@ class UserSessionScope internal constructor(
             cachedClientIdClearer,
             updateSupportedProtocolsAndResolveOneOnOnes,
             registerMLSClientUseCase,
-            syncFeatureConfigsUseCase
+            syncFeatureConfigsUseCase,
+            userConfigRepository
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(
@@ -1896,7 +1897,7 @@ class UserSessionScope internal constructor(
 
     @OptIn(DelicateKaliumApi::class)
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
-        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, mlsPublicKeysRepository)
+        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, mlsPublicKeysRepository, userConfigRepository)
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(

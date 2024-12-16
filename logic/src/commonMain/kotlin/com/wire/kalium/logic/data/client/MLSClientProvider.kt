@@ -28,6 +28,7 @@ import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
@@ -130,6 +131,10 @@ class MLSClientProviderImpl(
     }
 
     override suspend fun getOrFetchMLSConfig(): Either<CoreFailure, SupportedCipherSuite> {
+        if (!userConfigRepository.isMLSEnabled().getOrElse(true)) {
+            kaliumLogger.w("$TAG: Cannot fetch MLS config, MLS is disabled.")
+            return MLSFailure.Disabled.left()
+        }
         return userConfigRepository.getSupportedCipherSuite().flatMapLeft<CoreFailure, SupportedCipherSuite> {
             featureConfigRepository.getFeatureConfigs().map {
                 it.mlsModel.supportedCipherSuite
