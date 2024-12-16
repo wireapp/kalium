@@ -1771,7 +1771,8 @@ class UserSessionScope internal constructor(
             cachedClientIdClearer,
             updateSupportedProtocolsAndResolveOneOnOnes,
             registerMLSClientUseCase,
-            syncFeatureConfigsUseCase
+            syncFeatureConfigsUseCase,
+            userConfigRepository
         )
     }
     val conversations: ConversationScope by lazy {

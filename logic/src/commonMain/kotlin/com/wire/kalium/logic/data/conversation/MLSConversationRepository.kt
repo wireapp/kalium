@@ -670,17 +670,23 @@ internal class MLSConversationDataSource(
     })
 
     override suspend fun getClientIdentity(clientId: ClientId) =
-        wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
-            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                wrapMLSRequest {
+        wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }
+            .flatMap { conversationClientInfo ->
+                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                    wrapMLSRequest {
 
-                    mlsClient.getDeviceIdentities(
-                        it.mlsGroupId,
-                        listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
-                    ).firstOrNull()
+                        mlsClient.getDeviceIdentities(
+                            conversationClientInfo.mlsGroupId,
+                            listOf(
+                                CryptoQualifiedClientId(
+                                    conversationClientInfo.clientId,
+                                    conversationClientInfo.userId.toModel().toCrypto()
+                                )
+                            )
+                        ).firstOrNull()
+                    }
                 }
             }
-        }
 
     override suspend fun getUserIdentity(userId: UserId) =
         wrapStorageRequest {

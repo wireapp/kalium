@@ -43,6 +43,7 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.StaleCommit -> MLSMessageFailureResolution.Ignore
             is MLSFailure.MessageEpochTooOld -> MLSMessageFailureResolution.Ignore
             is MLSFailure.InternalErrors -> MLSMessageFailureResolution.Ignore
+            is MLSFailure.Disabled -> MLSMessageFailureResolution.Ignore
             else -> MLSMessageFailureResolution.InformUser
         }
     }
