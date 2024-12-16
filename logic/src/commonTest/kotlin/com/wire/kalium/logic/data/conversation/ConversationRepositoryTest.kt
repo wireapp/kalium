@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
@@ -178,6 +179,40 @@ class ConversationRepositoryTest {
                         }
                     )
                 }.wasInvoked(exactly = once)
+            }
+        }
+
+    @Test
+    fun givenNewMLSConversationEvent_whenMLSIsDisabled_thenConversationShouldNotPersisted() =
+        runTest {
+            val event = Event.Conversation.NewConversation(
+                "id",
+                TestConversation.ID,
+                TestUser.SELF.id,
+                Instant.UNIX_FIRST_DATE,
+                CONVERSATION_RESPONSE.copy(
+                    groupId = RAW_GROUP_ID,
+                    protocol = MLS,
+                    mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
+                )
+            )
+            val selfUserFlow = flowOf(TestUser.SELF)
+            val (arrangement, conversationRepository) = Arrangement()
+                .withSelfUserFlow(selfUserFlow)
+                .withDisabledMlsClientProvider()
+                .withHasEstablishedMLSGroup(true)
+                .arrange()
+
+            conversationRepository.persistConversation(event.conversation, "teamId")
+
+            with(arrangement) {
+                coVerify {
+                    conversationDAO.insertConversation(
+                        matches { conversation ->
+                            conversation.id.value == CONVERSATION_RESPONSE.id.value
+                        }
+                    )
+                }.wasNotInvoked()
             }
         }
 
@@ -1726,6 +1761,12 @@ class ConversationRepositoryTest {
             coEvery {
                 conversationDAO.updateLegalHoldStatusChangeNotified(any(), any())
             }.returns(updated)
+        }
+
+        suspend fun withDisabledMlsClientProvider() = apply {
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Left(MLSFailure.Disabled))
         }
 
         suspend fun arrange() = this to conversationRepository.also {
