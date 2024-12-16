@@ -47,7 +47,7 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
             }
 
             is Event.UserProperty.FoldersUpdate -> {
-                 handleFoldersUpdate(event)
+                handleFoldersUpdate(event)
             }
         }
     }
