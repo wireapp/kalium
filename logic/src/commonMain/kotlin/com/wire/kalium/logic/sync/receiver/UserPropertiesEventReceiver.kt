@@ -47,9 +47,7 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
             }
 
             is Event.UserProperty.FoldersUpdate -> {
-                Either.Right(Unit)
-                // TODO will be handled in 4.11.0
-//                 handleFoldersUpdate(event)
+                 handleFoldersUpdate(event)
             }
         }
     }
