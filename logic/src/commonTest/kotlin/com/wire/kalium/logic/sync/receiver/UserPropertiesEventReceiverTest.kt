@@ -47,19 +47,19 @@ class UserPropertiesEventReceiverTest {
         }.wasInvoked(exactly = once)
     }
 
-//     @Test
-//     fun givenFoldersUpdateEvent_repositoryIsInvoked() = runTest {
-//         val event = TestEvent.foldersUpdate()
-//         val (arrangement, eventReceiver) = Arrangement()
-//             .withUpdateConversationFolders()
-//             .arrange()
-//
-//         eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
-//
-//         coVerify {
-//             arrangement.conversationFolderRepository.updateConversationFolders(any())
-//         }.wasInvoked(exactly = once)
-//     }
+    @Test
+    fun givenFoldersUpdateEvent_repositoryIsInvoked() = runTest {
+        val event = TestEvent.foldersUpdate()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateConversationFolders()
+            .arrange()
+
+        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+
+        coVerify {
+            arrangement.conversationFolderRepository.updateConversationFolders(any())
+        }.wasInvoked(exactly = once)
+    }
 
     private class Arrangement {
 
@@ -80,11 +80,11 @@ class UserPropertiesEventReceiverTest {
             }.returns(Either.Right(Unit))
         }
 
-//         suspend fun withUpdateConversationFolders() = apply {
-//             coEvery {
-//                 conversationFolderRepository.updateConversationFolders(any())
-//             }.returns(Either.Right(Unit))
-//         }
+        suspend fun withUpdateConversationFolders() = apply {
+            coEvery {
+                conversationFolderRepository.updateConversationFolders(any())
+             }.returns(Either.Right(Unit))
+        }
 
         fun arrange() = this to userPropertiesEventReceiver
     }
