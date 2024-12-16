@@ -87,7 +87,7 @@ jobs:
             **/build/test-results/**/*.xml
 
       - name: Upload test report to codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
+        uses: codecov/codecov-action@7f8b4b4bde536c465e797be725718b88c5d95e0e
         with:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: "build/reports/kover/report.xml"
