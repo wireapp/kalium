@@ -433,8 +433,7 @@ internal class ConversationDataSource internal constructor(
         val isNewConversation = conversationDAO.getConversationById(conversation.id.toDao()) == null
         if (isNewConversation) {
             val mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) }
-            // if group state is left, then we don't want to persist the conversation
-            if (mlsGroupState?.fold({ true }, { false }) != true) {
+            if (shouldPersistMLSConversation(mlsGroupState)) {
                 conversationDAO.insertConversation(
                     conversationMapper.fromApiModelToDaoModel(
                         conversation,
@@ -461,15 +460,14 @@ internal class ConversationDataSource internal constructor(
                 val mlsGroupState = conversationResponse.groupId?.let {
                     mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent)
                 }
-                // if group state is left, then we don't want to persist the conversation
-                if (mlsGroupState?.fold({ true }, { false }) == true) {
-                    null
-                } else {
+                if (shouldPersistMLSConversation(mlsGroupState)) {
                     conversationMapper.fromApiModelToDaoModel(
                         conversationResponse,
                         mlsGroupState = mlsGroupState?.getOrNull(),
                         selfTeamIdProvider().getOrNull(),
                     )
+                } else {
+                    null
                 }
             }
         conversationDAO.insertConversations(conversationEntities)
@@ -513,6 +511,10 @@ internal class ConversationDataSource internal constructor(
                     it.conversationExists(idMapper.toCryptoModel(groupID))
                 }
             }
+
+    // if group state is not null and is left, then we don't want to persist the MLS conversation
+    private fun shouldPersistMLSConversation(groupState: Either<CoreFailure, ConversationEntity.GroupState>?): Boolean =
+        groupState?.fold({ true }, { false }) != true
 
     @DelicateKaliumApi("This function does not get values from cache")
     override suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId> =
