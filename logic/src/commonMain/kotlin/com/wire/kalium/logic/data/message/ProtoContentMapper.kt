@@ -574,13 +574,15 @@ class ProtoContentMapperImpl(
         Cleared(
             conversationId = readableContent.conversationId.value,
             qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
-            clearedTimestamp = readableContent.time.toEpochMilliseconds()
+            clearedTimestamp = readableContent.time.toEpochMilliseconds(),
+            needToRemoveLocally = readableContent.needToRemoveLocally
         )
     )
 
     private fun unpackCleared(protoContent: GenericMessage.Content.Cleared) = MessageContent.Cleared(
         conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
-        time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
+        time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp),
+        needToRemoveLocally = protoContent.value.needToRemoveLocally ?: false
     )
 
     private fun toProtoLegalHoldStatus(legalHoldStatus: Conversation.LegalHoldStatus): LegalHoldStatus =
