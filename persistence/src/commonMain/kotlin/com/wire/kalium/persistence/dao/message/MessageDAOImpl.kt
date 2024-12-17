@@ -505,6 +505,18 @@ internal class MessageDAOImpl internal constructor(
                 .executeAsOne()
         }
 
+    override suspend fun getAllMessageAssetIdsForConversationId(
+        conversationId: QualifiedIDEntity
+    ): List<String> {
+        return withContext(coroutineContext) {
+            assetViewQueries.getAllAssetMessagesByConversationId(
+                conversationId,
+                listOf(MessageEntity.Visibility.VISIBLE),
+                listOf(MessageEntity.ContentType.ASSET)
+            ).executeAsList().mapNotNull { it.assetId }
+        }
+    }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 
 }

@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -115,6 +117,8 @@ class ConversationScope internal constructor(
     private val kaliumLogger: KaliumLogger,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val serverConfigLinks: ServerConfig.Links,
+    internal val messageRepository: MessageRepository,
+    internal val assetRepository: AssetRepository,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -264,6 +268,18 @@ class ConversationScope internal constructor(
             selfUserId,
             currentClientIdProvider,
             selfConversationIdProvider
+        )
+
+    val clearConversationAssetsLocally: ClearLocalConversationAssetsUseCase
+        get() = ClearLocalConversationAssetsUseCaseImpl(
+            messageRepository,
+            assetRepository
+        )
+
+    val deleteLocalConversationUseCase: DeleteLocalConversationUseCase
+        get() = DeleteLocalConversationUseCaseImpl(
+            conversationRepository,
+            clearConversationAssetsLocally
         )
 
     val joinConversationViaCode: JoinConversationViaCodeUseCase
