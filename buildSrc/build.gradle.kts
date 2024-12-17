@@ -24,6 +24,15 @@ plugins {
 repositories {
     google()
     mavenCentral()
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion(libs.versions.kotlin.get())
+        }
+    }
 }
 
 dependencies {
