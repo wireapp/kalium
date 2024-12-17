@@ -49,7 +49,7 @@ class GetSenderNameByMessageIdUseCaseTest {
         getSenderNameByMessageId(CONVERSATION_ID, MESSAGE_ID)
 
         coVerify {
-            arrangement.messageRepository.getMessageById(CONVERSATION_ID, MESSAGE_ID)
+            arrangement.messageRepository.getSenderNameByMessageId(CONVERSATION_ID, MESSAGE_ID)
         }.wasInvoked(exactly = once)
     }
 
