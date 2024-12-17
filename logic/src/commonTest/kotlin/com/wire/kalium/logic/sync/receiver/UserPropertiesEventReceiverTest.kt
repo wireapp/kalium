@@ -24,8 +24,6 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -85,7 +83,7 @@ class UserPropertiesEventReceiverTest {
         suspend fun withUpdateConversationFolders() = apply {
             coEvery {
                 conversationFolderRepository.updateConversationFolders(any())
-            }.returns(Either.Right(Unit))
+             }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to userPropertiesEventReceiver
