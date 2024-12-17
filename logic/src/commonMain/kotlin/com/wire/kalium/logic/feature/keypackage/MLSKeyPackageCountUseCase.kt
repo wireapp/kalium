@@ -20,11 +20,13 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
 
 /**
  * This use case will return the current number of key packages.
@@ -37,6 +39,7 @@ internal class MLSKeyPackageCountUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val userConfigRepository: UserConfigRepository
 ) : MLSKeyPackageCountUseCase {
     override suspend operator fun invoke(fromAPI: Boolean): MLSKeyPackageCountResult =
         when (fromAPI) {
@@ -47,10 +50,15 @@ internal class MLSKeyPackageCountUseCaseImpl(
     private suspend fun validKeyPackagesCountFromAPI() = currentClientIdProvider().fold({
         MLSKeyPackageCountResult.Failure.FetchClientIdFailure(it)
     }, { selfClient ->
-        keyPackageRepository.getAvailableKeyPackageCount(selfClient).fold(
-            {
-                MLSKeyPackageCountResult.Failure.NetworkCallFailure(it)
-            }, { MLSKeyPackageCountResult.Success(selfClient, it.count, keyPackageLimitsProvider.needsRefill(it.count)) })
+        if (userConfigRepository.isMLSEnabled().getOrElse(false)) {
+            keyPackageRepository.getAvailableKeyPackageCount(selfClient)
+                .fold(
+                    { MLSKeyPackageCountResult.Failure.NetworkCallFailure(it) },
+                    { MLSKeyPackageCountResult.Success(selfClient, it.count, keyPackageLimitsProvider.needsRefill(it.count)) }
+                )
+        } else {
+            MLSKeyPackageCountResult.Failure.NotEnabled
+        }
     })
 
     private suspend fun validKeyPackagesCountFromMLSClient() =
@@ -70,6 +78,7 @@ sealed class MLSKeyPackageCountResult {
     sealed class Failure : MLSKeyPackageCountResult() {
         class NetworkCallFailure(val networkFailure: NetworkFailure) : Failure()
         class FetchClientIdFailure(val genericFailure: CoreFailure) : Failure()
+        data object NotEnabled : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
