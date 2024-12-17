@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import kotlinx.coroutines.flow.Flow
-import com.wire.kalium.logic.data.id.ConversationId
 
 /**
  * Use case to observe recently ended call metadata. This gives us all metadata assigned to a call.
