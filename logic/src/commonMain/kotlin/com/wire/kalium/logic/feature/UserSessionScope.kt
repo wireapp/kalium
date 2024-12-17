@@ -1905,7 +1905,8 @@ class UserSessionScope internal constructor(
             selfTeamId,
             checkRevocationList,
             syncFeatureConfigsUseCase,
-            userScopedLogger
+            userScopedLogger,
+            getTeamUrlUseCase
         )
     }
 
