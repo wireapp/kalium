@@ -75,6 +75,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
@@ -119,6 +120,7 @@ class CallManagerImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
+    private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
@@ -219,7 +221,8 @@ class CallManagerImpl internal constructor(
                     callRepository = callRepository,
                     networkStateObserver = networkStateObserver,
                     scope = scope,
-                    qualifiedIdMapper = qualifiedIdMapper
+                    qualifiedIdMapper = qualifiedIdMapper,
+                    createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
                 ).keepingStrongReference(),
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
@@ -463,14 +466,19 @@ class CallManagerImpl internal constructor(
         callClients: CallClientList
     ) {
         withCalling {
-            // Needed to support calls between federated and non federated environments
+            // Mapping Needed to support calls between federated and non federated environments (domain separation)
             val clients = callClients.clients.map { callClient ->
                 CallClient(
-                    federatedIdMapper.parseToFederatedId(callClient.userId),
-                    callClient.clientId
+                    userId = federatedIdMapper.parseToFederatedId(callClient.userId),
+                    clientId = callClient.clientId,
+                    isMemberOfSubconversation = callClient.isMemberOfSubconversation,
+                    quality = callClient.quality
                 )
             }
             val clientsJson = CallClientList(clients).toJsonString()
+            callingLogger.d(
+                "$TAG - wcall_request_video_streams() called -> Requesting video streams for conversation = ${conversationId.toLogString()}"
+            )
             val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
             calling.wcall_request_video_streams(
                 inst = it,
