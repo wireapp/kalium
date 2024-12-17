@@ -27,13 +27,13 @@ import com.wire.kalium.logic.data.id.ConversationId
  * Used mainly for analytics.
  */
 interface ObserveRecentlyEndedCallMetadataUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCallMetadata>
+    suspend operator fun invoke(): Flow<RecentlyEndedCallMetadata>
 }
 
 class ObserveRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
 ) : ObserveRecentlyEndedCallMetadataUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Flow<RecentlyEndedCallMetadata> {
+    override suspend fun invoke(): Flow<RecentlyEndedCallMetadata> {
         return callRepository.observeRecentlyEndedCallMetadata()
     }
 }
