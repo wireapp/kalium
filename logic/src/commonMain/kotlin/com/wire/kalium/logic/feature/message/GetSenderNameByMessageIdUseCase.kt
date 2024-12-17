@@ -26,6 +26,10 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+/**
+ * Provides a way to get a name of user that sent a message
+ * using its [ConversationId] and message ID coordinates.
+ */
 class GetSenderNameByMessageIdUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
