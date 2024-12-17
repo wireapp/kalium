@@ -36,7 +36,7 @@ class SearchScope internal constructor(
     private val kaliumConfigs: KaliumConfigs
 ) {
     val searchUsers: SearchUsersUseCase
-        get() = SearchUsersUseCase(
+        get() = SearchUsersUseCaseImpl(
             searchUserRepository,
             selfUserId,
             kaliumConfigs.maxRemoteSearchResultCount
