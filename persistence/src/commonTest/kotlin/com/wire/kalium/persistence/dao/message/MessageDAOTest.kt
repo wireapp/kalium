@@ -2344,6 +2344,96 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(messages.size, assetStatuses.size)
     }
 
+    @Test
+    fun givenMessagesAndUsersAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
+        insertInitialData()
+
+        val userInQuestion = userDetailsEntity1
+        val otherUser = userDetailsEntity2
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userInQuestion.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userInQuestion.name!!,
+                sender = userInQuestion
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = otherUser.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = otherUser.name!!,
+                sender = otherUser
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(expectedMessages)
+
+        val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
+
+        assertEquals(userDetailsEntity1.name, result)
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
+        insertInitialData()
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userDetailsEntity1.name!!,
+                sender = userDetailsEntity1
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity2.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userDetailsEntity2.name!!,
+                sender = userDetailsEntity2
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(expectedMessages)
+
+        val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
+
+        assertEquals(userDetailsEntity1.name, result)
+    }
+
+    @Test
+    fun givenMessagesAreButNoUserInserted_whenGettingSenderNameByMessageId_thenNullNameReturned() = runTest {
+        insertInitialData()
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity1.id.copy(value = "absolutely_another_value"),
+                status = MessageEntity.Status.PENDING,
+                senderName = "s",
+                sender = userDetailsEntity1.copy(name = "s", id = userDetailsEntity1.id.copy(value = "absolutely_another_value"))
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity2.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userDetailsEntity2.name!!,
+                sender = userDetailsEntity2
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(expectedMessages)
+
+        val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
+
+        assertEquals(null, result)
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(
