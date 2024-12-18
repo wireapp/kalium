@@ -253,6 +253,10 @@ internal interface MessageRepository {
         messageId: String,
         conversationId: ConversationId
     ): Either<StorageFailure, AssetTransferStatus>
+
+    suspend fun getAllAssetIdsFromConversationId(
+        conversationId: ConversationId,
+    ): Either<StorageFailure, List<String>>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -705,5 +709,13 @@ internal class MessageDataSource internal constructor(
         conversationId: ConversationId
     ): Either<StorageFailure, AssetTransferStatus> = wrapStorageRequest {
         messageDAO.getMessageAssetTransferStatus(messageId, conversationId.toDao()).toModel()
+    }
+
+    override suspend fun getAllAssetIdsFromConversationId(
+        conversationId: ConversationId
+    ): Either<StorageFailure, List<String>> {
+        return wrapStorageRequest {
+            messageDAO.getAllMessageAssetIdsForConversationId(conversationId = conversationId.toDao())
+        }
     }
 }
