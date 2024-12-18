@@ -351,7 +351,7 @@ class UserDAOImpl internal constructor(
 
     // returns true if any row has been inserted or modified, false if exactly the same data already exists
     private fun markUserAsDeleted(qualifiedID: QualifiedIDEntity, userType: UserTypeEntity): Boolean {
-        userQueries.markUserAsDeleted(qualifiedID, UserTypeEntity.NONE)
+        userQueries.markUserAsDeleted(qualifiedID, userType)
         return userQueries.selectChanges().executeAsOne() > 0
     }
 
