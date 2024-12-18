@@ -111,7 +111,7 @@ class MessageSendFailureHandlerImpl internal constructor(
 
     private suspend fun syncUserIds(userId: Set<UserId>): Either<CoreFailure, Unit> {
         return if (userId.isEmpty()) Either.Right(Unit)
-        else userRepository.fetchUsersByIds(userId)
+        else userRepository.fetchUsersByIds(userId).map { }
     }
 
     private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> =
