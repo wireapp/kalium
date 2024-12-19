@@ -126,6 +126,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MemberChange.RemovedFromTeam -> false
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.DataTransfer -> false
+            is MessageContent.InCallEmoji -> false
         }
 
     @Suppress("ComplexMethod")
@@ -180,6 +181,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.LegalHold,
             is MessageContent.MemberChange.RemovedFromTeam,
             is MessageContent.TeamMemberRemoved,
-            is MessageContent.DataTransfer -> false
+            is MessageContent.DataTransfer,
+            is MessageContent.InCallEmoji -> false
         }
 }

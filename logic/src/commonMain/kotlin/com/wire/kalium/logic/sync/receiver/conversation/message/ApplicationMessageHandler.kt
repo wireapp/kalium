@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
+import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -90,7 +91,8 @@ internal class ApplicationMessageHandlerImpl(
     private val receiptMessageHandler: ReceiptMessageHandler,
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val dataTransferEventHandler: DataTransferEventHandler,
-    private val selfUserId: UserId
+    private val inCallReactionsRepository: InCallReactionsRepository,
+    private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
@@ -106,18 +108,12 @@ internal class ApplicationMessageHandlerImpl(
         when (val protoContent = content.messageContent) {
             is MessageContent.Regular -> {
                 val visibility = when (protoContent) {
-                    is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
-                    is MessageContent.TextEdited -> Message.Visibility.HIDDEN
-                    is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
                     is MessageContent.Unknown -> if (protoContent.hidden) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
                     is MessageContent.Text -> Message.Visibility.VISIBLE
-                    is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
                     is MessageContent.Knock -> Message.Visibility.VISIBLE
                     is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
-                    is MessageContent.LastRead -> Message.Visibility.HIDDEN
-                    is MessageContent.Cleared -> Message.Visibility.HIDDEN
                     is MessageContent.Composite -> Message.Visibility.VISIBLE
                     is MessageContent.Location -> Message.Visibility.VISIBLE
                 }
@@ -222,6 +218,11 @@ internal class ApplicationMessageHandlerImpl(
             )
 
             is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
+            is MessageContent.InCallEmoji -> inCallReactionsRepository.addInCallReaction(
+                conversationId = signaling.conversationId,
+                senderUserId = signaling.senderUserId,
+                emojis = content.emojis.keys,
+            )
         }
     }
 

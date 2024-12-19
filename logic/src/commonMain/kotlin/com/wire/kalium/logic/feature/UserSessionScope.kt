@@ -40,6 +40,8 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.InCallReactionsDataSource
+import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -1387,7 +1389,8 @@ class UserSessionScope internal constructor(
             receiptMessageHandler,
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
-            userId
+            inCallReactionsRepository,
+            userId,
         )
 
     private val staleEpochVerifier: StaleEpochVerifier
@@ -2066,7 +2069,8 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository,
             getCallConversationType = getCallConversationType,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            inCallReactionsRepository = inCallReactionsRepository,
         )
 
     val connection: ConnectionScope
@@ -2164,6 +2168,8 @@ class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
         )
     }
+
+    private val inCallReactionsRepository: InCallReactionsRepository = InCallReactionsDataSource()
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
