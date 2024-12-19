@@ -43,6 +43,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.properties.Delegates
 import kotlin.test.Test
 import kotlin.test.assertEquals
+
 class CustomServerConfigRepositoryTest {
 
     @Test
@@ -78,8 +79,8 @@ class CustomServerConfigRepositoryTest {
             .with(any())
             .wasNotInvoked()
         verify(arrangement.serverConfigurationDAO)
-            .suspendFunction(arrangement.serverConfigurationDAO::updateApiVersion)
-            .with(any(), any())
+            .suspendFunction(arrangement.serverConfigurationDAO::updateServerMetaData)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigurationDAO)
             .suspendFunction(arrangement.serverConfigurationDAO::setFederationToTrue)
@@ -111,8 +112,8 @@ class CustomServerConfigRepositoryTest {
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigurationDAO)
-            .suspendFunction(arrangement.serverConfigurationDAO::updateApiVersion)
-            .with(any(), any())
+            .suspendFunction(arrangement.serverConfigurationDAO::updateServerMetaData)
+            .with(any(), any(), any())
             .wasNotInvoked()
         verify(arrangement.serverConfigurationDAO)
             .suspendFunction(arrangement.serverConfigurationDAO::setFederationToTrue)
@@ -156,8 +157,8 @@ class CustomServerConfigRepositoryTest {
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigurationDAO)
-            .suspendFunction(arrangement.serverConfigurationDAO::updateApiVersion)
-            .with(any(), any())
+            .suspendFunction(arrangement.serverConfigurationDAO::updateServerMetaData)
+            .with(any(), any(), any())
             .wasNotInvoked()
         verify(arrangement.serverConfigurationDAO)
             .suspendFunction(arrangement.serverConfigurationDAO::setFederationToTrue)
@@ -176,18 +177,19 @@ class CustomServerConfigRepositoryTest {
 
         @Mock
         val serverConfigApi = mock(classOf<ServerConfigApi>())
-        
+
         var developmentApiEnabled by Delegates.notNull<Boolean>()
 
         @Mock
         val serverConfigurationDAO = mock(classOf<ServerConfigurationDAO>())
+
         init {
             developmentApiEnabled = false
         }
-        
+
         @Mock
         val backendMetaDataUtil = mock(classOf<BackendMetaDataUtil>())
-        
+
         private var customServerConfigRepository: CustomServerConfigRepository =
             CustomServerConfigDataSource(serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)
 
@@ -199,8 +201,7 @@ class CustomServerConfigRepositoryTest {
                 domain = serverConfigEntity.metaData.domain
             )
         )
-        
-        
+
 
         suspend fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
             given(serverConfigurationDAO)
@@ -247,7 +248,7 @@ class CustomServerConfigRepositoryTest {
                 .then { flowOf(listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3))) }
             return this
         }
-        
+
         suspend fun withUpdatedServerConfig(): Arrangement {
             val newServerConfigEntity = serverConfigEntity.copy(
                 metaData = serverConfigEntity.metaData.copy(

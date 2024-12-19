@@ -94,7 +94,11 @@ internal class CustomServerConfigDataSource internal constructor(
             val storedConfigId = serverConfigurationDAO.configByLinks(serverConfigMapper.toEntity(links))?.id
             if (storedConfigId != null) {
                 // if already exists then just update it
-                serverConfigurationDAO.updateApiVersion(storedConfigId, metadata.commonApiVersion.version)
+                serverConfigurationDAO.updateServerMetaData(
+                    id = storedConfigId,
+                    federation = metadata.federation,
+                    commonApiVersion = metadata.commonApiVersion.version
+                )
                 if (metadata.federation) serverConfigurationDAO.setFederationToTrue(storedConfigId)
                 storedConfigId
             } else {

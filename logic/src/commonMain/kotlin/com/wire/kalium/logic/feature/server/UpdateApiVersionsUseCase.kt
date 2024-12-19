@@ -80,6 +80,6 @@ class UpdateApiVersionsUseCaseImpl internal constructor(
         } else {
             null
         }
-        serverConfigRepoProvider(serverConfig, proxyCredentials).updateConfigApiVersion(serverConfig)
+        serverConfigRepoProvider(serverConfig, proxyCredentials).updateConfigMetaData(serverConfig)
     }
 }
