@@ -29,9 +29,9 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.Text
-import com.wire.kalium.protobuf.messages.UnknownStrategy
 import io.ktor.utils.io.core.toByteArray
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -502,6 +502,24 @@ class ProtoContentMapperTest {
             MessageContent.DataTransfer.TrackingIdentifier(
                 "abcd-1234"
             )
+        )
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(decoded, protoContent)
+    }
+
+    @Test
+    fun givenInCallEmojiContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.InCallEmoji(
+            emojis = mapOf("emoji" to 999)
         )
         val protoContent = ProtoContent.Readable(
             TEST_MESSAGE_UUID,
