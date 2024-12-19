@@ -75,7 +75,7 @@ data class ConversationEntity(
 
         companion object {
             fun fromTag(tag: Int?): CipherSuite =
-                if (tag != null) values().first { type -> type.cipherSuiteTag == tag } else UNKNOWN
+                if (tag != null) entries.first { type -> type.cipherSuiteTag == tag } else UNKNOWN
         }
     }
 
