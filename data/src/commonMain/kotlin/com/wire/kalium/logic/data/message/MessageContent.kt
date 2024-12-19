@@ -395,6 +395,10 @@ sealed interface MessageContent {
             data object Disabled : ForConversation()
         }
     }
+
+    data class InCallEmoji(
+        val emojis: Map<String, Int>
+    ) : Signaling
 }
 
 /**
@@ -455,6 +459,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.LegalHold.ForMembers.Disabled -> "LegalHold.ForMembers.Disabled"
     is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
     is MessageContent.DataTransfer -> "DataTransfer"
+    is MessageContent.InCallEmoji -> "InCallEmoji"
     null -> "null"
 }
 
