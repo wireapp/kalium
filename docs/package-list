@@ -508,6 +508,7 @@ com.wire.kalium.logic.feature.e2ei
 com.wire.kalium.logic.feature.e2ei.usecase
 com.wire.kalium.logic.feature.featureConfig
 com.wire.kalium.logic.feature.featureConfig.handler
+com.wire.kalium.logic.feature.incallreaction
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.legalhold
 com.wire.kalium.logic.feature.message
