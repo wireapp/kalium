@@ -511,6 +511,11 @@ internal class MessageDAOImpl internal constructor(
         userQueries.selectNameByMessageId(id, conversationId).executeAsOneOrNull()?.name
     }
 
+    override suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String? =
+        withContext(coroutineContext) {
+            queries.selectNextAudioMessage(conversationId, prevMessageId).executeAsOneOrNull()
+        }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 
 }
