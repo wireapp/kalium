@@ -30,7 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-class DeleteLocalConversationUseCaseTest {
+class DeleteConversationLocallyUseCaseTest {
 
     companion object {
         val SUCCESS = Either.Right(Unit)
@@ -69,7 +69,7 @@ class DeleteLocalConversationUseCaseTest {
         // then
         assertIs<Either.Left<Unit>>(result)
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
-        coVerify { arrangement.conversationRepository.deleteLocalConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.deleteConversationLocally(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -88,7 +88,7 @@ class DeleteLocalConversationUseCaseTest {
         assertIs<Either.Left<Unit>>(result)
         coVerify { arrangement.clearLocalConversationAssets(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.deleteLocalConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.deleteConversationLocally(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -107,7 +107,7 @@ class DeleteLocalConversationUseCaseTest {
         assertIs<Either.Left<Unit>>(result)
         coVerify { arrangement.clearLocalConversationAssets(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.deleteLocalConversation(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.conversationRepository.deleteConversationLocally(any()) }.wasInvoked(exactly = 1)
     }
 
     private class Arrangement {
@@ -115,21 +115,21 @@ class DeleteLocalConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val clearLocalConversationAssets = mock(ClearLocalConversationAssetsUseCase::class)
+        val clearLocalConversationAssets = mock(ClearConversationAssetsLocallyUseCase::class)
 
         suspend fun withClearContent(result: Either<CoreFailure, Unit>) = apply {
             coEvery { conversationRepository.clearContent(any()) }.returns(result)
         }
 
         suspend fun withDeleteLocalConversation(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { conversationRepository.deleteLocalConversation(any()) }.returns(result)
+            coEvery { conversationRepository.deleteConversationLocally(any()) }.returns(result)
         }
 
         suspend fun withClearLocalAsset(result: Either<CoreFailure, Unit>) = apply {
             coEvery { clearLocalConversationAssets(any()) }.returns(result)
         }
 
-        fun arrange() = this to DeleteLocalConversationUseCaseImpl(
+        fun arrange() = this to DeleteConversationLocallyUseCaseImpl(
             conversationRepository = conversationRepository,
             clearLocalConversationAssets = clearLocalConversationAssets
         )

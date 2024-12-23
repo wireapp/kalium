@@ -224,7 +224,7 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteLocalConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     /**
      * Deletes all conversation messages
@@ -885,7 +885,7 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-    override suspend fun deleteLocalConversation(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
         }

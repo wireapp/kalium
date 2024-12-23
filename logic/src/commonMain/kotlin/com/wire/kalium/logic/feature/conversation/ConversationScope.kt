@@ -270,14 +270,14 @@ class ConversationScope internal constructor(
             selfConversationIdProvider
         )
 
-    val clearConversationAssetsLocally: ClearLocalConversationAssetsUseCase
-        get() = ClearLocalConversationAssetsUseCaseImpl(
+    val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
+        get() = ClearConversationAssetsLocallyUseCaseImpl(
             messageRepository,
             assetRepository
         )
 
-    val deleteLocalConversationUseCase: DeleteLocalConversationUseCase
-        get() = DeleteLocalConversationUseCaseImpl(
+    val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
+        get() = DeleteConversationLocallyUseCaseImpl(
             conversationRepository,
             clearConversationAssetsLocally
         )

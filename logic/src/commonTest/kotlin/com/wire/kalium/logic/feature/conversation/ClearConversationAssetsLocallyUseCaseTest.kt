@@ -31,7 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-class ClearLocalConversationAssetsUseCaseTest {
+class ClearConversationAssetsLocallyUseCaseTest {
 
     @Test
     fun givenConversationAssetIds_whenAllDeletionsAreSuccess_thenSuccessResultIsPropagated() = runTest {
@@ -103,7 +103,7 @@ class ClearLocalConversationAssetsUseCaseTest {
             coEvery { messageRepository.getAllAssetIdsFromConversationId(any()) }.returns(Either.Right(ids))
         }
 
-        fun arrange() = this to ClearLocalConversationAssetsUseCaseImpl(
+        fun arrange() = this to ClearConversationAssetsLocallyUseCaseImpl(
             messageRepository = messageRepository,
             assetRepository = assetRepository
         )

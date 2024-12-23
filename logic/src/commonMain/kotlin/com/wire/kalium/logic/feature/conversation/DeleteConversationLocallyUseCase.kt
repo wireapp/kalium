@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 
-interface DeleteLocalConversationUseCase {
+interface DeleteConversationLocallyUseCase {
     /**
      * Delete local conversation which:
      * - Clear all local assets
@@ -35,14 +35,14 @@ interface DeleteLocalConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
-internal class DeleteLocalConversationUseCaseImpl(
+internal class DeleteConversationLocallyUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val clearLocalConversationAssets: ClearLocalConversationAssetsUseCase
-) : DeleteLocalConversationUseCase {
+    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase
+) : DeleteConversationLocallyUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
         return clearLocalConversationAssets(conversationId)
             .flatMap { conversationRepository.clearContent(conversationId) }
-            .flatMap { conversationRepository.deleteLocalConversation(conversationId) }
+            .flatMap { conversationRepository.deleteConversationLocally(conversationId) }
     }
 }
