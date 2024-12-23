@@ -41,4 +41,5 @@ inline fun MessageContent.FromProto.typeDescription(): String = when (this) {
     is MessageContent.Receipt -> "Receipt"
     is MessageContent.TextEdited -> "TextEdited"
     is MessageContent.DataTransfer -> "DataTransfer"
+    is MessageContent.InCallEmoji -> "InCallEmoji"
 }

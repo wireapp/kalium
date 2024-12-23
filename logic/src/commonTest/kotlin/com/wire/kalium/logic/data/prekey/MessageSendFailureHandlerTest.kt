@@ -400,7 +400,7 @@ class MessageSendFailureHandlerTest {
         suspend fun withFetchUsersByIdSuccess() = apply {
             coEvery {
                 userRepository.fetchUsersByIds(any())
-            }.returns(Either.Right(Unit))
+            }.returns(Either.Right(true))
         }
 
         suspend fun withFetchUsersByIdFailure(failure: CoreFailure) = apply {

@@ -22,6 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
+import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.ParticipantsFilterImpl
 import com.wire.kalium.logic.data.call.ParticipantsOrderByNameImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -43,8 +44,6 @@ import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipa
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCaseImpl
@@ -53,12 +52,16 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOutgoingCallUseCase
@@ -103,6 +106,7 @@ class CallsScope internal constructor(
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val getCallConversationType: GetCallConversationTypeProvider,
     private val kaliumConfigs: KaliumConfigs,
+    private val inCallReactionsRepository: InCallReactionsRepository,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -239,4 +243,7 @@ class CallsScope internal constructor(
         get() = ObserveRecentlyEndedCallMetadataUseCaseImpl(
             callRepository = callRepository
         )
+
+    val observeInCallReactions: ObserveInCallReactionsUseCase
+        get() = ObserveInCallReactionsUseCaseImpl(inCallReactionsRepository)
 }

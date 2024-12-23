@@ -101,7 +101,7 @@ class OneOnOneResolverTest {
         // given
         val oneOnOneUser = TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID)
         val (arrangement, resolver) = arrange {
-            withFetchUsersByIdReturning(Either.Right(Unit))
+            withFetchUsersByIdReturning(Either.Right(true))
             withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
             withMigrateToMLSReturns(Either.Right(TestConversation.ID))
         }
@@ -128,7 +128,7 @@ class OneOnOneResolverTest {
         // given
         val oneOnOneUser = TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID)
         val (arrangement, resolver) = arrange {
-            withFetchUsersByIdReturning(Either.Right(Unit))
+            withFetchUsersByIdReturning(Either.Right(true))
             withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
             withMigrateToMLSReturns(Either.Right(TestConversation.ID))
         }
@@ -149,7 +149,7 @@ class OneOnOneResolverTest {
         val oneOnOneUser = TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID)
         val (arrangement, resolver) = arrange {
             withGetKnownUserReturning(flowOf(oneOnOneUser))
-            withFetchUsersByIdReturning(Either.Right(Unit))
+            withFetchUsersByIdReturning(Either.Right(true))
             withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
             withMigrateToMLSReturns(Either.Right(TestConversation.ID))
         }
