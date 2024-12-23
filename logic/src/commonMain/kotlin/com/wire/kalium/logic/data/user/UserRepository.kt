@@ -470,7 +470,6 @@ internal class UserDataSource internal constructor(
 
     // TODO: replace the flow with selfUser and cache it
     override suspend fun getSelfUser(): SelfUser? {
-        kaliumLogger.d("cccc: Getting self user")
         return observeSelfUser().firstOrNull()
     }
 
@@ -660,7 +659,6 @@ internal class UserDataSource internal constructor(
             CreateUserTeam(dto.teamId, dto.teamName)
         }
             .onSuccess {
-                kaliumLogger.d("cccc: Migrated user to team")
                 fetchSelfUser()
             }
             .onFailure { failure ->
