@@ -2351,7 +2351,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val userInQuestion = userDetailsEntity1
         val otherUser = userDetailsEntity2
 
-        val expectedMessages = listOf(
+        val insertingMessages = listOf(
             newRegularMessageEntity(
                 "1",
                 conversationId = conversationEntity1.id,
@@ -2369,7 +2369,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 sender = otherUser
             )
         )
-        messageDAO.insertOrIgnoreMessages(expectedMessages)
+        messageDAO.insertOrIgnoreMessages(insertingMessages)
 
         val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
 
@@ -2380,7 +2380,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMessagesAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
         insertInitialData()
 
-        val expectedMessages = listOf(
+        val insertingMessages = listOf(
             newRegularMessageEntity(
                 "1",
                 conversationId = conversationEntity1.id,
@@ -2398,7 +2398,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 sender = userDetailsEntity2
             )
         )
-        messageDAO.insertOrIgnoreMessages(expectedMessages)
+        messageDAO.insertOrIgnoreMessages(insertingMessages)
 
         val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
 
@@ -2409,7 +2409,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMessagesAreButNoUserInserted_whenGettingSenderNameByMessageId_thenNullNameReturned() = runTest {
         insertInitialData()
 
-        val expectedMessages = listOf(
+        val insertingMessages = listOf(
             newRegularMessageEntity(
                 "1",
                 conversationId = conversationEntity1.id,
@@ -2427,11 +2427,31 @@ class MessageDAOTest : BaseDatabaseTest() {
                 sender = userDetailsEntity2
             )
         )
-        messageDAO.insertOrIgnoreMessages(expectedMessages)
+        messageDAO.insertOrIgnoreMessages(insertingMessages)
 
         val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
 
         assertEquals(null, result)
+    }
+
+    @Test
+    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheLastOne_thenNullIdReturned() = runTest {
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOfMessageWithAudioAssets())
+
+        val result = messageDAO.getNextAudioMessageInConversation("4", conversationEntity1.id)
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheFirstOne_thenCorrespondingIdReturned() = runTest {
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOfMessageWithAudioAssets())
+
+        val result = messageDAO.getNextAudioMessageInConversation("1", conversationEntity1.id)
+
+        assertEquals("3", result)
     }
 
     private suspend fun insertInitialData() {
@@ -2479,4 +2499,54 @@ class MessageDAOTest : BaseDatabaseTest() {
             ),
             visibility = if (isComplete) MessageEntity.Visibility.VISIBLE else MessageEntity.Visibility.HIDDEN
         )
+
+    private fun listOfMessageWithAudioAssets(): List<MessageEntity> {
+        val messageTemplate = newRegularMessageEntity(
+            conversationId = conversationEntity1.id,
+            senderUserId = userDetailsEntity1.id,
+            status = MessageEntity.Status.DELIVERED,
+            sender = userDetailsEntity1,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = 1000,
+                assetMimeType = "audio/mp4",
+                assetOtrKey = byteArrayOf(1),
+                assetSha256Key = byteArrayOf(1),
+                assetId = "assetId",
+                assetEncryptionAlgorithm = "",
+                assetDurationMs = 10
+            )
+        )
+
+        return listOf(
+            messageTemplate.copy(id = "1", date = messageTemplate.date.plus(10.seconds)),
+            messageTemplate.copy(
+                id = "2",
+                date = messageTemplate.date.plus(20.seconds),
+                content = MessageEntityContent.Text("Test Text")
+            ),
+            messageTemplate.copy(id = "3", date = messageTemplate.date.plus(30.seconds)),
+            messageTemplate.copy(id = "4", date = messageTemplate.date.plus(40.seconds)),
+            newRegularMessageEntity(
+                id = "5",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity1.id,
+                status = MessageEntity.Status.DELIVERED,
+                sender = userDetailsEntity1,
+                date = messageTemplate.date.plus(50.seconds)
+            ),
+            messageTemplate.copy(
+                id = "6",
+                date = messageTemplate.date.plus(60.seconds),
+                content = MessageEntityContent.Asset(
+                    assetSizeInBytes = 1000,
+                    assetMimeType = "video/mp4",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId",
+                    assetEncryptionAlgorithm = "",
+                    assetDurationMs = 10
+                )
+            )
+        )
+    }
 }
