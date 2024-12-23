@@ -63,9 +63,6 @@ class CallManagerTest {
     private val callRepository = mock(CallRepository::class)
 
     @Mock
-    private val userRepository = mock(UserRepository::class)
-
-    @Mock
     private val messageSender = mock(MessageSender::class)
 
     @Mock
@@ -120,7 +117,6 @@ class CallManagerTest {
         callManagerImpl = CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
-            userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             selfConversationIdProvider = selfConversationIdProvider,
             conversationRepository = conversationRepository,
@@ -137,7 +133,8 @@ class CallManagerTest {
             kaliumConfigs = kaliumConfigs,
             mediaManagerService = mediaManagerService,
             flowManagerService = flowManagerService,
-            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
+            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
+            selfUserId = UserId
         )
     }
 
