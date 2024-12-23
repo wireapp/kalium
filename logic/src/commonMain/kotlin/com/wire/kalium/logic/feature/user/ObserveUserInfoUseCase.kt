@@ -77,7 +77,15 @@ internal class ObserveUserInfoUseCaseImpl(
                 either.fold({ storageFailure ->
                     if (storageFailure is StorageFailure.DataNotFound) {
                         userRepository.fetchUsersByIds(setOf(userId))
-                            .fold({ ObserveOtherUserResult(fetchUserError = it) }) { ObserveOtherUserResult() }
+                            .fold({ ObserveOtherUserResult(fetchUserError = it) }) { usersFound ->
+                                if (usersFound) {
+                                    // Fetched users are persisted
+                                    ObserveOtherUserResult()
+                                } else {
+                                    // Users cannot be found
+                                    ObserveOtherUserResult(fetchUserError = StorageFailure.DataNotFound)
+                                }
+                            }
                     } else {
                         ObserveOtherUserResult(getKnownUserError = storageFailure)
                     }

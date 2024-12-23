@@ -45,8 +45,19 @@ message GenericMessage {
         ButtonAction buttonAction = 21;
         ButtonActionConfirmation buttonActionConfirmation = 22;
         DataTransfer dataTransfer = 23; // client-side synchronization across devices of the same user
+        InCallEmoji inCallEmoji = 24;
+        // UnknownStrategy unknownStrategy = 25; -- Defined outside the oneof
+        // Next field should be 26 ↓
+        InCallHandRaise inCallHandRaise = 26;
     }
-    optional UnknownStrategy unknownStrategy = 24 [default = IGNORE];
+    optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
+
+    // See internal RFC: "2024-07-18 RFC Improve future-proofing for new OTR message types"
+    enum UnknownStrategy {
+        IGNORE = 0;                 // Ignore the message completely. Trash. Bye
+        DISCARD_AND_WARN = 1;       // Warn the user, but discard the message, as it won't be helpful in the future.
+        WARN_USER_ALLOW_RETRY = 2;  // Warn the user. Client has freedom to store it and retry in the future.
+    }
 }
 
 message QualifiedUserId {
@@ -332,6 +343,14 @@ message Reaction {
     optional LegalHoldStatus legal_hold_status = 3 [default = UNKNOWN]; // whether this message was sent to legal hold
 }
 
+message InCallEmoji {
+    map<string, int32> emojis = 1;
+}
+
+message InCallHandRaise {
+    required bool is_hand_up = 1; // true if the hand is raised, false if lowered
+}
+
 message Calling {
     required string content = 1;
     optional QualifiedConversationId qualified_conversation_id = 2;
@@ -361,10 +380,4 @@ enum LegalHoldStatus {
     UNKNOWN = 0;
     DISABLED = 1;
     ENABLED = 2;
-}
-
-enum UnknownStrategy {
-    IGNORE = 0;                 // Ignore the message completely.
-    DISCARD_AND_WARN = 1;       // Warn the user, but discard the message, as it may not be helpful in the future
-    WARN_USER_ALLOW_RETRY = 2;  // Warn the user. Client has freedom to store it and retry in the future.
 }

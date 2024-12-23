@@ -248,6 +248,11 @@ sealed interface Message {
                     typeKey to "dataTransfer",
                     "content" to content.toLogMap(),
                 )
+
+                is MessageContent.InCallEmoji -> mutableMapOf(
+                    typeKey to "inCallEmoji",
+                    "content" to content.emojis
+                )
             }
 
             val standardProperties = mapOf(
