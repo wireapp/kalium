@@ -1022,7 +1022,6 @@ class UserDAOTest : BaseDatabaseTest() {
         }
     }
 
-
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))

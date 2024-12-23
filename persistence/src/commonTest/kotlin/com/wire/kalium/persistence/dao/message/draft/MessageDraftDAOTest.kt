@@ -291,7 +291,6 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
 
     }
 
-
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1))
         conversationDAO.insertConversation(conversationEntity1)
