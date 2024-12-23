@@ -229,13 +229,13 @@ internal class UserDataSource internal constructor(
     private suspend fun updateSelfUserProviderAccountInfo(userDTO: SelfUserDTO): Either<StorageFailure, Unit> =
         sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
 
+    // TODO: race condition, if we request the same user (can happen for self) multiple times, we will fetch it multiple times
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
                 userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
                 if (otherUser != null) {
-//                     TODO: reuse TCP connection aka update in parallel
                     refreshUserDetailsIfNeeded(userId)
                 }
             }
