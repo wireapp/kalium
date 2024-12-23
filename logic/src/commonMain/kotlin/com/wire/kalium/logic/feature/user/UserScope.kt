@@ -75,6 +75,7 @@ import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
+import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
@@ -117,7 +118,8 @@ class UserScope internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
-    private val userScopedLogger: KaliumLogger
+    private val userScopedLogger: KaliumLogger,
+    private val teamUrlUseCase: GetTeamUrlUseCase
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -127,6 +129,7 @@ class UserScope internal constructor(
 
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
+    val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 
     val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
         get() = FinalizeMLSClientAfterE2EIEnrollmentImpl(

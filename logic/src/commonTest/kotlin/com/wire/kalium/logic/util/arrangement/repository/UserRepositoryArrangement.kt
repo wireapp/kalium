@@ -72,7 +72,7 @@ internal interface UserRepositoryArrangement {
     suspend fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>)
 
     suspend fun withFetchUsersByIdReturning(
-        result: Either<CoreFailure, Unit>,
+        result: Either<CoreFailure, Boolean>,
         userIdList: Matcher<Set<UserId>> = AnyMatcher(valueOf())
     )
 
@@ -186,7 +186,7 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
     }
 
     override suspend fun withFetchUsersByIdReturning(
-        result: Either<CoreFailure, Unit>,
+        result: Either<CoreFailure, Boolean>,
         userIdList: Matcher<Set<UserId>>
     ) {
         coEvery {
