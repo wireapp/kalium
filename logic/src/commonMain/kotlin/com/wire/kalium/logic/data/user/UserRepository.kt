@@ -439,28 +439,6 @@ internal class UserDataSource internal constructor(
                 .map(userMapper::fromUserDetailsEntityToSelfUser)
         }
     }
-//         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
-//             // If the self user is not in the database, proactively fetch it.
-//             if (it == null) {
-//                 val logPrefix = "Observing self user before insertion"
-//                 kaliumLogger.w("cccc: $logPrefix: Triggering a fetch.")
-//                 fetchSelfUser().fold({ failure ->
-//                     kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
-//                 }, {
-//                     kaliumLogger.i("$logPrefix: Succeeded")
-//                     userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
-//                 })
-//             } else {
-//                 kaliumLogger.d("cccc: Self user found in metadata")
-//                 refreshUserDetailsIfNeeded(selfUserId)
-//             }
-//         }.filterNotNull().flatMapMerge { encodedValue ->
-//             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-//             userDAO.observeUserDetailsByQualifiedID(selfUserID)
-//                 .filterNotNull()
-//                 .map(userMapper::fromUserDetailsEntityToSelfUser)
-//         }
-//     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
