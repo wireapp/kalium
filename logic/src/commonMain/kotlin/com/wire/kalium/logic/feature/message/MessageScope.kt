@@ -463,4 +463,7 @@ class MessageScope internal constructor(
             dispatchers = dispatcher,
             scope = scope,
         )
+
+    val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
+        get() = GetSenderNameByMessageIdUseCase(messageRepository)
 }

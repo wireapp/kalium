@@ -264,6 +264,7 @@ class UserDatabaseBuilder internal constructor(
             database.messagePreviewQueries,
             userId,
             database.reactionsQueries,
+            database.usersQueries,
             queriesContext,
             database.messageAssetTransferStatusQueries,
             database.buttonContentQueries
