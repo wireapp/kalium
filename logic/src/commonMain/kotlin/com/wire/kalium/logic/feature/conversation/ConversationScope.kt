@@ -137,7 +137,7 @@ class ConversationScope internal constructor(
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
 
     val getMembersToMention: MembersToMentionUseCase
-        get() = MembersToMentionUseCase(observeConversationMembers, userRepository)
+        get() = MembersToMentionUseCase(observeConversationMembers = observeConversationMembers, selfUserId = selfUserId)
 
     val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)

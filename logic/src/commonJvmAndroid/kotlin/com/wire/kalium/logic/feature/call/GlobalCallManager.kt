@@ -82,7 +82,6 @@ actual class GlobalCallManager(
     internal actual fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
-        userRepository: UserRepository,
         currentClientIdProvider: CurrentClientIdProvider,
         selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
@@ -103,7 +102,7 @@ actual class GlobalCallManager(
                 CallManagerImpl(
                     calling = calling,
                     callRepository = callRepository,
-                    userRepository = userRepository,
+                    selfUserId = userId,
                     currentClientIdProvider = currentClientIdProvider,
                     selfConversationIdProvider = selfConversationIdProvider,
                     callMapper = callMapper,

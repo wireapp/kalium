@@ -45,7 +45,6 @@ expect class GlobalCallManager {
     internal fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
-        userRepository: UserRepository,
         currentClientIdProvider: CurrentClientIdProvider,
         selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,

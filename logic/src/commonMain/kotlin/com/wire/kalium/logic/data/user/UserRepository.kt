@@ -235,6 +235,7 @@ internal class UserDataSource internal constructor(
                 userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
                 if (otherUser != null) {
+//                     TODO: reuse TCP connection aka update in parallel
                     refreshUserDetailsIfNeeded(userId)
                 }
             }
@@ -414,6 +415,7 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
+    // TODO: this can cause many issues since it will
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
@@ -437,6 +439,28 @@ internal class UserDataSource internal constructor(
                 .map(userMapper::fromUserDetailsEntityToSelfUser)
         }
     }
+//         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
+//             // If the self user is not in the database, proactively fetch it.
+//             if (it == null) {
+//                 val logPrefix = "Observing self user before insertion"
+//                 kaliumLogger.w("cccc: $logPrefix: Triggering a fetch.")
+//                 fetchSelfUser().fold({ failure ->
+//                     kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
+//                 }, {
+//                     kaliumLogger.i("$logPrefix: Succeeded")
+//                     userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
+//                 })
+//             } else {
+//                 kaliumLogger.d("cccc: Self user found in metadata")
+//                 refreshUserDetailsIfNeeded(selfUserId)
+//             }
+//         }.filterNotNull().flatMapMerge { encodedValue ->
+//             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
+//             userDAO.observeUserDetailsByQualifiedID(selfUserID)
+//                 .filterNotNull()
+//                 .map(userMapper::fromUserDetailsEntityToSelfUser)
+//         }
+//     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
@@ -467,8 +491,10 @@ internal class UserDataSource internal constructor(
     }
 
     // TODO: replace the flow with selfUser and cache it
-    override suspend fun getSelfUser(): SelfUser? =
-        observeSelfUser().firstOrNull()
+    override suspend fun getSelfUser(): SelfUser? {
+        kaliumLogger.d("cccc: Getting self user")
+        return observeSelfUser().firstOrNull()
+    }
 
     override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
@@ -656,7 +682,7 @@ internal class UserDataSource internal constructor(
             CreateUserTeam(dto.teamId, dto.teamName)
         }
             .onSuccess {
-                kaliumLogger.d("Migrated user to team")
+                kaliumLogger.d("cccc: Migrated user to team")
                 fetchSelfUser()
             }
             .onFailure { failure ->

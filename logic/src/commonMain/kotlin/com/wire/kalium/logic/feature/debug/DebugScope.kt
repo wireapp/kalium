@@ -116,10 +116,10 @@ class DebugScope internal constructor(
 
     val sendConfirmation: SendConfirmationUseCase
         get() = SendConfirmationUseCase(
-            userRepository,
-            currentClientIdProvider,
-            slowSyncRepository,
-            messageSender
+            currentClientIdProvider = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            selfUserId = userId,
         )
 
     val disableEventProcessing: DisableEventProcessingUseCase

@@ -1264,7 +1264,6 @@ class UserSessionScope internal constructor(
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
-            userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
             userConfigRepository = userConfigRepository,
@@ -2060,7 +2059,6 @@ class UserSessionScope internal constructor(
             callManager = callManager,
             callRepository = callRepository,
             conversationRepository = conversationRepository,
-            userRepository = userRepository,
             flowManagerService = flowManagerService,
             mediaManagerService = mediaManagerService,
             syncManager = syncManager,
@@ -2071,6 +2069,8 @@ class UserSessionScope internal constructor(
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             kaliumConfigs = kaliumConfigs,
             inCallReactionsRepository = inCallReactionsRepository,
+            selfUserId = userId,
+            userRepository = userRepository
         )
 
     val connection: ConnectionScope

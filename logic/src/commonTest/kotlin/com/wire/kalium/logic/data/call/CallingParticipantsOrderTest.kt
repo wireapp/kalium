@@ -45,10 +45,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class CallingParticipantsOrderTest {
-
-    @Mock
-    private val userRepository = mock(UserRepository::class)
-
     @Mock
     private val participantsFilter = mock(ParticipantsFilter::class)
 
@@ -63,7 +59,12 @@ class CallingParticipantsOrderTest {
     @BeforeTest
     fun setup() {
         callingParticipantsOrder =
-            CallingParticipantsOrderImpl(userRepository, currentClientIdProvider, participantsFilter, participantsOrderByName)
+            CallingParticipantsOrderImpl(
+                currentClientIdProvider,
+                participantsFilter,
+                selfUserId = selfUserId,
+                participantsOrderByName = participantsOrderByName
+            )
     }
 
     @Test
@@ -92,10 +93,6 @@ class CallingParticipantsOrderTest {
         coEvery {
             currentClientIdProvider.invoke()
         }.returns(Either.Right(ClientId(selfClientId)))
-
-        coEvery {
-            userRepository.getSelfUser()
-        }.returns(selfUser)
 
         every {
             participantsFilter.otherParticipants(participants, selfClientId)

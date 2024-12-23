@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -42,7 +42,7 @@ import kotlinx.coroutines.withContext
 @Suppress("ReturnCount")
 class MembersToMentionUseCase internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
-    private val userRepository: UserRepository,
+    private val selfUserId: UserId,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
@@ -57,7 +57,7 @@ class MembersToMentionUseCase internal constructor(
         // TODO apply normalization techniques that are used for other searches to the name (e.g. ö -> oe)
 
         val usersToSearch = conversationMembers.filter {
-            it.user.id != userRepository.getSelfUser()?.id
+            it.user.id != selfUserId
         }
         if (searchQuery.isEmpty())
             return@withContext usersToSearch
