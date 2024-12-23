@@ -511,7 +511,6 @@ internal class MessageDAOImpl internal constructor(
         return withContext(coroutineContext) {
             assetViewQueries.getAllAssetMessagesByConversationId(
                 conversationId,
-                listOf(MessageEntity.Visibility.VISIBLE),
                 listOf(MessageEntity.ContentType.ASSET)
             ).executeAsList().mapNotNull { it.assetId }
         }
