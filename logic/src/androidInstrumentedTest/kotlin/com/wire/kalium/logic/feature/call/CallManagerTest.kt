@@ -58,6 +58,8 @@ class CallManagerTest {
     @Mock
     private val calling = mock(Calling::class)
 
+    private val selfUserId = UserId(value = "selfUserId", domain = "selfDomain")
+
     @Mock
     private val callRepository = mock(CallRepository::class)
 
@@ -133,7 +135,7 @@ class CallManagerTest {
             mediaManagerService = mediaManagerService,
             flowManagerService = flowManagerService,
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
-            selfUserId = UserId
+            selfUserId = selfUserId
         )
     }
 
