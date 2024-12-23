@@ -162,4 +162,5 @@ interface MessageDAO {
     suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>>
     suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity
     suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String?
+    suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String?
 }

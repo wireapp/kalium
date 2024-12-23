@@ -62,7 +62,6 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
-import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
@@ -455,15 +454,9 @@ class MessageScope internal constructor(
     val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
 
-    val sendInCallReactionUseCase: SendInCallReactionUseCase
-        get() = SendInCallReactionUseCase(
-            selfUserId = selfUserId,
-            provideClientId = currentClientIdProvider,
-            messageSender = messageSender,
-            dispatchers = dispatcher,
-            scope = scope,
-        )
-
     val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
         get() = GetSenderNameByMessageIdUseCase(messageRepository)
+
+    val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
+        get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 }
