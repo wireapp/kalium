@@ -23,6 +23,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.client.ClientDataSource
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -158,7 +160,12 @@ class ConversationScope internal constructor(
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
 
     val observeConversationInteractionAvailabilityUseCase: ObserveConversationInteractionAvailabilityUseCase
-        get() = ObserveConversationInteractionAvailabilityUseCase(conversationRepository, userRepository)
+        get() = ObserveConversationInteractionAvailabilityUseCase(
+            conversationRepository,
+            selfUserId = selfUserId,
+            selfClientIdProvider = currentClientIdProvider,
+            userRepository = userRepository
+        )
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)

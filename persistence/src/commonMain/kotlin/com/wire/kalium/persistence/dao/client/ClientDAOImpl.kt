@@ -173,6 +173,11 @@ internal class ClientDAOImpl internal constructor(
             .executeAsList()
             .groupBy { it.userId }
 
+    override suspend fun isMLSCapable(userId: QualifiedIDEntity, clientId: String): Boolean? = withContext(queriesContext) {
+        clientsQueries.isClientMLSCapable(userId, clientId)
+            .executeAsOneOrNull()
+    }
+
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
             .asFlow()

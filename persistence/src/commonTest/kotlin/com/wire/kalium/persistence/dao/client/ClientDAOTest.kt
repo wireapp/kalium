@@ -460,6 +460,31 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenClientIsNotMlsCapable_whenCallingIsMlsCapable_thenReturnFalse() = runTest {
+        val user = user
+        val client: InsertClientParam = insertedClient.copy(isMLSCapable = false)
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(client)
+        assertFalse { clientDAO.isMLSCapable(userId, clientId = client.id)!! }
+    }
+
+    @Test
+    fun givenClientIsMlsCapable_whenCallingIsMlsCapable_thenReturnTrue() = runTest {
+        val user = user
+        val client: InsertClientParam = insertedClient.copy(isMLSCapable = true)
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(client)
+        assertTrue { clientDAO.isMLSCapable(userId, clientId = client.id)!! }
+    }
+
+    @Test
+    fun givenNotFound_whenCallingIsMlsCapableForUser_thenReturnNull() = runTest {
+        val user = user
+        userDAO.upsertUser(user)
+        assertNull(clientDAO.isMLSCapable(userId, clientId = client.id))
+    }
+
+    @Test
     fun givenPersistedClient_whenUpsertingTheSameExactClient_thenItShouldIgnoreAndNotNotifyOtherQueries() = runTest {
         // Given
         userDAO.upsertUser(user)

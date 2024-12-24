@@ -87,6 +87,9 @@ SELECT * FROM Client WHERE user_id = :user_id AND id = :client_id;
 deleteClientsOfUserExcept:
 DELETE FROM Client WHERE user_id = :user_id AND id NOT IN :exception_ids;
 
+isClientMLSCapable:
+SELECT is_mls_capable FROM Client WHERE user_id = :user_id AND id = :client_id;
+
 tryMarkAsInvalid:
 UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = :user_id AND  id IN :clientId_List;
 
