@@ -62,7 +62,9 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
      */
     suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> = withContext(dispatcher.io) {
 
-        val isSelfClientMlsCapable = selfClientIdProvider().flatMap { userRepository.isClientMlsCapable(selfUserId, it) }.getOrElse {
+        val isSelfClientMlsCapable = selfClientIdProvider().flatMap {
+            userRepository.isClientMlsCapable(selfUserId, it)
+        }.getOrElse {
             return@withContext flow { IsInteractionAvailableResult.Failure(it) }
         }
 

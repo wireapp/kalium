@@ -142,7 +142,6 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
             awaitComplete()
         }
-
     }
 
     @Test
