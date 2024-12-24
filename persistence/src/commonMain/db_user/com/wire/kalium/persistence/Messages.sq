@@ -608,3 +608,11 @@ WHERE conversation_id = :conversationId
 AND creation_date >= (SELECT creation_date FROM Message WHERE id = :messageId LIMIT 1)
 AND expire_after_millis IS NULL
 ORDER BY creation_date DESC;
+
+selectNextAudioMessage:
+SELECT Message.id
+FROM Message LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+WHERE Message.conversation_id = :conversationId
+AND AssetContent.asset_mime_type LIKE "%audio/%"
+AND Message.creation_date > (SELECT Message.creation_date FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId)
+LIMIT 1;

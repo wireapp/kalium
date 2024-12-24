@@ -100,7 +100,7 @@ interface UserRepository {
      * Fetches user information for all of users id stored in the DB
      */
     suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
-    suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
@@ -266,7 +266,7 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
-        return fetchUsersByIds(ids)
+        return fetchUsersByIds(ids).map { }
     }
 
     override suspend fun fetchUserInfo(userId: UserId) =
@@ -328,8 +328,8 @@ internal class UserDataSource internal constructor(
                 }
         }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
-        fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean> =
+        fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { it.usersFound.isNotEmpty() }
 
     private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
@@ -411,7 +411,7 @@ internal class UserDataSource internal constructor(
         qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it && !userEntity.name.isNullOrBlank() } }
     }.flatMap { missingIds ->
         if (missingIds.isEmpty()) Either.Right(Unit)
-        else fetchUsersByIds(missingIds.map { it.toModel() }.toSet())
+        else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -629,7 +629,7 @@ internal class UserDataSource internal constructor(
     }.flatMap { usersWithoutMetadata ->
         kaliumLogger.d("Numbers of users to refresh: ${usersWithoutMetadata.size}")
         val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
-        fetchUsersByIds(userIds)
+        fetchUsersByIds(userIds).map { }
     }
 
     override suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID) = wrapStorageRequest {

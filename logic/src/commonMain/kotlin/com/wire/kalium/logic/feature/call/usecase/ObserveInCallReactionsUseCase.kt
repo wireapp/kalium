@@ -17,22 +17,23 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
+import com.wire.kalium.logic.data.call.InCallReactionMessage
+import com.wire.kalium.logic.data.call.InCallReactionsRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Use case to observe recently ended call metadata. This gives us all metadata assigned to a call.
- * Used mainly for analytics.
+ * Observe incoming in-call reactions
  */
-interface ObserveRecentlyEndedCallMetadataUseCase {
-    suspend operator fun invoke(): Flow<RecentlyEndedCallMetadata>
+interface ObserveInCallReactionsUseCase {
+    operator fun invoke(conversationId: ConversationId): Flow<InCallReactionMessage>
 }
 
-class ObserveRecentlyEndedCallMetadataUseCaseImpl internal constructor(
-    private val callRepository: CallRepository,
-) : ObserveRecentlyEndedCallMetadataUseCase {
-    override suspend fun invoke(): Flow<RecentlyEndedCallMetadata> {
-        return callRepository.observeRecentlyEndedCallMetadata()
+internal class ObserveInCallReactionsUseCaseImpl(
+    private val inCallReactionsRepository: InCallReactionsRepository,
+) : ObserveInCallReactionsUseCase {
+
+    override fun invoke(conversationId: ConversationId): Flow<InCallReactionMessage> {
+        return inCallReactionsRepository.observeInCallReactions(conversationId)
     }
 }

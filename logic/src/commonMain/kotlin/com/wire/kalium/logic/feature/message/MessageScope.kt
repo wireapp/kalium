@@ -453,4 +453,10 @@ class MessageScope internal constructor(
 
     val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
+
+    val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
+        get() = GetSenderNameByMessageIdUseCase(messageRepository)
+
+    val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
+        get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 }
