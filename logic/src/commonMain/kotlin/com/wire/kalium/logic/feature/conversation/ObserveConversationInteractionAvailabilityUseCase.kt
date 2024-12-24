@@ -72,7 +72,10 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
 
         conversationRepository.observeConversationDetailsById(conversationId).map { eitherConversation ->
             eitherConversation.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { conversationDetails ->
-                val isProtocolSupported = doesUserSupportConversationProtocol(conversationDetails, isSelfClientMlsCapable)
+                val isProtocolSupported = doesUserSupportConversationProtocol(
+                    conversationDetails = conversationDetails,
+                    isSelfClientMlsCapable = isSelfClientMlsCapable
+                )
                 if (!isProtocolSupported) { // short-circuit to Unsupported Protocol if it's the case
                     return@fold IsInteractionAvailableResult.Success(InteractionAvailability.UNSUPPORTED_PROTOCOL)
                 }
