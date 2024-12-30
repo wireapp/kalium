@@ -23,6 +23,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneMigratorArrangement
@@ -250,7 +251,7 @@ class OneOnOneResolverTest {
         // given
         val (arrangement, resolver) = arrange {
             withGetProtocolForUser(CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate.left())
-            withMigrateExistingToProteusReturns(Either.Right(TestConversation.ID))
+            withMigrateExistingToProteusReturns(TestConversation.ID.right())
         }
 
         // when
