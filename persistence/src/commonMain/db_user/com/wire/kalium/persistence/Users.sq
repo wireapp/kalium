@@ -56,21 +56,21 @@ ON CONFLICT(qualified_id) DO UPDATE SET
     defederated = 0,
     supported_protocols = excluded.supported_protocols
 WHERE -- execute the update only if any of the fields changed
-    User.name != excluded.name
-    OR User.handle != excluded.handle
-    OR User.email != excluded.email
-    OR User.phone != excluded.phone
-    OR User.accent_id != excluded.accent_id
-    OR User.team != excluded.team
-    OR User.preview_asset_id != excluded.preview_asset_id
-    OR User.complete_asset_id != excluded.complete_asset_id
-    OR User.user_type != excluded.user_type
-    OR User.bot_service != excluded.bot_service
-    OR User.deleted != excluded.deleted
-    OR User.incomplete_metadata != excluded.incomplete_metadata
-    OR User.expires_at != excluded.expires_at
-    OR User.defederated != 0
-    OR User.supported_protocols != excluded.supported_protocols;
+    User.name IS NOT excluded.name
+    OR User.handle IS NOT excluded.handle
+    OR User.email IS NOT excluded.email
+    OR User.phone IS NOT excluded.phone
+    OR User.accent_id IS NOT excluded.accent_id
+    OR User.team IS NOT excluded.team
+    OR User.preview_asset_id IS NOT excluded.preview_asset_id
+    OR User.complete_asset_id IS NOT excluded.complete_asset_id
+    OR User.user_type IS NOT excluded.user_type
+    OR User.bot_service IS NOT excluded.bot_service
+    OR User.deleted IS NOT excluded.deleted
+    OR User.incomplete_metadata IS NOT excluded.incomplete_metadata
+    OR User.expires_at IS NOT excluded.expires_at
+    OR User.defederated IS NOT 0
+    OR User.supported_protocols IS NOT excluded.supported_protocols;
 
 selectChanges:
 SELECT changes();

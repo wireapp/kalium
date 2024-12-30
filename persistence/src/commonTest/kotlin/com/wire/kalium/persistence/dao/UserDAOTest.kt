@@ -1022,6 +1022,41 @@ class UserDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenPersistedUserWithNullValues_whenUpsertingUpdatedUserWithoutNullValues_thenItShouldBeSaved() = runTest(dispatcher) {
+        // Given
+        val userDetails = newUserDetailsEntity().copy(
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            team = null,
+            previewAssetId = null,
+            completeAssetId = null,
+            supportedProtocols = null,
+        )
+        val user = userDetails.toSimpleEntity()
+        db.userDAO.upsertUser(user)
+
+        // When
+        val updatedUserDetails = userDetails.copy(
+            name = "name",
+            handle = "handle",
+            email = "email",
+            phone = "phone",
+            team = "team",
+            previewAssetId = UserAssetIdEntity("preview", "domain"),
+            completeAssetId = UserAssetIdEntity("complete", "domain"),
+            supportedProtocols = setOf(SupportedProtocolEntity.MLS, SupportedProtocolEntity.PROTEUS),
+        )
+        val updatedUser = updatedUserDetails.toSimpleEntity()
+        db.userDAO.upsertUser(updatedUser)
+
+        // Then
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
+        assertEquals(updatedUserDetails, result)
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
