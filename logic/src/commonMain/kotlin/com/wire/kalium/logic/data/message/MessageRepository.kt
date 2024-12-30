@@ -254,6 +254,10 @@ internal interface MessageRepository {
         conversationId: ConversationId
     ): Either<StorageFailure, AssetTransferStatus>
 
+    suspend fun getAllAssetIdsFromConversationId(
+        conversationId: ConversationId,
+    ): Either<StorageFailure, List<String>>
+
     suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
     suspend fun getNextAudioMessageInConversation(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
 }
@@ -708,6 +712,14 @@ internal class MessageDataSource internal constructor(
         conversationId: ConversationId
     ): Either<StorageFailure, AssetTransferStatus> = wrapStorageRequest {
         messageDAO.getMessageAssetTransferStatus(messageId, conversationId.toDao()).toModel()
+    }
+
+    override suspend fun getAllAssetIdsFromConversationId(
+        conversationId: ConversationId
+    ): Either<StorageFailure, List<String>> {
+        return wrapStorageRequest {
+            messageDAO.getAllMessageAssetIdsForConversationId(conversationId = conversationId.toDao())
+        }
     }
 
     override suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String> =

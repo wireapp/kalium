@@ -507,6 +507,17 @@ internal class MessageDAOImpl internal constructor(
                 .executeAsOne()
         }
 
+    override suspend fun getAllMessageAssetIdsForConversationId(
+        conversationId: QualifiedIDEntity
+    ): List<String> {
+        return withContext(coroutineContext) {
+            assetViewQueries.getAllAssetMessagesByConversationId(
+                conversationId,
+                listOf(MessageEntity.ContentType.ASSET)
+            ).executeAsList().mapNotNull { it.assetId }
+        }
+    }
+
     override suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String? = withContext(coroutineContext) {
         userQueries.selectNameByMessageId(id, conversationId).executeAsOneOrNull()?.name
     }
