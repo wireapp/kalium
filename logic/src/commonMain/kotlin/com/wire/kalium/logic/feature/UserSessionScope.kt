@@ -1809,7 +1809,9 @@ class UserSessionScope internal constructor(
             this,
             userScopedLogger,
             refreshUsersWithoutMetadata,
-            sessionManager.getServerConfig().links
+            sessionManager.getServerConfig().links,
+            messages.messageRepository,
+            assetRepository
         )
     }
 

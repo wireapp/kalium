@@ -466,4 +466,7 @@ class MessageScope internal constructor(
 
     val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
         get() = GetSenderNameByMessageIdUseCase(messageRepository)
+
+    val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
+        get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 }
