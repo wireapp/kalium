@@ -75,18 +75,10 @@ internal class ClientDAOImpl internal constructor(
      * then any new value will be ignored.
      */
     override suspend fun insertClient(client: InsertClientParam): Unit = withContext(queriesContext) {
-        clientsQueries.transaction {
-            insert(client)
-            val changes = clientsQueries.selectChanges().executeAsOne()
-            if (changes == 0L) {
-                // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
-                this.rollback()
-            }
-        }
+        insert(client)
     }
 
-    // returns true if any row has been inserted or modified, false if exactly the same data already exists
-    private fun insert(client: InsertClientParam): Boolean = with(client) {
+    private fun insert(client: InsertClientParam) = with(client) {
         clientsQueries.insertClient(
             user_id = userId,
             id = id,
@@ -100,16 +92,11 @@ internal class ClientDAOImpl internal constructor(
             label = label,
             mls_public_keys = mlsPublicKeys
         )
-        clientsQueries.selectChanges().executeAsOne() > 0
     }
 
     override suspend fun insertClients(clients: List<InsertClientParam>) = withContext(queriesContext) {
         clientsQueries.transaction {
-            val anyInsertedOrModified = clients.map { client -> insert(client) }.any { it }
-            if (!anyInsertedOrModified) {
-                // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
-                this.rollback()
-            }
+            clients.forEach { client -> insert(client) }
         }
     }
 
@@ -129,13 +116,8 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>) = withContext(queriesContext) {
         clientsQueries.transaction {
             clients.groupBy { it.userId }.forEach { (userId, clientsList) ->
-                val anyInsertedOrModified = clientsList.map { client -> insert(client) }.any { it }
+                clientsList.forEach { client -> insert(client) }
                 clientsQueries.deleteClientsOfUserExcept(userId, clientsList.map { it.id })
-                val anyDeleted = clientsQueries.selectChanges().executeAsOne() > 0
-                if (!anyInsertedOrModified && !anyDeleted) {
-                    // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
-                    this.rollback()
-                }
             }
         }
     }

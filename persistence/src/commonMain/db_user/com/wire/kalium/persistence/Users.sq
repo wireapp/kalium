@@ -40,40 +40,21 @@ insertUser:
 INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
-    name = excluded.name,
-    handle = excluded.handle,
-    email = excluded.email,
-    phone = excluded.phone,
-    accent_id = excluded.accent_id,
-    team = excluded.team,
-    preview_asset_id = excluded.preview_asset_id,
-    complete_asset_id = excluded.complete_asset_id,
-    user_type = excluded.user_type,
-    bot_service = excluded.bot_service,
-    deleted = excluded.deleted,
-    incomplete_metadata = excluded.incomplete_metadata,
-    expires_at = excluded.expires_at,
-    defederated = 0,
-    supported_protocols = excluded.supported_protocols
-WHERE -- execute the update only if any of the fields changed
-    User.name != excluded.name
-    OR User.handle != excluded.handle
-    OR User.email != excluded.email
-    OR User.phone != excluded.phone
-    OR User.accent_id != excluded.accent_id
-    OR User.team != excluded.team
-    OR User.preview_asset_id != excluded.preview_asset_id
-    OR User.complete_asset_id != excluded.complete_asset_id
-    OR User.user_type != excluded.user_type
-    OR User.bot_service != excluded.bot_service
-    OR User.deleted != excluded.deleted
-    OR User.incomplete_metadata != excluded.incomplete_metadata
-    OR User.expires_at != excluded.expires_at
-    OR User.defederated != 0
-    OR User.supported_protocols != excluded.supported_protocols;
-
-selectChanges:
-SELECT changes();
+name = excluded.name,
+handle = excluded.handle,
+email = excluded.email,
+phone = excluded.phone,
+accent_id = excluded.accent_id,
+team = excluded.team,
+preview_asset_id = excluded.preview_asset_id,
+complete_asset_id = excluded.complete_asset_id,
+user_type = excluded.user_type,
+bot_service = excluded.bot_service,
+deleted = excluded.deleted,
+incomplete_metadata = excluded.incomplete_metadata,
+expires_at = excluded.expires_at,
+defederated = 0,
+supported_protocols = excluded.supported_protocols;
 
 insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)

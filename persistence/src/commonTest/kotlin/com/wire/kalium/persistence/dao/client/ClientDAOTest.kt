@@ -453,47 +453,9 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.insertClients(listOf(insertClientWithNonNullValues))
 
-        // null values should be overwritten with proper ones
+        // null values should not be overwritten with proper ones
         clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
             assertEquals(listOf(clientWithNonNullValues), resultList)
-        }
-    }
-
-    @Test
-    fun givenPersistedClient_whenUpsertingTheSameExactClient_thenItShouldIgnoreAndNotNotifyOtherQueries() = runTest {
-        // Given
-        userDAO.upsertUser(user)
-        clientDAO.insertClient(insertedClient)
-
-        clientDAO.observeClient(user.id, insertedClient.id).test {
-            val initialValue = awaitItem()
-            assertEquals(insertedClient.toClient(), initialValue)
-
-            // When
-            clientDAO.insertClient(insertedClient) // the same exact client is being saved again
-
-            // Then
-            expectNoEvents() // other query should not be notified
-        }
-    }
-
-    @Test
-    fun givenPersistedClient_whenUpsertingUpdatedClient_thenItShouldBeSavedAndOtherQueriesShouldBeUpdated() = runTest {
-        // Given
-        userDAO.upsertUser(user)
-        clientDAO.insertClient(insertedClient)
-        val updatedInsertedClient = insertedClient.copy(label = "new_label")
-
-        clientDAO.observeClient(user.id, insertedClient.id).test {
-            val initialValue = awaitItem()
-            assertEquals(insertedClient.toClient(), initialValue)
-
-            // When
-            clientDAO.insertClient(updatedInsertedClient) //  updated client is being saved that should replace the old one
-
-            // Then
-            val updatedValue = awaitItem() // other query should be notified
-            assertEquals(updatedInsertedClient.toClient(), updatedValue)
         }
     }
 
