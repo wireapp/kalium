@@ -42,6 +42,8 @@ import com.wire.kalium.logic.feature.call.usecase.FlipToFrontCameraUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.GetCurrentClientIdUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetCurrentClientIdUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
@@ -246,4 +248,9 @@ class CallsScope internal constructor(
 
     val observeInCallReactions: ObserveInCallReactionsUseCase
         get() = ObserveInCallReactionsUseCaseImpl(inCallReactionsRepository)
+
+    val getCurrentClientIdUseCase: GetCurrentClientIdUseCase
+        get() = GetCurrentClientIdUseCaseImpl(
+            currentClientIdProvider = currentClientIdProvider
+        )
 }
