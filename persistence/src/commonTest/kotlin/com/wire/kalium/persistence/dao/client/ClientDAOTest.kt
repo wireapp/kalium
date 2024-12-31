@@ -453,7 +453,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.insertClients(listOf(insertClientWithNonNullValues))
 
-        // null values should be overwritten with proper ones
+        // null values should not be overwritten with proper ones
         clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
             assertEquals(listOf(clientWithNonNullValues), resultList)
         }
