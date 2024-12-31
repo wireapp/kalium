@@ -68,7 +68,7 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
             return@withContext flow { IsInteractionAvailableResult.Failure(it) }
         }
 
-        kaliumLogger.d("cccc: isSelfClientMlsCapable $isSelfClientMlsCapable")
+        kaliumLogger.withTextTag("ObserveConversationInteractionAvailabilityUseCase").d("isSelfClientMlsCapable $isSelfClientMlsCapable")
 
         conversationRepository.observeConversationDetailsById(conversationId).map { eitherConversation ->
             eitherConversation.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { conversationDetails ->
