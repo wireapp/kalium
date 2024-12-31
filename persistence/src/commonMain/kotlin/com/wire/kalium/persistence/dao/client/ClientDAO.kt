@@ -97,4 +97,5 @@ interface ClientDAO {
     ): Map<QualifiedIDEntity, List<Client>>
 
     suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>>
+    suspend fun isMLSCapable(userId: QualifiedIDEntity, clientId: String): Boolean?
 }

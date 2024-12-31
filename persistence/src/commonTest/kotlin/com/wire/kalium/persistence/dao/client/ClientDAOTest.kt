@@ -459,6 +459,69 @@ class ClientDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenClientIsNotMlsCapable_whenCallingIsMlsCapable_thenReturnFalse() = runTest {
+        val user = user
+        val client: InsertClientParam = insertedClient.copy(isMLSCapable = false)
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(client)
+        assertFalse { clientDAO.isMLSCapable(userId, clientId = client.id)!! }
+    }
+
+    @Test
+    fun givenClientIsMlsCapable_whenCallingIsMlsCapable_thenReturnTrue() = runTest {
+        val user = user
+        val client: InsertClientParam = insertedClient.copy(isMLSCapable = true)
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(client)
+        assertTrue { clientDAO.isMLSCapable(userId, clientId = client.id)!! }
+    }
+
+    @Test
+    fun givenNotFound_whenCallingIsMlsCapableForUser_thenReturnNull() = runTest {
+        val user = user
+        userDAO.upsertUser(user)
+        assertNull(clientDAO.isMLSCapable(userId, clientId = client.id))
+    }
+
+    @Test
+    fun givenPersistedClient_whenUpsertingTheSameExactClient_thenItShouldIgnoreAndNotNotifyOtherQueries() = runTest {
+        // Given
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(insertedClient)
+
+        clientDAO.observeClient(user.id, insertedClient.id).test {
+            val initialValue = awaitItem()
+            assertEquals(insertedClient.toClient(), initialValue)
+
+            // When
+            clientDAO.insertClient(insertedClient) // the same exact client is being saved again
+
+            // Then
+            expectNoEvents() // other query should not be notified
+        }
+    }
+
+    @Test
+    fun givenPersistedClient_whenUpsertingUpdatedClient_thenItShouldBeSavedAndOtherQueriesShouldBeUpdated() = runTest {
+        // Given
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(insertedClient)
+        val updatedInsertedClient = insertedClient.copy(label = "new_label")
+
+        clientDAO.observeClient(user.id, insertedClient.id).test {
+            val initialValue = awaitItem()
+            assertEquals(insertedClient.toClient(), initialValue)
+
+            // When
+            clientDAO.insertClient(updatedInsertedClient) //  updated client is being saved that should replace the old one
+
+            // Then
+            val updatedValue = awaitItem() // other query should be notified
+            assertEquals(updatedInsertedClient.toClient(), updatedValue)
+        }
+    }
+
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
