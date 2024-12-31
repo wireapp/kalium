@@ -33,6 +33,8 @@ interface OneOnOneMigratorArrangement {
     fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>)
 
     fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>)
+
+    fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>)
 }
 
 class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
@@ -53,4 +55,12 @@ class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
             .whenInvokedWith(any())
             .thenReturn(result)
     }
+
+    override fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>) {
+        given(oneOnOneMigrator)
+            .suspendFunction(oneOnOneMigrator::migrateExistingProteus)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
 }
+//,
