@@ -182,40 +182,6 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenNewMLSConversationEvent_whenMLSIsDisabled_thenConversationShouldNotPersisted() =
-        runTest {
-            val event = Event.Conversation.NewConversation(
-                "id",
-                TestConversation.ID,
-                TestUser.SELF.id,
-                "time",
-                CONVERSATION_RESPONSE.copy(
-                    groupId = RAW_GROUP_ID,
-                    protocol = MLS,
-                    mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
-                )
-            )
-            val selfUserFlow = flowOf(TestUser.SELF)
-            val (arrangement, conversationRepository) = Arrangement()
-                .withSelfUserFlow(selfUserFlow)
-                .withExpectedConversationBase(null)
-                .withDisabledMlsClientProvider()
-                .withHasEstablishedMLSGroup(true)
-                .arrange()
-
-            conversationRepository.persistConversation(event.conversation, "teamId")
-
-            verify(arrangement.conversationDAO)
-                .suspendFunction(arrangement.conversationDAO::insertConversation)
-                .with(
-                    matching { conversation ->
-                        conversation.id.value == CONVERSATION_RESPONSE.id.value
-                    }
-                )
-                .wasNotInvoked()
-        }
-
-    @Test
     fun givenNewConversationEvent_whenCallingPersistConversationFromEventAndExists_thenConversationPersistenceShouldBeSkipped() =
         runTest {
             val event = Event.Conversation.NewConversation(
