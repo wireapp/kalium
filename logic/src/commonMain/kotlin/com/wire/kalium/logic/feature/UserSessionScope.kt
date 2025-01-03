@@ -2108,7 +2108,7 @@ class UserSessionScope internal constructor(
         )
 
     val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase
-        get() = MigrateFromPersonalToTeamUseCaseImpl(userId, userRepository, invalidateTeamId)
+        get() = MigrateFromPersonalToTeamUseCaseImpl(userId, userRepository, syncContacts, invalidateTeamId)
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
