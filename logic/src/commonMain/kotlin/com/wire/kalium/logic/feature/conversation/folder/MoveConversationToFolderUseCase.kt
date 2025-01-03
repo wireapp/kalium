@@ -38,7 +38,11 @@ interface MoveConversationToFolderUseCase {
      * @param previousFolderId the id of the previous folder, if any
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(conversationId: ConversationId, folderId: String, previousFolderId: String?): Result
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        folderId: String,
+        previousFolderId: String?
+    ): Result
 
     sealed interface Result {
         data object Success : Result
@@ -55,8 +59,17 @@ internal class MoveConversationToFolderUseCaseImpl(
         folderId: String,
         previousFolderId: String?
     ): MoveConversationToFolderUseCase.Result = withContext(dispatchers.io) {
-        (previousFolderId?.let { conversationFolderRepository.removeConversationFromFolder(conversationId, it) } ?: Either.Right(Unit))
-            .flatMap { conversationFolderRepository.addConversationToFolder(conversationId, folderId) }
+        (
+                previousFolderId?.let {
+                    conversationFolderRepository.removeConversationFromFolder(conversationId, it)
+                } ?: Either.Right(Unit)
+                )
+            .flatMap {
+                conversationFolderRepository.addConversationToFolder(
+                    conversationId,
+                    folderId
+                )
+            }
             .flatMap { conversationFolderRepository.syncConversationFoldersFromLocal() }
             .fold({
                 MoveConversationToFolderUseCase.Result.Failure(it)

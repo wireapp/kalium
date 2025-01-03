@@ -176,7 +176,9 @@ object TestConversation {
         userActiveOneOnOneConversationId = null,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         accentId = null,
-        isFavorite = false
+        isFavorite = false,
+        folderId = null,
+        folderName = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -341,7 +343,9 @@ object TestConversation {
         userActiveOneOnOneConversationId = null,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         accentId = null,
-        isFavorite = false
+        isFavorite = false,
+        folderId = null,
+        folderName = null
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(

@@ -308,7 +308,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val otherUser: OtherUser,
         val userType: UserType,
         val isFavorite: Boolean = false,
-        val folder: ConversationFolder?
+        val folder: ConversationFolder? = null
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -317,7 +317,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val isSelfUserMember: Boolean,
         val selfRole: Conversation.Member.Role?,
         val isFavorite: Boolean = false,
-        val folder: ConversationFolder?
+        val folder: ConversationFolder? = null
 //         val isTeamAdmin: Boolean, TODO kubaz
     ) : ConversationDetails(conversation)
 

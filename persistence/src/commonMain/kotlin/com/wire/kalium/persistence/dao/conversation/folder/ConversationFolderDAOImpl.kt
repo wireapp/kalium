@@ -37,8 +37,8 @@ class ConversationFolderDAOImpl internal constructor(
 ) : ConversationFolderDAO {
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
 
-    override suspend fun observeUserFolders(): Flow<List<ConversationFolderEntity>> {
-        return conversationFoldersQueries.getUserFolders()
+    override suspend fun observeFolders(): Flow<List<ConversationFolderEntity>> {
+        return conversationFoldersQueries.getFolders()
             .asFlow()
             .mapToList()
             .map { it.map(::toEntity) }

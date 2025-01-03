@@ -58,7 +58,7 @@ internal interface ConversationFolderRepository {
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
-    suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
+    suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
 }
 
 internal class ConversationFolderDataSource internal constructor(
@@ -155,8 +155,8 @@ internal class ConversationFolderDataSource internal constructor(
             }
     }
 
-    override suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
-        return conversationFolderDAO.observeUserFolders()
+    override suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
+        return conversationFolderDAO.observeFolders()
             .wrapStorageRequest()
             .mapRight { folderEntities -> folderEntities.map { it.toModel() } }
     }
