@@ -270,7 +270,7 @@ class UpdateApiVersionUseCaseTest {
                 .then { result }
         }
 
-        suspend fun withUpdateConfigMetaData(
+        fun withUpdateConfigMetaData(
             serverConfig: ServerConfig,
             result: Either<CoreFailure, Unit>
         ) {
