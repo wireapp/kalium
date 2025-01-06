@@ -285,7 +285,7 @@ internal class UserDataSource internal constructor(
         } else {
             qualifiedUserIdList
                 .chunked(BATCH_SIZE)
-                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
+                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, usersDTO ->
                     wrapApiRequest {
                         kaliumLogger.d("Fetching ${chunk.size} users")
                         userDetailsApi.getMultipleUsers(
@@ -293,9 +293,9 @@ internal class UserDataSource internal constructor(
                         )
                     }.map {
                         kaliumLogger.d("Found ${it.usersFound.size} users and ${it.usersFailed.size} failed users")
-                        acc.copy(
-                            usersFound = (acc.usersFound + it.usersFound).distinct(),
-                            usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
+                        usersDTO.copy(
+                            usersFound = (usersDTO.usersFound + it.usersFound).distinct(),
+                            usersFailed = (usersDTO.usersFailed + it.usersFailed).distinct(),
                         )
                     }
                 }
