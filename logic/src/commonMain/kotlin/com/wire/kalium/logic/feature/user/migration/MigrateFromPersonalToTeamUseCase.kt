@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 
@@ -54,6 +55,7 @@ sealed class MigrateFromPersonalToTeamFailure {
 internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
     private val selfUserId: UserId,
     private val userRepository: UserRepository,
+    private val syncContacts: SyncContactsUseCase,
     private val invalidateTeamId: () -> Unit
 ) : MigrateFromPersonalToTeamUseCase {
     override suspend operator fun invoke(
@@ -94,7 +96,8 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
             }
         }, { user ->
             userRepository.updateTeamId(selfUserId, TeamId(user.teamId))
-                    invalidateTeamId()
+            invalidateTeamId()
+            syncContacts()
             MigrateFromPersonalToTeamResult.Success
         })
     }
