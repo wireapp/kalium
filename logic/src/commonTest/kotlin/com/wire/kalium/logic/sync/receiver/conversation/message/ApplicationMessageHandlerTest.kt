@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
@@ -172,6 +173,41 @@ class ApplicationMessageHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenInCallReactionReceived_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        // given
+        val messageId = "messageId"
+        val inCallReactionContent = MessageContent.InCallEmoji(
+            emojis = mapOf("1" to 1)
+        )
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            inCallReactionContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+
+        val (arrangement, messageHandler) = Arrangement()
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+
+        // when
+        messageHandler.handleContent(
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        // then
+        coVerify {
+            arrangement.inCallReactionsRepository.addInCallReaction(messageEvent.conversationId, messageEvent.senderUserId, setOf("1"))
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
@@ -216,6 +252,9 @@ class ApplicationMessageHandlerTest {
         val buttonActionConfirmationHandler = mock(ButtonActionConfirmationHandler::class)
 
         @Mock
+        val inCallReactionsRepository = mock(InCallReactionsRepository::class)
+
+        @Mock
         val dataTransferEventHandler = mock(DataTransferEventHandler::class)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
@@ -234,6 +273,7 @@ class ApplicationMessageHandlerTest {
             receiptMessageHandler,
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
+            inCallReactionsRepository,
             TestUser.SELF.id
         )
 

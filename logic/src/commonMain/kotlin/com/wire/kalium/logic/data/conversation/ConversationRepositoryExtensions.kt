@@ -73,5 +73,5 @@ data class ConversationQueryConfig(
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,
     val newActivitiesOnTop: Boolean = false,
-    val conversationFilter: ConversationFilter = ConversationFilter.ALL,
+    val conversationFilter: ConversationFilter = ConversationFilter.All,
 )

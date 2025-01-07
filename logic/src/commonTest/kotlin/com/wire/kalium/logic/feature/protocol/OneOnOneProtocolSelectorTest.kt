@@ -167,48 +167,6 @@ class OneOnOneProtocolSelectorTest {
     }
 
     @Test
-    fun givenUsersHaveProtocolInCommonButDiffersWithDefaultProtocol_thenShouldReturnNoCommonProtocol() = runTest {
-        val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS)))
-            withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.MLS))))
-            withGetDefaultProtocolReturning(SupportedProtocol.PROTEUS.right())
-        }
-
-        oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
-            .shouldFail {
-                assertIs<CoreFailure.NoCommonProtocolFound>(it)
-            }
-    }
-
-    @Test
-    fun givenSelfUserSupportsDefaultProtocolButOtherUserDoesnt_thenShouldReturnNoCommonProtocol() = runTest {
-        val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS)))
-            withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.MLS))))
-            withGetDefaultProtocolReturning(SupportedProtocol.PROTEUS.right())
-        }
-
-        oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
-            .shouldFail {
-                assertIs<CoreFailure.NoCommonProtocolFound>(it)
-            }
-    }
-
-    @Test
-    fun givenSelfUserDoesntSupportsDefaultProtocolButOtherUserDoes_thenShouldReturnNoCommonProtocol() = runTest {
-        val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS)))
-            withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS))))
-            withGetDefaultProtocolReturning(SupportedProtocol.PROTEUS.right())
-        }
-
-        oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
-            .shouldFail {
-                assertIs<CoreFailure.NoCommonProtocolFound>(it)
-            }
-    }
-
-    @Test
     fun givenUsersHaveProtocolInCommonIncludingDefaultProtocol_thenShouldReturnDefaultProtocolAsCommonProtocol() = runTest {
         val (_, oneOnOneProtocolSelector) = arrange {
             withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS)))

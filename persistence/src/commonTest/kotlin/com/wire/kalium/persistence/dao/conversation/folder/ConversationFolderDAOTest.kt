@@ -59,7 +59,8 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
             id = folderId,
             name = "folderName",
             type = ConversationFolderTypeEntity.USER,
-            conversationIdList = listOf(conversationEntity1.id))
+            conversationIdList = listOf(conversationEntity1.id)
+        )
 
         db.conversationFolderDAO.updateConversationFolders(listOf(conversationFolderEntity))
         val result = db.conversationFolderDAO.observeConversationListFromFolder(folderId).first().first()
@@ -79,12 +80,13 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
             id = folderId,
             name = "",
             type = ConversationFolderTypeEntity.FAVORITE,
-            conversationIdList = listOf(conversationEntity1.id))
+            conversationIdList = listOf(conversationEntity1.id)
+        )
 
         db.conversationFolderDAO.updateConversationFolders(listOf(conversationFolderEntity))
         val result = db.conversationFolderDAO.getFavoriteConversationFolder()
 
-        assertEquals(folderId, result.id)
+        assertEquals(folderId, result?.id)
     }
 
     @Test

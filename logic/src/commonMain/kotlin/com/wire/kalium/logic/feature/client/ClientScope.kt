@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -71,7 +72,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val cachedClientIdClearer: CachedClientIdClearer,
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val registerMLSClientUseCase: RegisterMLSClientUseCase,
-    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
+    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
+    private val userConfigRepository: UserConfigRepository
 ) {
     @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
@@ -102,7 +104,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     val deregisterNativePushToken: DeregisterTokenUseCase
         get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
-        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientIdProvider, keyPackageLimitsProvider)
+        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientIdProvider, keyPackageLimitsProvider, userConfigRepository)
     val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
         get() = RestartSlowSyncProcessForRecoveryUseCaseImpl(slowSyncRepository)
     val refillKeyPackages: RefillKeyPackagesUseCase

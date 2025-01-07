@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -103,6 +104,9 @@ class CallManagerTest {
     @Mock
     private val getCallConversationType = mock(GetCallConversationTypeProvider::class)
 
+    @Mock
+    private val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
+
     private val dispatcher = TestKaliumDispatcher
 
     private lateinit var callManagerImpl: CallManagerImpl
@@ -132,7 +136,8 @@ class CallManagerTest {
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
             mediaManagerService = mediaManagerService,
-            flowManagerService = flowManagerService
+            flowManagerService = flowManagerService,
+            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
         )
     }
 

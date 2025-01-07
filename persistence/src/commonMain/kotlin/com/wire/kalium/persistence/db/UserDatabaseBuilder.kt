@@ -112,13 +112,15 @@ internal expect fun userDatabaseDriverByPath(
     enableWAL: Boolean
 ): SqlDriver
 
+@Suppress("LongParameterList")
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     internal val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
+    private val cipherProfile: String? = null,
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -262,6 +264,7 @@ class UserDatabaseBuilder internal constructor(
             database.messagePreviewQueries,
             userId,
             database.reactionsQueries,
+            database.usersQueries,
             queriesContext,
             database.messageAssetTransferStatusQueries,
             database.buttonContentQueries
@@ -315,6 +318,25 @@ class UserDatabaseBuilder internal constructor(
      * @return the absolute path of the DB file or null if the DB file does not exist
      */
     fun dbFileLocation(): String? = getDatabaseAbsoluteFileLocation(platformDatabaseData, userId)
+
+    /**
+     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
+     * @param enabled true to enable profiling, false to disable
+     */
+    fun changeProfiling(enabled: Boolean) {
+        if (isEncrypted && cipherProfile != null) {
+            val cipherProfileValue = if (enabled) cipherProfile else "off"
+            sqlDriver.executeQuery(
+                identifier = null,
+                sql = "PRAGMA cipher_profile='$cipherProfileValue'",
+                mapper = {
+                    it.next()
+                    it.getLong(0).let { QueryResult.Value<Long?>(it) }
+                },
+                parameters = 0,
+            )
+        }
+    }
 
     /**
      * drops DB connection and delete the DB file

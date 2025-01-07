@@ -132,12 +132,12 @@ interface ConversationRepository {
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter = ConversationFilter.ALL
+        conversationFilter: ConversationFilter = ConversationFilter.All
     ): Flow<List<ConversationDetails>>
 
     suspend fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean = false,
-        conversationFilter: ConversationFilter = ConversationFilter.ALL
+        conversationFilter: ConversationFilter = ConversationFilter.All
     ): Flow<List<ConversationDetailsWithEvents>>
 
     suspend fun getConversationIds(
@@ -224,6 +224,7 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     /**
      * Deletes all conversation messages
@@ -432,16 +433,19 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Boolean> = wrapStorageRequest {
         val isNewConversation = conversationDAO.getConversationById(conversation.id.toDao()) == null
         if (isNewConversation) {
-            conversationDAO.insertConversation(
-                conversationMapper.fromApiModelToDaoModel(
-                    conversation,
-                    mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },
-                    selfTeamIdProvider().getOrNull(),
+            val mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) }
+            if (shouldPersistMLSConversation(mlsGroupState)) {
+                conversationDAO.insertConversation(
+                    conversationMapper.fromApiModelToDaoModel(
+                        conversation,
+                        mlsGroupState = mlsGroupState?.getOrNull(),
+                        selfTeamIdProvider().getOrNull(),
+                    )
                 )
-            )
-            memberDAO.insertMembersWithQualifiedId(
-                memberMapper.fromApiModelToDaoModel(conversation.members), idMapper.fromApiToDao(conversation.id)
-            )
+                memberDAO.insertMembersWithQualifiedId(
+                    memberMapper.fromApiModelToDaoModel(conversation.members), idMapper.fromApiToDao(conversation.id)
+                )
+            }
         }
         isNewConversation
     }
@@ -453,17 +457,19 @@ internal class ConversationDataSource internal constructor(
         invalidateMembers: Boolean
     ) = wrapStorageRequest {
         val conversationEntities = conversations
-            .map { conversationResponse ->
-                conversationMapper.fromApiModelToDaoModel(
-                    conversationResponse,
-                    mlsGroupState = conversationResponse.groupId?.let {
-                        mlsGroupState(
-                            idMapper.fromGroupIDEntity(it),
-                            originatedFromEvent
-                        )
-                    },
-                    selfTeamIdProvider().getOrNull(),
-                )
+            .mapNotNull { conversationResponse ->
+                val mlsGroupState = conversationResponse.groupId?.let {
+                    mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent)
+                }
+                if (shouldPersistMLSConversation(mlsGroupState)) {
+                    conversationMapper.fromApiModelToDaoModel(
+                        conversationResponse,
+                        mlsGroupState = mlsGroupState?.getOrNull(),
+                        selfTeamIdProvider().getOrNull(),
+                    )
+                } else {
+                    null
+                }
             }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
@@ -483,10 +489,11 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    private suspend fun mlsGroupState(groupId: GroupID, originatedFromEvent: Boolean = false): ConversationEntity.GroupState =
-        hasEstablishedMLSGroup(groupId).fold({
-            throw IllegalStateException(it.toString()) // TODO find a more fitting exception?
-        }, { exists ->
+    private suspend fun mlsGroupState(
+        groupId: GroupID,
+        originatedFromEvent: Boolean = false
+    ): Either<CoreFailure, ConversationEntity.GroupState> = hasEstablishedMLSGroup(groupId)
+        .map { exists ->
             if (exists) {
                 ConversationEntity.GroupState.ESTABLISHED
             } else {
@@ -496,7 +503,7 @@ internal class ConversationDataSource internal constructor(
                     ConversationEntity.GroupState.PENDING_JOIN
                 }
             }
-        })
+        }
 
     private suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> =
         mlsClientProvider.getMLSClient()
@@ -505,6 +512,10 @@ internal class ConversationDataSource internal constructor(
                     it.conversationExists(idMapper.toCryptoModel(groupID))
                 }
             }
+
+    // if group state is not null and is left, then we don't want to persist the MLS conversation
+    private fun shouldPersistMLSConversation(groupState: Either<CoreFailure, ConversationEntity.GroupState>?): Boolean =
+        groupState?.fold({ true }, { false }) != true
 
     @DelicateKaliumApi("This function does not get values from cache")
     override suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId> =
@@ -873,6 +884,12 @@ internal class ConversationDataSource internal constructor(
                 }
             }
         }
+
+    override suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+        }
+    }
 
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {

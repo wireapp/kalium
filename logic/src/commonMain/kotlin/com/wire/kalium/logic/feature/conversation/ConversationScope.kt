@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -55,6 +57,8 @@ import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCas
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCase
+import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
@@ -113,6 +117,8 @@ class ConversationScope internal constructor(
     private val kaliumLogger: KaliumLogger,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val serverConfigLinks: ServerConfig.Links,
+    internal val messageRepository: MessageRepository,
+    internal val assetRepository: AssetRepository,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -158,7 +164,12 @@ class ConversationScope internal constructor(
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
 
     val observeConversationInteractionAvailabilityUseCase: ObserveConversationInteractionAvailabilityUseCase
-        get() = ObserveConversationInteractionAvailabilityUseCase(conversationRepository, userRepository)
+        get() = ObserveConversationInteractionAvailabilityUseCase(
+            conversationRepository,
+            selfUserId = selfUserId,
+            selfClientIdProvider = currentClientIdProvider,
+            userRepository = userRepository
+        )
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
@@ -264,6 +275,18 @@ class ConversationScope internal constructor(
             selfConversationIdProvider
         )
 
+    val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
+        get() = ClearConversationAssetsLocallyUseCaseImpl(
+            messageRepository,
+            assetRepository
+        )
+
+    val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
+        get() = DeleteConversationLocallyUseCaseImpl(
+            conversationRepository,
+            clearConversationAssetsLocally
+        )
+
     val joinConversationViaCode: JoinConversationViaCodeUseCase
         get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
 
@@ -361,4 +384,6 @@ class ConversationScope internal constructor(
         get() = AddConversationToFavoritesUseCaseImpl(conversationFolderRepository)
     val removeConversationFromFavorites: RemoveConversationFromFavoritesUseCase
         get() = RemoveConversationFromFavoritesUseCaseImpl(conversationFolderRepository)
+    val observeUserFolders: ObserveUserFoldersUseCase
+        get() = ObserveUserFoldersUseCaseImpl(conversationFolderRepository)
 }
