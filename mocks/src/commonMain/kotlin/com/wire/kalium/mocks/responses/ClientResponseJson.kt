@@ -22,6 +22,8 @@ import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.tools.KtxSerializer
+import kotlinx.serialization.encodeToString
 
 object ClientResponseJson {
     private val jsonProvider = { serializable: ClientDTO ->
@@ -36,7 +38,7 @@ object ClientResponseJson {
         |   "cookie": "${serializable.cookie}",
         |   "model": "${serializable.model}",
         |   "capabilities": [
-        |      "${serializable.capabilities[0]}"
+        |        ${KtxSerializer.json.encodeToString(serializable.capabilities[0])}
         |   ],
         |  "mls_public_keys": ${serializable.mlsPublicKeys}
         |}
@@ -57,9 +59,9 @@ object ClientResponseJson {
         |   "model": "${serializable.model}",
         |   "capabilities": {
         |     "capabilities": [
-        |        "${serializable.capabilities[0]}"
+        |        ${KtxSerializer.json.encodeToString(serializable.capabilities[0])}
         |     ]
-        |  }
+        |  },
         |  "mls_public_keys": ${serializable.mlsPublicKeys}
         |}
         """.trimMargin()

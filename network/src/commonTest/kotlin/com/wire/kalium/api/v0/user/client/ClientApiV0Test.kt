@@ -64,8 +64,12 @@ internal class ClientApiV0Test : ApiTest() {
     @Test
     fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpointWithOldFormat_theRequestShouldBeConfiguredCorrectly() =
         runTest {
+
+            val rowJson = VALID_REGISTER_CLIENT_OLD_RESPONSE.rawJson
+            val data = VALID_REGISTER_CLIENT_OLD_RESPONSE.serializableData
+
             val networkClient = mockAuthenticatedNetworkClient(
-                VALID_REGISTER_CLIENT_OLD_RESPONSE.rawJson,
+                rowJson,
                 statusCode = HttpStatusCode.Created,
                 assertion = {
                     assertPost()
@@ -77,7 +81,7 @@ internal class ClientApiV0Test : ApiTest() {
             val clientApi: ClientApi = ClientApiV0(networkClient)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
-            assertEquals(VALID_REGISTER_CLIENT_OLD_RESPONSE.serializableData, response.value)
+            assertEquals(data, response.value)
         }
 
     @Test
