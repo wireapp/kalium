@@ -216,8 +216,6 @@ import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
