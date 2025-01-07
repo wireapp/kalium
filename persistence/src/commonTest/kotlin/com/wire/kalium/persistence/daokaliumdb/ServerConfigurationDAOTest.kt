@@ -166,15 +166,15 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val expected = oldConfig.copy(metaData = newVersion)
 
         insertConfig(oldConfig)
-        globalDatabaseBuilder.serverConfigurationDAO.updateServerMetaData(
+        db.serverConfigurationDAO.updateServerMetaData(
             id = oldConfig.id,
             federation = true,
             commonApiVersion = 2
         )
-        globalDatabaseBuilder.serverConfigurationDAO.configById(oldConfig.id)
+        db.serverConfigurationDAO.configById(oldConfig.id)
             .also { actual ->
                 assertEquals(expected.metaData.federation, actual!!.metaData.federation)
-                assertEquals(expected.metaData.apiVersion, actual!!.metaData.apiVersion)
+                assertEquals(expected.metaData.apiVersion, actual.metaData.apiVersion)
             }
     }
 
