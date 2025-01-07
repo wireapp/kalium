@@ -27,12 +27,11 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
+import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -50,18 +49,19 @@ class CertificateRevocationListCheckWorkerTest {
 
         checkCrlWorker()
 
-        coVerify {
-            arrangement.certificateRevocationListRepository.getCRLs()
-        }.wasInvoked(exactly = once)
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::getCRLs)
+            .wasInvoked(exactly = once)
 
-        coVerify {
-            arrangement.checkRevocationList.check(eq(DUMMY_URL))
-        }.wasInvoked(exactly = once)
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(eq(DUMMY_URL))
+            .wasInvoked(exactly = once)
 
-        coVerify {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
-        }.wasInvoked(exactly = once)
-
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -79,32 +79,39 @@ class CertificateRevocationListCheckWorkerTest {
             certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
         )
 
-        suspend fun withNoCRL() = apply {
-            coEvery {
-                certificateRevocationListRepository.getCRLs()
-            }.returns(null)
+        fun withNoCRL() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getCRLs)
+                .whenInvoked()
+                .then { null }
         }
 
-        suspend fun withNonExpiredCRL() = apply {
-            coEvery {
-                certificateRevocationListRepository.getCRLs()
-            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, FUTURE_TIMESTAMP))))
+        fun withNonExpiredCRL() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getCRLs)
+                .whenInvoked()
+                .then { CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))) }
         }
 
-        suspend fun withExpiredCRL() = apply {
-            coEvery {
-                certificateRevocationListRepository.getCRLs()
-            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
+        fun withExpiredCRL() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getCRLs)
+                .whenInvoked()
+                .then { CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))) }
         }
-        suspend fun withCheckRevocationListResult() = apply {
-            coEvery {
-                checkRevocationList.check(any())
-            }.returns(Either.Right(FUTURE_TIMESTAMP))
+
+        fun withCheckRevocationListResult() = apply {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::check)
+                .whenInvokedWith(any())
+                .then { Either.Right(FUTURE_TIMESTAMP) }
         }
 
         fun withIncrementalSyncState(flow: Flow<IncrementalSyncStatus>) = apply {
-            every { incrementalSyncRepository.incrementalSyncState }
-                .returns(flow)
+            given(incrementalSyncRepository)
+                .invocation {
+                    incrementalSyncRepository.incrementalSyncState
+                }.then { flow }
         }
 
     }

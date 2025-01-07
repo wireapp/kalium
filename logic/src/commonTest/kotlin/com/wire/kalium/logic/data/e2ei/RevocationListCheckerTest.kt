@@ -35,12 +35,11 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
+import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,13 +57,15 @@ class RevocationListCheckerTest {
             val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
-            coVerify {
-                arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
-            }.wasInvoked(once)
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
+                .with(any())
+                .wasInvoked(exactly = once)
 
-            coVerify {
-                arrangement.coreCrypto.registerCrl(any(), any())
-            }.wasNotInvoked()
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasNotInvoked()
         }
 
     @Test
@@ -79,17 +80,20 @@ class RevocationListCheckerTest {
             val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
-            coVerify {
-                arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
-            }.wasInvoked(once)
 
-            coVerify {
-                arrangement.currentClientIdProvider.invoke()
-            }.wasInvoked(once)
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
+                .with(any())
+                .wasInvoked(exactly = once)
 
-            coVerify {
-                arrangement.coreCrypto.registerCrl(any(), any())
-            }.wasNotInvoked()
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasNotInvoked()
         }
 
     @Test
@@ -105,17 +109,20 @@ class RevocationListCheckerTest {
             val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
-            coVerify {
-                arrangement.currentClientIdProvider.invoke()
-            }.wasInvoked(once)
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(exactly = once)
 
-            coVerify {
-                arrangement.mlsClientProvider.getCoreCrypto(eq(TestClient.CLIENT_ID))
-            }.wasInvoked(once)
+            verify(arrangement.mlsClientProvider)
+                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
+                .with(eq(TestClient.CLIENT_ID))
+                .wasInvoked(exactly = once)
 
-            coVerify {
-                arrangement.coreCrypto.registerCrl(any(), any())
-            }.wasNotInvoked()
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasNotInvoked()
+
         }
 
     @Test
@@ -134,17 +141,20 @@ class RevocationListCheckerTest {
             result.shouldSucceed {
                 assertEquals(EXPIRATION, it)
             }
-            coVerify {
-                arrangement.currentClientIdProvider.invoke()
-            }.wasInvoked(once)
 
-            coVerify {
-                arrangement.mlsClientProvider.getCoreCrypto(eq(TestClient.CLIENT_ID))
-            }.wasInvoked(once)
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(exactly = once)
 
-            coVerify {
-                arrangement.coreCrypto.registerCrl(any(), any())
-            }.wasInvoked(once)
+            verify(arrangement.mlsClientProvider)
+                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
+                .with(eq(TestClient.CLIENT_ID))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
         }
 
     @Test
@@ -165,9 +175,10 @@ class RevocationListCheckerTest {
                 assertEquals(EXPIRATION, it)
             }
 
-            coVerify {
-                arrangement.coreCrypto.registerCrl(any(), any())
-            }.wasInvoked(once)
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
         }
 
     @Test
@@ -185,9 +196,10 @@ class RevocationListCheckerTest {
             assertEquals(E2EIFailure.Disabled, it)
         }
 
-        coVerify {
-            arrangement.coreCrypto.registerCrl(any(), any())
-        }.wasNotInvoked()
+        verify(arrangement.coreCrypto)
+            .suspendFunction(arrangement.coreCrypto::registerCrl)
+            .with(any(), any())
+            .wasNotInvoked()
     }
 
     internal class Arrangement {
@@ -218,66 +230,74 @@ class RevocationListCheckerTest {
             userConfigRepository = userConfigRepository
         )
 
-        suspend fun withE2EIRepositoryFailure() = apply {
-            coEvery {
-                certificateRevocationListRepository.getClientDomainCRL(any())
-            }.returns(Either.Left(E2EIFailure.Generic(Exception())))
+        fun withE2EIRepositoryFailure() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
+                .whenInvokedWith(any())
+                .then { Either.Left(E2EIFailure.Generic(Exception())) }
         }
 
-        suspend fun withE2EIRepositorySuccess() = apply {
-            coEvery {
-                certificateRevocationListRepository.getClientDomainCRL(any())
-            }.returns(Either.Right("result".toByteArray()))
+        fun withE2EIRepositorySuccess() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
+                .whenInvokedWith(any())
+                .then { Either.Right("result".toByteArray()) }
         }
 
-        suspend fun withCurrentClientIdProviderFailure() = apply {
-            coEvery {
-                currentClientIdProvider.invoke()
-            }.returns(Either.Left(CoreFailure.SyncEventOrClientNotFound))
+        fun withCurrentClientIdProviderFailure() = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Left(CoreFailure.SyncEventOrClientNotFound) }
         }
 
-        suspend fun withCurrentClientIdProviderSuccess() = apply {
-            coEvery {
-                currentClientIdProvider.invoke()
-            }.returns(Either.Right(TestClient.CLIENT_ID))
+        fun withCurrentClientIdProviderSuccess() = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(TestClient.CLIENT_ID) }
         }
 
-        suspend fun withMlsClientProviderFailure() = apply {
-            coEvery {
-                mlsClientProvider.getCoreCrypto(any())
-            }.returns(Either.Left(CoreFailure.SyncEventOrClientNotFound))
+        fun withMlsClientProviderFailure() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
+                .whenInvokedWith(any())
+                .then { Either.Left(CoreFailure.SyncEventOrClientNotFound) }
         }
 
-        suspend fun withMlsClientProviderSuccess() = apply {
-            coEvery {
-                mlsClientProvider.getCoreCrypto(any())
-            }.returns(Either.Right(coreCrypto))
+        fun withMlsClientProviderSuccess() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
+                .whenInvokedWith(any())
+                .then { Either.Right(coreCrypto) }
         }
 
-        suspend fun withRegisterCrl() = apply {
-            coEvery {
-                coreCrypto.registerCrl(any(), any())
-            }.returns(CrlRegistration(false, EXPIRATION))
+        fun withRegisterCrl() = apply {
+            given(coreCrypto)
+                .suspendFunction(coreCrypto::registerCrl)
+                .whenInvokedWith(any(), any())
+                .thenReturn(CrlRegistration(true, EXPIRATION))
         }
 
-        suspend fun withRegisterCrlFlagChanged() = apply {
-            coEvery {
-                coreCrypto.registerCrl(any(), any())
-            }.returns(CrlRegistration(true, EXPIRATION))
+        fun withRegisterCrlFlagChanged() = apply {
+            given(coreCrypto)
+                .suspendFunction(coreCrypto::registerCrl)
+                .whenInvokedWith(any(), any())
+                .thenReturn(CrlRegistration(false, EXPIRATION))
         }
 
         fun withE2EIEnabledAndMLSEnabled(result: Boolean) = apply {
-            every {
-                featureSupport.isMLSSupported
-            }.returns(result)
-
-            every {
-                userConfigRepository.isMLSEnabled()
-            }.returns(result.right())
-
-            every {
-                userConfigRepository.getE2EISettings()
-            }.returns(E2EISettings(true, DUMMY_URL, DateTimeUtil.currentInstant(), false, null).right())
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(result)
+            given(userConfigRepository)
+                .function(userConfigRepository::isMLSEnabled)
+                .whenInvoked()
+                .thenReturn(result.right())
+            given(userConfigRepository)
+                .function(userConfigRepository::getE2EISettings)
+                .whenInvoked()
+                .thenReturn(E2EISettings(result, DUMMY_URL, DateTimeUtil.currentInstant(), false, null).right())
         }
     }
 

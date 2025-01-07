@@ -48,6 +48,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -58,7 +59,6 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -151,7 +151,7 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
 
             verify(arrangement.checkRevocationList)
-                .suspendFunction(arrangement.checkRevocationList::invoke)
+                .suspendFunction(arrangement.checkRevocationList::check)
                 .with(any())
                 .wasInvoked(once)
 
@@ -413,7 +413,7 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -784,7 +784,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(any())
             .wasNotInvoked()
     }
@@ -805,7 +805,7 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -1382,7 +1382,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(any())
             .wasNotInvoked()
     }
@@ -1405,7 +1405,7 @@ class MLSConversationRepositoryTest {
         )
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -1770,7 +1770,7 @@ class MLSConversationRepositoryTest {
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
 
         @Mock
-        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+        val checkRevocationList = mock(classOf<RevocationListChecker>())
 
         @Mock
         val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
@@ -1997,7 +1997,7 @@ class MLSConversationRepositoryTest {
 
         fun withCheckRevocationListResult() = apply {
             given(checkRevocationList)
-                .suspendFunction(checkRevocationList::invoke)
+                .suspendFunction(checkRevocationList::check)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(1uL))
         }
