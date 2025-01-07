@@ -166,15 +166,26 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val expected = oldConfig.copy(metaData = newVersion)
 
         insertConfig(oldConfig)
+<<<<<<< HEAD
         globalDatabaseBuilder.serverConfigurationDAO.updateServerMetaData(
+=======
+        db.serverConfigurationDAO.updateServerMetaData(
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
             id = oldConfig.id,
             federation = true,
             commonApiVersion = 2
         )
+<<<<<<< HEAD
         globalDatabaseBuilder.serverConfigurationDAO.configById(oldConfig.id)
             .also { actual ->
                 assertEquals(expected.metaData.federation, actual!!.metaData.federation)
                 assertEquals(expected.metaData.apiVersion, actual!!.metaData.apiVersion)
+=======
+        db.serverConfigurationDAO.configById(oldConfig.id)
+            .also { actual ->
+                assertEquals(expected.metaData.federation, actual!!.metaData.federation)
+                assertEquals(expected.metaData.apiVersion, actual.metaData.apiVersion)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
             }
     }
 

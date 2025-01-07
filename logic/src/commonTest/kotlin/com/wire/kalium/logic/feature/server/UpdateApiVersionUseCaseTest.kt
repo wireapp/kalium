@@ -87,9 +87,17 @@ class UpdateApiVersionUseCaseTest {
             arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
         }.wasNotInvoked()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigRepository1.updateConfigMetaData(eq(serverConfig1))
         }.wasInvoked(exactly = once)
+=======
+
+        verify(arrangement.serverConfigRepository1)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
+            .with(eq(serverConfig1))
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     @Test
@@ -121,9 +129,17 @@ class UpdateApiVersionUseCaseTest {
             arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
         }.wasNotInvoked()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigRepository1.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
+=======
+
+        verify(arrangement.serverConfigRepository1)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     @Test
@@ -157,9 +173,16 @@ class UpdateApiVersionUseCaseTest {
             arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
         }.wasInvoked(exactly = once)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigRepository1.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.serverConfigRepository1)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     @Test
@@ -207,6 +230,7 @@ class UpdateApiVersionUseCaseTest {
             arrangement.tokenStorage.proxyCredentials(eq(userId1.toDao()))
         }.wasNotInvoked()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigRepository1.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
@@ -214,6 +238,17 @@ class UpdateApiVersionUseCaseTest {
         coVerify {
             arrangement.serverConfigRepository2.updateConfigMetaData(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.serverConfigRepository1)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.serverConfigRepository2)
+            .suspendFunction(arrangement.serverConfigRepository2::updateConfigMetaData)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
 
     }
 
@@ -249,17 +284,33 @@ class UpdateApiVersionUseCaseTest {
             }.returns(result)
         }
 
+<<<<<<< HEAD
         suspend fun withUpdateConfigMetaData(
+=======
+        fun withUpdateConfigMetaData(
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
             serverConfig: ServerConfig,
             result: Either<CoreFailure, Unit>
         ) {
             when (serverConfig.id) {
+<<<<<<< HEAD
                 serverConfig1.id ->
                     coEvery { serverConfigRepository1.updateConfigMetaData(any()) }
                         .returns(result)
 
                 serverConfig2.id -> coEvery { serverConfigRepository2.updateConfigMetaData(any()) }
                     .returns(result)
+=======
+                serverConfig1.id -> given(serverConfigRepository1)
+                    .suspendFunction(serverConfigRepository1::updateConfigMetaData)
+                    .whenInvokedWith(any())
+                    .then { result }
+
+                serverConfig2.id -> given(serverConfigRepository2)
+                    .suspendFunction(serverConfigRepository2::updateConfigMetaData)
+                    .whenInvokedWith(any())
+                    .then { result }
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
 
                 else -> throw IllegalArgumentException("Unexpected server config: $serverConfig")
             }

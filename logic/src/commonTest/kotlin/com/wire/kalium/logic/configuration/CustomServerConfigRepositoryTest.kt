@@ -71,6 +71,7 @@ class CustomServerConfigRepositoryTest {
             .storeConfig(arrangement.expectedServerConfig.links, arrangement.expectedServerConfig.metaData)
             .shouldSucceed { assertEquals(arrangement.expectedServerConfig, it) }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigurationDAO.configByLinks(any())
         }.wasInvoked(exactly = once)
@@ -86,6 +87,28 @@ class CustomServerConfigRepositoryTest {
         verify {
             arrangement.serverConfigurationDAO.configById(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::configByLinks)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::insert)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::updateServerMetaData)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::setFederationToTrue)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .function(arrangement.serverConfigurationDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     @Test
@@ -99,6 +122,7 @@ class CustomServerConfigRepositoryTest {
             .storeConfig(expected.links, expected.metaData)
             .shouldSucceed { assertEquals(it, expected) }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigurationDAO.configByLinks(any())
         }.wasInvoked(exactly = once)
@@ -114,6 +138,28 @@ class CustomServerConfigRepositoryTest {
         verify {
             arrangement.serverConfigurationDAO.configById(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::configByLinks)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::insert)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::updateServerMetaData)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::setFederationToTrue)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigurationDAO)
+            .function(arrangement.serverConfigurationDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     @Test
@@ -135,6 +181,7 @@ class CustomServerConfigRepositoryTest {
             .storeConfig(expectedServerConfig.links, expectedVersionInfo)
             .shouldSucceed { assertEquals(it, expectedServerConfig) }
 
+<<<<<<< HEAD
         verify {
             arrangement.backendMetaDataUtil.calculateApiVersion(any(), any(), any(), any())
         }.wasInvoked(exactly = once)
@@ -153,6 +200,32 @@ class CustomServerConfigRepositoryTest {
         verify {
             arrangement.serverConfigurationDAO.configById(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.backendMetaDataUtil)
+            .function(arrangement.backendMetaDataUtil::calculateApiVersion)
+            .with(any(), any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::configByLinks)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::insert)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::updateServerMetaData)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigurationDAO)
+            .suspendFunction(arrangement.serverConfigurationDAO::setFederationToTrue)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigurationDAO)
+            .function(arrangement.serverConfigurationDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     private class Arrangement {
@@ -161,19 +234,31 @@ class CustomServerConfigRepositoryTest {
         val SERVER_CONFIG = newServerConfig(1)
 
         @Mock
+<<<<<<< HEAD
         val serverConfigApi = mock(ServerConfigApi::class)
+=======
+        val serverConfigApi = mock(classOf<ServerConfigApi>())
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
 
         var developmentApiEnabled by Delegates.notNull<Boolean>()
 
         @Mock
+<<<<<<< HEAD
         val serverConfigurationDAO = mock(ServerConfigurationDAO::class)
+=======
+        val serverConfigurationDAO = mock(classOf<ServerConfigurationDAO>())
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
 
         init {
             developmentApiEnabled = false
         }
 
         @Mock
+<<<<<<< HEAD
         val backendMetaDataUtil = mock(BackendMetaDataUtil::class)
+=======
+        val backendMetaDataUtil = mock(classOf<BackendMetaDataUtil>())
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
 
         private var customServerConfigRepository: CustomServerConfigRepository =
             CustomServerConfigDataSource(serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)
@@ -186,6 +271,10 @@ class CustomServerConfigRepositoryTest {
                 domain = serverConfigEntity.metaData.domain
             )
         )
+<<<<<<< HEAD
+=======
+
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
 
         suspend fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
             every {

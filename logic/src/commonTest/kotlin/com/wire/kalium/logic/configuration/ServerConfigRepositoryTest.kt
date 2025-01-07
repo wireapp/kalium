@@ -124,6 +124,7 @@ class ServerConfigRepositoryTest {
             .storeConfig(arrangement.expectedServerConfig.links, arrangement.expectedServerConfig.metaData)
             .shouldSucceed { assertEquals(arrangement.expectedServerConfig, it) }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigDAO.configByLinks(any())
         }.wasInvoked(exactly = once)
@@ -139,6 +140,28 @@ class ServerConfigRepositoryTest {
         verify {
             arrangement.serverConfigDAO.configById(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::configByLinks)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::insert)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::updateServerMetaData)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::setFederationToTrue)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     @Test
@@ -152,6 +175,7 @@ class ServerConfigRepositoryTest {
             .storeConfig(expected.links, expected.metaData)
             .shouldSucceed { assertEquals(it, expected) }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.serverConfigDAO.configByLinks(any())
         }.wasInvoked(exactly = once)
@@ -167,6 +191,28 @@ class ServerConfigRepositoryTest {
         verify {
             arrangement.serverConfigDAO.configById(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::configByLinks)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::insert)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::updateServerMetaData)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigDAO)
+            .suspendFunction(arrangement.serverConfigDAO::setFederationToTrue)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     private class Arrangement(private val dispatcher: KaliumDispatcher) {

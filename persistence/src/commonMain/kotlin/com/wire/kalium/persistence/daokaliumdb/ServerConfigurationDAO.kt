@@ -126,7 +126,10 @@ interface ServerConfigurationDAO {
     suspend fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
     suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
+<<<<<<< HEAD
     suspend fun getCommonApiVersion(domain: String): Int
+=======
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int)
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
@@ -217,10 +220,13 @@ internal class ServerConfigurationDAOImpl internal constructor(
         withContext(queriesContext) {
             queries.updateServerMetaData(federation, commonApiVersion, id)
         }
+<<<<<<< HEAD
     }
 
     override suspend fun getCommonApiVersion(domain: String): Int = withContext(queriesContext) {
         queries.getCommonApiVersionByDomain(domain).executeAsOne()
+=======
+>>>>>>> f8e4329102 (fix: update federation flag when fetching server config [WPB-14728] (#3143) (#3189))
     }
 
     override suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =
