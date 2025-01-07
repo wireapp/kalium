@@ -83,6 +83,8 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCaseImpl
 import com.wire.kalium.logic.data.event.EventDataSource
@@ -649,12 +651,13 @@ class UserSessionScope internal constructor(
             memberJoinHandler, memberLeaveHandler
         )
 
-    private val checkRevocationList: CheckRevocationListUseCase
-        get() = CheckRevocationListUseCaseImpl(
+    private val checkRevocationList: RevocationListChecker
+        get() = RevocationListCheckerImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            isE2EIEnabledUseCase = isE2EIEnabled
+            featureSupport = featureSupport,
+            userConfigRepository = userConfigRepository
         )
 
     private val mlsConversationRepository: MLSConversationRepository
@@ -1359,7 +1362,7 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             oneOnOneResolver = oneOnOneResolver,
             refillKeyPackages = client.refillKeyPackages,
-            checkRevocationList = checkRevocationList,
+            revocationListChecker = checkRevocationList,
             certificateRevocationListRepository = certificateRevocationListRepository
         )
 

@@ -33,6 +33,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
@@ -213,7 +214,7 @@ internal class MLSConversationDataSource(
     private val epochsFlow: MutableSharedFlow<GroupID>,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val checkRevocationList: CheckRevocationListUseCase,
+    private val revocationListChecker: RevocationListChecker,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
@@ -904,7 +905,7 @@ internal class MLSConversationDataSource(
 
     private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
         crlNewDistributionPoints.forEach { url ->
-            checkRevocationList(url).map { newExpiration ->
+            revocationListChecker.check(url).map { newExpiration ->
                 newExpiration?.let {
                     certificateRevocationListRepository.addOrUpdateCRL(url, it)
                 }
