@@ -40,6 +40,8 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.InCallReactionsDataSource
+import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -177,6 +179,8 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
@@ -1273,7 +1277,8 @@ class UserSessionScope internal constructor(
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             getCallConversationType = getCallConversationType,
             networkStateObserver = networkStateObserver,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
         )
     }
 
@@ -1384,7 +1389,8 @@ class UserSessionScope internal constructor(
             receiptMessageHandler,
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
-            userId
+            inCallReactionsRepository,
+            userId,
         )
 
     private val staleEpochVerifier: StaleEpochVerifier
@@ -1803,7 +1809,9 @@ class UserSessionScope internal constructor(
             this,
             userScopedLogger,
             refreshUsersWithoutMetadata,
-            sessionManager.getServerConfig().links
+            sessionManager.getServerConfig().links,
+            messages.messageRepository,
+            assetRepository
         )
     }
 
@@ -1902,7 +1910,8 @@ class UserSessionScope internal constructor(
             selfTeamId,
             checkRevocationList,
             syncFeatureConfigsUseCase,
-            userScopedLogger
+            userScopedLogger,
+            getTeamUrlUseCase
         )
     }
 
@@ -2062,7 +2071,8 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository,
             getCallConversationType = getCallConversationType,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            inCallReactionsRepository = inCallReactionsRepository,
         )
 
     val connection: ConnectionScope
@@ -2108,8 +2118,15 @@ class UserSessionScope internal constructor(
             userScopedLogger
         )
 
+    private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
+        get() = CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
+            callRepository = callRepository,
+            observeConversationMembers = conversations.observeConversationMembers,
+            selfTeamIdProvider = selfTeamId
+        )
+
     val migrateFromPersonalToTeam: MigrateFromPersonalToTeamUseCase
-        get() = MigrateFromPersonalToTeamUseCaseImpl(userId, userRepository, invalidateTeamId)
+        get() = MigrateFromPersonalToTeamUseCaseImpl(userId, userRepository, syncContacts, invalidateTeamId)
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
@@ -2147,11 +2164,14 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val getTeamUrlUseCase: GetTeamUrlUseCase by lazy {
-        GetTeamUrlUseCase(
+    val getTeamUrlUseCase: GetTeamUrlUseCase
+        get() = GetTeamUrlUseCase(
             userId,
             authenticationScope.serverConfigRepository,
         )
+
+    private val inCallReactionsRepository: InCallReactionsRepository by lazy {
+        InCallReactionsDataSource()
     }
 
     /**

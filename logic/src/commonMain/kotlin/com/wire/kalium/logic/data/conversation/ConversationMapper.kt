@@ -479,11 +479,11 @@ internal class ConversationMapperImpl(
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
             ConvProtocol.MLS -> ProtocolInfo.MLS(
-                groupId ?: "",
-                mlsGroupState ?: GroupState.PENDING_JOIN,
-                epoch ?: 0UL,
+                groupId = groupId ?: "",
+                groupState = mlsGroupState ?: GroupState.PENDING_JOIN,
+                epoch = epoch ?: 0UL,
                 keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
+                cipherSuite = ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
             ConvProtocol.MIXED -> ProtocolInfo.Mixed(

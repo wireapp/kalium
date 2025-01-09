@@ -23,6 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.user.CreateUserTeam
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -47,6 +48,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withUpdateTeamIdReturning(Either.Right(Unit))
             .withMigrationSuccess()
+            .withSyncContactsSuccess()
             .arrange()
 
         val result = useCase(teamName = "teamName")
@@ -54,6 +56,10 @@ class MigrateFromPersonalToTeamUseCaseTest {
         coVerify {
             arrangement.userRepository.updateTeamId(any(), any())
         }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.syncContacts() }.wasInvoked(exactly = once)
+
         assertTrue(arrangement.isCachedTeamIdInvalidated)
         assertIs<MigrateFromPersonalToTeamResult.Success>(result)
     }
@@ -107,8 +113,12 @@ class MigrateFromPersonalToTeamUseCaseTest {
 
 
     private class Arrangement {
+
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
+
+        @Mock
+        val syncContacts: SyncContactsUseCase = mock(SyncContactsUseCase::class)
 
         var isCachedTeamIdInvalidated = false
 
@@ -134,7 +144,6 @@ class MigrateFromPersonalToTeamUseCaseTest {
             )
         )
 
-
         suspend fun withMigrationUserNotFoundFailure() = withMigrationReturning(
             Either.Left(
                 NetworkFailure.ServerMiscommunication(
@@ -148,6 +157,10 @@ class MigrateFromPersonalToTeamUseCaseTest {
                 )
             )
         )
+
+        suspend fun withSyncContactsSuccess() = apply {
+            coEvery { syncContacts.invoke() }.returns(Either.Right(Unit))
+        }
 
         suspend fun withMigrationNoNetworkFailure() = withMigrationReturning(
             Either.Left(NetworkFailure.NoNetworkConnection(null))
@@ -163,6 +176,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
 
         fun arrange() = this to MigrateFromPersonalToTeamUseCaseImpl(selfUserId = TestUser.SELF.id,
             userRepository = userRepository,
+            syncContacts = syncContacts,
             invalidateTeamId = {
                 isCachedTeamIdInvalidated = true
             })

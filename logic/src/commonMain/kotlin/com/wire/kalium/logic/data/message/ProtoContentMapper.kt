@@ -45,6 +45,8 @@ import com.wire.kalium.protobuf.messages.DataTransfer
 import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
+import com.wire.kalium.protobuf.messages.InCallEmoji
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
@@ -57,7 +59,6 @@ import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
-import com.wire.kalium.protobuf.messages.UnknownStrategy
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -146,6 +147,7 @@ class ProtoContentMapperImpl(
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
 
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
+            is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
         }
     }
 
@@ -266,7 +268,8 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited,
-            is MessageContent.DataTransfer -> throw IllegalArgumentException(
+            is MessageContent.DataTransfer,
+            is MessageContent.InCallEmoji -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
         }
@@ -377,6 +380,8 @@ class ProtoContentMapperImpl(
                 MessageContent.Ignored
             }
 
+            is GenericMessage.Content.InCallEmoji -> unpackInCallEmoji(protoContent)
+
             null -> {
                 kaliumLogger.w(
                     "Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}" +
@@ -390,6 +395,8 @@ class ProtoContentMapperImpl(
                     null -> MessageContent.Ignored
                 }
             }
+
+            is GenericMessage.Content.InCallHandRaise -> MessageContent.Ignored
         }
         return readableContent
     }
@@ -749,6 +756,29 @@ class ProtoContentMapperImpl(
         return MessageContent.Composite(
             textContent = text,
             buttonList = buttonList
+        )
+    }
+
+    private fun unpackInCallEmoji(protoContent: GenericMessage.Content.InCallEmoji): MessageContent.InCallEmoji {
+        return MessageContent.InCallEmoji(
+            // Map of emoji to senderId
+            emojis = protoContent.value.emojis
+                .mapNotNull {
+                    val key = it.key ?: return@mapNotNull null
+                    val value = it.value ?: return@mapNotNull null
+                    key to value
+                }
+                .associateBy({ it.first }, { it.second })
+        )
+    }
+
+    private fun packInCallEmoji(content: MessageContent.InCallEmoji): GenericMessage.Content.InCallEmoji {
+        return GenericMessage.Content.InCallEmoji(
+            inCallEmoji = InCallEmoji(
+                emojis = content.emojis.map { entry ->
+                   InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
+                }
+            )
         )
     }
 

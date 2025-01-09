@@ -30,16 +30,26 @@ import kotlinx.coroutines.coroutineScope
 
 /**
  * Use case for searching users.
- * @param searchQuery The search query.
- * @param excludingMembersOfConversation The conversation to exclude its members from the search.
- * @param customDomain The custom domain to search in if null the search will be on the self user domain.
  */
-class SearchUsersUseCase internal constructor(
+interface SearchUsersUseCase {
+    /**
+     * @param searchQuery The search query.
+     * @param excludingMembersOfConversation The conversation to exclude its members from the search.
+     * @param customDomain The custom domain to search in if null the search will be on the self user domain.
+     */
+    suspend operator fun invoke(
+        searchQuery: String,
+        excludingMembersOfConversation: ConversationId?,
+        customDomain: String?
+    ): SearchUserResult
+}
+
+class SearchUsersUseCaseImpl internal constructor(
     private val searchUserRepository: SearchUserRepository,
     private val selfUserId: UserId,
     private val maxRemoteSearchResultCount: Int
-) {
-    suspend operator fun invoke(
+) : SearchUsersUseCase {
+    override suspend operator fun invoke(
         searchQuery: String,
         excludingMembersOfConversation: ConversationId?,
         customDomain: String?
