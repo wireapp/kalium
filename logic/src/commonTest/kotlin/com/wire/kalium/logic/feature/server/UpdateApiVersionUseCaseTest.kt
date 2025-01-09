@@ -78,7 +78,7 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
             }
 
         runTest {
@@ -93,7 +93,7 @@ class UpdateApiVersionUseCaseTest {
 
 
         verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
             .with(eq(serverConfig1))
             .wasInvoked(exactly = once)
     }
@@ -117,7 +117,7 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
             }
 
         runTest {
@@ -132,7 +132,7 @@ class UpdateApiVersionUseCaseTest {
 
 
         verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -156,7 +156,7 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
                 withProxyCredForUser(userId1.toDao(), ProxyCredentialsEntity("user", "pass"))
             }
 
@@ -172,7 +172,7 @@ class UpdateApiVersionUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -205,8 +205,8 @@ class UpdateApiVersionUseCaseTest {
                         )
                     )
                 )
-                withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
-                withUpdateConfigApiVersion(serverConfig2, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
+                withUpdateConfigMetaData(serverConfig2, Either.Right(Unit))
                 withProxyCredForUser(userId2.toDao(), ProxyCredentialsEntity("user", "pass"))
             }
 
@@ -227,12 +227,12 @@ class UpdateApiVersionUseCaseTest {
             .wasNotInvoked()
 
         verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
+            .suspendFunction(arrangement.serverConfigRepository1::updateConfigMetaData)
             .with(any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.serverConfigRepository2)
-            .suspendFunction(arrangement.serverConfigRepository2::updateConfigApiVersion)
+            .suspendFunction(arrangement.serverConfigRepository2::updateConfigMetaData)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -270,18 +270,18 @@ class UpdateApiVersionUseCaseTest {
                 .then { result }
         }
 
-        fun withUpdateConfigApiVersion(
+        fun withUpdateConfigMetaData(
             serverConfig: ServerConfig,
             result: Either<CoreFailure, Unit>
         ) {
             when (serverConfig.id) {
                 serverConfig1.id -> given(serverConfigRepository1)
-                    .suspendFunction(serverConfigRepository1::updateConfigApiVersion)
+                    .suspendFunction(serverConfigRepository1::updateConfigMetaData)
                     .whenInvokedWith(any())
                     .then { result }
 
                 serverConfig2.id -> given(serverConfigRepository2)
-                    .suspendFunction(serverConfigRepository2::updateConfigApiVersion)
+                    .suspendFunction(serverConfigRepository2::updateConfigMetaData)
                     .whenInvokedWith(any())
                     .then { result }
 

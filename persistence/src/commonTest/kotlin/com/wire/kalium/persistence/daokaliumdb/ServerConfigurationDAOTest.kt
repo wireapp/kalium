@@ -24,17 +24,26 @@ import com.wire.kalium.persistence.GlobalDBBaseTest
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     private val config1 = newServerConfig(id = 1)
@@ -142,13 +151,31 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     @Test
     fun givenNewApiVersion_thenItCanBeUpdated() = runTest {
-        insertConfig(config1)
-        val newVersion = config1.metaData.copy(apiVersion = 2)
-        val expected = config1.copy(metaData = newVersion)
+        val oldConfig = config1.copy(
+            metaData = config1.metaData.copy(
+                apiVersion = 1,
+                federation = false
+            ),
+        )
 
-        db.serverConfigurationDAO.updateApiVersion(config1.id, newVersion.apiVersion)
-        val actual = db.serverConfigurationDAO.configById(config1.id)
-        assertEquals(expected, actual)
+        val newVersion = config1.metaData.copy(
+            apiVersion = 2,
+            federation = true
+        )
+
+        val expected = oldConfig.copy(metaData = newVersion)
+
+        insertConfig(oldConfig)
+        db.serverConfigurationDAO.updateServerMetaData(
+            id = oldConfig.id,
+            federation = true,
+            commonApiVersion = 2
+        )
+        db.serverConfigurationDAO.configById(oldConfig.id)
+            .also { actual ->
+                assertEquals(expected.metaData.federation, actual!!.metaData.federation)
+                assertEquals(expected.metaData.apiVersion, actual.metaData.apiVersion)
+            }
     }
 
     @Test
