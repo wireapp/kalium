@@ -45,13 +45,6 @@ kotlin {
 
                 // KTX
                 implementation(libs.ktxDateTime)
-
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                // mocks
-                implementation(project(":mocks"))
             }
         }
     }
