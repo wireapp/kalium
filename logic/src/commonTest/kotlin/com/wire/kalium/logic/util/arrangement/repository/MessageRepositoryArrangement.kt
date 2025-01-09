@@ -41,7 +41,11 @@ internal interface MessageRepositoryArrangement {
     @Mock
     val systemMessageInserter: SystemMessageInserter
 
+<<<<<<< HEAD
     suspend fun withGetMessageById(
+=======
+    fun withGetMessageById(
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
         result: Either<StorageFailure, Message>,
         messageID: Matcher<String> = AnyMatcher(valueOf()),
         conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
@@ -71,6 +75,7 @@ internal interface MessageRepositoryArrangement {
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
     @Mock
     override val messageRepository: MessageRepository = mock(MessageRepository::class)
+    override val systemMessageInserter = mock(SystemMessageInserter::class)
 
     override val systemMessageInserter = mock(SystemMessageInserter::class)
 
@@ -132,3 +137,4 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
         }.returns(result)
     }
 }
+

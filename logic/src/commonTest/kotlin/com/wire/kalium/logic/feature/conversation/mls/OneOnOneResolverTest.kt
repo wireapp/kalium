@@ -258,12 +258,22 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
 
         // then
+<<<<<<< HEAD
         coVerify {
             arrangement.oneOnOneMigrator.migrateExistingProteus(eq(OTHER_USER))
         }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
+=======
+        verify(arrangement.oneOnOneMigrator)
+            .suspendFunction(arrangement.oneOnOneMigrator::migrateExistingProteus)
+            .with(eq(OTHER_USER))
+            .wasInvoked(exactly = once)
+    }
+
+    private class Arrangement(private val block: Arrangement.() -> Unit) :
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),

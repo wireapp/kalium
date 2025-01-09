@@ -110,6 +110,7 @@ class OneOnOneMigratorTest {
             arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
         }.wasNotInvoked()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.messageRepository.moveMessagesToAnotherConversation(any(), any())
         }.wasNotInvoked()
@@ -117,6 +118,17 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasNotInvoked()
+=======
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::moveMessagesToAnotherConversation)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
     }
 
     @Test
@@ -153,6 +165,7 @@ class OneOnOneMigratorTest {
                 assertEquals(failure, it)
             }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
         }.wasNotInvoked()
@@ -160,6 +173,17 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasNotInvoked()
+=======
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
     }
 
     @Test
@@ -198,6 +222,7 @@ class OneOnOneMigratorTest {
         oneOnOneMigrator.migrateToMLS(user)
             .shouldSucceed()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.messageRepository.moveMessagesToAnotherConversation(eq(originalConversationId), eq(resolvedConversationId))
         }.wasInvoked(exactly = once)
@@ -205,6 +230,17 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::moveMessagesToAnotherConversation)
+            .with(eq(originalConversationId), eq(resolvedConversationId))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
     }
 
     @Test
@@ -224,6 +260,7 @@ class OneOnOneMigratorTest {
         oneOnOneMigrator.migrateToMLS(user)
             .shouldSucceed()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(resolvedConversationId))
         }.wasInvoked(exactly = once)
@@ -231,6 +268,17 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
+            .with(eq(user.id), eq(resolvedConversationId))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
     }
 
     @Test
@@ -247,6 +295,7 @@ class OneOnOneMigratorTest {
         oneOneMigrator.migrateExistingProteus(user)
             .shouldSucceed()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.conversationGroupRepository.createGroupConversation(
                 name = eq<String?>(null),
@@ -258,6 +307,17 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
         }.wasInvoked()
+=======
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::createGroupConversation)
+            .with(eq(null), eq(listOf(TestUser.OTHER.id)), eq(ConversationOptions()))
+            .wasNotInvoked()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
+            .with(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
+            .wasInvoked(exactly = once)
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
@@ -266,8 +326,13 @@ class OneOnOneMigratorTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+<<<<<<< HEAD
         fun arrange() = run {
             runBlocking { block() }
+=======
+        suspend fun arrange() = run {
+            block()
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
             this@Arrangement to OneOnOneMigratorImpl(
                 getResolvedMLSOneOnOne = mlsOneOnOneConversationResolver,
                 conversationGroupRepository = conversationGroupRepository,
@@ -280,6 +345,10 @@ class OneOnOneMigratorTest {
     }
 
     private companion object {
+<<<<<<< HEAD
         fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+=======
+        suspend fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
     }
 }

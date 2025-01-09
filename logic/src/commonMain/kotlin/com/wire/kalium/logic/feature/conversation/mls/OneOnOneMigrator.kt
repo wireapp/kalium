@@ -141,10 +141,13 @@ internal class OneOnOneMigratorImpl(
             // We can theoretically have more than one proteus 1-1 conversation with
             // team members since there was no backend safeguards against this
             proteusOneOnOneConversations.foldToEitherWhileRight(Unit) { proteusOneOnOneConversation, _ ->
+<<<<<<< HEAD
                 kaliumLogger.d(
                     "migrating proteus ${proteusOneOnOneConversation.toLogString()} " +
                             "to MLS conv ${targetConversation.toLogString()}"
                 )
+=======
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
                 messageRepository.moveMessagesToAnotherConversation(
                     originalConversation = proteusOneOnOneConversation,
                     targetConversation = targetConversation

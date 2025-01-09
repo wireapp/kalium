@@ -32,9 +32,15 @@ interface OneOnOneMigratorArrangement {
 
     suspend fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>)
 
+<<<<<<< HEAD
     suspend fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>)
 
     suspend fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>)
+=======
+    fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>)
+
+    fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>)
+>>>>>>> f9fcff1f31 (fix: port migration 1 on 1 resolution for mls migration (WPB-15191) (WPB-11194) (#3221))
 }
 
 class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
@@ -58,5 +64,12 @@ class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
         coEvery {
             oneOnOneMigrator.migrateExistingProteus(any())
         }.returns(result)
+    }
+
+    override fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>) {
+        given(oneOnOneMigrator)
+            .suspendFunction(oneOnOneMigrator::migrateExistingProteus)
+            .whenInvokedWith(any())
+            .thenReturn(result)
     }
 }
