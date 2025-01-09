@@ -19,6 +19,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -95,6 +96,12 @@ internal interface UserRepositoryArrangement {
     )
 
     suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
+
+    suspend fun withIsClientMlsCapable(
+        result: Either<StorageFailure, Boolean>,
+        userId: Matcher<UserId> = AnyMatcher(valueOf()),
+        clientId: Matcher<ClientId> = AnyMatcher(valueOf())
+    )
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -232,5 +239,14 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
 
     override suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
         coEvery { userRepository.getNameAndHandle(matches { userId.matches(it) }) }.returns(result)
+    }
+
+    override suspend fun withIsClientMlsCapable(result: Either<StorageFailure, Boolean>, userId: Matcher<UserId>, clientId: Matcher<ClientId>) {
+        coEvery {
+            userRepository.isClientMlsCapable(
+                userId = matches { userId.matches(it) },
+                clientId = matches { clientId.matches(it) }
+            )
+        }.returns(result)
     }
 }

@@ -33,6 +33,8 @@ interface OneOnOneMigratorArrangement {
     suspend fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>)
 
     suspend fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>)
+
+    suspend fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>)
 }
 
 class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
@@ -49,6 +51,12 @@ class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
     override suspend fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>) {
         coEvery {
             oneOnOneMigrator.migrateToProteus(any())
+        }.returns(result)
+    }
+
+    override suspend fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>) {
+        coEvery {
+            oneOnOneMigrator.migrateExistingProteus(any())
         }.returns(result)
     }
 }

@@ -23,6 +23,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
@@ -167,6 +168,7 @@ interface UserRepository {
     suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
     suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
     suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
+    suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -285,7 +287,7 @@ internal class UserDataSource internal constructor(
         } else {
             qualifiedUserIdList
                 .chunked(BATCH_SIZE)
-                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
+                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, usersDTO ->
                     wrapApiRequest {
                         kaliumLogger.d("Fetching ${chunk.size} users")
                         userDetailsApi.getMultipleUsers(
@@ -293,9 +295,9 @@ internal class UserDataSource internal constructor(
                         )
                     }.map {
                         kaliumLogger.d("Found ${it.usersFound.size} users and ${it.usersFailed.size} failed users")
-                        acc.copy(
-                            usersFound = (acc.usersFound + it.usersFound).distinct(),
-                            usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
+                        usersDTO.copy(
+                            usersFound = (usersDTO.usersFound + it.usersFound).distinct(),
+                            usersFailed = (usersDTO.usersFailed + it.usersFailed).distinct(),
                         )
                     }
                 }
@@ -666,6 +668,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit> = wrapStorageRequest {
         userDAO.updateTeamId(userId.toDao(), teamId.value)
+    }
+
+    override suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        clientDAO.isMLSCapable(userId.toDao(), clientId.value)
     }
 
     companion object {
