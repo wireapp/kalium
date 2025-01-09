@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneMigratorArrangement
@@ -251,6 +253,24 @@ class OneOnOneResolverTest {
         // then
         verify(arrangement.oneOnOneMigrator)
             .suspendFunction(arrangement.oneOnOneMigrator::migrateToProteus)
+            .with(eq(OTHER_USER))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProtocolResolvesToOtherNeedToUpdate_whenResolveOneOnOneConversationWithUser_thenMigrateExistingToProteus() = runTest {
+        // given
+        val (arrangement, resolver) = arrange {
+            withGetProtocolForUser(CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate.left())
+            withMigrateExistingToProteusReturns(TestConversation.ID.right())
+        }
+
+        // when
+        resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
+
+        // then
+        verify(arrangement.oneOnOneMigrator)
+            .suspendFunction(arrangement.oneOnOneMigrator::migrateExistingProteus)
             .with(eq(OTHER_USER))
             .wasInvoked(exactly = once)
     }

@@ -133,6 +133,11 @@ class OneOnOneMigratorTest {
             .suspendFunction(arrangement.messageRepository::moveMessagesToAnotherConversation)
             .with(any(), any())
             .wasNotInvoked()
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -142,7 +147,7 @@ class OneOnOneMigratorTest {
         )
         val failure = CoreFailure.MissingClientRegistration
 
-        val (_, oneOnOneMigrator) = arrange {
+        val (arrangement, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Left(failure))
         }
 
@@ -172,6 +177,11 @@ class OneOnOneMigratorTest {
         verify(arrangement.userRepository)
             .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
             .with(any(), any())
+            .wasNotInvoked()
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -215,6 +225,11 @@ class OneOnOneMigratorTest {
             .suspendFunction(arrangement.messageRepository::moveMessagesToAnotherConversation)
             .with(eq(originalConversationId), eq(resolvedConversationId))
             .wasInvoked(exactly = once)
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -238,28 +253,58 @@ class OneOnOneMigratorTest {
             .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
             .with(eq(user.id), eq(resolvedConversationId))
             .wasInvoked(exactly = once)
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    @Test
+    fun givenExistingTeamOneOnOne_whenMigratingToProteus_thenShouldNOTCreateGroupConversation() = runTest {
+        val user = TestUser.OTHER.copy(
+            activeOneOnOneConversationId = null
+        )
+
+        val (arrangement, oneOneMigrator) = arrange {
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ONE_ON_ONE().id)))
+            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+        }
+
+        oneOneMigrator.migrateExistingProteus(user)
+            .shouldSucceed()
+
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::createGroupConversation)
+            .with(eq(null), eq(listOf(TestUser.OTHER.id)), eq(ConversationOptions()))
+            .wasNotInvoked()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
+            .with(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
+            .wasInvoked(exactly = once)
+    }
+
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSOneOnOneConversationResolverArrangement by MLSOneOnOneConversationResolverArrangementImpl(),
         MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
-        UserRepositoryArrangement by UserRepositoryArrangementImpl()
-    {
-        fun arrange() = run {
+        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+        suspend fun arrange() = run {
             block()
             this@Arrangement to OneOnOneMigratorImpl(
                 getResolvedMLSOneOnOne = mlsOneOnOneConversationResolver,
                 conversationGroupRepository = conversationGroupRepository,
                 conversationRepository = conversationRepository,
                 messageRepository = messageRepository,
-                userRepository = userRepository
+                userRepository = userRepository,
+                systemMessageInserter = systemMessageInserter
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
     }
 }
