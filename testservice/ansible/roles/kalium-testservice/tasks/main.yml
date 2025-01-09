@@ -1,0 +1,79 @@
+- name: Install java and other useful packages
+  when:
+    - ansible_facts['distribution'] == "Debian"
+  package:
+    name:
+      - haveged
+      - openjdk-17-jre-headless
+    state: present
+
+- name: Enable service for random number generation
+  systemd:
+    name: haveged
+    daemon_reload: true
+    enabled: true
+    state: restarted
+
+- name: Create user account
+  user:
+    name: kalium
+    uid: 1001
+    shell: /bin/bash
+    state: present
+    groups: audio, video
+
+- name: Ensure logs directory exists
+  file:
+    path: /var/log/kalium-testservice/
+    state: directory
+    owner: kalium
+    group: kalium
+    mode: '0755'
+
+- name: Create directory for runtime files
+  file:
+    path: /usr/local/kalium-testservice/
+    state: directory
+    owner: kalium
+    group: kalium
+    mode: '0755'
+
+- name: Deploy config
+  copy:
+    src: ../config.yml
+    dest: /usr/local/kalium-testservice/config.yml
+    owner: kalium
+    group: kalium
+    mode: '0644'
+
+- name: Deploy native libraries
+  copy:
+    src: ../../native
+    dest: /usr/local/kalium-testservice/native
+    owner: kalium
+    group: kalium
+    mode: '0644'
+
+- name: Deploy jar
+  copy:
+    src: ../target/testservice-0.0.1-SNAPSHOT-all.jar
+    dest: /usr/local/kalium-testservice/testservice.jar
+    owner: kalium
+    group: kalium
+    mode: '0644'
+
+- name: Deploy service
+  copy:
+    src: kalium-testservice.service
+    dest: /etc/systemd/system/kalium-testservice.service
+    owner: kalium
+    group: kalium
+    mode: '0644'
+
+- name: Enable and start service
+  systemd:
+    name: kalium-testservice
+    daemon_reload: true
+    enabled: true
+    state: restarted
+
