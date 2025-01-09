@@ -27,10 +27,12 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
+import com.wire.kalium.persistence.utils.stubs.allMessageEntities
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
@@ -49,6 +51,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -61,6 +64,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     private lateinit var userDAO: UserDAO
     private lateinit var receiptDao: ReceiptDAO
     private lateinit var assetDao: AssetDAO
+    private lateinit var reactionDao: ReactionDAO
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val conversationEntity2 = newConversationEntity("Test2")
@@ -80,6 +84,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         userDAO = db.userDAO
         receiptDao = db.receiptDAO
         assetDao = db.assetDAO
+        reactionDao = db.reactionDAO
     }
 
     @Test
@@ -2345,6 +2350,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+<<<<<<< HEAD
     fun givenMessagesAndUsersAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
         insertInitialData()
 
@@ -2452,6 +2458,31 @@ class MessageDAOTest : BaseDatabaseTest() {
         val result = messageDAO.getNextAudioMessageInConversation("1", conversationEntity1.id)
 
         assertEquals("3", result)
+=======
+    fun givenAllTypesOfMessages_whenMovingToAnotherConversation_thenItSucceeds() = runTest {
+        // Given
+        insertInitialData()
+        val messages = allMessageEntities(conversationId = conversationEntity1.id, senderUserId = userEntity1.id)
+        val firstEmoji = "🫡"
+        messageDAO.insertOrIgnoreMessages(messages)
+        reactionDao.insertReaction(
+            messages.first().id,
+            messages.first().conversationId,
+            userEntity1.id,
+            Instant.DISTANT_PAST,
+            firstEmoji
+        )
+
+        // When
+        val exception = kotlin.runCatching {
+            messageDAO.moveMessages(conversationEntity1.id, conversationEntity2.id)
+        }.exceptionOrNull()
+
+        // Then
+        assertNull(exception, "Expected no exception but got: ${exception?.message}")
+        val result = messageDAO.getMessagesByConversationAndVisibility(conversationEntity2.id, 100, 0).first()
+        assertEquals(messages.size, result.size)
+>>>>>>> 3b9629000e (fix: messages migration from proteus to mls (#3218))
     }
 
     private suspend fun insertInitialData() {
