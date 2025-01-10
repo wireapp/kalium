@@ -2164,14 +2164,15 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val getTeamUrlUseCase: GetTeamUrlUseCase by lazy {
-        GetTeamUrlUseCase(
+    val getTeamUrlUseCase: GetTeamUrlUseCase
+        get() = GetTeamUrlUseCase(
             userId,
             authenticationScope.serverConfigRepository,
         )
-    }
 
-    private val inCallReactionsRepository: InCallReactionsRepository = InCallReactionsDataSource()
+    private val inCallReactionsRepository: InCallReactionsRepository by lazy {
+        InCallReactionsDataSource()
+    }
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
