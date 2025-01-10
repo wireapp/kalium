@@ -36,6 +36,7 @@ internal interface UserConfigRepositoryArrangement {
     fun withSetDefaultProtocolSuccessful()
     fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
     fun withSetMLSEnabledSuccessful()
+    fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>)
     fun withSetMigrationConfigurationSuccessful()
     fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
@@ -79,6 +80,13 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
             .function(userConfigRepository::setMLSEnabled)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
+    }
+
+    override fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
+        given(userConfigRepository)
+            .function(userConfigRepository::isMLSEnabled)
+            .whenInvoked()
+            .thenReturn(result)
     }
 
     override fun withSetMigrationConfigurationSuccessful() {

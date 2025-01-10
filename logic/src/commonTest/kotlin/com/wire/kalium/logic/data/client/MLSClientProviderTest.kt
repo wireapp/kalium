@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.MLSModel
@@ -32,12 +33,16 @@ import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepository
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import io.ktor.util.reflect.instanceOf
 import io.mockative.Mock
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -61,12 +66,17 @@ class MLSClientProviderTest {
 
         val (arrangement, mlsClientProvider) = Arrangement().arrange {
             withGetSupportedCipherSuitesReturning(StorageFailure.DataNotFound.left())
-            withGetFeatureConfigsReturning(FeatureConfigTest.newModel(mlsModel =expected).right())
+            withGetFeatureConfigsReturning(FeatureConfigTest.newModel(mlsModel = expected).right())
+            withGetMLSEnabledReturning(true.right())
         }
 
         mlsClientProvider.getOrFetchMLSConfig().shouldSucceed {
             assertEquals(expected.supportedCipherSuite, it)
         }
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::isMLSEnabled)
+            .wasInvoked(exactly = once)
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::getSupportedCipherSuite)
@@ -89,6 +99,8 @@ class MLSClientProviderTest {
 
         val (arrangement, mlsClientProvider) = Arrangement().arrange {
             withGetSupportedCipherSuitesReturning(expected.right())
+            withGetMLSEnabledReturning(true.right())
+            withGetFeatureConfigsReturning(FeatureConfigTest.newModel().right())
         }
 
         mlsClientProvider.getOrFetchMLSConfig().shouldSucceed {
@@ -96,8 +108,45 @@ class MLSClientProviderTest {
         }
 
         verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::isMLSEnabled)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::getSupportedCipherSuite)
             .wasInvoked(exactly = once)
+
+        verify(arrangement.featureConfigRepository)
+            .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenMLSDisabledWhenGetOrFetchMLSConfigIsCalledThenDoNotCallGetSupportedCipherSuiteOrGetFeatureConfigs() = runTest {
+        // given
+        val (arrangement, mlsClientProvider) = Arrangement().arrange {
+            withGetMLSEnabledReturning(false.right())
+            withGetSupportedCipherSuitesReturning(
+                SupportedCipherSuite(
+                    supported = listOf(
+                        CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+                        CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                    ),
+                    default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                ).right()
+            )
+        }
+
+        // when
+        val result = mlsClientProvider.getOrFetchMLSConfig()
+
+        // then
+        result.shouldFail { //TODO check
+            it.instanceOf(CoreFailure.Unknown::class)
+        }
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getSupportedCipherSuite)
+            .wasNotInvoked()
 
         verify(arrangement.featureConfigRepository)
             .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)

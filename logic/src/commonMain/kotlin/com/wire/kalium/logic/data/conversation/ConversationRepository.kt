@@ -379,12 +379,18 @@ internal class ConversationDataSource internal constructor(
         selfUserTeamId: String?,
         originatedFromEvent: Boolean
     ): Either<CoreFailure, Boolean> = wrapStorageRequest {
-        val isNewConversation = conversationDAO.getConversationBaseInfoByQualifiedID(conversation.id.toDao()) == null
+        val existingConversation = conversationDAO.getConversationBaseInfoByQualifiedID(conversation.id.toDao())
+        val isNewConversation = existingConversation?.let { conversationEntity ->
+            (conversationEntity.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.groupState?.let {
+                it != ConversationEntity.GroupState.ESTABLISHED
+            } ?: false
+        } ?: true
         if (isNewConversation) {
+            val mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) }
             conversationDAO.insertConversation(
                 conversationMapper.fromApiModelToDaoModel(
                     conversation,
-                    mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },
+                    mlsGroupState = mlsGroupState,
                     selfTeamIdProvider().getOrNull(),
                 )
             )
@@ -403,14 +409,12 @@ internal class ConversationDataSource internal constructor(
     ) = wrapStorageRequest {
         val conversationEntities = conversations
             .map { conversationResponse ->
+                val mlsGroupState = conversationResponse.groupId?.let {
+                    mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent)
+                }
                 conversationMapper.fromApiModelToDaoModel(
                     conversationResponse,
-                    mlsGroupState = conversationResponse.groupId?.let {
-                        mlsGroupState(
-                            idMapper.fromGroupIDEntity(it),
-                            originatedFromEvent
-                        )
-                    },
+                    mlsGroupState = mlsGroupState,
                     selfTeamIdProvider().getOrNull(),
                 )
             }
@@ -432,9 +436,14 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    private suspend fun mlsGroupState(groupId: GroupID, originatedFromEvent: Boolean = false): ConversationEntity.GroupState =
-        hasEstablishedMLSGroup(groupId).fold({
-            throw IllegalStateException(it.toString()) // TODO find a more fitting exception?
+    private suspend fun mlsGroupState(
+        groupId: GroupID,
+        originatedFromEvent: Boolean = false
+    ): ConversationEntity.GroupState = hasEstablishedMLSGroup(groupId)
+        .fold({ failure ->
+            kaliumLogger.withFeatureId(CONVERSATIONS)
+                .w("Error checking MLS group state, setting to ${ConversationEntity.GroupState.PENDING_JOIN}")
+            ConversationEntity.GroupState.PENDING_JOIN
         }, { exists ->
             if (exists) {
                 ConversationEntity.GroupState.ESTABLISHED

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
@@ -708,16 +709,16 @@ class ConversationRepositoryTest {
         val shouldFetchFromArchivedConversations = false
         val messagePreviewEntity = MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)
 
-            val conversationEntity = TestConversation.VIEW_ENTITY.copy(
-                id = conversationIdEntity,
-                type = ConversationEntity.Type.GROUP,
-            )
+        val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+            id = conversationIdEntity,
+            type = ConversationEntity.Type.GROUP,
+        )
 
-            val unreadMessagesCount = 5
-            val conversationUnreadEventEntity = ConversationUnreadEventEntity(
-                conversationIdEntity,
-                mapOf(UnreadEventTypeEntity.MESSAGE to unreadMessagesCount)
-            )
+        val unreadMessagesCount = 5
+        val conversationUnreadEventEntity = ConversationUnreadEventEntity(
+            conversationIdEntity,
+            mapOf(UnreadEventTypeEntity.MESSAGE to unreadMessagesCount)
+        )
 
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
@@ -729,8 +730,8 @@ class ConversationRepositoryTest {
         conversationRepository.observeConversationListDetails(shouldFetchFromArchivedConversations).test {
             val result = awaitItem()
 
-                assertContains(result.map { it.conversation.id }, conversationId)
-                val conversation = result.first { it.conversation.id == conversationId }
+            assertContains(result.map { it.conversation.id }, conversationId)
+            val conversation = result.first { it.conversation.id == conversationId }
 
             assertIs<ConversationDetails.Group>(conversation)
             assertEquals(conversation.unreadEventCount[UnreadEventType.MESSAGE], unreadMessagesCount)
@@ -739,9 +740,9 @@ class ConversationRepositoryTest {
                 conversation.lastMessage
             )
 
-                awaitComplete()
-            }
+            awaitComplete()
         }
+    }
 
     @Test
     fun givenArchivedConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCountAndNullLastMessage() =
@@ -789,21 +790,21 @@ class ConversationRepositoryTest {
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.GROUP,
         )
-            val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
-                .arrange()
+        val (_, conversationRepository) = Arrangement()
+            .withExpectedObservableConversation(conversationEntity)
+            .arrange()
 
-            // when
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-                // then
-                val conversationDetail = awaitItem()
+        // when
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            // then
+            val conversationDetail = awaitItem()
 
-                assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-                assertTrue { conversationDetail.value.lastMessage == null }
+            assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
+            assertTrue { conversationDetail.value.lastMessage == null }
 
-                awaitComplete()
-            }
+            awaitComplete()
         }
+    }
 
     @Test
     fun givenAOneToOneConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() =
@@ -837,36 +838,36 @@ class ConversationRepositoryTest {
         val conversationId = QualifiedID("some_value", "some_domain")
         val shouldFetchFromArchivedConversations = false
 
-            val conversationEntity = TestConversation.VIEW_ENTITY.copy(
-                id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE,
-                otherUserId = QualifiedIDEntity("otherUser", "domain")
-            )
+        val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+            id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE,
+            otherUserId = QualifiedIDEntity("otherUser", "domain")
+        )
 
-            val unreadMessagesCount = 5
-            val conversationUnreadEventEntity = ConversationUnreadEventEntity(
-                conversationIdEntity,
-                mapOf(UnreadEventTypeEntity.MESSAGE to unreadMessagesCount)
-            )
+        val unreadMessagesCount = 5
+        val conversationUnreadEventEntity = ConversationUnreadEventEntity(
+            conversationIdEntity,
+            mapOf(UnreadEventTypeEntity.MESSAGE to unreadMessagesCount)
+        )
 
-            val (_, conversationRepository) = Arrangement()
-                .withConversations(listOf(conversationEntity))
-                .withLastMessages(listOf())
-                .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
-                .arrange()
-        
+        val (_, conversationRepository) = Arrangement()
+            .withConversations(listOf(conversationEntity))
+            .withLastMessages(listOf())
+            .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
+            .arrange()
+
         // when
         conversationRepository.observeConversationListDetails(shouldFetchFromArchivedConversations).test {
             val result = awaitItem()
 
-                assertContains(result.map { it.conversation.id }, conversationId)
-                val conversation = result.first { it.conversation.id == conversationId }
+            assertContains(result.map { it.conversation.id }, conversationId)
+            val conversation = result.first { it.conversation.id == conversationId }
 
-                assertIs<ConversationDetails.OneOne>(conversation)
-                assertEquals(conversation.unreadEventCount[UnreadEventType.MESSAGE], unreadMessagesCount)
+            assertIs<ConversationDetails.OneOne>(conversation)
+            assertEquals(conversation.unreadEventCount[UnreadEventType.MESSAGE], unreadMessagesCount)
 
-                awaitComplete()
-            }
+            awaitComplete()
         }
+    }
 
     @Test
     fun givenAConversationDaoFailed_whenUpdatingTheConversationReadDate_thenShouldNotSucceed() = runTest {
@@ -1794,6 +1795,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::updateLegalHoldStatusChangeNotified)
                 .whenInvokedWith(any(), any())
                 .thenReturn(updated)
+        }
+
+        suspend fun withDisabledMlsClientProvider() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getMLSClient)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Left(MLSFailure.Disabled))
         }
 
         fun arrange() = this to conversationRepository
