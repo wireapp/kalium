@@ -17,14 +17,28 @@
  */
 package com.wire.backup.ingest
 
+import com.wire.backup.envelope.cryptography.BackupPassphrase
+import com.wire.backup.filesystem.EntryStorage
+import com.wire.backup.filesystem.FileBasedEntryStorage
 import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
 import okio.SYSTEM
+import okio.Sink
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
 @OptIn(ExperimentalObjCName::class)
-public actual class MPBackupImporter : CommonMPBackupImporter() {
+public actual class MPBackupImporter(
+    private val pathToWorkDirectory: String,
+    private val backupFileUnzipper: BackupFileUnzipper
+) : CommonMPBackupImporter() {
+
+    init {
+        pathToWorkDirectory.toPath().also {
+            if (!FileSystem.SYSTEM.exists(it)) FileSystem.SYSTEM.createDirectories(it)
+        }
+    }
 
     /**
      * Imports a backup from the specified root path.
@@ -32,9 +46,25 @@ public actual class MPBackupImporter : CommonMPBackupImporter() {
      * @param multiplatformBackupFilePath the path to the decrypted, unzipped backup data file
      */
     @ObjCName("importFile")
-    public fun importFromFile(multiplatformBackupFilePath: String): BackupImportResult {
-        return FileSystem.SYSTEM.read(multiplatformBackupFilePath.toPath()) {
-            importBackup(readByteArray())
-        }
+    public suspend fun importFromFile(
+        multiplatformBackupFilePath: String,
+        passphrase: BackupPassphrase?,
+    ): BackupImportResult = importBackup(FileSystem.SYSTEM.source(multiplatformBackupFilePath.toPath()), passphrase)
+
+    private val archiveZipPath: Path
+        get() = pathToWorkDirectory.toPath() / ZIP_FILE_NAME
+
+    override fun getUnencryptedArchiveSink(): Sink {
+        FileSystem.SYSTEM.delete(archiveZipPath, mustExist = false)
+        FileSystem.SYSTEM.sink(archiveZipPath)
+    }
+
+    override fun unzipAllEntries(): EntryStorage {
+        val unzipPath = backupFileUnzipper.unzipBackup(archiveZipPath.toString())
+        return FileBasedEntryStorage(FileSystem.SYSTEM, unzipPath.toPath(), false)
+    }
+
+    private companion object {
+        const val ZIP_FILE_NAME = "unencryptedArchive.zip"
     }
 }

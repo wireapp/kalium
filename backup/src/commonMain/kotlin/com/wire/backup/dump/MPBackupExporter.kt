@@ -39,7 +39,6 @@ import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedMessage
 import kotlinx.datetime.Clock
 import okio.Buffer
-import okio.ByteString.Companion.toByteString
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -83,6 +82,7 @@ public abstract class CommonMPBackupExporter(
     }
 
     private fun flushUsers() {
+        if(usersChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, users = usersChunk)
         storage.persistEntry(BackupEntry(USERS_ENTRY_PREFIX + persistedUserChunks + ENTRY_SUFFIX, backupData.asSource()))
         persistedUserChunks++
@@ -98,6 +98,7 @@ public abstract class CommonMPBackupExporter(
     }
 
     private fun flushConversations() {
+        if(conversationsChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, conversations = conversationsChunk)
         storage.persistEntry(BackupEntry(CONVERSATIONS_ENTRY_PREFIX + persistedConversationsChunks + ENTRY_SUFFIX, backupData.asSource()))
         persistedConversationsChunks++
@@ -113,6 +114,7 @@ public abstract class CommonMPBackupExporter(
     }
 
     private fun flushMessages() {
+        if(messagesChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, messages = messagesChunk)
         storage.persistEntry(BackupEntry(MESSAGES_ENTRY_PREFIX + persistedMessagesChunks + ENTRY_SUFFIX, backupData.asSource()))
         persistedMessagesChunks++
@@ -132,7 +134,7 @@ public abstract class CommonMPBackupExporter(
 
     internal suspend fun finalize(password: String?, output: Sink) {
         flushAll()
-        val zippedData = zipper.compress(storage.listEntries())
+        val zippedData = zipper.archive(storage.listEntries())
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
 
         val header = BackupHeader(
@@ -140,15 +142,14 @@ public abstract class CommonMPBackupExporter(
             false,
             HashData.defaultFromUserId(selfUserId)
         )
-        val headerData = BackupHeaderSerializer.Default.headerToBytes(header)
-        val headerBytes = headerData.readByteArray()
+        val headerBytes = BackupHeaderSerializer.Default.headerToBytes(header)
         output.buffer().use { bufferedOutput ->
-            bufferedOutput.writeAll(headerData)
+            bufferedOutput.write(headerBytes)
             bufferedOutput.flush()
             if (password == null) {
                 // We should skip the encryption headers, leaving empty/zeroed bytes
                 val skip = ByteArray(EncryptedStream.XCHACHA_20_POLY_1305_HEADER_LENGTH) { 0x00 }
-                bufferedOutput.write(skip.toByteString())
+                bufferedOutput.write(skip)
                 bufferedOutput.writeAll(zippedData)
             } else {
                 EncryptedStream.encrypt(

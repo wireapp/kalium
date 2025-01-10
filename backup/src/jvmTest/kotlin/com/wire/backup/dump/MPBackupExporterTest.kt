@@ -19,19 +19,18 @@ package com.wire.backup.dump
 
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.random.Random
-import kotlin.random.nextInt
 import kotlin.test.Test
 
 class MPBackupExporterTest {
 
-    fun createZipFile(files: List<File>, outputZipFile: File): File {
+    private fun createZipFile(files: List<File>, outputZipFile: File): File {
         ZipOutputStream(FileOutputStream(outputZipFile)).use { zipOut ->
             files.forEach { file ->
                 FileInputStream(file).use { fis ->
@@ -46,7 +45,7 @@ class MPBackupExporterTest {
     }
 
     @Test
-    fun e() = runBlocking {
+    fun e() = runTest {
         val userId = BackupQualifiedId("user", "domain")
         val subject = MPBackupExporter(userId, "TEST", "TEST-OUTPUT") { entries ->
             val files = entries.map { File(it) }

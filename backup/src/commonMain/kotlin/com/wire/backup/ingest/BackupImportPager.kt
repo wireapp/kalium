@@ -17,13 +17,13 @@
  */
 package com.wire.backup.ingest
 
+import com.wire.backup.filesystem.BackupEntry
+import com.wire.backup.filesystem.EntryStorage
+import com.wire.kalium.protobuf.backup.BackupData
 import kotlin.js.JsExport
 
 @JsExport
-public sealed class BackupImportResult {
-    public class Success(public val import: BackupImportPager) : BackupImportResult()
-    public sealed class Failure : BackupImportResult() {
-        public data object ParsingFailure : Failure()
-        public data object MissingOrWrongPassphrase : Failure()
-    }
+public class BackupImportPager internal constructor(private val entries: EntryStorage) {
+    fun hasMorePages(): Boolean
+    fun nextPage(): BackupData?
 }

@@ -20,10 +20,8 @@ package com.wire.backup.ingest
 import kotlin.js.JsExport
 
 @JsExport
-public sealed class BackupImportResult {
-    public class Success(public val import: BackupImportPager) : BackupImportResult()
-    public sealed class Failure : BackupImportResult() {
-        public data object ParsingFailure : Failure()
-        public data object MissingOrWrongPassphrase : Failure()
-    }
+public sealed class BackupAuthorValidationResult {
+    public data object Success : BackupAuthorValidationResult()
+    public data object AuthorDoesNotMatch: BackupAuthorValidationResult()
+    public data object UnknownFormat : BackupAuthorValidationResult()
 }

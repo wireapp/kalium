@@ -17,7 +17,6 @@
  */
 package com.wire.backup.encryption
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
 import com.ionspin.kotlin.crypto.pwhash.PasswordHash
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_argon2id_ALG_ARGON2ID13

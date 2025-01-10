@@ -17,5 +17,19 @@
  */
 package com.wire.backup.ingest
 
+import com.wire.backup.filesystem.EntryStorage
+import com.wire.backup.filesystem.InMemoryEntryStorage
+import okio.Buffer
+import okio.Sink
+
 @JsExport
-public actual class MPBackupImporter : CommonMPBackupImporter()
+public actual class MPBackupImporter : CommonMPBackupImporter() {
+    private val inMemoryUnencryptedBuffer = Buffer()
+
+    override fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer
+
+    override fun unzipAllEntries(): EntryStorage {
+        TODO("Unzip the whole in memory buffer, and return an InMemoryStorage with the unzipped entries")
+        return InMemoryEntryStorage()
+    }
+}

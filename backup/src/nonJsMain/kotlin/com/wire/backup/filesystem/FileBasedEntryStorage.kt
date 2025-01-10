@@ -20,11 +20,18 @@ package com.wire.backup.filesystem
 import okio.FileSystem
 import okio.Path
 
-internal class FileBasedEntryStorage(private val fileSystem: FileSystem, private val workDirectory: Path) : EntryStorage {
+internal class FileBasedEntryStorage(
+    private val fileSystem: FileSystem,
+    private val workDirectory: Path,
+    shouldBeCleared: Boolean,
+) : EntryStorage {
 
     init {
         if (!fileSystem.exists(workDirectory)) {
             fileSystem.createDirectories(workDirectory)
+        }
+        if (shouldBeCleared) {
+            clear()
         }
         require(fileSystem.metadata(workDirectory).isDirectory) {
             "Provided work directory is not a directory! ($workDirectory)"

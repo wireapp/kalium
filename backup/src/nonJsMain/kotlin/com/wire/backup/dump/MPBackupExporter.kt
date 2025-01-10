@@ -37,11 +37,11 @@ public actual class MPBackupExporter(
     private val fileSystem = FileSystem.SYSTEM
 
     override val storage: EntryStorage = FileBasedEntryStorage(
-        fileSystem, workDirectory.toPath()
+        fileSystem, workDirectory.toPath(), true
     )
 
     override val zipper: Zipper = object : Zipper {
-        override fun compress(data: List<BackupEntry>): Source {
+        override fun archive(data: List<BackupEntry>): Source {
             val entries = data.map { fileSystem.canonicalize(workDirectory.toPath() / it.name).toString() }
             val pathToZippedArchive = fileZipper.zip(entries).toPath()
             return fileSystem.source(pathToZippedArchive)

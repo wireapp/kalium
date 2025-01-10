@@ -21,5 +21,5 @@ import com.wire.backup.filesystem.BackupEntry
 import okio.Source
 
 internal interface Zipper {
-    fun compress(data: List<BackupEntry>): Source
+    fun archive(data: List<BackupEntry>): Source
 }

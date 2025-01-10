@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +17,11 @@
  */
 package com.wire.backup.ingest
 
-import kotlin.js.JsExport
+public interface BackupFileUnzipper {
 
-@JsExport
-public sealed class BackupImportResult {
-    public class Success(public val import: BackupImportPager) : BackupImportResult()
-    public sealed class Failure : BackupImportResult() {
-        public data object ParsingFailure : Failure()
-        public data object MissingOrWrongPassphrase : Failure()
-    }
+    /**
+     * Unzip all the entries stored within the file at [zipPath] to _some_ directory of choice.
+     * @return the path to a directory where all the entries were extracted.
+     */
+    public fun unzipBackup(zipPath: String): String
 }

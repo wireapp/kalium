@@ -21,4 +21,8 @@ package com.wire.backup.envelope.cryptography
 import kotlin.js.JsExport
 
 @JsExport
-public data class BackupPassphrase(val value: String)
+public data class BackupPassphrase(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Passphrase cannot be blank!" }
+    }
+}

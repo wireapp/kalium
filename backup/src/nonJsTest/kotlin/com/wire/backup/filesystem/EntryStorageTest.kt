@@ -21,5 +21,9 @@ import okio.FileSystem
 import okio.SYSTEM
 
 internal actual fun createTestStorage(): EntryStorage {
-    return FileBasedEntryStorage(FileSystem.SYSTEM, FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "kalium-test-backup")
+    return FileBasedEntryStorage(
+        FileSystem.SYSTEM,
+        FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "kalium-test-backup",
+        true
+    )
 }

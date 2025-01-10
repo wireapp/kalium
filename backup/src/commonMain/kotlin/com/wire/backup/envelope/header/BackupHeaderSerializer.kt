@@ -29,7 +29,7 @@ internal interface BackupHeaderSerializer {
     /**
      * Converts a [BackupHeader] into a byte buffer format, which can be stored in the beginning of a Backup file.
      */
-    fun headerToBytes(header: BackupHeader): Buffer
+    fun headerToBytes(header: BackupHeader): ByteArray
 
     /**
      * Consumes the first relevant bytes of the [source], parses and returns a [HeaderParseResult].
@@ -57,7 +57,7 @@ internal interface BackupHeaderSerializer {
          */
         private const val SIZE_OF_GAP_AFTER_FORMAT_FIELD = 1L
 
-        override fun headerToBytes(header: BackupHeader): Buffer {
+        override fun headerToBytes(header: BackupHeader): ByteArray {
             val headerBytes = Buffer()
             BackupHeaderField.String.format.write(FORMAT_IDENTIFIER_MAGIC_NUMBER, headerBytes)
             repeat(SIZE_OF_GAP_AFTER_FORMAT_FIELD.toInt()) {
@@ -75,7 +75,7 @@ internal interface BackupHeaderSerializer {
                 headerBytes.writeByte(0x00)
             }
 
-            return headerBytes
+            return headerBytes.readByteArray()
         }
 
         override fun parseHeader(source: Source): HeaderParseResult {
