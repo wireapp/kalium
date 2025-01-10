@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
@@ -56,7 +57,8 @@ actual class GlobalCallManager {
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
         networkStateObserver: NetworkStateObserver,
-        kaliumConfigs: KaliumConfigs
+        kaliumConfigs: KaliumConfigs,
+        createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
     ): CallManager {
         return CallManagerImpl()
     }

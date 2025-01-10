@@ -85,7 +85,7 @@ class UserPropertiesEventReceiverTest {
         suspend fun withUpdateConversationFolders() = apply {
             coEvery {
                 conversationFolderRepository.updateConversationFolders(any())
-            }.returns(Either.Right(Unit))
+             }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to userPropertiesEventReceiver

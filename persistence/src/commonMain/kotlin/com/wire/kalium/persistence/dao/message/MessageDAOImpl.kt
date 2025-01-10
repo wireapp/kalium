@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -59,6 +60,7 @@ internal class MessageDAOImpl internal constructor(
     private val messagePreviewQueries: MessagePreviewQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
+    private val userQueries: UsersQueries,
     private val coroutineContext: CoroutineContext,
     private val assetStatusQueries: MessageAssetTransferStatusQueries,
     buttonContentQueries: ButtonContentQueries
@@ -503,6 +505,26 @@ internal class MessageDAOImpl internal constructor(
         withContext(coroutineContext) {
             assetStatusQueries.selectMessageAssetStatus(conversationId, messageId)
                 .executeAsOne()
+        }
+
+    override suspend fun getAllMessageAssetIdsForConversationId(
+        conversationId: QualifiedIDEntity
+    ): List<String> {
+        return withContext(coroutineContext) {
+            assetViewQueries.getAllAssetMessagesByConversationId(
+                conversationId,
+                listOf(MessageEntity.ContentType.ASSET)
+            ).executeAsList().mapNotNull { it.assetId }
+        }
+    }
+
+    override suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String? = withContext(coroutineContext) {
+        userQueries.selectNameByMessageId(id, conversationId).executeAsOneOrNull()?.name
+    }
+
+    override suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String? =
+        withContext(coroutineContext) {
+            queries.selectNextAudioMessage(conversationId, prevMessageId).executeAsOneOrNull()
         }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)

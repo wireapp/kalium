@@ -30,6 +30,9 @@ import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Ar
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.NETWORK_FAILURE
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import io.mockative.Mock
 import io.mockative.any
@@ -39,20 +42,22 @@ import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientIdIsNotRegistered_ThenReturnGenericError() = runTest {
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withClientId(Either.Left(CLIENT_FETCH_ERROR))
-            .arrange()
+            .arrange{
+                withGetMLSEnabledReturning(true.right())
+            }
 
         val actual = keyPackageCountUseCase()
 
@@ -70,7 +75,9 @@ class MLSKeyPackageCountUseCaseTest {
             .withAvailableKeyPackageCountReturn(Either.Right(KEY_PACKAGE_COUNT_DTO))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
             .withKeyPackageLimitSucceed()
-            .arrange()
+            .arrange{
+                withGetMLSEnabledReturning(true.right())
+            }
 
         val actual = keyPackageCountUseCase()
 
@@ -86,7 +93,9 @@ class MLSKeyPackageCountUseCaseTest {
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withAvailableKeyPackageCountReturn(Either.Left(NETWORK_FAILURE))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
-            .arrange()
+            .arrange{
+                withGetMLSEnabledReturning(true.right())
+            }
 
         val actual = keyPackageCountUseCase()
 
@@ -97,7 +106,28 @@ class MLSKeyPackageCountUseCaseTest {
         assertEquals(actual.networkFailure, NETWORK_FAILURE)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenClientID_whenCallingGetMLSEnabledReturnFalse_ThenReturnKeyPackageCountNotEnabledFailure() = runTest {
+        val (arrangement, keyPackageCountUseCase) = Arrangement()
+            .withAvailableKeyPackageCountReturn(Either.Right(KEY_PACKAGE_COUNT_DTO))
+            .withClientId(Either.Right(TestClient.CLIENT_ID))
+            .arrange{
+                withGetMLSEnabledReturning(false.right())
+            }
+
+        val actual = keyPackageCountUseCase()
+
+        verify {
+            arrangement.userConfigRepository.isMLSEnabled()
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+        }.wasNotInvoked()
+        assertIs<MLSKeyPackageCountResult.Failure.NotEnabled>(actual)
+    }
+
+    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
         @Mock
         val keyPackageRepository = mock(KeyPackageRepository::class)
 
@@ -125,9 +155,11 @@ class MLSKeyPackageCountUseCaseTest {
             }.returns(result)
         }
 
-        fun arrange() = this to MLSKeyPackageCountUseCaseImpl(
-            keyPackageRepository, currentClientIdProvider, keyPackageLimitsProvider
-        )
+        fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {
+            this to MLSKeyPackageCountUseCaseImpl(
+                keyPackageRepository, currentClientIdProvider, keyPackageLimitsProvider, userConfigRepository
+            )
+        }
 
         companion object {
             val NETWORK_FAILURE = NetworkFailure.NoNetworkConnection(null)

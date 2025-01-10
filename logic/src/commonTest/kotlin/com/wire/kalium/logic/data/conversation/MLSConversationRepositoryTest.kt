@@ -99,7 +99,6 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -304,13 +303,15 @@ class MLSConversationRepositoryTest {
         coVerify {
             arrangement.mlsClient.createConversation(
                 groupId = eq(Arrangement.RAW_GROUP_ID),
-                externalSenders = any())
+                externalSenders = any()
+            )
         }.wasInvoked(once)
 
         coVerify {
             arrangement.mlsClient.addMember(
                 groupId = eq(Arrangement.RAW_GROUP_ID),
-                membersKeyPackages = any())
+                membersKeyPackages = any()
+            )
         }.wasInvoked(once)
 
         coVerify {
@@ -1512,7 +1513,7 @@ class MLSConversationRepositoryTest {
 
             val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
                 .withCommitPendingProposalsReturningNothing()
-                .withClaimKeyPackagesSuccessful()
+                .withClaimKeyPackagesSuccessful(emptyList()) // empty cause members is empty in case of establishMLSSubConversationGroup
                 .withGetMLSClientSuccessful()
                 .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
                 .withGetExternalSenderKeySuccessful()
@@ -1925,10 +1926,10 @@ class MLSConversationRepositoryTest {
                             "user_handle",
                             "wire.com"
                         ),
-                    "User Test",
-                    "domain.com",
-                    "certificate",
-                    serialNumber = "serialNumber",
+                        "User Test",
+                        "domain.com",
+                        "certificate",
+                        serialNumber = "serialNumber",
                         notAfter = 1899105093,
                         notBefore = 1899205093
                     )

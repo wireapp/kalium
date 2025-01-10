@@ -23,6 +23,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
@@ -100,7 +101,7 @@ interface UserRepository {
      * Fetches user information for all of users id stored in the DB
      */
     suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
-    suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
@@ -167,6 +168,7 @@ interface UserRepository {
     suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
     suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
     suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
+    suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -266,7 +268,7 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
-        return fetchUsersByIds(ids)
+        return fetchUsersByIds(ids).map { }
     }
 
     override suspend fun fetchUserInfo(userId: UserId) =
@@ -285,7 +287,7 @@ internal class UserDataSource internal constructor(
         } else {
             qualifiedUserIdList
                 .chunked(BATCH_SIZE)
-                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
+                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, usersDTO ->
                     wrapApiRequest {
                         kaliumLogger.d("Fetching ${chunk.size} users")
                         userDetailsApi.getMultipleUsers(
@@ -293,9 +295,9 @@ internal class UserDataSource internal constructor(
                         )
                     }.map {
                         kaliumLogger.d("Found ${it.usersFound.size} users and ${it.usersFailed.size} failed users")
-                        acc.copy(
-                            usersFound = (acc.usersFound + it.usersFound).distinct(),
-                            usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
+                        usersDTO.copy(
+                            usersFound = (usersDTO.usersFound + it.usersFound).distinct(),
+                            usersFailed = (usersDTO.usersFailed + it.usersFailed).distinct(),
                         )
                     }
                 }
@@ -328,8 +330,8 @@ internal class UserDataSource internal constructor(
                 }
         }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
-        fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean> =
+        fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { it.usersFound.isNotEmpty() }
 
     private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
@@ -411,7 +413,7 @@ internal class UserDataSource internal constructor(
         qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it && !userEntity.name.isNullOrBlank() } }
     }.flatMap { missingIds ->
         if (missingIds.isEmpty()) Either.Right(Unit)
-        else fetchUsersByIds(missingIds.map { it.toModel() }.toSet())
+        else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -629,7 +631,7 @@ internal class UserDataSource internal constructor(
     }.flatMap { usersWithoutMetadata ->
         kaliumLogger.d("Numbers of users to refresh: ${usersWithoutMetadata.size}")
         val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
-        fetchUsersByIds(userIds)
+        fetchUsersByIds(userIds).map { }
     }
 
     override suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID) = wrapStorageRequest {
@@ -666,6 +668,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit> = wrapStorageRequest {
         userDAO.updateTeamId(userId.toDao(), teamId.value)
+    }
+
+    override suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        clientDAO.isMLSCapable(userId.toDao(), clientId.value)
     }
 
     companion object {
