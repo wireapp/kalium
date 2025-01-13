@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
@@ -54,7 +55,7 @@ class CheckCrlRevocationListUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(eq(DUMMY_URL))
             .wasInvoked(exactly = once)
 
@@ -79,7 +80,7 @@ class CheckCrlRevocationListUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(eq(DUMMY_URL))
             .wasInvoked(exactly = once)
 
@@ -95,7 +96,7 @@ class CheckCrlRevocationListUseCaseTest {
         val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
 
         @Mock
-        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+        val checkRevocationList = mock(classOf<RevocationListChecker>())
 
         fun arrange() = this to CheckCrlRevocationListUseCase(
             certificateRevocationListRepository, checkRevocationList, kaliumLogger
@@ -123,7 +124,7 @@ class CheckCrlRevocationListUseCaseTest {
         }
         fun withCheckRevocationListResult() = apply {
             given(checkRevocationList)
-                .suspendFunction(checkRevocationList::invoke)
+                .suspendFunction(checkRevocationList::check)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(FUTURE_TIMESTAMP))
         }
