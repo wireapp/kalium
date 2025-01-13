@@ -29,20 +29,22 @@ import okio.Source
 
 public actual class MPBackupExporter(
     selfUserId: BackupQualifiedId,
-    private val workDirectory: String,
+    workDirectory: String,
     private val outputDirectory: String,
     private val fileZipper: FileZipper
 ) : CommonMPBackupExporter(selfUserId) {
 
+    private val workDirectoryPath = workDirectory.toPath() / "backupDump"
+
     private val fileSystem = FileSystem.SYSTEM
 
     override val storage: EntryStorage = FileBasedEntryStorage(
-        fileSystem, workDirectory.toPath(), true
+        fileSystem, workDirectoryPath, true
     )
 
     override val zipper: Zipper = object : Zipper {
         override fun archive(data: List<BackupEntry>): Source {
-            val entries = data.map { fileSystem.canonicalize(workDirectory.toPath() / it.name).toString() }
+            val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
             val pathToZippedArchive = fileZipper.zip(entries).toPath()
             return fileSystem.source(pathToZippedArchive)
                 .also { fileSystem.delete(pathToZippedArchive) }

@@ -56,7 +56,7 @@ public actual class MPBackupImporter(
 
     override fun getUnencryptedArchiveSink(): Sink {
         FileSystem.SYSTEM.delete(archiveZipPath, mustExist = false)
-        FileSystem.SYSTEM.sink(archiveZipPath)
+        return FileSystem.SYSTEM.sink(archiveZipPath)
     }
 
     override fun unzipAllEntries(): EntryStorage {

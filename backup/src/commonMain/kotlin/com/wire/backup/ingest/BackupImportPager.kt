@@ -17,13 +17,24 @@
  */
 package com.wire.backup.ingest
 
-import com.wire.backup.filesystem.BackupEntry
+import com.wire.backup.data.BackupData
 import com.wire.backup.filesystem.EntryStorage
-import com.wire.kalium.protobuf.backup.BackupData
+import okio.buffer
+import pbandk.decodeFromByteArray
 import kotlin.js.JsExport
+import com.wire.kalium.protobuf.backup.BackupData as ProtoBackupData
 
 @JsExport
-public class BackupImportPager internal constructor(private val entries: EntryStorage) {
-    fun hasMorePages(): Boolean
-    fun nextPage(): BackupData?
+public class BackupImportPager internal constructor(private val storage: EntryStorage) {
+    private val mapper = MPBackupMapper()
+    private var currentPageIndex = 0
+    private val entries = storage.listEntries().toMutableList()
+
+    public fun hasMorePages(): Boolean = currentPageIndex < entries.size
+
+    public fun nextPage(): BackupData? {
+        val page = entries.removeFirstOrNull() ?: return null
+        val bytes = page.data.buffer().readByteArray()
+        return mapper.fromProtoToBackupModel(ProtoBackupData.decodeFromByteArray(bytes))
+    }
 }
