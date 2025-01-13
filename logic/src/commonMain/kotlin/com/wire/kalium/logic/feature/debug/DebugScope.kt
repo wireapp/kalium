@@ -93,7 +93,7 @@ class DebugScope internal constructor(
     private val legalHoldHandler: LegalHoldHandler,
     private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
-    userStorage: UserStorage,
+    private val userStorage: UserStorage,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
@@ -227,5 +227,7 @@ class DebugScope internal constructor(
             notificationTokenRepository,
         )
 
-    val changeProfiling: ChangeProfilingUseCase = ChangeProfilingUseCase(userStorage)
+    val changeProfiling: ChangeProfilingUseCase get() = ChangeProfilingUseCase(userStorage)
+
+    val observeDatabaseLoggerState get() = ObserveDatabaseLoggerStateUseCase(userStorage)
 }

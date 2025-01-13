@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,13 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.persistence.db.DBProfile
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-class ChangeProfilingUseCase(
+class ObserveDatabaseLoggerStateUseCase(
     private val userStorage: UserStorage,
 ) {
-    /**
-     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
-     * @param enabled true to enable profiling, false to disable
-     */
-    suspend operator fun invoke(status: DBProfile) {
-        userStorage.database.debugExtension.changeProfiling(status)
-    }
-
-    suspend operator fun invoke(enabled: Boolean) {
-        userStorage.database.debugExtension.changeProfiling(if (enabled) DBProfile.ON.Device else DBProfile.Off)
+    suspend operator fun invoke(): Flow<Boolean> = userStorage.database.debugExtension.getProfilingState().map {
+        it is DBProfile.ON
     }
 }

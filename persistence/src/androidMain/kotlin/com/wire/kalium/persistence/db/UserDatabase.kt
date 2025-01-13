@@ -57,7 +57,6 @@ actual fun userDatabaseBuilder(
         dispatcher = dispatcher,
         platformDatabaseData = platformDatabaseData,
         isEncrypted = isEncryptionEnabled,
-        cipherProfile = "logcat",
     )
 }
 
