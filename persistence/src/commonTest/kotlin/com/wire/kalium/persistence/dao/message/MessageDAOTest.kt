@@ -2350,7 +2350,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-<<<<<<< HEAD
     fun givenMessagesAndUsersAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
         insertInitialData()
 
@@ -2458,7 +2457,9 @@ class MessageDAOTest : BaseDatabaseTest() {
         val result = messageDAO.getNextAudioMessageInConversation("1", conversationEntity1.id)
 
         assertEquals("3", result)
-=======
+    }
+
+    @Test
     fun givenAllTypesOfMessages_whenMovingToAnotherConversation_thenItSucceeds() = runTest {
         // Given
         insertInitialData()
@@ -2482,7 +2483,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertNull(exception, "Expected no exception but got: ${exception?.message}")
         val result = messageDAO.getMessagesByConversationAndVisibility(conversationEntity2.id, 100, 0).first()
         assertEquals(messages.size, result.size)
->>>>>>> 3b9629000e (fix: messages migration from proteus to mls (#3218))
     }
 
     private suspend fun insertInitialData() {
