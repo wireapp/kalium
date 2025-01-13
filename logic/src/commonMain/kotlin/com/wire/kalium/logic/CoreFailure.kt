@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlin.time.measureTime
 
 sealed interface CoreFailure {
 
@@ -371,12 +372,20 @@ internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailur
 }
 
 internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
-    val result = try {
-        storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
-    } catch (e: Exception) {
-        Either.Left(StorageFailure.Generic(e))
+    val result: Either<StorageFailure, T>
+    measureTime {
+        result = try {
+            storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+        } catch (e: Exception) {
+            Either.Left(StorageFailure.Generic(e))
+        }
+        result.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
+    }.run {
+        // Log error for requests longer than 1 second
+        if (inWholeSeconds > 1) {
+            kaliumLogger.e("storage request timeMs: $inWholeMilliseconds")
+        }
     }
-    result.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
     return result
 }
 
