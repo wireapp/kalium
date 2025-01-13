@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

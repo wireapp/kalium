@@ -22,6 +22,9 @@ import com.wire.kalium.persistence.db.DBProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * Use case to observe the state of the database logger.
+ */
 class ObserveDatabaseLoggerStateUseCase(
     private val userStorage: UserStorage,
 ) {
