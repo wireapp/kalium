@@ -21,10 +21,13 @@ package com.wire.kalium.persistence.utils.stubs
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import kotlinx.datetime.Instant
+import kotlin.random.Random
 
 @Suppress("LongParameterList")
 fun newRegularMessageEntity(
@@ -93,3 +96,243 @@ fun newDraftMessageEntity(
     quotedMessageId: String? = null,
     selectedMentionList: List<MessageEntity.Mention> = emptyList()
 ) = MessageDraftEntity(conversationId, text, editMessageId, quotedMessageId, selectedMentionList)
+
+fun allMessageEntities(
+    conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"),
+    senderUserId: QualifiedIDEntity,
+): List<MessageEntity> {
+    return listOf(
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage1",
+            content = MessageEntityContent.Text(
+                "@John @John",
+                linkPreview = listOf(
+                    MessageEntity.LinkPreview(
+                        "https://www.wire.com",
+                        0,
+                        "https://www.wire.com",
+                        "Wire",
+                        "Wire is the most secure collaboration platform",
+                    )
+                ),
+                mentions = listOf(
+                    MessageEntity.Mention(0, 4, QualifiedIDEntity("senderId", "senderDomain")),
+                    MessageEntity.Mention(6, 10, QualifiedIDEntity("senderId", "senderDomain"))
+                ),
+                quotedMessageId = "testMessage2",
+                isQuoteVerified = true,
+                quotedMessage = null
+            )
+        ),
+
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage2",
+            content = MessageEntityContent.Asset(
+                1000,
+                assetName = "test name",
+                assetMimeType = "image/png",
+                assetOtrKey = byteArrayOf(1),
+                assetSha256Key = byteArrayOf(1),
+                assetId = "assetId",
+                assetToken = "",
+                assetDomain = "convDomain",
+                assetEncryptionAlgorithm = "",
+                assetWidth = null,
+                assetHeight = 0,
+            ),
+        ),
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage3",
+            content = MessageEntityContent.Knock(false)
+        ),
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage4",
+            content = MessageEntityContent.Location(
+                latitude = 42.0f,
+                longitude = -42.0f,
+                name = "someSecretLocation",
+                zoom = 20
+            )
+        ),
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage5",
+            content = MessageEntityContent.Unknown(typeName = null, Random.nextBytes(1000))
+        ),
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage6",
+            content = MessageEntityContent.FailedDecryption(
+                null,
+                333,
+                false,
+                QualifiedIDEntity("senderId", "senderDomain"),
+                "someClient"
+            )
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage7",
+            content = MessageEntityContent.MLSWrongEpochWarning
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage8",
+            content = MessageEntityContent.MemberChange(
+                listOf(UserIDEntity("value", "domain")),
+                MessageEntity.MemberChangeType.REMOVED
+            )
+        ),
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage9",
+            content = MessageEntityContent.RestrictedAsset("", 0, "name")
+        ),
+        newRegularMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage10",
+            content = MessageEntityContent.Composite(
+                MessageEntityContent.Text("text"),
+                listOf(
+                    ButtonEntity("text1", "id1", false),
+                    ButtonEntity("tex2", "id2", false),
+                    ButtonEntity("tex3", "id3", false),
+                    ButtonEntity("tex4", "id4", false)
+                )
+            )
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage11",
+            content = MessageEntityContent.MissedCall
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage12",
+            content = MessageEntityContent.CryptoSessionReset
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage13",
+            content = MessageEntityContent.ConversationRenamed("newName")
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage14",
+            content = MessageEntityContent.TeamMemberRemoved("someUser")
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage15",
+            content = MessageEntityContent.NewConversationReceiptMode(true)
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage16",
+            content = MessageEntityContent.ConversationReceiptModeChanged(false)
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage17",
+            content = MessageEntityContent.ConversationMessageTimerChanged(6000)
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage18",
+            content = MessageEntityContent.ConversationProtocolChanged(ConversationEntity.Protocol.MIXED)
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage19",
+            content = MessageEntityContent.ConversationProtocolChangedDuringACall
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage20",
+            content = MessageEntityContent.HistoryLostProtocolChanged
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage21",
+            content = MessageEntityContent.HistoryLost
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage22",
+            content = MessageEntityContent.ConversationCreated
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage23",
+            content = MessageEntityContent.ConversationDegradedMLS
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage24",
+            content = MessageEntityContent.ConversationVerifiedMLS
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage25",
+            content = MessageEntityContent.ConversationDegradedProteus
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage26",
+            content = MessageEntityContent.ConversationVerifiedProteus
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage27",
+            content = MessageEntityContent.ConversationStartedUnverifiedWarning
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage28",
+            content = MessageEntityContent.Federation(
+                listOf("otherDomain"),
+                MessageEntity.FederationType.DELETE
+            )
+        ),
+        newSystemMessageEntity(
+            conversationId = conversationId,
+            senderUserId = senderUserId,
+            id = "testMessage29",
+            content = MessageEntityContent.LegalHold(
+                listOf(QualifiedIDEntity("otherId", "otherDomain")), MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS
+            )
+        ),
+    )
+}

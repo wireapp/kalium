@@ -89,6 +89,11 @@ internal class OneOnOneMigratorImpl(
         return getResolvedMLSOneOnOne(user.id)
             .flatMap { mlsConversation ->
                 if (user.activeOneOnOneConversationId == mlsConversation) {
+                    kaliumLogger.d(
+                        "active one-on-one already resolved to MLS "
+                                + "${mlsConversation.toLogString()}, "
+                                + "user = ${user.id.toLogString()}"
+                    )
                     return@flatMap Either.Right(mlsConversation)
                 }
 
@@ -136,6 +141,10 @@ internal class OneOnOneMigratorImpl(
             // We can theoretically have more than one proteus 1-1 conversation with
             // team members since there was no backend safeguards against this
             proteusOneOnOneConversations.foldToEitherWhileRight(Unit) { proteusOneOnOneConversation, _ ->
+                kaliumLogger.d(
+                    "migrating proteus ${proteusOneOnOneConversation.toLogString()} " +
+                            "to MLS conv ${targetConversation.toLogString()}"
+                )
                 messageRepository.moveMessagesToAnotherConversation(
                     originalConversation = proteusOneOnOneConversation,
                     targetConversation = targetConversation
