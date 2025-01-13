@@ -80,6 +80,8 @@ data object ConversationDetailsWithEventsMapper {
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
+        folderId: String?,
+        folderName: String?,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
         unreadMentionsCount: Long?,
@@ -153,7 +155,9 @@ data object ConversationDetailsWithEventsMapper {
             legalHoldStatus = legalHoldStatus,
             selfUserId = selfUserId,
             interactionEnabled = interactionEnabled,
-            isFavorite = isFavorite
+            isFavorite = isFavorite,
+            folderId = folderId,
+            folderName = folderName,
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(
             conversationId = qualifiedId,

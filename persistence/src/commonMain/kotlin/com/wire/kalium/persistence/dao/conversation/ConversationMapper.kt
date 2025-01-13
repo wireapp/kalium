@@ -76,6 +76,8 @@ data object ConversationMapper {
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
+        folderId: String?,
+        folderName: String?,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
@@ -125,7 +127,9 @@ data object ConversationMapper {
         proteusVerificationStatus = proteusVerificationStatus,
         legalHoldStatus = legalHoldStatus,
         accentId = accentId,
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        folderId = folderId,
+        folderName = folderName
     )
 
     @Suppress("LongParameterList", "UnusedParameter")

@@ -17,9 +17,8 @@ CREATE TABLE LabeledConversation (
       PRIMARY KEY (folder_id, conversation_id)
 );
 
-getUserFolders:
-SELECT * FROM ConversationFolder
-WHERE folder_type != 'FAVORITE';
+getFolders:
+SELECT * FROM ConversationFolder;
 
 getAllFoldersWithConversations:
 SELECT

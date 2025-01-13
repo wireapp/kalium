@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.call.ParticipantsOrderByNameImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
@@ -107,6 +108,7 @@ class CallsScope internal constructor(
     private val getCallConversationType: GetCallConversationTypeProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val inCallReactionsRepository: InCallReactionsRepository,
+    private val selfUserId: UserId,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -122,7 +124,7 @@ class CallsScope internal constructor(
         get() = GetIncomingCallsUseCaseImpl(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
-            userRepository = userRepository
+            userRepository = userRepository,
         )
     val observeOutgoingCall: ObserveOutgoingCallUseCase
         get() = ObserveOutgoingCallUseCaseImpl(
@@ -211,10 +213,10 @@ class CallsScope internal constructor(
 
     private val callingParticipantsOrder: CallingParticipantsOrder
         get() = CallingParticipantsOrderImpl(
-            userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             participantsFilter = ParticipantsFilterImpl(qualifiedIdMapper),
-            participantsOrderByName = ParticipantsOrderByNameImpl()
+            participantsOrderByName = ParticipantsOrderByNameImpl(),
+            selfUserId = selfUserId
         )
 
     val isLastCallClosed: IsLastCallClosedUseCase get() = IsLastCallClosedUseCaseImpl(callRepository)
