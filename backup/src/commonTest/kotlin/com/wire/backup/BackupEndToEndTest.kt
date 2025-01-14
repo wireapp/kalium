@@ -24,14 +24,26 @@ import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
 import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-expect class BackupEndToEndTest : BaseBackupEndToEndTest
+class BackupEndToEndTest {
 
-interface BaseBackupEndToEndTest {
+    private val subject = endToEndTestSubjectProvider()
+
+    @BeforeTest
+    fun setup() {
+        subject.setup()
+    }
+
+    @AfterTest
+    fun beforeAfter() {
+        subject.tearDown()
+    }
 
     @Test
     fun givenBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
@@ -80,7 +92,7 @@ interface BaseBackupEndToEndTest {
             content = content,
         )
 
-        val result = exportImportDataTest(BackupQualifiedId("eghyue", "potato"), password) {
+        val result = subject.exportImportDataTest(BackupQualifiedId("eghyue", "potato"), password) {
             add(expectedMessage)
         }
 
@@ -101,6 +113,13 @@ interface BaseBackupEndToEndTest {
         assertEquals(expectedMessage.content, firstMessage.content)
         assertContentEquals(arrayOf(expectedMessage), allMessages.toTypedArray())
     }
+}
+
+expect fun endToEndTestSubjectProvider() : CommonBackupEndToEndTestSubjectProvider
+
+interface CommonBackupEndToEndTestSubjectProvider {
+    fun setup() {}
+    fun tearDown() {}
 
     suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,

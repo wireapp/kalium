@@ -24,18 +24,17 @@ import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.MPBackupImporter
 import okio.FileSystem
 import okio.SYSTEM
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 
-actual class BackupEndToEndTest : BaseBackupEndToEndTest {
-
+actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubjectProvider {
     private val workDirPath = FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "kalium-backup-test"
     private val zipDirectory = workDirPath / "zip"
     private val exportDirectory = workDirPath / "export"
 
-    @BeforeTest
-    @AfterTest
-    fun setup() {
+    override fun setup() {
+        FileSystem.SYSTEM.deleteRecursively(workDirPath)
+    }
+
+    override fun tearDown() {
         FileSystem.SYSTEM.deleteRecursively(workDirPath)
     }
 
@@ -57,4 +56,3 @@ actual class BackupEndToEndTest : BaseBackupEndToEndTest {
         return importer.importFromFile(artifactPath, passphrase)
     }
 }
-

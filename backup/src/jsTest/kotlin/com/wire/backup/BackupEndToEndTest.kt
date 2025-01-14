@@ -25,7 +25,7 @@ import com.wire.backup.ingest.MPBackupImporter
 import kotlinx.coroutines.await
 
 
-actual class BackupEndToEndTest : BaseBackupEndToEndTest {
+actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubjectProvider {
     override suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,
         passphrase: String?,
