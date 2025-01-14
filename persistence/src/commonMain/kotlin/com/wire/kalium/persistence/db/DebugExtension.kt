@@ -88,7 +88,7 @@ sealed interface DBProfile {
             override val logTarget: String = "logcat"
 
             override fun toString(): String {
-                return "logcat"
+                return platformDatabaseLogger()
             }
         }
 
@@ -102,8 +102,10 @@ sealed interface DBProfile {
     companion object {
         fun fromString(value: String): DBProfile = when (value) {
             "off" -> Off
-            "logcat" -> ON.Device
+            platformDatabaseLogger() -> ON.Device
             else -> ON.CustomFile(value)
         }
     }
 }
+
+internal expect fun platformDatabaseLogger(): String
