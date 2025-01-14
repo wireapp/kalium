@@ -17,11 +17,11 @@
  */
 package com.wire.backup.util
 
-import com.wire.backup.envelope.header.BackupHeader
-import com.wire.backup.envelope.header.HashData
-import com.wire.backup.envelope.header.HashData.Companion.HASHED_USER_ID_SIZE_IN_BYTES
-import com.wire.backup.envelope.header.HashData.Companion.MINIMUM_MEMORY_LIMIT
-import com.wire.backup.envelope.header.HashData.Companion.SALT_SIZE_IN_BYTES
+import com.wire.backup.envelope.BackupHeader
+import com.wire.backup.envelope.HashData
+import com.wire.backup.envelope.HashData.Companion.HASHED_USER_ID_SIZE_IN_BYTES
+import com.wire.backup.envelope.HashData.Companion.MINIMUM_MEMORY_LIMIT
+import com.wire.backup.envelope.HashData.Companion.SALT_SIZE_IN_BYTES
 
 internal fun testHashData() = HashData(
     hashedUserId = UByteArray(HASHED_USER_ID_SIZE_IN_BYTES) { 1U },

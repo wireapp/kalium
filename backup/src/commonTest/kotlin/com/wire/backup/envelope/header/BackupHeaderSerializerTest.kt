@@ -17,6 +17,8 @@
  */
 package com.wire.backup.envelope.header
 
+import com.wire.backup.envelope.BackupHeaderSerializer
+import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.util.testHeader
 import okio.Buffer
 import kotlin.test.Test

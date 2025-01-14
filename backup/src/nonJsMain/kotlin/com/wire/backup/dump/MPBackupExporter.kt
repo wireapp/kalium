@@ -41,7 +41,9 @@ public actual class MPBackupExporter(
     private val fileSystem = FileSystem.SYSTEM
 
     override val storage: EntryStorage = FileBasedEntryStorage(
-        fileSystem, workDirectoryPath, true
+        fileSystem = fileSystem,
+        workDirectory = workDirectoryPath,
+        shouldBeCleared = true
     )
 
     override val zipper: Zipper = object : Zipper {

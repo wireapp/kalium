@@ -20,9 +20,8 @@ package com.wire.backup.ingest
 import com.wire.backup.data.BackupData
 import com.wire.backup.encryption.EncryptedStream
 import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
-import com.wire.backup.envelope.cryptography.BackupPassphrase
-import com.wire.backup.envelope.header.BackupHeaderSerializer
-import com.wire.backup.envelope.header.HeaderParseResult
+import com.wire.backup.envelope.BackupHeaderSerializer
+import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.filesystem.EntryStorage
 import okio.Buffer
 import okio.Sink
@@ -38,30 +37,11 @@ import kotlin.js.JsExport
 public abstract class CommonMPBackupImporter {
 
     /**
-     * Peeks into the complete backup artifact, returning [BackupPeekResult] with basic information about the artifact.
-     */
-    internal fun getBackupInfo(source: Source): BackupPeekResult = try {
-        val peekBuffer = source.buffer().peek()
-        when (val result = BackupHeaderSerializer.Default.parseHeader(peekBuffer)) {
-            HeaderParseResult.Failure.UnknownFormat -> BackupPeekResult.Failure.UnknownFormat
-            is HeaderParseResult.Failure.UnsupportedVersion -> BackupPeekResult.Failure.UnsupportedVersion(result.version.toString())
-            is HeaderParseResult.Success -> {
-                val header = result.header
-                BackupPeekResult.Success(header.version.toString(), header.isEncrypted)
-            }
-        }
-    } catch (e: Throwable) {
-        e.printStackTrace()
-        println(e)
-        BackupPeekResult.Failure.UnknownFormat
-    }
-
-    /**
      * Decrypt (if needed) and unzip the backup artifact.
      * The resulting [BackupImportResult.Success] contains a [BackupImportPager], that can be used to
      * consume pages of backed up application data, like messages, users and conversations.
      */
-    internal suspend fun importBackup(source: Source, passphrase: BackupPassphrase?): BackupImportResult {
+    internal suspend fun importBackup(source: Source, passphrase: String?): BackupImportResult {
         return when (val result = BackupHeaderSerializer.Default.parseHeader(source)) {
             HeaderParseResult.Failure.UnknownFormat -> BackupImportResult.Failure.ParsingFailure
             is HeaderParseResult.Failure.UnsupportedVersion -> BackupImportResult.Failure.ParsingFailure
@@ -74,7 +54,9 @@ public abstract class CommonMPBackupImporter {
                 } else {
                     if (isEncrypted && passphrase != null) {
                         EncryptedStream.decrypt(
-                            source, sink, XChaChaPoly1305AuthenticationData(
+                            source,
+                            sink,
+                            XChaChaPoly1305AuthenticationData(
                                 passphrase,
                                 header.hashData.salt,
                                 BackupHeaderSerializer.Default.headerToBytes(header).toUByteArray(),

@@ -22,6 +22,6 @@ import kotlin.js.JsExport
 @JsExport
 public sealed class BackupAuthorValidationResult {
     public data object Success : BackupAuthorValidationResult()
-    public data object AuthorDoesNotMatch: BackupAuthorValidationResult()
+    public data object AuthorDoesNotMatch : BackupAuthorValidationResult()
     public data object UnknownFormat : BackupAuthorValidationResult()
 }

@@ -26,7 +26,6 @@ import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 import com.ionspin.kotlin.crypto.stream.crypto_stream_chacha20_KEYBYTES
-import com.wire.backup.envelope.cryptography.BackupPassphrase
 import com.wire.backup.hash.HASH_MEM_LIMIT
 import com.wire.backup.hash.HASH_OPS_LIMIT
 import okio.Buffer
@@ -151,7 +150,7 @@ internal interface EncryptedStream<AuthenticationData> {
 
         private fun generateChaCha20Key(authData: XChaChaPoly1305AuthenticationData): UByteArray = PasswordHash.pwhash(
             outputLength = KEY_LENGTH,
-            password = authData.passphrase.value,
+            password = authData.passphrase,
             salt = authData.salt,
             opsLimit = authData.hashOpsLimit,
             memLimit = authData.hashMemLimit,
@@ -184,7 +183,7 @@ internal sealed interface DecryptionResult {
  * will also fail. The idea is to do not trust any fruit from the poisoned tree.
  */
 internal data class XChaChaPoly1305AuthenticationData(
-    val passphrase: BackupPassphrase,
+    val passphrase: String,
     val salt: UByteArray,
     val additionalData: UByteArray = ubyteArrayOf(),
     val hashOpsLimit: ULong = HASH_OPS_LIMIT,

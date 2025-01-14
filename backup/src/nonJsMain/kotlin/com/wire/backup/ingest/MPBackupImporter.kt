@@ -17,7 +17,6 @@
  */
 package com.wire.backup.ingest
 
-import com.wire.backup.envelope.cryptography.BackupPassphrase
 import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.filesystem.FileBasedEntryStorage
 import okio.FileSystem
@@ -48,7 +47,7 @@ public actual class MPBackupImporter(
     @ObjCName("importFile")
     public suspend fun importFromFile(
         multiplatformBackupFilePath: String,
-        passphrase: BackupPassphrase?,
+        passphrase: String?,
     ): BackupImportResult = importBackup(FileSystem.SYSTEM.source(multiplatformBackupFilePath.toPath()), passphrase)
 
     private val archiveZipPath: Path

@@ -17,7 +17,6 @@
  */
 package com.wire.backup.hash
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
 import com.ionspin.kotlin.crypto.pwhash.PasswordHash
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_ALG_DEFAULT
 import com.wire.backup.data.BackupQualifiedId

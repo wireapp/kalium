@@ -18,7 +18,6 @@
 package com.wire.backup.ingest
 
 import com.wire.backup.dump.JSZip
-import com.wire.backup.envelope.cryptography.BackupPassphrase
 import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.filesystem.InMemoryEntryStorage
@@ -39,7 +38,7 @@ public actual class MPBackupImporter : CommonMPBackupImporter() {
     public fun importFromFileData(data: ByteArray, passphrase: String?): Promise<BackupImportResult> = GlobalScope.promise {
         val buffer = Buffer()
         buffer.write(data)
-        importBackup(buffer, passphrase?.let { BackupPassphrase(it) })
+        importBackup(buffer, passphrase)
     }
 
     override fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer

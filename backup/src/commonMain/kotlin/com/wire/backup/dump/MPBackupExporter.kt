@@ -25,10 +25,9 @@ import com.wire.backup.data.BackupUser
 import com.wire.backup.data.toProtoModel
 import com.wire.backup.encryption.EncryptedStream
 import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
-import com.wire.backup.envelope.cryptography.BackupPassphrase
-import com.wire.backup.envelope.header.BackupHeader
-import com.wire.backup.envelope.header.BackupHeaderSerializer
-import com.wire.backup.envelope.header.HashData
+import com.wire.backup.envelope.BackupHeader
+import com.wire.backup.envelope.BackupHeaderSerializer
+import com.wire.backup.envelope.HashData
 import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.ingest.MPBackupMapper
@@ -82,7 +81,7 @@ public abstract class CommonMPBackupExporter(
     }
 
     private fun flushUsers() {
-        if(usersChunk.isEmpty()) return
+        if (usersChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, users = usersChunk)
         storage.persistEntry(BackupEntry(USERS_ENTRY_PREFIX + persistedUserChunks + ENTRY_SUFFIX, backupData.asSource()))
         persistedUserChunks++
@@ -98,7 +97,7 @@ public abstract class CommonMPBackupExporter(
     }
 
     private fun flushConversations() {
-        if(conversationsChunk.isEmpty()) return
+        if (conversationsChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, conversations = conversationsChunk)
         storage.persistEntry(BackupEntry(CONVERSATIONS_ENTRY_PREFIX + persistedConversationsChunks + ENTRY_SUFFIX, backupData.asSource()))
         persistedConversationsChunks++
@@ -114,7 +113,7 @@ public abstract class CommonMPBackupExporter(
     }
 
     private fun flushMessages() {
-        if(messagesChunk.isEmpty()) return
+        if (messagesChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, messages = messagesChunk)
         storage.persistEntry(BackupEntry(MESSAGES_ENTRY_PREFIX + persistedMessagesChunks + ENTRY_SUFFIX, backupData.asSource()))
         persistedMessagesChunks++
@@ -146,7 +145,7 @@ public abstract class CommonMPBackupExporter(
         output.buffer().use { bufferedOutput ->
             bufferedOutput.write(headerBytes)
             bufferedOutput.flush()
-            if (password == null) {
+            if (password.isNullOrBlank()) {
                 // We should skip the encryption headers, leaving empty/zeroed bytes
                 val skip = ByteArray(EncryptedStream.XCHACHA_20_POLY_1305_HEADER_LENGTH) { 0x00 }
                 bufferedOutput.write(skip)
@@ -156,7 +155,7 @@ public abstract class CommonMPBackupExporter(
                     zippedData,
                     bufferedOutput,
                     XChaChaPoly1305AuthenticationData(
-                        BackupPassphrase(password),
+                        password,
                         salt,
                         headerBytes.toUByteArray(),
                         header.hashData.operationsLimit,

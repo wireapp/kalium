@@ -17,9 +17,10 @@
  */
 package com.wire.backup.envelope.header
 
-import com.wire.backup.envelope.header.HashData.Companion.HASHED_USER_ID_SIZE_IN_BYTES
-import com.wire.backup.envelope.header.HashData.Companion.MINIMUM_MEMORY_LIMIT
-import com.wire.backup.envelope.header.HashData.Companion.SALT_SIZE_IN_BYTES
+import com.wire.backup.envelope.HashData
+import com.wire.backup.envelope.HashData.Companion.HASHED_USER_ID_SIZE_IN_BYTES
+import com.wire.backup.envelope.HashData.Companion.MINIMUM_MEMORY_LIMIT
+import com.wire.backup.envelope.HashData.Companion.SALT_SIZE_IN_BYTES
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertFailsWith
