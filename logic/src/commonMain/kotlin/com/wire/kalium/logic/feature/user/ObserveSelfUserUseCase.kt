@@ -22,26 +22,27 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 /**
- * This use case is responsible for retrieving the current user.
+ * This use case is responsible for observing the current user.
  */
-interface GetSelfUserUseCase {
+interface ObserveSelfUserUseCase {
 
     /**
-     * @return current user [SelfUser]
+     * @return a [Flow] of the current user [SelfUser]
      */
-    suspend operator fun invoke(): SelfUser?
+    suspend operator fun invoke(): Flow<SelfUser>
 
 }
 
-internal class GetSelfUserUseCaseImpl internal constructor(
+internal class ObserveSelfUserUseCaseImpl internal constructor(
     private val userRepository: UserRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : GetSelfUserUseCase {
+) : ObserveSelfUserUseCase {
 
-    override suspend operator fun invoke(): SelfUser? = withContext(dispatcher.io) {
-        userRepository.getSelfUser()
+    override suspend operator fun invoke(): Flow<SelfUser> = withContext(dispatcher.io) {
+        userRepository.observeSelfUser()
     }
 }
