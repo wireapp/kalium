@@ -18,20 +18,14 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.di.UserStorage
-import com.wire.kalium.persistence.db.DBProfile
 
 class ChangeProfilingUseCase(
     private val userStorage: UserStorage,
 ) {
     /**
-     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
-     * @param enabled true to enable profiling, false to disable
+     * Change profiling state.
      */
-    suspend operator fun invoke(status: DBProfile) {
-        userStorage.database.debugExtension.changeProfiling(status)
-    }
-
     suspend operator fun invoke(enabled: Boolean) {
-        userStorage.database.debugExtension.changeProfiling(if (enabled) DBProfile.ON.Device else DBProfile.Off)
+        userStorage.database.debugExtension.changeProfiling(enabled)
     }
 }

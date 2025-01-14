@@ -18,9 +18,7 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.di.UserStorage
-import com.wire.kalium.persistence.db.DBProfile
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 /**
  * Use case to observe the state of the database logger.
@@ -28,7 +26,5 @@ import kotlinx.coroutines.flow.map
 class ObserveDatabaseLoggerStateUseCase(
     private val userStorage: UserStorage,
 ) {
-    suspend operator fun invoke(): Flow<Boolean> = userStorage.database.debugExtension.getProfilingState().map {
-        it is DBProfile.ON
-    }
+    suspend operator fun invoke(): Flow<Boolean> = userStorage.database.debugExtension.observeIsProfilingEnabled()
 }

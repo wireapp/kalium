@@ -29,18 +29,21 @@ class DebugExtension(
     private val metaDataDao: MetadataDAO,
 ) {
 
-    suspend fun getProfilingState(): Flow<DBProfile?> =
+    suspend fun observeIsProfilingEnabled(): Flow<Boolean> =
         metaDataDao.valueByKeyFlow(KEY_CIPHER_PROFILE)
-            .map {
-                it?.let { DBProfile.fromString(it) }
+            .map { state ->
+                state?.let { DBProfile.fromString(it) }.let {
+                    it is DBProfile.ON
+                }
             }
 
     /**
      * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
      * @param enabled true to enable profiling, false to disable
      */
-    suspend fun changeProfiling(state: DBProfile): Long? =
+    suspend fun changeProfiling(enabled: Boolean): Long? =
         if (isEncrypted) {
+            val state = if (enabled) DBProfile.ON.Device else DBProfile.Off
             sqlDriver.executeQuery(
                 identifier = null,
                 sql = """PRAGMA cipher_profile= '${state.logTarget}';""",
