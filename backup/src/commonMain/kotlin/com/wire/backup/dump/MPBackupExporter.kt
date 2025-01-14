@@ -134,7 +134,7 @@ public abstract class CommonMPBackupExporter(
 
     internal suspend fun finalize(password: String?, output: Sink) {
         flushAll()
-        val zippedData = zipper.archive(storage.listEntries())
+        val zippedData = zipper.archive(storage.listEntries()).await()
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
 
         val header = BackupHeader(

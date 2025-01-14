@@ -17,15 +17,56 @@
  */
 package com.wire.backup.dump
 
+import com.wire.backup.compression.Zipper
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
-
-// JS uses the common one. Only handles Bytes / ByteArrays.
+import com.wire.backup.filesystem.InMemoryEntryStorage
+import ext.libsodium.com.ionspin.kotlin.crypto.toUByteArray
+import ext.libsodium.com.ionspin.kotlin.crypto.toUInt8Array
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.asDeferred
+import kotlinx.coroutines.promise
+import okio.Buffer
+import okio.Source
+import okio.buffer
+import kotlin.js.Promise
 
 @JsExport
-public actual class MPBackupExporter(selfUserId: BackupQualifiedId) : CommonMPBackupExporter(selfUserId) {
-    override val storage: EntryStorage
-        get() = TODO("Not yet implemented")
-}
+public actual class MPBackupExporter(
+    selfUserId: BackupQualifiedId
+) : CommonMPBackupExporter(selfUserId) {
 
-public actual class ExportResult
+    override val storage: EntryStorage = InMemoryEntryStorage()
+
+    // This shouldn't be used by clients anyway, so it's fine if we can't sport it to JS!
+    @Suppress("NON_EXPORTABLE_TYPE")
+    override val zipper: Zipper
+        get() = object : Zipper {
+            override fun archive(data: List<BackupEntry>): Deferred<Source> {
+                val zip = JSZip()
+                data.forEach { entry ->
+                    // TODO: Save memory and improve performance by avoid array duplication!
+                    zip.file(entry.name, entry.data.buffer().readByteArray().toUByteArray().toUInt8Array())
+                }
+                val result = zip.generateAsync(ZipOptions()).then {
+                    val buffer = Buffer()
+                    // TODO: Save memory and improve performance by avoid array duplication!
+                    val entryData = it.toUByteArray().toByteArray()
+                    buffer.write(entryData)
+                    buffer.flush()
+                    return@then buffer
+                }
+                return result.asDeferred()
+            }
+        }
+
+    public fun finalize(password: String?): Promise<ByteArray> {
+        return GlobalScope.promise {
+            val output = Buffer()
+            finalize(password, output)
+            output.readByteArray()
+        }
+    }
+}

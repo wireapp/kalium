@@ -22,6 +22,8 @@ import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.filesystem.FileBasedEntryStorage
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import okio.SYSTEM
@@ -43,11 +45,13 @@ public actual class MPBackupExporter(
     )
 
     override val zipper: Zipper = object : Zipper {
-        override fun archive(data: List<BackupEntry>): Source {
+        override fun archive(data: List<BackupEntry>): Deferred<Source> {
             val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
             val pathToZippedArchive = fileZipper.zip(entries).toPath()
-            return fileSystem.source(pathToZippedArchive)
-                .also { fileSystem.delete(pathToZippedArchive) }
+            return CompletableDeferred(
+                fileSystem.source(pathToZippedArchive)
+                    .also { fileSystem.delete(pathToZippedArchive) }
+            )
         }
     }
 

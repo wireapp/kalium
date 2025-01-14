@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.compression
+package com.wire.backup.dump
 
-import com.wire.backup.filesystem.BackupEntry
-import kotlinx.coroutines.Deferred
-import okio.Source
+import org.khronos.webgl.Uint8Array
+import kotlin.js.Promise
 
-internal interface Zipper {
-    fun archive(data: List<BackupEntry>): Deferred<Source>
+@JsModule("jszip")
+@JsNonModule
+internal external class JSZip {
+
+    val files: dynamic
+
+    fun file(name: String, data: Uint8Array): Promise<JSZip>
+
+    fun generateAsync(options: ZipOptions): Promise<Uint8Array>
+
+    companion object {
+        fun loadAsync(data: Uint8Array): Promise<JSZip>
+    }
 }
+
+internal class ZipOptions(
+    @JsName("type")
+    val type: String = "uint8array",
+
+    @JsName("compression")
+    val compression: String = "DEFLATE"
+)

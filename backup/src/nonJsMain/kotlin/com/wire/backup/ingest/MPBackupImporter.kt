@@ -59,7 +59,7 @@ public actual class MPBackupImporter(
         return FileSystem.SYSTEM.sink(archiveZipPath)
     }
 
-    override fun unzipAllEntries(): EntryStorage {
+    override suspend fun unzipAllEntries(): EntryStorage {
         val unzipPath = backupFileUnzipper.unzipBackup(archiveZipPath.toString())
         return FileBasedEntryStorage(FileSystem.SYSTEM, unzipPath.toPath(), false)
     }

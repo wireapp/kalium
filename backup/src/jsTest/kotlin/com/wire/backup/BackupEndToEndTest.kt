@@ -20,42 +20,22 @@ package com.wire.backup
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.dump.MPBackupExporter
-import com.wire.backup.envelope.cryptography.BackupPassphrase
 import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.MPBackupImporter
-import okio.FileSystem
-import okio.SYSTEM
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
+import kotlinx.coroutines.await
+
 
 actual class BackupEndToEndTest : BaseBackupEndToEndTest {
-
-    private val workDirPath = FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "kalium-backup-test"
-    private val zipDirectory = workDirPath / "zip"
-    private val exportDirectory = workDirPath / "export"
-
-    @BeforeTest
-    @AfterTest
-    fun setup() {
-        FileSystem.SYSTEM.deleteRecursively(workDirPath)
-    }
-
     override suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,
         passphrase: String?,
         export: CommonMPBackupExporter.() -> Unit,
     ): BackupImportResult {
-        val zipper = FakeZip(zipDirectory)
-        val exporter = MPBackupExporter(
-            selfUserId,
-            exportDirectory.toString(),
-            exportDirectory.toString(),
-            zipper
-        )
+        val exporter = MPBackupExporter(selfUserId)
         exporter.export()
         val artifactPath = exporter.finalize(passphrase)
-        val importer = MPBackupImporter(exportDirectory.toString(), zipper)
-        return importer.importFromFile(artifactPath, passphrase?.let { BackupPassphrase(it) })
+        val artifactData = artifactPath.await()
+        val importer = MPBackupImporter()
+        return importer.importFromFileData(artifactData, passphrase).await()
     }
 }
-

@@ -17,19 +17,47 @@
  */
 package com.wire.backup.ingest
 
+import com.wire.backup.dump.JSZip
+import com.wire.backup.envelope.cryptography.BackupPassphrase
+import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.filesystem.InMemoryEntryStorage
+import ext.libsodium.com.ionspin.kotlin.crypto.toUByteArray
+import ext.libsodium.com.ionspin.kotlin.crypto.toUInt8Array
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.await
+import kotlinx.coroutines.promise
 import okio.Buffer
 import okio.Sink
+import org.khronos.webgl.Uint8Array
+import kotlin.js.Promise
 
 @JsExport
 public actual class MPBackupImporter : CommonMPBackupImporter() {
     private val inMemoryUnencryptedBuffer = Buffer()
 
+    public fun importFromFileData(data: ByteArray, passphrase: String?): Promise<BackupImportResult> = GlobalScope.promise {
+        val buffer = Buffer()
+        buffer.write(data)
+        importBackup(buffer, passphrase?.let { BackupPassphrase(it) })
+    }
+
     override fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer
 
-    override fun unzipAllEntries(): EntryStorage {
-        TODO("Unzip the whole in memory buffer, and return an InMemoryStorage with the unzipped entries")
-        return InMemoryEntryStorage()
+    override suspend fun unzipAllEntries(): EntryStorage {
+        // TODO: Improve performance and save memory by avoiding array conversions
+        val zip = JSZip.loadAsync(inMemoryUnencryptedBuffer.readByteArray().toUByteArray().toUInt8Array()).await()
+        val storage = InMemoryEntryStorage()
+        val entryNames = keys(zip.files)
+        for (entry in entryNames) {
+            val promise = zip.files[entry].async("uint8array")
+            val data = promise.unsafeCast<Promise<Uint8Array>>().await()
+            val buffer = Buffer()
+            buffer.write(data.toUByteArray().toByteArray())
+            storage.persistEntry(BackupEntry(entry, buffer))
+        }
+        return storage
     }
+
+    private fun keys(json: dynamic) = js("Object").keys(json).unsafeCast<Array<String>>()
 }

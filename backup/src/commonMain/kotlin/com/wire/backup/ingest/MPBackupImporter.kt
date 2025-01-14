@@ -105,7 +105,7 @@ public abstract class CommonMPBackupImporter {
     /**
      * Unzips all entries in the zip archive stored in the sink returned by [getUnencryptedArchiveSink].
      */
-    internal abstract fun unzipAllEntries(): EntryStorage
+    internal abstract suspend fun unzipAllEntries(): EntryStorage
 }
 
 public expect class MPBackupImporter : CommonMPBackupImporter
