@@ -39,6 +39,11 @@ data class LabeledConversationEntity(
     val conversationId: QualifiedIDEntity?
 )
 
+data class ConversationLabelEntity(
+    val conversationId: QualifiedIDEntity,
+    val folderId: String
+)
+
 enum class ConversationFolderTypeEntity {
     USER,
     FAVORITE

@@ -231,6 +231,7 @@ internal class UserDataSource internal constructor(
     private suspend fun updateSelfUserProviderAccountInfo(userDTO: SelfUserDTO): Either<StorageFailure, Unit> =
         sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
 
+    // TODO: race condition, if we request the same user (can happen for self) multiple times, we will fetch it multiple times
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
@@ -416,6 +417,7 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
+    // TODO: this can cause many issues since it will
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
@@ -469,8 +471,9 @@ internal class UserDataSource internal constructor(
     }
 
     // TODO: replace the flow with selfUser and cache it
-    override suspend fun getSelfUser(): SelfUser? =
-        observeSelfUser().firstOrNull()
+    override suspend fun getSelfUser(): SelfUser? {
+        return observeSelfUser().firstOrNull()
+    }
 
     override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
@@ -658,7 +661,6 @@ internal class UserDataSource internal constructor(
             CreateUserTeam(dto.teamId, dto.teamName)
         }
             .onSuccess {
-                kaliumLogger.d("Migrated user to team")
                 fetchSelfUser()
             }
             .onFailure { failure ->

@@ -56,7 +56,6 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.scenario.CallingMessageSender
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
@@ -104,7 +103,6 @@ import java.util.Collections
 class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
-    private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     selfConversationIdProvider: SelfConversationIdProvider,
     private val conversationRepository: ConversationRepository,
@@ -121,6 +119,7 @@ class CallManagerImpl internal constructor(
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
+    private val selfUserId: UserId,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
@@ -153,11 +152,6 @@ class CallManagerImpl internal constructor(
             it
         })
     }
-    private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
-        userRepository.observeSelfUser().first().id.also {
-            callingLogger.d("$TAG - userId ${it.toLogString()}")
-        }
-    }
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
@@ -186,7 +180,7 @@ class CallManagerImpl internal constructor(
             }
             joinAll(flowManagerStartJob, mediaManagerStartJob)
             callingLogger.i("$TAG: Creating Handle")
-            val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
+            val selfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
             val selfClientId = clientId.await().value
 
             val waitInitializationJob = Job()
@@ -254,7 +248,7 @@ class CallManagerImpl internal constructor(
         val conversationMembers = conversationRepository.observeConversationMembers(message.conversationId).first()
         val shouldRemoteMute = shouldRemoteMuteChecker.check(
             senderUserId = message.senderUserId,
-            selfUserId = userId.await(),
+            selfUserId = selfUserId,
             selfClientId = clientId.await().value,
             targets = callingValue.targets,
             conversationMembers = conversationMembers
@@ -306,7 +300,7 @@ class CallManagerImpl internal constructor(
             isMuted = false,
             isCameraOn = isCameraOn,
             isCbrEnabled = isAudioCbr,
-            callerId = userId.await()
+            callerId = selfUserId
         )
 
         withCalling {
@@ -401,7 +395,7 @@ class CallManagerImpl internal constructor(
         }
         callingLogger.d("$TAG -> set test video to $logString")
 
-        val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
+        val selfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
         val selfClientId = clientId.await().value
         val handle = deferredHandle.await()
 

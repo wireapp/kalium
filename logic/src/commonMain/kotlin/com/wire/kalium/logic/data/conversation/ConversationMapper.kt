@@ -263,7 +263,8 @@ internal class ConversationMapperImpl(
                             activeOneOnOneConversationId = userActiveOneOnOneConversationId?.toModel()
                         ),
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        isFavorite = isFavorite
+                        isFavorite = isFavorite,
+                        folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                     )
                 }
 
@@ -273,7 +274,8 @@ internal class ConversationMapperImpl(
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         isSelfUserMember = isMember,
                         selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
-                        isFavorite = isFavorite
+                        isFavorite = isFavorite,
+                        folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                     )
                 }
 

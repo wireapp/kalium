@@ -74,6 +74,8 @@ data class ConversationViewEntity(
     val legalHoldStatus: ConversationEntity.LegalHoldStatus,
     val accentId: Int?,
     val isFavorite: Boolean,
+    val folderId: String?,
+    val folderName: String?,
 ) {
     val isMember: Boolean get() = selfRole != null
 }

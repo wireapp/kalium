@@ -216,6 +216,20 @@ class ConversationFolderRepositoryTest {
         coVerify { arrangement.conversationFolderDAO.getFoldersWithConversations() }.wasInvoked()
     }
 
+    @Test
+    fun givenValidFolderIdWhenRemovingFolderThenShouldRemoveSuccessfully() = runTest {
+        // given
+        val folderId = "folder1"
+        val arrangement = Arrangement().withSuccessfulFolderRemoval()
+
+        // when
+        val result = arrangement.repository.removeFolder(folderId)
+
+        // then
+        result.shouldSucceed()
+        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -276,6 +290,11 @@ class ConversationFolderRepositoryTest {
 
         suspend fun withRemoveConversationFromFolder(): Arrangement {
             coEvery { conversationFolderDAO.removeConversationFromFolder(any(), any()) }.returns(Unit)
+            return this
+        }
+
+        suspend fun withSuccessfulFolderRemoval(): Arrangement {
+            coEvery { conversationFolderDAO.removeFolder(any()) }.returns(Unit)
             return this
         }
     }

@@ -57,8 +57,9 @@ internal interface ConversationFolderRepository {
     suspend fun fetchConversationFolders(): Either<CoreFailure, Unit>
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
+    suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit>
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
-    suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
+    suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
 }
 
 internal class ConversationFolderDataSource internal constructor(
@@ -143,6 +144,10 @@ internal class ConversationFolderDataSource internal constructor(
         }
     }
 
+    override suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationFolderDAO.removeFolder(folderId)
+    }
+
     override suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit> {
         kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).v("Syncing conversation folders from local")
         return wrapStorageRequest { conversationFolderDAO.getFoldersWithConversations().map { it.toModel() } }
@@ -155,8 +160,8 @@ internal class ConversationFolderDataSource internal constructor(
             }
     }
 
-    override suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
-        return conversationFolderDAO.observeUserFolders()
+    override suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
+        return conversationFolderDAO.observeFolders()
             .wrapStorageRequest()
             .mapRight { folderEntities -> folderEntities.map { it.toModel() } }
     }
