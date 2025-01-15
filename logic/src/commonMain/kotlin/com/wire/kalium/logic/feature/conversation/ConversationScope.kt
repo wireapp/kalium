@@ -63,6 +63,8 @@ import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCa
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -390,4 +392,6 @@ class ConversationScope internal constructor(
         get() = ObserveUserFoldersUseCaseImpl(conversationFolderRepository)
     val moveConversationToFolder: MoveConversationToFolderUseCase
         get() = MoveConversationToFolderUseCaseImpl(conversationFolderRepository)
+    val removeConversationFromFolder: RemoveConversationFromFolderUseCase
+        get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
 }

@@ -11,7 +11,6 @@ CREATE TABLE LabeledConversation (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       folder_id TEXT NOT NULL,
 
-      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
       FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
       PRIMARY KEY (folder_id, conversation_id)
@@ -68,3 +67,6 @@ DELETE FROM LabeledConversation;
 
 clearFolders:
 DELETE FROM ConversationFolder;
+
+deleteFolder:
+DELETE FROM ConversationFolder WHERE id = ?;

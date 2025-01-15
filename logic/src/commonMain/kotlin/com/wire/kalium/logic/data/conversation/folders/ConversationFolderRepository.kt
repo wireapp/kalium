@@ -57,6 +57,7 @@ internal interface ConversationFolderRepository {
     suspend fun fetchConversationFolders(): Either<CoreFailure, Unit>
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
+    suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit>
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
     suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
 }
@@ -141,6 +142,10 @@ internal class ConversationFolderDataSource internal constructor(
         return wrapStorageRequest {
             conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId)
         }
+    }
+
+    override suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationFolderDAO.removeFolder(folderId)
     }
 
     override suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit> {
