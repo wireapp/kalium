@@ -115,7 +115,7 @@ class BackupEndToEndTest {
     }
 }
 
-expect fun endToEndTestSubjectProvider() : CommonBackupEndToEndTestSubjectProvider
+expect fun endToEndTestSubjectProvider(): CommonBackupEndToEndTestSubjectProvider
 
 interface CommonBackupEndToEndTestSubjectProvider {
     fun setup() {}

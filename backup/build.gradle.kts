@@ -56,8 +56,6 @@ kotlin {
         generateTypeScriptDefinitions()
     }
     sourceSets {
-        val androidUnitTest by getting { }
-        remove(androidUnitTest) // Android Unit tests are removed, as we run Instrumentation tests for encryption/file manipulation, etc.
         all {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
             languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
@@ -97,6 +95,11 @@ kotlin {
             dependsOn(nonJsMain)
         }
         val androidInstrumentedTest by getting {
+            dependsOn(nonJsTest)
+        }
+        val androidUnitTest by getting {
+            // Although UNIT tests for Android are disabled (only run Instrumented), we need to add this in order to resolve
+            // expect/actual definitions during test compilation fase ...
             dependsOn(nonJsTest)
         }
         val jvmMain by getting {
