@@ -99,7 +99,7 @@ kotlin {
         }
         val androidUnitTest by getting {
             // Although UNIT tests for Android are disabled (only run Instrumented), we need to add this in order to resolve
-            // expect/actual definitions during test compilation fase ...
+            // expect/actual definitions during test compilation phase.
             dependsOn(nonJsTest)
         }
         val jvmMain by getting {
