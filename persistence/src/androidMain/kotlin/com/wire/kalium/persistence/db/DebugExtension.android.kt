@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.debug
+package com.wire.kalium.persistence.db
 
-import com.wire.kalium.logic.di.UserStorage
-
-class ChangeProfilingUseCase(
-    private val userStorage: UserStorage,
-) {
-    /**
-     * Change profiling state.
-     */
-    suspend operator fun invoke(enabled: Boolean) {
-        userStorage.database.debugExtension.changeProfiling(enabled)
-    }
-}
+internal actual fun platformDatabaseLogger(): String = "logcat"

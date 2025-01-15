@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,13 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.di.UserStorage
+import kotlinx.coroutines.flow.Flow
 
-class ChangeProfilingUseCase(
+/**
+ * Use case to observe the state of the database logger.
+ */
+class ObserveDatabaseLoggerStateUseCase(
     private val userStorage: UserStorage,
 ) {
-    /**
-     * Change profiling state.
-     */
-    suspend operator fun invoke(enabled: Boolean) {
-        userStorage.database.debugExtension.changeProfiling(enabled)
-    }
+    suspend operator fun invoke(): Flow<Boolean> = userStorage.database.debugExtension.observeIsProfilingEnabled()
 }
