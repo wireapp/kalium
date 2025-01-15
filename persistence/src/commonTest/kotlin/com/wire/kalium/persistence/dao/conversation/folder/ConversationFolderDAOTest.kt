@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -207,6 +208,81 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
         val favoriteFolderResult = db.conversationFolderDAO.observeConversationListFromFolder("favoriteFolderId").first()
         assertEquals(1, favoriteFolderResult.size)
         assertEquals(conversationEntity1.id, favoriteFolderResult.first().conversationViewEntity.id)
+    }
+
+    @Test
+    fun givenExistingFolder_whenRemovingFolder_thenFolderShouldBeDeleted() = runTest {
+        val folderId = "folderId1"
+
+        val folder = folderWithConversationsEntity(
+            id = folderId,
+            name = "Test Folder",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(folder))
+        assertEquals(1, db.conversationFolderDAO.getFoldersWithConversations().size)
+
+        db.conversationFolderDAO.removeFolder(folderId)
+
+        val result = db.conversationFolderDAO.getFoldersWithConversations()
+        assertTrue(result.none { it.id == folderId })
+    }
+
+    @Test
+    fun givenNonExistentFolder_whenRemovingFolder_thenNoErrorShouldBeThrown() = runTest {
+        val nonExistentFolderId = "nonExistentFolderId"
+
+        db.conversationFolderDAO.removeFolder(nonExistentFolderId)
+
+        val result = db.conversationFolderDAO.getFoldersWithConversations()
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun givenFolderWithConversations_whenRemovingFolder_thenFolderAndConversationsShouldBeDeleted() = runTest {
+        val folderId = "folderId1"
+
+        val folder = folderWithConversationsEntity(
+            id = folderId,
+            name = "Test Folder",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(folder))
+        db.conversationFolderDAO.removeFolder(folderId)
+
+        val folderResult = db.conversationFolderDAO.getFoldersWithConversations()
+        assertTrue(folderResult.none { it.id == folderId })
+
+        val conversationResult = db.conversationFolderDAO.observeConversationListFromFolder(folderId).firstOrNull()
+        assertTrue(conversationResult.isNullOrEmpty())
+    }
+
+    @Test
+    fun givenMultipleFolders_whenRemovingOneFolder_thenOthersShouldRemain() = runTest {
+        val folder1 = folderWithConversationsEntity(
+            id = "folderId1",
+            name = "Folder 1",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+
+        val folder2 = folderWithConversationsEntity(
+            id = "folderId2",
+            name = "Folder 2",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf()
+        )
+
+        db.conversationFolderDAO.updateConversationFolders(listOf(folder1, folder2))
+        db.conversationFolderDAO.removeFolder("folderId1")
+
+        val result = db.conversationFolderDAO.getFoldersWithConversations()
+        assertEquals(1, result.size)
+        assertTrue(result.any { it.id == "folderId2" })
     }
 
     companion object {
