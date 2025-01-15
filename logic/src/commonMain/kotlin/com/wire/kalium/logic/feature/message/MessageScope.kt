@@ -436,7 +436,8 @@ class MessageScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
             selfUserId = selfUserId,
-            selfConversationIdProvider = selfConversationIdProvider
+            selfConversationIdProvider = selfConversationIdProvider,
+            syncManager = syncManager,
         )
 
     val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
