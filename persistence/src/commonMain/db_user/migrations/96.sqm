@@ -1,5 +1,3 @@
-PRAGMA foreign_keys=off;
-
 CREATE TABLE LabeledConversation_New (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       folder_id TEXT NOT NULL,
@@ -15,5 +13,3 @@ SELECT conversation_id, folder_id FROM LabeledConversation;
 DROP TABLE LabeledConversation;
 
 ALTER TABLE LabeledConversation_New RENAME TO LabeledConversation;
-
-PRAGMA foreign_keys=on;
