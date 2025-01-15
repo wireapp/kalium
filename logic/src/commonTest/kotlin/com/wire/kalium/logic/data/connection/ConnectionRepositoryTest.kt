@@ -318,7 +318,7 @@ class ConnectionRepositoryTest {
     }
 
     @Test
-    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
+    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBeUpdated() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
@@ -333,6 +333,29 @@ class ConnectionRepositoryTest {
         // then
         coVerify {
             arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withGetConnectionByUser()
+            .withSuccessfulUpdateConnectionStatusResponse(userId)
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { arrangement.stubConnectionOne }
+
+        // then
+        coVerify {
+            arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
+                lastUpdateDate = any(),
+                status = ConnectionEntity.State.IGNORED
+            ))
         }.wasInvoked(exactly = once)
     }
 
@@ -354,7 +377,7 @@ class ConnectionRepositoryTest {
     }
 
     @Test
-    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBePersisted() = runTest {
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBeUpdated() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
@@ -377,6 +400,32 @@ class ConnectionRepositoryTest {
     }
 
     @Test
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withErrorUpdatingConnectionStatusResponse(
+                userId,
+                KaliumException.FederationUnreachableException(FederationUnreachableResponse())
+            )
+            .withConnectionEntityByUser()
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { arrangement.stubConnectionOne }
+
+        // then
+        coVerify {
+            arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
+                lastUpdateDate = any(),
+                status = ConnectionEntity.State.IGNORED
+            ))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithNonFederatedFailedDomains_thenTheConnectionNotShouldBePersisted() =
         runTest {
             // given
@@ -392,8 +441,10 @@ class ConnectionRepositoryTest {
 
             // then
             coVerify {
-                arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
-            }.wasInvoked(exactly = once)
+                arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
+                    status = ConnectionEntity.State.IGNORED
+                ))
+            }.wasInvoked(exactly = 0)
         }
 
     private class Arrangement :
@@ -620,6 +671,12 @@ class ConnectionRepositoryTest {
             coEvery {
                 connectionDAO.getConnection(any())
             }.returns(connection)
+        }
+
+        suspend fun withGetConnectionByUser(): Arrangement = apply {
+            coEvery {
+                connectionDAO.getConnectionByUser(any())
+            }.returns(connectionEntity)
         }
 
         fun arrange() = this to connectionRepository
