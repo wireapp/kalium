@@ -55,6 +55,7 @@ interface OneOnOneMigrator {
     suspend fun migrateToMLS(user: OtherUser): Either<CoreFailure, ConversationId>
 }
 
+@Suppress("LongParameterList")
 internal class OneOnOneMigratorImpl(
     private val getResolvedMLSOneOnOne: MLSOneOnOneConversationResolver,
     private val conversationGroupRepository: ConversationGroupRepository,
