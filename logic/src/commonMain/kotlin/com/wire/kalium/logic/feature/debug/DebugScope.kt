@@ -201,7 +201,8 @@ class DebugScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
             selfUserId = userId,
-            selfConversationIdProvider = selfConversationIdProvider
+            selfConversationIdProvider = selfConversationIdProvider,
+            syncManager = syncManager,
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
