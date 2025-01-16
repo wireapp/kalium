@@ -31,6 +31,7 @@ ktx-atomicfu = "0.24.0"
 kover = "0.7.6"
 multiplatform-settings = "1.1.1"
 moduleGraph = "0.7.0"
+nativeCoroutines = "1.0.0-ALPHA-26" # CAUTION: Upgrading this might require iOS to upgrade on their side too
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the workaround in the dev.mk file
 sqldelight = "2.0.1"
@@ -77,6 +78,7 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin" }
 moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-nativeCoroutines = { id = "com.rickclephas.kmp.nativecoroutines", version.ref = "nativeCoroutines"}
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

@@ -17,6 +17,7 @@
  */
 package com.wire.backup.ingest
 
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.filesystem.FileBasedEntryStorage
 import okio.FileSystem
@@ -45,6 +46,7 @@ public actual class MPBackupImporter(
      * @param multiplatformBackupFilePath the path to the decrypted, unzipped backup data file
      */
     @ObjCName("importFile")
+    @NativeCoroutines
     public suspend fun importFromFile(
         multiplatformBackupFilePath: String,
         passphrase: String?,

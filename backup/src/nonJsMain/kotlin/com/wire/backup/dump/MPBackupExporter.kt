@@ -17,6 +17,7 @@
  */
 package com.wire.backup.dump
 
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.compression.Zipper
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.filesystem.BackupEntry
@@ -57,6 +58,7 @@ public actual class MPBackupExporter(
         }
     }
 
+    @NativeCoroutines
     public suspend fun finalize(password: String?): String {
         val fileName = "export.wbu"
         val path = outputDirectory.toPath() / fileName
