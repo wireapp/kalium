@@ -37,6 +37,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
 
 /**
@@ -60,7 +61,8 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
-    private val selfConversationIdProvider: SelfConversationIdProvider
+    private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val syncManager: SyncManager,
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
@@ -78,6 +80,11 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                                     conversationId,
                                     currentClientId
                                 ).flatMap {
+
+                                    // Wait until the sync is complete to avoid sending message with
+                                    // potentially invalid epoch
+                                    syncManager.waitUntilLive()
+
                                     sendDeleteMessageToOriginalSender(
                                         message.id,
                                         message.conversationId,
