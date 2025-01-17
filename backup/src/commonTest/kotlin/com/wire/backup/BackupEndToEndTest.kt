@@ -23,14 +23,27 @@ import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
-import com.wire.backup.ingest.CommonMPBackupImporter
 import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class BackupEndToEndTest {
+
+    private val subject = endToEndTestSubjectProvider()
+
+    @BeforeTest
+    fun setup() {
+        subject.setup()
+    }
+
+    @AfterTest
+    fun beforeAfter() {
+        subject.tearDown()
+    }
 
     @Test
     fun givenBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
@@ -69,7 +82,7 @@ class BackupEndToEndTest {
         shouldBackupAndRestoreSameContent(content)
     }
 
-    private fun shouldBackupAndRestoreSameContent(content: BackupMessageContent) {
+    private suspend fun shouldBackupAndRestoreSameContent(content: BackupMessageContent, password: String? = null) {
         val expectedMessage = BackupMessage(
             id = "messageId",
             conversationId = BackupQualifiedId("value", "domain"),
@@ -78,27 +91,39 @@ class BackupEndToEndTest {
             creationDate = BackupDateTime(0L),
             content = content,
         )
-        val exporter = object : CommonMPBackupExporter(BackupQualifiedId("eghyue", "potato")) {}
-        exporter.addMessage(expectedMessage)
-        val encoded = exporter.serialize()
 
-        val importer = object : CommonMPBackupImporter() {}
-        val result = importer.importBackup(encoded)
+        val result = subject.exportImportDataTest(BackupQualifiedId("eghyue", "potato"), password) {
+            add(expectedMessage)
+        }
+
         assertIs<BackupImportResult.Success>(result)
-        val firstMessage = result.backupData.messages.first()
+        val pager = result.pager
+        val allMessages = mutableListOf<BackupMessage>()
+        while (pager.hasMorePages()) {
+            pager.nextPage()?.let { page ->
+                allMessages.addAll(page.messages)
+            }
+        }
+        val firstMessage = allMessages.first()
         assertEquals(expectedMessage.conversationId, firstMessage.conversationId)
         assertEquals(expectedMessage.id, firstMessage.id)
         assertEquals(expectedMessage.senderClientId, firstMessage.senderClientId)
         assertEquals(expectedMessage.senderUserId, firstMessage.senderUserId)
         assertEquals(expectedMessage.creationDate, firstMessage.creationDate)
         assertEquals(expectedMessage.content, firstMessage.content)
-        assertContentEquals(arrayOf(expectedMessage), result.backupData.messages)
+        assertContentEquals(arrayOf(expectedMessage), allMessages.toTypedArray())
     }
+}
 
-    @Test
-    fun givenBackUpDataIsUnrecognisable_whenRestoring_thenShouldReturnParsingError() = runTest {
-        val importer = object : CommonMPBackupImporter() {}
-        val result = importer.importBackup(byteArrayOf(0x42, 0x42, 0x42))
-        assertIs<BackupImportResult.ParsingFailure>(result)
-    }
+expect fun endToEndTestSubjectProvider(): CommonBackupEndToEndTestSubjectProvider
+
+interface CommonBackupEndToEndTestSubjectProvider {
+    fun setup() {}
+    fun tearDown() {}
+
+    suspend fun exportImportDataTest(
+        selfUserId: BackupQualifiedId,
+        passphrase: String?,
+        export: CommonMPBackupExporter.() -> Unit,
+    ): BackupImportResult
 }

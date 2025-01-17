@@ -15,15 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.ingest
+package com.wire.backup.dump
 
-import kotlin.js.JsExport
-
-@JsExport
-public sealed class BackupImportResult {
-    public class Success(public val pager: BackupImportPager) : BackupImportResult()
-    public sealed class Failure : BackupImportResult() {
-        public data object ParsingFailure : Failure()
-        public data object MissingOrWrongPassphrase : Failure()
-    }
+public fun interface FileZipper {
+    /**
+     * Joins all file entries into a single zip archive.
+     * Returns the path to the zipped archived.
+     */
+    public fun zip(entries: List<String>): String
 }

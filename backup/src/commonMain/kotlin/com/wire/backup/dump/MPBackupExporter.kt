@@ -22,73 +22,164 @@ import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
 import com.wire.backup.data.toProtoModel
+import com.wire.backup.encryption.EncryptedStream
+import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
+import com.wire.backup.envelope.BackupHeader
+import com.wire.backup.envelope.BackupHeaderSerializer
+import com.wire.backup.envelope.HashData
+import com.wire.backup.filesystem.BackupEntry
+import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.ingest.MPBackupMapper
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
+import com.wire.kalium.protobuf.backup.ExportUser
+import com.wire.kalium.protobuf.backup.ExportedConversation
+import com.wire.kalium.protobuf.backup.ExportedMessage
+import kotlinx.coroutines.Deferred
 import kotlinx.datetime.Clock
+import okio.Buffer
+import okio.Sink
+import okio.Source
+import okio.buffer
+import okio.use
 import pbandk.encodeToByteArray
-import kotlin.experimental.ExperimentalObjCName
-import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
-import kotlin.native.ObjCName
-import kotlin.native.ShouldRefineInSwift
+import kotlin.js.JsName
 
 /**
  * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
  * into a cross-platform [BackupData] format.
  */
-@OptIn(ExperimentalObjCName::class, ExperimentalObjCRefinement::class)
 @JsExport
 public abstract class CommonMPBackupExporter(
     private val selfUserId: BackupQualifiedId
 ) {
     private val mapper = MPBackupMapper()
-    private val allUsers = mutableListOf<BackupUser>()
-    private val allConversations = mutableListOf<BackupConversation>()
-    private val allMessages = mutableListOf<BackupMessage>()
+    private val usersChunk = mutableListOf<ExportUser>()
+    private val conversationsChunk = mutableListOf<ExportedConversation>()
+    private val messagesChunk = mutableListOf<ExportedMessage>()
+    private var persistedUserChunks = 0
+    private var persistedConversationsChunks = 0
+    private var persistedMessagesChunks = 0
 
-    // TODO: Replace `ObjCName` with `JsName` in the future and flip it around.
-    //       Unfortunately the IDE doesn't understand this right now and
-    //       keeps complaining if making the other way around
-    @ObjCName("add")
-    public fun addUser(user: BackupUser) {
-        allUsers.add(user)
-    }
-
-    @ObjCName("add")
-    public fun addConversation(conversation: BackupConversation) {
-        allConversations.add(conversation)
-    }
-
-    @ObjCName("add")
-    public fun addMessage(message: BackupMessage) {
-        allMessages.add(message)
-    }
-
-    @OptIn(ExperimentalStdlibApi::class)
-    @ShouldRefineInSwift // Hidden in Swift
-    public fun serialize(): ByteArray {
-        val backupData = BackupData(
-            BackupInfo(
-                platform = "Common",
-                version = "1.0",
-                userId = selfUserId.toProtoModel(),
-                creationTime = Clock.System.now().toEpochMilliseconds(),
-                clientId = "lol"
-            ),
-            allConversations.map {
-                mapper.mapConversationToProtobuf(it)
-            },
-            allMessages.map {
-                mapper.mapMessageToProtobuf(it)
-            },
-            allUsers.map {
-                mapper.mapUserToProtobuf(it)
-            },
+    private val backupInfo by lazy {
+        BackupInfo(
+            platform = "Common",
+            version = "1.0",
+            userId = selfUserId.toProtoModel(),
+            creationTime = Clock.System.now().toEpochMilliseconds(),
+            clientId = "lol"
         )
-        return backupData.encodeToByteArray().also {
-            println("XPlatform Backup POC. Exported data bytes: ${it.toHexString()}")
+    }
+
+    @JsName("addUser")
+    public fun add(user: BackupUser) {
+        usersChunk.add(mapper.mapUserToProtobuf(user))
+        if (usersChunk.size > ITEMS_CHUNK_SIZE) {
+            flushUsers()
         }
+    }
+
+    private fun flushUsers() {
+        if (usersChunk.isEmpty()) return
+        val backupData = BackupData(backupInfo, users = usersChunk)
+        storage.persistEntry(BackupEntry(USERS_ENTRY_PREFIX + persistedUserChunks + ENTRY_SUFFIX, backupData.asSource()))
+        persistedUserChunks++
+        usersChunk.clear()
+    }
+
+    @JsName("addConversation")
+    public fun add(conversation: BackupConversation) {
+        conversationsChunk.add(mapper.mapConversationToProtobuf(conversation))
+        if (conversationsChunk.size > ITEMS_CHUNK_SIZE) {
+            flushConversations()
+        }
+    }
+
+    private fun flushConversations() {
+        if (conversationsChunk.isEmpty()) return
+        val backupData = BackupData(backupInfo, conversations = conversationsChunk)
+        storage.persistEntry(BackupEntry(CONVERSATIONS_ENTRY_PREFIX + persistedConversationsChunks + ENTRY_SUFFIX, backupData.asSource()))
+        persistedConversationsChunks++
+        conversationsChunk.clear()
+    }
+
+    @JsName("addMessage")
+    public fun add(message: BackupMessage) {
+        messagesChunk.add(mapper.mapMessageToProtobuf(message))
+        if (messagesChunk.size > ITEMS_CHUNK_SIZE) {
+            flushMessages()
+        }
+    }
+
+    private fun flushMessages() {
+        if (messagesChunk.isEmpty()) return
+        val backupData = BackupData(backupInfo, messages = messagesChunk)
+        storage.persistEntry(BackupEntry(MESSAGES_ENTRY_PREFIX + persistedMessagesChunks + ENTRY_SUFFIX, backupData.asSource()))
+        persistedMessagesChunks++
+        messagesChunk.clear()
+    }
+
+    private fun flushAll() {
+        flushUsers()
+        flushConversations()
+        flushMessages()
+    }
+
+    private fun BackupData.asSource(): Source {
+        val buffer = Buffer()
+        return buffer.write(this.encodeToByteArray())
+    }
+
+    internal suspend fun finalize(password: String?, output: Sink) {
+        flushAll()
+        val zippedData = zipEntries(storage.listEntries()).await()
+        val salt = XChaChaPoly1305AuthenticationData.newSalt()
+
+        val header = BackupHeader(
+            BackupHeaderSerializer.Default.CURRENT_HEADER_VERSION,
+            false,
+            HashData.defaultFromUserId(selfUserId)
+        )
+        val headerBytes = BackupHeaderSerializer.Default.headerToBytes(header)
+        output.buffer().use { bufferedOutput ->
+            bufferedOutput.write(headerBytes)
+            bufferedOutput.flush()
+            if (password.isNullOrBlank()) {
+                // We should skip the encryption headers, leaving empty/zeroed bytes
+                val skip = ByteArray(EncryptedStream.XCHACHA_20_POLY_1305_HEADER_LENGTH) { 0x00 }
+                bufferedOutput.write(skip)
+                bufferedOutput.writeAll(zippedData)
+            } else {
+                EncryptedStream.encrypt(
+                    zippedData,
+                    bufferedOutput,
+                    XChaChaPoly1305AuthenticationData(
+                        password,
+                        salt,
+                        headerBytes.toUByteArray(),
+                        header.hashData.operationsLimit,
+                        header.hashData.hashingMemoryLimit
+                    )
+                )
+            }
+            bufferedOutput
+        }
+    }
+
+    internal abstract val storage: EntryStorage
+
+    internal abstract fun zipEntries(data: List<BackupEntry>): Deferred<Source>
+
+    private companion object {
+        /**
+         * Amount of items (conversations or messages) to be put into a single page / entry
+         */
+        const val ITEMS_CHUNK_SIZE = 1_000
+        const val USERS_ENTRY_PREFIX = "users"
+        const val CONVERSATIONS_ENTRY_PREFIX = "conversations"
+        const val MESSAGES_ENTRY_PREFIX = "messages"
+        const val ENTRY_SUFFIX = ".binpb"
     }
 }
 

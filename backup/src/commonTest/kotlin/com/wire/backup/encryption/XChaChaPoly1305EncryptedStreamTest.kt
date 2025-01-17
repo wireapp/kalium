@@ -18,14 +18,9 @@
 package com.wire.backup.encryption
 
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
-import com.wire.backup.envelope.cryptography.BackupPassphrase
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
-import okio.ByteString.Companion.encodeUtf8
 import kotlin.random.Random
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -46,18 +41,18 @@ class XChaChaPoly1305EncryptedStreamTest {
         val originalBufferData = originalBuffer.peek().readByteArray()
 
         val encryptedBuffer = Buffer()
-        val passphrase = BackupPassphrase("password")
+        val passphrase = "password"
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
         )
 
         val decryptedBuffer = Buffer()
-        val result = stream.decrypt(encryptedBuffer, decryptedBuffer, authenticationData, encryptionHeader)
+        val result = stream.decrypt(encryptedBuffer, decryptedBuffer, authenticationData)
         assertEquals(DecryptionResult.Success, result)
         assertContentEquals(originalBufferData, decryptedBuffer.readByteArray())
     }
@@ -108,22 +103,22 @@ class XChaChaPoly1305EncryptedStreamTest {
         originalBuffer.writeUtf8("Hello Alice!")
 
         val encryptedBuffer = Buffer()
-        val passphrase = BackupPassphrase("password")
+        val passphrase = "password"
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
         )
 
         val result = stream.decrypt(
-            encryptedBuffer, Buffer(),
-            authenticationData.copy(
+            source = encryptedBuffer,
+            outputSink = Buffer(),
+            authenticationData = authenticationData.copy(
                 additionalData = "INCORRECT".encodeToByteArray().toUByteArray(),
             ),
-            encryptionHeader,
         )
         assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
     }
@@ -134,11 +129,11 @@ class XChaChaPoly1305EncryptedStreamTest {
         originalBuffer.writeUtf8("Hello Alice!")
 
         val encryptedBuffer = Buffer()
-        val passphrase = BackupPassphrase("password")
+        val passphrase = "password"
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
@@ -149,11 +144,11 @@ class XChaChaPoly1305EncryptedStreamTest {
             wrongSalt[i] = 42U
         }
         val result = stream.decrypt(
-            encryptedBuffer, Buffer(),
-            authenticationData.copy(
+            source = encryptedBuffer,
+            outputSink = Buffer(),
+            authenticationData = authenticationData.copy(
                 salt = wrongSalt,
             ),
-            encryptionHeader,
         )
         assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
     }
@@ -164,48 +159,22 @@ class XChaChaPoly1305EncryptedStreamTest {
         originalBuffer.writeUtf8("Hello Alice!")
 
         val encryptedBuffer = Buffer()
-        val passphrase = BackupPassphrase("password")
+        val passphrase = "password"
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
         val additionalData = "additionalData".encodeToByteArray().toUByteArray()
         val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
+        stream.encrypt(
             originalBuffer,
             encryptedBuffer,
             authenticationData
         )
 
         val result = stream.decrypt(
-            encryptedBuffer, Buffer(),
-            authenticationData.copy(
-                passphrase = BackupPassphrase("WRONG PASSWORD"),
+            source = encryptedBuffer,
+            outputSink = Buffer(),
+            authenticationData = authenticationData.copy(
+                passphrase = "WRONG PASSWORD",
             ),
-            encryptionHeader,
-        )
-        assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
-    }
-
-    @Test
-    fun givenEncryptedMessageAndWrongHeader_whenDecrypting_thenShouldFailDecryption() = runTest {
-        val originalBuffer = Buffer()
-        originalBuffer.writeUtf8("Hello Alice!")
-
-        val encryptedBuffer = Buffer()
-        val passphrase = BackupPassphrase("password")
-        val salt = XChaChaPoly1305AuthenticationData.newSalt()
-        val additionalData = "additionalData".encodeToByteArray().toUByteArray()
-        val authenticationData = XChaChaPoly1305AuthenticationData(passphrase, salt, additionalData)
-        val encryptionHeader = stream.encrypt(
-            originalBuffer,
-            encryptedBuffer,
-            authenticationData
-        )
-
-        encryptionHeader[0] = (encryptionHeader[0] + 0x01U).toUByte()
-
-        val result = stream.decrypt(
-            encryptedBuffer, Buffer(),
-            authenticationData,
-            encryptionHeader,
         )
         assertEquals(DecryptionResult.Failure.AuthenticationFailure, result)
     }

@@ -58,6 +58,8 @@ kotlin {
     sourceSets {
         all {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+            languageSettings.optIn("kotlin.js.ExperimentalJsExport")
         }
         val commonMain by getting {
             dependencies {
@@ -95,6 +97,11 @@ kotlin {
         val androidInstrumentedTest by getting {
             dependsOn(nonJsTest)
         }
+        val androidUnitTest by getting {
+            // Although UNIT tests for Android are disabled (only run Instrumented), we need to add this in order to resolve
+            // expect/actual definitions during test compilation phase.
+            dependsOn(nonJsTest)
+        }
         val jvmMain by getting {
             dependsOn(nonJsMain)
         }
@@ -130,6 +137,11 @@ kotlin {
         val macosArm64Main by getting {
             dependencies {
                 implementation(libs.pbandk.runtime.macArm64)
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+                implementation(npm("jszip", "3.10.1"))
             }
         }
     }

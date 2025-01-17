@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.envelope.header
+package com.wire.backup.envelope
 
 import okio.Buffer
 import okio.Source
@@ -29,7 +29,7 @@ internal interface BackupHeaderSerializer {
     /**
      * Converts a [BackupHeader] into a byte buffer format, which can be stored in the beginning of a Backup file.
      */
-    fun headerToBytes(header: BackupHeader): Buffer
+    fun headerToBytes(header: BackupHeader): ByteArray
 
     /**
      * Consumes the first relevant bytes of the [source], parses and returns a [HeaderParseResult].
@@ -57,7 +57,7 @@ internal interface BackupHeaderSerializer {
          */
         private const val SIZE_OF_GAP_AFTER_FORMAT_FIELD = 1L
 
-        override fun headerToBytes(header: BackupHeader): Buffer {
+        override fun headerToBytes(header: BackupHeader): ByteArray {
             val headerBytes = Buffer()
             BackupHeaderField.String.format.write(FORMAT_IDENTIFIER_MAGIC_NUMBER, headerBytes)
             repeat(SIZE_OF_GAP_AFTER_FORMAT_FIELD.toInt()) {
@@ -66,8 +66,8 @@ internal interface BackupHeaderSerializer {
             BackupHeaderField.UShort.version.write(header.version.toUShort(), headerBytes)
             BackupHeaderField.UByteArray.salt.write(header.hashData.salt, headerBytes)
             BackupHeaderField.UByteArray.hashedUserId.write(header.hashData.hashedUserId, headerBytes)
-            BackupHeaderField.UInt.opsLimit.write(header.hashData.operationsLimit, headerBytes)
-            BackupHeaderField.UInt.memLimit.write(header.hashData.hashingMemoryLimit, headerBytes)
+            BackupHeaderField.UInt.opsLimit.write(header.hashData.operationsLimit.toUInt(), headerBytes)
+            BackupHeaderField.UInt.memLimit.write(header.hashData.hashingMemoryLimit.toUInt(), headerBytes)
             BackupHeaderField.Boolean.isEncrypted.write(header.isEncrypted, headerBytes)
 
             val remainingReservedSpaceSize = HEADER_SIZE - headerBytes.size
@@ -75,7 +75,7 @@ internal interface BackupHeaderSerializer {
                 headerBytes.writeByte(0x00)
             }
 
-            return headerBytes
+            return headerBytes.readByteArray()
         }
 
         override fun parseHeader(source: Source): HeaderParseResult {
@@ -96,7 +96,7 @@ internal interface BackupHeaderSerializer {
                     val memLimit = BackupHeaderField.UInt.memLimit.read(headerBytes)
                     val isEncrypted = BackupHeaderField.Boolean.isEncrypted.read(headerBytes)
 
-                    val hashData = HashData(hashedUserId, salt, opsLimit, memLimit)
+                    val hashData = HashData(hashedUserId, salt, opsLimit.toULong(), memLimit.toInt())
                     val header = BackupHeader(version, isEncrypted, hashData)
                     HeaderParseResult.Success(header)
                 }
