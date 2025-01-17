@@ -17,7 +17,6 @@
  */
 package com.wire.backup.dump
 
-import com.wire.backup.compression.Zipper
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
@@ -46,15 +45,13 @@ public actual class MPBackupExporter(
         shouldBeCleared = true
     )
 
-    override val zipper: Zipper = object : Zipper {
-        override fun archive(data: List<BackupEntry>): Deferred<Source> {
-            val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
-            val pathToZippedArchive = fileZipper.zip(entries).toPath()
-            return CompletableDeferred(
-                fileSystem.source(pathToZippedArchive)
-                    .also { fileSystem.delete(pathToZippedArchive) }
-            )
-        }
+    override fun zipEntries(data: List<BackupEntry>): Deferred<Source> {
+        val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
+        val pathToZippedArchive = fileZipper.zip(entries).toPath()
+        return CompletableDeferred(
+            fileSystem.source(pathToZippedArchive)
+                .also { fileSystem.delete(pathToZippedArchive) }
+        )
     }
 
     public suspend fun finalize(password: String?): String {

@@ -17,7 +17,6 @@
  */
 package com.wire.backup.dump
 
-import com.wire.backup.compression.Zipper
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
@@ -36,6 +35,7 @@ import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportUser
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedMessage
+import kotlinx.coroutines.Deferred
 import kotlinx.datetime.Clock
 import okio.Buffer
 import okio.Sink
@@ -133,7 +133,7 @@ public abstract class CommonMPBackupExporter(
 
     internal suspend fun finalize(password: String?, output: Sink) {
         flushAll()
-        val zippedData = zipper.archive(storage.listEntries()).await()
+        val zippedData = zipEntries(storage.listEntries()).await()
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
 
         val header = BackupHeader(
@@ -168,7 +168,8 @@ public abstract class CommonMPBackupExporter(
     }
 
     internal abstract val storage: EntryStorage
-    internal abstract val zipper: Zipper
+
+    internal abstract fun zipEntries(data: List<BackupEntry>): Deferred<Source>
 
     private companion object {
         /**
