@@ -50,6 +50,10 @@ class ConversationFolderDAOImpl internal constructor(
         conversationFoldersQueries.deleteFolder(folderId)
     }
 
+    override suspend fun addFolder(folder: ConversationFolderEntity) = withContext(coroutineContext) {
+        conversationFoldersQueries.upsertFolder(folder.id, folder.name, folder.type)
+    }
+
     override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(coroutineContext) {
         val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().executeAsList().map(::toEntity)
 
