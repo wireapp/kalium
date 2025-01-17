@@ -285,6 +285,24 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
         assertTrue(result.any { it.id == "folderId2" })
     }
 
+    @Test
+    fun givenFolder_whenAddingFolder_thenFolderShouldBeAddedToDatabase() = runTest {
+        val folderId = "folder1"
+        val folderName = "Test Folder"
+        val folderType = ConversationFolderTypeEntity.USER
+        val folder = ConversationFolderEntity(id = folderId, name = folderName, type = folderType)
+
+        db.conversationFolderDAO.addFolder(folder)
+
+        val result = db.conversationFolderDAO.getFoldersWithConversations()
+
+        assertEquals(1, result.size)
+        val addedFolder = result.first()
+        assertEquals(folderId, addedFolder.id)
+        assertEquals(folderName, addedFolder.name)
+        assertEquals(folderType, addedFolder.type)
+    }
+
     companion object {
         fun folderWithConversationsEntity(
             id: String = "folderId",

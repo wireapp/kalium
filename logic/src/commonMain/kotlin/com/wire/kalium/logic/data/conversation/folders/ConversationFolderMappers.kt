@@ -84,3 +84,9 @@ fun ConversationFolderTypeEntity.toModel(): FolderType = when (this) {
     ConversationFolderTypeEntity.USER -> FolderType.USER
     ConversationFolderTypeEntity.FAVORITE -> FolderType.FAVORITE
 }
+
+fun ConversationFolder.toDao() = ConversationFolderEntity(
+    id = id,
+    name = name,
+    type = type.toDao()
+)

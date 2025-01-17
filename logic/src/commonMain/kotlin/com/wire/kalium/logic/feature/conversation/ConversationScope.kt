@@ -53,6 +53,8 @@ import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequests
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
@@ -394,4 +396,6 @@ class ConversationScope internal constructor(
         get() = MoveConversationToFolderUseCaseImpl(conversationFolderRepository)
     val removeConversationFromFolder: RemoveConversationFromFolderUseCase
         get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
+    val createConversationFolder: CreateConversationFolderUseCase
+        get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
 }
