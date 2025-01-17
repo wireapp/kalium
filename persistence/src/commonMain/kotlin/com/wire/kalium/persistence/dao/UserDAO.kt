@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
@@ -258,6 +257,7 @@ interface UserDAO {
     suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?>
     suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
+    suspend fun getUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): UserDetailsEntity?
     suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity>
     suspend fun getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,

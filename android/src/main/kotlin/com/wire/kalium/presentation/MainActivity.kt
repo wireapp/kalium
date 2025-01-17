@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
 
             session.users.uploadUserAvatar(tempAvatarPath, imageContent.size.toLong())
 
-            val selfUser = session.users.getSelfUser().first()
+            val selfUser = session.users.observeSelfUser().first()
 
             val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser.previewPicture!!)) {
                 is PublicAssetResult.Success -> {

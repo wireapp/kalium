@@ -305,6 +305,7 @@ class UserRepositoryTest {
         selfUserIdChannel.send(TestUser.JSON_QUALIFIED_ID)
         // given
         val (arrangement, userRepository) = Arrangement()
+            .withSelfUserIdMetadataReturning(TestUser.JSON_QUALIFIED_ID)
             .withSelfUserIdFlowMetadataReturning(selfUserIdChannel.consumeAsFlow())
             .withRemoteGetSelfReturningUser()
             .arrange()
@@ -386,6 +387,7 @@ class UserRepositoryTest {
     @Test
     fun givenAKnownSelfUser_whenGettingFromDbAndCacheExpiredOrNotPresent_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
+            .withSelfUserIdMetadataReturning(TestUser.JSON_QUALIFIED_ID)
             .withSelfUserIdFlowMetadataReturning(flowOf(TestUser.JSON_QUALIFIED_ID))
             .withRemoteGetSelfReturningUser()
             .withGetTeamMemberSuccess(TestTeam.memberDTO(TestUser.SELF.id.value))
@@ -409,6 +411,7 @@ class UserRepositoryTest {
     @Test
     fun givenAKnownSelfUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
+            .withSelfUserIdMetadataReturning(TestUser.JSON_QUALIFIED_ID)
             .withSelfUserIdFlowMetadataReturning(flowOf(TestUser.JSON_QUALIFIED_ID))
             .withRemoteGetSelfReturningUser()
             .withGetTeamMemberSuccess(TestTeam.memberDTO(TestUser.SELF.id.value))
@@ -888,6 +891,12 @@ class UserRepositoryTest {
             coEvery {
                 userDAO.getUserMinimizedByQualifiedID(any())
             }.returns(value)
+        }
+
+        suspend fun withSelfUserIdMetadataReturning(selfUserId: String?) = apply {
+            coEvery {
+                metadataDAO.valueByKey(eq(SELF_USER_ID_KEY))
+            }.returns(selfUserId)
         }
 
         suspend fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {
