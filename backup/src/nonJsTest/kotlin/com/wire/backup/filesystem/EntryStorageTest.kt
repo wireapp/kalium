@@ -15,15 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.ingest
+package com.wire.backup.filesystem
 
-import kotlin.js.JsExport
+import okio.FileSystem
+import okio.SYSTEM
 
-@JsExport
-public sealed class BackupImportResult {
-    public class Success(public val pager: BackupImportPager) : BackupImportResult()
-    public sealed class Failure : BackupImportResult() {
-        public data object ParsingFailure : Failure()
-        public data object MissingOrWrongPassphrase : Failure()
-    }
+internal actual fun createTestStorage(): EntryStorage {
+    return FileBasedEntryStorage(
+        FileSystem.SYSTEM,
+        FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "kalium-test-backup",
+        true
+    )
 }

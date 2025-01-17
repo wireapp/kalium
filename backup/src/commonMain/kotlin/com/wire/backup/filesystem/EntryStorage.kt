@@ -15,15 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.ingest
+package com.wire.backup.filesystem
 
-import kotlin.js.JsExport
+import okio.Source
 
-@JsExport
-public sealed class BackupImportResult {
-    public class Success(public val pager: BackupImportPager) : BackupImportResult()
-    public sealed class Failure : BackupImportResult() {
-        public data object ParsingFailure : Failure()
-        public data object MissingOrWrongPassphrase : Failure()
-    }
+/**
+ * Storage used during export/import of backups.
+ */
+internal interface EntryStorage {
+    fun persistEntry(backupEntry: BackupEntry)
+    operator fun get(entryName: String): BackupEntry?
+    fun listEntries(): List<BackupEntry>
+    fun clear()
 }
+
+internal data class BackupEntry(
+    val name: String,
+    val data: Source,
+)

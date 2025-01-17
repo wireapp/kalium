@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,14 @@
  */
 @file:OptIn(ExperimentalUnsignedTypes::class)
 
-package com.wire.backup.envelope.header
+package com.wire.backup.envelope
 
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_MEMLIMIT_MIN
+import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
+import com.wire.backup.hash.HASH_MEM_LIMIT
+import com.wire.backup.hash.HASH_OPS_LIMIT
+import com.wire.backup.hash.hashUserId
 
 /**
  * The unencrypted data we write on the beginning of the backup files.
@@ -50,14 +55,14 @@ internal data class HashData(
      * Raising this number will make the function require more CPU cycles to compute a key.
      * See [Libsodium's Documentation](https://libsodium.gitbook.io/doc/password_hashing/default_phf#key-derivation).
      */
-    val operationsLimit: UInt,
+    val operationsLimit: ULong,
 
     /**
      * Memory used by the hashing algorithm.
      * See [Libsodium's Documentation](https://libsodium.gitbook.io/doc/password_hashing/default_phf#key-derivation).
      * This value has to be bigger than [crypto_pwhash_MEMLIMIT_MIN].
      */
-    val hashingMemoryLimit: UInt
+    val hashingMemoryLimit: Int
 ) {
     init {
         require(hashedUserId.size == HASHED_USER_ID_SIZE_IN_BYTES) {
@@ -67,12 +72,6 @@ internal data class HashData(
         require(hashingMemoryLimit >= MINIMUM_MEMORY_LIMIT) {
             "Memory Limit must be equal to or bigger than $MINIMUM_MEMORY_LIMIT!"
         }
-    }
-
-    companion object {
-        const val HASHED_USER_ID_SIZE_IN_BYTES = 32
-        const val SALT_SIZE_IN_BYTES = 16
-        val MINIMUM_MEMORY_LIMIT = crypto_pwhash_MEMLIMIT_MIN.toUInt()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -97,4 +96,16 @@ internal data class HashData(
         return result
     }
 
+    companion object {
+        const val HASHED_USER_ID_SIZE_IN_BYTES = 32
+        const val SALT_SIZE_IN_BYTES = 16
+        const val MINIMUM_MEMORY_LIMIT = crypto_pwhash_MEMLIMIT_MIN
+
+        suspend fun defaultFromUserId(
+            userId: BackupQualifiedId,
+        ): HashData {
+            val salt = XChaChaPoly1305AuthenticationData.newSalt()
+            return HashData(hashUserId(userId, salt, HASH_MEM_LIMIT, HASH_OPS_LIMIT), salt, HASH_OPS_LIMIT, HASH_MEM_LIMIT)
+        }
+    }
 }

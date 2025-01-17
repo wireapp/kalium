@@ -17,6 +17,8 @@
  */
 package com.wire.backup.envelope.header
 
+import com.wire.backup.envelope.BackupHeaderSerializer
+import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.util.testHeader
 import okio.Buffer
 import kotlin.test.Test
@@ -32,7 +34,7 @@ class BackupHeaderSerializerTest {
         val originalHeader = testHeader()
         val bytes = serializer.headerToBytes(originalHeader)
         val buffer = Buffer()
-        buffer.writeAll(bytes)
+        buffer.write(bytes)
         val result = serializer.parseHeader(buffer)
         assertIs<HeaderParseResult.Success>(result)
         assertEquals(originalHeader, result.header)
@@ -42,9 +44,9 @@ class BackupHeaderSerializerTest {
     fun givenProvidedByteArrayIsTooShort_whenParsing_shouldReturnUnknownFormat() {
         val validHeader = testHeader()
         val validHeaderBytes = serializer.headerToBytes(validHeader)
-        val shortHeaderBytes = validHeaderBytes.readByteArray(validHeaderBytes.size - 1)
+        val shortHeaderBytes = validHeaderBytes.take(validHeaderBytes.size - 1)
         val buffer = Buffer()
-        buffer.write(shortHeaderBytes)
+        buffer.write(shortHeaderBytes.toByteArray())
         val result = serializer.parseHeader(buffer)
         assertIs<HeaderParseResult.Failure.UnknownFormat>(result)
     }
@@ -52,13 +54,12 @@ class BackupHeaderSerializerTest {
     @Test
     fun givenProvidedBytesDoNotStartWithCorrectMagicNumber_whenParsing_shouldReturnUnknownFormat() {
         val validHeader = testHeader()
-        val validHeaderBytes = serializer.headerToBytes(validHeader)
-        val invalidHeaderBytes = validHeaderBytes.readByteArray(validHeaderBytes.size)
-        invalidHeaderBytes[0] = 0x42
-        invalidHeaderBytes[1] = 0x43
-        invalidHeaderBytes[2] = 0x43
+        val headerBytes = serializer.headerToBytes(validHeader)
+        headerBytes[0] = 0x42
+        headerBytes[1] = 0x43
+        headerBytes[2] = 0x43
         val buffer = Buffer()
-        buffer.write(invalidHeaderBytes)
+        buffer.write(headerBytes)
         val result = serializer.parseHeader(buffer)
         assertIs<HeaderParseResult.Failure.UnknownFormat>(result)
     }
@@ -68,7 +69,9 @@ class BackupHeaderSerializerTest {
         val unsupportedVersion = serializer.MINIMUM_SUPPORTED_VERSION - 1
         val header = testHeader(version = unsupportedVersion)
         val validHeaderBytes = serializer.headerToBytes(header)
-        val result = serializer.parseHeader(validHeaderBytes)
+        val buffer = Buffer()
+        buffer.write(validHeaderBytes)
+        val result = serializer.parseHeader(buffer)
         assertIs<HeaderParseResult.Failure.UnsupportedVersion>(result)
         assertEquals(unsupportedVersion, result.version)
     }
@@ -78,7 +81,9 @@ class BackupHeaderSerializerTest {
         val unsupportedVersion = serializer.MAXIMUM_SUPPORTED_VERSION + 1
         val header = testHeader(version = unsupportedVersion)
         val validHeaderBytes = serializer.headerToBytes(header)
-        val result = serializer.parseHeader(validHeaderBytes)
+        val buffer = Buffer()
+        buffer.write(validHeaderBytes)
+        val result = serializer.parseHeader(buffer)
         assertIs<HeaderParseResult.Failure.UnsupportedVersion>(result)
         assertEquals(unsupportedVersion, result.version)
     }
