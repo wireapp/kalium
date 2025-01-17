@@ -30,4 +30,5 @@ interface ConversationFolderDAO {
     suspend fun removeConversationFromFolder(conversationId: QualifiedIDEntity, folderId: String)
     suspend fun observeFolders(): Flow<List<ConversationFolderEntity>>
     suspend fun removeFolder(folderId: String)
+    suspend fun addFolder(folder: ConversationFolderEntity)
 }

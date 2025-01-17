@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation.folders
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.id.toDao
@@ -230,6 +231,20 @@ class ConversationFolderRepositoryTest {
         coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasInvoked()
     }
 
+    @Test
+    fun givenValidFolderWhenAddingFolderThenShouldAddSuccessfully() = runTest {
+        // given
+        val folder = ConversationFolder(id = "folder1", name = "New Folder", type = FolderType.USER)
+        val arrangement = Arrangement().withSuccessfulFolderAddition()
+
+        // when
+        val result = arrangement.repository.addFolder(folder)
+
+        // then
+        result.shouldSucceed()
+        coVerify { arrangement.conversationFolderDAO.addFolder(eq(folder.toDao())) }.wasInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -295,6 +310,11 @@ class ConversationFolderRepositoryTest {
 
         suspend fun withSuccessfulFolderRemoval(): Arrangement {
             coEvery { conversationFolderDAO.removeFolder(any()) }.returns(Unit)
+            return this
+        }
+
+        suspend fun withSuccessfulFolderAddition(): Arrangement {
+            coEvery { conversationFolderDAO.addFolder(any()) }.returns(Unit)
             return this
         }
     }

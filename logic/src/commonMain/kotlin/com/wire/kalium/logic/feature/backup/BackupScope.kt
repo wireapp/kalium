@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
 class BackupScope internal constructor(
@@ -72,4 +73,14 @@ class BackupScope internal constructor(
             restoreWeb
         )
 
+
+    @DelicateKaliumApi("this is NOT a backup feature, but a feature to create an unencrypted and obfuscated copy of the database")
+    val createUnEncryptedCopy: CreateUnEncryptedCopyUseCase
+        get() = CreateUnEncryptedCopyUseCase(
+            userId,
+            clientIdProvider,
+            userRepository,
+            kaliumFileSystem,
+            userStorage.database.obfuscatedCopyExporter,
+        )
 }
