@@ -139,7 +139,7 @@ class PocIntegrationTest {
         launch {
             val userSession = initUserSession(createCoreLogic(mockedRequests))
 
-            val selfUserId = userSession.users.getSelfUser().first().id
+            val selfUserId = userSession.users.observeSelfUser().first().id
             val selfClientId = userSession.clientIdProvider().getOrFail { throw IllegalStateException("No self client is registered") }
             val targetUserId = UserId(value = selfUserId.value, domain = selfUserId.domain)
 

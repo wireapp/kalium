@@ -21,6 +21,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationFoldersQueries
 import com.wire.kalium.persistence.GetAllFoldersWithConversations
+import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
@@ -45,6 +46,14 @@ class ConversationFolderDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
+    override suspend fun removeFolder(folderId: String) = withContext(coroutineContext) {
+        conversationFoldersQueries.deleteFolder(folderId)
+    }
+
+    override suspend fun addFolder(folder: ConversationFolderEntity) = withContext(coroutineContext) {
+        conversationFoldersQueries.upsertFolder(folder.id, folder.name, folder.type)
+    }
+
     override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(coroutineContext) {
         val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().executeAsList().map(::toEntity)
 
@@ -66,6 +75,11 @@ class ConversationFolderDAOImpl internal constructor(
         folderId = row.label_id,
         folderName = row.label_name,
         folderType = row.label_type,
+        conversationId = row.conversation_id
+    )
+
+    private fun toEntity(row: LabeledConversation) = ConversationLabelEntity(
+        folderId = row.folder_id,
         conversationId = row.conversation_id
     )
 

@@ -53,6 +53,8 @@ import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequests
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
@@ -63,6 +65,8 @@ import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCa
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -391,4 +395,8 @@ class ConversationScope internal constructor(
         get() = ObserveUserFoldersUseCaseImpl(conversationFolderRepository)
     val moveConversationToFolder: MoveConversationToFolderUseCase
         get() = MoveConversationToFolderUseCaseImpl(conversationFolderRepository)
+    val removeConversationFromFolder: RemoveConversationFromFolderUseCase
+        get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
+    val createConversationFolder: CreateConversationFolderUseCase
+        get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
 }

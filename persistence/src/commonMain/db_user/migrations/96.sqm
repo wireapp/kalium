@@ -1,0 +1,10 @@
+DROP TABLE LabeledConversation;
+
+CREATE TABLE LabeledConversation (
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      folder_id TEXT NOT NULL,
+
+      FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+      PRIMARY KEY (folder_id, conversation_id)
+);
