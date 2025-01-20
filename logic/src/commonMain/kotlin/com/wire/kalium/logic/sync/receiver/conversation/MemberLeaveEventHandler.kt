@@ -47,6 +47,7 @@ interface MemberLeaveEventHandler {
     suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class MemberLeaveEventHandlerImpl(
     private val memberDAO: MemberDAO,
     private val userRepository: UserRepository,
