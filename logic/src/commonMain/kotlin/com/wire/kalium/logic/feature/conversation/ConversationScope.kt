@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -96,6 +97,7 @@ class ConversationScope internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
@@ -151,6 +153,7 @@ class ConversationScope internal constructor(
             oneOnOneResolver,
             conversationRepository,
             deleteEphemeralMessageEndDate,
+            slowSyncRepository,
             kaliumLogger
         )
 
