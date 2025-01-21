@@ -343,6 +343,7 @@ internal class MLSConversationDataSource(
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
+                kaliumLogger.d("Sending commit bundle for ${groupID.toLogString()}")
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.flatMap { response ->
                 processCommitBundleEvents(response.events)
@@ -376,6 +377,7 @@ internal class MLSConversationDataSource(
         }
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
+        kaliumLogger.d("Processing commit bundle events")
         events.forEach { eventContentDTO ->
             val event =
                 MapperProvider.eventMapper(selfUserId).fromEventContentDTO(
@@ -454,7 +456,15 @@ internal class MLSConversationDataSource(
             retryOnStaleMessage = true,
             allowPartialMemberList = false,
             cipherSuite = cipherSuite
-        ).map { Unit }
+        ).onFailure {
+            kaliumLogger.e("Failed to add members to MLS group ${groupID.toLogString()}, proceed wipe conversation")
+            mlsClientProvider.getMLSClient().map { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.wipeConversation(groupID.toCrypto())
+                }
+            }
+        }
+            .map { Unit }
 
     private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
@@ -464,7 +474,7 @@ internal class MLSConversationDataSource(
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
-            kaliumLogger.d("adding ${userIdList.count()} users to MLS group")
+            kaliumLogger.d("adding ${userIdList.count()} users to MLS group ${groupID.toLogString()}")
             produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
                     if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
@@ -485,12 +495,15 @@ internal class MLSConversationDataSource(
                             // We are creating a group with only our self client which technically
                             // doesn't need be added with a commit, but our backend API requires one,
                             // so we create a commit by updating our key material.
+                            kaliumLogger.d("add members to MLS Group: updating keying material for self client")
                             updateKeyingMaterial(idMapper.toCryptoModel(groupID))
                         } else {
+                            kaliumLogger.d("add members to MLS Group: executing for groupID ${groupID.toLogString()}")
                             addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                         }
                     }.onSuccess { commitBundle ->
                         commitBundle?.crlNewDistributionPoints?.let { revocationList ->
+                            kaliumLogger.d("add members to MLS Group: checking revocation list")
                             checkRevocationList(revocationList)
                         }
                     }.map {

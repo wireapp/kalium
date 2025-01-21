@@ -135,6 +135,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             protocol.epoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this
+                kaliumLogger.d("Joining group by external commit ${conversation.id.toLogString()}")
                 wrapApiRequest {
                     conversationApi.fetchGroupInfo(conversation.id.toApi())
                 }.flatMap { groupInfo ->
@@ -185,6 +186,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
             type == Conversation.Type.SELF -> {
+                kaliumLogger.d("Establish Self MLS Conversation ${conversation.id.toLogString()}")
                 mlsConversationRepository.establishMLSGroup(
                     protocol.groupId,
                     emptyList()
@@ -203,6 +205,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
             type == Conversation.Type.ONE_ON_ONE -> {
+                kaliumLogger.d("Establish 1on1 MLS Conversation ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
