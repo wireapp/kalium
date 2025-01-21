@@ -70,7 +70,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation, since MLS is not supported.")
+            kaliumLogger.d("$TAG: Skip re-join existing MLS conversation, since MLS is not supported.")
             Either.Right(Unit)
         } else {
             conversationRepository.getConversationById(conversationId).fold({
@@ -115,7 +115,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             }
                         }
                     } else if (failure.kaliumException.isMlsMissingGroupInfo()) {
-                        kaliumLogger.w("conversation has no group info, ignoring...")
+                        kaliumLogger.w("$TAG: conversation has no group info, ignoring...")
                         Either.Right(Unit)
                     } else {
                         Either.Left(failure)
@@ -135,7 +135,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             protocol.epoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this
-                kaliumLogger.d("Joining group by external commit ${conversation.id.toLogString()}")
+                kaliumLogger.d("$TAG: Joining group by external commit ${conversation.id.toLogString()}")
                 wrapApiRequest {
                     conversationApi.fetchGroupInfo(conversation.id.toApi())
                 }.flatMap { groupInfo ->
@@ -186,7 +186,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
             type == Conversation.Type.SELF -> {
-                kaliumLogger.d("Establish Self MLS Conversation ${conversation.id.toLogString()}")
+                kaliumLogger.d("$TAG: Establish Self MLS Conversation ${conversation.id.toLogString()}")
                 mlsConversationRepository.establishMLSGroup(
                     protocol.groupId,
                     emptyList()
@@ -205,7 +205,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
             type == Conversation.Type.ONE_ON_ONE -> {
-                kaliumLogger.d("Establish 1on1 MLS Conversation ${conversation.id.toLogString()}")
+                kaliumLogger.d("$TAG: Establish 1on1 MLS Conversation ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
@@ -228,5 +228,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 
             else -> Either.Right(Unit)
         }
+    }
+
+    companion object {
+        private const val TAG = "[JoinExistingMLSConversationUseCase]"
     }
 }

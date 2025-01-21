@@ -456,14 +456,7 @@ internal class MLSConversationDataSource(
             retryOnStaleMessage = true,
             allowPartialMemberList = false,
             cipherSuite = cipherSuite
-        ).onFailure {
-            kaliumLogger.e("Failed to add members to MLS group ${groupID.toLogString()}, proceed wipe conversation")
-            mlsClientProvider.getMLSClient().map { mlsClient ->
-                wrapMLSRequest {
-                    mlsClient.wipeConversation(groupID.toCrypto())
-                }
-            }
-        }
+        )
             .map { Unit }
 
     private suspend fun internalAddMemberToMLSGroup(

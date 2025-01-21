@@ -26,9 +26,13 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Used by the UI to notify Kalium that a conversation is open.
@@ -48,13 +52,21 @@ internal class NotifyConversationIsOpenUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
     private val slowSyncRepository: SlowSyncRepository,
-    private val kaliumLogger: KaliumLogger
+    private val kaliumLogger: KaliumLogger,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : NotifyConversationIsOpenUseCase {
 
-    override suspend operator fun invoke(conversationId: ConversationId) {
-        kaliumLogger.v("$TAG: Waiting for slow sync to complete")
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
+    override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatcher.io) {
+        val ephemeralCleanupJob = launch {
+            kaliumLogger.v("$TAG: Starting ephemeral messages deletion in background")
+            deleteEphemeralMessageEndDate()
+        }
+
+        val slowSyncStatus = slowSyncRepository.slowSyncStatus.first()
+
+        if (slowSyncStatus != SlowSyncStatus.Complete) {
+            kaliumLogger.v("$TAG: Slow sync is not completed yet, skipping further steps")
+            return@withContext
         }
 
         kaliumLogger.v(
@@ -75,8 +87,7 @@ internal class NotifyConversationIsOpenUseCaseImpl(
             )
         }
 
-        // Delete Ephemeral Messages that has passed the end date
-        deleteEphemeralMessageEndDate()
+        ephemeralCleanupJob.join()
     }
 
     companion object {
