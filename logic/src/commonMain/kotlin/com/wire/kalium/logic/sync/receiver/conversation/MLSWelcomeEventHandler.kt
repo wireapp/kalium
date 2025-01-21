@@ -81,6 +81,7 @@ internal class MLSWelcomeEventHandlerImpl(
             }
             .flatMapLeft {
                 if (it is MLSFailure.ConversationAlreadyExists) {
+                    kaliumLogger.w("$TAG: Discarding welcome since the conversation already exists")
                     Either.Right(Unit)
                 } else {
                     Either.Left(it)
