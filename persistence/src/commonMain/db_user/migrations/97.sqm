@@ -1,82 +1,10 @@
-DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+DROP TABLE LabeledConversation;
 
-CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
-SELECT
-    ConversationDetails.*,
-    -- unread events
-    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
-    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
-    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
-    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
-    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
-    CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
-        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
-           CASE
-                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
-                ELSE 0
-            END
-        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
-            CASE
-                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
-                ELSE 0
-            END
-        ELSE 0
-    END AS hasNewActivitiesToShow,
-    -- draft message
-    MessageDraft.text AS messageDraftText,
-    MessageDraft.edit_message_id AS messageDraftEditMessageId,
-    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
-    MessageDraft.mention_list AS messageDraftMentionList,
-    -- last message
-    Message.id AS lastMessageId,
-    Message.content_type AS lastMessageContentType,
-    Message.creation_date AS lastMessageDate,
-    Message.visibility AS lastMessageVisibility,
-    Message.sender_user_id AS lastMessageSenderUserId,
-    (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
-    User.name AS lastMessageSenderName,
-    User.connection_status AS lastMessageSenderConnectionStatus,
-    User.deleted AS lastMessageSenderIsDeleted,
-    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
-    MemberChangeContent.member_change_list AS lastMessageMemberChangeList,
-    MemberChangeContent.member_change_type AS lastMessageMemberChangeType,
-    ConversationNameChangedContent.conversation_name AS lastMessageUpdateConversationName,
-    COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
-    TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
-    TextContent.text_body AS lastMessageText,
-    AssetContent.asset_mime_type AS lastMessageAssetMimeType
-FROM ConversationDetails
-LEFT JOIN UnreadEventCountsGrouped
-    ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
-LEFT JOIN MessageDraft
-    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
-LEFT JOIN LastMessage
-    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
-LEFT JOIN Message
-    ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
-LEFT JOIN User
-    ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
-    ON LastMessage.message_id = MemberChangeContent.message_id AND LastMessage.conversation_id = MemberChangeContent.conversation_id
-LEFT JOIN MessageMention AS Mention
-    ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
-LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
-    ON LastMessage.message_id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
-LEFT JOIN MessageAssetContent AS AssetContent
-    ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent
-    ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
-WHERE
-    ConversationDetails.type IS NOT 'SELF'
-    AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
-    )
-    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
-    AND ConversationDetails.isActive
-GROUP BY ConversationDetails.qualifiedId;
+CREATE TABLE LabeledConversation (
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      folder_id TEXT NOT NULL,
+
+      FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+      PRIMARY KEY (folder_id, conversation_id)
+);
