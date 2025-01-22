@@ -1787,6 +1787,7 @@ class UserSessionScope internal constructor(
             clientIdProvider,
             messages.messageSender,
             teamRepository,
+            slowSyncRepository,
             userId,
             selfConversationIdProvider,
             persistMessage,

@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.functional.Either
@@ -30,8 +32,11 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -102,10 +107,19 @@ class NotifyConversationIsOpenUseCaseTest {
         @Mock
         private val deleteEphemeralMessageEndDate = mock(DeleteEphemeralMessagesAfterEndDateUseCase::class)
 
+        @Mock
+        private val slowSyncRepository = mock(SlowSyncRepository::class)
+
         suspend fun withDeleteEphemeralMessageEndDateSuccess() {
             coEvery {
                 deleteEphemeralMessageEndDate.invoke()
             }.returns(Unit)
+        }
+
+        init {
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(MutableStateFlow(SlowSyncStatus.Complete))
         }
 
         suspend fun arrange(): Pair<Arrangement, NotifyConversationIsOpenUseCase> = run {
@@ -114,7 +128,8 @@ class NotifyConversationIsOpenUseCaseTest {
                 oneOnOneResolver = oneOnOneResolver,
                 conversationRepository = conversationRepository,
                 kaliumLogger = kaliumLogger,
-                deleteEphemeralMessageEndDate = deleteEphemeralMessageEndDate
+                deleteEphemeralMessageEndDate = deleteEphemeralMessageEndDate,
+                slowSyncRepository = slowSyncRepository
             )
         }
     }
