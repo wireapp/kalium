@@ -51,8 +51,13 @@ import okio.Source
 import okio.buffer
 import okio.use
 
+/**
+ * Creates an obfuscated copy of the user's data.
+ * TO BE USED FOR DEBUGGING PURPOSES ONLY.
+ */
 @DelicateKaliumApi("This class is used for debugging purposes only")
-class CreateUnEncryptedCopyUseCase internal constructor(
+@Suppress("LongParameterList")
+class CreateObfuscatedCopyUseCase internal constructor(
     private val userId: UserId,
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
@@ -75,13 +80,21 @@ class CreateUnEncryptedCopyUseCase internal constructor(
                 ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
 
         try {
-            createBackupFile(userId, plainDBPath, backupFilePath).fold(
+            createBackupFile(
+                userId,
+                plainDBPath,
+                backupFilePath
+            ).fold(
                 { error -> CreateBackupResult.Failure(error) },
                 { (backupFilePath, backupSize) ->
                     if (password != null) {
                         encryptAndCompressFile(backupFilePath, password)
-                    } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
-                })
+                    } else {
+                        CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
+                    }
+                }
+
+            )
         } finally {
             obfuscatedCopyExporter.deleteCopyFile()
         }

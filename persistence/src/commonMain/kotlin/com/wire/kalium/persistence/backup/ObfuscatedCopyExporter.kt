@@ -83,7 +83,7 @@ class ObfuscatedCopyExporter internal constructor(
         )
     }
 
-    @Suppress("TooGenericExceptionCaught", "ReturnCount")
+    @Suppress("TooGenericExceptionCaught", "LongMethod")
     private suspend fun obfuscatePlainCopy(
         plainDBPath: String,
     ): Boolean = withContext(kaliumDispatcher.io) {
@@ -96,13 +96,15 @@ class ObfuscatedCopyExporter internal constructor(
 
         try {
             plainDBDriver.execute(
-                null, "UPDATE MessageTextContent " +
+                null,
+                "UPDATE MessageTextContent " +
                         "SET text_body = CASE " +
                         "    WHEN text_body IS NOT NULL " +
                         "    THEN substr(hex(randomblob(length(text_body))), 1, length(text_body)) " +
                         "    ELSE NULL " +
                         "END " +
-                        "WHERE text_body IS NOT NULL;", 0
+                        "WHERE text_body IS NOT NULL;",
+                0
             )
 
             plainDBDriver.execute(

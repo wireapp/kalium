@@ -73,10 +73,9 @@ class BackupScope internal constructor(
             restoreWeb
         )
 
-
     @DelicateKaliumApi("this is NOT a backup feature, but a feature to create an unencrypted and obfuscated copy of the database")
-    val createUnEncryptedCopy: CreateUnEncryptedCopyUseCase
-        get() = CreateUnEncryptedCopyUseCase(
+    val createUnEncryptedCopy: CreateObfuscatedCopyUseCase
+        get() = CreateObfuscatedCopyUseCase(
             userId,
             clientIdProvider,
             userRepository,

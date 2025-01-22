@@ -28,7 +28,6 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
-import com.wire.kalium.util.FileUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.File
@@ -137,4 +136,3 @@ internal actual fun createEmptyDatabaseFile(
             it.absolutePath
         }
     }
-

@@ -91,7 +91,6 @@ internal actual fun createEmptyDatabaseFile(
     userId: UserIDEntity,
 ): String? = TODO()
 
-
 /**
  * Creates an in-memory user database,
  * or returns an existing one if it already exists.
