@@ -28,5 +28,7 @@ interface ConversationFolderDAO {
     suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>)
     suspend fun addConversationToFolder(conversationId: QualifiedIDEntity, folderId: String)
     suspend fun removeConversationFromFolder(conversationId: QualifiedIDEntity, folderId: String)
-    suspend fun observeUserFolders(): Flow<List<ConversationFolderEntity>>
+    suspend fun observeFolders(): Flow<List<ConversationFolderEntity>>
+    suspend fun removeFolder(folderId: String)
+    suspend fun addFolder(folder: ConversationFolderEntity)
 }

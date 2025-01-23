@@ -1264,7 +1264,6 @@ class UserSessionScope internal constructor(
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
-            userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
             userConfigRepository = userConfigRepository,
@@ -2062,7 +2061,6 @@ class UserSessionScope internal constructor(
             callManager = callManager,
             callRepository = callRepository,
             conversationRepository = conversationRepository,
-            userRepository = userRepository,
             flowManagerService = flowManagerService,
             mediaManagerService = mediaManagerService,
             syncManager = syncManager,
@@ -2073,6 +2071,8 @@ class UserSessionScope internal constructor(
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             kaliumConfigs = kaliumConfigs,
             inCallReactionsRepository = inCallReactionsRepository,
+            selfUserId = userId,
+            userRepository = userRepository
         )
 
     val connection: ConnectionScope
@@ -2164,14 +2164,15 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val getTeamUrlUseCase: GetTeamUrlUseCase by lazy {
-        GetTeamUrlUseCase(
+    val getTeamUrlUseCase: GetTeamUrlUseCase
+        get() = GetTeamUrlUseCase(
             userId,
             authenticationScope.serverConfigRepository,
         )
-    }
 
-    private val inCallReactionsRepository: InCallReactionsRepository = InCallReactionsDataSource()
+    private val inCallReactionsRepository: InCallReactionsRepository by lazy {
+        InCallReactionsDataSource()
+    }
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

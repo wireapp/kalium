@@ -34,7 +34,6 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
@@ -59,11 +58,10 @@ class CallManagerTest {
     @Mock
     private val calling = mock(Calling::class)
 
-    @Mock
-    private val callRepository = mock(CallRepository::class)
+    private val selfUserId = UserId(value = "selfUserId", domain = "selfDomain")
 
     @Mock
-    private val userRepository = mock(UserRepository::class)
+    private val callRepository = mock(CallRepository::class)
 
     @Mock
     private val messageSender = mock(MessageSender::class)
@@ -120,7 +118,6 @@ class CallManagerTest {
         callManagerImpl = CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
-            userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             selfConversationIdProvider = selfConversationIdProvider,
             conversationRepository = conversationRepository,
@@ -137,7 +134,8 @@ class CallManagerTest {
             kaliumConfigs = kaliumConfigs,
             mediaManagerService = mediaManagerService,
             flowManagerService = flowManagerService,
-            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
+            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
+            selfUserId = selfUserId
         )
     }
 

@@ -23,10 +23,9 @@ class ChangeProfilingUseCase(
     private val userStorage: UserStorage,
 ) {
     /**
-     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
-     * @param enabled true to enable profiling, false to disable
+     * Change profiling state.
      */
-    operator fun invoke(enabled: Boolean) {
-        userStorage.database.changeProfiling(enabled)
+    suspend operator fun invoke(enabled: Boolean) {
+        userStorage.database.debugExtension.changeProfiling(enabled)
     }
 }

@@ -52,9 +52,9 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -150,15 +150,18 @@ internal class ConnectionDataSource(
     override suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit> =
         updateRemoteConnectionStatus(userId, IGNORED)
             .flatMapLeft {
-                if (it is NetworkFailure.FederatedBackendFailure.FailedDomains)
-                    wrapStorageRequest { connectionDAO.getConnectionByUser(userId.toDao()) }
-                        .map { connectionEntity ->
-                            val updatedConnection = connectionMapper.fromDaoToModel(connectionEntity).copy(status = IGNORED)
-                            handleUserConnectionStatusPersistence(updatedConnection)
-                        }
-                else it.left()
+                if (it is NetworkFailure.FederatedBackendFailure.FailedDomains) Either.Right(Unit) else it.left()
             }
-            .map { Unit }
+            .onSuccess {
+                setConnectionStatus(userId, IGNORED)
+            }.map { Unit }
+
+    private suspend fun setConnectionStatus(userId: UserId, status: ConnectionState): Either<CoreFailure, Unit> =
+        wrapStorageRequest { connectionDAO.getConnectionByUser(userId.toDao()) }
+            .map { connectionEntity ->
+                val updatedConnection = connectionMapper.fromDaoToModel(connectionEntity).copy(status = status)
+                handleUserConnectionStatusPersistence(updatedConnection)
+            }
 
     /**
      * Check if we can transition to the correct connection status

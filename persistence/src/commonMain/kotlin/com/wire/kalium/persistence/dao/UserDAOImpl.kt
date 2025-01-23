@@ -296,6 +296,13 @@ class UserDAOImpl internal constructor(
             }.executeAsList()
         }
 
+    override suspend fun getUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): UserDetailsEntity? =
+        withContext(queriesContext) {
+            userQueries.selectDetailsByQualifiedId(listOf(qualifiedID))
+                .executeAsOneOrNull()
+                ?.let { mapper.toDetailsModel(it) }
+        }
+
     override suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity> =
         withContext(queriesContext) {
             userQueries.selectDetailsByQualifiedId(qualifiedIDList)

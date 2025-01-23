@@ -2369,7 +2369,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userActiveOneOnOneConversationId = null,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             accentId = 1,
-            isFavorite = false
+            isFavorite = false,
+            folderName = null,
+            folderId = null
         )
     }
 

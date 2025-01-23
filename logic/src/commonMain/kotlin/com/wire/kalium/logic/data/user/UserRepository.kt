@@ -81,13 +81,17 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -200,6 +204,9 @@ internal class UserDataSource internal constructor(
      */
     private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
+    private var userRefresh: Deferred<Either<CoreFailure, Unit>>? = null
+    private val userRefreshMutex: Mutex = Mutex()
+
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { selfUserDTO ->
             selfUserDTO.teamId.let { selfUserTeamId ->
@@ -246,24 +253,35 @@ internal class UserDataSource internal constructor(
             .map(userMapper::fromUserEntityToOtherUser)
     }
 
+    private suspend fun refreshUserDetailsIfNeeded(userId: UserId): Either<CoreFailure, Unit> = coroutineScope {
+        userRefreshMutex.withLock {
+            val now = DateTimeUtil.currentInstant()
+            val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
+
+            if (wasFetchedRecently) return@coroutineScope Either.Right(Unit)
+
+            if (userRefresh?.isActive == true) return@coroutineScope userRefresh?.await() ?: error("")
+
+            userRefresh = async { refreshUserDetails(userId) }
+        }
+
+        userRefresh?.await() ?: error("")
+    }
+
     /**
      * Only refresh user profiles if it wasn't fetched recently.
      *
      * @see userDetailsRefreshInstantCache
      * @see USER_DETAILS_MAX_AGE
      */
-    private suspend fun refreshUserDetailsIfNeeded(userId: UserId): Either<CoreFailure, Unit> {
-        val now = DateTimeUtil.currentInstant()
-        val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
-        return if (!wasFetchedRecently) {
-            when (userId) {
-                selfUserId -> fetchSelfUser()
-                else -> fetchUserInfo(userId)
-            }.also {
-                kaliumLogger.d("Refreshing user info from API after $USER_DETAILS_MAX_AGE")
-                userDetailsRefreshInstantCache[userId] = now
-            }
-        } else Either.Right(Unit)
+    private suspend fun refreshUserDetails(userId: UserId): Either<CoreFailure, Unit> {
+        return when (userId) {
+            selfUserId -> fetchSelfUser()
+            else -> fetchUserInfo(userId)
+        }.also {
+            kaliumLogger.d("Refreshing user info from API after $USER_DETAILS_MAX_AGE")
+            userDetailsRefreshInstantCache[userId] = DateTimeUtil.currentInstant()
+        }
     }
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
@@ -416,39 +434,52 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
-        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
-            // If the self user is not in the database, proactively fetch it.
-            if (it == null) {
-                val logPrefix = "Observing self user before insertion"
-                kaliumLogger.w("$logPrefix: Triggering a fetch.")
-                fetchSelfUser().fold({ failure ->
-                    kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
-                }, {
-                    kaliumLogger.i("$logPrefix: Succeeded")
-                    userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
-                })
-            } else {
-                refreshUserDetailsIfNeeded(selfUserId)
-            }
-        }.filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.observeUserDetailsByQualifiedID(selfUserID)
-                .filterNotNull()
+
+        val selfUser = getOrFetchSelfUserId()
+
+        return if (selfUser != null) {
+            userDAO.observeUserDetailsByQualifiedID(selfUser).filterNotNull()
                 .map(userMapper::fromUserDetailsEntityToSelfUser)
+        } else {
+            emptyFlow()
         }
+    }
+
+    private suspend fun getOrFetchSelfUserId(): QualifiedIDEntity? {
+
+        var userId = metadataDAO.valueByKey(SELF_USER_ID_KEY)
+
+        if (userId == null) {
+
+            val logPrefix = "Observing self user before insertion"
+            kaliumLogger.w("$logPrefix: Triggering a fetch.")
+
+            fetchSelfUser().fold({ failure ->
+                kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
+            }, {
+                kaliumLogger.i("$logPrefix: Succeeded")
+                userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
+            })
+        } else {
+            refreshUserDetailsIfNeeded(selfUserId)
+        }
+
+        return metadataDAO.valueByKey(SELF_USER_ID_KEY)?.let { Json.decodeFromString(it) }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
-        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserDetailsWithTeamByQualifiedID(selfUserID)
-                .filterNotNull()
+
+        val selfUser = getOrFetchSelfUserId()
+
+        return if (selfUser != null) {
+            userDAO.getUserDetailsWithTeamByQualifiedID(selfUser).filterNotNull()
                 .map { (user, team) ->
                     userMapper.fromUserDetailsEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
                 }
+        } else {
+            emptyFlow()
         }
     }
 
@@ -468,9 +499,13 @@ internal class UserDataSource internal constructor(
             }.map { }
     }
 
-    // TODO: replace the flow with selfUser and cache it
-    override suspend fun getSelfUser(): SelfUser? =
-        observeSelfUser().firstOrNull()
+    override suspend fun getSelfUser(): SelfUser? {
+        return getOrFetchSelfUserId()?.let {
+            userDAO.getUserDetailsByQualifiedID(it)?.let {
+                userMapper.fromUserDetailsEntityToSelfUser(it)
+            }
+        }
+    }
 
     override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
@@ -658,7 +693,6 @@ internal class UserDataSource internal constructor(
             CreateUserTeam(dto.teamId, dto.teamName)
         }
             .onSuccess {
-                kaliumLogger.d("Migrated user to team")
                 fetchSelfUser()
             }
             .onFailure { failure ->
