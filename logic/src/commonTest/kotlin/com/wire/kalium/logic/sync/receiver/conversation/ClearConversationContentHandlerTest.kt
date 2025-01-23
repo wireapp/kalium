@@ -18,16 +18,18 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -41,12 +43,13 @@ import kotlin.test.Test
 class ClearConversationContentHandlerTest {
 
     @Test
-    fun givenMessageFromOtherClient_whenMessageNeedsToBeRemovedLocallyAndUserIsNotPartOfConversation_thenWholeConversationShouldBeDeleted() =
+    fun givenMessageFromOtherUserAndNeedToRemove_whenMessageNotInSelfConversation_thenWholeConversationShouldNotBeDeleted() =
         runTest {
             // given
             val (arrangement, handler) = Arrangement()
-                .withMessageSentInSelfConversation(false)
-                .arrange()
+                .arrange {
+                    withMessageSentInSelfConversation(false)
+                }
 
             // when
             handler.handle(
@@ -59,19 +62,18 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.conversationRepository.deleteConversation(any()) }
-                .wasInvoked(exactly = once)
-            coVerify { arrangement.conversationRepository.clearContent(any()) }
-                .wasNotInvoked()
+            coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
 
     @Test
-    fun givenMessageFromOtherClient_whenMessageNeedsToBeRemovedLocallyAndUserIsPartOfConversation_thenOnlyContentShouldBeCleared() =
+    fun givenMessageFromOtherClient_whenMessageInSelfConversation_thenDoNothing() =
         runTest {
             // given
             val (arrangement, handler) = Arrangement()
-                .withMessageSentInSelfConversation(true)
-                .arrange()
+                .arrange {
+                    withMessageSentInSelfConversation(true)
+                }
 
             // when
             handler.handle(
@@ -84,19 +86,18 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.conversationRepository.deleteConversation(any()) }
-                .wasNotInvoked()
-            coVerify { arrangement.conversationRepository.clearContent(any()) }
-                .wasInvoked(exactly = once)
+            coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
         }
 
     @Test
-    fun givenMessageFromOtherClient_whenMessageDoesNotNeedToBeRemovedAndUserIsNotPartOfConversation_thenContentNorConversationShouldBeRemoved() =
+    fun givenMessageFromOtherUser_whenMessageNotInSelfConversationAndNoNeedToRemove_thenOnlyClearContent() =
         runTest {
             // given
             val (arrangement, handler) = Arrangement()
-                .withMessageSentInSelfConversation(false)
-                .arrange()
+                .arrange {
+                    withMessageSentInSelfConversation(false)
+                }
 
             // when
             handler.handle(
@@ -109,42 +110,17 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.conversationRepository.deleteConversation(any()) }
-                .wasNotInvoked()
-            coVerify { arrangement.conversationRepository.clearContent(any()) }
-                .wasNotInvoked()
+            coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
 
     @Test
-    fun givenMessageFromOtherClient_whenMessageDoesNotNeedToBeRemovedAndUserIsPartOfConversation_thenContentShouldBeRemoved() = runTest {
+    fun givenMessageFromTheSelfUser_whenMessageNotInSelfConversation_thenContentNorConversationShouldBeRemoved() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
-            .withMessageSentInSelfConversation(true)
-            .arrange()
-
-        // when
-        handler.handle(
-            message = MESSAGE,
-            messageContent = MessageContent.Cleared(
-                conversationId = CONVERSATION_ID,
-                time = Instant.DISTANT_PAST,
-                needToRemoveLocally = false
-            )
-        )
-
-        // then
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }
-            .wasNotInvoked()
-        coVerify { arrangement.conversationRepository.clearContent(any()) }
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenMessageFromTheSameClient_whenHandleIsInvoked_thenContentNorConversationShouldBeRemoved() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withMessageSentInSelfConversation(true)
-            .arrange()
+            .arrange {
+                withMessageSentInSelfConversation(false)
+            }
 
         // when
         handler.handle(
@@ -157,33 +133,109 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }
-            .wasNotInvoked()
-        coVerify { arrangement.conversationRepository.clearContent(any()) }
-            .wasNotInvoked()
+        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenSelfSenderAndMessageInSelfConversation_whenNeedToRemoveAndConversationIsNotLeftYet_thenContentCleared() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .arrange {
+                withMessageSentInSelfConversation(true)
+                withGetConversationMembers(listOf(TestUser.USER_ID))
+            }
+
+        // when
+        handler.handle(
+            message = OWN_MESSAGE,
+            messageContent = MessageContent.Cleared(
+                conversationId = CONVERSATION_ID,
+                time = Instant.DISTANT_PAST,
+                needToRemoveLocally = true
+            )
+        )
+
+        // then
+        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSelfSenderAndMessageInSelfConversation_whenNeedToRemoveAndLeftConversation_thenContentAndConversationRemoved() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .arrange {
+                withMessageSentInSelfConversation(true)
+                withGetConversationMembers(listOf())
+            }
+
+        // when
+        handler.handle(
+            message = OWN_MESSAGE,
+            messageContent = MessageContent.Cleared(
+                conversationId = CONVERSATION_ID,
+                time = Instant.DISTANT_PAST,
+                needToRemoveLocally = true
+            )
+        )
+
+        // then
+        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMessageFromTheSelfUser_whenMessageInSelfConversationAndNoNeedToRemove_thenOnlyContentRemoved() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .arrange {
+                withMessageSentInSelfConversation(true)
+            }
+
+        // when
+        handler.handle(
+            message = OWN_MESSAGE,
+            messageContent = MessageContent.Cleared(
+                conversationId = CONVERSATION_ID,
+                time = Instant.DISTANT_PAST,
+                needToRemoveLocally = false
+            )
+        )
+
+        // then
+        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
     }
 
 
-    private class Arrangement {
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
-
+    private class Arrangement : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
         @Mock
         val isMessageSentInSelfConversationUseCase = mock(IsMessageSentInSelfConversationUseCase::class)
+
+        @Mock
+        val clearConversationAssetsLocally = mock(ClearConversationAssetsLocallyUseCase::class)
 
         suspend fun withMessageSentInSelfConversation(isSentInSelfConv: Boolean) = apply {
             coEvery { isMessageSentInSelfConversationUseCase(any()) }.returns(isSentInSelfConv)
         }
 
-        suspend fun arrange(): Pair<Arrangement, ClearConversationContentHandler> =
-            this to ClearConversationContentHandlerImpl(
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ClearConversationContentHandler> = run {
+            val clearConversationContentHandler = ClearConversationContentHandlerImpl(
                 conversationRepository = conversationRepository,
                 selfUserId = TestUser.USER_ID,
                 isMessageSentInSelfConversation = isMessageSentInSelfConversationUseCase,
-            ).apply {
-                coEvery { conversationRepository.deleteConversation(any()) }.returns(Either.Right(Unit))
-                coEvery { conversationRepository.clearContent(any()) }.returns(Either.Right(Unit))
-            }
+                clearLocalConversationAssets = clearConversationAssetsLocally
+            )
+            withDeletingConversationSucceeding()
+            withClearContentSucceeding()
+            coEvery { clearConversationAssetsLocally(any()) }.returns(Either.Right(Unit))
+            block()
+
+            this to clearConversationContentHandler
+        }
     }
 
     companion object {

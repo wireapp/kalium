@@ -25,6 +25,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -41,9 +42,8 @@ class DeleteConversationLocallyUseCaseTest {
     @Test
     fun givenDeleteLocalConversationInvoked_whenAllStepsAreSuccessful_thenSuccessResultIsPropagated() = runTest {
         // given
-        val (_, useCase) = Arrangement()
-            .withClearContent(SUCCESS)
-            .withClearLocalAsset(SUCCESS)
+        val (arrangement, useCase) = Arrangement()
+            .withClearLocalAsset(true)
             .withDeleteLocalConversation(SUCCESS)
             .arrange()
 
@@ -52,51 +52,15 @@ class DeleteConversationLocallyUseCaseTest {
 
         // then
         assertIs<Either.Right<Unit>>(result)
-    }
-
-    @Test
-    fun givenDeleteLocalConversationInvoked_whenAssetClearIsUnsuccessful_thenErrorResultIsPropagated() = runTest {
-        // given
-        val (arrangement, useCase) = Arrangement()
-            .withClearContent(SUCCESS)
-            .withClearLocalAsset(ERROR)
-            .withDeleteLocalConversation(SUCCESS)
-            .arrange()
-
-        // when
-        val result = useCase(CONVERSATION_ID)
-
-        // then
-        assertIs<Either.Left<Unit>>(result)
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
-        coVerify { arrangement.conversationRepository.deleteConversationLocally(any()) }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenDeleteLocalConversationInvoked_whenContentClearIsUnsuccessful_thenErrorResultIsPropagated() = runTest {
-        // given
-        val (arrangement, useCase) = Arrangement()
-            .withClearContent(ERROR)
-            .withClearLocalAsset(SUCCESS)
-            .withDeleteLocalConversation(SUCCESS)
-            .arrange()
-
-        // when
-        val result = useCase(CONVERSATION_ID)
-
-        // then
-        assertIs<Either.Left<Unit>>(result)
-        coVerify { arrangement.clearLocalConversationAssets(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.deleteConversationLocally(any()) }.wasNotInvoked()
+        coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
     fun givenDeleteLocalConversationInvoked_whenDeleteConversationIsUnsuccessful_thenErrorResultIsPropagated() = runTest {
         // given
         val (arrangement, useCase) = Arrangement()
-            .withClearContent(SUCCESS)
-            .withClearLocalAsset(SUCCESS)
+            .withClearLocalAsset(true)
             .withDeleteLocalConversation(ERROR)
             .arrange()
 
@@ -105,9 +69,25 @@ class DeleteConversationLocallyUseCaseTest {
 
         // then
         assertIs<Either.Left<Unit>>(result)
-        coVerify { arrangement.clearLocalConversationAssets(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.deleteConversationLocally(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasInvoked(exactly = 1)
+    }
+
+    @Test
+    fun givenDeleteLocalConversationInvoked_whenClearContentIsUnsuccessful_thenErrorResultIsPropagated() = runTest {
+        // given
+        val (arrangement, useCase) = Arrangement()
+            .withClearLocalAsset(false)
+            .withDeleteLocalConversation(SUCCESS)
+            .arrange()
+
+        // when
+        val result = useCase(CONVERSATION_ID)
+
+        // then
+        assertIs<Either.Left<Unit>>(result)
+        coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -115,23 +95,22 @@ class DeleteConversationLocallyUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val clearLocalConversationAssets = mock(ClearConversationAssetsLocallyUseCase::class)
-
-        suspend fun withClearContent(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { conversationRepository.clearContent(any()) }.returns(result)
-        }
+        val clearConversationContent = mock(ClearConversationContentUseCase::class)
 
         suspend fun withDeleteLocalConversation(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { conversationRepository.deleteConversationLocally(any()) }.returns(result)
+            coEvery { conversationRepository.deleteConversation(any()) }.returns(result)
         }
 
-        suspend fun withClearLocalAsset(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { clearLocalConversationAssets(any()) }.returns(result)
+        suspend fun withClearLocalAsset(isSuccess: Boolean) = apply {
+            coEvery { clearConversationContent(any(), any()) }.returns(
+                if (isSuccess) ClearConversationContentUseCase.Result.Success
+                else ClearConversationContentUseCase.Result.Failure(ERROR.value)
+            )
         }
 
         fun arrange() = this to DeleteConversationLocallyUseCaseImpl(
             conversationRepository = conversationRepository,
-            clearLocalConversationAssets = clearLocalConversationAssets
+            clearConversationContent = clearConversationContent
         )
     }
 }
