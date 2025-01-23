@@ -33,6 +33,10 @@ import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
@@ -71,7 +75,7 @@ class MemberLeaveEventHandlerTest {
                 )
             }
 
-        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
+        memberLeaveEventHandler.handle(event)
 
         coVerify {
             arrangement.memberDAO.deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
@@ -101,7 +105,7 @@ class MemberLeaveEventHandlerTest {
                 withDeleteMembersByQualifiedIDThrows(throws = IllegalArgumentException())
             }
 
-        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
+        memberLeaveEventHandler.handle(event)
 
         coVerify {
             arrangement.memberDAO.deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
@@ -131,7 +135,7 @@ class MemberLeaveEventHandlerTest {
                 withIsAtLeastOneUserATeamMember(Either.Right(true))
             }
 
-        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
+        memberLeaveEventHandler.handle(event)
 
         coVerify {
             arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
@@ -162,7 +166,7 @@ class MemberLeaveEventHandlerTest {
                 withPersistingMessage(Either.Right(Unit))
             }
 
-        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
+        memberLeaveEventHandler.handle(event)
 
         coVerify {
             arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
@@ -251,11 +255,40 @@ class MemberLeaveEventHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenDaoReturnsSuccessAndConversationInDeleteQueue_whenDeletingSelfMember_thenConversationDeleted() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Left).copy(removedList = listOf(selfUserId), removedBy = selfUserId)
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withDeleteMembersByQualifiedID(
+                    result = event.removedList.size.toLong(),
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(event.removedList.map { QualifiedIDEntity(it.value, it.domain) })
+                )
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withTeamId(Either.Right(null))
+                withPersistingMessage(Either.Right(Unit))
+                withGetConversationsDeleteQueue(listOf(event.conversationId))
+                withDeletingConversationSucceeding(EqualsMatcher(event.conversationId))
+            }
+
+        memberLeaveEventHandler.handle(event)
+
+        coVerify {
+            arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
+        coVerify { arrangement.conversationRepository.getConversationsDeleteQueue() }.wasInvoked(once)
+        coVerify { arrangement.conversationRepository.deleteConversation(event.conversationId) }.wasInvoked(once)
+        coVerify { arrangement.conversationRepository.removeConversationFromDeleteQueue(event.conversationId) }.wasInvoked(once)
+    }
+
     private class Arrangement :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
-        SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
+        SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         @Mock
         val updateConversationClientsForCurrentCall = mock(UpdateConversationClientsForCurrentCallUseCase::class)
@@ -269,14 +302,17 @@ class MemberLeaveEventHandlerTest {
             coEvery {
                 legalHoldHandler.handleConversationMembersChanged(any())
             }.returns(Either.Right(Unit))
+            withRemoveConversationToDeleteQueue()
             block()
             memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
                 memberDAO = memberDAO,
                 userRepository = userRepository,
+                conversationRepository = conversationRepository,
                 persistMessage = persistMessageUseCase,
                 updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
                 legalHoldHandler = legalHoldHandler,
-                selfTeamIdProvider = selfTeamIdProvider
+                selfTeamIdProvider = selfTeamIdProvider,
+                selfUserId = selfUserId
             )
             this to memberLeaveEventHandler
         }
@@ -284,6 +320,7 @@ class MemberLeaveEventHandlerTest {
 
     companion object {
         val failure = CoreFailure.MissingClientRegistration
+        val selfUserId = UserId("self-userId", "domain")
         val userId = UserId("userId", "domain")
         private val qualifiedUserIdEntity = QualifiedIDEntity("userId", "domain")
         private val qualifiedConversationIdEntity = QualifiedIDEntity("conversationId", "domain")
