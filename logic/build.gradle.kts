@@ -46,6 +46,7 @@ kotlin {
                 api(project(":logger"))
                 api(project(":calling"))
                 implementation(project(":util"))
+                implementation(project(":cells"))
 
                 // coroutines
                 implementation(libs.coroutines.core)
