@@ -24,7 +24,13 @@ java -jar testservice/build/libs/testservice-*-all.jar server testservice/config
 
 ## Installation
 
-### Linux
+Build inside container:
+```shell
+docker build --platform linux/arm64 -t testservice_build_env -f testservice/Dockerfile .
+docker create --name temp_container testservice_build_env
+docker cp temp_container:/app/target/testservice-0.0.1-SNAPSHOT-all.jar ./target/testservice-0.0.1-SNAPSHOT-all.jar
+docker rm temp_container
+```
 
 Run Ansible script with:
 

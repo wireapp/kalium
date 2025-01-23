@@ -26,7 +26,17 @@
     state: present
     validate: sshd -t -f %s
   notify:
-    - restart sshd
+    - Restart sshd
+
+- name: Disallow SSH root login
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+    state: present
+    validate: sshd -t -f %s
+  notify:
+    - Restart sshd
 
 - name: Configure unattended upgrades
   copy:
