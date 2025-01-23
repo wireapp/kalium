@@ -34,6 +34,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.feature.cells.WireCellsScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
@@ -115,6 +116,8 @@ abstract class CoreLogicCommon internal constructor(
     abstract val networkStateObserver: NetworkStateObserver
 
     internal val logoutCallbackManager = LogoutCallbackManagerImpl()
+
+    fun getCellsScope() = WireCellsScope()
 }
 
 expect val clientPlatform: String

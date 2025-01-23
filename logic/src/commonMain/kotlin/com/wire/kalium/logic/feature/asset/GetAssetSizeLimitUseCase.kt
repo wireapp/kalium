@@ -46,7 +46,7 @@ class GetAssetSizeLimitUseCaseImpl internal constructor(
 
     companion object {
         const val IMAGE_SIZE_LIMIT_BYTES = 15L * 1024 * 1024 // 15 MB limit for images
-        const val ASSET_SIZE_DEFAULT_LIMIT_BYTES = 25L * 1024 * 1024 // 25 MB asset default user limit size
+        const val ASSET_SIZE_DEFAULT_LIMIT_BYTES = 125L * 1024 * 1024 // 25 MB asset default user limit size
         const val ASSET_SIZE_TEAM_USER_LIMIT_BYTES = 100L * 1024 * 1024 // 100 MB asset team user limit size
     }
 }
