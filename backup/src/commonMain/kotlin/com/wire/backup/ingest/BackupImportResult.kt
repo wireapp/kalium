@@ -23,7 +23,17 @@ import kotlin.js.JsExport
 public sealed class BackupImportResult {
     public class Success(public val pager: BackupImportPager) : BackupImportResult()
     public sealed class Failure : BackupImportResult() {
+        /**
+         * The file has an incompatible format.
+         * _i.e._ it isn't a Wire Backup file, or it is from an unsupported version.
+         */
         public data object ParsingFailure : Failure()
         public data object MissingOrWrongPassphrase : Failure()
+
+        /**
+         * Error thrown during unzipping.
+         */
+        public data class UnzippingError(public val message: String) : Failure()
+        public data class UnknownError(public val message: String) : Failure()
     }
 }

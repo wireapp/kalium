@@ -161,12 +161,12 @@ internal interface EncryptedStream<AuthenticationData> {
 
 internal sealed interface DecryptionResult {
     data object Success : DecryptionResult
-    data object Failure : DecryptionResult {
+    sealed interface Failure : DecryptionResult {
         /**
          * Wrong passphrase, salt, header, or additional data
          */
-        data object AuthenticationFailure : DecryptionResult
-        data class Unknown(val message: String) : DecryptionResult
+        data object AuthenticationFailure : Failure
+        data class Unknown(val message: String) : Failure
     }
 }
 

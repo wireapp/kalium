@@ -18,8 +18,10 @@
 package com.wire.backup.ingest
 
 import com.wire.backup.data.BackupData
+import com.wire.backup.encryption.DecryptionResult
 import com.wire.backup.encryption.EncryptedStream
 import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
+import com.wire.backup.envelope.BackupHeader
 import com.wire.backup.envelope.BackupHeaderSerializer
 import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.filesystem.EntryStorage
@@ -34,48 +36,95 @@ import kotlin.js.JsExport
  * digestible data in [BackupData] format.
  */
 @JsExport
-public abstract class CommonMPBackupImporter {
+public abstract class CommonMPBackupImporter internal constructor(
+    private val encryptedStream: EncryptedStream<XChaChaPoly1305AuthenticationData> = EncryptedStream.XChaCha20Poly1305,
+    private val headerSerializer: BackupHeaderSerializer = BackupHeaderSerializer.Default
+) {
 
     /**
      * Decrypt (if needed) and unzip the backup artifact.
      * The resulting [BackupImportResult.Success] contains a [BackupImportPager], that can be used to
      * consume pages of backed up application data, like messages, users and conversations.
      */
-    internal suspend fun importBackup(source: Source, passphrase: String?): BackupImportResult {
-        return when (val result = BackupHeaderSerializer.Default.parseHeader(source)) {
-            HeaderParseResult.Failure.UnknownFormat -> BackupImportResult.Failure.ParsingFailure
-            is HeaderParseResult.Failure.UnsupportedVersion -> BackupImportResult.Failure.ParsingFailure
-            is HeaderParseResult.Success -> {
-                val header = result.header
-                val sink = getUnencryptedArchiveSink()
-                val isEncrypted = header.isEncrypted
-                if (isEncrypted && passphrase == null) {
-                    BackupImportResult.Failure.MissingOrWrongPassphrase
-                } else {
-                    if (isEncrypted && passphrase != null) {
-                        EncryptedStream.decrypt(
-                            source,
-                            sink,
-                            XChaChaPoly1305AuthenticationData(
-                                passphrase,
-                                header.hashData.salt,
-                                BackupHeaderSerializer.Default.headerToBytes(header).toUByteArray(),
-                                header.hashData.operationsLimit,
-                                header.hashData.hashingMemoryLimit
-                            )
-                        )
-                    } else {
-                        // No need to decrypt. We skip the encryption header bytes and copy the zip archive to the destination
-                        source.read(Buffer(), EncryptedStream.XCHACHA_20_POLY_1305_HEADER_LENGTH.toLong())
-                        val buffer = sink.buffer()
-                        buffer.writeAll(source)
-                        buffer.flush()
-                    }
-                }
-                sink.close()
-                BackupImportResult.Success(BackupImportPager(unzipAllEntries()))
-            }
+    internal suspend fun importBackup(
+        source: Source,
+        passphrase: String?
+    ): BackupImportResult = when (val result = headerSerializer.parseHeader(source)) {
+        HeaderParseResult.Failure.UnknownFormat -> BackupImportResult.Failure.ParsingFailure
+        is HeaderParseResult.Failure.UnsupportedVersion -> BackupImportResult.Failure.ParsingFailure
+        is HeaderParseResult.Success -> handleCompatibleHeader(result, passphrase, source)
+    }
+
+    private suspend fun handleCompatibleHeader(
+        result: HeaderParseResult.Success,
+        passphrase: String?,
+        source: Source
+    ): BackupImportResult {
+        val header = result.header
+        val sink = getUnencryptedArchiveSink()
+        val isEncrypted = header.isEncrypted
+        return if (isEncrypted && passphrase == null) {
+            BackupImportResult.Failure.MissingOrWrongPassphrase
+        } else {
+            extractDataArchiveFromBackupFile(isEncrypted, passphrase, source, sink, header)
         }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun extractDataArchiveFromBackupFile(
+        isEncrypted: Boolean,
+        passphrase: String?,
+        source: Source,
+        sink: Sink,
+        header: BackupHeader
+    ): BackupImportResult {
+        if (isEncrypted && passphrase != null) {
+            val decryptionResult = decryptArchiveToDestination(source, sink, passphrase, header)
+            if (decryptionResult is DecryptionResult.Failure) {
+                return when (decryptionResult) {
+                    DecryptionResult.Failure.AuthenticationFailure -> BackupImportResult.Failure.MissingOrWrongPassphrase
+                    is DecryptionResult.Failure.Unknown -> BackupImportResult.Failure.UnknownError(
+                        decryptionResult.message
+                    )
+                }
+            }
+        } else {
+            copyUnencryptedArchiveToDestination(source, sink)
+        }
+        sink.close()
+        return try {
+            BackupImportResult.Success(BackupImportPager(unzipAllEntries()))
+        } catch (t: Throwable) {
+            BackupImportResult.Failure.UnzippingError(t.message ?: "Unknown zipping error.")
+        }
+    }
+
+    private fun copyUnencryptedArchiveToDestination(source: Source, sink: Sink) {
+        // No need to decrypt. We skip the encryption header bytes and copy the zip archive to the destination
+        source.read(Buffer(), EncryptedStream.XCHACHA_20_POLY_1305_HEADER_LENGTH.toLong())
+        val buffer = sink.buffer()
+        buffer.writeAll(source)
+        buffer.flush()
+        sink.close()
+    }
+
+    private suspend fun decryptArchiveToDestination(
+        source: Source,
+        sink: Sink,
+        passphrase: String,
+        header: BackupHeader
+    ): DecryptionResult = header.hashData.run {
+        encryptedStream.decrypt(
+            source = source,
+            outputSink = sink,
+            authenticationData = XChaChaPoly1305AuthenticationData(
+                passphrase = passphrase,
+                salt = salt,
+                additionalData = headerSerializer.headerToBytes(header).toUByteArray(),
+                hashOpsLimit = operationsLimit,
+                hashMemLimit = hashingMemoryLimit
+            )
+        )
     }
 
     /**
