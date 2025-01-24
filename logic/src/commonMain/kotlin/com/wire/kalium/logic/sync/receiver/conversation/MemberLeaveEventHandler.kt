@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
@@ -46,26 +47,27 @@ interface MemberLeaveEventHandler {
     suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class MemberLeaveEventHandlerImpl(
     private val memberDAO: MemberDAO,
     private val userRepository: UserRepository,
+    private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
     private val legalHoldHandler: LegalHoldHandler,
-    private val selfTeamIdProvider: SelfTeamIdProvider
+    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
     override suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return let {
-            if (event.reason == MemberLeaveReason.UserDeleted) {
-                userRepository.markAsDeleted(event.removedList)
-            }
-            deleteMembers(event.removedList, event.conversationId)
+        if (event.reason == MemberLeaveReason.UserDeleted) {
+            userRepository.markAsDeleted(event.removedList)
         }
+        return deleteMembers(event.removedList, event.conversationId)
+            .onSuccess { updateConversationClientsForCurrentCall.value(event.conversationId) }
+            .onSuccess { deleteConversationIfNeeded(event) }
             .onSuccess {
-                updateConversationClientsForCurrentCall.value(event.conversationId)
-            }.onSuccess {
                 // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
                 // and keep them to properly show this member-leave message
                 userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
@@ -131,4 +133,16 @@ internal class MemberLeaveEventHandlerImpl(
                 conversationID.toDao()
             )
         }
+
+    private suspend fun deleteConversationIfNeeded(event: Event.Conversation.MemberLeave) {
+        val isSelfUserLeftConversation = event.removedList == listOf(selfUserId) && event.reason == MemberLeaveReason.Left
+        if (!isSelfUserLeftConversation) return
+
+        if (!conversationRepository.getConversationsDeleteQueue().contains(event.conversationId)) return
+
+        // User wanted to delete conversation fully, but MessageContent.Cleared event came before and we couldn't delete it then.
+        // Now, when user left the conversation, we can delete it.
+        conversationRepository.deleteConversation(event.conversationId)
+        conversationRepository.removeConversationFromDeleteQueue(event.conversationId)
+    }
 }
