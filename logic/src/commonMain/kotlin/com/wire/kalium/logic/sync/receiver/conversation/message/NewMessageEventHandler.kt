@@ -129,6 +129,7 @@ internal class NewMessageEventHandlerImpl(
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
                             event.conversationId,
+                            event.subconversationId,
                             event.messageInstant
                         )
                     }

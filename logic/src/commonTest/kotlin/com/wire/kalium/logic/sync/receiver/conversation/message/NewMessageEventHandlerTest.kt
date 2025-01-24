@@ -372,7 +372,11 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.staleEpochVerifier.verifyEpoch(eq(newMessageEvent.conversationId), eq(newMessageEvent.messageInstant))
+            arrangement.staleEpochVerifier.verifyEpoch(
+                eq(newMessageEvent.conversationId),
+                any(),
+                eq(newMessageEvent.messageInstant)
+            )
         }.wasInvoked(exactly = once)
     }
 
