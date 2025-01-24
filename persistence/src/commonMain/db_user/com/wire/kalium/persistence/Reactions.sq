@@ -6,7 +6,7 @@ CREATE TABLE Reaction (
     sender_id TEXT AS QualifiedIDEntity NOT NULL,
     emoji TEXT NOT NULL,
     date TEXT NOT NULL,
-    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (message_id, conversation_id, sender_id, emoji)
 );

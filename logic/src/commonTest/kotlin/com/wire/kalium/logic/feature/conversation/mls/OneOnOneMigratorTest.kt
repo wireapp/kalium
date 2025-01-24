@@ -66,25 +66,6 @@ class OneOnOneMigratorTest {
     }
 
     @Test
-    fun givenUnassignedOneOnOne_whenMigratingToProteus_thenShouldAssignOneOnOneConversation() = runTest {
-        val user = TestUser.OTHER.copy(
-            activeOneOnOneConversationId = null
-        )
-
-        val (arrangement, oneOneMigrator) = arrange {
-            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
-            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
-        }
-
-        oneOneMigrator.migrateToProteus(user)
-            .shouldSucceed()
-
-        coVerify {
-            arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(TestConversation.ID))
-        }.wasInvoked()
-    }
-
-    @Test
     fun givenNoExistingTeamOneOnOne_whenMigratingToProteus_thenShouldCreateGroupConversation() = runTest {
         val user = TestUser.OTHER.copy(
             activeOneOnOneConversationId = null
@@ -250,6 +231,33 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenExistingTeamOneOnOne_whenMigratingToProteus_thenShouldNOTCreateGroupConversation() = runTest {
+        val user = TestUser.OTHER.copy(
+            activeOneOnOneConversationId = null
+        )
+
+        val (arrangement, oneOneMigrator) = arrange {
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ONE_ON_ONE().id)))
+            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+        }
+
+        oneOneMigrator.migrateExistingProteus(user)
+            .shouldSucceed()
+
+        coVerify {
+            arrangement.conversationGroupRepository.createGroupConversation(
+                name = eq<String?>(null),
+                usersList = eq(listOf(TestUser.OTHER.id)),
+                options = eq(ConversationOptions())
+            )
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
+        }.wasInvoked()
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :

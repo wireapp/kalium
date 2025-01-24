@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -198,11 +199,12 @@ object TestEvent {
     )
 
     fun newMLSMessageEvent(
-        dateTime: Instant
+        dateTime: Instant,
+        subConversationId: SubconversationId? = null
     ) = Event.Conversation.NewMLSMessage(
         "eventId",
         TestConversation.ID,
-        null,
+        subConversationId,
         TestUser.USER_ID,
         dateTime,
         "content".encodeBase64(),
