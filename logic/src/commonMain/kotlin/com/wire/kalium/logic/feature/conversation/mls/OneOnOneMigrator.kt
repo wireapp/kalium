@@ -32,8 +32,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Instant
 
 interface OneOnOneMigrator {
     /**
@@ -52,13 +55,15 @@ interface OneOnOneMigrator {
     suspend fun migrateToMLS(user: OtherUser): Either<CoreFailure, ConversationId>
 }
 
+@Suppress("LongParameterList")
 internal class OneOnOneMigratorImpl(
     private val getResolvedMLSOneOnOne: MLSOneOnOneConversationResolver,
     private val conversationGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
-    private val systemMessageInserter: SystemMessageInserter
+    private val systemMessageInserter: SystemMessageInserter,
+    private val currentInstant: CurrentInstantProvider = CurrentInstantProvider { DateTimeUtil.currentInstant() },
 ) : OneOnOneMigrator {
 
     override suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId> =
@@ -140,16 +145,26 @@ internal class OneOnOneMigratorImpl(
         ).flatMap { proteusOneOnOneConversations ->
             // We can theoretically have more than one proteus 1-1 conversation with
             // team members since there was no backend safeguards against this
-            proteusOneOnOneConversations.foldToEitherWhileRight(Unit) { proteusOneOnOneConversation, _ ->
-                kaliumLogger.d(
-                    "migrating proteus ${proteusOneOnOneConversation.toLogString()} " +
-                            "to MLS conv ${targetConversation.toLogString()}"
-                )
+            proteusOneOnOneConversations.foldToEitherWhileRight(null as Instant?) { proteusOneOnOneConversation, lastModifiedDate ->
                 messageRepository.moveMessagesToAnotherConversation(
                     originalConversation = proteusOneOnOneConversation,
                     targetConversation = targetConversation
-                )
+                ).map {
+                    // Emit most recent last modified date of the proteus conversations to pass it to the target conversation
+                    conversationRepository.getConversationById(proteusOneOnOneConversation).getOrNull()?.lastModifiedDate.let {
+                        listOfNotNull(lastModifiedDate, it).maxOrNull()
+                    }
+                }
+            }.map { lastModifiedDate ->
+                // Fallback to current time if not found as it means that it's completely new conversation without any history
+                lastModifiedDate ?: currentInstant()
             }
+        }.flatMap { lastModifiedDate ->
+            conversationRepository.updateConversationModifiedDate(targetConversation, lastModifiedDate)
         }
     }
+}
+
+fun interface CurrentInstantProvider {
+    operator fun invoke(): Instant
 }
