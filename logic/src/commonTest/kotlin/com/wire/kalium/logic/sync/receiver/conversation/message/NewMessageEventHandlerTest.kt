@@ -493,7 +493,7 @@ class NewMessageEventHandlerTest {
 
         suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                staleEpochVerifier.verifyEpoch(any(), any())
+                staleEpochVerifier.verifyEpoch(any(), any(), any())
             }.returns(result)
         }
 
