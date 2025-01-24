@@ -22,10 +22,12 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -34,19 +36,36 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface StaleEpochVerifier {
-    suspend fun verifyEpoch(conversationId: ConversationId, timestamp: Instant? = null): Either<CoreFailure, Unit>
+    suspend fun verifyEpoch(
+        conversationId: ConversationId,
+        subConversationId: SubconversationId? = null,
+        timestamp: Instant? = null
+    ): Either<CoreFailure, Unit>
 }
 
 internal class StaleEpochVerifierImpl(
     private val systemMessageInserter: SystemMessageInserter,
     private val conversationRepository: ConversationRepository,
+    private val subconversationRepository: SubconversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
 ) : StaleEpochVerifier {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
-    override suspend fun verifyEpoch(conversationId: ConversationId, timestamp: Instant?): Either<CoreFailure, Unit> {
-        logger.i("Verifying stale epoch")
+    override suspend fun verifyEpoch(
+        conversationId: ConversationId,
+        subConversationId: SubconversationId?,
+        timestamp: Instant?
+    ): Either<CoreFailure, Unit> {
+        return if (subConversationId != null) {
+            verifySubConversationEpoch(conversationId, subConversationId)
+        } else {
+            verifyConversationEpoch(conversationId)
+        }
+    }
+
+    private suspend fun verifyConversationEpoch(conversationId: ConversationId): Either<CoreFailure, Unit> {
+        logger.i("Verifying stale epoch for conversation ${conversationId.toLogString()}")
         return getUpdatedConversationProtocolInfo(conversationId).flatMap { protocol ->
             if (protocol is Conversation.ProtocolInfo.MLS) {
                 Either.Right(protocol)
@@ -72,6 +91,32 @@ internal class StaleEpochVerifierImpl(
                 Either.Right(Unit)
             }
         }
+    }
+
+    private suspend fun verifySubConversationEpoch(
+        conversationId: ConversationId,
+        subConversationId: SubconversationId
+    ): Either<CoreFailure, Unit> {
+        logger.i("Verifying stale epoch for subconversation ${subConversationId.toLogString()}")
+        return subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
+            .flatMap { subConversationDetails ->
+                mlsConversationRepository.isGroupOutOfSync(subConversationDetails.groupId, subConversationDetails.epoch)
+                    .map { epochIsStale ->
+                        epochIsStale
+                    }
+                    .flatMap { hasMissedCommits ->
+                        if (hasMissedCommits) {
+                            logger.w("Epoch stale due to missing commits, joining by external commit")
+                            subconversationRepository.fetchRemoteSubConversationGroupInfo(conversationId, subConversationId)
+                                .flatMap { groupInfo ->
+                                    mlsConversationRepository.joinGroupByExternalCommit(subConversationDetails.groupId, groupInfo)
+                                }
+                        } else {
+                            logger.i("Epoch stale due to unprocessed events")
+                            Either.Right(Unit)
+                        }
+                    }
+            }
     }
 
     private suspend fun getUpdatedConversationProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo> {
