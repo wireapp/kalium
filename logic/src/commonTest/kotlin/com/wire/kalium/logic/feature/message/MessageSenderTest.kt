@@ -323,7 +323,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.staleEpochVerifier.verifyEpoch(eq(Arrangement.TEST_CONVERSATION_ID), any())
+                arrangement.staleEpochVerifier.verifyEpoch(eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
             }.wasInvoked(once)
         }
     }
