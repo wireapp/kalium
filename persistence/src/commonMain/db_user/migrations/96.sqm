@@ -1,9 +1,18 @@
-DROP TABLE LabeledConversation;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity;
 
-CREATE TABLE LabeledConversation (
+CREATE TABLE IF NOT EXISTS ConversationFolder (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    folder_type TEXT AS ConversationFolderTypeEntity NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS LabeledConversation (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       folder_id TEXT NOT NULL,
 
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
       FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
       PRIMARY KEY (folder_id, conversation_id)
