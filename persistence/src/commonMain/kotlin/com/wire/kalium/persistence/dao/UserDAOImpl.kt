@@ -224,33 +224,42 @@ class UserDAOImpl internal constructor(
         }
     }
 
+    private fun insertUser(user: UserEntity): Boolean {
+        userQueries.insertUser(
+            qualified_id = user.id,
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = user.phone,
+            accent_id = user.accentId,
+            team = user.team,
+            preview_asset_id = user.previewAssetId,
+            complete_asset_id = user.completeAssetId,
+            user_type = user.userType,
+            bot_service = user.botService,
+            incomplete_metadata = user.hasIncompleteMetadata,
+            expires_at = user.expiresAt,
+            connection_status = user.connectionStatus,
+            deleted = user.deleted,
+            supported_protocols = user.supportedProtocols,
+            active_one_on_one_conversation_id = user.activeOneOnOneConversationId
+        )
+        return userQueries.selectChanges().executeAsOne() > 0
+    }
+
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
-            for (user: UserEntity in users) {
-                if (user.deleted) {
-                    // mark as deleted and remove from groups
-                    safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
-                } else {
-                    userQueries.insertUser(
-                        qualified_id = user.id,
-                        name = user.name,
-                        handle = user.handle,
-                        email = user.email,
-                        phone = user.phone,
-                        accent_id = user.accentId,
-                        team = user.team,
-                        preview_asset_id = user.previewAssetId,
-                        complete_asset_id = user.completeAssetId,
-                        user_type = user.userType,
-                        bot_service = user.botService,
-                        incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt,
-                        connection_status = user.connectionStatus,
-                        deleted = user.deleted,
-                        supported_protocols = user.supportedProtocols,
-                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
-                    )
-                }
+            val anyInsertedOrModified = users.map { user ->
+                    if (user.deleted) {
+                        // mark as deleted and remove from groups
+                        safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
+                    } else {
+                        insertUser(user)
+                    }
+                }.any { it }
+            if (!anyInsertedOrModified) {
+                // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
+                this.rollback()
             }
         }
     }
@@ -340,9 +349,21 @@ class UserDAOImpl internal constructor(
             }
         }
 
-    private fun safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID: QualifiedIDEntity) {
-        userQueries.markUserAsDeleted(qualifiedID, UserTypeEntity.NONE)
+    // returns true if any row has been inserted or modified, false if exactly the same data already exists
+    private fun markUserAsDeleted(qualifiedID: QualifiedIDEntity, userType: UserTypeEntity): Boolean {
+        userQueries.markUserAsDeleted(qualifiedID, userType)
+        return userQueries.selectChanges().executeAsOne() > 0
+    }
+
+    // returns true if any row has been inserted or modified, false if exactly the same data already exists
+    private fun deleteUserFromGroupConversations(qualifiedID: QualifiedIDEntity): Boolean {
         userQueries.deleteUserFromGroupConversations(qualifiedID)
+        return userQueries.selectChanges().executeAsOne() > 0
+    }
+
+    // returns true if any row has been inserted or modified, false if exactly the same data already exists
+    private fun safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID: QualifiedIDEntity): Boolean {
+        return markUserAsDeleted(qualifiedID, UserTypeEntity.NONE) or deleteUserFromGroupConversations(qualifiedID)
     }
 
     override suspend fun markAsDeleted(userId: List<UserIDEntity>) {
