@@ -111,6 +111,11 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
     suspend fun withPersistMembers(result: Either<StorageFailure, Unit>)
     suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>)
+    suspend fun withAddConversationToDeleteQueue()
+    suspend fun withRemoveConversationToDeleteQueue()
+    suspend fun withGetConversationsDeleteQueue(result: List<ConversationId>)
+    suspend fun withClearContentSucceeding()
+    suspend fun withGetConversationMembers(result: List<UserId>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -271,5 +276,25 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
 
     override suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
         coEvery { conversationRepository.selectMembersNameAndHandle(any()) }.returns(result)
+    }
+
+    override suspend fun withAddConversationToDeleteQueue() {
+        coEvery { conversationRepository.addConversationToDeleteQueue(any()) }.returns(Unit)
+    }
+
+    override suspend fun withRemoveConversationToDeleteQueue() {
+        coEvery { conversationRepository.removeConversationFromDeleteQueue(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetConversationsDeleteQueue(result: List<ConversationId>) {
+        coEvery { conversationRepository.getConversationsDeleteQueue() }.returns(result)
+    }
+
+    override suspend fun withClearContentSucceeding() {
+        coEvery { conversationRepository.clearContent(any()) }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withGetConversationMembers(result: List<UserId>) {
+        coEvery { conversationRepository.getConversationMembers(any()) }.returns(Either.Right(result))
     }
 }

@@ -66,6 +66,7 @@ import com.wire.kalium.network.api.authenticated.conversation.model.Conversation
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -85,6 +86,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
 interface ConversationRepository {
@@ -224,7 +226,6 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     /**
      * Deletes all conversation messages
@@ -315,6 +316,9 @@ interface ConversationRepository {
 
     suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
     suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>>
+    suspend fun addConversationToDeleteQueue(conversationId: ConversationId)
+    suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId)
+    suspend fun getConversationsDeleteQueue(): List<ConversationId>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -330,6 +334,7 @@ internal class ConversationDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
+    private val metadataDAO: MetadataDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -884,12 +889,6 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-    override suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
-        }
-    }
-
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.clearContent(conversationId.toDao())
@@ -1146,7 +1145,38 @@ internal class ConversationDataSource internal constructor(
                 .mapKeys { it.key.toModel() }
         }
 
+    override suspend fun addConversationToDeleteQueue(conversationId: ConversationId) {
+        val queue = metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
+            ?.toMutableSet()
+            ?.plus(conversationId.toDao())
+            ?: setOf(conversationId.toDao())
+
+        metadataDAO.putSerializable(
+            CONVERSATIONS_TO_DELETE_KEY,
+            queue,
+            SetSerializer(QualifiedIDEntity.serializer())
+        )
+    }
+
+    override suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId) {
+        val queue = metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
+            ?.toMutableSet()
+            ?.minus(conversationId.toDao())
+            ?: return
+
+        metadataDAO.putSerializable(
+            CONVERSATIONS_TO_DELETE_KEY,
+            queue,
+            SetSerializer(QualifiedIDEntity.serializer())
+        )
+    }
+
+    override suspend fun getConversationsDeleteQueue(): List<ConversationId> =
+        metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
+            ?.map { it.toModel() } ?: listOf()
+
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
+        private const val CONVERSATIONS_TO_DELETE_KEY = "conversations_to_delete"
     }
 }

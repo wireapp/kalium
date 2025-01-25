@@ -732,6 +732,7 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
+            userStorage.database.metadataDAO,
         )
 
     private val conversationFolderRepository: ConversationFolderRepository
@@ -1380,6 +1381,7 @@ class UserSessionScope internal constructor(
                 conversationRepository,
                 userId,
                 isMessageSentInSelfConversation,
+                conversations.clearConversationAssetsLocally
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
@@ -1440,10 +1442,12 @@ class UserSessionScope internal constructor(
         get() = MemberLeaveEventHandlerImpl(
             memberDAO = userStorage.database.memberDAO,
             userRepository = userRepository,
+            conversationRepository = conversationRepository,
             persistMessage = persistMessage,
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
-            selfTeamIdProvider = selfTeamId
+            selfTeamIdProvider = selfTeamId,
+            selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(
@@ -1791,6 +1795,7 @@ class UserSessionScope internal constructor(
             clientIdProvider,
             messages.messageSender,
             teamRepository,
+            slowSyncRepository,
             userId,
             selfConversationIdProvider,
             persistMessage,

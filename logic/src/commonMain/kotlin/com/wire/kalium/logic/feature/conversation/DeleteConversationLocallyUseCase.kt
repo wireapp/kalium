@@ -21,7 +21,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.left
 
 interface DeleteConversationLocallyUseCase {
     /**
@@ -29,6 +29,7 @@ interface DeleteConversationLocallyUseCase {
      * - Clear all local assets
      * - Clear content
      * - Remove conversation
+     * - Send Signal message to other clients to do the same
      *
      * @param conversationId - id of conversation to delete
      */
@@ -36,13 +37,16 @@ interface DeleteConversationLocallyUseCase {
 }
 
 internal class DeleteConversationLocallyUseCaseImpl(
+    private val clearConversationContent: ClearConversationContentUseCase,
     private val conversationRepository: ConversationRepository,
-    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase
 ) : DeleteConversationLocallyUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        return clearLocalConversationAssets(conversationId)
-            .flatMap { conversationRepository.clearContent(conversationId) }
-            .flatMap { conversationRepository.deleteConversationLocally(conversationId) }
+        val clearResult = clearConversationContent(conversationId, true)
+        return if (clearResult is ClearConversationContentUseCase.Result.Failure) {
+            clearResult.failure.left()
+        } else {
+            conversationRepository.deleteConversation(conversationId)
+        }
     }
 }
