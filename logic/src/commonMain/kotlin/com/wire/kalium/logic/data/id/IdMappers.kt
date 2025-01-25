@@ -26,6 +26,7 @@ import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.network.api.model.SubconversationId as NetworkSubConversationId
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.model.QualifiedID
 internal typealias PersistenceQualifiedId = QualifiedIDEntity
@@ -53,3 +54,5 @@ internal fun SubconversationId.toApi(): String = value
 internal fun GroupID.toCrypto(): MLSGroupId = value
 
 internal fun CryptoQualifiedClientId.toModel() = QualifiedClientID(ClientId(value), userId.toModel())
+
+internal fun NetworkSubConversationId.toModel() = SubconversationId(this)

@@ -1399,7 +1399,8 @@ class UserSessionScope internal constructor(
             systemMessageInserter = systemMessageInserter,
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            subconversationRepository = subconversationRepository
         )
 
     private val newMessageHandler: NewMessageEventHandler

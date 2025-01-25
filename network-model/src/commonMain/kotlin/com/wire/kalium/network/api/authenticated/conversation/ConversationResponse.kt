@@ -255,11 +255,11 @@ data class SubconversationResponse(
     val mlsCipherSuiteTag: Int?,
 
     @SerialName("members")
-    val members: List<SubconversationMember>,
+    val members: List<SubconversationMemberDTO>,
 )
 
 @Serializable
-data class SubconversationMember(
+data class SubconversationMemberDTO(
     @SerialName("client_id") val clientId: String,
     @SerialName("user_id") val userId: String,
     @SerialName("domain") val domain: String

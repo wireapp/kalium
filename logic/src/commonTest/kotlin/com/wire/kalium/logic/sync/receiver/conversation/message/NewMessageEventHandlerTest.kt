@@ -372,7 +372,11 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.staleEpochVerifier.verifyEpoch(eq(newMessageEvent.conversationId), eq(newMessageEvent.messageInstant))
+            arrangement.staleEpochVerifier.verifyEpoch(
+                eq(newMessageEvent.conversationId),
+                any(),
+                eq(newMessageEvent.messageInstant)
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -489,7 +493,7 @@ class NewMessageEventHandlerTest {
 
         suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                staleEpochVerifier.verifyEpoch(any(), any())
+                staleEpochVerifier.verifyEpoch(any(), any(), any())
             }.returns(result)
         }
 

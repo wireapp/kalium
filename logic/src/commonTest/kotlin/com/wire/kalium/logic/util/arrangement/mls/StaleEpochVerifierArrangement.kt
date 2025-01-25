@@ -40,7 +40,7 @@ class StaleEpochVerifierArrangementImpl : StaleEpochVerifierArrangement {
 
     override suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) {
         coEvery {
-            staleEpochVerifier.verifyEpoch(any(), any())
+            staleEpochVerifier.verifyEpoch(any(), any(), any())
         }.returns(result)
     }
 }
