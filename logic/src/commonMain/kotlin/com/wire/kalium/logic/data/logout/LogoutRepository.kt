@@ -75,7 +75,6 @@ internal class LogoutDataSource(
             metadataDAO.clear(
                 keysToKeep = listOf(
                     ClientRegistrationStorageImpl.RETAINED_CLIENT_ID_KEY,
-                    UserDataSource.SELF_USER_ID_KEY
                 )
             )
         }
