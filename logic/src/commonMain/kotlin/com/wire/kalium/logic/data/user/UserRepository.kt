@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.user
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -48,7 +47,6 @@ import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
@@ -74,28 +72,13 @@ import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlin.time.Duration.Companion.minutes
 
 @Suppress("TooManyFunctions")
 interface UserRepository {
