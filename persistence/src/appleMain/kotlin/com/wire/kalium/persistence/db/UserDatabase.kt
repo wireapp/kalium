@@ -121,3 +121,8 @@ internal actual fun getDatabaseAbsoluteFileLocation(
         null
     }
 }
+
+internal actual fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+): String? = TODO()
