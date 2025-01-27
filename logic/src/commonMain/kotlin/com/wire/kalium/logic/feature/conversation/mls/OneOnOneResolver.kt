@@ -31,7 +31,9 @@ import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -154,11 +156,18 @@ internal class OneOnOneResolverImpl(
         if (invalidateCurrentKnownProtocols) {
             userRepository.fetchUsersByIds(setOf(user.id))
         }
-        return oneOnOneProtocolSelector.getProtocolForUser(user.id).flatMap { supportedProtocol ->
+        return oneOnOneProtocolSelector.getProtocolForUser(user.id).fold({ coreFailure ->
+            if (coreFailure is CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate) {
+                kaliumLogger.i("Resolving existing proteus 1:1 as not matching protocol found with: ${user.id.toLogString()}")
+                oneOnOneMigrator.migrateExistingProteus(user)
+            } else {
+                coreFailure.left()
+            }
+        }, { supportedProtocol ->
             when (supportedProtocol) {
                 SupportedProtocol.PROTEUS -> oneOnOneMigrator.migrateToProteus(user)
                 SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(user)
             }
-        }
+        })
     }
 }

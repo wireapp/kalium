@@ -24,7 +24,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.kaliumLogger
 
 internal interface OneOnOneProtocolSelector {
     suspend fun getProtocolForUser(userId: UserId): Either<CoreFailure, SupportedProtocol>
@@ -41,13 +42,17 @@ internal class OneOnOneProtocolSelectorImpl(
                 return@flatMap Either.Left(CoreFailure.Unknown(error))
             }
 
+            val teamDefaultProtocol = userConfigRepository.getDefaultProtocol().getOrNull()
             val selfUserProtocols = selfUser.supportedProtocols.orEmpty()
             val otherUserProtocols = otherUser.supportedProtocols.orEmpty()
-            val commonProtocols = userConfigRepository.getDefaultProtocol().fold({
-                selfUserProtocols.intersect(otherUserProtocols)
-            }, {
-                selfUserProtocols.intersect(listOf(it).toSet()).intersect(otherUserProtocols)
-            })
+            val commonProtocols = selfUserProtocols.intersect(otherUserProtocols)
+
+            kaliumLogger.withTextTag(TAG).d(
+                "teamDefaultProtocol = $teamDefaultProtocol, " +
+                        "selfUserProtocols = $selfUserProtocols, " +
+                        "otherUserProtocols = $otherUserProtocols, " +
+                        "commonProtocols = $commonProtocols"
+            )
 
             return when {
                 commonProtocols.contains(SupportedProtocol.MLS) -> Either.Right(SupportedProtocol.MLS)
@@ -56,4 +61,8 @@ internal class OneOnOneProtocolSelectorImpl(
                 else -> Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate)
             }
         }
+
+    private companion object {
+        const val TAG = "OneOnOneProtocolSelector"
+    }
 }
