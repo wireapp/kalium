@@ -22,6 +22,7 @@ import okio.buffer
 
 /**
  * As JS on a browser doesn't have access to files, we just write stuff in memory.
+ * It is also useful for tests.
  */
 internal class InMemoryEntryStorage : EntryStorage {
 
