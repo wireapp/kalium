@@ -15,6 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
+// will suppress since this class is for debugging only
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
+
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.cryptography.backup.BackupCoder
