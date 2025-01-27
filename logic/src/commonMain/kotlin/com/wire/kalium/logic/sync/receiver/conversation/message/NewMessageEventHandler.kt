@@ -112,17 +112,20 @@ internal class NewMessageEventHandlerImpl(
 
                     is MLSMessageFailureResolution.InformUser -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-                        applicationMessageHandler.handleDecryptionError(
-                            eventId = event.id,
-                            conversationId = event.conversationId,
-                            messageInstant = event.messageInstant,
-                            senderUserId = event.senderUserId,
-                            senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                            content = MessageContent.FailedDecryption(
-                                isDecryptionResolved = false,
-                                senderUserId = event.senderUserId
+                        // messages from subconversations should not send a system message
+                        if (event.subconversationId == null) {
+                            applicationMessageHandler.handleDecryptionError(
+                                eventId = event.id,
+                                conversationId = event.conversationId,
+                                messageInstant = event.messageInstant,
+                                senderUserId = event.senderUserId,
+                                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                                content = MessageContent.FailedDecryption(
+                                    isDecryptionResolved = false,
+                                    senderUserId = event.senderUserId
+                                )
                             )
-                        )
+                        }
                     }
 
                     is MLSMessageFailureResolution.OutOfSync -> {
