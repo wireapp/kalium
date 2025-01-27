@@ -20,14 +20,13 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -48,14 +47,14 @@ class CertificateRevocationListCheckWorkerTest {
             .withCheckRevocationListResult()
             .arrange()
 
-        checkCrlWorker.execute()
+        checkCrlWorker()
 
         verify(arrangement.certificateRevocationListRepository)
             .suspendFunction(arrangement.certificateRevocationListRepository::getCRLs)
             .wasInvoked(exactly = once)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(eq(DUMMY_URL))
             .wasInvoked(exactly = once)
 
@@ -63,21 +62,20 @@ class CertificateRevocationListCheckWorkerTest {
             .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
             .with(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
             .wasInvoked(exactly = once)
-
     }
 
     private class Arrangement {
 
         @Mock
-        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
         @Mock
-        val incrementalSyncRepository = mock(classOf<IncrementalSyncRepository>())
+        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
         @Mock
-        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+        val checkRevocationList = mock(RevocationListChecker::class)
 
-        fun arrange() = this to CertificateRevocationListCheckWorkerImpl(
+        fun arrange() = this to SyncCertificateRevocationListUseCase(
             certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
         )
 
@@ -85,34 +83,35 @@ class CertificateRevocationListCheckWorkerTest {
             given(certificateRevocationListRepository)
                 .suspendFunction(certificateRevocationListRepository::getCRLs)
                 .whenInvoked()
-                .thenReturn(null)
+                .then { null }
         }
 
         fun withNonExpiredCRL() = apply {
             given(certificateRevocationListRepository)
                 .suspendFunction(certificateRevocationListRepository::getCRLs)
                 .whenInvoked()
-                .thenReturn(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, FUTURE_TIMESTAMP))))
+                .then { CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))) }
         }
 
         fun withExpiredCRL() = apply {
             given(certificateRevocationListRepository)
                 .suspendFunction(certificateRevocationListRepository::getCRLs)
                 .whenInvoked()
-                .thenReturn(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
+                .then { CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))) }
         }
+
         fun withCheckRevocationListResult() = apply {
             given(checkRevocationList)
-                .suspendFunction(checkRevocationList::invoke)
+                .suspendFunction(checkRevocationList::check)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(FUTURE_TIMESTAMP))
+                .then { Either.Right(FUTURE_TIMESTAMP) }
         }
 
         fun withIncrementalSyncState(flow: Flow<IncrementalSyncStatus>) = apply {
             given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .thenReturn(flow)
+                .invocation {
+                    incrementalSyncRepository.incrementalSyncState
+                }.then { flow }
         }
 
     }

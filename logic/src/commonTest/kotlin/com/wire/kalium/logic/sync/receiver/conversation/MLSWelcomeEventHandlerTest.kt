@@ -26,6 +26,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
@@ -250,7 +252,7 @@ class MLSWelcomeEventHandlerTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .suspendFunction(arrangement.checkRevocationList::check)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -273,7 +275,7 @@ class MLSWelcomeEventHandlerTest {
         val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(classOf<RefillKeyPackagesUseCase>())
 
         @Mock
-        val checkRevocationList: CheckRevocationListUseCase = mock(classOf<CheckRevocationListUseCase>())
+        val checkRevocationList: RevocationListChecker = mock(classOf<RevocationListChecker>())
 
         @Mock
         val certificateRevocationListRepository: CertificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
@@ -305,7 +307,7 @@ class MLSWelcomeEventHandlerTest {
 
         fun withCheckRevocationListResult() {
             given(checkRevocationList)
-                .suspendFunction(checkRevocationList::invoke)
+                .suspendFunction(checkRevocationList::check)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(1uL))
         }
@@ -324,7 +326,7 @@ class MLSWelcomeEventHandlerTest {
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
                 refillKeyPackages = refillKeyPackagesUseCase,
-                checkRevocationList = checkRevocationList,
+                revocationListChecker = checkRevocationList,
                 certificateRevocationListRepository = certificateRevocationListRepository
             )
         }
