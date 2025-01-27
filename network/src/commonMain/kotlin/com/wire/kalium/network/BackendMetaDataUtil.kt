@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ val SupportedApiVersions: Set<Int> = setOf(0, 1, 2, 4, 5, 6, 7)
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
-val DevelopmentApiVersions: Set<Int> = emptySet()
+val DevelopmentApiVersions: Set<Int> = setOf(8)
 
 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
 // bump API version and generate all needed classes
