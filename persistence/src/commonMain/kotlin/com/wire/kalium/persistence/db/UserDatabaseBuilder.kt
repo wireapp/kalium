@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
+import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
 import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -250,6 +251,9 @@ class UserDatabaseBuilder internal constructor(
     val databaseExporter: DatabaseExporter
         get() = DatabaseExporterImpl(userId, platformDatabaseData, this)
 
+    val obfuscatedCopyExporter: ObfuscatedCopyExporter
+        get() = ObfuscatedCopyExporter(userId, platformDatabaseData, this)
+
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
 
@@ -317,7 +321,7 @@ class UserDatabaseBuilder internal constructor(
         get() = DebugExtension(
             sqlDriver = sqlDriver,
             metaDataDao = metadataDAO,
-            isEncrypted = isEncrypted
+            isEncrypted = isEncrypted,
         )
 
     /**
@@ -343,6 +347,11 @@ internal expect fun nuke(
 internal expect fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
+): String?
+
+internal expect fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
 ): String?
 
 @Suppress("TooGenericExceptionCaught")
