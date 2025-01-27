@@ -75,6 +75,7 @@ import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -1453,6 +1454,9 @@ class ConversationRepositoryTest {
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
 
         @Mock
+        val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
+
+        @Mock
         val renamedConversationEventHandler =
             mock(RenamedConversationEventHandler::class)
 
@@ -1468,7 +1472,8 @@ class ConversationRepositoryTest {
                 messageDraftDAO,
                 clientDao,
                 clientApi,
-                conversationMetaDataDAO
+                conversationMetaDataDAO,
+                metadataDAO
             )
 
 

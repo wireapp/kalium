@@ -25,6 +25,7 @@ import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -35,7 +36,6 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
@@ -392,6 +392,33 @@ class NewMessageEventHandlerTest {
                 arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
             }.wasNotInvoked()
         }
+
+    @Test
+    fun givenSubconversationId_whenHandlingInformUserFailure_thenShouldNotSendSystemMessage() = runTest {
+        val event = TestEvent.newMLSMessageEvent(
+            dateTime = DateTimeUtil.currentInstant(),
+            subConversationId = SubconversationId("subconversation-id")
+        )
+
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .apply {
+                withMLSUnpackerReturning(Either.Left(CoreFailure.Unknown(null)))
+            }
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(event, TestEvent.liveDeliveryInfo)
+
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(
+                eventId = any(),
+                conversationId = any(),
+                messageInstant = any(),
+                senderUserId = any(),
+                senderClientId = any(),
+                content = any()
+            )
+        }.wasNotInvoked()
+    }
 
     private class Arrangement {
 
