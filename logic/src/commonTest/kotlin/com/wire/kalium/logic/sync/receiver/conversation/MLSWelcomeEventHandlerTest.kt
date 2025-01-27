@@ -26,6 +26,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
@@ -243,9 +245,16 @@ class MLSWelcomeEventHandlerTest {
             arrangement.conversationRepository.fetchConversationIfUnknown(eq(CONVERSATION_ID))
         }.wasInvoked(exactly = once)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         coVerify {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
@@ -265,7 +274,11 @@ class MLSWelcomeEventHandlerTest {
         val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
 
         @Mock
+<<<<<<< HEAD
         val checkRevocationList: RevocationListChecker = mock(RevocationListChecker::class)
+=======
+        val checkRevocationList: RevocationListChecker = mock(classOf<RevocationListChecker>())
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         @Mock
         val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
@@ -302,6 +315,47 @@ class MLSWelcomeEventHandlerTest {
 
         suspend fun arrange() = run {
             withMLSClientProviderReturningMLSClient()
+<<<<<<< HEAD
+=======
+        }
+
+        fun withMLSClientProviderReturningMLSClient() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getMLSClient)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(mlsClient))
+        }
+
+        fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::processWelcomeMessage)
+                .whenInvokedWith(any())
+                .thenThrow(exception)
+        }
+
+        fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::processWelcomeMessage)
+                .whenInvokedWith(any())
+                .thenReturn(welcomeBundle)
+        }
+
+        fun withCheckRevocationListResult() {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::check)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(1uL))
+        }
+
+        fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
+            given(refillKeyPackagesUseCase)
+                .suspendFunction(refillKeyPackagesUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun arrange() = run {
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
             block()
             this@Arrangement to MLSWelcomeEventHandlerImpl(
                 mlsClientProvider = mlsClientProvider,

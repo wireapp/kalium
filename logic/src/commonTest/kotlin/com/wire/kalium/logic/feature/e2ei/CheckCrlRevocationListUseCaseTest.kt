@@ -19,6 +19,12 @@ package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+<<<<<<< HEAD
+=======
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
@@ -48,9 +54,16 @@ class CheckCrlRevocationListUseCaseTest {
             arrangement.certificateRevocationListRepository.getCRLs()
         }.wasInvoked(exactly = once)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(eq(DUMMY_URL))
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(eq(DUMMY_URL))
+            .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         coVerify {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
@@ -71,9 +84,16 @@ class CheckCrlRevocationListUseCaseTest {
             arrangement.certificateRevocationListRepository.getCRLs()
         }.wasInvoked(exactly = once)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(eq(DUMMY_URL))
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(eq(DUMMY_URL))
+            .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         coVerify {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
@@ -86,7 +106,11 @@ class CheckCrlRevocationListUseCaseTest {
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
         @Mock
+<<<<<<< HEAD
         val checkRevocationList = mock(RevocationListChecker::class)
+=======
+        val checkRevocationList = mock(classOf<RevocationListChecker>())
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         fun arrange() = this to CheckCrlRevocationListUseCase(
             certificateRevocationListRepository, checkRevocationList, kaliumLogger
@@ -109,10 +133,18 @@ class CheckCrlRevocationListUseCaseTest {
                 certificateRevocationListRepository.getCRLs()
             }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
         }
+<<<<<<< HEAD
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
                 checkRevocationList.check(any())
             }.returns(Either.Right(FUTURE_TIMESTAMP))
+=======
+        fun withCheckRevocationListResult() = apply {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::check)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(FUTURE_TIMESTAMP))
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
     }
 

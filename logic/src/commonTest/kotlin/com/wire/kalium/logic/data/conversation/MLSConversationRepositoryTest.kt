@@ -149,9 +149,16 @@ class MLSConversationRepositoryTest {
 
             mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
 
+<<<<<<< HEAD
             coVerify {
                 arrangement.checkRevocationList.check(any())
             }.wasInvoked(once)
+=======
+            verify(arrangement.checkRevocationList)
+                .suspendFunction(arrangement.checkRevocationList::check)
+                .with(any())
+                .wasInvoked(once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
             coVerify {
                 arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
@@ -391,9 +398,16 @@ class MLSConversationRepositoryTest {
 
         mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         coVerify {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
@@ -712,9 +726,16 @@ class MLSConversationRepositoryTest {
             )
         }.wasInvoked(once)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(any())
         }.wasNotInvoked()
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(any())
+            .wasNotInvoked()
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
     }
 
     @Test
@@ -732,9 +753,16 @@ class MLSConversationRepositoryTest {
 
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         coVerify {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
@@ -1272,9 +1300,16 @@ class MLSConversationRepositoryTest {
             arrangement.mlsMessageApi.sendCommitBundle(any<MLSMessageApi.CommitBundle>())
         }.wasInvoked(once)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(any())
         }.wasNotInvoked()
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(any())
+            .wasNotInvoked()
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
     }
 
     @Test
@@ -1294,9 +1329,16 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.rotateKeysAndMigrateConversations(TestClient.CLIENT_ID, arrangement.e2eiClient, "")
         )
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(any())
+            .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         coVerify {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
@@ -1639,7 +1681,11 @@ class MLSConversationRepositoryTest {
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         @Mock
+<<<<<<< HEAD
         val checkRevocationList = mock(RevocationListChecker::class)
+=======
+        val checkRevocationList = mock(classOf<RevocationListChecker>())
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 
         @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
@@ -1818,10 +1864,18 @@ class MLSConversationRepositoryTest {
             }.returns(NetworkResponse.Error(failure))
         }
 
+<<<<<<< HEAD
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
                 checkRevocationList.check(any())
             }.returns(Either.Right(1uL))
+=======
+        fun withCheckRevocationListResult() = apply {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::check)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(1uL))
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
 
         suspend fun withSendMLSMessageSuccessful(events: List<EventContentDTO> = emptyList()) = apply {

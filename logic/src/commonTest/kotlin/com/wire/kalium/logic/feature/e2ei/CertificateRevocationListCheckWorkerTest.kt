@@ -27,8 +27,11 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.Mock
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coEvery
 import io.mockative.coVerify
+=======
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
@@ -54,6 +57,7 @@ class CertificateRevocationListCheckWorkerTest {
             arrangement.certificateRevocationListRepository.getCRLs()
         }.wasInvoked(exactly = once)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.checkRevocationList.check(eq(DUMMY_URL))
         }.wasInvoked(exactly = once)
@@ -62,6 +66,17 @@ class CertificateRevocationListCheckWorkerTest {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
         }.wasInvoked(exactly = once)
 
+=======
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::check)
+            .with(eq(DUMMY_URL))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
+            .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
     }
 
     private class Arrangement {
@@ -79,6 +94,7 @@ class CertificateRevocationListCheckWorkerTest {
             certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
         )
 
+<<<<<<< HEAD
         suspend fun withNoCRL() = apply {
             coEvery {
                 certificateRevocationListRepository.getCRLs()
@@ -105,6 +121,41 @@ class CertificateRevocationListCheckWorkerTest {
         fun withIncrementalSyncState(flow: Flow<IncrementalSyncStatus>) = apply {
             every { incrementalSyncRepository.incrementalSyncState }
                 .returns(flow)
+=======
+        fun withNoCRL() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getCRLs)
+                .whenInvoked()
+                .then { null }
+        }
+
+        fun withNonExpiredCRL() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getCRLs)
+                .whenInvoked()
+                .then { CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))) }
+        }
+
+        fun withExpiredCRL() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getCRLs)
+                .whenInvoked()
+                .then { CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))) }
+        }
+
+        fun withCheckRevocationListResult() = apply {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::check)
+                .whenInvokedWith(any())
+                .then { Either.Right(FUTURE_TIMESTAMP) }
+        }
+
+        fun withIncrementalSyncState(flow: Flow<IncrementalSyncStatus>) = apply {
+            given(incrementalSyncRepository)
+                .invocation {
+                    incrementalSyncRepository.incrementalSyncState
+                }.then { flow }
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
 
     }

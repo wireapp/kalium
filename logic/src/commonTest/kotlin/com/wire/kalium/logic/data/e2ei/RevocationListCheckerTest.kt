@@ -35,12 +35,20 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+=======
+import io.mockative.eq
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,6 +66,7 @@ class RevocationListCheckerTest {
             val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
+<<<<<<< HEAD
             coVerify {
                 arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
             }.wasInvoked(once)
@@ -65,6 +74,17 @@ class RevocationListCheckerTest {
             coVerify {
                 arrangement.coreCrypto.registerCrl(any(), any())
             }.wasNotInvoked()
+=======
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasNotInvoked()
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
 
     @Test
@@ -79,6 +99,7 @@ class RevocationListCheckerTest {
             val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
+<<<<<<< HEAD
             coVerify {
                 arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
             }.wasInvoked(once)
@@ -90,6 +111,22 @@ class RevocationListCheckerTest {
             coVerify {
                 arrangement.coreCrypto.registerCrl(any(), any())
             }.wasNotInvoked()
+=======
+
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasNotInvoked()
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
 
     @Test
@@ -105,6 +142,7 @@ class RevocationListCheckerTest {
             val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
+<<<<<<< HEAD
             coVerify {
                 arrangement.currentClientIdProvider.invoke()
             }.wasInvoked(once)
@@ -116,6 +154,22 @@ class RevocationListCheckerTest {
             coVerify {
                 arrangement.coreCrypto.registerCrl(any(), any())
             }.wasNotInvoked()
+=======
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.mlsClientProvider)
+                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
+                .with(eq(TestClient.CLIENT_ID))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasNotInvoked()
+
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
 
     @Test
@@ -134,6 +188,7 @@ class RevocationListCheckerTest {
             result.shouldSucceed {
                 assertEquals(EXPIRATION, it)
             }
+<<<<<<< HEAD
             coVerify {
                 arrangement.currentClientIdProvider.invoke()
             }.wasInvoked(once)
@@ -145,6 +200,22 @@ class RevocationListCheckerTest {
             coVerify {
                 arrangement.coreCrypto.registerCrl(any(), any())
             }.wasInvoked(once)
+=======
+
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.mlsClientProvider)
+                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
+                .with(eq(TestClient.CLIENT_ID))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
 
     @Test
@@ -165,9 +236,16 @@ class RevocationListCheckerTest {
                 assertEquals(EXPIRATION, it)
             }
 
+<<<<<<< HEAD
             coVerify {
                 arrangement.coreCrypto.registerCrl(any(), any())
             }.wasInvoked(once)
+=======
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
 
     @Test
@@ -185,9 +263,16 @@ class RevocationListCheckerTest {
             assertEquals(E2EIFailure.Disabled, it)
         }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.coreCrypto.registerCrl(any(), any())
         }.wasNotInvoked()
+=======
+        verify(arrangement.coreCrypto)
+            .suspendFunction(arrangement.coreCrypto::registerCrl)
+            .with(any(), any())
+            .wasNotInvoked()
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
     }
 
     internal class Arrangement {
@@ -218,6 +303,7 @@ class RevocationListCheckerTest {
             userConfigRepository = userConfigRepository
         )
 
+<<<<<<< HEAD
         suspend fun withE2EIRepositoryFailure() = apply {
             coEvery {
                 certificateRevocationListRepository.getClientDomainCRL(any())
@@ -278,6 +364,76 @@ class RevocationListCheckerTest {
             every {
                 userConfigRepository.getE2EISettings()
             }.returns(E2EISettings(true, DUMMY_URL, DateTimeUtil.currentInstant(), false, null).right())
+=======
+        fun withE2EIRepositoryFailure() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
+                .whenInvokedWith(any())
+                .then { Either.Left(E2EIFailure.Generic(Exception())) }
+        }
+
+        fun withE2EIRepositorySuccess() = apply {
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
+                .whenInvokedWith(any())
+                .then { Either.Right("result".toByteArray()) }
+        }
+
+        fun withCurrentClientIdProviderFailure() = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Left(CoreFailure.SyncEventOrClientNotFound) }
+        }
+
+        fun withCurrentClientIdProviderSuccess() = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(TestClient.CLIENT_ID) }
+        }
+
+        fun withMlsClientProviderFailure() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
+                .whenInvokedWith(any())
+                .then { Either.Left(CoreFailure.SyncEventOrClientNotFound) }
+        }
+
+        fun withMlsClientProviderSuccess() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
+                .whenInvokedWith(any())
+                .then { Either.Right(coreCrypto) }
+        }
+
+        fun withRegisterCrl() = apply {
+            given(coreCrypto)
+                .suspendFunction(coreCrypto::registerCrl)
+                .whenInvokedWith(any(), any())
+                .thenReturn(CrlRegistration(true, EXPIRATION))
+        }
+
+        fun withRegisterCrlFlagChanged() = apply {
+            given(coreCrypto)
+                .suspendFunction(coreCrypto::registerCrl)
+                .whenInvokedWith(any(), any())
+                .thenReturn(CrlRegistration(false, EXPIRATION))
+        }
+
+        fun withE2EIEnabledAndMLSEnabled(result: Boolean) = apply {
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(result)
+            given(userConfigRepository)
+                .function(userConfigRepository::isMLSEnabled)
+                .whenInvoked()
+                .thenReturn(result.right())
+            given(userConfigRepository)
+                .function(userConfigRepository::getE2EISettings)
+                .whenInvoked()
+                .thenReturn(E2EISettings(result, DUMMY_URL, DateTimeUtil.currentInstant(), false, null).right())
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
         }
     }
 

@@ -54,7 +54,11 @@ internal class MLSWelcomeEventHandlerImpl(
     val conversationRepository: ConversationRepository,
     val oneOnOneResolver: OneOnOneResolver,
     val refillKeyPackages: RefillKeyPackagesUseCase,
+<<<<<<< HEAD
     val revocationListChecker: RevocationListChecker,
+=======
+    private val revocationListChecker: RevocationListChecker,
+>>>>>>> a2f4bcdebc (fix: update cert revocation list class [WPB-14835] (#3215))
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> {
