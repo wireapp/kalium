@@ -19,14 +19,8 @@
 package com.wire.kalium.network.api.v8.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
-import com.wire.kalium.network.api.unauthenticated.register.NewBindingTeamDTO
 import com.wire.kalium.network.api.v7.authenticated.UpgradePersonalToTeamApiV7
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 
 internal open class UpgradePersonalToTeamApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-) : UpgradePersonalToTeamApiV7(authenticatedNetworkClient) 
+) : UpgradePersonalToTeamApiV7(authenticatedNetworkClient)
