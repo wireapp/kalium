@@ -131,9 +131,19 @@ public abstract class CommonMPBackupExporter(
         return buffer.write(this.encodeToByteArray())
     }
 
-    internal suspend fun finalize(password: String?, output: Sink) {
+    @Suppress("TooGenericExceptionCaught")
+    internal suspend fun finalize(password: String?, output: Sink): ExportResult {
         flushAll()
-        val zippedData = zipEntries(storage.listEntries()).await()
+        val zippedData = try {
+            zipEntries(storage.listEntries()).await()
+        } catch (t: Throwable) {
+            return ExportResult.Failure.ZipError(t.message ?: "Unknown ZIP error.")
+        }
+        return writeBackupArtifact(output, password, zippedData)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun writeBackupArtifact(output: Sink, password: String?, zippedData: Source): ExportResult = try {
         val salt = XChaChaPoly1305AuthenticationData.newSalt()
 
         val header = BackupHeader(
@@ -165,6 +175,9 @@ public abstract class CommonMPBackupExporter(
             }
             bufferedOutput
         }
+        ExportResult.Success
+    } catch (t: Throwable) {
+        ExportResult.Failure.IOError(t.message ?: "Unknown IO error.")
     }
 
     internal abstract val storage: EntryStorage
