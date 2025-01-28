@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.TestStubs
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newUserDetailsEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
@@ -977,6 +978,83 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(users)
 
         assertFalse { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
+    }
+
+    @Test
+    fun givenPersistedUser_whenUpsertingTheSameExactUser_thenItShouldIgnoreAndNotNotifyOtherQueries() = runTest(dispatcher) {
+        // Given
+        val user = newUserEntity()
+        val userDetails = newUserDetailsEntity()
+        db.userDAO.upsertUser(user)
+        val updatedUser = user.copy(name = "new_name")
+
+        db.userDAO.observeUserDetailsByQualifiedID(user.id).test {
+            val initialValue = awaitItem()
+            assertEquals(userDetails, initialValue)
+
+            // When
+            db.userDAO.upsertUser(updatedUser) // the same exact user is being saved again
+
+            // Then
+            expectNoEvents() // other query should not be notified
+        }
+    }
+
+    @Test
+    fun givenPersistedUser_whenUpsertingUpdatedUser_thenItShouldBeSavedAndOtherQueriesShouldBeUpdated() = runTest(dispatcher) {
+        // Given
+        val user = newUserEntity()
+        val userDetails = newUserDetailsEntity()
+        db.userDAO.upsertUser(user)
+        val updatedUser = user.copy(name = "new_name")
+        val updatedUserDetails = userDetails.copy(name = "new_name")
+
+        db.userDAO.observeUserDetailsByQualifiedID(user.id).test {
+            val initialValue = awaitItem()
+            assertEquals(userDetails, initialValue)
+
+            // When
+            db.userDAO.upsertUser(updatedUser) // updated user is being saved
+
+            // Then
+            val updatedValue = awaitItem() // other query should be notified
+            assertEquals(updatedUserDetails, updatedValue)
+        }
+    }
+
+    @Test
+    fun givenPersistedUserWithNullValues_whenUpsertingUpdatedUserWithoutNullValues_thenItShouldBeSaved() = runTest(dispatcher) {
+        // Given
+        val userDetails = newUserDetailsEntity().copy(
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            team = null,
+            previewAssetId = null,
+            completeAssetId = null,
+            supportedProtocols = null,
+        )
+        val user = userDetails.toSimpleEntity()
+        db.userDAO.upsertUser(user)
+
+        // When
+        val updatedUserDetails = userDetails.copy(
+            name = "name",
+            handle = "handle",
+            email = "email",
+            phone = "phone",
+            team = "team",
+            previewAssetId = UserAssetIdEntity("preview", "domain"),
+            completeAssetId = UserAssetIdEntity("complete", "domain"),
+            supportedProtocols = setOf(SupportedProtocolEntity.MLS, SupportedProtocolEntity.PROTEUS),
+        )
+        val updatedUser = updatedUserDetails.toSimpleEntity()
+        db.userDAO.upsertUser(updatedUser)
+
+        // Then
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
+        assertEquals(updatedUserDetails, result)
     }
 
     private companion object {
