@@ -17,14 +17,47 @@
  */
 package com.wire.kalium.network.api.unauthenticated.domainregistration
 
-// todo(ym). validate optional and required fields
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class DomainRegistrationDTO(
-    val backendUrl: String,
+    @SerialName("backend_url")
+    val backendUrl: String?,
+    @SerialName("domain_redirect")
     val domainRedirect: DomainRedirect,
+    @SerialName("sso_code")
     val ssoCode: String?
 )
 
-
+@Serializable
 enum class DomainRedirect {
-    NONE, LOCKED, SSO, BACKEND, NO_REGISTRATION, PRE_AUTHORIZED
+    @SerialName("none")
+    NONE,
+
+    @SerialName("locked")
+    LOCKED,
+
+    @SerialName("sso")
+    SSO,
+
+    @SerialName("backend")
+    BACKEND,
+
+    @SerialName("no-registration")
+    NO_REGISTRATION,
+
+    @SerialName("pre-authorized")
+    PRE_AUTHORIZED;
+
+    override fun toString(): String {
+        return when (this) {
+            NONE -> "none"
+            LOCKED -> "locked"
+            SSO -> "sso"
+            BACKEND -> "backend"
+            NO_REGISTRATION -> "no-registration"
+            PRE_AUTHORIZED -> "pre-authorized"
+        }
+    }
 }

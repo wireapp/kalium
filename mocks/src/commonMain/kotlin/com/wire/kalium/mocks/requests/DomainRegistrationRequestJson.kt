@@ -15,16 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.api.base.unauthenticated.domainregistration
+package com.wire.kalium.mocks.requests
 
-import com.wire.kalium.network.api.base.authenticated.BaseApi
-import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
-import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.mocks.responses.ValidJsonProvider
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationRequest
 
-interface GetDomainRegistrationApi : BaseApi {
-    suspend fun getDomainRegistration(email: String): NetworkResponse<DomainRegistrationDTO>
+object DomainRegistrationRequestJson {
 
-    companion object {
-        const val MIN_API_VERSION = 8
+    val jsonProvider = { serializable: DomainRegistrationRequest ->
+        """
+            {
+                "email": "${serializable.email}"
+            }
+            """.trimIndent()
     }
+
+    fun createValid(email: String) = ValidJsonProvider(DomainRegistrationRequest(email), jsonProvider)
+
 }

@@ -19,14 +19,26 @@ package com.wire.kalium.network.api.v8.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationRequest
 import com.wire.kalium.network.api.v7.unauthenticated.GetDomainRegistrationApiV7
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class GetDomainRegistrationApiV8 internal constructor(
-    private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
 ) : GetDomainRegistrationApiV7(unauthenticatedNetworkClient) {
 
-    override suspend fun getDomainRegistration(domain: String): NetworkResponse<DomainRegistrationDTO> {
-        TODO("ym. to implement")
+    override suspend fun getDomainRegistration(email: String): NetworkResponse<DomainRegistrationDTO> {
+        return wrapKaliumResponse {
+            httpClient.post(PATH_DOMAIN_REGISTRATION) {
+                setBody(DomainRegistrationRequest(email))
+            }
+        }
+    }
+
+    companion object {
+        const val PATH_DOMAIN_REGISTRATION = "get-domain-registration"
     }
 }

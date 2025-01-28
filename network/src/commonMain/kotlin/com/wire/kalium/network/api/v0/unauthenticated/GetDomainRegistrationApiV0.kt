@@ -30,7 +30,7 @@ internal open class GetDomainRegistrationApiV0 internal constructor(
 
     internal val httpClient get() = unauthenticatedNetworkClient.httpClient
 
-    override suspend fun getDomainRegistration(domain: String): NetworkResponse<DomainRegistrationDTO> {
+    override suspend fun getDomainRegistration(email: String): NetworkResponse<DomainRegistrationDTO> {
         return NetworkResponse.Error(
             APINotSupported(
                 errorBody = "${this::class.simpleName}: ${::getDomainRegistration.name} api is only available on API V${MIN_API_VERSION}"
