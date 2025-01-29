@@ -145,6 +145,7 @@ interface ConversationDAO {
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
+    suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
 }
 
 data class NameAndHandleEntity(
