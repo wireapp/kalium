@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
 import com.wire.kalium.network.api.v6.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV6
 import com.wire.kalium.network.api.v7.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV7
+import com.wire.kalium.network.api.v8.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV8
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
@@ -122,6 +123,14 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 7 -> UnauthenticatedNetworkContainerV7(
+                    backendLinks = serverConfigDTO,
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled
+                )
+
+                8 -> UnauthenticatedNetworkContainerV8(
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,

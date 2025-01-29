@@ -38,6 +38,8 @@ import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase
+import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCase
 import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
@@ -126,6 +128,7 @@ class GlobalKaliumScope internal constructor(
             globalDatabase.serverConfigurationDAO
         )
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
+    val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
