@@ -317,4 +317,5 @@ interface UserDAO {
     suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized>
     suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
     suspend fun updateTeamId(userId: UserIDEntity, teamId: String)
+    suspend fun countUsers(): Int?
 }

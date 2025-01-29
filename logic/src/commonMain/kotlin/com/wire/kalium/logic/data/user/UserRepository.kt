@@ -173,6 +173,7 @@ interface UserRepository {
     suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
     suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
     suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean>
+    suspend fun getContactsSize(): Either<StorageFailure, Int>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -386,8 +387,8 @@ internal class UserDataSource internal constructor(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.ACCEPTED,
                     userTypeEntity =
-                    if (userProfileDTO.service != null) UserTypeEntity.SERVICE
-                    else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
+                        if (userProfileDTO.service != null) UserTypeEntity.SERVICE
+                        else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
                 )
             }
         val otherUsers = listUserProfileDTO
@@ -706,6 +707,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean> = wrapStorageRequest {
         clientDAO.isMLSCapable(userId.toDao(), clientId.value)
+    }
+
+    override suspend fun getContactsSize(): Either<StorageFailure, Int> = wrapStorageRequest {
+        userDAO.countUsers()
     }
 
     companion object {
