@@ -17,6 +17,7 @@
  */
 package com.wire.backup.dump
 
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
@@ -54,13 +55,20 @@ public actual class MPBackupExporter(
         )
     }
 
-    public suspend fun finalize(password: String?): String {
+    @NativeCoroutines
+    @Suppress("TooGenericExceptionCaught")
+    public suspend fun finalize(password: String?): BackupExportResult = try {
         val fileName = "export.wbu"
         val path = outputDirectory.toPath() / fileName
         fileSystem.delete(path)
         fileSystem.createDirectories(path.parent!!)
         val fileHandle = fileSystem.openReadWrite(path)
-        finalize(password, fileHandle.sink())
-        return path.toString()
+        when (val result = finalize(password, fileHandle.sink())) {
+            is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
+            is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
+            ExportResult.Success -> BackupExportResult.Success(path.toString())
+        }
+    } catch (io: Throwable) {
+        BackupExportResult.Failure.IOError(io.message ?: "Unknown IO error.")
     }
 }

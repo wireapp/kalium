@@ -18,6 +18,7 @@
 package com.wire.backup
 
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.dump.BackupExportResult
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
@@ -51,7 +52,8 @@ actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubj
             zipper
         )
         exporter.export()
-        val artifactPath = exporter.finalize(passphrase)
+        val artifactPath = (exporter.finalize(passphrase) as BackupExportResult.Success).pathToOutputFile
+
         val importer = MPBackupImporter(exportDirectory.toString(), zipper)
         return importer.importFromFile(artifactPath, passphrase)
     }

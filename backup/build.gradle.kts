@@ -23,6 +23,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.kotlinNativeCoroutines)
 }
 
 kaliumLibrary {
@@ -59,6 +60,7 @@ kotlin {
         all {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
             languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
             languageSettings.optIn("kotlin.js.ExperimentalJsExport")
         }
         val commonMain by getting {
