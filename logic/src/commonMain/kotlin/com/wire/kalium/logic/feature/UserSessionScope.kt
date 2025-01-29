@@ -1222,13 +1222,16 @@ class UserSessionScope internal constructor(
         lazy { clientRepository },
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository })
+        lazy { users.timestampKeyRepository }
+    )
+
     internal val keyingMaterialsManager: KeyingMaterialsManager = KeyingMaterialsManagerImpl(
         featureSupport,
         incrementalSyncRepository,
         lazy { clientRepository },
         lazy { conversations.updateMLSGroupsKeyingMaterials },
-        lazy { users.timestampKeyRepository })
+        lazy { users.timestampKeyRepository }
+    )
 
     val mlsClientManager: MLSClientManager = MLSClientManagerImpl(
         clientIdProvider,
@@ -1240,7 +1243,8 @@ class UserSessionScope internal constructor(
             RegisterMLSClientUseCaseImpl(
                 mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
             )
-        })
+        }
+    )
 
     internal val mlsMigrationWorker
         get() =
