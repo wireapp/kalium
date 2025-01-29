@@ -41,6 +41,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Persist migrated messages from old datasource
@@ -76,6 +77,9 @@ internal class PersistMigratedMessagesUseCaseImpl(
                             PlainMessageBlob(migratedMessage.encryptedProto!!)
                         )
                     } catch (e: Exception) {
+                        if (e is CancellationException) {
+                            throw e
+                        }
                         null
                     })?.let {
                         protoMessages[migratedMessage] = it

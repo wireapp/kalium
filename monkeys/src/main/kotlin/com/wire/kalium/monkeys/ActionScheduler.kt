@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.serializer
+import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooGenericExceptionCaught", "LongParameterList")
 @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
@@ -59,6 +60,9 @@ suspend fun start(
                         logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
                     }
                 } catch (e: Exception) {
+                    if (e is CancellationException) {
+                        throw e
+                    }
                     logger.e("Error in action ${actionConfig.description}:", e)
                     if (e.cause != null) {
                         logger.e("Cause for error in ${actionConfig.description}:", e.cause)

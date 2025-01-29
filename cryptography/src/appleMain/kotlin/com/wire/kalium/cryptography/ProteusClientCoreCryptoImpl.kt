@@ -27,6 +27,7 @@ import io.ktor.utils.io.core.toByteArray
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.Foundation.URLByAppendingPathComponent
+import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: CoreCrypto) : ProteusClient {
@@ -140,6 +141,9 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
             // TODO underlying proteus error is not exposed atm
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         }
     }
@@ -196,6 +200,9 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
             } catch (e: CryptoException) {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             } catch (e: Exception) {
+                if (e is CancellationException) {
+                    throw e
+                }
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }

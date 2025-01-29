@@ -29,6 +29,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 import com.wire.cryptobox.PreKey as CryptoBoxPreKey
 
 @Suppress("TooManyFunctions")
@@ -189,6 +190,9 @@ class ProteusClientCryptoBoxImpl constructor(
         } catch (e: CryptoException) {
             throw ProteusException(e.message, fromCryptoException(e), e.code.ordinal, e.cause)
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
         }
     }

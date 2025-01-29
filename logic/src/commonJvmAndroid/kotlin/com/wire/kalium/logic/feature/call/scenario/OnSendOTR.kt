@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import kotlinx.serialization.json.Json
+import kotlin.coroutines.cancellation.CancellationException
 
 // TODO(testing): create unit test
 @Suppress("LongParameterList")
@@ -85,8 +86,11 @@ internal class OnSendOTR(
                     messageTarget = messageTarget
                 )
                 AvsCallBackError.NONE.value
-            } catch (exception: Exception) {
-                callingLogger.e("[OnSendOTR] -> Error Exception: $exception")
+            } catch (e: Exception) {
+                callingLogger.e("[OnSendOTR] -> Error Exception: $e")
+                if (e is CancellationException) {
+                    throw e
+                }
                 AvsCallBackError.COULD_NOT_DECODE_ARGUMENT.value
             }
         }

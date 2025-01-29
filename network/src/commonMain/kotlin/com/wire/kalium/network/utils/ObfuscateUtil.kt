@@ -33,11 +33,15 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlin.coroutines.cancellation.CancellationException
 
 fun obfuscatedJsonMessage(text: String): String = try {
     val obj = (Json.decodeFromString(text) as JsonElement)
     obfuscatedJsonElement(obj).toString()
 } catch (e: Exception) {
+    if (e is CancellationException) {
+        throw e
+    }
     "\"Error while obfuscating. Content probably not json.\""
 }
 
@@ -120,6 +124,9 @@ fun deleteSensitiveItemsFromJson(text: String): String {
         return logMessage
 
     } catch (e: Exception) {
+        if (e is CancellationException) {
+            throw e
+        }
         return "error while logging "
     }
 }

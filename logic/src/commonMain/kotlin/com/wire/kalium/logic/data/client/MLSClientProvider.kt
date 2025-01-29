@@ -53,6 +53,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 interface MLSClientProvider {
     suspend fun isMLSClientInitialised(): Boolean
@@ -174,14 +175,15 @@ class MLSClientProviderImpl(
                         databaseKey = passphrase
                     )
                 } catch (e: Exception) {
-
                     val logMap = mapOf(
                         "exception" to e,
                         "message" to e.message,
                         "stackTrace" to e.stackTraceToString()
                     )
-
                     kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
+                    if (e is CancellationException) {
+                        throw e
+                    }
                     return@run Either.Left(CoreFailure.Unknown(e))
                 }
                 coreCryptoCentral = cc
