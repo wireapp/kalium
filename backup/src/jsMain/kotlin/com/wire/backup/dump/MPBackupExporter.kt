@@ -58,11 +58,12 @@ public actual class MPBackupExporter(
         return result.asDeferred()
     }
 
-    public fun finalize(password: String?): Promise<ByteArray> {
-        return GlobalScope.promise {
-            val output = Buffer()
-            finalize(password, output)
-            output.readByteArray()
+    public fun finalize(password: String?): Promise<BackupExportResult> = GlobalScope.promise {
+        val output = Buffer()
+        when (val result = finalize(password, output)) {
+            is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
+            is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
+            ExportResult.Success -> BackupExportResult.Success(output.readByteArray())
         }
     }
 }
