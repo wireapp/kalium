@@ -27,7 +27,7 @@ import com.wire.kalium.logic.functional.fold
  *
  * @see [GetAllSessionsResult.Success.sessions]
  */
-class GetValidSessionsUseCase(
+class GetSessionsUseCase(
     private val sessionRepository: SessionRepository
 ) {
     suspend operator fun invoke(): GetAllSessionsResult = sessionRepository.allValidSessions().fold(

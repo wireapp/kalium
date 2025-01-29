@@ -75,8 +75,8 @@ class GetValidSessionsUseCaseTest {
 
         @Mock
         private val sessionRepository = mock(SessionRepository::class)
-        private val useCase: GetValidSessionsUseCase by lazy {
-            GetValidSessionsUseCase(sessionRepository)
+        private val useCase: GetSessionsUseCase by lazy {
+            GetSessionsUseCase(sessionRepository)
         }
 
         suspend fun withAllValidSessions(result: Either<StorageFailure, List<AccountInfo.Valid>>) = apply {

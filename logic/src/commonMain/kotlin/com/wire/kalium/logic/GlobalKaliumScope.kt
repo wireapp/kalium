@@ -59,8 +59,8 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
-import com.wire.kalium.logic.feature.session.GetValidSessionsUseCase
-import com.wire.kalium.logic.feature.session.ObserveValidSessionsUseCase
+import com.wire.kalium.logic.feature.session.GetSessionsUseCase
+import com.wire.kalium.logic.feature.session.ObserveSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
@@ -136,8 +136,8 @@ class GlobalKaliumScope internal constructor(
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
-    val getValidSessions: GetValidSessionsUseCase get() = GetValidSessionsUseCase(sessionRepository)
-    val observeValidSessions: ObserveValidSessionsUseCase get() = ObserveValidSessionsUseCase(sessionRepository)
+    val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    val observeSessions: ObserveSessionsUseCase get() = ObserveSessionsUseCase(sessionRepository)
     val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)

@@ -88,8 +88,8 @@ class ObserveValidSessionsUseCaseTest {
 
         @Mock
         private val sessionRepository = mock(SessionRepository::class)
-        private val useCase: ObserveValidSessionsUseCase by lazy {
-            ObserveValidSessionsUseCase(sessionRepository)
+        private val useCase: ObserveSessionsUseCase by lazy {
+            ObserveSessionsUseCase(sessionRepository)
         }
 
         suspend fun withAllValidSessionsFlow(result: Flow<Either<StorageFailure, List<AccountInfo.Valid>>>) = apply {

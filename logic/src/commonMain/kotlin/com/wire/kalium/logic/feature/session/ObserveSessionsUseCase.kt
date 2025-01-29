@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.map
  *
  * @see [GetAllSessionsResult.Success.sessions]
  */
-class ObserveValidSessionsUseCase(
+class ObserveSessionsUseCase(
     private val sessionRepository: SessionRepository
 ) {
     suspend operator fun invoke(): Flow<GetAllSessionsResult> = sessionRepository.allValidSessionsFlow()
