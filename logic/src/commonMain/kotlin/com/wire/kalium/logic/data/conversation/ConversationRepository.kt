@@ -319,7 +319,9 @@ interface ConversationRepository {
     suspend fun addConversationToDeleteQueue(conversationId: ConversationId)
     suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId)
     suspend fun getConversationsDeleteQueue(): List<ConversationId>
-    suspend fun observeOneToOneConversationDetailsWithOtherUser(otherUserId: UserId): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
+    suspend fun observeOneToOneConversationDetailsWithOtherUser(
+        otherUserId: UserId
+    ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -797,12 +799,10 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeOneToOneConversationDetailsWithOtherUser(
         otherUserId: UserId
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>> {
-        println("KBX other user id $otherUserId")
         return conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(otherUserId.toDao())
             .map { it?.let { conversationMapper.fromDaoModelToDetails(it) as? ConversationDetails.OneOne } }
             .wrapStorageRequest()
     }
-
 
     override suspend fun getOneOnOneConversationsWithOtherUser(
         otherUserId: UserId,
