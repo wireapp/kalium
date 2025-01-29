@@ -25,6 +25,7 @@ import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class GetDomainRegistrationApiV8Test : ApiTest() {
@@ -42,11 +43,45 @@ internal class GetDomainRegistrationApiV8Test : ApiTest() {
             }
         )
 
+        GetDomainRegistrationApiV8(networkClient).getDomainRegistration(emailToVerify)
+    }
+
+    @Test
+    fun whenCallingGetDomainRegistration_thenTheResponseShouldBeParsedCorrectly() = runTest {
+        val emailToVerify = "test@wire.com"
+        val networkClient = mockUnauthenticatedNetworkClient(
+            SUCCESS_RESPONSE,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertPathEqual("get-domain-registration")
+                assertJsonBodyContent(DomainRegistrationRequestJson.createValid(emailToVerify).rawJson)
+            }
+        )
+
         val response = GetDomainRegistrationApiV8(networkClient).getDomainRegistration(emailToVerify)
         assertTrue(response.isSuccessful())
     }
 
+    @Test
+    fun givenAnInvalidDomain_whenCallingGetDomainRegistration_thenTheResponseShouldBeParsedCorrectly() = runTest {
+        val emailToVerify = "test@wire.com"
+        val networkClient = mockUnauthenticatedNetworkClient(
+            INVALID_DOMAIN_RESPONSE,
+            statusCode = HttpStatusCode.BadRequest,
+            assertion = {
+                assertPost()
+                assertPathEqual("get-domain-registration")
+                assertJsonBodyContent(DomainRegistrationRequestJson.createValid(emailToVerify).rawJson)
+            }
+        )
+
+        val response = GetDomainRegistrationApiV8(networkClient).getDomainRegistration(emailToVerify)
+        assertFalse(response.isSuccessful())
+    }
+
     companion object {
         val SUCCESS_RESPONSE = DomainRegistrationResponseJson.success.rawJson
+        val INVALID_DOMAIN_RESPONSE = DomainRegistrationResponseJson.invalidDomain.rawJson
     }
 }

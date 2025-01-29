@@ -17,8 +17,11 @@
  */
 package com.wire.kalium.mocks.responses
 
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 object DomainRegistrationResponseJson {
 
@@ -36,6 +39,21 @@ object DomainRegistrationResponseJson {
                 "sso_code": "${serializable.ssoCode}"
             }
             """.trimIndent()
+        }
+    )
+
+    val invalidDomain = ValidJsonProvider(
+        serializableData = ErrorResponse(
+            code = 400,
+            label = "invalid-domain",
+            message = "invalid-domain"
+        ),
+        jsonProvider = { serializable ->
+            buildJsonObject {
+                put("code", serializable.code)
+                put("label", serializable.label)
+                put("message", serializable.message)
+            }.toString()
         }
     )
 
