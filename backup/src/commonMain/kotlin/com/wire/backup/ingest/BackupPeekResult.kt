@@ -21,9 +21,15 @@ import kotlin.js.JsExport
 
 @JsExport
 public sealed class BackupPeekResult {
+    /**
+     * The provided data corresponds to a compatible backup artifact.
+     *
+     * @property isCreatedBySameUser - true if the provided UserId matches the UserId that created the backup.
+     */
     public data class Success(
         val version: String,
         val isEncrypted: Boolean,
+        val isCreatedBySameUser: Boolean,
         /** TODO: Add more info about the backup */
     ) : BackupPeekResult()
 
