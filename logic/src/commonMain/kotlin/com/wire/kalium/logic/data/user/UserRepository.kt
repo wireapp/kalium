@@ -173,7 +173,7 @@ interface UserRepository {
     suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
     suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
     suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean>
-    suspend fun getContactsSize(): Either<StorageFailure, Int>
+    suspend fun getContactsCount(): Either<StorageFailure, Int>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -709,8 +709,8 @@ internal class UserDataSource internal constructor(
         clientDAO.isMLSCapable(userId.toDao(), clientId.value)
     }
 
-    override suspend fun getContactsSize(): Either<StorageFailure, Int> = wrapStorageRequest {
-        userDAO.countUsers()
+    override suspend fun getContactsCount(): Either<StorageFailure, Int> = wrapStorageRequest {
+        userDAO.getContactsCount()
     }
 
     companion object {

@@ -487,7 +487,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun countUsers(): Int? = withContext(queriesContext) {
-        userQueries.countUsers().executeAsOneOrNull()?.toInt()
+    override suspend fun getContactsCount(): Int? = withContext(queriesContext) {
+        userQueries.getContactsCount().executeAsOneOrNull()?.toInt()
     }
 }

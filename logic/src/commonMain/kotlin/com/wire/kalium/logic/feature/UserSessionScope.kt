@@ -511,7 +511,7 @@ class UserSessionScope internal constructor(
 
     private suspend fun contactsSize(): Either<CoreFailure, Int> =
         if (_contactsSize != null) Either.Right(_contactsSize!!) else {
-            userRepository.getContactsSize().onSuccess {
+            userRepository.getContactsCount().onSuccess {
                 _contactsSize = it
             }
         }
