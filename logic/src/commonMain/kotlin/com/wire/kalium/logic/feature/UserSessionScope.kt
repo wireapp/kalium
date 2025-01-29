@@ -823,7 +823,6 @@ class UserSessionScope internal constructor(
 
     private val userRepository: UserRepository = UserDataSource(
         userDAO = userStorage.database.userDAO,
-        metadataDAO = userStorage.database.metadataDAO,
         clientDAO = userStorage.database.clientDAO,
         selfApi = authenticatedNetworkContainer.selfApi,
         userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
