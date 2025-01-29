@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.session
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -25,63 +26,75 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class GetValidSessionsUseCaseTest {
+class ObserveSessionsUseCaseTest {
 
     @Test
-    fun givenValidSession_whenGettingValidSessions_thenReturnThatSession() = runTest {
+    fun givenValidSession_whenObservingValidSessions_thenEmitThatSession() = runTest {
         // given
         val validSession = AccountInfo.Valid(UserId("id", "domain"))
         val (_, useCase) = Arrangement()
-            .withAllValidSessions(Either.Right(listOf(validSession)))
+            .withAllValidSessionsFlow(flowOf(Either.Right(listOf(validSession))))
             .arrange()
         // when
-        val result = useCase()
-        // then
-        assertIs<GetAllSessionsResult.Success>(result).also {
-            assertEquals(listOf(validSession), it.sessions)
+        useCase().test {
+            val result = awaitItem()
+            // then
+            assertIs<GetAllSessionsResult.Success>(result).also {
+                assertEquals(listOf(validSession), it.sessions)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+
+    }
+
+    @Test
+    fun givenDataNotFound_whenObservingValidSessions_thenEmitNoSessionFound() = runTest {
+        // given
+        val (_, useCase) = Arrangement()
+            .withAllValidSessionsFlow(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            .arrange()
+        // when
+        useCase().test {
+            val result = awaitItem()
+            // then
+            assertIs<GetAllSessionsResult.Failure.NoSessionFound>(result)
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun givenDataNotFound_whenGettingValidSessions_thenReturnNoSessionFound() = runTest {
+    fun givenFailure_whenObservingValidSessions_thenEmitFailure() = runTest {
         // given
         val (_, useCase) = Arrangement()
-            .withAllValidSessions(Either.Left(StorageFailure.DataNotFound))
+            .withAllValidSessionsFlow(flowOf(Either.Left(StorageFailure.Generic(Throwable("error")))))
             .arrange()
         // when
-        val result = useCase()
-        // then
-        assertIs<GetAllSessionsResult.Failure.NoSessionFound>(result)
-    }
-
-    @Test
-    fun givenFailure_whenGettingValidSessions_thenReturnFailure() = runTest {
-        // given
-        val (_, useCase) = Arrangement()
-            .withAllValidSessions(Either.Left(StorageFailure.Generic(Throwable("error"))))
-            .arrange()
-        // when
-        val result = useCase()
-        // then
-        assertIs<GetAllSessionsResult.Failure.Generic>(result)
+        useCase().test {
+            val result = awaitItem()
+            // then
+            assertIs<GetAllSessionsResult.Failure.Generic>(result)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     class Arrangement {
 
         @Mock
         private val sessionRepository = mock(SessionRepository::class)
-        private val useCase: GetSessionsUseCase by lazy {
-            GetSessionsUseCase(sessionRepository)
+        private val useCase: ObserveSessionsUseCase by lazy {
+            ObserveSessionsUseCase(sessionRepository)
         }
 
-        suspend fun withAllValidSessions(result: Either<StorageFailure, List<AccountInfo.Valid>>) = apply {
+        suspend fun withAllValidSessionsFlow(result: Flow<Either<StorageFailure, List<AccountInfo.Valid>>>) = apply {
             coEvery {
-                sessionRepository.allValidSessions()
+                sessionRepository.allValidSessionsFlow()
             }.returns(result)
         }
 
