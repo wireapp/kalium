@@ -40,7 +40,8 @@ class ObserveSessionsUseCase(
                         StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound
                         is StorageFailure.Generic -> GetAllSessionsResult.Failure.Generic(failure)
                     }
-                }, { sessions ->
+                },
+                { sessions ->
                     GetAllSessionsResult.Success(sessions)
                 }
             )
