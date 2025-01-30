@@ -17,19 +17,21 @@
  */
 package com.wire.backup.ingest
 
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
+import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.envelope.HashData
+import com.wire.backup.hash.hashUserId
 import kotlin.js.JsExport
 
 @JsExport
 public sealed class BackupPeekResult {
     /**
      * The provided data corresponds to a compatible backup artifact.
-     *
-     * @property isCreatedBySameUser - true if the provided UserId matches the UserId that created the backup.
      */
-    public data class Success(
-        val version: String,
-        val isEncrypted: Boolean,
-        val isCreatedBySameUser: Boolean,
+    public class Success internal constructor(
+        public val version: String,
+        public val isEncrypted: Boolean,
+        internal val hashData: HashData
         /** TODO: Add more info about the backup */
     ) : BackupPeekResult()
 
@@ -37,4 +39,11 @@ public sealed class BackupPeekResult {
         public data object UnknownFormat : Failure()
         public data class UnsupportedVersion(val backupVersion: String) : Failure()
     }
+}
+
+@NativeCoroutines
+public suspend fun BackupPeekResult.Success.isCreatedBySameUser(userId: BackupQualifiedId): Boolean {
+    val candidateHash = hashUserId(userId, hashData.salt, hashData.hashingMemoryLimit, hashData.operationsLimit)
+    val actualHash = hashData.hashedUserId
+    return candidateHash.contentEquals(actualHash)
 }

@@ -17,7 +17,6 @@
  */
 package com.wire.backup.ingest
 
-import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.JSZip
 import com.wire.backup.filesystem.BackupEntry
 import com.wire.backup.filesystem.EntryStorage
@@ -36,10 +35,10 @@ import kotlin.js.Promise
 public actual class MPBackupImporter : CommonMPBackupImporter() {
     private val inMemoryUnencryptedBuffer = Buffer()
 
-    public fun peekFileData(data: ByteArray, selfUserId: BackupQualifiedId): Promise<BackupPeekResult> = GlobalScope.promise {
+    public fun peekFileData(data: ByteArray): Promise<BackupPeekResult> = GlobalScope.promise {
         val buffer = Buffer()
         buffer.write(data)
-        peekBackup(buffer, selfUserId)
+        peekBackup(buffer)
     }
 
     public fun importFromFileData(data: ByteArray, passphrase: String?): Promise<BackupImportResult> = GlobalScope.promise {

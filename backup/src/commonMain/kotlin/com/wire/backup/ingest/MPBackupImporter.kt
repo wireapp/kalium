@@ -18,7 +18,6 @@
 package com.wire.backup.ingest
 
 import com.wire.backup.data.BackupData
-import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.encryption.DecryptionResult
 import com.wire.backup.encryption.EncryptedStream
 import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
@@ -26,7 +25,6 @@ import com.wire.backup.envelope.BackupHeader
 import com.wire.backup.envelope.BackupHeaderSerializer
 import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.filesystem.EntryStorage
-import com.wire.backup.hash.hashUserId
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -47,19 +45,16 @@ public abstract class CommonMPBackupImporter internal constructor(
      * Peeks into a backup artifact, returning information about it.
      * @see BackupPeekResult
      */
-    internal suspend fun peekBackup(
+    internal fun peekBackup(
         source: Source,
-        userId: BackupQualifiedId,
     ): BackupPeekResult {
         val peekBuffer = source.buffer().peek()
         return when (val result = headerSerializer.parseHeader(peekBuffer)) {
             HeaderParseResult.Failure.UnknownFormat -> BackupPeekResult.Failure.UnknownFormat
             is HeaderParseResult.Failure.UnsupportedVersion -> BackupPeekResult.Failure.UnsupportedVersion(result.version.toString())
             is HeaderParseResult.Success -> {
-                val hashData = result.header.hashData
-                val userHash = hashUserId(userId, hashData.salt, hashData.hashingMemoryLimit, hashData.operationsLimit)
-                val doesUserMatch = userHash.contentEquals(hashData.hashedUserId)
-                BackupPeekResult.Success(result.header.version.toString(), result.header.isEncrypted, doesUserMatch)
+                val header = result.header
+                BackupPeekResult.Success(header.version.toString(), header.isEncrypted, header.hashData)
             }
         }
     }

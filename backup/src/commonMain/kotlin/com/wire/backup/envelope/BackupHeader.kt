@@ -22,6 +22,8 @@ package com.wire.backup.envelope
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_MEMLIMIT_MIN
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
+import com.wire.backup.envelope.HashData.Companion.HASHED_USER_ID_SIZE_IN_BYTES
+import com.wire.backup.envelope.HashData.Companion.SALT_SIZE_IN_BYTES
 import com.wire.backup.hash.HASH_MEM_LIMIT
 import com.wire.backup.hash.HASH_OPS_LIMIT
 import com.wire.backup.hash.hashUserId

@@ -34,9 +34,7 @@ import okio.Sink
 import okio.Source
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class MPBackupImporterTest {
 
@@ -140,31 +138,10 @@ class MPBackupImporterTest {
         buffer.write(data)
         val subject = createSubject()
 
-        val result = subject.peekBackup(buffer, userId)
+        val result = subject.peekBackup(buffer)
         assertIs<BackupPeekResult.Success>(result)
         assertEquals(header.version.toString(), result.version)
         assertEquals(header.isEncrypted, result.isEncrypted)
-        assertTrue { result.isCreatedBySameUser }
-    }
-
-    @Test
-    fun givenBackupWasNotCreatedBySameUserId_whenPeeking_thenCorrectDataIsReturned() = runTest {
-        val userId = BackupQualifiedId("user", "domain")
-        val header = BackupHeader(
-            version = BackupHeaderSerializer.Default.MAXIMUM_SUPPORTED_VERSION,
-            isEncrypted = true,
-            hashData = HashData.defaultFromUserId(userId)
-        )
-        val data = BackupHeaderSerializer.Default.headerToBytes(header)
-        val buffer = Buffer()
-        buffer.write(data)
-        val subject = createSubject()
-
-        val result = subject.peekBackup(buffer, userId.copy(id = "otherUser"))
-        assertIs<BackupPeekResult.Success>(result)
-        assertEquals(header.version.toString(), result.version)
-        assertEquals(header.isEncrypted, result.isEncrypted)
-        assertFalse { result.isCreatedBySameUser }
     }
 
     @Test
@@ -180,7 +157,7 @@ class MPBackupImporterTest {
         buffer.write(data)
         val subject = createSubject()
 
-        val result = subject.peekBackup(buffer, userId.copy(id = "otherUser"))
+        val result = subject.peekBackup(buffer)
         assertIs<BackupPeekResult.Failure.UnsupportedVersion>(result)
         assertEquals(header.version.toString(), result.backupVersion)
     }
@@ -192,7 +169,7 @@ class MPBackupImporterTest {
         buffer.write(data)
         val subject = createSubject()
 
-        val result = subject.peekBackup(buffer, BackupQualifiedId("user", "domain"))
+        val result = subject.peekBackup(buffer)
         assertIs<BackupPeekResult.Failure.UnknownFormat>(result)
     }
 }

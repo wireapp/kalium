@@ -18,7 +18,6 @@
 package com.wire.backup.ingest
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
-import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.filesystem.EntryStorage
 import com.wire.backup.filesystem.FileBasedEntryStorage
 import okio.FileSystem
@@ -45,16 +44,14 @@ public actual class MPBackupImporter(
      * Peeks into the specified backup file and retrieves metadata about it.
      *
      * @param pathToBackupFile the path to the backup file to be inspected
-     * @param selfUserId the identifier of the user performing the inspection
      * @return a [BackupPeekResult] that contains information about the backup,
-     * such as version, encryption status, and if it was created by the same [selfUserId]
+     * such as version, encryption status, etc.
      */
     @ObjCName("peek")
     @NativeCoroutines
     public suspend fun peekBackupFile(
-        pathToBackupFile: String,
-        selfUserId: BackupQualifiedId
-    ): BackupPeekResult = peekBackup(FileSystem.SYSTEM.source(pathToBackupFile.toPath()), selfUserId)
+        pathToBackupFile: String
+    ): BackupPeekResult = peekBackup(FileSystem.SYSTEM.source(pathToBackupFile.toPath()))
 
     /**
      * Imports a backup from the specified root path.
