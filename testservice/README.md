@@ -28,14 +28,15 @@ Build inside container:
 ```shell
 docker build --platform linux/arm64 -t testservice_build_env -f testservice/Dockerfile .
 docker create --name temp_container testservice_build_env
-docker cp temp_container:/app/target/testservice-0.0.1-SNAPSHOT-all.jar ./target/testservice-0.0.1-SNAPSHOT-all.jar
+docker cp temp_container:/app/testservice/build/libs/testservice-0.0.1-SNAPSHOT-all.jar ./testservice/testservice-0.0.1-SNAPSHOT-all.jar
+docker cp temp_container:/app/native/libs ./native/
 docker rm temp_container
 ```
 
 Run Ansible script with:
 
 ```shell
-cd ansible
+cd testservice/ansible
 ansible-playbook -i hosts.ini site.yml --diff
 ```
 

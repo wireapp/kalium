@@ -17,7 +17,6 @@
 - name: Create user account
   user:
     name: kalium
-    uid: 1001
     shell: /bin/bash
     state: present
     groups: audio, video
@@ -46,17 +45,17 @@
     group: kalium
     mode: '0644'
 
-- name: Deploy native libraries
-  copy:
-    src: ../../native
-    dest: /usr/local/kalium-testservice/native
-    owner: kalium
-    group: kalium
-    mode: '0644'
+#- name: Deploy native libraries
+#  copy:
+#    src: ../../native
+#    dest: /usr/local/kalium-testservice/native
+#    owner: kalium
+#    group: kalium
+#    mode: '0644'
 
 - name: Deploy jar
   copy:
-    src: ../target/testservice-0.0.1-SNAPSHOT-all.jar
+    src: ../testservice-0.0.1-SNAPSHOT-all.jar
     dest: /usr/local/kalium-testservice/testservice.jar
     owner: kalium
     group: kalium

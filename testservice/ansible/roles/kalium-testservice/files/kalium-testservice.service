@@ -11,7 +11,7 @@ LimitCORE=infinity
 TimeoutStartSec=8
 WorkingDirectory=/usr/local/kalium-testservice
 Environment="PATH=/usr/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
-ExecStart=java -Djava.library.path=/usr/local/kalium-testservice/native/libs/ -jar /usr/local/kalium-testservice/testservice-0.0.1-SNAPSHOT-all.jar server /usr/local/kalium-testservice/config.yml
+ExecStart=java -Djava.library.path=/usr/local/kalium-testservice/native/libs/ -jar /usr/local/kalium-testservice/testservice.jar server /usr/local/kalium-testservice/config.yml
 Restart=always
 
 [Install]
