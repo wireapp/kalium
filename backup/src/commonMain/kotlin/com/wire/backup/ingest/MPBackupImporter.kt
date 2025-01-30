@@ -42,6 +42,24 @@ public abstract class CommonMPBackupImporter internal constructor(
 ) {
 
     /**
+     * Peeks into a backup artifact, returning information about it.
+     * @see BackupPeekResult
+     */
+    internal fun peekBackup(
+        source: Source,
+    ): BackupPeekResult {
+        val peekBuffer = source.buffer().peek()
+        return when (val result = headerSerializer.parseHeader(peekBuffer)) {
+            HeaderParseResult.Failure.UnknownFormat -> BackupPeekResult.Failure.UnknownFormat
+            is HeaderParseResult.Failure.UnsupportedVersion -> BackupPeekResult.Failure.UnsupportedVersion(result.version.toString())
+            is HeaderParseResult.Success -> {
+                val header = result.header
+                BackupPeekResult.Success(header.version.toString(), header.isEncrypted, header.hashData)
+            }
+        }
+    }
+
+    /**
      * Decrypt (if needed) and unzip the backup artifact.
      * The resulting [BackupImportResult.Success] contains a [BackupImportPager], that can be used to
      * consume pages of backed up application data, like messages, users and conversations.

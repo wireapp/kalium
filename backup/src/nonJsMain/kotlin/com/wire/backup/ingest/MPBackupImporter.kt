@@ -41,6 +41,19 @@ public actual class MPBackupImporter(
     }
 
     /**
+     * Peeks into the specified backup file and retrieves metadata about it.
+     *
+     * @param pathToBackupFile the path to the backup file to be inspected
+     * @return a [BackupPeekResult] that contains information about the backup,
+     * such as version, encryption status, etc.
+     */
+    @ObjCName("peek")
+    @NativeCoroutines
+    public suspend fun peekBackupFile(
+        pathToBackupFile: String
+    ): BackupPeekResult = peekBackup(FileSystem.SYSTEM.source(pathToBackupFile.toPath()))
+
+    /**
      * Imports a backup from the specified root path.
      *
      * @param multiplatformBackupFilePath the path to the decrypted, unzipped backup data file

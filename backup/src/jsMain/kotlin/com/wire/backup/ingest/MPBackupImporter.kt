@@ -35,6 +35,12 @@ import kotlin.js.Promise
 public actual class MPBackupImporter : CommonMPBackupImporter() {
     private val inMemoryUnencryptedBuffer = Buffer()
 
+    public fun peekFileData(data: ByteArray): Promise<BackupPeekResult> = GlobalScope.promise {
+        val buffer = Buffer()
+        buffer.write(data)
+        peekBackup(buffer)
+    }
+
     public fun importFromFileData(data: ByteArray, passphrase: String?): Promise<BackupImportResult> = GlobalScope.promise {
         val buffer = Buffer()
         buffer.write(data)

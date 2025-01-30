@@ -17,10 +17,13 @@
  */
 package com.wire.backup.ingest
 
+import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.encryption.DecryptionResult
 import com.wire.backup.encryption.EncryptedStream
 import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
+import com.wire.backup.envelope.BackupHeader
 import com.wire.backup.envelope.BackupHeaderSerializer
+import com.wire.backup.envelope.HashData
 import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.envelope.header.FakeHeaderSerializer
 import com.wire.backup.filesystem.EntryStorage
@@ -120,5 +123,53 @@ class MPBackupImporterTest {
 
         assertIs<BackupImportResult.Failure.UnzippingError>(result)
         assertEquals(throwable.message, result.message)
+    }
+
+    @Test
+    fun givenBackupHeaderBuffer_whenPeeking_thenCorrectDataIsReturned() = runTest {
+        val userId = BackupQualifiedId("user", "domain")
+        val header = BackupHeader(
+            version = BackupHeaderSerializer.Default.MAXIMUM_SUPPORTED_VERSION,
+            isEncrypted = true,
+            hashData = HashData.defaultFromUserId(userId)
+        )
+        val data = BackupHeaderSerializer.Default.headerToBytes(header)
+        val buffer = Buffer()
+        buffer.write(data)
+        val subject = createSubject()
+
+        val result = subject.peekBackup(buffer)
+        assertIs<BackupPeekResult.Success>(result)
+        assertEquals(header.version.toString(), result.version)
+        assertEquals(header.isEncrypted, result.isEncrypted)
+    }
+
+    @Test
+    fun givenBackupIsFromAnUnsupportedVersion_whenPeeking_thenCorrectDataIsReturned() = runTest {
+        val userId = BackupQualifiedId("user", "domain")
+        val header = BackupHeader(
+            version = BackupHeaderSerializer.Default.MINIMUM_SUPPORTED_VERSION - 1,
+            isEncrypted = true,
+            hashData = HashData.defaultFromUserId(userId)
+        )
+        val data = BackupHeaderSerializer.Default.headerToBytes(header)
+        val buffer = Buffer()
+        buffer.write(data)
+        val subject = createSubject()
+
+        val result = subject.peekBackup(buffer)
+        assertIs<BackupPeekResult.Failure.UnsupportedVersion>(result)
+        assertEquals(header.version.toString(), result.backupVersion)
+    }
+
+    @Test
+    fun givenDataIsNotFromValidBackup_whenPeeking_thenCorrectDataIsReturned() = runTest {
+        val data = byteArrayOf(0x00, 0x01, 0x02)
+        val buffer = Buffer()
+        buffer.write(data)
+        val subject = createSubject()
+
+        val result = subject.peekBackup(buffer)
+        assertIs<BackupPeekResult.Failure.UnknownFormat>(result)
     }
 }
