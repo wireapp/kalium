@@ -29,7 +29,7 @@ Build inside container:
 docker build --platform linux/arm64 -t testservice_build_env -f testservice/Dockerfile .
 docker create --name temp_container testservice_build_env
 docker cp temp_container:/app/testservice/build/libs/testservice-0.0.1-SNAPSHOT-all.jar ./testservice/testservice-0.0.1-SNAPSHOT-all.jar
-docker cp temp_container:/app/native/libs ./native/
+(optional) docker cp temp_container:/app/native/libs ./native/
 docker rm temp_container
 ```
 

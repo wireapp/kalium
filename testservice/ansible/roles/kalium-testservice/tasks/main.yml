@@ -5,6 +5,7 @@
     name:
       - haveged
       - openjdk-17-jre-headless
+      - libc6
     state: present
 
 - name: Enable service for random number generation
@@ -45,10 +46,19 @@
     group: kalium
     mode: '0644'
 
+# Native libraries are not external anymore with core crypto
+#- name: Create directory for native libs
+#  file:
+#    path: /usr/local/kalium-testservice/native/libs/
+#    state: directory
+#    owner: kalium
+#    group: kalium
+#    mode: '0755'
+#
 #- name: Deploy native libraries
 #  copy:
-#    src: ../../native
-#    dest: /usr/local/kalium-testservice/native
+#    src: ../../native/libs/
+#    dest: /usr/local/kalium-testservice/native/libs/
 #    owner: kalium
 #    group: kalium
 #    mode: '0644'
