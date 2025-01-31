@@ -49,6 +49,7 @@ import kotlinx.coroutines.withContext
 import okio.Path
 import okio.buffer
 import okio.use
+import kotlin.coroutines.cancellation.CancellationException
 
 interface RestoreWebBackupUseCase {
 
@@ -111,8 +112,11 @@ internal class RestoreWebBackupUseCaseImpl(
                             if (migratedConversation != null) {
                                 migratedConversations.add(migratedConversation)
                             }
-                        } catch (exception: Exception) {
-                            kaliumLogger.e("$TAG ${exception.message}")
+                        } catch (e: Exception) {
+                            kaliumLogger.e("$TAG ${e.message}")
+                            if (e is CancellationException) {
+                                throw e
+                            }
                         }
                     }
                     if (migratedConversations.isNotEmpty()) {

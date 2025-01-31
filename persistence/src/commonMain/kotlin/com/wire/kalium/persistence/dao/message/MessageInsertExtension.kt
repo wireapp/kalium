@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlinx.datetime.Instant
+import kotlin.coroutines.cancellation.CancellationException
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
     assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
@@ -97,6 +98,9 @@ internal class MessageInsertExtensionImpl(
             insertMessageContent(message)
             insertUnreadEvent(message)
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             /* no-op */
         }
     }

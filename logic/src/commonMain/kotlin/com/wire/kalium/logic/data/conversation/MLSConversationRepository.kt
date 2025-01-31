@@ -88,6 +88,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 
 data class ApplicationMessage(
@@ -887,8 +888,11 @@ internal class MLSConversationDataSource(
             @Suppress("TooGenericExceptionCaught")
             try {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-            } catch (error: Throwable) {
-                kaliumLogger.e("Discarding pending commit failed: $error")
+            } catch (e: Throwable) {
+                if (e is CancellationException) {
+                    throw e
+                }
+                kaliumLogger.e("Discarding pending commit failed: $e")
             }
             Either.Right(Unit)
         }
