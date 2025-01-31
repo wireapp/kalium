@@ -25,6 +25,10 @@ fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
 
+fun interface ContactsSizeProvider {
+    suspend operator fun invoke(): Either<CoreFailure, Int>
+}
+
 internal fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }
