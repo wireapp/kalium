@@ -20,8 +20,8 @@ package com.wire.backup.filesystem
 import okio.FileSystem
 import okio.SYSTEM
 
-internal actual fun createTestStorage(): EntryStorage {
-    return FileBasedEntryStorage(
+internal actual fun createTestStorage(): BackupPageStorage {
+    return FileBasedBackupPageStorage(
         FileSystem.SYSTEM,
         FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "kalium-test-backup",
         true

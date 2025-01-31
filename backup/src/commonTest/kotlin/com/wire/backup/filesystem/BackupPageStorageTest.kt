@@ -29,9 +29,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 
-internal expect fun createTestStorage(): EntryStorage
+internal expect fun createTestStorage(): BackupPageStorage
 
-class EntryStorageTest {
+class BackupPageStorageTest {
 
     private val entryStorage = createTestStorage()
 
@@ -63,7 +63,7 @@ class EntryStorageTest {
         val entryData = Buffer().apply { write(expectedData) }
         val entryName = "test.bin"
 
-        entryStorage.persistEntry(BackupEntry(entryName, entryData))
+        entryStorage.persistEntry(BackupPage(entryName, entryData))
 
         val result = entryStorage[entryName]
         assertNotNull(result)
@@ -76,9 +76,9 @@ class EntryStorageTest {
         val entryData = Buffer().apply { write(expectedData) }
         val entryName = "test.bin"
 
-        entryStorage.persistEntry(BackupEntry(entryName, entryData))
+        entryStorage.persistEntry(BackupPage(entryName, entryData))
         assertFailsWith<IllegalStateException> {
-            entryStorage.persistEntry(BackupEntry(entryName, entryData.copy()))
+            entryStorage.persistEntry(BackupPage(entryName, entryData.copy()))
         }
     }
 
@@ -88,7 +88,7 @@ class EntryStorageTest {
         val entryData = Buffer().apply { write(expectedData) }
         val entryName = "test.bin"
 
-        entryStorage.persistEntry(BackupEntry(entryName, entryData))
+        entryStorage.persistEntry(BackupPage(entryName, entryData))
 
         val result = entryStorage.listEntries()
         assertEquals(1, result.size)
@@ -102,7 +102,7 @@ class EntryStorageTest {
         val entryData = Buffer().apply { write(expectedData) }
         val entryName = "test.bin"
 
-        entryStorage.persistEntry(BackupEntry(entryName, entryData))
+        entryStorage.persistEntry(BackupPage(entryName, entryData))
         entryStorage.clear()
 
         val result = entryStorage[entryName]

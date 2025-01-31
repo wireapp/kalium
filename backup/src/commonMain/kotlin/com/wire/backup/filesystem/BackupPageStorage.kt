@@ -22,14 +22,21 @@ import okio.Source
 /**
  * Storage used during export/import of backups.
  */
-internal interface EntryStorage {
-    fun persistEntry(backupEntry: BackupEntry)
-    operator fun get(entryName: String): BackupEntry?
-    fun listEntries(): List<BackupEntry>
+internal interface BackupPageStorage {
+    fun persistEntry(backupPage: BackupPage)
+    operator fun get(entryName: String): BackupPage?
+    fun listEntries(): List<BackupPage>
     fun clear()
 }
 
-internal data class BackupEntry(
+internal data class BackupPage(
     val name: String,
     val data: Source,
-)
+) {
+    internal companion object {
+        const val CONVERSATIONS_PREFIX = "conversations_"
+        const val MESSAGES_PREFIX = "messages_"
+        const val USERS_PREFIX = "users_"
+        const val PAGE_SUFFIX = ".binpb"
+    }
+}

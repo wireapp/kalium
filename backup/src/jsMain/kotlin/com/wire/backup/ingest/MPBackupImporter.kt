@@ -17,10 +17,11 @@
  */
 package com.wire.backup.ingest
 
+import com.wire.backup.data.BackupData
 import com.wire.backup.dump.JSZip
-import com.wire.backup.filesystem.BackupEntry
-import com.wire.backup.filesystem.EntryStorage
-import com.wire.backup.filesystem.InMemoryEntryStorage
+import com.wire.backup.filesystem.BackupPage
+import com.wire.backup.filesystem.BackupPageStorage
+import com.wire.backup.filesystem.InMemoryBackupPageStorage
 import ext.libsodium.com.ionspin.kotlin.crypto.toUByteArray
 import ext.libsodium.com.ionspin.kotlin.crypto.toUInt8Array
 import kotlinx.coroutines.GlobalScope
@@ -31,6 +32,12 @@ import okio.Sink
 import org.khronos.webgl.Uint8Array
 import kotlin.js.Promise
 
+/**
+ * Entity able to parse backed-up data and returns
+ * digestible data in [BackupData] format.
+ * @sample samples.backup.BackupSamplesJs.peekBackup
+ * @sample samples.backup.BackupSamples.commonImport
+ */
 @JsExport
 public actual class MPBackupImporter : CommonMPBackupImporter() {
     private val inMemoryUnencryptedBuffer = Buffer()
@@ -49,17 +56,17 @@ public actual class MPBackupImporter : CommonMPBackupImporter() {
 
     override fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer
 
-    override suspend fun unzipAllEntries(): EntryStorage {
+    override suspend fun unzipAllEntries(): BackupPageStorage {
         // TODO: Improve performance and save memory by avoiding array conversions
         val zip = JSZip.loadAsync(inMemoryUnencryptedBuffer.readByteArray().toUByteArray().toUInt8Array()).await()
-        val storage = InMemoryEntryStorage()
+        val storage = InMemoryBackupPageStorage()
         val entryNames = keys(zip.files)
         for (entry in entryNames) {
             val promise = zip.files[entry].async("uint8array")
             val data = promise.unsafeCast<Promise<Uint8Array>>().await()
             val buffer = Buffer()
             buffer.write(data.toUByteArray().toByteArray())
-            storage.persistEntry(BackupEntry(entry, buffer))
+            storage.persistEntry(BackupPage(entry, buffer))
         }
         return storage
     }

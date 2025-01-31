@@ -99,10 +99,8 @@ class BackupEndToEndTest {
         assertIs<BackupImportResult.Success>(result)
         val pager = result.pager
         val allMessages = mutableListOf<BackupMessage>()
-        while (pager.hasMorePages()) {
-            pager.nextPage()?.let { page ->
-                allMessages.addAll(page.messages)
-            }
+        while (pager.messagesPager.hasMorePages()) {
+            allMessages.addAll(pager.messagesPager.nextPage())
         }
         val firstMessage = allMessages.first()
         assertEquals(expectedMessage.conversationId, firstMessage.conversationId)
