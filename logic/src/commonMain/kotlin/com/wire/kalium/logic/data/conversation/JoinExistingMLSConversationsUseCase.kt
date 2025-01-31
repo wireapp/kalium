@@ -30,7 +30,6 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isMLSProtocol
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
@@ -65,11 +64,10 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                                 is NetworkFailure -> {
                                     if (it is NetworkFailure.ServerMiscommunication
                                         && it.kaliumException is KaliumException.InvalidRequestError
-                                        && it.kaliumException.isMLSProtocol()
                                     ) {
                                         kaliumLogger.w(
                                             "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                    "due to Invalid LeafNode signature, skipping."
+                                                    "due to invalid request error, skipping."
                                         )
                                         Either.Right(Unit)
                                     } else {
