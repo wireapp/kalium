@@ -29,6 +29,7 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.exceptions.KaliumException
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
@@ -61,12 +62,23 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                         .flatMapLeft {
                             when (it) {
                                 is NetworkFailure -> {
-                                    kaliumLogger.w(
-                                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                "due to network failure"
-                                    )
-                                    Either.Left(it)
+                                    if (it is NetworkFailure.ServerMiscommunication
+                                        && it.kaliumException is KaliumException.InvalidRequestError
+                                    ) {
+                                        kaliumLogger.w(
+                                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                                    "due to invalid request error, skipping."
+                                        )
+                                        Either.Right(Unit)
+                                    } else {
+                                        kaliumLogger.w(
+                                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                                    "due to network failure"
+                                        )
+                                        Either.Left(it)
+                                    }
                                 }
+
                                 is CoreFailure.MissingKeyPackages -> {
                                     kaliumLogger.w(
                                         "Failed to establish mls group for ${conversation.id.toLogString()} " +
@@ -74,6 +86,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                                     )
                                     Either.Right(Unit)
                                 }
+
                                 else -> {
                                     kaliumLogger.w(
                                         "Failed to establish mls group for ${conversation.id.toLogString()} " +
