@@ -157,4 +157,9 @@ public abstract class CommonMPBackupImporter internal constructor(
     internal abstract suspend fun unzipAllEntries(): BackupPageStorage
 }
 
+/**
+ * Entity able to parse backed-up data and returns
+ * digestible data in [BackupData] format.
+ * @sample samples.backup.BackupSample.commonImport
+ */
 public expect class MPBackupImporter : CommonMPBackupImporter

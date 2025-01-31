@@ -1,6 +1,10 @@
 # Module logic
 Higher level business logic operations, tying up single operations from other modules.
 
+# Module backup
+Multiplatform/Crossplatform backup implementation, meant to be used by all clients. 
+Entrypoint: `MPBackupImporter` and `MPBackupExporter` classes.
+
 # Module calling
 Wraps [wire-avs](https://github.com/wireapp/wire-avs) for each platform, providing calling capabilities.
 

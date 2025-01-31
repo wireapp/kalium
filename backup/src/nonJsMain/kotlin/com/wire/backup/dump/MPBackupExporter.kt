@@ -18,10 +18,14 @@
 package com.wire.backup.dump
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
+import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
+import com.wire.kalium.protobuf.backup.BackupData
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import okio.FileSystem
@@ -29,6 +33,11 @@ import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.Source
 
+/**
+ * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
+ * into a cross-platform [BackupData] format.
+ * @sample samples.backup.BackupSamplesNonJS.exportBackup
+ */
 public actual class MPBackupExporter(
     selfUserId: BackupQualifiedId,
     workDirectory: String,

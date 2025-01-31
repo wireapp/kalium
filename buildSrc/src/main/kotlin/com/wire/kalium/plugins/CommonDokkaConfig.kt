@@ -23,6 +23,7 @@ import org.jetbrains.dokka.DokkaConfiguration.Visibility
 import org.jetbrains.dokka.gradle.AbstractDokkaLeafTask
 
 val documentedSubprojects = listOf(
+    "backup",
     "calling",
     "cli",
     "cryptography",

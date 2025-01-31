@@ -595,6 +595,10 @@ style:
         active: false
     UnusedPrivateClass:
         active: true
+    UnusedParameter:
+        excludes: [ '**/samples/src/**' ]
+    UnusedPrivateProperty:
+        excludes: [ '**/samples/src/**', '**/build.gradle.kts' ]
     UnusedPrivateMember:
         active: false
         allowedNames: '(_|ignored|expected|serialVersionUID)'

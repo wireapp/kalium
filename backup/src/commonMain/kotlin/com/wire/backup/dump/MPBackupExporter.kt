@@ -207,4 +207,8 @@ public abstract class CommonMPBackupExporter(
     }
 }
 
+/**
+ * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
+ * into a cross-platform [BackupData] format.
+ */
 public expect class MPBackupExporter : CommonMPBackupExporter

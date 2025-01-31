@@ -17,10 +17,14 @@
  */
 package com.wire.backup.dump
 
+import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.InMemoryBackupPageStorage
+import com.wire.kalium.protobuf.backup.BackupData
 import ext.libsodium.com.ionspin.kotlin.crypto.toUByteArray
 import ext.libsodium.com.ionspin.kotlin.crypto.toUInt8Array
 import kotlinx.coroutines.Deferred
@@ -32,6 +36,11 @@ import okio.Source
 import okio.buffer
 import kotlin.js.Promise
 
+/**
+ * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
+ * into a cross-platform [BackupData] format.
+ * @sample samples.backup.BackupSamplesJs.exportBackup
+ */
 @JsExport
 public actual class MPBackupExporter(
     selfUserId: BackupQualifiedId

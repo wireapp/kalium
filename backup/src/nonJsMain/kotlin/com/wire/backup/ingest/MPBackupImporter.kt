@@ -18,6 +18,7 @@
 package com.wire.backup.ingest
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
+import com.wire.backup.data.BackupData
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
 import okio.FileSystem
@@ -28,6 +29,12 @@ import okio.Sink
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
+/**
+ * Entity able to parse backed-up data and returns
+ * digestible data in [BackupData] format.
+ * @sample samples.backup.BackupSamplesNonJS.peekBackup
+ * @sample samples.backup.BackupSamples.commonImport
+ */
 @OptIn(ExperimentalObjCName::class)
 public actual class MPBackupImporter(
     private val pathToWorkDirectory: String,
