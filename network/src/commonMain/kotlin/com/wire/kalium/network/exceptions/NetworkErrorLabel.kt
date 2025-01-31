@@ -41,6 +41,7 @@ internal object NetworkErrorLabel {
     const val MLS_UNSUPPORTED_PROPOSAL = "mls-unsupported-proposal"
     const val MLS_KEY_PACKAGE_REF_NOT_FOUND = "mls-key-package-ref-not-found"
     const val MLS_MISSING_GROUP_INFO = "mls-missing-group-info"
+    const val MLS_PROTOCOL_ERROR = "mls-protocol-error"
     const val UNKNOWN_CLIENT = "unknown-client"
     const val NOT_TEAM_MEMBER = "no-team-member"
     const val NO_CONVERSATION = "no-conversation"

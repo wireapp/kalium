@@ -34,6 +34,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
@@ -129,6 +131,26 @@ class JoinExistingMLSConversationsUseCaseTest {
         }.wasInvoked(twice)
     }
 
+    @Test
+    fun givenServerMiscommunicationWithInvalidRequestError_WhenJoiningMLSConversation_ThenSkipConversation() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful()
+            .withJoinExistingMLSConversationReturningServerMiscommunication()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+        }.wasInvoked(twice)
+
+        coVerify {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -193,6 +215,20 @@ class JoinExistingMLSConversationsUseCaseTest {
             coEvery {
                 clientRepository.hasRegisteredMLSClient()
             }.returns(Either.Right(result))
+        }
+
+        suspend fun withJoinExistingMLSConversationReturningServerMiscommunication() = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(any(), any())
+            }.returns(
+                Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(
+                            errorResponse = ErrorResponse(400, "Invalid LeafNode signature", "mls-protocol-error")
+                        )
+                    )
+                )
+            )
         }
 
         companion object {
