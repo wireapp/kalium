@@ -17,28 +17,28 @@
  */
 package com.wire.kalium.logic.feature.auth
 
-sealed class LoginPath(val isCloudAccountCreationPossible: Boolean) {
+sealed class LoginPathResult(val isCloudAccountCreationPossible: Boolean) {
 
     /**
      * Regular case for Wire cloud, where the user can login and create an account.
      * This is the default path. and also covers pre-authorized and locked values.
      */
-    data object None : LoginPath(isCloudAccountCreationPossible = true)
+    data object None : LoginPathResult(isCloudAccountCreationPossible = true)
 
     /**
      * SSO case for Wire cloud, where the user can login using SSO.
      * @param ssoCode the SSO code of a cloud team.
      */
-    data class SSO(val ssoCode: String) : LoginPath(isCloudAccountCreationPossible = false)
+    data class SSO(val ssoCode: String) : LoginPathResult(isCloudAccountCreationPossible = false)
 
     /**
      * The team has a custom backend, where the user can login.
      * @param backendConfigUrl the URL of the json config from where to fetch the custom backend configurations.
      */
-    data class CustomBackend(val backendConfigUrl: String) : LoginPath(isCloudAccountCreationPossible = false)
+    data class CustomBackend(val backendConfigUrl: String) : LoginPathResult(isCloudAccountCreationPossible = false)
 
     /**
      * Wire cloud case for users, they can login but not to create an account.
      */
-    data object NoRegistration : LoginPath(isCloudAccountCreationPossible = false)
+    data object NoRegistration : LoginPathResult(isCloudAccountCreationPossible = false)
 }
