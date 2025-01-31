@@ -3,6 +3,17 @@
 This module implements the Wire Cross-platform Backup solution.
 Its purpose is to create a common implementation to be used by iOS, Web, and Android.
 
+## Samples
+
+If you want to jump straight to examples, checkout the `nonJs` and `js` versions in the documentation:
+- [Importing](https://wireapp.github.io/kalium/backup/com.wire.backup.ingest/-m-p-backup-importer/index.html)
+- [Exporting](https://wireapp.github.io/kalium/backup/com.wire.backup.dump/-m-p-backup-exporter/index.html)
+
+## Data structure
+
+To see the currently supported data (conversations, users, messages, etc.), check
+[BackupData](https://wireapp.github.io/kalium/backup/com.wire.backup.data/-backup-message/index.html)
+
 ## Capabilities
 
 > [!TIP]

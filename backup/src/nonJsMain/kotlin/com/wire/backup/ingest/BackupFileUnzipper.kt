@@ -17,7 +17,7 @@
  */
 package com.wire.backup.ingest
 
-public interface BackupFileUnzipper {
+public fun interface BackupFileUnzipper {
 
     /**
      * Unzip all the entries stored within the file at [zipPath] to _some_ directory of choice.
