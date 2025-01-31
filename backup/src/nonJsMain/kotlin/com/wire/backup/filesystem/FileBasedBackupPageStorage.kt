@@ -20,11 +20,11 @@ package com.wire.backup.filesystem
 import okio.FileSystem
 import okio.Path
 
-internal class FileBasedEntryStorage(
+internal class FileBasedBackupPageStorage(
     private val fileSystem: FileSystem,
     private val workDirectory: Path,
     shouldBeCleared: Boolean,
-) : EntryStorage {
+) : BackupPageStorage {
 
     init {
         if (!fileSystem.exists(workDirectory)) {
@@ -38,27 +38,27 @@ internal class FileBasedEntryStorage(
         }
     }
 
-    override fun persistEntry(backupEntry: BackupEntry) {
-        check(!fileSystem.exists(workDirectory / backupEntry.name)) {
-            "File with name ${backupEntry.name} already exists!"
+    override fun persistEntry(backupPage: BackupPage) {
+        check(!fileSystem.exists(workDirectory / backupPage.name)) {
+            "File with name ${backupPage.name} already exists!"
         }
-        fileSystem.write(workDirectory / backupEntry.name) {
-            writeAll(backupEntry.data)
+        fileSystem.write(workDirectory / backupPage.name) {
+            writeAll(backupPage.data)
         }
     }
 
-    override operator fun get(entryName: String): BackupEntry? {
+    override operator fun get(entryName: String): BackupPage? {
         val entryFile = workDirectory / entryName
         return if (fileSystem.exists(entryFile)) {
-            BackupEntry(entryName, fileSystem.openReadOnly(entryFile).source())
+            BackupPage(entryName, fileSystem.openReadOnly(entryFile).source())
         } else {
             null
         }
     }
 
-    override fun listEntries(): List<BackupEntry> =
+    override fun listEntries(): List<BackupPage> =
         fileSystem.list(workDirectory).map {
-            BackupEntry(it.name, fileSystem.openReadOnly(it).source())
+            BackupPage(it.name, fileSystem.openReadOnly(it).source())
         }
 
     override fun clear() {

@@ -24,7 +24,7 @@ import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
 import com.wire.backup.envelope.BackupHeader
 import com.wire.backup.envelope.BackupHeaderSerializer
 import com.wire.backup.envelope.HeaderParseResult
-import com.wire.backup.filesystem.EntryStorage
+import com.wire.backup.filesystem.BackupPageStorage
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -111,7 +111,7 @@ public abstract class CommonMPBackupImporter internal constructor(
         }
         sink.close()
         return try {
-            BackupImportResult.Success(BackupImportPager(unzipAllEntries()))
+            BackupImportResult.Success(BackupImportPager(unzipAllEntries().listEntries()))
         } catch (t: Throwable) {
             BackupImportResult.Failure.UnzippingError(t.message ?: "Unknown zipping error.")
         }
@@ -154,7 +154,7 @@ public abstract class CommonMPBackupImporter internal constructor(
     /**
      * Unzips all entries in the zip archive stored in the sink returned by [getUnencryptedArchiveSink].
      */
-    internal abstract suspend fun unzipAllEntries(): EntryStorage
+    internal abstract suspend fun unzipAllEntries(): BackupPageStorage
 }
 
 public expect class MPBackupImporter : CommonMPBackupImporter

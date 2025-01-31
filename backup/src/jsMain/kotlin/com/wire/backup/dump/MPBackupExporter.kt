@@ -18,9 +18,9 @@
 package com.wire.backup.dump
 
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.filesystem.BackupEntry
-import com.wire.backup.filesystem.EntryStorage
-import com.wire.backup.filesystem.InMemoryEntryStorage
+import com.wire.backup.filesystem.BackupPage
+import com.wire.backup.filesystem.BackupPageStorage
+import com.wire.backup.filesystem.InMemoryBackupPageStorage
 import ext.libsodium.com.ionspin.kotlin.crypto.toUByteArray
 import ext.libsodium.com.ionspin.kotlin.crypto.toUInt8Array
 import kotlinx.coroutines.Deferred
@@ -37,11 +37,11 @@ public actual class MPBackupExporter(
     selfUserId: BackupQualifiedId
 ) : CommonMPBackupExporter(selfUserId) {
 
-    override val storage: EntryStorage = InMemoryEntryStorage()
+    override val storage: BackupPageStorage = InMemoryBackupPageStorage()
 
     // This shouldn't be used by clients anyway, so it's fine if we can't sport it to JS!
     @Suppress("NON_EXPORTABLE_TYPE")
-    override fun zipEntries(data: List<BackupEntry>): Deferred<Source> {
+    override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val zip = JSZip()
         data.forEach { entry ->
             // TODO: Save memory and improve performance by avoid array duplication!

@@ -24,23 +24,23 @@ import okio.buffer
  * As JS on a browser doesn't have access to files, we just write stuff in memory.
  * It is also useful for tests.
  */
-internal class InMemoryEntryStorage : EntryStorage {
+internal class InMemoryBackupPageStorage : BackupPageStorage {
 
     private val entries = mutableMapOf<String, ByteArray>()
 
-    override fun persistEntry(backupEntry: BackupEntry) {
-        check(!entries.containsKey(backupEntry.name)) { "Entry with name ${backupEntry.name} already exists." }
-        entries[backupEntry.name] = backupEntry.data.buffer().readByteArray()
+    override fun persistEntry(backupPage: BackupPage) {
+        check(!entries.containsKey(backupPage.name)) { "Entry with name ${backupPage.name} already exists." }
+        entries[backupPage.name] = backupPage.data.buffer().readByteArray()
     }
 
-    override operator fun get(entryName: String): BackupEntry? = entries[entryName]?.let {
+    override operator fun get(entryName: String): BackupPage? = entries[entryName]?.let {
         val buffer = Buffer().apply { write(it) }
-        BackupEntry(entryName, buffer)
+        BackupPage(entryName, buffer)
     }
 
-    override fun listEntries(): List<BackupEntry> = entries.map { data ->
+    override fun listEntries(): List<BackupPage> = entries.map { data ->
         val buffer = Buffer().apply { write(data.value) }
-        BackupEntry(data.key, buffer)
+        BackupPage(data.key, buffer)
     }
 
     override fun clear() {

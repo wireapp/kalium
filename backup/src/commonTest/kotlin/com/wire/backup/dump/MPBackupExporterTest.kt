@@ -18,9 +18,9 @@
 package com.wire.backup.dump
 
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.filesystem.BackupEntry
-import com.wire.backup.filesystem.EntryStorage
-import com.wire.backup.filesystem.InMemoryEntryStorage
+import com.wire.backup.filesystem.BackupPage
+import com.wire.backup.filesystem.BackupPageStorage
+import com.wire.backup.filesystem.InMemoryBackupPageStorage
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
@@ -37,9 +37,9 @@ class MPBackupExporterTest {
         val subject = object : CommonMPBackupExporter(
             BackupQualifiedId("user", "domain")
         ) {
-            override val storage: EntryStorage = InMemoryEntryStorage()
+            override val storage: BackupPageStorage = InMemoryBackupPageStorage()
 
-            override fun zipEntries(data: List<BackupEntry>): Deferred<Source> {
+            override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
                 throw thrownException
             }
         }
