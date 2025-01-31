@@ -19,9 +19,9 @@ package com.wire.backup.dump
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.filesystem.BackupEntry
-import com.wire.backup.filesystem.EntryStorage
-import com.wire.backup.filesystem.FileBasedEntryStorage
+import com.wire.backup.filesystem.BackupPage
+import com.wire.backup.filesystem.BackupPageStorage
+import com.wire.backup.filesystem.FileBasedBackupPageStorage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import okio.FileSystem
@@ -40,13 +40,13 @@ public actual class MPBackupExporter(
 
     private val fileSystem = FileSystem.SYSTEM
 
-    override val storage: EntryStorage = FileBasedEntryStorage(
+    override val storage: BackupPageStorage = FileBasedBackupPageStorage(
         fileSystem = fileSystem,
         workDirectory = workDirectoryPath,
         shouldBeCleared = true
     )
 
-    override fun zipEntries(data: List<BackupEntry>): Deferred<Source> {
+    override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
         val pathToZippedArchive = fileZipper.zip(entries).toPath()
         return CompletableDeferred(
