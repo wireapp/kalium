@@ -26,6 +26,11 @@ sealed class LoginPathResult(val isCloudAccountCreationPossible: Boolean) {
     data object None : LoginPathResult(isCloudAccountCreationPossible = true)
 
     /**
+     * The user has an existing cloud account, but the domain is already claimed by an organization.
+     */
+    data class ExistingAccountWithClaimedDomain(val domain: String) : LoginPathResult(isCloudAccountCreationPossible = false)
+
+    /**
      * SSO case for Wire cloud, where the user can login using SSO.
      * @param ssoCode the SSO code of a cloud team.
      */
