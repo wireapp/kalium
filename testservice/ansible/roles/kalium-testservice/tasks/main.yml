@@ -86,3 +86,9 @@
     enabled: true
     state: restarted
 
+- name: Restart kalium-testservice every evening
+  cron:
+    name: "Restart kalium-testservice"
+    minute: "30"
+    hour: "20"
+    job: "systemctl restart kalium-testservice"
