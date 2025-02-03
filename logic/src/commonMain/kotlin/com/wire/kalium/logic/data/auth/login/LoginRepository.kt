@@ -19,14 +19,17 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.auth.DomainRegistrationMapper
+import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 
@@ -45,12 +48,16 @@ internal interface LoginRepository {
         label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>>
+
+    suspend fun getDomainRegistration(email: String): Either<NetworkFailure, LoginDomainPath>
 }
 
 internal class LoginRepositoryImpl internal constructor(
     private val loginApi: LoginApi,
+    private val getDomainRegistrationApi: GetDomainRegistrationApi,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val domainRegistrationMapper: DomainRegistrationMapper = MapperProvider.domainRegistrationMapper()
 ) : LoginRepository {
 
     override suspend fun loginWithEmail(
@@ -75,6 +82,12 @@ internal class LoginRepositoryImpl internal constructor(
             LoginParam.LoginWithHandle(handle, password, label),
             shouldPersistClient
         )
+
+    override suspend fun getDomainRegistration(email: String): Either<NetworkFailure, LoginDomainPath> = wrapApiRequest {
+        getDomainRegistrationApi.getDomainRegistration(email)
+    }.map {
+        domainRegistrationMapper.fromApiModel(it, email)
+    }
 
     private suspend fun login(
         loginParam: LoginParam,
