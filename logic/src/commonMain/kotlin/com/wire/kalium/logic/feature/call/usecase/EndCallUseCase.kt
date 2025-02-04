@@ -56,7 +56,7 @@ internal class EndCallUseCaseImpl(
      * @param conversationId the id of the conversation for the call should be ended.
      */
     override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
-        callRepository.callsFlow().first().find {
+        val endedCall = callRepository.callsFlow().first().find {
             // This use case can be invoked while joining the call or when the call is established.
             it.conversationId == conversationId && it.status in listOf(
                 CallStatus.STARTED,
@@ -72,10 +72,11 @@ internal class EndCallUseCaseImpl(
                 callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED")
                 callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
             }
+            it
         }
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
-        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback())
+        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback(endedCall?.establishedTime))
     }
 }

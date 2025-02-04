@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallScreenSharingMetadata
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -57,7 +58,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
         val conversationServicesCount = conversationMembers.count { member -> member.user.userType == UserType.SERVICE }
         val guestsCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST }
         val guestsProCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST && member.user.teamId != null }
-        val isOutgoingCall = callerId.value == selfCallUser?.id?.value
+        val isOutgoingCall = callStatus == CallStatus.STARTED
         val callDurationInSeconds = establishedTime?.let {
             DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentIsoDateTimeString()) / MILLIS_IN_SECOND
         } ?: 0L
