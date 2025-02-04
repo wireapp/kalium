@@ -136,8 +136,8 @@ class ConversationScope internal constructor(
     val getConversationDetails: GetConversationUseCase
         get() = GetConversationUseCase(conversationRepository)
 
-    val getOneToOneConversation: GetOneToOneConversationUseCase
-        get() = GetOneToOneConversationUseCase(conversationRepository)
+    val getOneToOneConversation: GetOneToOneConversationDetailsUseCase
+        get() = GetOneToOneConversationDetailsUseCase(conversationRepository)
 
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
