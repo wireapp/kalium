@@ -180,11 +180,12 @@ private fun CoreFailure.getStrategy(
         this is NetworkFailure.ServerMiscommunication &&
         kaliumException is KaliumException.InvalidRequestError
     ) {
-        if (this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) {
+        if ((this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) ||
+            this.kaliumException.isMlsCommitMissingReferences()
+        ) {
             CommitStrategy.DISCARD_AND_RETRY
         } else if (
-            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage ||
-            this.kaliumException.isMlsCommitMissingReferences()
+            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage
         ) {
             CommitStrategy.KEEP_AND_RETRY
         } else {
