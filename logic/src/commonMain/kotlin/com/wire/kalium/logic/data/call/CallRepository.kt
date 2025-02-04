@@ -475,7 +475,7 @@ internal class CallDataSource(
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                     this[conversationId] = call.copy(
                         participants = participants,
-                        maxParticipants = max(call.maxParticipants, participants.size + 1),
+                        maxParticipants = max(call.maxParticipants, participants.size),
                         users = updatedUsers,
                         screenShareMetadata = updateScreenSharingMetadata(
                             metadata = call.screenShareMetadata,
