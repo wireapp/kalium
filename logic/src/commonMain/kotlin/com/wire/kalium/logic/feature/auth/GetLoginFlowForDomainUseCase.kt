@@ -25,17 +25,25 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
 
-interface GetLoginFlowForDomain {
+/**
+ * Use case to get the login flow for the client app/user to follow.
+ * This is determined by the backend according to registration of the domain.¬
+ *
+ * @param email the email to look up the domain registration for
+ */
+interface GetLoginFlowForDomainUseCase {
     suspend operator fun invoke(email: String): Either<CoreFailure, LoginDomainPath>
 }
 
 @Suppress("FunctionNaming")
-internal fun GetLoginFlowForDomain(
+internal fun GetLoginFlowForDomainUseCase(
     loginRepository: LoginRepository
-) = object : GetLoginFlowForDomain {
+) = object : GetLoginFlowForDomainUseCase {
     override suspend fun invoke(email: String): Either<CoreFailure, LoginDomainPath> {
-        return loginRepository.getDomainRegistration(email).fold(
-            { it.left() },
-            { it.right() })
+        return loginRepository.getDomainRegistration(email).fold({
+            it.left()
+        }, {
+            it.right()
+        })
     }
 }

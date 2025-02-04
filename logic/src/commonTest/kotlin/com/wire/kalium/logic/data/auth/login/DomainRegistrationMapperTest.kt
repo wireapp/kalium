@@ -69,6 +69,7 @@ class DomainRegistrationMapperTest {
             Arrangement.provideDomainRegistrationDTO(DomainRedirect.NONE, dueToExistingAccount = true), Arrangement.EMAIL
         )
         assertEquals(LoginDomainPath.ExistingAccountWithClaimedDomain::class, result::class)
+        assertEquals("wire.com", (result as LoginDomainPath.ExistingAccountWithClaimedDomain).domain)
     }
 
     private object Arrangement {

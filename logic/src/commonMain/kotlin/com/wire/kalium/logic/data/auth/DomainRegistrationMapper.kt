@@ -31,7 +31,7 @@ internal object DomainRegistrationMapperImpl : DomainRegistrationMapper {
             DomainRedirect.LOCKED -> LoginDomainPath.None
             DomainRedirect.NONE -> {
                 if (domainRegistrationDTO.dueToExistingAccount == true) {
-                    LoginDomainPath.ExistingAccountWithClaimedDomain(email) // todo. extract domain
+                    LoginDomainPath.ExistingAccountWithClaimedDomain(extractDomain(email))
                 } else {
                     LoginDomainPath.None
                 }
@@ -41,5 +41,9 @@ internal object DomainRegistrationMapperImpl : DomainRegistrationMapper {
             DomainRedirect.BACKEND -> LoginDomainPath.CustomBackend(domainRegistrationDTO.backendUrl!!)
             DomainRedirect.NO_REGISTRATION -> LoginDomainPath.NoRegistration
         }
+    }
+
+    private fun extractDomain(email: String): String {
+        return email.substringAfter('@')
     }
 }
