@@ -94,7 +94,7 @@ class ShouldAskCallFeedbackUseCaseTest {
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ShouldAskCallFeedbackUseCase> {
             runBlocking { block() }
-            return this to ShouldAskCallFeedbackUseCase(userConfigRepository)
+            return this to shouldAskCallFeedbackUseCase(userConfigRepository)
         }
     }
 

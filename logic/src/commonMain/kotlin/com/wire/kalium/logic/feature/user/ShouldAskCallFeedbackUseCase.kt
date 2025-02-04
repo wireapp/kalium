@@ -34,11 +34,9 @@ interface ShouldAskCallFeedbackUseCase {
     ): ShouldAskCallFeedbackUseCaseResult
 }
 
-internal fun ShouldAskCallFeedbackUseCase(
+internal fun shouldAskCallFeedbackUseCase(
     userConfigRepository: UserConfigRepository
 ) = object : ShouldAskCallFeedbackUseCase {
-    private val MILLIS_IN_SECOND = 1_000L
-    private val ONE_MINUTE = 60
 
     override suspend fun invoke(
         establishedTime: String?,
@@ -80,3 +78,6 @@ sealed class ShouldAskCallFeedbackUseCaseResult {
             ShouldNotAskCallFeedback("Next time for call feedback is not reached")
     }
 }
+
+private const val MILLIS_IN_SECOND = 1_000L
+private const val ONE_MINUTE = 60

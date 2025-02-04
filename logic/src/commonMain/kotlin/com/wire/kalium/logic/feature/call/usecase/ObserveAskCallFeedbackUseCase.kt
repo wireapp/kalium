@@ -32,7 +32,7 @@ interface ObserveAskCallFeedbackUseCase {
     suspend operator fun invoke(): Flow<ShouldAskCallFeedbackUseCaseResult>
 }
 
-internal fun ObserveAskCallFeedbackUseCase(
+internal fun observeAskCallFeedbackUseCase(
     endCallListener: EndCallResultListener
 ) = object : ObserveAskCallFeedbackUseCase {
     override suspend fun invoke(): Flow<ShouldAskCallFeedbackUseCaseResult> =
