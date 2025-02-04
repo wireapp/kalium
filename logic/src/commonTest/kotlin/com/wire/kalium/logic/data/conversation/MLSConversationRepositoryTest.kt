@@ -1601,6 +1601,77 @@ class MLSConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenMlsCommitMissingReferencesError_whenEstablishMLSSubConversationGroup_thenShouldDiscardAndRetry() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(emptyList())
+            .withGetMLSClientSuccessful()
+            .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
+            .withGetExternalSenderKeySuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
+            .withKeyForCipherSuite()
+            .withUpdateKeyingMaterialSuccessful()
+            .withWaitUntilLiveSuccessful()
+            .withSendCommitBundleFailing(Arrangement.MLS_COMMIT_MISSING_REFERENCES_ERROR, times = 1)
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
+
+        result.shouldSucceed()
+
+        coVerify { arrangement.mlsMessageApi.sendCommitBundle(any()) }.wasInvoked(2) // Retry should occur
+        coVerify { arrangement.mlsClient.clearPendingCommit(eq(Arrangement.RAW_GROUP_ID)) }
+            .wasInvoked(once) // indicates that the commit was discarded
+    }
+
+    @Test
+    fun givenStaleMessageError_whenUpdateKeyingMaterial_thenShouldKeepAndRetry() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withCommitPendingProposalsSuccessful()
+            .withClaimKeyPackagesSuccessful(emptyList())
+            .withGetMLSClientSuccessful()
+            .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
+            .withGetExternalSenderKeySuccessful()
+            .withKeyForCipherSuite()
+            .withGetDefaultCipherSuiteSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
+            .withWaitUntilLiveSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+
+        result.shouldSucceed()
+
+        coVerify { arrangement.mlsMessageApi.sendCommitBundle(any()) }.wasInvoked(2) // Retry should occur
+        coVerify { arrangement.mlsClient.clearPendingCommit(eq(Arrangement.RAW_GROUP_ID)) }
+            .wasNotInvoked() // indicates that the commit was not discarded
+    }
+
+    @Test
+    fun givenUnexpectedError_whenEstablishMLSSubConversationGroup_thenShouldAbort() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(emptyList())
+            .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
+            .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
+            .withGetExternalSenderKeySuccessful()
+            .withKeyForCipherSuite()
+            .withUpdateKeyingMaterialSuccessful()
+            .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR, times = 1)
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
+
+        result.shouldFail()
+
+        coVerify { arrangement.mlsMessageApi.sendCommitBundle(any()) }.wasInvoked(1) // No retry should happen
+        coVerify { arrangement.mlsClient.clearPendingCommit(eq(Arrangement.RAW_GROUP_ID)) }
+            .wasInvoked(once) // indicates that the commit was discarded
+    }
+
     private class Arrangement(
         var kaliumDispatcher: KaliumDispatcher = TestKaliumDispatcher
     ) {
@@ -1888,6 +1959,8 @@ class MLSConversationRepositoryTest {
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
+            val MLS_COMMIT_MISSING_REFERENCES_ERROR =
+                KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-commit-missing-references"))
             val MLS_PUBLIC_KEY = MLSPublicKeys(
                 removal = mapOf(
                     "ed25519" to "gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw="
