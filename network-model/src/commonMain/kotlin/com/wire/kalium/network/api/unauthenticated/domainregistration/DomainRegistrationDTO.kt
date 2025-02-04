@@ -27,7 +27,9 @@ data class DomainRegistrationDTO(
     @SerialName("domain_redirect")
     val domainRedirect: DomainRedirect,
     @SerialName("sso_code")
-    val ssoCode: String?
+    val ssoCode: String?,
+    @SerialName("due_to_existing_account")
+    val dueToExistingAccount: Boolean?
 )
 
 @Serializable

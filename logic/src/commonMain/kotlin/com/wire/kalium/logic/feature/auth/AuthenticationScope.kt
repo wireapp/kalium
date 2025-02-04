@@ -100,7 +100,7 @@ class AuthenticationScope internal constructor(
         )
 
     private val loginRepository: LoginRepository
-        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi)
+        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, unauthenticatedNetworkContainer.getDomainRegistrationApi)
 
     private val registerAccountRepository: RegisterAccountRepository
         get() = RegisterAccountDataSource(
@@ -125,6 +125,9 @@ class AuthenticationScope internal constructor(
 
     private val appVersionRepository: AppVersionRepository
         get() = AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
+
+    val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
+        get() = GetLoginFlowForDomainUseCase(loginRepository)
 
     val login: LoginUseCase
         get() = LoginUseCaseImpl(
