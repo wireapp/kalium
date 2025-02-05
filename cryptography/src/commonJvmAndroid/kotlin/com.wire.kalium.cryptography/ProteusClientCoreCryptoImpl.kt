@@ -28,6 +28,7 @@ import io.ktor.util.encodeBase64
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import kotlin.coroutines.cancellation.CancellationException
 import com.wire.crypto.ProteusException as ProteusExceptionNative
 
 @Suppress("TooManyFunctions")
@@ -153,6 +154,8 @@ class ProteusClientCoreCryptoImpl private constructor(
                 intCode = mapProteusExceptionToRawIntErrorCode(e.v1),
                 cause = e
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
