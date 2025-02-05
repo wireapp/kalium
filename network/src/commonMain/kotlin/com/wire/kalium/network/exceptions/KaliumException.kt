@@ -45,6 +45,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CO
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_PROTOCOL_ERROR
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_FOUND
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_TEAM_MEMBER
@@ -222,6 +223,10 @@ fun KaliumException.InvalidRequestError.isGuestLinkDisabled(): Boolean {
 
 fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
     return errorResponse.label == ACCESS_DENIED
+}
+
+fun KaliumException.InvalidRequestError.isMLSProtocol(): Boolean {
+    return errorResponse.label == MLS_PROTOCOL_ERROR
 }
 
 fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
