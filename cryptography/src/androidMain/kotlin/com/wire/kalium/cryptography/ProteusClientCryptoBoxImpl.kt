@@ -183,7 +183,7 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()

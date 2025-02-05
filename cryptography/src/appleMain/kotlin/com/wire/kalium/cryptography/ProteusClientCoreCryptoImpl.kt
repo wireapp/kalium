@@ -133,7 +133,7 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
@@ -190,7 +190,7 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
             }
         }
 
-        @Suppress("TooGenericExceptionCaught")
+        @Suppress("TooGenericExceptionCaught", "ThrowsCount")
         operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientCoreCryptoImpl {
             try {
                 migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
