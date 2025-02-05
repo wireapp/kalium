@@ -1,0 +1,37 @@
+- name: Update package repository
+  when:
+    - ansible_facts['distribution'] == "Debian"
+  apt:
+    update_cache: true
+
+- name: Install java and other useful packages
+  when:
+    - ansible_facts['distribution'] == "Debian"
+  package:
+    name:
+      - openjdk-17-jre-headless
+      - vim
+      - curl
+      - jq
+      - git
+      - intel-microcode
+      - unattended-upgrades
+    state: present
+
+- name: Disallow SSH root login
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+    state: present
+    validate: sshd -t -f %s
+  notify:
+    - Restart sshd
+
+- name: Configure unattended upgrades
+  copy:
+    src: 20auto-upgrades
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: 0644
+    owner: root
+    group: root
