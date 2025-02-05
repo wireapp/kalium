@@ -282,7 +282,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
             assertEquals(listOf(draft), initialValue)
 
             // When
-            messageDraftDAO.upsertMessageDraft(updatedDraft) // the same exact draft is being saved again
+            messageDraftDAO.upsertMessageDraft(updatedDraft) // updated draft is being saved that should replace the old one
 
             // Then
             val updatedValue = awaitItem() // other query should be notified
