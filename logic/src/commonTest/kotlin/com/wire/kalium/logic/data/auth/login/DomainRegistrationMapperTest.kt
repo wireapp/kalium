@@ -34,7 +34,7 @@ class DomainRegistrationMapperTest {
         val result = domainRegistrationMapper.fromApiModel(
             Arrangement.provideDomainRegistrationDTO(DomainRedirect.NONE), Arrangement.EMAIL
         )
-        assertEquals(LoginDomainPath.None, result)
+        assertEquals(LoginDomainPath.Default, result)
     }
 
     @Test

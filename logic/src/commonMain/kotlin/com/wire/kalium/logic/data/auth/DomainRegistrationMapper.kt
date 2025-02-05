@@ -27,13 +27,13 @@ interface DomainRegistrationMapper {
 internal object DomainRegistrationMapperImpl : DomainRegistrationMapper {
     override fun fromApiModel(domainRegistrationDTO: DomainRegistrationDTO, email: String): LoginDomainPath {
         return when (domainRegistrationDTO.domainRedirect) {
-            DomainRedirect.PRE_AUTHORIZED -> LoginDomainPath.None
-            DomainRedirect.LOCKED -> LoginDomainPath.None
+            DomainRedirect.PRE_AUTHORIZED -> LoginDomainPath.Default
+            DomainRedirect.LOCKED -> LoginDomainPath.Default
             DomainRedirect.NONE -> {
                 if (domainRegistrationDTO.dueToExistingAccount == true) {
                     LoginDomainPath.ExistingAccountWithClaimedDomain(extractDomain(email))
                 } else {
-                    LoginDomainPath.None
+                    LoginDomainPath.Default
                 }
             }
 

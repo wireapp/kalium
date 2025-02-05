@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
@@ -24,6 +25,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 
 /**
  * Use case to get the login flow for the client app/user to follow.
@@ -40,10 +43,24 @@ internal fun GetLoginFlowForDomainUseCase(
     loginRepository: LoginRepository
 ) = object : GetLoginFlowForDomainUseCase {
     override suspend fun invoke(email: String): Either<CoreFailure, LoginDomainPath> {
+        logger.d("Get domain registration")
         return loginRepository.getDomainRegistration(email).fold({
+            logger.logStructuredJson(
+                level = KaliumLogLevel.ERROR,
+                leadingMessage = "Get domain registration",
+                jsonStringKeyValues = mapOf("error" to it)
+            )
             it.left()
         }, {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.DEBUG,
+                leadingMessage = "Get domain registration",
+                jsonStringKeyValues = mapOf("path" to it)
+            )
             it.right()
         })
     }
 }
+
+private const val TAG = "GetLoginFlowForDomainUseCase"
+private val logger = kaliumLogger.withTextTag(TAG)

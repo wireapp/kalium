@@ -23,7 +23,7 @@ sealed class LoginDomainPath(val isCloudAccountCreationPossible: Boolean) {
      * Regular case for Wire cloud, where the user can login and create an account.
      * This is the default path. and also covers pre-authorized and locked values.
      */
-    data object None : LoginDomainPath(isCloudAccountCreationPossible = true)
+    data object Default : LoginDomainPath(isCloudAccountCreationPossible = true)
 
     /**
      * The user has an existing cloud account, but the domain is already claimed by an organization.

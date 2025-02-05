@@ -37,7 +37,7 @@ class GetLoginFlowForDomainUseCaseTest {
     @Test
     fun givenEmail_whenInvoked_thenReturnTheDomainPath() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withDomainRegistrationResult(LoginDomainPath.None.right())
+            .withDomainRegistrationResult(LoginDomainPath.Default.right())
             .arrange()
 
         useCase(Arrangement.EMAIL)
