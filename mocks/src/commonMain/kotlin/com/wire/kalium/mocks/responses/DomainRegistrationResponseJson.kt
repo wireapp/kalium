@@ -29,7 +29,8 @@ object DomainRegistrationResponseJson {
         serializableData = DomainRegistrationDTO(
             backendUrl = null,
             domainRedirect = DomainRedirect.NO_REGISTRATION,
-            ssoCode = null
+            ssoCode = null,
+            dueToExistingAccount = null
         ),
         jsonProvider = { serializable ->
             """
