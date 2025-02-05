@@ -38,10 +38,9 @@ import kotlin.coroutines.cancellation.CancellationException
 fun obfuscatedJsonMessage(text: String): String = try {
     val obj = (Json.decodeFromString(text) as JsonElement)
     obfuscatedJsonElement(obj).toString()
+} catch (e: CancellationException) {
+    throw e
 } catch (e: Exception) {
-    if (e is CancellationException) {
-        throw e
-    }
     "\"Error while obfuscating. Content probably not json.\""
 }
 
@@ -123,10 +122,9 @@ fun deleteSensitiveItemsFromJson(text: String): String {
         }
         return logMessage
 
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         return "error while logging "
     }
 }

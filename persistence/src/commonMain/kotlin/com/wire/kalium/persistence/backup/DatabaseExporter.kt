@@ -95,11 +95,10 @@ internal class DatabaseExporterImpl internal constructor(
             // attach the plain DB to the user DB
             // dump the content of the user DB into the plain DB
             plainDatabase.database.dumpContentQueries.dumpAllTables()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
-            if (e is CancellationException) {
-                throw e
-            }
             // if the dump failed, delete the backup DB file
             deleteBackupDBFile()
             return null
@@ -136,10 +135,9 @@ internal class DatabaseExporterImpl internal constructor(
                     bindBytes(1, localDBPassphrase.value)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            if (e is CancellationException) {
-                throw e
-            }
             kaliumLogger.e("Failed to attach the local DB to the plain DB ${e.message}")
             return false
         }

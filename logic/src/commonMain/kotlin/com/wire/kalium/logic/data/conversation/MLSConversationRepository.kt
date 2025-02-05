@@ -888,10 +888,9 @@ internal class MLSConversationDataSource(
             @Suppress("TooGenericExceptionCaught")
             try {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Throwable) {
-                if (e is CancellationException) {
-                    throw e
-                }
                 kaliumLogger.e("Discarding pending commit failed: $e")
             }
             Either.Right(Unit)

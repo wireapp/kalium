@@ -140,10 +140,9 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         } catch (e: CryptoException) {
             // TODO underlying proteus error is not exposed atm
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            if (e is CancellationException) {
-                throw e
-            }
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         }
     }
@@ -199,10 +198,9 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
                 return ProteusClientCoreCryptoImpl(coreCrypto)
             } catch (e: CryptoException) {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                if (e is CancellationException) {
-                    throw e
-                }
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }

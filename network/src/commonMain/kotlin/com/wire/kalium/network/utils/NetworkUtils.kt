@@ -157,10 +157,9 @@ private inline fun <reified ResponseType : Any> handlingNetworkException(
     performRequest: () -> NetworkResponse<ResponseType>
 ): NetworkResponse<ResponseType> = try {
     performRequest()
+} catch (e: CancellationException) {
+    throw e
 } catch (e: Exception) {
-    if (e is CancellationException) {
-        throw e
-    }
     NetworkResponse.Error(KaliumException.GenericError(e))
 }
 

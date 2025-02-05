@@ -335,33 +335,29 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )
         Either.Left(ProteusFailure(e))
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         kaliumLogger.e(
             """{ "ProteusException": "${e.message},"
                 |"cause": ${e.cause} },
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )
-        if (e is CancellationException) {
-            throw e
-        }
-
         Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)))
-
     }
 }
 
 internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         kaliumLogger.e(
             """{ "MLSException": "${e.message},"
                 |"cause": ${e.cause} }",
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )
-        if (e is CancellationException) {
-            throw e
-        }
         Either.Left(mapMLSException(e))
     }
 }
@@ -369,15 +365,14 @@ internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, 
 internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailure, T> {
     return try {
         Either.Right(e2eiRequest())
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         kaliumLogger.e(
             """{ "E2EIException": "${e.message},"
                 |"cause": ${e.cause} }",
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )
-        if (e is CancellationException) {
-            throw e
-        }
         Either.Left(E2EIFailure.Generic(e))
     }
 }
@@ -385,10 +380,9 @@ internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailur
 internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
     val result = try {
         storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         Either.Left(StorageFailure.Generic(e))
     }
     result.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
@@ -405,10 +399,9 @@ internal inline fun <T : Any> wrapStorageRequest(
 ): Either<StorageFailure, T> {
     return try {
         storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         errorHandler(e)
     }
 }
@@ -416,11 +409,10 @@ internal inline fun <T : Any> wrapStorageRequest(
 internal inline fun <T : Any> wrapStorageNullableRequest(storageRequest: () -> T?): Either<StorageFailure, T?> {
     return try {
         storageRequest().let { data -> Either.Right(data) }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        if (e is CancellationException) {
-            throw e
-        }
         Either.Left(StorageFailure.Generic(e))
     }
 }
@@ -447,10 +439,9 @@ internal inline fun <T : Any> wrapFlowStorageRequest(storageRequest: () -> Flow<
             }
             emit(Either.Left(StorageFailure.Generic(e)))
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         flowOf(Either.Left(StorageFailure.Generic(e)))
     }.onEach {
         it.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }
@@ -467,10 +458,9 @@ internal inline fun <T : Any> wrapNullableFlowStorageRequest(storageRequest: () 
             }
             emit(Either.Left<StorageFailure>(StorageFailure.Generic(e)))
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         flowOf(Either.Left<StorageFailure>(StorageFailure.Generic(e)))
     }.onEach {
         it.onFailure { storageFailure -> kaliumLogger.e(storageFailure.toString()) }

@@ -368,10 +368,9 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
             sqlSchema.migrate(this, oldVersion, newVersion)
         }
         true
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         false
     }
 }

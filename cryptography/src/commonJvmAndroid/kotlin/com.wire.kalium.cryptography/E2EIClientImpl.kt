@@ -83,10 +83,9 @@ class E2EIClientImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun getOAuthRefreshToken() = try {
         wireE2eIdentity.getRefreshToken()
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         null
     }
 

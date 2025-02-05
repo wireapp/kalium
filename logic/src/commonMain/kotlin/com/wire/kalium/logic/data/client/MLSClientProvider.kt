@@ -174,6 +174,8 @@ class MLSClientProviderImpl(
                         rootDir = "$location/$KEYSTORE_NAME",
                         databaseKey = passphrase
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     val logMap = mapOf(
                         "exception" to e,
@@ -181,9 +183,6 @@ class MLSClientProviderImpl(
                         "stackTrace" to e.stackTraceToString()
                     )
                     kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
-                    if (e is CancellationException) {
-                        throw e
-                    }
                     return@run Either.Left(CoreFailure.Unknown(e))
                 }
                 coreCryptoCentral = cc

@@ -112,11 +112,10 @@ internal class RestoreWebBackupUseCaseImpl(
                             if (migratedConversation != null) {
                                 migratedConversations.add(migratedConversation)
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             kaliumLogger.e("$TAG ${e.message}")
-                            if (e is CancellationException) {
-                                throw e
-                            }
                         }
                     }
                     if (migratedConversations.isNotEmpty()) {

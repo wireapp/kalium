@@ -111,10 +111,9 @@ internal open class AssetApiV0 internal constructor(
             sink.close()
         }
         NetworkResponse.Success(Unit, httpResponse)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) {
-            throw e
-        }
         NetworkResponse.Error(KaliumException.GenericError(e))
     }
 

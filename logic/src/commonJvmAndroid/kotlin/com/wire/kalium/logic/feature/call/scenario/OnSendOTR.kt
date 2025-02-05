@@ -86,11 +86,10 @@ internal class OnSendOTR(
                     messageTarget = messageTarget
                 )
                 AvsCallBackError.NONE.value
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 callingLogger.e("[OnSendOTR] -> Error Exception: $e")
-                if (e is CancellationException) {
-                    throw e
-                }
                 AvsCallBackError.COULD_NOT_DECODE_ARGUMENT.value
             }
         }

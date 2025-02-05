@@ -154,10 +154,9 @@ class ProteusClientCoreCryptoImpl private constructor(
                 intCode = mapProteusExceptionToRawIntErrorCode(e.v1),
                 cause = e
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            if (e is CancellationException) {
-                throw e
-            }
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
     }

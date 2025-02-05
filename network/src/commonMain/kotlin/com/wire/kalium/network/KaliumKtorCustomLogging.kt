@@ -104,10 +104,9 @@ class KaliumKtorCustomLogging private constructor(
 
             val response = try {
                 logRequest(context)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Throwable) {
-                if (e is CancellationException) {
-                    throw e
-                }
                 null
             }
 

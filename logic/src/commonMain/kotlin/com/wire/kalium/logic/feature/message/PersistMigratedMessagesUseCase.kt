@@ -76,10 +76,9 @@ internal class PersistMigratedMessagesUseCaseImpl(
                         protoContentMapper.decodeFromProtobuf(
                             PlainMessageBlob(migratedMessage.encryptedProto!!)
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
-                        if (e is CancellationException) {
-                            throw e
-                        }
                         null
                     })?.let {
                         protoMessages[migratedMessage] = it
