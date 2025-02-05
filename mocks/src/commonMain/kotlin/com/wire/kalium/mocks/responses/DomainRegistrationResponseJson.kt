@@ -28,15 +28,17 @@ object DomainRegistrationResponseJson {
     val success = ValidJsonProvider(
         serializableData = DomainRegistrationDTO(
             backendUrl = null,
-            domainRedirect = DomainRedirect.NO_REGISTRATION,
-            ssoCode = null
+            domainRedirect = DomainRedirect.NONE,
+            ssoCode = null,
+            dueToExistingAccount = true
         ),
         jsonProvider = { serializable ->
             """
             {
                 "backend_url": "${serializable.backendUrl}",
                 "domain_redirect": "${serializable.domainRedirect}",
-                "sso_code": "${serializable.ssoCode}"
+                "sso_code": "${serializable.ssoCode}",
+                "due_to_existing_account": ${serializable.dueToExistingAccount}
             }
             """.trimIndent()
         }
