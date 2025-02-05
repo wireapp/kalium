@@ -17,4 +17,4 @@
  */
 package com.wire.backup.filesystem
 
-internal actual fun createTestStorage(): EntryStorage = InMemoryEntryStorage()
+internal actual fun createTestStorage(): BackupPageStorage = InMemoryBackupPageStorage()

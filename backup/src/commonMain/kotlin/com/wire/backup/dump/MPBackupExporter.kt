@@ -27,8 +27,8 @@ import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
 import com.wire.backup.envelope.BackupHeader
 import com.wire.backup.envelope.BackupHeaderSerializer
 import com.wire.backup.envelope.HashData
-import com.wire.backup.filesystem.BackupEntry
-import com.wire.backup.filesystem.EntryStorage
+import com.wire.backup.filesystem.BackupPage
+import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.ingest.MPBackupMapper
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
@@ -83,7 +83,12 @@ public abstract class CommonMPBackupExporter(
     private fun flushUsers() {
         if (usersChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, users = usersChunk)
-        storage.persistEntry(BackupEntry(USERS_ENTRY_PREFIX + persistedUserChunks + ENTRY_SUFFIX, backupData.asSource()))
+        storage.persistEntry(
+            BackupPage(
+                name = BackupPage.USERS_PREFIX + persistedUserChunks + BackupPage.PAGE_SUFFIX,
+                data = backupData.asSource()
+            )
+        )
         persistedUserChunks++
         usersChunk.clear()
     }
@@ -99,7 +104,12 @@ public abstract class CommonMPBackupExporter(
     private fun flushConversations() {
         if (conversationsChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, conversations = conversationsChunk)
-        storage.persistEntry(BackupEntry(CONVERSATIONS_ENTRY_PREFIX + persistedConversationsChunks + ENTRY_SUFFIX, backupData.asSource()))
+        storage.persistEntry(
+            BackupPage(
+                name = BackupPage.CONVERSATIONS_PREFIX + persistedConversationsChunks + BackupPage.PAGE_SUFFIX,
+                data = backupData.asSource()
+            )
+        )
         persistedConversationsChunks++
         conversationsChunk.clear()
     }
@@ -115,7 +125,12 @@ public abstract class CommonMPBackupExporter(
     private fun flushMessages() {
         if (messagesChunk.isEmpty()) return
         val backupData = BackupData(backupInfo, messages = messagesChunk)
-        storage.persistEntry(BackupEntry(MESSAGES_ENTRY_PREFIX + persistedMessagesChunks + ENTRY_SUFFIX, backupData.asSource()))
+        storage.persistEntry(
+            BackupPage(
+                name = BackupPage.MESSAGES_PREFIX + persistedMessagesChunks + BackupPage.PAGE_SUFFIX,
+                data = backupData.asSource()
+            )
+        )
         persistedMessagesChunks++
         messagesChunk.clear()
     }
@@ -180,19 +195,15 @@ public abstract class CommonMPBackupExporter(
         ExportResult.Failure.IOError(t.message ?: "Unknown IO error.")
     }
 
-    internal abstract val storage: EntryStorage
+    internal abstract val storage: BackupPageStorage
 
-    internal abstract fun zipEntries(data: List<BackupEntry>): Deferred<Source>
+    internal abstract fun zipEntries(data: List<BackupPage>): Deferred<Source>
 
     private companion object {
         /**
          * Amount of items (conversations or messages) to be put into a single page / entry
          */
         const val ITEMS_CHUNK_SIZE = 1_000
-        const val USERS_ENTRY_PREFIX = "users"
-        const val CONVERSATIONS_ENTRY_PREFIX = "conversations"
-        const val MESSAGES_ENTRY_PREFIX = "messages"
-        const val ENTRY_SUFFIX = ".binpb"
     }
 }
 

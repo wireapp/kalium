@@ -26,8 +26,8 @@ import com.wire.backup.envelope.BackupHeaderSerializer
 import com.wire.backup.envelope.HashData
 import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.envelope.header.FakeHeaderSerializer
-import com.wire.backup.filesystem.EntryStorage
-import com.wire.backup.filesystem.InMemoryEntryStorage
+import com.wire.backup.filesystem.BackupPageStorage
+import com.wire.backup.filesystem.InMemoryBackupPageStorage
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import okio.Sink
@@ -39,7 +39,7 @@ import kotlin.test.assertIs
 class MPBackupImporterTest {
 
     private fun createSubject(
-        unzipEntries: () -> EntryStorage = { InMemoryEntryStorage() },
+        unzipEntries: () -> BackupPageStorage = { InMemoryBackupPageStorage() },
         encryptedStream: EncryptedStream<XChaChaPoly1305AuthenticationData> = EncryptedStream.XChaCha20Poly1305,
         headerSerializer: BackupHeaderSerializer = BackupHeaderSerializer.Default,
     ): CommonMPBackupImporter = object : CommonMPBackupImporter(encryptedStream, headerSerializer) {
