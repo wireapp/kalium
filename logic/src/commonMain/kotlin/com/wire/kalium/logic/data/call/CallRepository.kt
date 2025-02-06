@@ -163,7 +163,7 @@ internal class CallDataSource(
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
-    private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
+    val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
 
     override suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?> = _callMetadataProfile.map {
         it[conversationId]?.let { currentCall ->
@@ -669,8 +669,11 @@ internal class CallDataSource(
         callJobs.remove(conversationId)?.cancel()
 
         // Cancel all jobs for removing stale participants
-        staleParticipantJobs.values.forEach { it.cancel() }
-        staleParticipantJobs.clear()
+        staleParticipantJobs.block { map ->
+            val jobsSnapshot = map.values.toList()
+            jobsSnapshot.forEach { it.cancel() }
+            map.clear()
+        }
 
         leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
             .onSuccess {
