@@ -34,6 +34,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
@@ -275,6 +276,39 @@ suspend fun <T : Any> wrapFederationResponse(
         else -> {
             delegatedHandler.invoke(response)
         }
+    }
+
+/**
+ * For Cells Sdk calls.
+ * Wraps a producer of [HttpResponse] and attempts to parse the server response based on the [BodyType].
+ * @return - Successful response (HTTP Status Codes from 200 to 299):
+ * a [NetworkResponse.Success] with the expected [BodyType] will be returned.
+ *
+ * - Unsuccessful response (any other HTTP Status Code):
+ * a [NetworkResponse.Error] with a [KaliumException].
+ *
+ * - Exceptions failure to reach server or parse response:
+ * a [NetworkResponse.Error] containing a [KaliumException.GenericError]
+ *
+ */
+suspend inline fun <reified BodyType : Any> wrapCellsResponse(
+    performRequest: () -> com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse<BodyType>
+): NetworkResponse<BodyType> =
+    try {
+
+        val response = performRequest()
+        val status = HttpStatusCode.fromValue(response.status)
+
+        if (status.isSuccess()) {
+            NetworkResponse.Success(response.body(), emptyMap(), response.status)
+        } else {
+            NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(response.status, "", "")))
+        }
+
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
     }
 
 /**

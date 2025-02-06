@@ -185,6 +185,7 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
+import com.wire.kalium.logic.feature.cells.CellsScope
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
@@ -887,6 +888,9 @@ class UserSessionScope internal constructor(
             restartSlowSyncProcessForRecoveryUseCase,
             globalPreferences,
         )
+
+    val cells: CellsScope
+        get() = CellsScope(globalScope)
 
     val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl)

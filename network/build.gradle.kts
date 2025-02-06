@@ -68,6 +68,8 @@ kotlin {
 
                 // UUIDs
                 implementation(libs.benAsherUUID)
+
+                implementation(libs.wire.cells.sdk)
             }
         }
         val commonTest by getting {
@@ -96,6 +98,7 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.ktor.okHttp)
+                implementation(awssdk.services.s3)
             }
         }
         val appleMain by getting {
