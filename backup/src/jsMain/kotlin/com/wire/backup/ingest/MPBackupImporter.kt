@@ -17,6 +17,7 @@
  */
 package com.wire.backup.ingest
 
+import com.wire.backup.data.BackupData
 import com.wire.backup.dump.JSZip
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
@@ -31,6 +32,12 @@ import okio.Sink
 import org.khronos.webgl.Uint8Array
 import kotlin.js.Promise
 
+/**
+ * Entity able to parse backed-up data and returns
+ * digestible data in [BackupData] format.
+ * @sample samples.backup.BackupSamplesJs.peekBackup
+ * @sample samples.backup.BackupSamples.commonImport
+ */
 @JsExport
 public actual class MPBackupImporter : CommonMPBackupImporter() {
     private val inMemoryUnencryptedBuffer = Buffer()

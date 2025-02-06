@@ -37,7 +37,6 @@ android {
     }
 }
 
-@Suppress("UnusedPrivateProperty")
 kotlin {
     // Makes visibility modifiers mandatory
     // Useful for a library that will be called by other clients
