@@ -41,6 +41,7 @@ import io.ktor.util.InternalAPI
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.core.readText
+import kotlin.coroutines.cancellation.CancellationException
 
 private val KaliumHttpCustomLogger = AttributeKey<KaliumHttpLogger>("KaliumHttpLogger")
 private val DisableLogging = AttributeKey<Unit>("DisableLogging")
@@ -103,7 +104,9 @@ class KaliumKtorCustomLogging private constructor(
 
             val response = try {
                 logRequest(context)
-            } catch (_: Throwable) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
                 null
             }
 

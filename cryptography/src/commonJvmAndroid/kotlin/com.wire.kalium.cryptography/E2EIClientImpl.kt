@@ -18,6 +18,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.E2eiEnrollment
+import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
@@ -82,6 +83,8 @@ class E2EIClientImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun getOAuthRefreshToken() = try {
         wireE2eIdentity.getRefreshToken()
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         null
     }
