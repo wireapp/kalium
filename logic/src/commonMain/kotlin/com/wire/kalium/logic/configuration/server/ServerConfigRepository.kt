@@ -38,6 +38,8 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.Url
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 interface ServerConfigRepository {
@@ -67,6 +69,7 @@ interface ServerConfigRepository {
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
     suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int>
     suspend fun getTeamUrlForUser(userId: UserId): String?
+    suspend fun observeConfigForUser(userId: UserId): Either<StorageFailure, Flow<ServerConfig?>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -168,4 +171,9 @@ internal class ServerConfigDataSource(
             }.map { serverConfigMapper.fromDTO(it) }
 
     override suspend fun getTeamUrlForUser(userId: UserId): String? = dao.teamUrlForUser(userId.toDao())
+    override suspend fun observeConfigForUser(userId: UserId): Either<StorageFailure, Flow<ServerConfig?>> = wrapStorageRequest {
+        dao.getConfigForUserFlow(userId.toDao()).map { severConfig ->
+            severConfig?.let { serverConfigMapper.fromEntity(it) }
+        }
+    }
 }

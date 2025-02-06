@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -134,6 +135,7 @@ interface ServerConfigurationDAO {
     suspend fun setFederationToTrue(id: String)
     suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
     suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String)
+    suspend fun getConfigForUserFlow(userId: UserIDEntity): Flow<ServerConfigEntity?>
 
     data class InsertData(
         val id: String,
@@ -247,4 +249,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
     override suspend fun teamUrlForUser(userId: UserIDEntity): String? = withContext(queriesContext) {
         queries.getTeamUrlByUser(userId).executeAsOneOrNull()
     }
+
+    override suspend fun getConfigForUserFlow(userId: UserIDEntity): Flow<ServerConfigEntity?> =
+        queries.getByUser(userId, mapper = mapper::fromServerConfiguration).asFlow().mapToOneOrNull().flowOn(queriesContext)
 }
