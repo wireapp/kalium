@@ -88,6 +88,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 
 data class ApplicationMessage(
@@ -180,11 +181,12 @@ private fun CoreFailure.getStrategy(
         this is NetworkFailure.ServerMiscommunication &&
         kaliumException is KaliumException.InvalidRequestError
     ) {
-        if (this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) {
+        if ((this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) ||
+            this.kaliumException.isMlsCommitMissingReferences()
+        ) {
             CommitStrategy.DISCARD_AND_RETRY
         } else if (
-            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage ||
-            this.kaliumException.isMlsCommitMissingReferences()
+            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage
         ) {
             CommitStrategy.KEEP_AND_RETRY
         } else {
@@ -887,8 +889,10 @@ internal class MLSConversationDataSource(
             @Suppress("TooGenericExceptionCaught")
             try {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-            } catch (error: Throwable) {
-                kaliumLogger.e("Discarding pending commit failed: $error")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                kaliumLogger.e("Discarding pending commit failed: $e")
             }
             Either.Right(Unit)
         }

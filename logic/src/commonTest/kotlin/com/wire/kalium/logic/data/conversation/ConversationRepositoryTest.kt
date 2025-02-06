@@ -418,7 +418,7 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversation() =
+    fun givenUserHasKnownContactAndConversation_WhenGettingConversationByExistingConversation_ReturnTheCorrectConversation() =
         runTest {
             // given
             val (_, conversationRepository) = Arrangement()
@@ -429,6 +429,25 @@ class ConversationRepositoryTest {
 
             // when
             conversationRepository.observeOneToOneConversationWithOtherUser(OTHER_USER_ID).test {
+                val result = awaitItem()
+                // then
+                assertIs<Either.Right<ConversationDetails.OneOne>>(result)
+                awaitComplete()
+            }
+        }
+
+    @Test
+    fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversationDetails() =
+        runTest {
+            // given
+            val (_, conversationRepository) = Arrangement()
+                .withSelfUserFlow(flowOf(TestUser.SELF))
+                .withExpectedConversationDetailsWithOtherUser(TestConversation.VIEW_ONE_ON_ONE.copy(otherUserId = OTHER_USER_ID.toDao()))
+                .withExpectedOtherKnownUser(TestUser.OTHER)
+                .arrange()
+
+            // when
+            conversationRepository.observeOneToOneConversationDetailsWithOtherUser(OTHER_USER_ID).test {
                 val result = awaitItem()
                 // then
                 assertIs<Either.Right<ConversationDetails.OneOne>>(result)
@@ -1525,6 +1544,12 @@ class ConversationRepositoryTest {
         suspend fun withExpectedConversationWithOtherUser(conversation: ConversationEntity?) = apply {
             coEvery {
                 conversationDAO.observeOneOnOneConversationWithOtherUser(any())
+            }.returns(flowOf(conversation))
+        }
+
+        suspend fun withExpectedConversationDetailsWithOtherUser(conversation: ConversationViewEntity?) = apply {
+            coEvery {
+                conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(any())
             }.returns(flowOf(conversation))
         }
 

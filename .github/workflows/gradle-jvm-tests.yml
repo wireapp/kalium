@@ -87,7 +87,7 @@ jobs:
             **/build/test-results/**/*.xml
 
       - name: Upload test report to codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3
         with:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: "build/reports/kover/report.xml"
@@ -112,7 +112,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4.1.8
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R
