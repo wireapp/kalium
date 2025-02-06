@@ -39,7 +39,7 @@ interface AnswerCallUseCase {
 }
 
 internal class AnswerCallUseCaseImpl(
-    private val allCalls: GetAllCallsWithSortedParticipantsUseCase,
+    private val incomingCalls: GetIncomingCallsUseCase,
     private val callManager: Lazy<CallManager>,
     private val muteCall: MuteCallUseCase,
     private val unMuteCall: UnMuteCallUseCase,
@@ -54,11 +54,9 @@ internal class AnswerCallUseCaseImpl(
         conversationId: ConversationId
     ) {
         // mute or un-mute call when answering/joining
-        allCalls().map {
+        incomingCalls().map {
             it.find { call ->
-                call.conversationId == conversationId &&
-                        call.status != CallStatus.CLOSED &&
-                        call.status != CallStatus.MISSED
+                call.conversationId == conversationId
             }
         }.flowOn(dispatchers.default).first()?.let {
             if (it.isMuted) {
