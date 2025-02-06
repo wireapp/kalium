@@ -1,0 +1,41 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.cells.domain.usecase
+
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.functional.Either
+
+public interface DeleteCellFileUseCase {
+    /**
+     * Delete a file from the cell.
+     * Note: Delete operation is asynchronous on Cells Server. Actual delete does not happen immediately.
+     * @param node The node of the file to delete.
+     * @return Either a [NetworkFailure] or [Unit].
+     */
+    public suspend operator fun invoke(node: CellNode): Either<NetworkFailure, Unit>
+}
+
+internal class DeleteCellFileUseCaseImpl(
+    private val cellsRepository: CellsRepository
+) : DeleteCellFileUseCase {
+    override suspend operator fun invoke(node: CellNode): Either<NetworkFailure, Unit> {
+        return cellsRepository.deleteFile(node)
+    }
+}
