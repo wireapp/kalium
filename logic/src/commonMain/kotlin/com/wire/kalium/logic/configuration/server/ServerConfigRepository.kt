@@ -71,7 +71,9 @@ internal class ServerConfigDataSource(
     override val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ServerConfigRepository, ServerConfigRepositoryExtension(
-    versionApi, serverConfigurationDAO, serverConfigMapper
+    versionApi = versionApi,
+    serverConfigurationDAO = serverConfigurationDAO,
+    serverConfigMapper = serverConfigMapper
 ) {
 
     override val minimumApiVersionForPersonalToTeamAccountMigration = MIN_API_VERSION

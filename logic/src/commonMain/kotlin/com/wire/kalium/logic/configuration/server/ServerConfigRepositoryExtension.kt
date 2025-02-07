@@ -102,5 +102,3 @@ internal abstract class ServerConfigRepositoryExtension(
                 storeServerLinksAndMetadata(links, metaData)
             }
 }
-
-

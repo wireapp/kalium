@@ -74,7 +74,9 @@ internal class CustomServerConfigDataSource internal constructor(
     private val backendMetaDataUtil: BackendMetaDataUtil = BackendMetaDataUtilImpl,
     override val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : CustomServerConfigRepository, ServerConfigRepositoryExtension(
-    versionApi, serverConfigurationDAO, serverConfigMapper
+    versionApi = versionApi,
+    serverConfigurationDAO = serverConfigurationDAO,
+    serverConfigMapper = serverConfigMapper
 ) {
 
     override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> =
@@ -109,10 +111,11 @@ internal class CustomServerConfigDataSource internal constructor(
     }
 
     override suspend fun observeServerConfigByLinks(links: ServerConfig.Links): Flow<Either<CoreFailure, ServerConfig>> =
-        fetchApiVersionAndStore(links).fold({ flowOf(it.left()) }, {
+        fetchApiVersionAndStore(links).fold({
+            flowOf(it.left())
+        }) {
             serverConfigurationDAO.getServerConfigByLinksFlow(serverConfigMapper.toEntity(links)).filterNotNull()
                 .map(serverConfigMapper::fromEntity)
                 .wrapStorageRequest()
-        })
+        }
 }
-
