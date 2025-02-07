@@ -59,7 +59,7 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
             logger.d("Skip updating supported protocols, since MLS is not supported.")
             Either.Right(false)
         } else {
-            (userRepository.getSelfUser()?.let { selfUser ->
+            (userRepository.getSelfUser().flatMap { selfUser ->
                 selfSupportedProtocols().flatMap { newSupportedProtocols ->
                     logger.i(
                         "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
@@ -81,7 +81,7 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
                         else -> Either.Left(it)
                     }
                 }
-            } ?: Either.Left(StorageFailure.DataNotFound))
+            })
         }
     }
 

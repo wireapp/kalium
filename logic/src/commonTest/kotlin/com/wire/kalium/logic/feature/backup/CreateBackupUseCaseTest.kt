@@ -29,6 +29,7 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FIL
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.framework.TestUser.SELF
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.IgnoreIOS
@@ -233,7 +234,7 @@ class CreateBackupUseCaseTest {
         suspend fun withUserHandle(selfUser: SelfUser) = apply {
             coEvery {
                 userRepository.getSelfUser()
-            }.returns(selfUser)
+            }.returns(selfUser.right())
         }
 
         fun arrange(): Pair<Arrangement, CreateBackupUseCase> =

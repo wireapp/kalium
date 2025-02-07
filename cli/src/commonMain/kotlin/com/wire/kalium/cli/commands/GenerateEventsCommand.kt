@@ -58,7 +58,7 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
     }
 
     override fun run() = runBlocking {
-        val selfUserId = userSession.users.observeSelfUser().first().id
+        val selfUserId = userSession.users.getSelfUser()?.id ?: throw PrintMessage("No self user is registered")
         val selfClientId = userSession.clientIdProvider().getOrFail { throw PrintMessage("No self client is registered") }
         val targetUserId = UserId(value = targetUserId, domain = selfUserId.domain)
         val targetClientId = ClientId(targetClientId)

@@ -42,6 +42,7 @@ import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.ExtractFilesParam
@@ -159,9 +160,7 @@ internal class RestoreBackupUseCaseImpl(
         password: String
     ): Either<Failure, Unit> {
         val backupSource = kaliumFileSystem.source(encryptedFilePath)
-        val userHandle = userRepository.getSelfUser()?.handle?.map {
-            it.toString().replace(".", "-")
-        }?.first()
+        val userHandle = userRepository.getSelfUser().getOrNull()?.handle?.replace(".", "-")
         val timeStamp = DateTimeUtil.currentIsoDateTimeString()
         val backupName = createBackupFileName(userHandle, timeStamp)
         val extractedBackupPath = extractedBackupRootPath / backupName

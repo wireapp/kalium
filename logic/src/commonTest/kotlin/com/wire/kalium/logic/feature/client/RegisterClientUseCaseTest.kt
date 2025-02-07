@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -478,7 +479,7 @@ class RegisterClientUseCaseTest {
         suspend fun withSelfUser(selfUser: SelfUser) = apply {
             coEvery {
                 userRepository.getSelfUser()
-            }.returns(selfUser)
+            }.returns(selfUser.right())
         }
 
         suspend fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {

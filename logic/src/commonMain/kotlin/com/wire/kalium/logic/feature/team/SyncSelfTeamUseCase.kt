@@ -38,22 +38,21 @@ internal class SyncSelfTeamUseCaseImpl(
     private val fetchedUsersLimit: Int?
 ) : SyncSelfTeamUseCase {
 
-    override suspend fun invoke(): Either<CoreFailure, Unit> {
-        val user = userRepository.observeSelfUser().first()
-
-        return user.teamId?.let { teamId ->
-            teamRepository.fetchTeamById(teamId = teamId).flatMap {
-                teamRepository.fetchMembersByTeamId(
-                    teamId = teamId,
-                    userDomain = user.id.domain,
-                    fetchedUsersLimit = fetchedUsersLimit
-                )
-            }.onSuccess {
-                teamRepository.syncServices(teamId = teamId)
+    override suspend fun invoke(): Either<CoreFailure, Unit> =
+        userRepository.getSelfUser().flatMap { selfUser ->
+            selfUser.teamId?.let { teamId ->
+                teamRepository.fetchTeamById(teamId = teamId).flatMap {
+                    teamRepository.fetchMembersByTeamId(
+                        teamId = teamId,
+                        userDomain = selfUser.id.domain,
+                        fetchedUsersLimit = fetchedUsersLimit
+                    )
+                }.onSuccess {
+                    teamRepository.syncServices(teamId = teamId)
+                }
+            } ?: run {
+                kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
+                Either.Right(Unit)
             }
-        } ?: run {
-            kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
-            Either.Right(Unit)
         }
-    }
 }

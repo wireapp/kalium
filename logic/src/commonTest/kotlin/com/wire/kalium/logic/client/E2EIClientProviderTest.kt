@@ -17,12 +17,14 @@
  */
 package com.wire.kalium.logic.client
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -46,7 +48,7 @@ class E2EIClientProviderTest {
                 dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewActivationEnrollmentSuccessful()
-                withSelfUser(TestUser.SELF)
+                withSelfUser(TestUser.SELF.right())
                 withE2EIEnabled(false)
             }
 
@@ -72,7 +74,7 @@ class E2EIClientProviderTest {
                 dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewRotationEnrollmentSuccessful()
-                withSelfUser(TestUser.SELF)
+                withSelfUser(TestUser.SELF.right())
                 withE2EIEnabled(true)
             }
 
@@ -102,7 +104,7 @@ class E2EIClientProviderTest {
                 dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewRotationEnrollmentSuccessful()
-                withSelfUser(null)
+                withSelfUser(StorageFailure.DataNotFound.left())
                 withE2EIEnabled(true)
             }
 
@@ -139,7 +141,7 @@ class E2EIClientProviderTest {
                 dispatcher = this@runTest.testKaliumDispatcher
                 withGettingCoreCryptoSuccessful()
                 withGetNewAcmeEnrollmentSuccessful()
-                withSelfUser(TestUser.SELF)
+                withSelfUser(TestUser.SELF.right())
                 withGetOrFetchMLSConfig(supportedCipherSuite)
             }
 

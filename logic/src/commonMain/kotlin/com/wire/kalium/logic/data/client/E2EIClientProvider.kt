@@ -32,6 +32,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -139,10 +140,14 @@ internal class EI2EIClientProviderImpl(
     }
 
     private suspend fun getSelfUserInfo(): Either<E2EIFailure, SelfUser> {
-        val selfUser = userRepository.getSelfUser() ?: return E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
-        return if (selfUser.name == null || selfUser.handle == null)
-            E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
-        else selfUser.right()
+        return userRepository.getSelfUser()
+            .mapLeft { E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound) }
+            .flatMap { selfUser ->
+                if (selfUser.name == null || selfUser.handle == null)
+                    E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
+                else selfUser.right()
+            }
+
     }
 
     override suspend fun nuke() {

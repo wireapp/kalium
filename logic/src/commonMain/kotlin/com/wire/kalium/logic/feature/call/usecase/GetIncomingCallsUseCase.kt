@@ -27,6 +27,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isLeft
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -70,7 +73,6 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
-        // TODO: do not refresh self form remote in this case and just get status from local
         userRepository.observeSelfUser()
             .flatMapLatest {
                 // if user is AWAY we don't show any IncomingCalls
