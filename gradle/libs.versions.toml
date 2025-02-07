@@ -13,6 +13,7 @@ cryptobox4j = "1.4.0"
 cryptobox-android = "1.1.5"
 android-security = "1.1.0-alpha06"
 ktor = "2.3.10"
+kotlinNativeCoroutines = "1.0.0-ALPHA-26"
 okio = "3.9.0"
 ok-http = "4.12.0"
 mockative = "2.2.0"
@@ -35,7 +36,7 @@ moduleGraph = "0.7.0"
 # and delete the workaround in the dev.mk file
 sqldelight = "2.0.1"
 sqlcipher-android = "4.5.6"
-pbandk = "0.14.2"
+pbandk = "0.15.0"
 turbine = "1.1.0"
 avs = "10.0.1"
 jna = "5.14.0"
@@ -79,6 +80,7 @@ moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlinNativeCoroutines = { id = "com.rickclephas.kmp.nativecoroutines", version.ref = "kotlinNativeCoroutines"}
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
