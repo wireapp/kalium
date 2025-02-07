@@ -11,7 +11,7 @@ $dokka.location:com.wire.backup.dump/BackupExportResult.Failure.ZipError/message
 $dokka.location:com.wire.backup.dump/BackupExportResult.Failure///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/index.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Failure/message/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/message.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/index.html
-$dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#kotlin.ByteArray/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/-success.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#[Error type: Unresolved type for Uint8Array]/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/-success.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/-success.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/bytes/#/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/bytes.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/pathToOutputFile/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/path-to-output-file.html
