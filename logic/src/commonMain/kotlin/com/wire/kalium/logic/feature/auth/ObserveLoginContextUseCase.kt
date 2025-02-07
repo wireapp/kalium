@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.functional.right
@@ -38,13 +38,13 @@ interface ObserveLoginContextUseCase {
 
 @Suppress("FunctionNaming")
 internal fun ObserveLoginContextUseCase(
-    serverConfigRepository: ServerConfigRepository
+    serverConfigRepository: CustomServerConfigRepository
 ): ObserveLoginContextUseCase = object : ObserveLoginContextUseCase {
     override suspend operator fun invoke(serverLinks: ServerConfig.Links): Flow<LoginContext> {
         return serverConfigRepository.observeServerConfigByLinks(serverLinks).map {
             it.flatMap { serverConfig ->
                 if (serverConfig.metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_ENTERPRISE_LOGIN
-                    && serverLinks.apiProxy == null
+                    && serverLinks.apiProxy?.needsAuthentication == false
                 ) {
                     LoginContext.EnterpriseLogin.right()
                 } else {

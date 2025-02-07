@@ -46,7 +46,6 @@ import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
-import com.wire.kalium.logic.feature.auth.ObserveLoginContextUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
@@ -196,8 +195,6 @@ class UserScope internal constructor(
         get() = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
     val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
-
-    val observeLoginContext get() = ObserveLoginContextUseCase(serverConfigRepository)
 
     val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 

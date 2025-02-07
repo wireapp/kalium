@@ -17,21 +17,25 @@
  */
 package com.wire.kalium.logic.configuration.server
 
-import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /**
@@ -58,15 +62,20 @@ internal interface CustomServerConfigRepository {
      * updates lastBlackListCheckDate for the Set of configIds
      */
     suspend fun updateAppBlackListCheckDate(configIds: Set<String>, date: String)
+
+    suspend fun observeServerConfigByLinks(links: ServerConfig.Links): Flow<Either<CoreFailure, ServerConfig>>
 }
 
 internal class CustomServerConfigDataSource internal constructor(
+    override val versionApi: VersionApi,
     private val api: ServerConfigApi,
     private val developmentApiEnabled: Boolean,
-    private val serverConfigurationDAO: ServerConfigurationDAO,
+    override val serverConfigurationDAO: ServerConfigurationDAO,
     private val backendMetaDataUtil: BackendMetaDataUtil = BackendMetaDataUtilImpl,
-    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
-) : CustomServerConfigRepository {
+    override val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
+) : CustomServerConfigRepository, ServerConfigRepositoryExtension(
+    versionApi, serverConfigurationDAO, serverConfigMapper
+) {
 
     override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> =
         wrapApiRequest { api.fetchServerConfig(serverConfigUrl) }
@@ -89,47 +98,7 @@ internal class CustomServerConfigDataSource internal constructor(
     }
 
     override suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest {
-            // check if such config is already inserted
-            val storedConfigId = serverConfigurationDAO.configByLinks(serverConfigMapper.toEntity(links))?.id
-            if (storedConfigId != null) {
-                // if already exists then just update it
-                serverConfigurationDAO.updateServerMetaData(
-                    id = storedConfigId,
-                    federation = metadata.federation,
-                    commonApiVersion = metadata.commonApiVersion.version
-                )
-                if (metadata.federation) serverConfigurationDAO.setFederationToTrue(storedConfigId)
-                storedConfigId
-            } else {
-                // otherwise insert new config
-                val newId = uuid4().toString()
-                serverConfigurationDAO.insert(
-                    ServerConfigurationDAO.InsertData(
-                        id = newId,
-                        apiBaseUrl = links.api,
-                        accountBaseUrl = links.accounts,
-                        webSocketBaseUrl = links.webSocket,
-                        blackListUrl = links.blackList,
-                        teamsUrl = links.teams,
-                        websiteUrl = links.website,
-                        isOnPremises = links.isOnPremises,
-                        title = links.title,
-                        federation = metadata.federation,
-                        domain = metadata.domain,
-                        commonApiVersion = metadata.commonApiVersion.version,
-                        apiProxyHost = links.apiProxy?.host,
-                        apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
-                        apiProxyPort = links.apiProxy?.port
-                    )
-                )
-                newId
-            }
-        }.flatMap { storedConfigId ->
-            wrapStorageRequest { serverConfigurationDAO.configById(storedConfigId) }
-        }.map {
-            serverConfigMapper.fromEntity(it)
-        }
+        storeServerLinksAndMetadata(links, metadata)
 
     override suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =
         wrapStorageRequest { serverConfigurationDAO.getServerConfigsWithAccIdWithLastCheckBeforeDate(date) }
@@ -139,4 +108,11 @@ internal class CustomServerConfigDataSource internal constructor(
         wrapStorageRequest { serverConfigurationDAO.updateBlackListCheckDate(configIds, date) }
     }
 
+    override suspend fun observeServerConfigByLinks(links: ServerConfig.Links): Flow<Either<CoreFailure, ServerConfig>> =
+        fetchApiVersionAndStore(links).fold({ flowOf(it.left()) }, {
+            serverConfigurationDAO.getServerConfigByLinksFlow(serverConfigMapper.toEntity(links)).filterNotNull()
+                .map(serverConfigMapper::fromEntity)
+                .wrapStorageRequest()
+        })
 }
+
