@@ -196,7 +196,7 @@ class UserScope internal constructor(
 
     val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 
-    val observeSelfServerConfig get() = ObserveSelfServerConfigUseCase(selfUserId, serverConfigRepository)
+    val observeSelfServerConfig get() = ObserveSelfServerConfigUseCase(serverConfigRepository)
 
     val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 

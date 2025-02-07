@@ -21,41 +21,32 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 /**
  * Observes the current user's server configuration.
+ * - auth server provider, regular and custom backend
  */
 interface ObserveSelfServerConfigUseCase {
     /**
      * @return [ServerConfigResult]
      */
-    suspend operator fun invoke(): Either<CoreFailure, Flow<ServerConfigResult>>
+    suspend operator fun invoke(serverLinks: ServerConfig.Links): Either<CoreFailure, Flow<ServerConfigResult>>
 }
 
 @Suppress("FunctionNaming")
 internal fun ObserveSelfServerConfigUseCase(
-    selfUserId: UserId,
     serverConfigRepository: ServerConfigRepository
 ): ObserveSelfServerConfigUseCase = object : ObserveSelfServerConfigUseCase {
-    override suspend operator fun invoke(): Either<CoreFailure, Flow<ServerConfigResult>> =
-        serverConfigRepository.observeConfigForUser(selfUserId).map { result ->
-            result.map { serverConfig -> serverConfig?.let { ServerConfigResult.Success(it) } ?: ServerConfigResult.Default }
-        }
+    override suspend operator fun invoke(serverLinks: ServerConfig.Links): Either<CoreFailure, Flow<ServerConfigResult>> {
+        // serverConfigRepository.getOrFetchMetadata(serverLinks)
+        // fetch api version and resolve if can use the new experience
+        // if proxy mod with auth, then old experience as default.
+        TODO()
+    }
 }
 
 sealed class ServerConfigResult {
-    /**
-     * Default result instead of null, in case the server configuration is not available, equals to null.
-     */
-    data object Default : ServerConfigResult()
-
-    /**
-     * The server config was loaded successfully.
-     */
-    data class Success(val serverConfig: ServerConfig) : ServerConfigResult()
+    data class Success(val canUseNewFlow: Boolean) : ServerConfigResult()
 }
