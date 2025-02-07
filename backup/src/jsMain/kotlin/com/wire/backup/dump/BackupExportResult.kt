@@ -17,9 +17,13 @@
  */
 package com.wire.backup.dump
 
+import org.khronos.webgl.Uint8Array
+
 @JsExport
 public sealed class BackupExportResult {
-    public class Success(public val bytes: ByteArray) : BackupExportResult()
+    public class Success(
+        public val bytes: Uint8Array
+    ) : BackupExportResult()
     public sealed class Failure(public val message: String) : BackupExportResult() {
         /**
          * Represents an I/O error that occurs during an export process.

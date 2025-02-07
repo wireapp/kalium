@@ -22,6 +22,7 @@ import com.wire.backup.ingest.BackupPeekResult
 import com.wire.backup.ingest.MPBackupImporter
 import com.wire.backup.ingest.isCreatedBySameUser
 import kotlinx.coroutines.await
+import org.khronos.webgl.Uint8Array
 
 object BackupSamplesJs : BackupSamples() {
 
@@ -51,7 +52,7 @@ object BackupSamplesJs : BackupSamples() {
         println("Backup created file. Raw binary data: $fileData")
     }
 
-    suspend fun peekBackup(data: ByteArray) {
+    suspend fun peekBackup(data: Uint8Array) {
         // Peek into backup file
         val importer = MPBackupImporter()
 

@@ -72,7 +72,7 @@ public actual class MPBackupExporter(
         when (val result = finalize(password, output)) {
             is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
             is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
-            ExportResult.Success -> BackupExportResult.Success(output.readByteArray())
+            ExportResult.Success -> BackupExportResult.Success(output.readByteArray().toUByteArray().toUInt8Array())
         }
     }
 }
