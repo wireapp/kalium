@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.util
 
+import co.touchlab.kermit.Logger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
@@ -38,13 +39,35 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 @Suppress("TooGenericExceptionCaught")
-actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {
+actual fun createCompressedFile(
+    files: List<Pair<Source, String>>,
+    outputSink: Sink,
+    totalBytes: Long,
+    onProgress: (Float) -> Unit
+): Either<CoreFailure, Long> = try {
     var compressedFileSize = 0L
-    ZipOutputStream(outputSink.buffer().outputStream()).use { zipOutputStream ->
+    // The progress calculation is done by weighing both the uncompressed progress and the compressed progress. The
+    // final progress is a weighted average of these two values, where the uncompressed progress is given less weight
+    // (10%) and the compressed progress is given more weight (90%). This reflects the fact that compression is a process
+    // that involves both reading the input data and writing the compressed output, with more focus on the output size being
+    // written to the zip file.
+    val progressSink = ProgressTrackingSink(outputSink, totalBytes) { bytesWritten, total ->
+        val uncompressedProgress = bytesWritten.toFloat() / total.toFloat()
+        val compressedProgress = compressedFileSize.toFloat() / total.toFloat()
+        val progress = (uncompressedProgress * 0.1f) + (compressedProgress * 0.9f)
+        onProgress(progress.coerceAtMost(1.0f))
+        Logger.d { "Progress: $progress" }
+        Logger.e("Bytes Written: $bytesWritten, Uncompressed Progress: $uncompressedProgress, Compressed Progress: $compressedProgress\"")
+    }.buffer()
+
+    ZipOutputStream(progressSink.outputStream()).use { zipOutputStream ->
         files.forEach { (fileSource, fileName) ->
             compressedFileSize += addToCompressedFile(zipOutputStream, fileSource, fileName)
+            zipOutputStream.flush()
         }
     }
+    // Ensure that the progress is at 100% when the file is fully compressed
+    onProgress(1.0f)
     Either.Right(compressedFileSize)
 } catch (e: Exception) {
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to compress the provided files", e)))
