@@ -28,6 +28,7 @@ import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -38,6 +39,10 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.Url
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 interface ServerConfigRepository {
@@ -67,6 +72,7 @@ interface ServerConfigRepository {
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
     suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int>
     suspend fun getTeamUrlForUser(userId: UserId): String?
+    suspend fun observeServerConfigByLinks(links: ServerConfig.Links): Flow<Either<CoreFailure, ServerConfig>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -168,4 +174,11 @@ internal class ServerConfigDataSource(
             }.map { serverConfigMapper.fromDTO(it) }
 
     override suspend fun getTeamUrlForUser(userId: UserId): String? = dao.teamUrlForUser(userId.toDao())
+
+    override suspend fun observeServerConfigByLinks(links: ServerConfig.Links): Flow<Either<CoreFailure, ServerConfig>> =
+        fetchApiVersionAndStore(links).fold({ flowOf(it.left()) }, {
+            dao.getServerConfigByLinksFlow(serverConfigMapper.toEntity(links)).filterNotNull()
+                .map(serverConfigMapper::fromEntity)
+                .wrapStorageRequest()
+        })
 }
