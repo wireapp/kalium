@@ -26,7 +26,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.first
 
 internal interface SyncSelfTeamUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>

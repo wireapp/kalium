@@ -27,9 +27,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.isLeft
-import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi

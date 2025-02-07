@@ -18,14 +18,9 @@
 
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for observing the current user.

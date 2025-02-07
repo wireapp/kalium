@@ -56,7 +56,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
@@ -370,7 +369,6 @@ internal class UserDataSource internal constructor(
 
     override suspend fun observeSelfUser(): Flow<SelfUser> = userDAO.observeUserDetailsByQualifiedID(selfUserId.toDao()).filterNotNull()
             .map(userMapper::fromUserDetailsEntityToSelfUser)
-
 
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
         return userDAO.getUserDetailsWithTeamByQualifiedID(selfUserId.toDao()).filterNotNull()
