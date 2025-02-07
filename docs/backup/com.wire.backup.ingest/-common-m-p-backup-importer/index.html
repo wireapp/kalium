@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>CommonMPBackupImporter</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/jetbrains-mono.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+<div class="navigation-wrapper" id="navigation-wrapper">
+    <div id="leftToggler"><span class="icon-toggler"></span></div>
+    <div class="library-name">
+<a href="../../../index.html">
+<span>kalium</span>            </a>    </div>
+    <div>
+    </div>
+    <div class="pull-right d-flex">
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":backup:dokkaHtmlPartial/commonMain">common</button>
+        </div>
+        <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
+        <div id="searchBar"></div>
+    </div>
+</div>
+<div id="container">
+    <div id="leftColumn">
+        <div id="sideMenu"></div>
+    </div>
+    <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="backup::com.wire.backup.ingest/CommonMPBackupImporter///PointingToDeclaration//-377836143">
+  <div class="breadcrumbs"><a href="../../index.html">backup</a><span class="delimiter">/</span><a href="../index.html">com.wire.backup.ingest</a><span class="delimiter">/</span><span class="current">CommonMPBackupImporter</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Common</span><wbr><span>MPBackup</span><wbr><span><span>Importer</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":backup:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="index.html">CommonMPBackupImporter</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">encryptedStream<span class="token operator">: </span><a href="../../com.wire.backup.encryption/-encrypted-stream/index.html">EncryptedStream</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../../com.wire.backup.encryption/-x-cha-cha-poly1305-authentication-data/index.html">XChaChaPoly1305AuthenticationData</a><span class="token operator">&gt;</span><span class="token operator"> = </span>EncryptedStream.XChaCha20Poly1305<span class="token punctuation">, </span></span><span class="parameter ">headerSerializer<span class="token operator">: </span><a href="../../com.wire.backup.envelope/-backup-header-serializer/index.html">BackupHeaderSerializer</a><span class="token operator"> = </span>BackupHeaderSerializer.Default</span></span><span class="token punctuation">)</span></div><p class="paragraph">Entity able to parse backed-up data and returns digestible data in <a href="../../com.wire.backup.data/-backup-data/index.html">BackupData</a> format.</p><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":backup:dokkaHtmlPartial/commonMain" data-filterable-set=":backup:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-m-p-backup-importer/index.html">MPBackupImporter</a></div></span></div><div></div></div></div></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="1140187428%2FConstructors%2F-377836143" anchor-label="CommonMPBackupImporter" id="1140187428%2FConstructors%2F-377836143" data-filterable-set=":backup:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":backup:dokkaHtmlPartial/commonMain" data-filterable-set=":backup:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-common-m-p-backup-importer.html"><span>Common</span><wbr><span>MPBackup</span><wbr><span><span>Importer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1140187428%2FConstructors%2F-377836143"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":backup:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">encryptedStream<span class="token operator">: </span><a href="../../com.wire.backup.encryption/-encrypted-stream/index.html">EncryptedStream</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../../com.wire.backup.encryption/-x-cha-cha-poly1305-authentication-data/index.html">XChaChaPoly1305AuthenticationData</a><span class="token operator">&gt;</span><span class="token operator"> = </span>EncryptedStream.XChaCha20Poly1305<span class="token punctuation">, </span></span><span class="parameter ">headerSerializer<span class="token operator">: </span><a href="../../com.wire.backup.envelope/-backup-header-serializer/index.html">BackupHeaderSerializer</a><span class="token operator"> = </span>BackupHeaderSerializer.Default</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="1534535151%2FFunctions%2F-377836143" anchor-label="getUnencryptedArchiveSink" id="1534535151%2FFunctions%2F-377836143" data-filterable-set=":backup:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":backup:dokkaHtmlPartial/commonMain" data-filterable-set=":backup:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-unencrypted-archive-sink.html"><span>get</span><wbr><span>Unencrypted</span><wbr><span>Archive</span><wbr><span><span>Sink</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1534535151%2FFunctions%2F-377836143"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":backup:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">abstract </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="get-unencrypted-archive-sink.html"><span class="token function">getUnencryptedArchiveSink</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="brief "><p class="paragraph">Provides a sink to store the unencrypted data. Be the archive encrypted or not, the data will be moved to this sink until <a href="unzip-all-entries.html">unzipAllEntries</a> is used.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="477517339%2FFunctions%2F-377836143" anchor-label="importBackup" id="477517339%2FFunctions%2F-377836143" data-filterable-set=":backup:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":backup:dokkaHtmlPartial/commonMain" data-filterable-set=":backup:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="import-backup.html"><span>import</span><wbr><span><span>Backup</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="477517339%2FFunctions%2F-377836143"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":backup:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="import-backup.html"><span class="token function">importBackup</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">source<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">passphrase<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-backup-import-result/index.html">BackupImportResult</a></div><div class="brief "><p class="paragraph">Decrypt (if needed) and unzip the backup artifact. The resulting <a href="../-backup-import-result/-success/index.html">BackupImportResult.Success</a> contains a <a href="../-backup-import-pager/index.html">BackupImportPager</a>, that can be used to consume pages of backed up application data, like messages, users and conversations.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1219424467%2FFunctions%2F-377836143" anchor-label="peekBackup" id="-1219424467%2FFunctions%2F-377836143" data-filterable-set=":backup:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":backup:dokkaHtmlPartial/commonMain" data-filterable-set=":backup:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="peek-backup.html"><span>peek</span><wbr><span><span>Backup</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1219424467%2FFunctions%2F-377836143"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":backup:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="peek-backup.html"><span class="token function">peekBackup</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">source<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-backup-peek-result/index.html">BackupPeekResult</a></div><div class="brief "><p class="paragraph">Peeks into a backup artifact, returning information about it.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="868830648%2FFunctions%2F-377836143" anchor-label="unzipAllEntries" id="868830648%2FFunctions%2F-377836143" data-filterable-set=":backup:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":backup:dokkaHtmlPartial/commonMain" data-filterable-set=":backup:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="unzip-all-entries.html"><span>unzip</span><wbr><span>All</span><wbr><span><span>Entries</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="868830648%2FFunctions%2F-377836143"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":backup:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="unzip-all-entries.html"><span class="token function">unzipAllEntries</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.backup.filesystem/-backup-page-storage/index.html">BackupPageStorage</a></div><div class="brief "><p class="paragraph">Unzips all entries in the zip archive stored in the sink returned by <a href="get-unencrypted-archive-sink.html">getUnencryptedArchiveSink</a>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="footer">
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2025 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+      </div>
+    </div>
+</div>
+</body>
+</html>
+
