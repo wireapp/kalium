@@ -103,7 +103,6 @@ internal class ConfirmationDeliveryHandlerImpl(
                             leadingMessage = "Skipping group conversation: ${conversation.id.toLogString()}",
                             jsonStringKeyValues = mapOf(
                                 "conversationId" to conversation.id.toLogString(),
-                                "messages" to messages.joinToString { it.obfuscateId() },
                                 "messageCount" to messages.size
                             )
                         )
