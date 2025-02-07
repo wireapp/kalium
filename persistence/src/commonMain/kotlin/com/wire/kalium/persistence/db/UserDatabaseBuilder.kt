@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
+import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
 import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -84,6 +85,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -120,7 +122,6 @@ class UserDatabaseBuilder internal constructor(
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
-    private val cipherProfile: String? = null,
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -251,6 +252,9 @@ class UserDatabaseBuilder internal constructor(
     val databaseExporter: DatabaseExporter
         get() = DatabaseExporterImpl(userId, platformDatabaseData, this)
 
+    val obfuscatedCopyExporter: ObfuscatedCopyExporter
+        get() = ObfuscatedCopyExporter(userId, platformDatabaseData, this)
+
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
 
@@ -314,29 +318,17 @@ class UserDatabaseBuilder internal constructor(
             queriesContext
         )
 
+    val debugExtension: DebugExtension
+        get() = DebugExtension(
+            sqlDriver = sqlDriver,
+            metaDataDao = metadataDAO,
+            isEncrypted = isEncrypted,
+        )
+
     /**
      * @return the absolute path of the DB file or null if the DB file does not exist
      */
     fun dbFileLocation(): String? = getDatabaseAbsoluteFileLocation(platformDatabaseData, userId)
-
-    /**
-     * Changes the profiling of the database (cipher_profile) if the profile is specified and the database is encrypted
-     * @param enabled true to enable profiling, false to disable
-     */
-    fun changeProfiling(enabled: Boolean) {
-        if (isEncrypted && cipherProfile != null) {
-            val cipherProfileValue = if (enabled) cipherProfile else "off"
-            sqlDriver.executeQuery(
-                identifier = null,
-                sql = "PRAGMA cipher_profile='$cipherProfileValue'",
-                mapper = {
-                    it.next()
-                    it.getLong(0).let { QueryResult.Value<Long?>(it) }
-                },
-                parameters = 0,
-            )
-        }
-    }
 
     /**
      * drops DB connection and delete the DB file
@@ -358,6 +350,11 @@ internal expect fun getDatabaseAbsoluteFileLocation(
     userId: UserIDEntity
 ): String?
 
+internal expect fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+): String?
+
 @Suppress("TooGenericExceptionCaught")
 fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
     val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
@@ -371,6 +368,8 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
             sqlSchema.migrate(this, oldVersion, newVersion)
         }
         true
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         false
     }

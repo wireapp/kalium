@@ -88,6 +88,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 
 data class ApplicationMessage(
@@ -180,11 +181,12 @@ private fun CoreFailure.getStrategy(
         this is NetworkFailure.ServerMiscommunication &&
         kaliumException is KaliumException.InvalidRequestError
     ) {
-        if (this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) {
+        if ((this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) ||
+            this.kaliumException.isMlsCommitMissingReferences()
+        ) {
             CommitStrategy.DISCARD_AND_RETRY
         } else if (
-            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage ||
-            this.kaliumException.isMlsCommitMissingReferences()
+            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage
         ) {
             CommitStrategy.KEEP_AND_RETRY
         } else {
@@ -343,6 +345,7 @@ internal class MLSConversationDataSource(
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
+                kaliumLogger.d("Sending commit bundle for ${groupID.toLogString()}")
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.flatMap { response ->
                 processCommitBundleEvents(response.events)
@@ -376,6 +379,7 @@ internal class MLSConversationDataSource(
         }
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
+        kaliumLogger.d("Processing commit bundle events")
         events.forEach { eventContentDTO ->
             val event =
                 MapperProvider.eventMapper(selfUserId).fromEventContentDTO(
@@ -454,7 +458,8 @@ internal class MLSConversationDataSource(
             retryOnStaleMessage = true,
             allowPartialMemberList = false,
             cipherSuite = cipherSuite
-        ).map { Unit }
+        )
+            .map { Unit }
 
     private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
@@ -464,7 +469,7 @@ internal class MLSConversationDataSource(
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
-            kaliumLogger.d("adding ${userIdList.count()} users to MLS group")
+            kaliumLogger.d("adding ${userIdList.count()} users to MLS group ${groupID.toLogString()}")
             produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
                     if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
@@ -485,12 +490,15 @@ internal class MLSConversationDataSource(
                             // We are creating a group with only our self client which technically
                             // doesn't need be added with a commit, but our backend API requires one,
                             // so we create a commit by updating our key material.
+                            kaliumLogger.d("add members to MLS Group: updating keying material for self client")
                             updateKeyingMaterial(idMapper.toCryptoModel(groupID))
                         } else {
+                            kaliumLogger.d("add members to MLS Group: executing for groupID ${groupID.toLogString()}")
                             addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                         }
                     }.onSuccess { commitBundle ->
                         commitBundle?.crlNewDistributionPoints?.let { revocationList ->
+                            kaliumLogger.d("add members to MLS Group: checking revocation list")
                             checkRevocationList(revocationList)
                         }
                     }.map {
@@ -881,8 +889,10 @@ internal class MLSConversationDataSource(
             @Suppress("TooGenericExceptionCaught")
             try {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-            } catch (error: Throwable) {
-                kaliumLogger.e("Discarding pending commit failed: $error")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                kaliumLogger.e("Discarding pending commit failed: $e")
             }
             Either.Right(Unit)
         }

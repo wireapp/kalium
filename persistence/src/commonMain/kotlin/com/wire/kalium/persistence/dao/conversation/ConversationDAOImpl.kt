@@ -277,6 +277,13 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
+    override suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
+        return conversationDetailsQueries.selectActiveOneOnOneConversationDetails(userId, conversationMapper::fromViewToModel)
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(coroutineContext)
+    }
+
     override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo? =
         withContext(coroutineContext) {
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()

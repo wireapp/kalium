@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -53,14 +54,20 @@ import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequests
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -100,6 +107,7 @@ class ConversationScope internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
@@ -128,8 +136,8 @@ class ConversationScope internal constructor(
     val getConversationDetails: GetConversationUseCase
         get() = GetConversationUseCase(conversationRepository)
 
-    val getOneToOneConversation: GetOneToOneConversationUseCase
-        get() = GetOneToOneConversationUseCase(conversationRepository)
+    val getOneToOneConversation: GetOneToOneConversationDetailsUseCase
+        get() = GetOneToOneConversationDetailsUseCase(conversationRepository)
 
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
@@ -141,7 +149,7 @@ class ConversationScope internal constructor(
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
 
     val getMembersToMention: MembersToMentionUseCase
-        get() = MembersToMentionUseCase(observeConversationMembers, userRepository)
+        get() = MembersToMentionUseCase(observeConversationMembers = observeConversationMembers, selfUserId = selfUserId)
 
     val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)
@@ -157,6 +165,7 @@ class ConversationScope internal constructor(
             oneOnOneResolver,
             conversationRepository,
             deleteEphemeralMessageEndDate,
+            slowSyncRepository,
             kaliumLogger
         )
 
@@ -266,25 +275,26 @@ class ConversationScope internal constructor(
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
 
-    val clearConversationContent: ClearConversationContentUseCase
-        get() = ClearConversationContentUseCaseImpl(
-            conversationRepository,
-            messageSender,
-            selfUserId,
-            currentClientIdProvider,
-            selfConversationIdProvider
-        )
-
     val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
         get() = ClearConversationAssetsLocallyUseCaseImpl(
             messageRepository,
             assetRepository
         )
 
+    val clearConversationContent: ClearConversationContentUseCase
+        get() = ClearConversationContentUseCaseImpl(
+            conversationRepository,
+            messageSender,
+            selfUserId,
+            currentClientIdProvider,
+            selfConversationIdProvider,
+            clearConversationAssetsLocally
+        )
+
     val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
         get() = DeleteConversationLocallyUseCaseImpl(
-            conversationRepository,
-            clearConversationAssetsLocally
+            clearConversationContent,
+            conversationRepository
         )
 
     val joinConversationViaCode: JoinConversationViaCodeUseCase
@@ -386,4 +396,10 @@ class ConversationScope internal constructor(
         get() = RemoveConversationFromFavoritesUseCaseImpl(conversationFolderRepository)
     val observeUserFolders: ObserveUserFoldersUseCase
         get() = ObserveUserFoldersUseCaseImpl(conversationFolderRepository)
+    val moveConversationToFolder: MoveConversationToFolderUseCase
+        get() = MoveConversationToFolderUseCaseImpl(conversationFolderRepository)
+    val removeConversationFromFolder: RemoveConversationFromFolderUseCase
+        get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
+    val createConversationFolder: CreateConversationFolderUseCase
+        get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
 }

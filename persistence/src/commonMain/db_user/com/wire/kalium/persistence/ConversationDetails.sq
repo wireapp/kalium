@@ -105,7 +105,9 @@ CASE
         END
     ELSE 0
 END AS interactionEnabled,
-LabeledConversation.folder_id IS NOT NULL AS isFavorite
+LabeledConversation.folder_id IS NOT NULL AS isFavorite,
+CurrentFolder.id AS folderId,
+CurrentFolder.name AS folderName
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -121,8 +123,10 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          AND Conversation.type IS 'CONNECTION_PENDING')
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
 LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1)
-LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type = 'FAVORITE'
-LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id;
+LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 'FAVORITE'
+LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
+LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
+LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE';
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails
@@ -154,3 +158,7 @@ SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationDetailsByGroupId:
 SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
+
+selectActiveOneOnOneConversationDetails:
+SELECT * FROM ConversationDetails
+WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);

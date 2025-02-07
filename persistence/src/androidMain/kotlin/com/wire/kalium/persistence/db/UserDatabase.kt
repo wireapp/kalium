@@ -57,7 +57,6 @@ actual fun userDatabaseBuilder(
         dispatcher = dispatcher,
         platformDatabaseData = platformDatabaseData,
         isEncrypted = isEncryptionEnabled,
-        cipherProfile = "logcat",
     )
 }
 
@@ -125,3 +124,15 @@ internal actual fun getDatabaseAbsoluteFileLocation(
         null
     }
 }
+
+internal actual fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+): String? =
+    (FileNameUtil.userDBName(userId)).let { fileName ->
+        platformDatabaseData.context.getDatabasePath(fileName).let {
+            it.delete()
+            it.createNewFile()
+            it.absolutePath
+        }
+    }

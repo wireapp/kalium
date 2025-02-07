@@ -11,15 +11,13 @@ CREATE TABLE LabeledConversation (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       folder_id TEXT NOT NULL,
 
-      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
       FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
       PRIMARY KEY (folder_id, conversation_id)
 );
 
-getUserFolders:
-SELECT * FROM ConversationFolder
-WHERE folder_type != 'FAVORITE';
+getFolders:
+SELECT * FROM ConversationFolder ORDER BY name COLLATE NOCASE ASC;
 
 getAllFoldersWithConversations:
 SELECT
@@ -32,7 +30,7 @@ FROM
 LEFT JOIN
     LabeledConversation labeledConversation ON conversationFolder.id = labeledConversation.folder_id
 ORDER BY
-    conversationFolder.id;
+    conversationFolder.name COLLATE NOCASE ASC;
 
 getConversationsFromFolder:
 SELECT ConversationDetailsWithEvents.*
@@ -69,3 +67,6 @@ DELETE FROM LabeledConversation;
 
 clearFolders:
 DELETE FROM ConversationFolder;
+
+deleteFolder:
+DELETE FROM ConversationFolder WHERE id = ?;

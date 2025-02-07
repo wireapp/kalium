@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.user
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -48,7 +47,6 @@ import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
@@ -74,24 +72,13 @@ import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlin.time.Duration.Companion.minutes
 
 @Suppress("TooManyFunctions")
 interface UserRepository {
@@ -174,7 +161,6 @@ interface UserRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class UserDataSource internal constructor(
     private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
@@ -191,14 +177,6 @@ internal class UserDataSource internal constructor(
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
 ) : UserRepository {
-
-    /**
-     * Stores the last time a user's details were fetched from remote.
-     *
-     * @see Event.User.Update
-     * @see USER_DETAILS_MAX_AGE
-     */
-    private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { selfUserDTO ->
@@ -221,9 +199,6 @@ internal class UserDataSource internal constructor(
                     }
                     .flatMap { userEntity ->
                         wrapStorageRequest { userDAO.upsertUser(userEntity) }
-                            .flatMap {
-                                wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
-                            }
                     }
             }
         }
@@ -235,35 +210,11 @@ internal class UserDataSource internal constructor(
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
                 userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
-            }.onEach { otherUser ->
-                if (otherUser != null) {
-                    refreshUserDetailsIfNeeded(userId)
-                }
             }
 
     override suspend fun getUsersWithOneOnOneConversation(): List<OtherUser> {
         return userDAO.getUsersWithOneOnOneConversation()
             .map(userMapper::fromUserEntityToOtherUser)
-    }
-
-    /**
-     * Only refresh user profiles if it wasn't fetched recently.
-     *
-     * @see userDetailsRefreshInstantCache
-     * @see USER_DETAILS_MAX_AGE
-     */
-    private suspend fun refreshUserDetailsIfNeeded(userId: UserId): Either<CoreFailure, Unit> {
-        val now = DateTimeUtil.currentInstant()
-        val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
-        return if (!wasFetchedRecently) {
-            when (userId) {
-                selfUserId -> fetchSelfUser()
-                else -> fetchUserInfo(userId)
-            }.also {
-                kaliumLogger.d("Refreshing user info from API after $USER_DETAILS_MAX_AGE")
-                userDetailsRefreshInstantCache[userId] = now
-            }
-        } else Either.Right(Unit)
     }
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
@@ -416,40 +367,16 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
-        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
-            // If the self user is not in the database, proactively fetch it.
-            if (it == null) {
-                val logPrefix = "Observing self user before insertion"
-                kaliumLogger.w("$logPrefix: Triggering a fetch.")
-                fetchSelfUser().fold({ failure ->
-                    kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
-                }, {
-                    kaliumLogger.i("$logPrefix: Succeeded")
-                    userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
-                })
-            } else {
-                refreshUserDetailsIfNeeded(selfUserId)
-            }
-        }.filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.observeUserDetailsByQualifiedID(selfUserID)
-                .filterNotNull()
-                .map(userMapper::fromUserDetailsEntityToSelfUser)
-        }
+        return userDAO.observeUserDetailsByQualifiedID(selfUserId.toDao()).filterNotNull()
+            .map(userMapper::fromUserDetailsEntityToSelfUser)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
-        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserDetailsWithTeamByQualifiedID(selfUserID)
-                .filterNotNull()
-                .map { (user, team) ->
-                    userMapper.fromUserDetailsEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
-                }
-        }
+        return userDAO.getUserDetailsWithTeamByQualifiedID(selfUserId.toDao()).filterNotNull()
+            .map { (user, team) ->
+                userMapper.fromUserDetailsEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
+            }
     }
 
     @Deprecated(
@@ -468,9 +395,11 @@ internal class UserDataSource internal constructor(
             }.map { }
     }
 
-    // TODO: replace the flow with selfUser and cache it
-    override suspend fun getSelfUser(): SelfUser? =
-        observeSelfUser().firstOrNull()
+    override suspend fun getSelfUser(): SelfUser? {
+        return userDAO.getUserDetailsByQualifiedID(selfUserId.toDao())?.let {
+            userMapper.fromUserDetailsEntityToSelfUser(it)
+        }
+    }
 
     override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
@@ -658,7 +587,6 @@ internal class UserDataSource internal constructor(
             CreateUserTeam(dto.teamId, dto.teamName)
         }
             .onSuccess {
-                kaliumLogger.d("Migrated user to team")
                 fetchSelfUser()
             }
             .onFailure { failure ->
@@ -675,17 +603,7 @@ internal class UserDataSource internal constructor(
     }
 
     companion object {
-        internal const val SELF_USER_ID_KEY = "selfUserID"
 
-        /**
-         * Maximum age for user details.
-         *
-         * The USER_DETAILS_MAX_AGE constant represents the maximum age in minutes that user details can be considered valid. After
-         * this duration, the user details should be refreshed.
-         *
-         * This is needed because some users don't get `user.update` events, so we need to refresh their details every so often.
-         */
-        internal val USER_DETAILS_MAX_AGE = 5.minutes
         internal const val BATCH_SIZE = 500
     }
 }

@@ -47,6 +47,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 internal interface ConversationFolderRepository {
@@ -57,8 +58,10 @@ internal interface ConversationFolderRepository {
     suspend fun fetchConversationFolders(): Either<CoreFailure, Unit>
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
+    suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit>
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
-    suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
+    suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
+    suspend fun addFolder(folder: ConversationFolder): Either<CoreFailure, Unit>
 }
 
 internal class ConversationFolderDataSource internal constructor(
@@ -140,7 +143,17 @@ internal class ConversationFolderDataSource internal constructor(
             .v("Removing conversation ${conversationId.toLogString()} from folder ${folderId.obfuscateId()}")
         return wrapStorageRequest {
             conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId)
+            val conversations = conversationFolderDAO.observeConversationListFromFolder(folderId).first()
+            if (conversations.isEmpty()) {
+                conversationFolderDAO.removeFolder(folderId)
+            } else {
+                Unit
+            }
         }
+    }
+
+    override suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationFolderDAO.removeFolder(folderId)
     }
 
     override suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit> {
@@ -155,9 +168,15 @@ internal class ConversationFolderDataSource internal constructor(
             }
     }
 
-    override suspend fun observeUserFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
-        return conversationFolderDAO.observeUserFolders()
+    override suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
+        return conversationFolderDAO.observeFolders()
             .wrapStorageRequest()
             .mapRight { folderEntities -> folderEntities.map { it.toModel() } }
+    }
+
+    override suspend fun addFolder(folder: ConversationFolder): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            conversationFolderDAO.addFolder(folder.toDao())
+        }
     }
 }

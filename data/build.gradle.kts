@@ -24,13 +24,11 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
+    multiplatform { }
 }
+
 kotlin {
     sourceSets {
-        @Suppress("UnusedPrivateProperty")
         val commonMain by getting {
             dependencies {
                 implementation(project(":network-model"))

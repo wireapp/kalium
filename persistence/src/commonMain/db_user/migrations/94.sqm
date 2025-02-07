@@ -1,0 +1,47 @@
+CREATE TABLE Reaction_temp AS
+SELECT * FROM Reaction;
+
+DROP TABLE Reaction;
+
+CREATE TABLE Reaction (
+    message_id TEXT NOT NULL,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    sender_id TEXT AS QualifiedIDEntity NOT NULL,
+    emoji TEXT NOT NULL,
+    date TEXT NOT NULL,
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
+    PRIMARY KEY (message_id, conversation_id, sender_id, emoji)
+);
+
+INSERT INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
+SELECT message_id, conversation_id, sender_id, emoji, date
+FROM Reaction_temp;
+
+DROP TABLE Reaction_temp;
+
+CREATE INDEX reaction_sender_index ON Reaction(sender_id);
+CREATE INDEX reaction_emoji_index ON Reaction(emoji);
+
+CREATE TABLE MessageRestrictedAssetContent_temp AS
+SELECT * FROM MessageRestrictedAssetContent;
+
+DROP TABLE MessageRestrictedAssetContent;
+
+CREATE TABLE MessageRestrictedAssetContent (
+    message_id TEXT NOT NULL,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+    asset_mime_type TEXT NOT NULL,
+    asset_size INTEGER NOT NULL,
+    asset_name TEXT NOT NULL,
+
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (message_id, conversation_id)
+);
+
+INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type, asset_size, asset_name)
+SELECT message_id, conversation_id, asset_mime_type, asset_size, asset_name
+FROM MessageRestrictedAssetContent_temp;
+
+DROP TABLE MessageRestrictedAssetContent_temp;

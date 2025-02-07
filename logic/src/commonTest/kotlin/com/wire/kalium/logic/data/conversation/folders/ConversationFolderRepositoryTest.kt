@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation.folders
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.id.toDao
@@ -182,6 +183,7 @@ class ConversationFolderRepositoryTest {
         val arrangement = Arrangement()
             .withRemoveConversationFromFolder()
             .withGetFoldersWithConversations()
+            .withConversationsFromFolder(folderId, listOf())
             .withUpdateLabels(NetworkResponse.Success(Unit, mapOf(), 200))
 
         // when
@@ -214,6 +216,80 @@ class ConversationFolderRepositoryTest {
         result.shouldSucceed()
         coVerify { arrangement.userPropertiesApi.updateLabels(any()) }.wasInvoked()
         coVerify { arrangement.conversationFolderDAO.getFoldersWithConversations() }.wasInvoked()
+    }
+
+    @Test
+    fun givenValidFolderIdWhenRemovingFolderThenShouldRemoveSuccessfully() = runTest {
+        // given
+        val folderId = "folder1"
+        val arrangement = Arrangement().withSuccessfulFolderRemoval()
+
+        // when
+        val result = arrangement.repository.removeFolder(folderId)
+
+        // then
+        result.shouldSucceed()
+        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasInvoked()
+    }
+
+    @Test
+    fun givenValidFolderWhenAddingFolderThenShouldAddSuccessfully() = runTest {
+        // given
+        val folder = ConversationFolder(id = "folder1", name = "New Folder", type = FolderType.USER)
+        val arrangement = Arrangement().withSuccessfulFolderAddition()
+
+        // when
+        val result = arrangement.repository.addFolder(folder)
+
+        // then
+        result.shouldSucceed()
+        coVerify { arrangement.conversationFolderDAO.addFolder(eq(folder.toDao())) }.wasInvoked()
+    }
+
+    @Test
+    fun givenLastConversationRemovedFromFolder_whenRemovingConversation_thenFolderShouldBeDeleted() = runTest {
+        // given
+        val folderId = "folder1"
+        val conversationId = TestConversation.ID
+
+        val arrangement = Arrangement()
+            .withRemoveConversationFromFolder()
+            .withConversationsFromFolder(folderId, emptyList())
+
+        // when
+        val result = arrangement.repository.removeConversationFromFolder(conversationId, folderId)
+
+        // then
+        result.shouldSucceed()
+
+        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
+        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasInvoked()
+    }
+
+    @Test
+    fun givenRemainingConversationsInFolder_whenRemovingConversation_thenFolderShouldNotBeDeleted() = runTest {
+        // given
+        val folderId = "folder1"
+        val conversationId = TestConversation.ID
+        val remainingConversation = ConversationDetailsWithEventsEntity(
+            conversationViewEntity = TestConversation.VIEW_ENTITY,
+            lastMessage = null,
+            messageDraft = null,
+            unreadEvents = ConversationUnreadEventEntity(TestConversation.VIEW_ENTITY.id, mapOf())
+        )
+
+        val arrangement = Arrangement()
+            .withRemoveConversationFromFolder()
+            .withConversationsFromFolder(folderId, listOf(remainingConversation))
+
+        // when
+        val result = arrangement.repository.removeConversationFromFolder(conversationId, folderId)
+
+        // then
+        result.shouldSucceed()
+
+        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
+        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -276,6 +352,16 @@ class ConversationFolderRepositoryTest {
 
         suspend fun withRemoveConversationFromFolder(): Arrangement {
             coEvery { conversationFolderDAO.removeConversationFromFolder(any(), any()) }.returns(Unit)
+            return this
+        }
+
+        suspend fun withSuccessfulFolderRemoval(): Arrangement {
+            coEvery { conversationFolderDAO.removeFolder(any()) }.returns(Unit)
+            return this
+        }
+
+        suspend fun withSuccessfulFolderAddition(): Arrangement {
+            coEvery { conversationFolderDAO.addFolder(any()) }.returns(Unit)
             return this
         }
     }
