@@ -25,6 +25,7 @@ import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArr
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
@@ -94,12 +95,12 @@ class ShouldAskCallFeedbackUseCaseTest {
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ShouldAskCallFeedbackUseCase> {
             runBlocking { block() }
-            return this to shouldAskCallFeedbackUseCase(userConfigRepository)
+            return this to ShouldAskCallFeedbackUseCase(userConfigRepository)
         }
     }
 
     companion object {
-        const val ESTABLISHED_TIME = "2024-02-03T15:36:00.000Z"
-        const val CURRENT_TIME = "2024-02-03T15:36:09.000Z"
+        val ESTABLISHED_TIME = Instant.parse("2024-02-03T15:36:00.000Z")
+        val CURRENT_TIME = Instant.parse("2024-02-03T15:36:09.000Z")
     }
 }

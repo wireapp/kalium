@@ -87,7 +87,6 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.feature.call.usecase.video.SetVideoSendStateUseCase
 import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
-import com.wire.kalium.logic.feature.user.shouldAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.user.UpdateNextTimeCallFeedbackUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
@@ -236,7 +235,7 @@ class CallsScope internal constructor(
         get() = observeAskCallFeedbackUseCase(EndCallResultListenerImpl)
 
     private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase by lazy {
-        shouldAskCallFeedbackUseCase(userConfigRepository)
+        ShouldAskCallFeedbackUseCase(userConfigRepository)
     }
 
     val updateNextTimeCallFeedback: UpdateNextTimeCallFeedbackUseCase by lazy {

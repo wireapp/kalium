@@ -29,18 +29,19 @@ import kotlinx.datetime.Instant
  */
 interface ShouldAskCallFeedbackUseCase {
     suspend operator fun invoke(
-        establishedTime: String?,
-        currentTime: String = DateTimeUtil.currentIsoDateTimeString()
+        establishedTime: Instant?,
+        currentTime: Instant = DateTimeUtil.currentInstant()
     ): ShouldAskCallFeedbackUseCaseResult
 }
 
-internal fun shouldAskCallFeedbackUseCase(
+@Suppress("FunctionNaming")
+internal fun ShouldAskCallFeedbackUseCase(
     userConfigRepository: UserConfigRepository
 ) = object : ShouldAskCallFeedbackUseCase {
 
     override suspend fun invoke(
-        establishedTime: String?,
-        currentTime: String
+        establishedTime: Instant?,
+        currentTime: Instant
     ): ShouldAskCallFeedbackUseCaseResult {
         val callDurationInSeconds = establishedTime?.let {
             DateTimeUtil.calculateMillisDifference(it, currentTime) / MILLIS_IN_SECOND
