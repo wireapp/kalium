@@ -17,11 +17,13 @@
  */
 package com.wire.kalium.cells
 
+import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellsApi
 import com.wire.kalium.cells.data.CellsApiImpl
 import com.wire.kalium.cells.data.CellsAwsClient
 import com.wire.kalium.cells.data.CellsDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
+import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.CancelDraftUseCase
@@ -32,8 +34,6 @@ import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.PublishDraftUseCase
 import com.wire.kalium.cells.domain.usecase.PublishDraftUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.UploadToCellUseCase
-import com.wire.kalium.cells.domain.usecase.UploadToCellUseCaseImpl
 import com.wire.kalium.logic.GlobalKaliumScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -68,14 +68,15 @@ public class CellsScope(
             awsClient = cellAwsClient
         )
 
+    public val uploadManager: CellUploadManager by lazy {
+        CellUploadManagerImpl(
+            repository = cellsRepository,
+            uploadScope = this,
+        )
+    }
+
     public val getCellFiles: GetCellFilesUseCase
         get() = GetCellFilesUseCaseImpl(cellsRepository)
-
-    public val uploadToCell: UploadToCellUseCase
-        get() = UploadToCellUseCaseImpl(
-            scope = this,
-            cellsRepository = cellsRepository
-        )
 
     public val deleteFromCell: DeleteCellFileUseCase
         get() = DeleteCellFileUseCaseImpl(cellsRepository)

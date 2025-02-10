@@ -19,5 +19,5 @@ package com.wire.kalium.cells.data.model
 
 internal data class PreCheckResultDTO(
     val fileExists: Boolean = false,
-    val suggestedPath: String? = null,
+    val nextPath: String? = null,
 )

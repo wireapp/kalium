@@ -24,7 +24,7 @@ import com.wire.kalium.logic.functional.Either
 import okio.Path
 
 internal interface CellsRepository {
-    suspend fun preCheck(node: CellNode): Either<NetworkFailure, PreCheckResult>
+    suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun getFiles(cellName: String): Either<NetworkFailure, List<CellNode>>
     suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit>

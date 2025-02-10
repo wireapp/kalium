@@ -36,6 +36,7 @@ kotlin {
                 implementation(libs.coroutines.core)
                 implementation(libs.ktor.authClient)
                 implementation(libs.okio.core)
+                implementation(libs.benAsherUUID)
                 implementation(libs.wire.cells.sdk)
             }
         }

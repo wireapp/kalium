@@ -57,8 +57,12 @@ internal class CellsApiImpl(
     httpClient: HttpClient
 ) : CellsApi {
 
+    private companion object {
+        const val API_VERSION = "v2"
+    }
+
     private var nodeServiceApi: NodeServiceApi = NodeServiceApi(
-        baseUrl = "${credentials.serverUrl}/a",
+        baseUrl = "${credentials.serverUrl}/$API_VERSION",
         httpClient = httpClient.config {
             installAuth(
                 BearerAuthProvider(
@@ -74,7 +78,8 @@ internal class CellsApiImpl(
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(
-                    locators = RestNodeLocators(listOf(RestNodeLocator(path = "$cellName/*")))
+                    locators = RestNodeLocators(listOf(RestNodeLocator(path = "$cellName/*"))),
+                    sortField = "Modified"
                 )
             )
         }.mapSuccess { response -> response.toDto() }
@@ -122,7 +127,7 @@ internal class CellsApiImpl(
             response.results?.firstOrNull()?.let {
                 PreCheckResultDTO(
                     fileExists = it.exists ?: false,
-                    suggestedPath = it.nextPath,
+                    nextPath = it.nextPath,
                 )
             } ?: PreCheckResultDTO()
         }

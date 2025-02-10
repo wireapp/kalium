@@ -19,5 +19,5 @@ package com.wire.kalium.cells.domain.model
 
 public sealed interface PreCheckResult {
     public data object Success : PreCheckResult
-    public data class FileExists(val suggestedFilename: String) : PreCheckResult
+    public data class FileExists(val nextPath: String) : PreCheckResult
 }

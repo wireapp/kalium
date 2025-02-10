@@ -38,13 +38,13 @@ internal class CellsDataSource internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CellsRepository {
 
-    override suspend fun preCheck(node: CellNode): Either<NetworkFailure, PreCheckResult> {
+    override suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult> {
         return withContext(dispatchers.io) {
             wrapApiRequest {
-                cellsApi.preCheck(node.path)
+                cellsApi.preCheck(nodePath)
             }.map { result ->
                 if (result.fileExists) {
-                    PreCheckResult.FileExists(result.suggestedPath ?: node.path)
+                    PreCheckResult.FileExists(result.nextPath ?: nodePath)
                 } else {
                     PreCheckResult.Success
                 }

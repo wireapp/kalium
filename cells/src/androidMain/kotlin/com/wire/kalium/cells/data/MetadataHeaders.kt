@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.data
 
 internal object MetadataHeaders {
-    const val DRAFT_MODE = "draft_mode"
+    const val DRAFT_MODE = "draft-mode"
     const val CREATE_RESOURCE_UUID = "create-resource-uuid"
     const val CREATE_VERSION_ID = "create-version-id"
 }

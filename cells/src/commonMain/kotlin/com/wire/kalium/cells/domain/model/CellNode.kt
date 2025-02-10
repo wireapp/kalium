@@ -21,6 +21,8 @@ public data class CellNode(
     val uuid: String,
     val versionId: String,
     val path: String,
+    val modified: Long? = null,
+    val size: Long? = null,
     val eTag: String? = null,
     val type: String? = null,
     val isRecycleBin: Boolean = false,
