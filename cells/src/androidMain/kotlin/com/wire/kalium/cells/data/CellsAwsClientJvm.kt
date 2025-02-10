@@ -94,6 +94,7 @@ private class CellsAwsClientJvm(
             val requestId = createMultipartUpload {
                 bucket = DEFAULT_BUCKET_NAME
                 key = node.path
+                metadata = node.createDraftNodeMetaData()
             }.uploadId
             RandomAccessFile(path.toFile(), "r").use { file ->
                 val fileSize = file.length()
