@@ -25,11 +25,10 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableJs.set(false)
+        enableJs.set(true)
     }
 }
 
-@Suppress("UnusedPrivateProperty")
 kotlin {
     sourceSets {
         val commonMain by getting {

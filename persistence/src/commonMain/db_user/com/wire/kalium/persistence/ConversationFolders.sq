@@ -17,7 +17,7 @@ CREATE TABLE LabeledConversation (
 );
 
 getFolders:
-SELECT * FROM ConversationFolder;
+SELECT * FROM ConversationFolder ORDER BY name COLLATE NOCASE ASC;
 
 getAllFoldersWithConversations:
 SELECT
@@ -30,7 +30,7 @@ FROM
 LEFT JOIN
     LabeledConversation labeledConversation ON conversationFolder.id = labeledConversation.folder_id
 ORDER BY
-    conversationFolder.id;
+    conversationFolder.name COLLATE NOCASE ASC;
 
 getConversationsFromFolder:
 SELECT ConversationDetailsWithEvents.*

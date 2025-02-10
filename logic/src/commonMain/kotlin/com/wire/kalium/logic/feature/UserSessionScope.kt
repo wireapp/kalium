@@ -732,6 +732,7 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
+            userStorage.database.metadataDAO,
         )
 
     private val conversationFolderRepository: ConversationFolderRepository
@@ -811,7 +812,6 @@ class UserSessionScope internal constructor(
 
     private val userRepository: UserRepository = UserDataSource(
         userDAO = userStorage.database.userDAO,
-        metadataDAO = userStorage.database.metadataDAO,
         clientDAO = userStorage.database.clientDAO,
         selfApi = authenticatedNetworkContainer.selfApi,
         userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
@@ -1381,6 +1381,7 @@ class UserSessionScope internal constructor(
                 conversationRepository,
                 userId,
                 isMessageSentInSelfConversation,
+                conversations.clearConversationAssetsLocally
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
@@ -1397,7 +1398,8 @@ class UserSessionScope internal constructor(
             systemMessageInserter = systemMessageInserter,
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            subconversationRepository = subconversationRepository
         )
 
     private val newMessageHandler: NewMessageEventHandler
@@ -1441,10 +1443,12 @@ class UserSessionScope internal constructor(
         get() = MemberLeaveEventHandlerImpl(
             memberDAO = userStorage.database.memberDAO,
             userRepository = userRepository,
+            conversationRepository = conversationRepository,
             persistMessage = persistMessage,
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
-            selfTeamIdProvider = selfTeamId
+            selfTeamIdProvider = selfTeamId,
+            selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(
@@ -1792,6 +1796,7 @@ class UserSessionScope internal constructor(
             clientIdProvider,
             messages.messageSender,
             teamRepository,
+            slowSyncRepository,
             userId,
             selfConversationIdProvider,
             persistMessage,

@@ -25,7 +25,7 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableJs.set(false)
+        enableJs.set(true)
     }
 }
 
@@ -33,9 +33,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":network"))
+                implementation(project(":backup"))
                 implementation(project(":cryptography"))
-                implementation(project(":persistence"))
                 implementation(project(":protobuf"))
                 implementation(project(":logger"))
 
@@ -43,7 +42,16 @@ kotlin {
             }
         }
 
+        val nonJsMain by creating {
+            dependsOn(commonMain)
+            dependencies {
+                implementation(project(":network"))
+                implementation(project(":persistence"))
+            }
+        }
+
         val jvmMain by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(project(":logic"))
                 implementation(project(":calling"))
@@ -51,6 +59,7 @@ kotlin {
         }
 
         val androidMain by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(project(":logic"))
                 implementation(project(":calling"))
@@ -58,6 +67,7 @@ kotlin {
         }
 
         val appleMain by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(project(":logic"))
                 implementation(project(":calling"))

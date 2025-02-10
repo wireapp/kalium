@@ -686,8 +686,11 @@ internal class CallDataSource(
         callJobs.remove(conversationId)?.cancel()
 
         // Cancel all jobs for removing stale participants
-        staleParticipantJobs.values.forEach { it.cancel() }
-        staleParticipantJobs.clear()
+        staleParticipantJobs.block { map ->
+            val jobsSnapshot = map.values.toList()
+            jobsSnapshot.forEach { it.cancel() }
+            map.clear()
+        }
 
         leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
             .onSuccess {

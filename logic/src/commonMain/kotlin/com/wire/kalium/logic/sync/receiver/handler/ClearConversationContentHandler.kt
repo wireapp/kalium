@@ -19,10 +19,13 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
+import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
+import com.wire.kalium.logic.functional.fold
 
 internal interface ClearConversationContentHandler {
     suspend fun handle(
@@ -34,25 +37,41 @@ internal interface ClearConversationContentHandler {
 internal class ClearConversationContentHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
-    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
+    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase
 ) : ClearConversationContentHandler {
 
     override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.Cleared
     ) {
-        val isMessageComingFromAnotherUser = message.senderUserId != selfUserId
-        val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
+        val isSelfSender = message.senderUserId == selfUserId
+        val isMessageInSelfConversation: Boolean = isMessageSentInSelfConversation(message)
 
-        if (isMessageComingFromAnotherUser) {
-            when {
-                !messageContent.needToRemoveLocally && !isMessageDestinedForSelfConversation -> return
-                messageContent.needToRemoveLocally && !isMessageDestinedForSelfConversation -> conversationRepository.deleteConversation(
-                    messageContent.conversationId
-                )
+        if (isSelfSender != isMessageInSelfConversation) return
 
-                else -> conversationRepository.clearContent(messageContent.conversationId)
-            }
+        clearConversation(messageContent.conversationId)
+
+        if (messageContent.needToRemoveLocally && isSelfSender) {
+            tryToRemoveConversation(messageContent.conversationId)
         }
+    }
+
+    private suspend fun tryToRemoveConversation(conversationId: ConversationId) {
+        conversationRepository.getConversationMembers(conversationId).fold({ false }, { it.contains(selfUserId) })
+            .let { isMember ->
+                if (isMember) {
+                    // Sometimes MessageContent.Cleared event may come before User Left conversation event.
+                    // In that case we couldn't delete it and should wait for user leave and delete after that.
+                    conversationRepository.addConversationToDeleteQueue(conversationId)
+                } else {
+                    conversationRepository.deleteConversation(conversationId)
+                }
+            }
+    }
+
+    private suspend fun clearConversation(conversationId: ConversationId) {
+        conversationRepository.clearContent(conversationId)
+        clearLocalConversationAssets(conversationId)
     }
 }

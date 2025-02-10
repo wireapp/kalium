@@ -36,12 +36,17 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.every
+import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -63,6 +68,25 @@ class OneOnOneMigratorTest {
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenUnassignedOneOnOne_whenMigratingToProteus_thenShouldAssignOneOnOneConversation() = runTest {
+        val user = TestUser.OTHER.copy(
+            activeOneOnOneConversationId = null
+        )
+
+        val (arrangement, oneOneMigrator) = arrange {
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
+            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+        }
+
+        oneOneMigrator.migrateToProteus(user)
+            .shouldSucceed()
+
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(TestConversation.ID))
+        }.wasInvoked()
     }
 
     @Test
@@ -171,8 +195,10 @@ class OneOnOneMigratorTest {
         val (_, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(TestConversation.ID))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
+            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = TestConversation.ID))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Left(failure))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
         oneOnOneMigrator.migrateToMLS(user)
@@ -191,8 +217,10 @@ class OneOnOneMigratorTest {
         val (arrangement, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(resolvedConversationId))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversationId)))
+            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = originalConversationId))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
         oneOnOneMigrator.migrateToMLS(user)
@@ -217,8 +245,10 @@ class OneOnOneMigratorTest {
         val (arrangement, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(resolvedConversationId))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversationId)))
+            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = originalConversationId))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
         oneOnOneMigrator.migrateToMLS(user)
@@ -234,30 +264,51 @@ class OneOnOneMigratorTest {
     }
 
     @Test
-    fun givenExistingTeamOneOnOne_whenMigratingToProteus_thenShouldNOTCreateGroupConversation() = runTest {
-        val user = TestUser.OTHER.copy(
-            activeOneOnOneConversationId = null
+    fun givenProteusConversation_whenMigratingToMLS_thenUpdateLastModifiedDateFromOriginalConversation() = runTest {
+        val lastModified = DateTimeUtil.currentInstant()
+        val originalConversation = TestConversation.CONVERSATION.copy(
+            id = ConversationId("someRandomConversationId", "testDomain"),
+            lastModifiedDate = lastModified
         )
-
-        val (arrangement, oneOneMigrator) = arrange {
-            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ONE_ON_ONE().id)))
+        val resolvedConversationId = ConversationId("resolvedMLSConversationId", "anotherDomain")
+        val user = TestUser.OTHER.copy(activeOneOnOneConversationId = originalConversation.id)
+        val (arrangement, oneOnOneMigrator) = arrange {
+            withResolveConversationReturning(Either.Right(resolvedConversationId))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversation.id)))
+            withGetConversationByIdReturning(originalConversation)
+            withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
-        oneOneMigrator.migrateExistingProteus(user)
+        oneOnOneMigrator.migrateToMLS(user)
             .shouldSucceed()
 
         coVerify {
-            arrangement.conversationGroupRepository.createGroupConversation(
-                name = eq<String?>(null),
-                usersList = eq(listOf(TestUser.OTHER.id)),
-                options = eq(ConversationOptions())
-            )
-        }.wasNotInvoked()
+            arrangement.conversationRepository.updateConversationModifiedDate(eq(resolvedConversationId), eq(lastModified))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNoProteusConversation_whenMigratingToMLS_thenUpdateLastModifiedDateToBeCurrentDate() = runTest {
+        val resolvedConversationId = ConversationId("resolvedMLSConversationId", "anotherDomain")
+        val lastModified = DateTimeUtil.currentInstant()
+        val user = TestUser.OTHER.copy(activeOneOnOneConversationId = null)
+        val (arrangement, oneOnOneMigrator) = arrange {
+            withResolveConversationReturning(Either.Right(resolvedConversationId))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf()))
+            withMoveMessagesToAnotherConversation(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withCurrentInstant(lastModified)
+        }
+
+        oneOnOneMigrator.migrateToMLS(user)
+            .shouldSucceed()
 
         coVerify {
-            arrangement.userRepository.updateActiveOneOnOneConversation(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
-        }.wasInvoked()
+            arrangement.conversationRepository.updateConversationModifiedDate(eq(resolvedConversationId), eq(lastModified))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
@@ -266,6 +317,20 @@ class OneOnOneMigratorTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+
+        @Mock
+        val currentInstantProvider: CurrentInstantProvider = mock(CurrentInstantProvider::class)
+
+        fun withCurrentInstant(currentInstant: Instant) {
+            every {
+                currentInstantProvider()
+            }.returns(currentInstant)
+        }
+
+        init {
+            withCurrentInstant(DateTimeUtil.currentInstant())
+        }
+
         fun arrange() = run {
             runBlocking { block() }
             this@Arrangement to OneOnOneMigratorImpl(
@@ -274,7 +339,8 @@ class OneOnOneMigratorTest {
                 conversationRepository = conversationRepository,
                 messageRepository = messageRepository,
                 userRepository = userRepository,
-                systemMessageInserter = systemMessageInserter
+                systemMessageInserter = systemMessageInserter,
+                currentInstant = currentInstantProvider,
             )
         }
     }

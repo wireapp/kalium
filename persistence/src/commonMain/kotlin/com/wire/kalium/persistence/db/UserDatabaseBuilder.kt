@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
+import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
 import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -84,6 +85,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -250,6 +252,9 @@ class UserDatabaseBuilder internal constructor(
     val databaseExporter: DatabaseExporter
         get() = DatabaseExporterImpl(userId, platformDatabaseData, this)
 
+    val obfuscatedCopyExporter: ObfuscatedCopyExporter
+        get() = ObfuscatedCopyExporter(userId, platformDatabaseData, this)
+
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
 
@@ -317,7 +322,7 @@ class UserDatabaseBuilder internal constructor(
         get() = DebugExtension(
             sqlDriver = sqlDriver,
             metaDataDao = metadataDAO,
-            isEncrypted = isEncrypted
+            isEncrypted = isEncrypted,
         )
 
     /**
@@ -345,6 +350,11 @@ internal expect fun getDatabaseAbsoluteFileLocation(
     userId: UserIDEntity
 ): String?
 
+internal expect fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+): String?
+
 @Suppress("TooGenericExceptionCaught")
 fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
     val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
@@ -358,6 +368,8 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
             sqlSchema.migrate(this, oldVersion, newVersion)
         }
         true
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         false
     }
