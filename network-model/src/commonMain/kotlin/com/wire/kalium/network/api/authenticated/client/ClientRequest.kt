@@ -125,6 +125,7 @@ object ClientCapabilityDTOSerializer : KSerializer<ClientCapabilityDTO> {
     override fun deserialize(decoder: Decoder): ClientCapabilityDTO {
         return when (val value = decoder.decodeString()) {
             "legalhold-implicit-consent" -> ClientCapabilityDTO.LegalHoldImplicitConsent
+            "consumable-notifications" -> ClientCapabilityDTO.ConsumableNotifications
             else -> ClientCapabilityDTO.Unknown(value)
         }
     }
