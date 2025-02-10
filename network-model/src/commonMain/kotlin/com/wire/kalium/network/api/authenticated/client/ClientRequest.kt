@@ -96,6 +96,9 @@ enum class DeviceTypeDTO {
 sealed class ClientCapabilityDTO {
     @SerialName("legalhold-implicit-consent")
     data object LegalHoldImplicitConsent : ClientCapabilityDTO()
+
+    @SerialName("consumable-notifications")
+    data object ConsumableNotifications : ClientCapabilityDTO()
     data class Unknown(val name: String) : ClientCapabilityDTO()
 }
 
@@ -110,8 +113,12 @@ object ClientCapabilityDTOSerializer : KSerializer<ClientCapabilityDTO> {
             is ClientCapabilityDTO.LegalHoldImplicitConsent ->
                 encoder.encodeString("legalhold-implicit-consent")
 
+            ClientCapabilityDTO.ConsumableNotifications ->
+                encoder.encodeString("consumable-notifications")
+
             is ClientCapabilityDTO.Unknown ->
                 encoder.encodeString(value.name)
+
         }
     }
 

@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v5.authenticated.KeyPackageApiV5
 import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.util.int.toHexString
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -34,17 +35,21 @@ internal class KeyPackageApiV5Test : ApiTest() {
 
     @Test
     fun givenAValidClientId_whenCallingGetAvailableKeyPackageCountEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
+        val cipherSuite = 0
+        val expectedCipherSuite = cipherSuite.toHexString()
+
         val networkClient = mockAuthenticatedNetworkClient(
             KeyPackageJson.keyPackageCountJson(KEY_PACKAGE_COUNT).rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
                 assertPathEqual(KEY_PACKAGE_COUNT_PATH)
+                assertQueryParameter(name = "ciphersuite", hasValue = expectedCipherSuite)
             }
         )
         val keyPackageApi: KeyPackageApi = KeyPackageApiV5(networkClient)
 
-        val response = keyPackageApi.getAvailableKeyPackageCount(VALID_CLIENT_ID)
+        val response = keyPackageApi.getAvailableKeyPackageCount(VALID_CLIENT_ID, cipherSuite)
         assertTrue(response.isSuccessful())
         assertEquals(response.value.count, KEY_PACKAGE_COUNT)
     }

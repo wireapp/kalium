@@ -47,7 +47,7 @@ internal open class KeyPackageApiV0 internal constructor() : KeyPackageApi {
         APINotSupported("MLS: replaceKeyPackages api is only available on API V5")
     )
 
-    override suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO> =
+    override suspend fun getAvailableKeyPackageCount(clientId: String, cipherSuite: Int): NetworkResponse<KeyPackageCountDTO> =
         NetworkResponse.Error(
             APINotSupported("MLS: getAvailableKeyPackageCount api is only available on API V5")
         )
