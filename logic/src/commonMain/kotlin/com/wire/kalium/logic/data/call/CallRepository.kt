@@ -83,7 +83,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -136,7 +135,6 @@ interface CallRepository {
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
     suspend fun advanceEpoch(conversationId: ConversationId)
     fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
-    suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
 
     suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
     suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata>
@@ -172,30 +170,8 @@ internal class CallDataSource(
         extraBufferCapacity = 1
     )
 
-    override suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?> = _callMetadataProfile.map {
-        it[conversationId]?.mapCallMetadataToCall(conversationId)
-    }
-
     override suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
         _recentlyEndedCallFlow.emit(recentlyEndedCallMetadata)
-    }
-
-    private fun CallMetadata.mapCallMetadataToCall(conversationId: ConversationId): Call {
-        return Call(
-            conversationId = conversationId,
-            status = callStatus,
-            isMuted = isMuted,
-            isCameraOn = isCameraOn,
-            isCbrEnabled = isCbrEnabled,
-            callerId = callerId,
-            conversationName = conversationName,
-            conversationType = conversationType,
-            callerName = callerName,
-            callerTeamName = callerTeamName,
-            establishedTime = establishedTime,
-            participants = getFullParticipants(),
-            maxParticipants = maxParticipants
-        )
     }
 
     override suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata> {
