@@ -83,7 +83,6 @@ class GetLoginFlowForDomainUseCaseTest {
         assertEquals(result, EnterpriseLoginResult.Failure.NotSupported)
     }
 
-
     private class Arrangement {
 
         @Mock
