@@ -45,5 +45,5 @@ sealed class LoginDomainPath(val isCloudAccountCreationPossible: Boolean) {
     /**
      * The user has an existing cloud account, but the domain is already claimed by an organization.
      */
-    data class ExistingAccountWithClaimedDomain(val domain: String) : LoginDomainPath(isCloudAccountCreationPossible = true)
+    data class ExistingAccountWithClaimedDomain(val domain: String) : LoginDomainPath(isCloudAccountCreationPossible = false)
 }
