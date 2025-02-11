@@ -21,12 +21,12 @@ package com.wire.kalium.logic.feature.rootDetection
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 /**

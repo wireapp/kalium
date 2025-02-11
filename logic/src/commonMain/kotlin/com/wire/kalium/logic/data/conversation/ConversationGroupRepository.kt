@@ -35,11 +35,11 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
@@ -439,7 +439,7 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId
     ) = if (apiResult.value is ConversationMemberAddedResponse.Changed) {
         memberJoinEventHandler.handle(
-            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event)
+            eventMapper.conversationMemberJoin(LocalId.generate(), (apiResult.value as ConversationMemberAddedResponse.Changed).event)
         ).flatMap {
             if (lastUsersAttempt is LastUsersAttempt.Failed && lastUsersAttempt.failedUsers.isNotEmpty()) {
                 newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(

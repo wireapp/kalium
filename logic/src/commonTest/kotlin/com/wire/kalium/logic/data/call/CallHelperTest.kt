@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import io.mockative.Mock
 import io.mockative.classOf

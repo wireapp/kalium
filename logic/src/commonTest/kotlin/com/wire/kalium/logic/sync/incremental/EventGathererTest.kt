@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent

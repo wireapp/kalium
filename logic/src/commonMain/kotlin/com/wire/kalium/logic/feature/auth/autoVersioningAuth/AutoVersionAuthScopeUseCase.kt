@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.SupportedApiVersions
 

@@ -34,11 +34,11 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.persistence.dao.message.MessageEntity

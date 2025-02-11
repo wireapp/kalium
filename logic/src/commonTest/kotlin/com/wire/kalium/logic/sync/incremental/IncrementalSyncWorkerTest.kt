@@ -24,7 +24,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock

@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.corefailure
 
 import com.wire.kalium.logic.MLSFailure
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.wrapMLSRequest
 import kotlin.test.Test

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isHandleExists

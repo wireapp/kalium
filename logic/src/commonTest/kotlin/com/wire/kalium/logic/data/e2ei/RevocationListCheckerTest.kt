@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil

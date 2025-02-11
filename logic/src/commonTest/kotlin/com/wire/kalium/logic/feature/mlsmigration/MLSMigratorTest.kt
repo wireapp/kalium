@@ -36,9 +36,9 @@ import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorTest.Arrangement.Co
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed

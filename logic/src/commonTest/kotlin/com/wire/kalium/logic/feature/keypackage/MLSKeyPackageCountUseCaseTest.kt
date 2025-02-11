@@ -32,8 +32,8 @@ import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Ar
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT_DTO
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.NETWORK_FAILURE
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO

@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 /**
  * This use case will add a member(s) to a given conversation.

@@ -20,7 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock

@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.util.DateTimeUtil

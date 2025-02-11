@@ -29,12 +29,12 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 

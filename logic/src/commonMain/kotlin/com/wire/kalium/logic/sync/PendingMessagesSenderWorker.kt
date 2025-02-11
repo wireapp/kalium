@@ -22,8 +22,8 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 /**

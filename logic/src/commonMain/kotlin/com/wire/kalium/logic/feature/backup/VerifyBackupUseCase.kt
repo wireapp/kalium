@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.util.checkIfCompressedFileContainsFileTypes
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

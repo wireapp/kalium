@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import io.mockative.Mock

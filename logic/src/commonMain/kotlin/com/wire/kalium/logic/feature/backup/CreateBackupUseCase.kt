@@ -35,11 +35,11 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FIL
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.createCompressedFile

@@ -77,7 +77,7 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.logic.util.toInt

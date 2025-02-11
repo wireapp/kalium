@@ -28,11 +28,11 @@ import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.wrapApiRequest

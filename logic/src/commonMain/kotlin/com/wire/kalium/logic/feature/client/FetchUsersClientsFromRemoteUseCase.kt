@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 /**

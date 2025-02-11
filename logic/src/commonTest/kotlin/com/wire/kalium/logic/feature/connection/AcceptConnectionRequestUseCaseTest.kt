@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
 import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement

@@ -32,7 +32,7 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher

@@ -31,11 +31,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.data.message.MessageTarget
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock

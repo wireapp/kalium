@@ -23,9 +23,9 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
 
 class MLSConfigHandler(
     private val userConfigRepository: UserConfigRepository,

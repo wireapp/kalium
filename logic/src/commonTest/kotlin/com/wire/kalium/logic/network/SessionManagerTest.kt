@@ -27,7 +27,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.SessionDTO

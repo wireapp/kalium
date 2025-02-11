@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 
 /**

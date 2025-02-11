@@ -34,8 +34,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile

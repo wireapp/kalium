@@ -22,7 +22,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler

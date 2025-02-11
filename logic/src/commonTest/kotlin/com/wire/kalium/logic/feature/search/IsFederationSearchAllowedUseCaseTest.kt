@@ -25,7 +25,7 @@ import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUse
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.PROTEUS_PROTOCOL_INFO
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mock
 import io.mockative.any

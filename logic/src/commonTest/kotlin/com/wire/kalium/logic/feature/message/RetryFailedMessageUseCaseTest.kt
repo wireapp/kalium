@@ -38,7 +38,7 @@ import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension

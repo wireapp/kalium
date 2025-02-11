@@ -23,7 +23,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery

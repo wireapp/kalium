@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.proteus
 
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl

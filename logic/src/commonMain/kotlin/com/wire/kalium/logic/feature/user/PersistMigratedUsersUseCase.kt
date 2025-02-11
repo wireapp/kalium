@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 
 /**

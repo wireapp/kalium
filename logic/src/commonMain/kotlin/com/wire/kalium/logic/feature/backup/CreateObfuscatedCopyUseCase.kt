@@ -33,11 +33,11 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter

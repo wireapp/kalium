@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse

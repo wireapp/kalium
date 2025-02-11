@@ -45,7 +45,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException

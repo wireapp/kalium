@@ -33,7 +33,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO

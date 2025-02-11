@@ -20,8 +20,8 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied

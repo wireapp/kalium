@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement

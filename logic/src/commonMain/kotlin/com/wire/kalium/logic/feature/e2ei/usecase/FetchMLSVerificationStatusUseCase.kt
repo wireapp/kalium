@@ -36,13 +36,13 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
 import kotlinx.datetime.Clock
 

@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement

@@ -25,8 +25,8 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.wrapStorageRequest
 import kotlinx.coroutines.flow.firstOrNull
 

@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 sealed class DoesValidSessionExistResult {
     data class Success(val doesValidSessionExist: Boolean) : DoesValidSessionExistResult()

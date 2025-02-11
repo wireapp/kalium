@@ -39,11 +39,11 @@ import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFai
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.InvalidUserId
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.mapLeft
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile

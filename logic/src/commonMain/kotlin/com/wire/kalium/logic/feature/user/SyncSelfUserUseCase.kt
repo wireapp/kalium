@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 
 /**
  * This use case will sync the current user with the backend.

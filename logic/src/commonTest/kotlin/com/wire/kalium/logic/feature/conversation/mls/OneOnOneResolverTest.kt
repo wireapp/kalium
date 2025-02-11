@@ -21,9 +21,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneMigratorArrangement

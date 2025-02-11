@@ -34,9 +34,9 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_EVENTS_FI
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.decodeBufferSequence

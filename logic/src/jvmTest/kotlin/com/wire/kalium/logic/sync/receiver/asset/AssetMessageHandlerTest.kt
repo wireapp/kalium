@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any

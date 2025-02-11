@@ -22,7 +22,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.auth.PersistentWebSocketStatus
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 

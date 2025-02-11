@@ -43,8 +43,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl

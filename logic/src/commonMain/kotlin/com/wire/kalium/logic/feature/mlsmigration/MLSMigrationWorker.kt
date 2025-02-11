@@ -22,9 +22,9 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.kaliumLogger
 
 interface MLSMigrationWorker {

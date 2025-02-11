@@ -21,7 +21,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery

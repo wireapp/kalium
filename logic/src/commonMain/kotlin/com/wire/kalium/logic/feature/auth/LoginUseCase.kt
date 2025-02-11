@@ -28,8 +28,8 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure

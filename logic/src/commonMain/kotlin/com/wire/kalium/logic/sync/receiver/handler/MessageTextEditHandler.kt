@@ -25,8 +25,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
 

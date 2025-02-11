@@ -53,7 +53,7 @@ import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Compa
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement

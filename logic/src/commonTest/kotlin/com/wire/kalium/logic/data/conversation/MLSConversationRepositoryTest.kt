@@ -60,8 +60,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher

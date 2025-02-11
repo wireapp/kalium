@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock

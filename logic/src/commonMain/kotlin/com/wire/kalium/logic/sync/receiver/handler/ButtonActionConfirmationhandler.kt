@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 
 internal interface ButtonActionConfirmationHandler {
     suspend fun handle(

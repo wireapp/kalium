@@ -23,9 +23,9 @@ import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys.LAST_MISSING_METADATA_SYNC_CHECK
 import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

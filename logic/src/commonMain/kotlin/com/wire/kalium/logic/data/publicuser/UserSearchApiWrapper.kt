@@ -22,8 +22,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.authenticated.search.UserSearchRequest

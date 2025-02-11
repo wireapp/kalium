@@ -22,7 +22,7 @@ import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 
 class FileSharingConfigHandler(
     private val userConfigRepository: UserConfigRepository,

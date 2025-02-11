@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 /**
  * This use case will return all valid sessions.

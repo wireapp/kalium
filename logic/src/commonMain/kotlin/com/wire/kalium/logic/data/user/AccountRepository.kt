@@ -22,8 +22,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest

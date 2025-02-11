@@ -22,8 +22,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
 

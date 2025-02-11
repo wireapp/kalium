@@ -21,9 +21,9 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 
 /**
  * Checks if the current requires password to authenticate operations.

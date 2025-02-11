@@ -31,10 +31,10 @@ import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity

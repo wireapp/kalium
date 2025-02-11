@@ -36,7 +36,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode

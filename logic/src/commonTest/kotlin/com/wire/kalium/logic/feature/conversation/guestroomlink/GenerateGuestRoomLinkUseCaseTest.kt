@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation.guestroomlink
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement

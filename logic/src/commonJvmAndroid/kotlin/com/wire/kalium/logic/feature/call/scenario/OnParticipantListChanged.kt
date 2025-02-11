@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first

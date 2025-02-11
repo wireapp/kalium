@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 interface EstablishSessionUseCase {

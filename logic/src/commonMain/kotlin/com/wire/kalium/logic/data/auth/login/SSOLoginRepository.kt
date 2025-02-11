@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi

@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery

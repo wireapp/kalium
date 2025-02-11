@@ -30,8 +30,8 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi

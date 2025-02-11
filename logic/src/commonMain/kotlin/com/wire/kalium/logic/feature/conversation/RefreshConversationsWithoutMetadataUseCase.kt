@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

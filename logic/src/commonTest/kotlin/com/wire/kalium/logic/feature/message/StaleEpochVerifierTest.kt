@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement

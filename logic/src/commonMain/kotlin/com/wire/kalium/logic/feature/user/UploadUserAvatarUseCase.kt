@@ -22,9 +22,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import okio.Path

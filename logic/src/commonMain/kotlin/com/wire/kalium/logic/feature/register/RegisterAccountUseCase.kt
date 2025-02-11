@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration

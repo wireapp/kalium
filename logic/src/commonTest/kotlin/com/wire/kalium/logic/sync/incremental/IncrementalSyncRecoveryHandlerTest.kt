@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl

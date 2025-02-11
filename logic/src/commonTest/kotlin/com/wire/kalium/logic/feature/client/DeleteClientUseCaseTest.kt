@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl

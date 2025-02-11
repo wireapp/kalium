@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 /**

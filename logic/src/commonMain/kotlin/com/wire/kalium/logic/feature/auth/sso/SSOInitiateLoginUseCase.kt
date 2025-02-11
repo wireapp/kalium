@@ -23,7 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.sso.SSOUtil
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 

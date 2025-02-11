@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.EventReceiver
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler

@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement

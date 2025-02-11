@@ -21,8 +21,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 
 @Suppress("ClassNaming", "MagicNumber")
 internal class SyncMigrationStep_6_7(

@@ -30,8 +30,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFoundLabel

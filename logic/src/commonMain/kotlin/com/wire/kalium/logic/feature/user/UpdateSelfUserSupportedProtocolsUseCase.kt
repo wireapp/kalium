@@ -32,10 +32,10 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.map
 import kotlinx.datetime.Instant
 
 /**

@@ -33,11 +33,11 @@ import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventInput
 import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventWorker
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first

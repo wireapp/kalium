@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.user.readReceipts
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 /**

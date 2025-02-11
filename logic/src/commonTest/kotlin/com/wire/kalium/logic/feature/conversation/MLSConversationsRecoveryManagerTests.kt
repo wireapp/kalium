@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
 import io.mockative.any

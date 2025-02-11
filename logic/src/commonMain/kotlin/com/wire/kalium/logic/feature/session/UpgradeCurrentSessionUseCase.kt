@@ -22,9 +22,9 @@ package com.wire.kalium.logic.feature.session
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager

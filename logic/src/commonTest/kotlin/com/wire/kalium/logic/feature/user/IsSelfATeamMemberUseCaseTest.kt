@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify

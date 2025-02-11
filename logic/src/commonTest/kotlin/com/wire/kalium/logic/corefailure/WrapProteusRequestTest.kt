@@ -21,7 +21,7 @@ package com.wire.kalium.logic.corefailure
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.ProteusFailure
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.wrapProteusRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals

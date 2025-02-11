@@ -23,8 +23,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials

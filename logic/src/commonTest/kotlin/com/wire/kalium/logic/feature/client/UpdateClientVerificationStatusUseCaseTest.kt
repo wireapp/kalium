@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
 import io.mockative.coVerify

@@ -29,8 +29,8 @@ import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery

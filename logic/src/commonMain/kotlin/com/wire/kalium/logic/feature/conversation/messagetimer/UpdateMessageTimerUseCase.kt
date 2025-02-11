@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation.messagetimer
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 /**
  * A use case used to update messages self deletion for conversation

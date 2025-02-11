@@ -35,7 +35,7 @@ import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHa
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock

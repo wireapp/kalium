@@ -40,7 +40,7 @@ import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
 import io.mockative.any

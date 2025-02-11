@@ -22,7 +22,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.feature.register.RequestActivationCodeUseCase
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
 

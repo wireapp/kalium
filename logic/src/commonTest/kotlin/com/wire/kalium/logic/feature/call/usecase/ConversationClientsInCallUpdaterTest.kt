@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any

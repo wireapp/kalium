@@ -41,7 +41,7 @@ import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi

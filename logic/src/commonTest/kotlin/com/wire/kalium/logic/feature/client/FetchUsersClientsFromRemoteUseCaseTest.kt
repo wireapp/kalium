@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse

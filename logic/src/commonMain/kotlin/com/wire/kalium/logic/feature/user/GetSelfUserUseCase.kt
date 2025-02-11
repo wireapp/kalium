@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.getOrNull
 
 /**
  * This use case is responsible for retrieving the current user.

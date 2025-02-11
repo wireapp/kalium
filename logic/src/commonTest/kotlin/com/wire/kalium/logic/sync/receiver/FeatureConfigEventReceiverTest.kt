@@ -41,7 +41,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesC
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any

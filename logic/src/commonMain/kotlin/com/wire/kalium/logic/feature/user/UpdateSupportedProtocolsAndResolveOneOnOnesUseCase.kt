@@ -19,8 +19,8 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 
 /**
  * Update self supported protocols, and if the supported protocols

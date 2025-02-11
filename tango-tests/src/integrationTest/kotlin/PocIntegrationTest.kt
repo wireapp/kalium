@@ -30,7 +30,7 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.getOrFail
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.logic.util.TimeLogger
 import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.requests.ACMERequests

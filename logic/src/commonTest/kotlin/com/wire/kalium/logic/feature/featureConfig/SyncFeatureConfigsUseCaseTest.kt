@@ -47,7 +47,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesC
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage

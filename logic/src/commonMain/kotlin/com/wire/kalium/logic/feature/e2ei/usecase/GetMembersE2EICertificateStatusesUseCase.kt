@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 
 /**
  * This use case is used to get the e2ei certificates of all the users in Conversation.

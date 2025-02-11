@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import io.mockative.Mock
 import io.mockative.any
@@ -34,8 +34,8 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement

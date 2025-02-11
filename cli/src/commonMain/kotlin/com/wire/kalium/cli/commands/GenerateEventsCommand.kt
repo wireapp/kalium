@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.data.event.EventGenerator
-import com.wire.kalium.logic.functional.getOrFail
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking

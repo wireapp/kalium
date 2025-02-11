@@ -25,8 +25,8 @@ import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigResult
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify

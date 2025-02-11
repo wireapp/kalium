@@ -32,11 +32,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException

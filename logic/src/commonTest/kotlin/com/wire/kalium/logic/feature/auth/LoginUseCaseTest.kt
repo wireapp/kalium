@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.auth.verification.FakeSecondFactorVerification
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newTestServer
 import io.mockative.Mock

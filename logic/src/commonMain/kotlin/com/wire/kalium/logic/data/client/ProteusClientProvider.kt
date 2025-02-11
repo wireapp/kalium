@@ -28,7 +28,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl

@@ -21,10 +21,10 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapMLSRequest

@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import io.mockative.Matchers
 import io.mockative.Mock

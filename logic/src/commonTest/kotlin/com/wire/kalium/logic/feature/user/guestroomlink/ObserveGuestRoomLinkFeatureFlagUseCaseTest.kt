@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.user.guestroomlink
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock

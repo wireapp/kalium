@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
 
 /**

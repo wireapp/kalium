@@ -21,8 +21,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.InsertMessageResult

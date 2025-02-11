@@ -40,7 +40,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.testservice.KaliumLogWriter
 import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse

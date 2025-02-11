@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestTeam
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock

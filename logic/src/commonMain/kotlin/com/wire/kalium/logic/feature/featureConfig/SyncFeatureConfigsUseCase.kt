@@ -31,9 +31,9 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam

@@ -21,10 +21,10 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase.Result
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
 
 /**
  * This use case will return the favorite folder.

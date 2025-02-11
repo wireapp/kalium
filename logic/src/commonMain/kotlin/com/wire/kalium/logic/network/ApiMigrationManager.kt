@@ -19,11 +19,11 @@
 package com.wire.kalium.logic.network
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO

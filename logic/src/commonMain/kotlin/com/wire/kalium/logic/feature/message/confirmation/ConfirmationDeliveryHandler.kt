@@ -25,9 +25,9 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.FlowPreview

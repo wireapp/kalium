@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 
 /**
  * Fetches the list of clients of the current user from remote.

@@ -26,9 +26,9 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl.Companion.CHECK_APP_VERSION_FREQUENCY_MS
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.intervalFlow
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.intervalFlow
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.util.DateTimeUtil

@@ -20,9 +20,9 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.flatMapRightWithEither
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.mapToRightOr
+import com.wire.kalium.common.functional.flatMapRightWithEither
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.mapToRightOr
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 

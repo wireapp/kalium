@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import kotlinx.datetime.Clock
 
 /**

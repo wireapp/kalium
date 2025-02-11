@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.proteus
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail

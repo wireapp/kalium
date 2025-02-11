@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 

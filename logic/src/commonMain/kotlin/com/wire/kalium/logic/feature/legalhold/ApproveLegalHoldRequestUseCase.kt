@@ -22,9 +22,9 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.network.exceptions.isBadRequest

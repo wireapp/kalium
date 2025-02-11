@@ -20,7 +20,7 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import okio.BufferedSource
 import okio.Path
 import okio.Sink

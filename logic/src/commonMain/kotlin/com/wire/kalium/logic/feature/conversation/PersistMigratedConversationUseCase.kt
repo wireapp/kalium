@@ -28,7 +28,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 
 /**
  * Persists a list of conversations migrated from old clients

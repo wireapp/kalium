@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity

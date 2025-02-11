@@ -31,7 +31,7 @@ import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher

@@ -21,7 +21,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.UpdateEmailUseCase.Result
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists

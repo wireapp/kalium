@@ -22,7 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 
 class MLSMigrationConfigHandler(
     private val userConfigRepository: UserConfigRepository,

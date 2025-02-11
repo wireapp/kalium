@@ -29,8 +29,8 @@ import com.wire.kalium.logic.data.e2ei.Nonce
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse

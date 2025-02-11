@@ -34,7 +34,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler

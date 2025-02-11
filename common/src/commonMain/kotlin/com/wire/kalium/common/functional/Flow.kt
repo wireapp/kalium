@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.functional
+package com.wire.kalium.common.functional
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

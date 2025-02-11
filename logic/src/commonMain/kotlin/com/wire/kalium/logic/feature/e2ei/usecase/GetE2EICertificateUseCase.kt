@@ -22,10 +22,10 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 
 /**
  * This use case is used to get the e2ei certificate

@@ -29,8 +29,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement

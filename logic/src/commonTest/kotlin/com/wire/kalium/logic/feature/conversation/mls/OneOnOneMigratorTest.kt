@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement

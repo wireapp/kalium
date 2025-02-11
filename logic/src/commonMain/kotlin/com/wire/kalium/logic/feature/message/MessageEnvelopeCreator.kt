@@ -46,8 +46,8 @@ import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapProteusRequest
 import kotlinx.coroutines.flow.first

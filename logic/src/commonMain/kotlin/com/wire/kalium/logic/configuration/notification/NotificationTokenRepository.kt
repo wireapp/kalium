@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.configuration.notification
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.TokenStorage
 

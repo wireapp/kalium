@@ -27,10 +27,10 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 

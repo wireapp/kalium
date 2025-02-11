@@ -25,9 +25,9 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 

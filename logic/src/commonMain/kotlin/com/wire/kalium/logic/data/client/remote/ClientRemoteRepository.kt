@@ -31,9 +31,9 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.signatureAlgorithm
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse

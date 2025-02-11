@@ -21,7 +21,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 /**
  * Updates the verification status of a client.

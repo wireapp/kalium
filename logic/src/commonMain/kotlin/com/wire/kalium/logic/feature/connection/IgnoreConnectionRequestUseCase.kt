@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 /**

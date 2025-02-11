@@ -23,10 +23,10 @@ import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import io.ktor.util.decodeBase64Bytes

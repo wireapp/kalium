@@ -24,10 +24,10 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEY_PACKAGE_COUNT_CHECK
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

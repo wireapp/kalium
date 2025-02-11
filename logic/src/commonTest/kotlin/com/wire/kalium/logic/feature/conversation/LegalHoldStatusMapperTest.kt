@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestMessage.signalingMessage
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import kotlin.test.Test
 import kotlin.test.assertEquals

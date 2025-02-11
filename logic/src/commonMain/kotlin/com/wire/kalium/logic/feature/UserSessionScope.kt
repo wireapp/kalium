@@ -354,10 +354,10 @@ import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSo
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3

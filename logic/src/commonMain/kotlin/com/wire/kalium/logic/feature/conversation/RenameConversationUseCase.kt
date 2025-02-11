@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.persistence.dao.message.LocalId

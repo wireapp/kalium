@@ -19,7 +19,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement

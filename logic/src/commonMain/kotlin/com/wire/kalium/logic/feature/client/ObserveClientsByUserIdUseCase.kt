@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

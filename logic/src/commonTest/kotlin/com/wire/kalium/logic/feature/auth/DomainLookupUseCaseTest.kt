@@ -22,9 +22,9 @@ import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.any

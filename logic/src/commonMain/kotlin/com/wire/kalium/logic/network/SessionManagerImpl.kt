@@ -29,10 +29,10 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.nullableFold
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi

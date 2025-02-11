@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.USER_PROFILE_DTO
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangementImpl
