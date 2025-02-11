@@ -19,12 +19,16 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 
 sealed class RefillKeyPackagesResult {
@@ -47,30 +51,32 @@ interface RefillKeyPackagesUseCase {
 internal class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val mlsClientProvider: MLSClientProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
 ) : RefillKeyPackagesUseCase {
-    override suspend operator fun invoke(): RefillKeyPackagesResult =
-        currentClientIdProvider().flatMap { selfClientId ->
-            // TODO: Maybe use MLSKeyPackageCountUseCase instead of repository directly,
-            //       and fetch from local instead of remote
-            keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
-                .flatMap {
-                    kaliumLogger.i("Key packages: Found ${it.count} available key packages")
-                    if (keyPackageLimitsProvider.needsRefill(it.count)) {
-                        kaliumLogger.i("Key packages: Refilling key packages...")
-                        val amount = keyPackageLimitsProvider.refillAmount()
-                        keyPackageRepository.uploadNewKeyPackages(selfClientId, amount).flatMap {
-                            Either.Right(Unit)
-                        }
-                    } else {
-                        kaliumLogger.i("Key packages: Refill not needed")
-                        Either.Right(Unit)
-                    }
+    override suspend operator fun invoke(): RefillKeyPackagesResult {
+        val selfClientId = currentClientIdProvider().getOrElse {
+            return RefillKeyPackagesResult.Failure(it)
+        }
+
+        return mlsClientProvider.getMLSClient().map { CipherSuite.fromTag(it.getDefaultCipherSuite()) }.flatMap { cipherSuite ->
+            keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite)
+        }.flatMap {
+            kaliumLogger.i("Key packages: Found ${it.count} available key packages")
+            if (keyPackageLimitsProvider.needsRefill(it.count)) {
+                kaliumLogger.i("Key packages: Refilling key packages...")
+                val amount = keyPackageLimitsProvider.refillAmount()
+                keyPackageRepository.uploadNewKeyPackages(selfClientId, amount).flatMap {
+                    Either.Right(Unit)
                 }
+            } else {
+                kaliumLogger.i("Key packages: Refill not needed")
+                Either.Right(Unit)
+            }
         }.fold({ failure ->
             RefillKeyPackagesResult.Failure(failure)
         }, {
             RefillKeyPackagesResult.Success
         })
-
+    }
 }

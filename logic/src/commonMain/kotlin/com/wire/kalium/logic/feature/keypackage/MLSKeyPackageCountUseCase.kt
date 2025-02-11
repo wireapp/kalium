@@ -21,12 +21,15 @@ package com.wire.kalium.logic.feature.keypackage
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 
 /**
  * This use case will return the current number of key packages.
@@ -38,6 +41,7 @@ interface MLSKeyPackageCountUseCase {
 internal class MLSKeyPackageCountUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val mlsClientProvider: MLSClientProvider,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val userConfigRepository: UserConfigRepository
 ) : MLSKeyPackageCountUseCase {
@@ -47,19 +51,24 @@ internal class MLSKeyPackageCountUseCaseImpl(
             false -> validKeyPackagesCountFromMLSClient()
         }
 
-    private suspend fun validKeyPackagesCountFromAPI() = currentClientIdProvider().fold({
-        MLSKeyPackageCountResult.Failure.FetchClientIdFailure(it)
-    }, { selfClient ->
-        if (userConfigRepository.isMLSEnabled().getOrElse(false)) {
-            keyPackageRepository.getAvailableKeyPackageCount(selfClient)
-                .fold(
-                    { MLSKeyPackageCountResult.Failure.NetworkCallFailure(it) },
-                    { MLSKeyPackageCountResult.Success(selfClient, it.count, keyPackageLimitsProvider.needsRefill(it.count)) }
-                )
-        } else {
-            MLSKeyPackageCountResult.Failure.NotEnabled
+    @Suppress("ReturnCount")
+    private suspend fun validKeyPackagesCountFromAPI(): MLSKeyPackageCountResult {
+        val selfClientId = currentClientIdProvider().getOrElse {
+            return MLSKeyPackageCountResult.Failure.FetchClientIdFailure(it)
         }
-    })
+
+        if (!userConfigRepository.isMLSEnabled().getOrElse(false)) {
+            return MLSKeyPackageCountResult.Failure.NotEnabled
+        }
+
+        val cipherSuite = mlsClientProvider.getMLSClient().map { CipherSuite.fromTag(it.getDefaultCipherSuite()) }
+            .getOrElse { return MLSKeyPackageCountResult.Failure.Generic(it) }
+
+        return keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite).fold(
+            { MLSKeyPackageCountResult.Failure.NetworkCallFailure(it) },
+            { MLSKeyPackageCountResult.Success(selfClientId, it.count, keyPackageLimitsProvider.needsRefill(it.count)) }
+        )
+    }
 
     private suspend fun validKeyPackagesCountFromMLSClient() =
         currentClientIdProvider().fold({

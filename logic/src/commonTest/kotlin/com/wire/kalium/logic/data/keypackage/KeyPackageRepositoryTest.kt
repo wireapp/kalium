@@ -70,13 +70,13 @@ class KeyPackageRepositoryTest {
 
     @Test
     fun givenExistingClient_whenGettingAvailableKeyPackageCount_thenResultShouldBePropagated() = runTest {
-
+        val cipherSuite = CipherSuite.fromTag(1)
         val (_, keyPackageRepository) = Arrangement()
             .withMLSClient()
             .withGetAvailableKeyPackageCountSuccessful()
             .arrange()
 
-        val keyPackageCount = keyPackageRepository.getAvailableKeyPackageCount(Arrangement.SELF_CLIENT_ID)
+        val keyPackageCount = keyPackageRepository.getAvailableKeyPackageCount(Arrangement.SELF_CLIENT_ID, cipherSuite)
 
         assertIs<Either.Right<KeyPackageCountDTO>>(keyPackageCount)
         assertEquals(Arrangement.KEY_PACKAGE_COUNT_DTO.count, keyPackageCount.value.count)
@@ -210,7 +210,7 @@ class KeyPackageRepositoryTest {
 
         suspend fun withGetAvailableKeyPackageCountSuccessful() = apply {
             coEvery {
-                keyPackageApi.getAvailableKeyPackageCount(eq(SELF_CLIENT_ID.value))
+                keyPackageApi.getAvailableKeyPackageCount(eq(SELF_CLIENT_ID.value), any())
             }.returns(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
         }
 

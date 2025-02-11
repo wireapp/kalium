@@ -18,12 +18,15 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.CLIENT_FETCH_ERROR
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT_DTO
@@ -53,16 +56,19 @@ class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientIdIsNotRegistered_ThenReturnGenericError() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519
+
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withClientId(Either.Left(CLIENT_FETCH_ERROR))
-            .arrange{
+            .withDefaultCipherSuite(expectedCipherSuite)
+            .arrange {
                 withGetMLSEnabledReturning(true.right())
             }
 
         val actual = keyPackageCountUseCase()
 
         coVerify {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
         }.wasNotInvoked()
 
         assertIs<MLSKeyPackageCountResult.Failure.FetchClientIdFailure>(actual)
@@ -71,18 +77,21 @@ class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientId_whenCallingKeyPackageCountReturnValue_ThenReturnKeyPackageCountSuccess() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519
+
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withAvailableKeyPackageCountReturn(Either.Right(KEY_PACKAGE_COUNT_DTO))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
+            .withDefaultCipherSuite(expectedCipherSuite)
             .withKeyPackageLimitSucceed()
-            .arrange{
+            .arrange {
                 withGetMLSEnabledReturning(true.right())
             }
 
         val actual = keyPackageCountUseCase()
 
         coVerify {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
         }.wasInvoked(once)
         assertIs<MLSKeyPackageCountResult.Success>(actual)
         assertEquals(actual, MLSKeyPackageCountResult.Success(TestClient.CLIENT_ID, KEY_PACKAGE_COUNT, true))
@@ -90,17 +99,20 @@ class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientID_whenCallingKeyPackageCountReturnError_ThenReturnKeyPackageCountFailure() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519
+
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withAvailableKeyPackageCountReturn(Either.Left(NETWORK_FAILURE))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
-            .arrange{
+            .withDefaultCipherSuite(expectedCipherSuite)
+            .arrange {
                 withGetMLSEnabledReturning(true.right())
             }
 
         val actual = keyPackageCountUseCase()
 
         coVerify {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
         }.wasInvoked(once)
         assertIs<MLSKeyPackageCountResult.Failure.NetworkCallFailure>(actual)
         assertEquals(actual.networkFailure, NETWORK_FAILURE)
@@ -108,10 +120,12 @@ class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientID_whenCallingGetMLSEnabledReturnFalse_ThenReturnKeyPackageCountNotEnabledFailure() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withAvailableKeyPackageCountReturn(Either.Right(KEY_PACKAGE_COUNT_DTO))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
-            .arrange{
+            .withDefaultCipherSuite(expectedCipherSuite)
+            .arrange {
                 withGetMLSEnabledReturning(false.right())
             }
 
@@ -122,7 +136,7 @@ class MLSKeyPackageCountUseCaseTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
         }.wasNotInvoked()
         assertIs<MLSKeyPackageCountResult.Failure.NotEnabled>(actual)
     }
@@ -136,6 +150,12 @@ class MLSKeyPackageCountUseCaseTest {
 
         @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
+
+        @Mock
+        val mlsClientProvider = mock(MLSClientProvider::class)
+
+        @Mock
+        val mlsClient = mock(MLSClient::class)
 
         suspend fun withClientId(result: Either<CoreFailure, ClientId>) = apply {
             coEvery {
@@ -151,13 +171,27 @@ class MLSKeyPackageCountUseCaseTest {
 
         suspend fun withAvailableKeyPackageCountReturn(result: Either<NetworkFailure, KeyPackageCountDTO>) = apply {
             coEvery {
-                keyPackageRepository.getAvailableKeyPackageCount(any())
+                keyPackageRepository.getAvailableKeyPackageCount(any(), any())
             }.returns(result)
         }
 
-        fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {
+        fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
+            every {
+                mlsClient.getDefaultCipherSuite()
+            }.returns(cipherSuite.tag.toUShort())
+        }
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = apply {
+            coEvery { mlsClientProvider.getMLSClient() }.returns(mlsClient.right())
+        }.apply {
+            runBlocking { block() }
+        }.let {
             this to MLSKeyPackageCountUseCaseImpl(
-                keyPackageRepository, currentClientIdProvider, keyPackageLimitsProvider, userConfigRepository
+                keyPackageRepository = keyPackageRepository,
+                currentClientIdProvider = currentClientIdProvider,
+                keyPackageLimitsProvider = keyPackageLimitsProvider,
+                userConfigRepository = userConfigRepository,
+                mlsClientProvider = mlsClientProvider,
             )
         }
 
