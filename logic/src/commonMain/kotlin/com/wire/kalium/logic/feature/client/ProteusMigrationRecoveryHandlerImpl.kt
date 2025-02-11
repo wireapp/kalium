@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 
 internal class ProteusMigrationRecoveryHandlerImpl(
     private val logoutUseCase: Lazy<LogoutUseCase>

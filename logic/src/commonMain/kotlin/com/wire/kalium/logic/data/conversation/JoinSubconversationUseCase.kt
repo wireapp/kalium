@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -28,11 +28,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
-import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
@@ -132,7 +132,7 @@ internal class JoinSubconversationUseCaseImpl(
         joinOrEstablishSubconversation(conversationId, subconversationId)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-                    if (failure.kaliumException.isMlsStaleMessage()) {
+                    if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
                         kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
                         joinOrEstablishSubconversation(conversationId, subconversationId)
                     } else {

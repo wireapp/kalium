@@ -19,10 +19,10 @@
 package com.wire.kalium.logic.feature.user.readReceipts
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 
 /**
  * UseCase that allow us to persist the configuration of read receipts to enabled or not

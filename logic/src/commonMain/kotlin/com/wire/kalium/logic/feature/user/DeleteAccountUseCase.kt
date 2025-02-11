@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.common.functional.fold
 

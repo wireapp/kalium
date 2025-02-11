@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl

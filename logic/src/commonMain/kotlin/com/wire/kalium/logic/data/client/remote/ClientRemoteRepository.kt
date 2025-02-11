@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.client.remote
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -34,7 +34,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest

@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.common.functional.combine
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager

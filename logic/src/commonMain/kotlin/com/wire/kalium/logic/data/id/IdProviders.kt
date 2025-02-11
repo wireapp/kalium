@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.common.functional.Either
 

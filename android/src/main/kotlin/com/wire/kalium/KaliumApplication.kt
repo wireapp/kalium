@@ -22,7 +22,7 @@ import android.app.Application
 import androidx.work.Configuration
 import com.wire.kalium.android.R
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.WrapperWorkerFactory

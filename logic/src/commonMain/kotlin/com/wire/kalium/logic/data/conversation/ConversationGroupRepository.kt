@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.MLSFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -44,9 +44,9 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimer
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapNullableFlowStorageRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -615,7 +615,7 @@ internal class ConversationGroupRepositoryImpl(
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&
-                it.kaliumException.isConversationHasNoCode()
+                (it.kaliumException as KaliumException.InvalidRequestError).isConversationHasNoCode()
             ) {
                 wrapStorageRequest {
                     conversationDAO.deleteGuestRoomLink(conversationId.toDao())

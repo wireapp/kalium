@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId

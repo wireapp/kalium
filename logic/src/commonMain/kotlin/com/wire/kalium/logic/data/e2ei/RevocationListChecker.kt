@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.data.e2ei
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -27,7 +27,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 
 /**
  * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.

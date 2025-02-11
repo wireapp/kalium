@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.logger.logStructuredJson
 
 internal interface MLSConversationsRecoveryManager {
     suspend fun invoke()

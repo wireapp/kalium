@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.conversation.link
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 
 internal interface CodeUpdatedHandler {

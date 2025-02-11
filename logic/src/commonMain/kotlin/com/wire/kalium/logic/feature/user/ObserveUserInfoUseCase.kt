@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.OtherUser
@@ -31,7 +31,7 @@ import com.wire.kalium.common.functional.flatMapRightWithEither
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.common.functional.mapToRightOr
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf

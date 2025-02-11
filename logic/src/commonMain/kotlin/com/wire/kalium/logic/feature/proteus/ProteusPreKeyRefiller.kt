@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.proteus
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.MAX_PREKEY_ID
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.MINIMUM_PREKEYS_COUNT

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.connection
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.common.functional.Either
 

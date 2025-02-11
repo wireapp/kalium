@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.util.arrangement.eventHandler
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import io.mockative.Mock

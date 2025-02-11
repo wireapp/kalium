@@ -19,7 +19,7 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
@@ -32,8 +32,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import kotlinx.coroutines.flow.first
 

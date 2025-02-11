@@ -19,10 +19,10 @@
 package com.wire.kalium.logic.feature.user.typingIndicator
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 
 /**
  * UseCase allowing to persist the global configuration flag regarding User Typing Indicator feature

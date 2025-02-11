@@ -19,7 +19,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
@@ -66,7 +66,7 @@ class JoinConversationViaCodeUseCase internal constructor(
     private fun onError(networkFailure: NetworkFailure): Result.Failure = when (networkFailure) {
         is NetworkFailure.ServerMiscommunication -> {
             if (networkFailure.kaliumException is KaliumException.InvalidRequestError &&
-                networkFailure.kaliumException.isWrongConversationPassword()
+                (networkFailure.kaliumException as KaliumException.InvalidRequestError).isWrongConversationPassword()
             ) {
                 Result.Failure.IncorrectPassword
             } else {

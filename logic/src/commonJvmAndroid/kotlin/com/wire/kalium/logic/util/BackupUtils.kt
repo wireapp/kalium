@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.web.KtxWebSerializer
 import com.wire.kalium.common.functional.Either

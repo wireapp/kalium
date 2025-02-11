@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow

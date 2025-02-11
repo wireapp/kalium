@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.properties
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either

@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
 
 internal interface AssetMessageHandler {

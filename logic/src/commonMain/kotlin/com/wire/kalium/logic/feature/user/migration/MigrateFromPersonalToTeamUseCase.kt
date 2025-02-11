@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.feature.user.migration
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.common.functional.fold
@@ -65,7 +65,7 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
             return when (error) {
                 is NetworkFailure.ServerMiscommunication -> {
                     if (error.kaliumException is KaliumException.InvalidRequestError) {
-                        val response = error.kaliumException.errorResponse
+                        val response = (error.kaliumException as KaliumException.InvalidRequestError).errorResponse
                         if (response.label == MigrateFromPersonalToTeamFailure.UserAlreadyInTeam.ERROR_LABEL) {
                             MigrateFromPersonalToTeamResult.Error(
                                 MigrateFromPersonalToTeamFailure.UserAlreadyInTeam()

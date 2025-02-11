@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.common.functional.Either
@@ -71,7 +71,7 @@ class ApproveLegalHoldRequestUseCaseImpl internal constructor(
 
     private fun handleError(failure: CoreFailure): ApproveLegalHoldRequestUseCase.Result.Failure =
         if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
-            failure.kaliumException.let { error: KaliumException.InvalidRequestError ->
+            (failure.kaliumException as KaliumException.InvalidRequestError).let { error ->
                 when {
                     error.errorResponse.code == HttpStatusCode.BadRequest.value && error.isBadRequest() ->
                         ApproveLegalHoldRequestUseCase.Result.Failure.InvalidPassword

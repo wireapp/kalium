@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call.scenario
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository

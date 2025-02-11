@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatus
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest

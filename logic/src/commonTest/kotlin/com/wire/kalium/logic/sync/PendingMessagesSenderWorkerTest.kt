@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestMessage

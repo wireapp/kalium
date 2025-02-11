@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.register
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
@@ -41,7 +41,7 @@ class VerifyActivationCodeUseCase internal constructor(
                 if (
                     it is NetworkFailure.ServerMiscommunication &&
                     it.kaliumException is KaliumException.InvalidRequestError &&
-                    it.kaliumException.isInvalidCode()
+                    (it.kaliumException as KaliumException.InvalidRequestError).isInvalidCode()
                 ) {
                     VerifyActivationCodeResult.Failure.InvalidCode
                 } else {

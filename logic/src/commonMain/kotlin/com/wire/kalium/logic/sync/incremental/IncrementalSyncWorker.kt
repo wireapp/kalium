@@ -22,7 +22,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable

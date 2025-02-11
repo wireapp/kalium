@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.feature.user.migration
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.user.CreateUserTeam
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase

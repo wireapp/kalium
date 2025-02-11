@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.utils.SHA256Key
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.conversation.ClientId

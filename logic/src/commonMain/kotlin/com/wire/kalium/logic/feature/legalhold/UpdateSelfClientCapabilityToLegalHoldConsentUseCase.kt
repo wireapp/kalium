@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam

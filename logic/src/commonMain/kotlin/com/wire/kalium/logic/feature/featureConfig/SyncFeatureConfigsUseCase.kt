@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.featureConfig
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
@@ -34,7 +34,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesC
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 
@@ -79,7 +79,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 networkFailure is NetworkFailure.ServerMiscommunication &&
                 networkFailure.kaliumException is KaliumException.InvalidRequestError
             ) {
-                if (networkFailure.kaliumException.isNoTeam()) {
+                if ((networkFailure.kaliumException as KaliumException.InvalidRequestError).isNoTeam()) {
                     kaliumLogger.i("this user doesn't belong to a team")
                 } else {
                     kaliumLogger.d("operation denied due to insufficient permissions")

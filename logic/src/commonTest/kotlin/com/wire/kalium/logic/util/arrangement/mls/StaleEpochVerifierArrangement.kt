@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.util.arrangement.mls
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.common.functional.Either
 import io.mockative.Mock

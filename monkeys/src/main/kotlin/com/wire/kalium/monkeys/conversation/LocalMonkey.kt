@@ -18,7 +18,7 @@
 package com.wire.kalium.monkeys.conversation
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ConversationOptions

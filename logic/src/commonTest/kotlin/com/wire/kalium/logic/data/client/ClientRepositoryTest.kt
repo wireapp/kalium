@@ -20,8 +20,8 @@ package com.wire.kalium.logic.data.client
 
 import app.cash.turbine.test
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.common.functional.flatMap
@@ -53,7 +53,7 @@ internal class DeregisterTokenUseCaseImpl(
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&
-                it.kaliumException.isNotFound()
+                (it.kaliumException as KaliumException.InvalidRequestError).isNotFound()
             ) {
                 DeregisterTokenUseCase.Result.Failure.NotFound
             }

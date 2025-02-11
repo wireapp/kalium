@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.UpdateEmailUseCase.Result
@@ -45,9 +45,10 @@ class UpdateEmailUseCase internal constructor(
 
     private fun onError(error: NetworkFailure): Result.Failure {
         return if (error is NetworkFailure.ServerMiscommunication && error.kaliumException is KaliumException.InvalidRequestError) {
+            val exception = error.kaliumException as KaliumException.InvalidRequestError
             when {
-                error.kaliumException.isKeyExists() -> Result.Failure.EmailAlreadyInUse
-                error.kaliumException.isInvalidEmail() -> Result.Failure.InvalidEmail
+                exception.isKeyExists() -> Result.Failure.EmailAlreadyInUse
+                exception.isInvalidEmail() -> Result.Failure.InvalidEmail
                 else -> Result.Failure.GenericFailure(error)
             }
         } else {

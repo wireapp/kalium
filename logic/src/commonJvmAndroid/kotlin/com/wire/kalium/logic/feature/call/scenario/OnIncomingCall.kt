@@ -22,7 +22,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.ConversationTypeForCall

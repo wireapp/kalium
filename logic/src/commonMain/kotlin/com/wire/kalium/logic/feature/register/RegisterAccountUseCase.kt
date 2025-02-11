@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.register
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
@@ -114,7 +114,7 @@ class RegisterAccountUseCase internal constructor(
         RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-            handleSpecialErrors(it.kaliumException)
+            handleSpecialErrors(it.kaliumException as KaliumException.InvalidRequestError)
         } else {
             RegisterResult.Failure.Generic(it)
         }

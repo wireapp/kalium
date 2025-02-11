@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.common.functional.flatMap

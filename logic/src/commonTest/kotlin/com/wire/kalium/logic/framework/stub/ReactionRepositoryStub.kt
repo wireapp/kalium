@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.framework.stub
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.UserReactions
 import com.wire.kalium.logic.data.message.reaction.MessageReaction

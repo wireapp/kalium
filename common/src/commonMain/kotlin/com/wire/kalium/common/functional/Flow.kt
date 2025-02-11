@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 
-suspend inline fun <A, B> Collection<A>.flatMapFromIterable(
+inline fun <A, B> Collection<A>.flatMapFromIterable(
     crossinline block: suspend (A) -> Flow<B>
 ): Flow<List<B>> = flow {
     val result = mutableListOf<B>()

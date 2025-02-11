@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.register
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
@@ -41,15 +41,16 @@ class RequestActivationCodeUseCase internal constructor(
 
         return registerAccountRepository.requestEmailActivationCode(email)
             .fold({
-                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
+                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                    val error = it.kaliumException as KaliumException.InvalidRequestError
                     when {
-                        it.kaliumException.isInvalidEmail() -> RequestActivationCodeResult.Failure.InvalidEmail
-                        it.kaliumException.isBlackListedEmail() -> RequestActivationCodeResult.Failure.BlacklistedEmail
-                        it.kaliumException.isKeyExists() -> RequestActivationCodeResult.Failure.AlreadyInUse
-                        it.kaliumException.isDomainBlockedForRegistration() -> RequestActivationCodeResult.Failure.DomainBlocked
+                        error.isInvalidEmail() -> RequestActivationCodeResult.Failure.InvalidEmail
+                        error.isBlackListedEmail() -> RequestActivationCodeResult.Failure.BlacklistedEmail
+                        error.isKeyExists() -> RequestActivationCodeResult.Failure.AlreadyInUse
+                        error.isDomainBlockedForRegistration() -> RequestActivationCodeResult.Failure.DomainBlocked
                         else -> RequestActivationCodeResult.Failure.Generic(it)
                     }
-                else RequestActivationCodeResult.Failure.Generic(it)
+                } else RequestActivationCodeResult.Failure.Generic(it)
             }, {
                 RequestActivationCodeResult.Success
             })

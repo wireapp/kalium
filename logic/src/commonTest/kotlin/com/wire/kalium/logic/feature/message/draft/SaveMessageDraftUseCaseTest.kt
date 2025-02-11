@@ -18,8 +18,7 @@
 
 package com.wire.kalium.logic.feature.message.draft
 
-import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.message.draft.MessageDraft
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.framework.TestConversation

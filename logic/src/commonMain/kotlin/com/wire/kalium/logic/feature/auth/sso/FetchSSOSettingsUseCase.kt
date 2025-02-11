@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.auth.sso
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.feature.auth.sso.FetchSSOSettingsUseCase.Result
 import com.wire.kalium.common.functional.fold
@@ -37,7 +37,7 @@ class FetchSSOSettingsUseCase internal constructor(
         .fold({
             if (it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&
-                it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
+                (it.kaliumException as KaliumException.InvalidRequestError).errorResponse.code == HttpStatusCode.NotFound.value
             ) {
                 Result.Success(null)
             } else {

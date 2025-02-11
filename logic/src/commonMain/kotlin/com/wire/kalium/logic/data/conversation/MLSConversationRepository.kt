@@ -24,11 +24,11 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.MLSFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -62,12 +62,12 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -181,12 +181,12 @@ private fun CoreFailure.getStrategy(
         this is NetworkFailure.ServerMiscommunication &&
         kaliumException is KaliumException.InvalidRequestError
     ) {
-        if ((this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) ||
-            this.kaliumException.isMlsCommitMissingReferences()
-        ) {
+        val error = kaliumException as KaliumException.InvalidRequestError
+
+        if ((error.isMlsClientMismatch() && retryOnClientMismatch) || error.isMlsCommitMissingReferences()) {
             CommitStrategy.DISCARD_AND_RETRY
         } else if (
-            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage
+            error.isMlsStaleMessage() && retryOnStaleMessage
         ) {
             CommitStrategy.KEEP_AND_RETRY
         } else {

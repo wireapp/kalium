@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.publicuser
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.fold

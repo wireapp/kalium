@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.util.arrangement.protocol
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.common.functional.Either

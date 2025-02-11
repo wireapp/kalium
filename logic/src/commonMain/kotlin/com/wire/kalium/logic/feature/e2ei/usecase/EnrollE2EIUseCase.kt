@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.cryptography.NewAcmeAuthz
-import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
 import com.wire.kalium.common.functional.Either
@@ -27,7 +27,7 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 

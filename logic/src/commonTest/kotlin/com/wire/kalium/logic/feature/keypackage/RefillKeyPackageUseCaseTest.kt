@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -30,7 +30,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
-import io.mockative.Matchers
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -39,11 +38,9 @@ import io.mockative.eq
 import io.mockative.every
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
@@ -37,7 +37,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -188,7 +188,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     ): RegisterClientResult = if (failure is NetworkFailure.ServerMiscommunication &&
         failure.kaliumException is KaliumException.InvalidRequestError
     ) {
-        val kaliumException = failure.kaliumException
+        val kaliumException = failure.kaliumException as KaliumException.InvalidRequestError
         val authCodeFailure = kaliumException.authenticationCodeFailure
         when {
             kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients

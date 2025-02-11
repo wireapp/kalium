@@ -18,6 +18,7 @@
 plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -30,9 +31,43 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":data"))
+                implementation(project(":logger"))
+                implementation(project(":util"))
+                implementation(project(":persistence"))
                 implementation(project(":network"))
+                implementation(project(":network-util"))
                 implementation(project(":cryptography"))
+                implementation(libs.ktxSerialization)
                 implementation(libs.coroutines.core)
+            }
+        }
+
+        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+        }
+
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coreCrypto)
+            }
+        }
+
+        val jvmMain by getting {
+            addCommonKotlinJvmSourceDir()
+            dependencies {
+                implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
+            }
+        }
+
+        val androidMain by getting {
+            addCommonKotlinJvmSourceDir()
+            dependencies {
+                implementation(libs.work)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
         }
     }

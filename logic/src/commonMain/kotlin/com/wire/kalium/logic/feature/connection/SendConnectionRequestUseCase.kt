@@ -18,14 +18,14 @@
 
 package com.wire.kalium.logic.feature.connection
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 
@@ -66,7 +66,7 @@ internal class SendConnectionRequestUseCaseImpl(
     private fun handleServerMissCommunicationError(failure: NetworkFailure.ServerMiscommunication): SendConnectionRequestResult.Failure =
         when (failure.kaliumException) {
             is KaliumException.InvalidRequestError -> {
-                with(failure.kaliumException) {
+                with(failure.kaliumException as KaliumException.InvalidRequestError) {
                     when {
                         isMissingLegalHoldConsent() -> SendConnectionRequestResult.Failure.MissingLegalHoldConsent
                         else -> SendConnectionRequestResult.Failure.GenericFailure(failure)

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.auth.sso
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.sso.SSOUtil
@@ -86,9 +86,10 @@ internal class SSOInitiateLoginUseCaseImpl(
             }
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
+                val error = it.kaliumException as KaliumException.InvalidRequestError
+                if (error.errorResponse.code == HttpStatusCode.BadRequest.value)
                     return@fold SSOInitiateLoginResult.Failure.InvalidRedirect
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
+                if (error.errorResponse.code == HttpStatusCode.NotFound.value)
                     return@fold SSOInitiateLoginResult.Failure.InvalidCode
             }
             SSOInitiateLoginResult.Failure.Generic(it)

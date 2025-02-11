@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.service
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.common.functional.Either

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.auth.sso
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.id.IdMapper
@@ -65,7 +65,7 @@ internal class GetSSOLoginSessionUseCaseImpl(
     override suspend fun invoke(cookie: String): SSOLoginSessionResult =
         ssoLoginRepository.provideLoginSession(cookie).fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
+                if ((it.kaliumException as KaliumException.InvalidRequestError).errorResponse.code == HttpStatusCode.BadRequest.value)
                     return@fold SSOLoginSessionResult.Failure.InvalidCookie
             }
             SSOLoginSessionResult.Failure.Generic(it)

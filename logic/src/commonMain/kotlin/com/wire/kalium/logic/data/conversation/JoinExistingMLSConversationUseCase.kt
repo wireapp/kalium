@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
@@ -34,11 +34,11 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
-import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsMissingGroupInfo
@@ -89,7 +89,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         joinOrEstablishMLSGroup(conversation, mlsPublicKeys)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-                    if (failure.kaliumException.isMlsStaleMessage()) {
+                    if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
                         kaliumLogger.logStructuredJson(
                             level = KaliumLogLevel.WARN,
                             leadingMessage = "Join-Establish MLS Group Stale",
@@ -114,7 +114,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 joinOrEstablishMLSGroup(conversation, null)
                             }
                         }
-                    } else if (failure.kaliumException.isMlsMissingGroupInfo()) {
+                    } else if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsMissingGroupInfo()) {
                         kaliumLogger.w("$TAG: conversation has no group info, ignoring...")
                         Either.Right(Unit)
                     } else {

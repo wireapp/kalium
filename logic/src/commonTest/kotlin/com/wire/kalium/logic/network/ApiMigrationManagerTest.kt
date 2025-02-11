@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.network
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock

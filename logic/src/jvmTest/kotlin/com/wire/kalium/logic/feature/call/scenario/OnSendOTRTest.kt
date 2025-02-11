@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Memory
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Size_t
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId

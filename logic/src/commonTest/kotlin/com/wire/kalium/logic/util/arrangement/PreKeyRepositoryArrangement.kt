@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.util.arrangement
 
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.common.functional.Either
 import io.mockative.Mock

@@ -18,14 +18,14 @@
 
 package com.wire.kalium.logic.data.message.reaction
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.UserReactions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
