@@ -42,7 +42,7 @@ import kotlin.test.Test
 class AnswerCallUseCaseTest {
 
     @Mock
-    private val getAllCallsWithSortedParticipants = mock(GetAllCallsWithSortedParticipantsUseCase::class)
+    private val getIncomingCalls = mock(GetIncomingCallsUseCase::class)
 
     @Mock
     private val muteCall = mock(MuteCallUseCase::class)
@@ -54,7 +54,7 @@ class AnswerCallUseCaseTest {
     private val callManager = mock(CallManager::class)
 
     private val answerCall = AnswerCallUseCaseImpl(
-        allCalls = getAllCallsWithSortedParticipants,
+        incomingCalls = getIncomingCalls,
         muteCall = muteCall,
         unMuteCall = unMuteCall,
         callManager = lazy { callManager },
@@ -75,11 +75,11 @@ class AnswerCallUseCaseTest {
         val configs = KaliumConfigs(forceConstantBitrateCalls = isCbrEnabled)
 
         coEvery {
-            getAllCallsWithSortedParticipants.invoke()
-        }.returns(flowOf(listOf()))
+            getIncomingCalls()
+        }.returns(flowOf(listOf(call)))
 
         val answerCallWithCBR = AnswerCallUseCaseImpl(
-            allCalls = getAllCallsWithSortedParticipants,
+            incomingCalls = getIncomingCalls,
             muteCall = muteCall,
             unMuteCall = unMuteCall,
             callManager = lazy { callManager },
@@ -101,10 +101,10 @@ class AnswerCallUseCaseTest {
     }
 
     @Test
-    fun givenACall_whenAnsweringIt_thenInvokeAnswerCallOnce() = runTest(TestKaliumDispatcher.main) {
+    fun givenAIncomingCall_whenAnsweringIt_thenInvokeAnswerCallOnce() = runTest(TestKaliumDispatcher.main) {
         coEvery {
-            getAllCallsWithSortedParticipants.invoke()
-        }.returns(flowOf(listOf()))
+            getIncomingCalls()
+        }.returns(flowOf(listOf(call)))
 
         answerCall(
             conversationId = conversationId
@@ -118,8 +118,10 @@ class AnswerCallUseCaseTest {
     @Test
     fun givenOnGoingGroupCall_whenJoiningIt_thenMuteThatCall() = runTest(TestKaliumDispatcher.main) {
         coEvery {
-            getAllCallsWithSortedParticipants.invoke()
-        }.returns(flowOf(listOf(call)))
+            getIncomingCalls()
+        }.returns(flowOf(listOf(call.copy(
+            status = CallStatus.STILL_ONGOING
+        ))))
 
         answerCall(
             conversationId = conversationId
@@ -138,13 +140,12 @@ class AnswerCallUseCaseTest {
     @Test
     fun givenIncomingOneOnOneCallWithIsMutedFalse_whenAnsweringTheCall_thenUnMuteThatCall() = runTest(TestKaliumDispatcher.main) {
         val newCall = call.copy(
-            status = CallStatus.INCOMING,
             conversationType = Conversation.Type.ONE_ON_ONE,
             isMuted = false
         )
 
         coEvery {
-            getAllCallsWithSortedParticipants.invoke()
+            getIncomingCalls()
         }.returns(flowOf(listOf(newCall)))
 
         answerCall(
@@ -167,7 +168,7 @@ class AnswerCallUseCaseTest {
         )
         val call = Call(
             conversationId = conversationId,
-            status = CallStatus.STILL_ONGOING,
+            status = CallStatus.INCOMING,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
