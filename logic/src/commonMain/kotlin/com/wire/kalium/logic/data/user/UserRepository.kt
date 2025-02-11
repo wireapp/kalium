@@ -93,7 +93,7 @@ interface UserRepository {
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
-    suspend fun getSelfUser(): SelfUser?
+    suspend fun getSelfUser(): Either<StorageFailure, SelfUser>
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): Either<StorageFailure, OtherUserMinimized>
@@ -367,10 +367,8 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
-    override suspend fun observeSelfUser(): Flow<SelfUser> {
-        return userDAO.observeUserDetailsByQualifiedID(selfUserId.toDao()).filterNotNull()
+    override suspend fun observeSelfUser(): Flow<SelfUser> = userDAO.observeUserDetailsByQualifiedID(selfUserId.toDao()).filterNotNull()
             .map(userMapper::fromUserDetailsEntityToSelfUser)
-    }
 
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
         return userDAO.getUserDetailsWithTeamByQualifiedID(selfUserId.toDao()).filterNotNull()
@@ -395,8 +393,8 @@ internal class UserDataSource internal constructor(
             }.map { }
     }
 
-    override suspend fun getSelfUser(): SelfUser? {
-        return userDAO.getUserDetailsByQualifiedID(selfUserId.toDao())?.let {
+    override suspend fun getSelfUser(): Either<StorageFailure, SelfUser> = wrapStorageRequest {
+        userDAO.getUserDetailsByQualifiedID(selfUserId.toDao())?.let {
             userMapper.fromUserDetailsEntityToSelfUser(it)
         }
     }

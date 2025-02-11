@@ -35,6 +35,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRS
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
@@ -175,7 +176,10 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     }
 
     private suspend fun currentlyStoredVerificationCode(): String? {
-        val userEmail = userRepository.getSelfUser()?.email
+        val userEmail = userRepository.getSelfUser()
+            .map {
+                it.email
+            }.getOrNull()
         return userEmail?.let { secondFactorVerificationRepository.getStoredVerificationCode(it) }
     }
 
@@ -206,7 +210,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
             RegisterClientResult.Failure.InvalidCredentials.Missing2FA
 
         AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE -> {
-            userRepository.getSelfUser()?.email?.let {
+            userRepository.getSelfUser().getOrNull()?.email?.let {
                 secondFactorVerificationRepository.clearStoredVerificationCode(it)
             }
             RegisterClientResult.Failure.InvalidCredentials.Invalid2FA

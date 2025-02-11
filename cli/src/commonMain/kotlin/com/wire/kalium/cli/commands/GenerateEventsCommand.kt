@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.data.event.EventGenerator
 import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -58,7 +57,7 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
     }
 
     override fun run() = runBlocking {
-        val selfUserId = userSession.users.observeSelfUser().first().id
+        val selfUserId = userSession.users.getSelfUser()?.id ?: throw PrintMessage("No self user is registered")
         val selfClientId = userSession.clientIdProvider().getOrFail { throw PrintMessage("No self client is registered") }
         val targetUserId = UserId(value = targetUserId, domain = selfUserId.domain)
         val targetClientId = ClientId(targetClientId)

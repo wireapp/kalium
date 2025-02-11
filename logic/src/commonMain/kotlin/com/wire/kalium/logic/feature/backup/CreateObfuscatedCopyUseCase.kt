@@ -36,6 +36,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.createCompressedFile
@@ -73,7 +74,7 @@ class CreateObfuscatedCopyUseCase internal constructor(
 
     @DelicateKaliumApi("This function is used for debugging purposes only")
     suspend operator fun invoke(password: String?): CreateBackupResult = withContext(dispatchers.default) {
-        val userHandle = userRepository.getSelfUser()?.handle?.replace(".", "-")
+        val userHandle = userRepository.getSelfUser().getOrNull()?.handle?.replace(".", "-")
         val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
         val backupName = createFinalZipName(userHandle, timeStamp)
         val backupFilePath = kaliumFileSystem.tempFilePath(backupName)

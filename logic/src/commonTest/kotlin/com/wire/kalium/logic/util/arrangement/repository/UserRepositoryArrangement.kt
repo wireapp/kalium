@@ -56,7 +56,7 @@ internal interface UserRepositoryArrangement {
         userIdMatcher: Matcher<UserId> = AnyMatcher(valueOf())
     )
 
-    suspend fun withSelfUserReturning(selfUser: SelfUser?)
+    suspend fun withSelfUserReturning(result: Either<StorageFailure, SelfUser>)
 
     suspend fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>)
 
@@ -144,10 +144,10 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
             .returns(Either.Right(result))
     }
 
-    override suspend fun withSelfUserReturning(selfUser: SelfUser?) {
+    override suspend fun withSelfUserReturning(result: Either<StorageFailure, SelfUser>) {
         coEvery {
             userRepository.getSelfUser()
-        }.returns(selfUser)
+        }.returns(result)
     }
 
     override suspend fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>) {

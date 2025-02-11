@@ -70,7 +70,6 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
-        // TODO: do not refresh self form remote in this case and just get status from local
         userRepository.observeSelfUser()
             .flatMapLatest {
                 // if user is AWAY we don't show any IncomingCalls
