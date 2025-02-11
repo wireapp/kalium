@@ -31,6 +31,7 @@ import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class GetLoginFlowForDomainUseCaseTest {
 
@@ -40,9 +41,10 @@ class GetLoginFlowForDomainUseCaseTest {
             .withDomainRegistrationResult(LoginDomainPath.Default.right())
             .arrange()
 
-        useCase(Arrangement.EMAIL)
+        val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result, EnterpriseLoginResult.Success(LoginDomainPath.Default))
     }
 
     @Test
@@ -51,10 +53,36 @@ class GetLoginFlowForDomainUseCaseTest {
             .withDomainRegistrationResult(NetworkFailure.ServerMiscommunication(RuntimeException()).left())
             .arrange()
 
-        useCase(Arrangement.EMAIL)
+        val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result::class, EnterpriseLoginResult.Failure.Generic::class)
     }
+
+    @Test
+    fun givenEmail_whenInvokedAndError_thenReturnNoNetwork() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(NetworkFailure.NoNetworkConnection(RuntimeException()).left())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result, EnterpriseLoginResult.Failure.NoNetwork)
+    }
+
+    @Test
+    fun givenEmail_whenInvokedAndErrorBecauseOfNotSupported_thenReturnNotSupported() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(NetworkFailure.FeatureNotSupported.left())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result, EnterpriseLoginResult.Failure.NotSupported)
+    }
+
 
     private class Arrangement {
 
