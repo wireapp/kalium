@@ -70,6 +70,7 @@ class DomainRegistrationMapperTest {
         )
         assertEquals(LoginDomainPath.ExistingAccountWithClaimedDomain::class, result::class)
         assertEquals("wire.com", (result as LoginDomainPath.ExistingAccountWithClaimedDomain).domain)
+        assertEquals(false, result.isCloudAccountCreationPossible)
     }
 
     private object Arrangement {
