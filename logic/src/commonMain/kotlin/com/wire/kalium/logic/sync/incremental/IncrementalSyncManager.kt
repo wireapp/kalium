@@ -22,11 +22,8 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.sync.ConnectionPolicy.KEEP_ALIVE
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
@@ -40,25 +37,19 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
 import kotlinx.datetime.Clock
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Starts and Stops Incremental Sync once SlowSync is performed.
+ * Starts and Stops Incremental Sync.
  *
  * Incremental Sync consists of receiving events, such as:
  * - Messages
@@ -83,22 +74,38 @@ import kotlin.time.Duration.Companion.seconds
  * @see Event
  * @see SlowSyncManager
  */
-@Suppress("LongParameterList")
-internal class IncrementalSyncManager(
-    private val slowSyncRepository: SlowSyncRepository,
-    private val incrementalSyncWorker: IncrementalSyncWorker,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
-    private val networkStateObserver: NetworkStateObserver,
-    logger: KaliumLogger = kaliumLogger,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
-        MIN_RETRY_DELAY,
-        MAX_RETRY_DELAY
-    )
-) {
+internal interface IncrementalSyncManager {
 
-    private val logger = logger.withFeatureId(SYNC)
+    /**
+     * While collected, performs IncrementalSync, by fetching
+     * and processing events, etc.
+     * Emits the current [IncrementalSyncStatus] as it progresses.
+     * In case of failure, will retry as needed.
+     * Does not end.
+     */
+    fun performSyncFlow(): Flow<IncrementalSyncStatus>
+
+    companion object {
+        val MIN_RETRY_DELAY = 1.seconds
+        val MAX_RETRY_DELAY = 10.minutes
+    }
+}
+
+@Suppress("LongParameterList", "FunctionNaming")
+internal fun IncrementalSyncManager(
+    incrementalSyncWorker: IncrementalSyncWorker,
+    incrementalSyncRepository: IncrementalSyncRepository,
+    incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
+    networkStateObserver: NetworkStateObserver,
+    userScopedLogger: KaliumLogger,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
+        IncrementalSyncManager.MIN_RETRY_DELAY,
+        IncrementalSyncManager.MAX_RETRY_DELAY
+    )
+) = object : IncrementalSyncManager {
+
+    private val logger = userScopedLogger.withFeatureId(SYNC).withTextTag("IncrementalSyncManager")
 
     /**
      * A dispatcher with limited parallelism of 1.
@@ -107,7 +114,7 @@ internal class IncrementalSyncManager(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val eventProcessingDispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
-    private val coroutineExceptionHandler = SyncExceptionHandler(
+    private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
             logger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
             syncScope.launch {
@@ -115,7 +122,7 @@ internal class IncrementalSyncManager(
             }
         },
         onFailure = { failure ->
-            logger.i("$TAG ExceptionHandler error $failure")
+            logger.i("ExceptionHandler error $failure")
             syncScope.launch {
                 val delay = exponentialDurationHelper.next()
                 incrementalSyncRepository.updateIncrementalSyncState(
@@ -123,69 +130,42 @@ internal class IncrementalSyncManager(
                 )
 
                 incrementalSyncRecoveryHandler.recover(failure = failure) {
-                    logger.i("$TAG Triggering delay($delay) and waiting for reconnection")
-                    delayUntilConnectedOrPolicyUpgrade(delay)
-                    logger.i("$TAG Delay and waiting for connection finished - retrying")
-                    startMonitoringForSync()
+                    logger.i("Triggering delay($delay) and waiting for reconnection")
+                    networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                    logger.i("Delay and waiting for connection finished - retrying")
+                    onRetry()
                 }
             }
         }
     )
 
-    private suspend fun delayUntilConnectedOrPolicyUpgrade(delay: Duration): Unit = coroutineScope {
-        select {
-            async {
-                incrementalSyncRepository
-                    .connectionPolicyState
-                    .drop(1)
-                    .first { it == KEEP_ALIVE }
-            }.onAwait {
-                logger.i("$TAG backoff timer short-circuited as Policy was upgraded")
-            }
-            async {
-                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-            }.onAwait {
-                logger.i("$TAG wait whole timer, as there was no policy upgrade until now")
-            }
-        }.also { coroutineContext.cancelChildren() }
-    }
-
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
-    init {
-        startMonitoringForSync()
-    }
-
-    private fun startMonitoringForSync() {
-        syncScope.launch(coroutineExceptionHandler) {
-            logger.i("$TAG started monitoring for SlowSync")
-            slowSyncRepository.slowSyncStatus.collectLatest { status ->
-                if (status is SlowSyncStatus.Complete) {
-                    // START SYNC. The ConnectionPolicy doesn't matter the first time
-                    logger.i("$TAG Starting IncrementalSync, as SlowSync is completed")
-                    doIncrementalSyncWhilePolicyAllows()
-                    logger.i("$TAG IncrementalSync finished normally. Starting to observe ConnectionPolicy upgrade")
-                    observeConnectionPolicyUpgrade()
+    override fun performSyncFlow(): Flow<IncrementalSyncStatus> = channelFlow {
+        coroutineScope {
+            launch {
+                // TODO: Instead of forwarding repository state, we could just emit within the flow. Killing the repository completely.
+                incrementalSyncRepository.incrementalSyncState.collect {
+                    send(it)
                 }
-                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+            }
+            // Always start sync with a fresh retry delay
+            exponentialDurationHelper.reset()
+            val exceptionHandler = coroutineExceptionHandler { doIncrementalSync() }
+            launch {
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    doIncrementalSync()
+                } catch (t: Throwable) {
+                    exceptionHandler.handleException(t)
+                }
             }
         }
     }
 
-    private suspend fun observeConnectionPolicyUpgrade() {
-        incrementalSyncRepository.connectionPolicyState
-            .filter { it == KEEP_ALIVE }
-            .cancellable()
-            .collect {
-                exponentialDurationHelper.reset()
-                logger.i("$TAG Re-starting IncrementalSync, as ConnectionPolicy was upgraded to KEEP_ALIVE")
-                doIncrementalSyncWhilePolicyAllows()
-            }
-    }
-
-    private suspend fun doIncrementalSyncWhilePolicyAllows() {
+    private suspend fun doIncrementalSync() {
         incrementalSyncWorker
-            .processEventsWhilePolicyAllowsFlow()
+            .processEventsFlow()
             .cancellable()
             .runningFold(uuid4().toString() to Clock.System.now()) { syncData, eventSource ->
                 val syncLogger = kaliumLogger.provideNewSyncManagerLogger(SyncType.INCREMENTAL, syncData.first)
@@ -207,12 +187,6 @@ internal class IncrementalSyncManager(
                 if (eventSource == EventSource.LIVE) uuid4().toString() to Clock.System.now() else syncData
             }.collect()
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
-        logger.i("$TAG IncrementalSync stopped.")
-    }
-
-    private companion object {
-        val MIN_RETRY_DELAY = 1.seconds
-        val MAX_RETRY_DELAY = 10.minutes
-        private const val TAG = "IncrementalSyncManager"
+        logger.i("IncrementalSync stopped.")
     }
 }

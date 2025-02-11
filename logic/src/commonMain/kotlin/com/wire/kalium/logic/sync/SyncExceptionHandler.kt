@@ -22,17 +22,14 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
 
 internal class SyncExceptionHandler(
     private val onCancellation: () -> Unit,
     private val onFailure: (exception: CoreFailure) -> Unit
-) : AbstractCoroutineContextElement(CoroutineExceptionHandler), CoroutineExceptionHandler {
+) {
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    override fun handleException(context: CoroutineContext, exception: Throwable) {
+    fun handleException(exception: Throwable) {
         when (exception) {
             is CancellationException -> {
                 logger.w("Sync job was cancelled", exception)
