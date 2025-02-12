@@ -572,7 +572,6 @@ com.wire.kalium.logic.feature.user.screenshotCensoring
 com.wire.kalium.logic.feature.user.typingIndicator
 com.wire.kalium.logic.feature.user.webSocketStatus
 com.wire.kalium.logic.featureFlags
-com.wire.kalium.logic.functional
 com.wire.kalium.logic.network
 com.wire.kalium.logic.sync
 com.wire.kalium.logic.sync.incremental
