@@ -71,6 +71,7 @@ enum class DeviceType {
 
 sealed class ClientCapability {
     data object LegalHoldImplicitConsent : ClientCapability()
+    data object ConsumableNotifications : ClientCapability()
     data class Unknown(val name: String) : ClientCapability()
 }
 

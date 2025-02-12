@@ -25,7 +25,7 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
@@ -46,10 +46,10 @@ import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapProteusRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapProteusRequest
 import kotlinx.coroutines.flow.first
 
 interface MessageEnvelopeCreator {

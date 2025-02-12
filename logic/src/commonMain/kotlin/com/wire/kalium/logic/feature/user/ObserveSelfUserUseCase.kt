@@ -20,10 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for observing the current user.
@@ -39,10 +36,8 @@ interface ObserveSelfUserUseCase {
 
 internal class ObserveSelfUserUseCaseImpl internal constructor(
     private val userRepository: UserRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveSelfUserUseCase {
 
-    override suspend operator fun invoke(): Flow<SelfUser> = withContext(dispatcher.io) {
-        userRepository.observeSelfUser()
-    }
+    override suspend operator fun invoke(): Flow<SelfUser> = userRepository.observeSelfUser()
+
 }

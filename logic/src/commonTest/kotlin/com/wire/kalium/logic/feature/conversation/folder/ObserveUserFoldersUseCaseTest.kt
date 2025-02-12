@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.logic.feature.conversation.folder
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify

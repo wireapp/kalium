@@ -18,15 +18,15 @@
 
 package com.wire.kalium.logic.feature.server
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity

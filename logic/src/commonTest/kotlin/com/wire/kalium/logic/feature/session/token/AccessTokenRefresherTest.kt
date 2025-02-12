@@ -17,15 +17,15 @@
  */
 package com.wire.kalium.logic.feature.session.token
 
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.session.token.AccessTokenRefreshResult
 import com.wire.kalium.logic.data.session.token.AccessTokenRepository
 import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock

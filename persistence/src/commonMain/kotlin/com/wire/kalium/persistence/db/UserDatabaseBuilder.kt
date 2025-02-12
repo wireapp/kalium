@@ -85,6 +85,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -367,6 +368,8 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
             sqlSchema.migrate(this, oldVersion, newVersion)
         }
         true
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         false
     }

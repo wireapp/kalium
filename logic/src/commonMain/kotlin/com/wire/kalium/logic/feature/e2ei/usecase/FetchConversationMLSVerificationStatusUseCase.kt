@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.onSuccess
 
 /**
  * Trigger the checking and updating MLS Conversations Verification status.

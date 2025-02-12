@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement

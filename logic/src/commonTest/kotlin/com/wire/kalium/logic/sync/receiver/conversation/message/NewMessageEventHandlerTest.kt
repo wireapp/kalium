@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.MLSFailure
-import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
@@ -35,7 +35,7 @@ import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHa
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock

@@ -27,6 +27,7 @@ import io.ktor.utils.io.core.toByteArray
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.Foundation.URLByAppendingPathComponent
+import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: CoreCrypto) : ProteusClient {
@@ -132,13 +133,15 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
             // TODO underlying proteus error is not exposed atm
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, null)
         }
@@ -187,7 +190,7 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
             }
         }
 
-        @Suppress("TooGenericExceptionCaught")
+        @Suppress("TooGenericExceptionCaught", "ThrowsCount")
         operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientCoreCryptoImpl {
             try {
                 migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
@@ -195,6 +198,8 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
                 return ProteusClientCoreCryptoImpl(coreCrypto)
             } catch (e: CryptoException) {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }

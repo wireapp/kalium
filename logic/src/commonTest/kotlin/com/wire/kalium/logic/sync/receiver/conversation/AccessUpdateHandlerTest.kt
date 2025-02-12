@@ -17,16 +17,13 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation.Access
 import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock

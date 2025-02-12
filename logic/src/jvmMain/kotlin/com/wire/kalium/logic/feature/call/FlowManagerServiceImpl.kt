@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformView
 import kotlinx.coroutines.CoroutineScope

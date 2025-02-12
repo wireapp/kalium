@@ -18,11 +18,11 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 
 interface FeatureConfigRepository {

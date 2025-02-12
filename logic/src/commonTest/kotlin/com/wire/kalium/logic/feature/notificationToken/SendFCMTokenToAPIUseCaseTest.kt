@@ -17,16 +17,16 @@
  */
 package com.wire.kalium.logic.feature.notificationToken
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.notification.NotificationToken
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger

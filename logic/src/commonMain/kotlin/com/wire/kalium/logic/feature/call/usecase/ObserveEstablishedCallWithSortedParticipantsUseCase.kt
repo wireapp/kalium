@@ -21,16 +21,14 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
-import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /**
- * Use case to observe established call with the participants sorted according to the [CallingParticipantsOrder]
+ * Use case to observe the established call with sorted participants according to the [CallingParticipantsOrder]
  */
 interface ObserveEstablishedCallWithSortedParticipantsUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Call?>
+    suspend operator fun invoke(): Flow<Call?>
 }
 
 class ObserveEstablishedCallWithSortedParticipantsUseCaseImpl internal constructor(
@@ -38,14 +36,12 @@ class ObserveEstablishedCallWithSortedParticipantsUseCaseImpl internal construct
     private val callingParticipantsOrder: CallingParticipantsOrder
 ) : ObserveEstablishedCallWithSortedParticipantsUseCase {
 
-    override suspend operator fun invoke(conversationId: ConversationId): Flow<Call?> {
-        return callRepository.observeCurrentCall(conversationId)
-            .distinctUntilChanged()
-            .map { call ->
-                call?.let {
-                    val sortedParticipants = callingParticipantsOrder.reorderItems(call.participants)
-                    call.copy(participants = sortedParticipants)
-                }
-            }
+    override suspend operator fun invoke(): Flow<Call?> {
+        return callRepository.establishedCallsFlow().map { calls ->
+            calls.map { call ->
+                val sortedParticipants = callingParticipantsOrder.reorderItems(call.participants)
+                call.copy(participants = sortedParticipants)
+            }.firstOrNull()
+        }
     }
 }

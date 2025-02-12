@@ -23,14 +23,14 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.AvsSFTError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.common.functional.nullableFold
 import kotlinx.coroutines.launch
 
 // TODO(testing): create unit test

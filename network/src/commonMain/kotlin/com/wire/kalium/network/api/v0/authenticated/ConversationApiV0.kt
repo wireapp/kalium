@@ -370,7 +370,7 @@ internal open class ConversationApiV0 internal constructor(
         messageTimer: Long?
     ): NetworkResponse<EventContentDTO.Conversation.MessageTimerUpdate> =
         wrapKaliumResponse {
-            httpClient.put("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MESSAGE_TIMER") {
+            httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MESSAGE_TIMER") {
                 setBody(ConversationMessageTimerDTO(messageTimer))
             }
         }

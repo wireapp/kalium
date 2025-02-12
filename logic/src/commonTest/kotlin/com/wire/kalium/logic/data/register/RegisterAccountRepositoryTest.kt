@@ -18,13 +18,13 @@
 
 package com.wire.kalium.logic.data.register
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SessionDTO

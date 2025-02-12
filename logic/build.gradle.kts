@@ -32,11 +32,11 @@ kaliumLibrary {
     }
 }
 
-@Suppress("UnusedPrivateProperty")
 kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api(project(":common"))
                 implementation(project(":network"))
                 api(project(":data"))
                 api(project(":network-util"))
@@ -73,6 +73,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(project(":common"))
                 implementation(project(":persistence-test"))
                 // coroutines
                 implementation(libs.coroutines.test)

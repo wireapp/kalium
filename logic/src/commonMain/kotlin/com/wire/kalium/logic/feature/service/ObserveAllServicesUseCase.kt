@@ -21,8 +21,8 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow

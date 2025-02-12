@@ -20,7 +20,7 @@
 package com.wire.kalium.logic.feature.message
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -41,6 +41,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Persist migrated messages from old datasource
@@ -75,6 +76,8 @@ internal class PersistMigratedMessagesUseCaseImpl(
                         protoContentMapper.decodeFromProtobuf(
                             PlainMessageBlob(migratedMessage.encryptedProto!!)
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         null
                     })?.let {

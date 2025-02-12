@@ -22,7 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 
 internal interface DataTransferEventHandler {
     suspend fun handle(

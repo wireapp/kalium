@@ -19,11 +19,11 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext

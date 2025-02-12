@@ -18,14 +18,14 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

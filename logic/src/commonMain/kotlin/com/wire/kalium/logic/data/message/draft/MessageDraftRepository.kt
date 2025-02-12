@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.data.message.draft
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 
 internal interface MessageDraftRepository {

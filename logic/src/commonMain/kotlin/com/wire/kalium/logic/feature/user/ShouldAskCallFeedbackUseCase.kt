@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 

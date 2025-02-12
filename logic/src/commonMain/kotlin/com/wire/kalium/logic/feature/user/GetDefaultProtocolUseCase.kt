@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 /**
  * Get the Default Protocol [SupportedProtocol]

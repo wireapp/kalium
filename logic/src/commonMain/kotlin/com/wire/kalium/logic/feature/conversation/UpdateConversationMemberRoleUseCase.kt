@@ -22,8 +22,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 
 interface UpdateConversationMemberRoleUseCase {
     /**

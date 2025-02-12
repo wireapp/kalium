@@ -18,15 +18,15 @@
 
 package com.wire.kalium.logic.cache
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
 
 internal fun interface SelfConversationIdProvider {

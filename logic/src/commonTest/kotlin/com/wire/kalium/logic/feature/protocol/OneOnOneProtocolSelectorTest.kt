@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.protocol
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
@@ -46,14 +46,13 @@ class OneOnOneProtocolSelectorTest {
         val failure = StorageFailure.DataNotFound
         val (_, oneOnOneProtocolSelector) = arrange {
             withUserByIdReturning(Either.Right(TestUser.OTHER))
-            withSelfUserReturning(null)
+            withSelfUserReturning(StorageFailure.DataNotFound.left())
             withGetDefaultProtocolReturning(failure.left())
         }
 
         oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
             .shouldFail {
-                assertIs<CoreFailure.Unknown>(it)
-                assertIs<NullPointerException>(it.rootCause)
+                assertIs<StorageFailure.DataNotFound>(it)
             }
     }
 
@@ -61,7 +60,7 @@ class OneOnOneProtocolSelectorTest {
     fun givenFailureToFindOtherUser_thenShouldPropagateFailure() = runTest {
         val failure = StorageFailure.DataNotFound
         val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF)
+            withSelfUserReturning(TestUser.SELF.right())
             withUserByIdReturning(failure.left())
             withGetDefaultProtocolReturning(failure.left())
         }
@@ -76,7 +75,7 @@ class OneOnOneProtocolSelectorTest {
     fun givenOtherUserId_thenShouldCallRepoWithCorrectUserId() = runTest {
         val failure = StorageFailure.DataNotFound
         val (arrangement, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF)
+            withSelfUserReturning(TestUser.SELF.right())
             withUserByIdReturning(Either.Left(failure))
             withGetDefaultProtocolReturning(failure.left())
         }
@@ -93,7 +92,7 @@ class OneOnOneProtocolSelectorTest {
         val failure = StorageFailure.DataNotFound
         val supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS)
         val (arrangement, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = supportedProtocols))
+            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = supportedProtocols).right())
             withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = supportedProtocols)))
             withGetDefaultProtocolReturning(failure.left())
         }
@@ -109,7 +108,7 @@ class OneOnOneProtocolSelectorTest {
         val bothProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS)
         val failure = StorageFailure.DataNotFound
         val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = bothProtocols))
+            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = bothProtocols).right())
             withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.PROTEUS))))
             withGetDefaultProtocolReturning(failure.left())
         }
@@ -125,7 +124,7 @@ class OneOnOneProtocolSelectorTest {
         val failure = StorageFailure.DataNotFound
         val mlsSet = setOf(SupportedProtocol.MLS)
         val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = mlsSet))
+            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = mlsSet).right())
             withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = mlsSet)))
             withGetDefaultProtocolReturning(failure.left())
         }
@@ -140,7 +139,7 @@ class OneOnOneProtocolSelectorTest {
     fun givenUsersHaveNoProtocolInCommon_thenShouldReturnNoCommonProtocol() = runTest {
         val failure = StorageFailure.DataNotFound
         val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS)))
+            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS)).right())
             withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.PROTEUS))))
             withGetDefaultProtocolReturning(failure.left())
         }
@@ -155,7 +154,7 @@ class OneOnOneProtocolSelectorTest {
     fun givenUsersHaveNoProtocolInCommon_thenShouldReturnNoCommonProtocol_2() = runTest {
         val failure = StorageFailure.DataNotFound
         val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.PROTEUS)))
+            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.PROTEUS)).right())
             withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.MLS))))
             withGetDefaultProtocolReturning(failure.left())
         }
@@ -169,7 +168,7 @@ class OneOnOneProtocolSelectorTest {
     @Test
     fun givenUsersHaveProtocolInCommonIncludingDefaultProtocol_thenShouldReturnDefaultProtocolAsCommonProtocol() = runTest {
         val (_, oneOnOneProtocolSelector) = arrange {
-            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS)))
+            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS)).right())
             withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.MLS))))
             withGetDefaultProtocolReturning(SupportedProtocol.MLS.right())
         }

@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -30,8 +30,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil

@@ -29,11 +29,11 @@ import com.sun.net.httpserver.HttpServer
 import com.wire.kalium.cli.getConversations
 import com.wire.kalium.cli.listConversations
 import com.wire.kalium.cli.selectConversation
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.feature.UserSessionScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -73,7 +73,7 @@ class ConsoleCommand : CliktCommand(name = "console") {
     private fun startObservingVideoState() {
         GlobalScope.launch {
             userSession.calls.allCallsWithSortedParticipants().collect { sessionCalls ->
-                for (call in sessionCalls) {
+                sessionCalls?.let { call ->
                     if (call.status == CallStatus.ESTABLISHED) {
                         userSession.calls.setTestRemoteVideoStates(
                             conversationId = call.conversationId,
