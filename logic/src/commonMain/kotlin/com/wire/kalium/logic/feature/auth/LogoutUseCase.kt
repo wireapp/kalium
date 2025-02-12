@@ -31,7 +31,7 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel

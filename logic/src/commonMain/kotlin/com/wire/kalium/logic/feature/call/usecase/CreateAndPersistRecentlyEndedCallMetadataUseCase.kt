@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 

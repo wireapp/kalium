@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 internal interface ClearConversationContentHandler {
     suspend fun handle(

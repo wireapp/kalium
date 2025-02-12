@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation.folders
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations

@@ -21,10 +21,10 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.analytics.AnalyticsIdentifierResult
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMapRightWithEither
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapRightWithEither
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf

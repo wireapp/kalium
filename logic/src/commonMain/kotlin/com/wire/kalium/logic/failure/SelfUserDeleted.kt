@@ -18,6 +18,6 @@
 
 package com.wire.kalium.logic.failure
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 
 object SelfUserDeleted : CoreFailure.FeatureFailure()

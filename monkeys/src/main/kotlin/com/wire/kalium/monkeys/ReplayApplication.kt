@@ -32,7 +32,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.model.Event

@@ -20,9 +20,9 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.WelcomeBundle
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -34,7 +34,7 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement

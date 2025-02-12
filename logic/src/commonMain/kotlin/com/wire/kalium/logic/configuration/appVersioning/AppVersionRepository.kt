@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.configuration.appVersioning
 
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 
 internal interface AppVersionRepository {

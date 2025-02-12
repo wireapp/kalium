@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -32,10 +32,10 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.map
 import kotlinx.datetime.Instant
 
 /**

@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.user.screenshotCensoring
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.mapToRightOr
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.mapToRightOr
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 

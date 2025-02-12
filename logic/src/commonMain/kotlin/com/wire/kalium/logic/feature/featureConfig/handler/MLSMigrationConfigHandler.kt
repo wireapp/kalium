@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.featureConfig.handler
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 
 class MLSMigrationConfigHandler(
     private val userConfigRepository: UserConfigRepository,

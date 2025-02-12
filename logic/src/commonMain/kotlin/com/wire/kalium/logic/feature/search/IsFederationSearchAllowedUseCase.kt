@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext

@@ -27,7 +27,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import kotlinx.coroutines.runBlocking

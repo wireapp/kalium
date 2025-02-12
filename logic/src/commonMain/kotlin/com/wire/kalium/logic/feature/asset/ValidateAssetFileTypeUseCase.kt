@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.asset
 
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 
 /**
  * Returns true if the file extension is present in file name and is allowed and false otherwise.

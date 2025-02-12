@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
  */
 @file:Suppress("TooManyFunctions")
 
-package com.wire.kalium.logic.functional
+package com.wire.kalium.common.functional
 
-import com.wire.kalium.logic.functional.Either.Left
-import com.wire.kalium.logic.functional.Either.Right
+import com.wire.kalium.common.functional.Either.Left
+import com.wire.kalium.common.functional.Either.Right
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 

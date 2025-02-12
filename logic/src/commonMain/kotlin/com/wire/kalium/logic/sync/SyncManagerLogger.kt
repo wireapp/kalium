@@ -20,7 +20,7 @@ package com.wire.kalium.logic.sync
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.logger.logStructuredJson
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration

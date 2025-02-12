@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -27,9 +27,9 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 
 /**
  * This use case will return the current number of key packages.

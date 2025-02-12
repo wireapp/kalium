@@ -18,11 +18,11 @@
 package com.wire.kalium.logic.util.arrangement.mls
 
 import com.wire.kalium.cryptography.WireIdentity
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock

@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.message.ephemeral
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement

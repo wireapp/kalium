@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.search
 import co.touchlab.stately.concurrency.AtomicReference
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 

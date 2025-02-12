@@ -17,15 +17,15 @@
  */
 package com.wire.kalium.logic.client
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement

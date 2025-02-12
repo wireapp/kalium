@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.SelfUserMuteHandler
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first

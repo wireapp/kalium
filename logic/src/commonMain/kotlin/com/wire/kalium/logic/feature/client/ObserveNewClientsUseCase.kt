@@ -23,9 +23,9 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapToRightOr
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapToRightOr
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine

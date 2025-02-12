@@ -22,8 +22,8 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 
 interface FederatedIdMapper {
     suspend fun parseToFederatedId(qualifiedID: QualifiedID): String

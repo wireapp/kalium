@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.failure
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 
 sealed class ServerConfigFailure : CoreFailure.FeatureFailure() {
     data object UnknownServerVersion : ServerConfigFailure()

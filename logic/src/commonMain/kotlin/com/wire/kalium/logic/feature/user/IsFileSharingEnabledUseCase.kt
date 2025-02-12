@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 /**
  * This use case is to get the file sharing status of the team settings from the local storage

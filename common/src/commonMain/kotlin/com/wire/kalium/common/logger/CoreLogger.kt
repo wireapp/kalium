@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic
+package com.wire.kalium.common.logger
 
 import com.wire.kalium.cryptography.CryptographyLogger
 import com.wire.kalium.logger.KaliumLogLevel
@@ -28,8 +28,8 @@ import com.wire.kalium.persistence.PersistenceLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
 private var kaliumLoggerConfig = KaliumLogger.Config.DISABLED
-internal var kaliumLogger = KaliumLogger.disabled()
-internal var callingLogger = KaliumLogger.disabled()
+var kaliumLogger = KaliumLogger.disabled()
+var callingLogger = KaliumLogger.disabled()
 
 object CoreLogger {
 
@@ -60,7 +60,7 @@ object CoreLogger {
  * @param leadingMessage the leading message useful for later grok parsing
  * @param jsonStringKeyValues the map of key-value pairs to be logged in a valid JSON format
  */
-internal fun KaliumLogger.logStructuredJson(
+fun KaliumLogger.logStructuredJson(
     level: KaliumLogLevel,
     leadingMessage: String,
     jsonStringKeyValues: Map<String, Any?>

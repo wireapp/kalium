@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.every
