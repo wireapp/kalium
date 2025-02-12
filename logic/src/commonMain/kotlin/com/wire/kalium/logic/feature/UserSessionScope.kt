@@ -19,6 +19,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
@@ -2178,6 +2179,9 @@ class UserSessionScope internal constructor(
     private val inCallReactionsRepository: InCallReactionsRepository by lazy {
         InCallReactionsDataSource()
     }
+
+    val cells: CellsScope
+        get() = CellsScope(globalScope.unboundNetworkContainer.cellsClient)
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

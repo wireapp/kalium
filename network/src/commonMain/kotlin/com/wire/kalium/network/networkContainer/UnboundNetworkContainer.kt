@@ -26,11 +26,13 @@ import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImp
 import com.wire.kalium.network.clearTextTrafficEngine
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 
 interface UnboundNetworkContainer {
     val serverConfigApi: ServerConfigApi
     val acmeApi: ACMEApi
+    val cellsClient: HttpClient
 }
 
 private interface UnboundNetworkClientProvider {
@@ -95,4 +97,7 @@ class UnboundNetworkContainerCommon(
             unboundNetworkClient,
             unboundClearTextTrafficNetworkClient
         )
+
+    override val cellsClient: HttpClient
+        get() = unboundNetworkClient.httpClient
 }
