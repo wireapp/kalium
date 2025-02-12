@@ -27,6 +27,7 @@ import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
@@ -163,6 +164,9 @@ class CustomServerConfigRepositoryTest {
         @Mock
         val serverConfigApi = mock(ServerConfigApi::class)
 
+        @Mock
+        val versionApi = mock(VersionApi::class)
+
         var developmentApiEnabled by Delegates.notNull<Boolean>()
 
         @Mock
@@ -176,7 +180,7 @@ class CustomServerConfigRepositoryTest {
         val backendMetaDataUtil = mock(BackendMetaDataUtil::class)
 
         private var customServerConfigRepository: CustomServerConfigRepository =
-            CustomServerConfigDataSource(serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)
+            CustomServerConfigDataSource(versionApi, serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)
 
         val serverConfigEntity = newServerConfigEntity(1)
         val expectedServerConfig = newServerConfig(1).copy(
