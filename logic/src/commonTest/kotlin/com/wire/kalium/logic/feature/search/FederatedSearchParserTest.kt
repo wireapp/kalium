@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.search
 
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.SessionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.SessionRepositoryArrangementImpl
 import io.mockative.any

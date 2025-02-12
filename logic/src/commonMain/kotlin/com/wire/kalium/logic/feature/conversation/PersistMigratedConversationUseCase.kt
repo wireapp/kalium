@@ -20,15 +20,15 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 
 /**
  * Persists a list of conversations migrated from old clients

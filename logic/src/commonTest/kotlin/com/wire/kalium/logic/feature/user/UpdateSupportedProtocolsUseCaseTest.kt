@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -33,7 +33,8 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Ar
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -336,7 +337,7 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         suspend fun withGetSelfUserSuccessful(supportedProtocols: Set<SupportedProtocol>? = null) = apply {
             coEvery { userRepository.getSelfUser() }
-                .returns(TestUser.SELF.copy(supportedProtocols = supportedProtocols))
+                .returns(TestUser.SELF.copy(supportedProtocols = supportedProtocols).right())
         }
 
         suspend fun withUpdateSupportedProtocolsSuccessful() = apply {

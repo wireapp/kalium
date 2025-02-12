@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.user.typingIndicator
 
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

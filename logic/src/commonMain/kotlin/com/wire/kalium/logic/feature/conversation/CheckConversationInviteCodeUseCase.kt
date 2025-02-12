@@ -19,13 +19,13 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isAccessDenied
@@ -81,7 +81,7 @@ class CheckConversationInviteCodeUseCase internal constructor(
         when (error.kaliumException) {
 
             is KaliumException.InvalidRequestError -> {
-                with(error.kaliumException) {
+                with(error.kaliumException as KaliumException.InvalidRequestError) {
                     when {
                         // for more info about error codes see
                         // https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_conversations_join

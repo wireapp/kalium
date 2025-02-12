@@ -21,8 +21,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 
 /**
  * This use case is used to get the e2ei certificate status of specific user

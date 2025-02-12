@@ -36,6 +36,13 @@ class ClientCapabilityDTOSerializerTest {
     }
 
     @Test
+    fun serialize_consumable_notifications() {
+        val capability = ClientCapabilityDTO.ConsumableNotifications
+        val result = json.encodeToString(ClientCapabilityDTO.serializer(), capability)
+        assertEquals("\"consumable-notifications\"", result)
+    }
+
+    @Test
     fun serialize_unknown_capability() {
         val capability = ClientCapabilityDTO.Unknown("custom-capability")
         val result = json.encodeToString(ClientCapabilityDTO.serializer(), capability)
@@ -47,6 +54,13 @@ class ClientCapabilityDTOSerializerTest {
         val jsonString = "\"legalhold-implicit-consent\""
         val result = json.decodeFromString(ClientCapabilityDTO.serializer(), jsonString)
         assertEquals(ClientCapabilityDTO.LegalHoldImplicitConsent, result)
+    }
+
+    @Test
+    fun deserialize_consumable_notifications() {
+        val jsonString = "\"consumable-notifications\""
+        val result = json.decodeFromString(ClientCapabilityDTO.serializer(), jsonString)
+        assertEquals(ClientCapabilityDTO.ConsumableNotifications, result)
     }
 
     @Test

@@ -28,7 +28,7 @@ import com.github.ajalt.clikt.parameters.types.file
 import com.github.ajalt.clikt.parameters.types.int
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.monkeys.coreLogic
 import com.wire.kalium.monkeys.fileLogger
 import com.wire.kalium.monkeys.homeDirectory

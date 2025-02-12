@@ -19,24 +19,23 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class GetAllCallsWithSortedParticipantsUseCaseTest {
+class ObserveEstablishedCallWithSortedParticipantsUseCaseTest {
 
     @Mock
     private val callRepository = mock(CallRepository::class)
@@ -44,60 +43,40 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
     @Mock
     private val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
 
-    private lateinit var getAllCallsWithSortedParticipantsUseCase: GetAllCallsWithSortedParticipantsUseCase
+    private lateinit var observeEstablishedCallWithSortedParticipantsUseCase: ObserveEstablishedCallWithSortedParticipantsUseCase
 
     @BeforeTest
     fun setUp() {
-        getAllCallsWithSortedParticipantsUseCase = GetAllCallsWithSortedParticipantsUseCaseImpl(
+        observeEstablishedCallWithSortedParticipantsUseCase = ObserveEstablishedCallWithSortedParticipantsUseCaseImpl(
             callRepository,
             callingParticipantsOrder
         )
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenCallsFlowEmitsANewValue_whenUseCaseIsCollected_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
-        val calls1 = listOf(call1, call2)
-        val calls2 = listOf(call2)
+    fun givenCallFlowEmitsANewValue_whenUseCaseIsRunning_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
+        val calls = listOf(establishedCall)
 
         coEvery {
-            callingParticipantsOrder.reorderItems(calls1.first().participants) 
-        }.returns(calls1.first().participants)
+            callingParticipantsOrder.reorderItems(calls.first().participants)
+        }.returns(calls.first().participants)
 
         coEvery {
-            callingParticipantsOrder.reorderItems(calls2.first().participants) 
-        }.returns(calls2.first().participants)
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(calls))
 
-        val callsFlow = flowOf(calls1, calls2)
-        coEvery {
-            callRepository.callsFlow()
-        }.returns(callsFlow)
-
-        val result = getAllCallsWithSortedParticipantsUseCase()
+        val result = observeEstablishedCallWithSortedParticipantsUseCase()
 
         result.test {
-            assertEquals(calls1, awaitItem())
-            assertEquals(calls2, awaitItem())
+            assertEquals(establishedCall, awaitItem())
             awaitComplete()
         }
     }
 
     companion object {
-        private val call1 = Call(
-            ConversationId("first", "domain"),
-            CallStatus.STARTED,
-            isMuted = true,
-            isCameraOn = false,
-            isCbrEnabled = false,
-            callerId = UserId("called-id", "domain"),
-            conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
-            callerName = "otherUsername",
-            callerTeamName = "team1"
-        )
-        private val call2 = Call(
+        private val establishedCall = Call(
             ConversationId("second", "domain"),
-            CallStatus.INCOMING,
+            CallStatus.ESTABLISHED,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -108,5 +87,4 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
             callerTeamName = "team2"
         )
     }
-
 }

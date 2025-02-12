@@ -21,8 +21,8 @@ package com.wire.kalium.logic.feature.asset
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
@@ -30,9 +30,9 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFoundLabel
 import com.wire.kalium.util.KaliumDispatcher
@@ -119,7 +119,7 @@ internal class GetMessageAssetUseCaseImpl(
                                 // This should be called if there is an issue while downloading the asset
                                 if (it is NetworkFailure.ServerMiscommunication &&
                                     it.kaliumException is KaliumException.InvalidRequestError
-                                    && it.kaliumException.isNotFoundLabel()
+                                    && (it.kaliumException as KaliumException.InvalidRequestError).isNotFoundLabel()
                                 ) {
                                     updateAssetMessageTransferStatus(AssetTransferStatus.NOT_FOUND, conversationId, messageId)
                                 } else {

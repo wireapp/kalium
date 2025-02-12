@@ -22,8 +22,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 
 /**
  * This use case is used to get all MLSClientIdentities of the user.

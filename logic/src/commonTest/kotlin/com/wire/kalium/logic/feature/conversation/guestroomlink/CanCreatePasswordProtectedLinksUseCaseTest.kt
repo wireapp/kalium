@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation.guestroomlink
 
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.stubs.newServerConfig

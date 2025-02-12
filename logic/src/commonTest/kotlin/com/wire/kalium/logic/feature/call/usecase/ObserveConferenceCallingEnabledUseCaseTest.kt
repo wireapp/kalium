@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
