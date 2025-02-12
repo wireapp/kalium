@@ -34,13 +34,13 @@ import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.PublishDraftUseCase
 import com.wire.kalium.cells.domain.usecase.PublishDraftUseCaseImpl
-import com.wire.kalium.logic.GlobalKaliumScope
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlin.coroutines.CoroutineContext
 
 public class CellsScope(
-    private val globalScope: GlobalKaliumScope,
+    private val cellsClient: HttpClient,
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -59,7 +59,7 @@ public class CellsScope(
     private val cellsApi: CellsApi
         get() = CellsApiImpl(
             credentials = cellClientCredentials,
-            httpClient = globalScope.unboundNetworkContainer.cellsClient
+            httpClient = cellsClient
         )
 
     private val cellsRepository: CellsRepository

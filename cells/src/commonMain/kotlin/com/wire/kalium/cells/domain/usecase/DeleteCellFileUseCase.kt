@@ -19,8 +19,8 @@ package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 
 public interface DeleteCellFileUseCase {
     /**

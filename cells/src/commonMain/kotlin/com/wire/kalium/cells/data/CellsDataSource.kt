@@ -22,9 +22,9 @@ import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.PreCheckResult
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

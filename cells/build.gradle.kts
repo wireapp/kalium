@@ -30,9 +30,9 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                implementation(project(":common"))
                 implementation(project(":network"))
                 implementation(project(":util"))
-                implementation(project(":logic"))
                 implementation(libs.coroutines.core)
                 implementation(libs.ktor.authClient)
                 implementation(libs.okio.core)
