@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.data.auth.login
 
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.auth.LoginRedirectPath
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import kotlinx.coroutines.test.runTest
@@ -70,6 +72,30 @@ class DomainRegistrationMapperTest {
         )
         assertEquals(LoginDomainPath.ExistingAccountWithClaimedDomain::class, result::class)
         assertEquals("wire.com", (result as LoginDomainPath.ExistingAccountWithClaimedDomain).domain)
+        assertEquals(false, result.isCloudAccountCreationPossible)
+    }
+
+    @Test
+    fun givenADomainValue_whenMappingToResult_thenMapCorrectly() = runTest {
+        val domainRegistrationMapper = MapperProvider.domainRegistrationMapper()
+
+        val result = domainRegistrationMapper.fromModelToResult(
+            LoginDomainPath.Default
+        )
+        assertEquals(LoginRedirectPath.Default, result)
+        assertEquals(true, result.isCloudAccountCreationPossible)
+    }
+
+    @Test
+    fun givenADomainValueForCustomBackend_whenMappingToResult_thenMapCorrectly() = runTest {
+        val domainRegistrationMapper = MapperProvider.domainRegistrationMapper()
+
+        val result = domainRegistrationMapper.fromModelToCustomBackendResult(
+            LoginDomainPath.CustomBackend("my-custom-backend-url"),
+            ServerConfig.STAGING
+        )
+        assertEquals(LoginRedirectPath.CustomBackend::class, result::class)
+        assertEquals(ServerConfig.STAGING, (result as LoginRedirectPath.CustomBackend).serverLinks)
         assertEquals(false, result.isCloudAccountCreationPossible)
     }
 

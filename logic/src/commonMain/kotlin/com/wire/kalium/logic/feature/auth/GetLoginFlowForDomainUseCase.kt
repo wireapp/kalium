@@ -20,8 +20,11 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
+import com.wire.kalium.logic.data.auth.DomainRegistrationMapper
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
@@ -38,7 +41,9 @@ interface GetLoginFlowForDomainUseCase {
 
 @Suppress("FunctionNaming")
 internal fun GetLoginFlowForDomainUseCase(
-    loginRepository: LoginRepository
+    loginRepository: LoginRepository,
+    customServerConfigRepository: CustomServerConfigRepository,
+    mapper: DomainRegistrationMapper = MapperProvider.domainRegistrationMapper()
 ) = object : GetLoginFlowForDomainUseCase {
     override suspend fun invoke(email: String): EnterpriseLoginResult {
         logger.d("Get domain registration")
@@ -55,8 +60,25 @@ internal fun GetLoginFlowForDomainUseCase(
                 leadingMessage = "Get domain registration",
                 jsonStringKeyValues = mapOf("path" to it)
             )
-            EnterpriseLoginResult.Success(it)
+            it.mapLoginPathToResult()
         })
+    }
+
+    private suspend fun LoginDomainPath.mapLoginPathToResult(): EnterpriseLoginResult {
+        return when (this) {
+            is LoginDomainPath.Default,
+            is LoginDomainPath.ExistingAccountWithClaimedDomain,
+            is LoginDomainPath.NoRegistration,
+            is LoginDomainPath.SSO -> EnterpriseLoginResult.Success(mapper.fromModelToResult(this))
+
+            is LoginDomainPath.CustomBackend -> {
+                customServerConfigRepository.fetchRemoteConfig(backendConfigUrl).fold({
+                    it.mapFailure()
+                }, {
+                    EnterpriseLoginResult.Success(mapper.fromModelToCustomBackendResult(this, it))
+                })
+            }
+        }
     }
 
     private fun NetworkFailure.mapFailure() =
@@ -92,7 +114,7 @@ sealed interface EnterpriseLoginResult {
     /**
      * Enterprise Login is supported for the domain.
      */
-    data class Success(val loginDomainPath: LoginDomainPath) : EnterpriseLoginResult
+    data class Success(val loginRedirectPath: LoginRedirectPath) : EnterpriseLoginResult
 }
 
 private const val TAG = "GetLoginFlowForDomainUseCase"

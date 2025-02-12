@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.functional.Either
@@ -44,7 +46,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result, EnterpriseLoginResult.Success(LoginDomainPath.Default))
+        assertEquals(result, EnterpriseLoginResult.Success(LoginRedirectPath.Default))
     }
 
     @Test
@@ -88,11 +90,18 @@ class GetLoginFlowForDomainUseCaseTest {
         @Mock
         val loginRepository: LoginRepository = mock(LoginRepository::class)
 
+        @Mock
+        val customServerConfigRepository = mock(CustomServerConfigRepository::class)
+
         suspend fun withDomainRegistrationResult(result: Either<NetworkFailure, LoginDomainPath>) = apply {
             coEvery { loginRepository.getDomainRegistration(any()) }.returns(result)
         }
 
-        fun arrange() = this to GetLoginFlowForDomainUseCase(loginRepository)
+        suspend fun withServerLinksResult(result: Either<NetworkFailure, ServerConfig.Links>) = apply {
+            coEvery { customServerConfigRepository.fetchRemoteConfig(any()) }.returns(result)
+        }
+
+        fun arrange() = this to GetLoginFlowForDomainUseCase(loginRepository, customServerConfigRepository)
 
         companion object {
             const val EMAIL = "user@wire.com"

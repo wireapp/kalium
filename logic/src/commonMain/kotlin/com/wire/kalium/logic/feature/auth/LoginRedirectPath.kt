@@ -15,35 +15,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.auth
+package com.wire.kalium.logic.feature.auth
 
-sealed class LoginDomainPath(val isCloudAccountCreationPossible: Boolean) {
+import com.wire.kalium.logic.configuration.server.ServerConfig
+
+sealed class LoginRedirectPath(val isCloudAccountCreationPossible: Boolean) {
 
     /**
      * Regular case for Wire cloud, where the user can login and create an account.
      * This is the default path and also covers pre-authorized and locked values.
      */
-    data object Default : LoginDomainPath(isCloudAccountCreationPossible = true)
+    data object Default : LoginRedirectPath(isCloudAccountCreationPossible = true)
 
     /**
      * SSO case for Wire cloud, where the user can login using SSO.
      * @param ssoCode the SSO code of a cloud team.
      */
-    data class SSO(val ssoCode: String) : LoginDomainPath(isCloudAccountCreationPossible = false)
+    data class SSO(val ssoCode: String) : LoginRedirectPath(isCloudAccountCreationPossible = false)
 
     /**
      * The team has a custom backend, where the user can login.
-     * @param backendConfigUrl the URL of the json config from where to fetch the custom backend configurations.
+     * @param serverLinks the URL of the json config from where to fetch the custom backend configurations.
      */
-    data class CustomBackend(val backendConfigUrl: String) : LoginDomainPath(isCloudAccountCreationPossible = false)
+    data class CustomBackend(val serverLinks: ServerConfig.Links) : LoginRedirectPath(isCloudAccountCreationPossible = false)
 
     /**
      * Wire cloud case for users, they can login but not to create an account.
      */
-    data object NoRegistration : LoginDomainPath(isCloudAccountCreationPossible = false)
+    data object NoRegistration : LoginRedirectPath(isCloudAccountCreationPossible = false)
 
     /**
      * The user has an existing cloud account, but the domain is already claimed by an organization.
      */
-    data class ExistingAccountWithClaimedDomain(val domain: String) : LoginDomainPath(isCloudAccountCreationPossible = false)
+    data class ExistingAccountWithClaimedDomain(val domain: String) : LoginRedirectPath(isCloudAccountCreationPossible = false)
 }
