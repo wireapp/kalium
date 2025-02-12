@@ -85,6 +85,23 @@ class GetLoginFlowForDomainUseCaseTest {
         assertEquals(result, EnterpriseLoginResult.Failure.NotSupported)
     }
 
+    @Test
+    fun givenEmail_whenInvokedCustomBackend_thenFetchTheConfigurationAndMapIt() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(LoginDomainPath.CustomBackend("https://custom-backend.com").right())
+            .withServerLinksResult(ServerConfig.DUMMY.right())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        coVerify { arrangement.customServerConfigRepository.fetchRemoteConfig(any()) }
+        assertEquals(
+            result,
+            EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY))
+        )
+    }
+
     private class Arrangement {
 
         @Mock
