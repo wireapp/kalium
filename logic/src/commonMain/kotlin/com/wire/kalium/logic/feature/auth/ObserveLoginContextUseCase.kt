@@ -44,7 +44,7 @@ internal fun ObserveLoginContextUseCase(
         return serverConfigRepository.observeServerConfigByLinks(serverLinks).map {
             it.flatMap { serverConfig ->
                 if (serverConfig.metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_ENTERPRISE_LOGIN
-                    && serverLinks.apiProxy?.needsAuthentication == false
+                    && serverLinks.apiProxy?.needsAuthentication != true
                 ) {
                     LoginContext.EnterpriseLogin.right()
                 } else {
