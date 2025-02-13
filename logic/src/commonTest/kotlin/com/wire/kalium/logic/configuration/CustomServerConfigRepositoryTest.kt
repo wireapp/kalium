@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.configuration
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
@@ -28,14 +29,17 @@ import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -51,8 +55,8 @@ class CustomServerConfigRepositoryTest {
     @Test
     fun givenUrl_whenFetchingServerConfigSuccess_thenTheSuccessIsReturned() = runTest {
         val (arrangement, repository) = Arrangement().withSuccessConfigResponse().arrange()
-        val expected = arrangement.SERVER_CONFIG.links
-        val serverConfigUrl = arrangement.SERVER_CONFIG_URL
+        val expected = SERVER_CONFIG.links
+        val serverConfigUrl = SERVER_CONFIG_URL
 
         val actual = repository.fetchRemoteConfig(serverConfigUrl)
 
@@ -69,8 +73,8 @@ class CustomServerConfigRepositoryTest {
             .arrange()
 
         repository
-            .storeConfig(arrangement.expectedServerConfig.links, arrangement.expectedServerConfig.metaData)
-            .shouldSucceed { assertEquals(arrangement.expectedServerConfig, it) }
+            .storeConfig(expectedServerConfig.links, expectedServerConfig.metaData)
+            .shouldSucceed { assertEquals(expectedServerConfig, it) }
 
         coVerify {
             arrangement.serverConfigurationDAO.configByLinks(any())
@@ -156,11 +160,30 @@ class CustomServerConfigRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
-        val SERVER_CONFIG_URL = "https://test.test/test.json"
-        val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
-        val SERVER_CONFIG = newServerConfig(1)
+    @Test
+    fun givenServerLinks_whenCalledObserve_thenTheSuccessEmitFlowWithSererConfig() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withVersionApiResponse()
+            .withConfigByLinks(serverConfigEntity)
+            .withConfigById(serverConfigEntity)
+            .withGetServerConfigByLinksFlow()
+            .arrange()
+        val expected = SERVER_CONFIG.links
+        val serverConfigUrl = SERVER_CONFIG_URL
 
+        val actual = repository.observeServerConfigByLinks(expected)
+
+        actual.test {
+            awaitItem().shouldSucceed { assertEquals(SERVER_CONFIG, it) }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+        coVerify {
+            arrangement.versionApi.fetchApiVersion(eq(Url(SERVER_CONFIG_RESPONSE.links.api)))
+        }.wasInvoked(exactly = once)
+    }
+
+    private class Arrangement {
         @Mock
         val serverConfigApi = mock(ServerConfigApi::class)
 
@@ -181,15 +204,6 @@ class CustomServerConfigRepositoryTest {
 
         private var customServerConfigRepository: CustomServerConfigRepository =
             CustomServerConfigDataSource(versionApi, serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)
-
-        val serverConfigEntity = newServerConfigEntity(1)
-        val expectedServerConfig = newServerConfig(1).copy(
-            metaData = ServerConfig.MetaData(
-                commonApiVersion = CommonApiVersionType.Valid(5),
-                federation = true,
-                domain = serverConfigEntity.metaData.domain
-            )
-        )
 
         suspend fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
             every {
@@ -233,6 +247,12 @@ class CustomServerConfigRepositoryTest {
             return this
         }
 
+        suspend fun withGetServerConfigByLinksFlow(): Arrangement {
+            coEvery { serverConfigurationDAO.getServerConfigByLinksFlow(any()) }
+                .returns(flowOf(newServerConfigEntity(1)))
+            return this
+        }
+
         suspend fun withUpdatedServerConfig(): Arrangement {
             val newServerConfigEntity = serverConfigEntity.copy(
                 metaData = serverConfigEntity.metaData.copy(
@@ -250,6 +270,12 @@ class CustomServerConfigRepositoryTest {
             return this
         }
 
+        suspend fun withVersionApiResponse(): Arrangement {
+            coEvery { versionApi.fetchApiVersion(any()) }
+                .returns(NetworkResponse.Success(ServerConfigDTO.MetaData(true, ApiVersionDTO.fromInt(8), "wire.com"), mapOf(), 200))
+            return this
+        }
+
         fun withCalculateApiVersion(result: ServerConfigDTO.MetaData): Arrangement {
             every {
                 backendMetaDataUtil.calculateApiVersion(any(), any(), any(), any())
@@ -259,5 +285,19 @@ class CustomServerConfigRepositoryTest {
 
         fun arrange() = this to customServerConfigRepository
 
+    }
+
+    companion object {
+        val SERVER_CONFIG_URL = "https://test.test/test.json"
+        val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
+        val SERVER_CONFIG = newServerConfig(1)
+        val serverConfigEntity = newServerConfigEntity(1)
+        val expectedServerConfig = newServerConfig(1).copy(
+            metaData = ServerConfig.MetaData(
+                commonApiVersion = CommonApiVersionType.Valid(5),
+                federation = true,
+                domain = serverConfigEntity.metaData.domain
+            )
+        )
     }
 }
