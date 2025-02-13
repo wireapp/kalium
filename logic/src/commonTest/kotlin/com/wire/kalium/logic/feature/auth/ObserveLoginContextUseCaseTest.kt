@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.auth
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -34,17 +35,75 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ObserveLoginContextUseCaseTest {
 
     @Test
-    fun givenEmail_whenInvoked_thenReturnServerConfig() = runTest {
+    fun givenServerConfig_whenInvokedAndAPILessThan8_thenReturnFallback() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withObserveServerConfigByLinks(flowOf(newServerConfig(1).copy(links = ServerConfig.DUMMY).right()))
             .arrange()
 
-        useCase(ServerConfig.DUMMY)
+        val result = useCase(ServerConfig.DUMMY)
 
+        result.test {
+            assertEquals(LoginContext.FallbackLogin, awaitItem())
+            cancelAndConsumeRemainingEvents()
+        }
+        coVerify { arrangement.serverConfigRepository.observeServerConfigByLinks(eq(ServerConfig.DUMMY)) }
+    }
+
+    @Test
+    fun givenServerConfig_whenInvokedAndProxyNeedsAuth_thenReturnFallback() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withObserveServerConfigByLinks(
+                flowOf(
+                    newServerConfig(1).copy(
+                        metaData = ServerConfig.MetaData(
+                            commonApiVersion = com.wire.kalium.logic.configuration.server.CommonApiVersionType.Valid(7),
+                            domain = "domain",
+                            federation = false
+                        ),
+                        links = ServerConfig.DUMMY.copy(
+                            apiProxy = ServerConfig.ApiProxy(true, "dummy", 8080)
+                        )
+                    ).right()
+                )
+            )
+            .arrange()
+
+        val result = useCase(ServerConfig.DUMMY)
+
+        result.test {
+            assertEquals(LoginContext.FallbackLogin, awaitItem())
+            cancelAndConsumeRemainingEvents()
+        }
+        coVerify { arrangement.serverConfigRepository.observeServerConfigByLinks(eq(ServerConfig.DUMMY)) }
+    }
+
+    @Test
+    fun givenServerConfig_whenInvokedAndAPIEqualsOrGreaterThan8_thenReturnEnterpriseLogin() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withObserveServerConfigByLinks(
+                flowOf(
+                    newServerConfig(1).copy(
+                        metaData = ServerConfig.MetaData(
+                            commonApiVersion = com.wire.kalium.logic.configuration.server.CommonApiVersionType.Valid(8),
+                            domain = "domain",
+                            federation = false
+                        )
+                    ).right()
+                )
+            )
+            .arrange()
+
+        val result = useCase(ServerConfig.DUMMY)
+
+        result.test {
+            assertEquals(LoginContext.EnterpriseLogin, awaitItem())
+            cancelAndConsumeRemainingEvents()
+        }
         coVerify { arrangement.serverConfigRepository.observeServerConfigByLinks(eq(ServerConfig.DUMMY)) }
     }
 
