@@ -21,10 +21,8 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
-import com.wire.kalium.logic.data.auth.DomainRegistrationMapper
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
@@ -43,17 +41,18 @@ interface GetLoginFlowForDomainUseCase {
 internal fun GetLoginFlowForDomainUseCase(
     loginRepository: LoginRepository,
     customServerConfigRepository: CustomServerConfigRepository,
-    mapper: DomainRegistrationMapper = MapperProvider.domainRegistrationMapper()
+    mapper: LoginRedirectMapper = LoginRedirectMapperImpl
 ) = object : GetLoginFlowForDomainUseCase {
     override suspend fun invoke(email: String): EnterpriseLoginResult {
         logger.d("Get domain registration")
         return loginRepository.getDomainRegistration(email).fold({
+            val failure = it.mapFailure()
             logger.logStructuredJson(
                 level = KaliumLogLevel.ERROR,
                 leadingMessage = "Get domain registration",
-                jsonStringKeyValues = mapOf("error" to it::class.simpleName)
+                jsonStringKeyValues = mapOf("error" to failure.toLogString())
             )
-            it.mapFailure()
+            failure
         }, {
             logger.logStructuredJson(
                 level = KaliumLogLevel.DEBUG,
@@ -95,20 +94,35 @@ internal fun GetLoginFlowForDomainUseCase(
  */
 sealed interface EnterpriseLoginResult {
     sealed class Failure : EnterpriseLoginResult {
+
+        abstract fun toLogString(): String
+
         /**
          * The feature is not supported by this backend/client version
          */
-        data object NotSupported : Failure()
+        data object NotSupported : Failure() {
+            override fun toLogString(): String {
+                return "NotSupported"
+            }
+        }
 
         /**
          * No network connection.
          */
-        data object NoNetwork : Failure()
+        data object NoNetwork : Failure() {
+            override fun toLogString(): String {
+                return "NoNetwork"
+            }
+        }
 
         /**
          * Generic failure case.
          */
-        data class Generic(val coreFailure: CoreFailure) : Failure()
+        data class Generic(val coreFailure: CoreFailure) : Failure() {
+            override fun toLogString(): String {
+                return "Generic"
+            }
+        }
     }
 
     /**

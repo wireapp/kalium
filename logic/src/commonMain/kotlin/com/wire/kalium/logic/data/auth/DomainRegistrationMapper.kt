@@ -17,15 +17,11 @@
  */
 package com.wire.kalium.logic.data.auth
 
-import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.feature.auth.LoginRedirectPath
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 
 internal interface DomainRegistrationMapper {
     fun fromApiModel(domainRegistrationDTO: DomainRegistrationDTO, email: String): LoginDomainPath
-    fun fromModelToResult(loginDomainPath: LoginDomainPath): LoginRedirectPath
-    fun fromModelToCustomBackendResult(loginDomainPath: LoginDomainPath.CustomBackend, serverLinks: ServerConfig.Links): LoginRedirectPath
 }
 
 internal object DomainRegistrationMapperImpl : DomainRegistrationMapper {
@@ -45,26 +41,6 @@ internal object DomainRegistrationMapperImpl : DomainRegistrationMapper {
             DomainRedirect.BACKEND -> LoginDomainPath.CustomBackend(domainRegistrationDTO.backendUrl!!)
             DomainRedirect.NO_REGISTRATION -> LoginDomainPath.NoRegistration
         }
-    }
-
-    override fun fromModelToResult(loginDomainPath: LoginDomainPath): LoginRedirectPath {
-        return when (loginDomainPath) {
-            is LoginDomainPath.Default -> LoginRedirectPath.Default
-            is LoginDomainPath.ExistingAccountWithClaimedDomain -> LoginRedirectPath.ExistingAccountWithClaimedDomain(
-                domain = loginDomainPath.domain
-            )
-
-            is LoginDomainPath.NoRegistration -> LoginRedirectPath.NoRegistration
-            is LoginDomainPath.SSO -> LoginRedirectPath.SSO(ssoCode = loginDomainPath.ssoCode)
-            else -> error("LoginDomainPath.CustomBackend needs serverLinks to be provided")
-        }
-    }
-
-    override fun fromModelToCustomBackendResult(
-        loginDomainPath: LoginDomainPath.CustomBackend,
-        serverLinks: ServerConfig.Links
-    ): LoginRedirectPath {
-        return LoginRedirectPath.CustomBackend(serverLinks)
     }
 
     private fun extractDomain(email: String): String {

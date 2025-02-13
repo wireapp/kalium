@@ -75,29 +75,7 @@ class DomainRegistrationMapperTest {
         assertEquals(false, result.isCloudAccountCreationPossible)
     }
 
-    @Test
-    fun givenADomainValue_whenMappingToResult_thenMapCorrectly() = runTest {
-        val domainRegistrationMapper = MapperProvider.domainRegistrationMapper()
 
-        val result = domainRegistrationMapper.fromModelToResult(
-            LoginDomainPath.Default
-        )
-        assertEquals(LoginRedirectPath.Default, result)
-        assertEquals(true, result.isCloudAccountCreationPossible)
-    }
-
-    @Test
-    fun givenADomainValueForCustomBackend_whenMappingToResult_thenMapCorrectly() = runTest {
-        val domainRegistrationMapper = MapperProvider.domainRegistrationMapper()
-
-        val result = domainRegistrationMapper.fromModelToCustomBackendResult(
-            LoginDomainPath.CustomBackend("my-custom-backend-url"),
-            ServerConfig.STAGING
-        )
-        assertEquals(LoginRedirectPath.CustomBackend::class, result::class)
-        assertEquals(ServerConfig.STAGING, (result as LoginRedirectPath.CustomBackend).serverLinks)
-        assertEquals(false, result.isCloudAccountCreationPossible)
-    }
 
     private object Arrangement {
 
