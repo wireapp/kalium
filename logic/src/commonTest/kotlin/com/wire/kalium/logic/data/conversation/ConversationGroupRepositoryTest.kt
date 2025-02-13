@@ -575,7 +575,7 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addService(serviceID, TestConversation.ID)
             .shouldFail {
                 assertIs<MLSFailure.Generic>(it)
-                assertIs<UnsupportedOperationException>(it.exception)
+                assertIs<UnsupportedOperationException>(it.rootCause)
             }
 
         coVerify {
