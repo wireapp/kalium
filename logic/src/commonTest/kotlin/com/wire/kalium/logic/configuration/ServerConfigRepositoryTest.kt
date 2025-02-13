@@ -29,10 +29,9 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
-import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
@@ -46,7 +45,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -169,13 +167,7 @@ class ServerConfigRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val dispatcher: KaliumDispatcher) {
-        val SERVER_CONFIG_URL = "https://test.test/test.json"
-        val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
-        val SERVER_CONFIG = newServerConfig(1)
-
-        @Mock
-        val serverConfigApi = mock(ServerConfigApi::class)
+    private class Arrangement(dispatcher: KaliumDispatcher) {
 
         @Mock
         val serverConfigDAO = mock(ServerConfigurationDAO::class)
@@ -204,20 +196,6 @@ class ServerConfigRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessConfigResponse(): Arrangement {
-            coEvery {
-                serverConfigApi.fetchServerConfig(SERVER_CONFIG_URL)
-            }.returns(NetworkResponse.Success(SERVER_CONFIG_RESPONSE.links, mapOf(), 200))
-            return this
-        }
-
-        suspend fun withDaoEntityResponse(): Arrangement {
-            coEvery {
-                serverConfigDAO.allConfig()
-            }.returns(listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3)))
-            return this
-        }
-
         fun withConfigById(serverConfig: ServerConfigEntity): Arrangement {
             every {
                 serverConfigDAO.configById(any())
@@ -229,13 +207,6 @@ class ServerConfigRepositoryTest {
             coEvery {
                 serverConfigDAO.configByLinks(any())
             }.returns(serverConfigEntity)
-            return this
-        }
-
-        suspend fun withDaoEntityFlowResponse(): Arrangement {
-            coEvery {
-                serverConfigDAO.allConfigFlow()
-            }.returns(flowOf(listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3))))
             return this
         }
 
