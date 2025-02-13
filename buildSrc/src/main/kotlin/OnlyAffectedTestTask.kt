@@ -50,7 +50,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     @TaskAction
     fun runOnlyAffectedConnectedTest() {
         var affectedModules: Set<String> = mutableSetOf()
-        File("${project.buildDir}/dag-command/affected-modules.json").useLines {
+        File("${project.layout.buildDirectory.get()}/dag-command/affected-modules.json").useLines {
             affectedModules = it.joinToString()
                 .removeSurrounding("[", "]")
                 .replace("\"", "")
