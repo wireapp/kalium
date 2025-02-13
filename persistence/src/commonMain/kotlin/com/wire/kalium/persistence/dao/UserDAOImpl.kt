@@ -503,6 +503,12 @@ class UserDAOImpl internal constructor(
     }
 
     override suspend fun updateTeamId(userId: UserIDEntity, teamId: String) {
-        userQueries.updateTeamId(teamId, userId)
+        withContext(queriesContext) {
+            userQueries.updateTeamId(teamId, userId)
+        }
+    }
+
+    override suspend fun getContactsCount(): Int? = withContext(queriesContext) {
+        userQueries.getContactsCount().executeAsOneOrNull()?.toInt()
     }
 }
