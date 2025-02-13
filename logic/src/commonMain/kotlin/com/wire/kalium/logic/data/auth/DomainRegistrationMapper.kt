@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.auth
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 
-interface DomainRegistrationMapper {
+internal interface DomainRegistrationMapper {
     fun fromApiModel(domainRegistrationDTO: DomainRegistrationDTO, email: String): LoginDomainPath
 }
 
