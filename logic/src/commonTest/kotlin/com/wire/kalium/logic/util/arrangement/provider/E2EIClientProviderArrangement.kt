@@ -20,13 +20,14 @@ package com.wire.kalium.logic.util.arrangement.provider
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -63,7 +64,7 @@ interface E2EIClientProviderArrangement {
 
     suspend fun withE2EIEnabled(isEnabled: Boolean)
 
-    suspend fun withSelfUser(selfUser: SelfUser?)
+    suspend fun withSelfUser(result: Either<StorageFailure, SelfUser>)
 
     suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite)
 }
@@ -111,10 +112,10 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
         }.returns(isEnabled)
     }
 
-    override suspend fun withSelfUser(selfUser: SelfUser?) {
+    override suspend fun withSelfUser(result: Either<StorageFailure, SelfUser>) {
         coEvery {
             userRepository.getSelfUser()
-        }.returns(selfUser)
+        }.returns(result)
     }
 
     override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {

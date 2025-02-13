@@ -21,10 +21,10 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.ProteusFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.auth.verification.FakeSecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.Client
@@ -38,7 +38,8 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -478,7 +479,7 @@ class RegisterClientUseCaseTest {
         suspend fun withSelfUser(selfUser: SelfUser) = apply {
             coEvery {
                 userRepository.getSelfUser()
-            }.returns(selfUser)
+            }.returns(selfUser.right())
         }
 
         suspend fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {

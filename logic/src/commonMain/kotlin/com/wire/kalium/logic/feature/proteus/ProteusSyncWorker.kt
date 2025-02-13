@@ -23,7 +23,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest

@@ -104,14 +104,21 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     val deregisterNativePushToken: DeregisterTokenUseCase
         get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
-        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientIdProvider, keyPackageLimitsProvider, userConfigRepository)
+        get() = MLSKeyPackageCountUseCaseImpl(
+            keyPackageRepository = keyPackageRepository,
+            currentClientIdProvider = clientIdProvider,
+            mlsClientProvider = mlsClientProvider,
+            keyPackageLimitsProvider = keyPackageLimitsProvider,
+            userConfigRepository = userConfigRepository,
+        )
     val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
         get() = RestartSlowSyncProcessForRecoveryUseCaseImpl(slowSyncRepository)
     val refillKeyPackages: RefillKeyPackagesUseCase
         get() = RefillKeyPackagesUseCaseImpl(
-            keyPackageRepository,
-            keyPackageLimitsProvider,
-            clientIdProvider
+            keyPackageRepository = keyPackageRepository,
+            keyPackageLimitsProvider = keyPackageLimitsProvider,
+            mlsClientProvider = mlsClientProvider,
+            currentClientIdProvider = clientIdProvider,
         )
 
     val observeCurrentClientId: ObserveCurrentClientIdUseCase

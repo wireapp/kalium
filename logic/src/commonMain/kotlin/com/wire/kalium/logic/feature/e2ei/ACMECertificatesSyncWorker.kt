@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
-import com.wire.kalium.logic.functional.intervalFlow
+import com.wire.kalium.common.functional.intervalFlow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 

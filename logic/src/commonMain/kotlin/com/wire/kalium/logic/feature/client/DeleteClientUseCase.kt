@@ -18,13 +18,13 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -57,14 +57,15 @@ internal class DeleteClientUseCaseImpl(
             })
 
     private fun handleError(failure: NetworkFailure): DeleteClientResult.Failure =
-        if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
+        if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
+            val error = failure.kaliumException as KaliumException.InvalidRequestError
             when {
-                failure.kaliumException.isInvalidCredentials() -> DeleteClientResult.Failure.InvalidCredentials
-                failure.kaliumException.isMissingAuth() -> DeleteClientResult.Failure.PasswordAuthRequired
-                failure.kaliumException.isBadRequest() -> DeleteClientResult.Failure.InvalidCredentials
+                error.isInvalidCredentials() -> DeleteClientResult.Failure.InvalidCredentials
+                error.isMissingAuth() -> DeleteClientResult.Failure.PasswordAuthRequired
+                error.isBadRequest() -> DeleteClientResult.Failure.InvalidCredentials
                 else -> DeleteClientResult.Failure.Generic(failure)
             }
-        else {
+        } else {
             DeleteClientResult.Failure.Generic(failure)
         }
 }

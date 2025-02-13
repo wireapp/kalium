@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -28,8 +27,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
@@ -70,13 +68,13 @@ class KeyPackageRepositoryTest {
 
     @Test
     fun givenExistingClient_whenGettingAvailableKeyPackageCount_thenResultShouldBePropagated() = runTest {
-
+        val cipherSuite = CipherSuite.fromTag(1)
         val (_, keyPackageRepository) = Arrangement()
             .withMLSClient()
             .withGetAvailableKeyPackageCountSuccessful()
             .arrange()
 
-        val keyPackageCount = keyPackageRepository.getAvailableKeyPackageCount(Arrangement.SELF_CLIENT_ID)
+        val keyPackageCount = keyPackageRepository.getAvailableKeyPackageCount(Arrangement.SELF_CLIENT_ID, cipherSuite)
 
         assertIs<Either.Right<KeyPackageCountDTO>>(keyPackageCount)
         assertEquals(Arrangement.KEY_PACKAGE_COUNT_DTO.count, keyPackageCount.value.count)
@@ -210,7 +208,7 @@ class KeyPackageRepositoryTest {
 
         suspend fun withGetAvailableKeyPackageCountSuccessful() = apply {
             coEvery {
-                keyPackageApi.getAvailableKeyPackageCount(eq(SELF_CLIENT_ID.value))
+                keyPackageApi.getAvailableKeyPackageCount(eq(SELF_CLIENT_ID.value), any())
             }.returns(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
         }
 

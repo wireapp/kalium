@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.feature.auth.sso
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 sealed class SSOMetaDataResult {
     data class Success(val metaData: String) : SSOMetaDataResult()

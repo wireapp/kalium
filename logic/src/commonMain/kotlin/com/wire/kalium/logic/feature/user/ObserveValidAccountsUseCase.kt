@@ -22,8 +22,8 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
-import com.wire.kalium.logic.functional.flatMapRight
-import com.wire.kalium.logic.functional.mapToRightOr
+import com.wire.kalium.common.functional.flatMapRight
+import com.wire.kalium.common.functional.mapToRightOr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.featureConfig.handler
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration

@@ -79,8 +79,15 @@ internal open class KeyPackageApiV5 internal constructor(
             }
         }
 
-    override suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO> =
-        wrapKaliumResponse { httpClient.get("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId/$PATH_COUNT") }
+    override suspend fun getAvailableKeyPackageCount(
+        clientId: String,
+        cipherSuite: Int,
+    ): NetworkResponse<KeyPackageCountDTO> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId/$PATH_COUNT") {
+                parameter(QUERY_CIPHER_SUITE, cipherSuite.toHexString())
+            }
+        }
 
     private companion object {
         const val PATH_KEY_PACKAGES = "mls/key-packages"

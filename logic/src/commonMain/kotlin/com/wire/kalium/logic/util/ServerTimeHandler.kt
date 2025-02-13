@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.datetime.Clock
 
 internal interface ServerTimeHandler {

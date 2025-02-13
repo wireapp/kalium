@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatten
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatten
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock

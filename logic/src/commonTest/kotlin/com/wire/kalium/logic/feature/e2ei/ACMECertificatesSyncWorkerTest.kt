@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.E2EIRepositoryArrangement

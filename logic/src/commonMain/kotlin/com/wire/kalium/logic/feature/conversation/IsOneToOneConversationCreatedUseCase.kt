@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.common.functional.isRight
 
 /**
  * Operation that indicates if we have one-o-one Conversation with specific [UserId].

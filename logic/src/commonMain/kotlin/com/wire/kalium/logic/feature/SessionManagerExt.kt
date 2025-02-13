@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.session.SessionManager
 
 internal fun SessionManager.getProxyCredentials(): ProxyCredentials? {

@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.auth.verification
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.feature.register.RequestActivationCodeUseCase
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
 
@@ -58,7 +58,7 @@ class RequestSecondFactorVerificationCodeUseCase(
     ): Result = secondFactorVerificationRepository.requestVerificationCode(email, verifiableAction).fold({
         if (it is NetworkFailure.ServerMiscommunication
             && it.kaliumException is KaliumException.InvalidRequestError
-            && it.kaliumException.isTooManyRequests()
+            && (it.kaliumException as KaliumException.InvalidRequestError).isTooManyRequests()
         ) {
             Result.Failure.TooManyRequests
         } else {

@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 
 sealed class MLSMessageFailureResolution {
     data object Ignore : MLSMessageFailureResolution()

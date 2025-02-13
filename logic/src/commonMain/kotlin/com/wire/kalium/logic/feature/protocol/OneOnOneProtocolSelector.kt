@@ -17,15 +17,17 @@
  */
 package com.wire.kalium.logic.feature.protocol
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.logger.kaliumLogger
 
 internal interface OneOnOneProtocolSelector {
     suspend fun getProtocolForUser(userId: UserId): Either<CoreFailure, SupportedProtocol>
@@ -37,9 +39,9 @@ internal class OneOnOneProtocolSelectorImpl(
 ) : OneOnOneProtocolSelector {
     override suspend fun getProtocolForUser(userId: UserId): Either<CoreFailure, SupportedProtocol> =
         userRepository.userById(userId).flatMap { otherUser ->
-            val selfUser = userRepository.getSelfUser() ?: run {
-                val error = NullPointerException("Self user unobtainable when selecting protocol for user")
-                return@flatMap Either.Left(CoreFailure.Unknown(error))
+            val selfUser = userRepository.getSelfUser().getOrElse {
+                kaliumLogger.d("Self user unobtainable when selecting protocol for user")
+                return@flatMap it.left()
             }
 
             val teamDefaultProtocol = userConfigRepository.getDefaultProtocol().getOrNull()

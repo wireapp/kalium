@@ -27,10 +27,10 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapStorageNullableRequest
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import io.ktor.util.collections.ConcurrentSet
 import kotlinx.coroutines.coroutineScope

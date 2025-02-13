@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.featureConfig.handler
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.nullableFold
 
 internal class AppLockConfigHandler internal constructor(
     private val userConfigRepository: UserConfigRepository
