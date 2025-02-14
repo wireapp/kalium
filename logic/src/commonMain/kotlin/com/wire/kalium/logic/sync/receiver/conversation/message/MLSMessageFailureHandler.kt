@@ -17,17 +17,12 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-<<<<<<< HEAD
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.MLSFailure
-=======
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.StorageFailure
->>>>>>> 040b38c54f (chore: bump cc to 3.1.0 [WPB-16041] (#3292))
 
 sealed class MLSMessageFailureResolution {
     data object Ignore : MLSMessageFailureResolution()
