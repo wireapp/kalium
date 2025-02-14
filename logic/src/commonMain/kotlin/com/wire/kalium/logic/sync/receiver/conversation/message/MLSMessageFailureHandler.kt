@@ -24,7 +24,6 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
 
-
 sealed class MLSMessageFailureResolution {
     data object Ignore : MLSMessageFailureResolution()
     data object InformUser : MLSMessageFailureResolution()
