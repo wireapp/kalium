@@ -32,8 +32,21 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
             is MlsException.StaleCommit -> MLSFailure.StaleCommit
             is MlsException.ConversationAlreadyExists -> MLSFailure.ConversationAlreadyExists
             is MlsException.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
-            else -> MLSFailure.Generic(exception)
+
+            is MlsException.Other -> {
+                if ((exception.v1 as MlsException.Other).v1
+                        .startsWith(COMMIT_FOR_MISSING_PROPOSAL)
+                ) {
+                    MLSFailure.CommitForMissingProposal
+                } else {
+                    MLSFailure.Other
+                }
+            }
+
+            is MlsException.OrphanWelcome -> MLSFailure.Generic(exception)
         }
     } else {
         MLSFailure.Generic(exception)
     }
+
+private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"

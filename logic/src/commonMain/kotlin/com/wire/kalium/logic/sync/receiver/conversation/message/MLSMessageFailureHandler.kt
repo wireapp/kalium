@@ -18,7 +18,11 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.StorageFailure
 
 sealed class MLSMessageFailureResolution {
     data object Ignore : MLSMessageFailureResolution()
@@ -31,20 +35,45 @@ internal object MLSMessageFailureHandler {
         return when (failure) {
             // Received messages targeting a future epoch (outside epoch bounds), we might have lost messages.
             is MLSFailure.WrongEpoch -> MLSMessageFailureResolution.OutOfSync
+
             // Received already sent or received message, can safely be ignored.
-            is MLSFailure.DuplicateMessage -> MLSMessageFailureResolution.Ignore
-            // Received message was targeting a future epoch and been buffered, can safely be ignored.
-            is MLSFailure.BufferedFutureMessage -> MLSMessageFailureResolution.Ignore
-            // Received self commit, any unmerged group has know been when merged by CoreCrypto.
-            is MLSFailure.SelfCommitIgnored -> MLSMessageFailureResolution.Ignore
-            // Message arrive in an unmerged group, it has been buffered and will be consumed later.
-            is MLSFailure.UnmergedPendingGroup -> MLSMessageFailureResolution.Ignore
-            is MLSFailure.StaleProposal -> MLSMessageFailureResolution.Ignore
-            is MLSFailure.StaleCommit -> MLSMessageFailureResolution.Ignore
-            is MLSFailure.MessageEpochTooOld -> MLSMessageFailureResolution.Ignore
-            is MLSFailure.InternalErrors -> MLSMessageFailureResolution.Ignore
-            is MLSFailure.Disabled -> MLSMessageFailureResolution.Ignore
-            else -> MLSMessageFailureResolution.InformUser
+            is MLSFailure.DuplicateMessage,
+                // Received message was targeting a future epoch and been buffered, can safely be ignored.
+            is MLSFailure.BufferedFutureMessage,
+                // Received self commit, any unmerged group has know been when merged by CoreCrypto.
+            is MLSFailure.SelfCommitIgnored,
+                // Message arrive in an unmerged group, it has been buffered and will be consumed later.
+            is MLSFailure.UnmergedPendingGroup,
+            is MLSFailure.StaleProposal,
+            is MLSFailure.StaleCommit,
+            is MLSFailure.MessageEpochTooOld,
+            is MLSFailure.InternalErrors,
+            is MLSFailure.Disabled,
+            MLSFailure.CommitForMissingProposal,
+            is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
+
+            MLSFailure.ConversationAlreadyExists,
+            MLSFailure.ConversationDoesNotSupportMLS,
+            is MLSFailure.Generic,
+            is MLSFailure.Other,
+            is E2EIFailure,
+            is CoreFailure.FeatureFailure,
+            CoreFailure.MissingClientRegistration,
+            is CoreFailure.MissingKeyPackages,
+            NetworkFailure.FeatureNotSupported,
+            is NetworkFailure.FederatedBackendFailure.ConflictingBackends,
+            is NetworkFailure.FederatedBackendFailure.FailedDomains,
+            is NetworkFailure.FederatedBackendFailure.FederationDenied,
+            is NetworkFailure.FederatedBackendFailure.FederationNotEnabled,
+            is NetworkFailure.FederatedBackendFailure.General,
+            is NetworkFailure.NoNetworkConnection,
+            is NetworkFailure.ProxyError,
+            is NetworkFailure.ServerMiscommunication,
+            is ProteusFailure,
+            StorageFailure.DataNotFound,
+            is StorageFailure.Generic,
+            is CoreFailure.Unknown -> MLSMessageFailureResolution.InformUser
+
         }
     }
 }
