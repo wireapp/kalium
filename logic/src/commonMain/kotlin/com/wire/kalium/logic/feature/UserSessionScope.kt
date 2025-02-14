@@ -1880,6 +1880,7 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
+            cells.publishAttachments,
             this,
             userScopedLogger,
         )
@@ -2180,8 +2181,13 @@ class UserSessionScope internal constructor(
         InCallReactionsDataSource()
     }
 
-    val cells: CellsScope
-        get() = CellsScope(globalScope.unboundNetworkContainer.cellsClient)
+    val cells: CellsScope by lazy {
+        CellsScope(
+            cellsClient = globalScope.unboundNetworkContainer.cellsClient,
+            attachmentDraftDao = userStorage.database.messageAttachmentDraftDao,
+            conversationsDAO = userStorage.database.conversationDAO,
+        )
+    }
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

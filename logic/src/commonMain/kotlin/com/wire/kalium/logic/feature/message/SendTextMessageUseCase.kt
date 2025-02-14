@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.common.error.CoreFailure
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
@@ -63,6 +65,7 @@ class SendTextMessageUseCase internal constructor(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
+    private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val scope: CoroutineScope
 ) {
@@ -86,11 +89,23 @@ class SendTextMessageUseCase internal constructor(
 
         val previews = uploadLinkPreviewImages(linkPreviews)
 
+        val attachments = publishAttachmentsUseCase.invoke(conversationId).getOrElse { emptyList() }
+
+        val textWithAttachments = if (attachments.isNotEmpty()) {
+            buildString {
+                append(text)
+                appendLine()
+                attachments.forEach { appendLine(it) }
+            }
+        } else {
+            text
+        }
+
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Text(
-                    value = text,
+                    value = textWithAttachments,
                     linkPreviews = previews,
                     mentions = mentions,
                     quotedMessageReference = quotedMessageId?.let { quotedMessageId ->

@@ -32,7 +32,9 @@ kotlin {
             dependencies {
                 implementation(project(":common"))
                 implementation(project(":network"))
+                implementation(project(":data"))
                 implementation(project(":util"))
+                implementation(project(":persistence"))
                 implementation(libs.coroutines.core)
                 implementation(libs.ktor.authClient)
                 implementation(libs.okio.core)

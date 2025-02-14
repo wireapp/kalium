@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS MessageAttachmentDraft (
+      attachment_id TEXT NOT NULL,
+      verison_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      file_name TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      data_path TEXT NOT NULL,
+      node_path TEXT NOT NULL,
+      upload_status TEXT NOT NULL,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (attachment_id)
+);

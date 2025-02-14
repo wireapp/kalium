@@ -23,9 +23,9 @@ import com.wire.kalium.cells.data.model.toModel
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
@@ -69,43 +69,40 @@ internal class CellsDataSource internal constructor(
     }
 
     override suspend fun getFiles(cellName: String): Either<NetworkFailure, List<CellNode>> =
-        withContext(dispatchers.io) {
-            wrapApiRequest {
-                cellsApi.getFiles(cellName)
-            }.map { response ->
-                response.nodes
-                    .filterNot { it.isRecycleBin }
-                    .map { it.toModel() }
-            }
+        wrapApiRequest {
+            cellsApi.getFiles(cellName)
+        }.map { response ->
+            response.nodes
+                .filterNot { it.isRecycleBin }
+                .map { it.toModel() }
         }
 
-    override suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit> {
-        return withContext(dispatchers.io) {
-            wrapApiRequest {
-                cellsApi.delete(node.toDto())
-            }
+    override suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            cellsApi.delete(node.toDto())
         }
-    }
 
-    override suspend fun publishDraft(node: CellNode): Either<NetworkFailure, Unit> {
-        return withContext(dispatchers.io) {
-            wrapApiRequest {
-                cellsApi.publishDraft(node.toDto())
-            }
+    override suspend fun publishDraft(nodeUuid: String): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            cellsApi.publishDraft(nodeUuid)
         }
-    }
 
-    override suspend fun cancelDraft(node: CellNode): Either<NetworkFailure, Unit> {
-        return withContext(dispatchers.io) {
-            wrapApiRequest {
-                cellsApi.cancelDraft(node.toDto())
-            }
+    override suspend fun getFiles(cellNames: List<String>): Either<NetworkFailure, List<CellNode>> =
+        wrapApiRequest {
+            cellsApi.getFiles(cellNames)
+        }.map { response ->
+            response.nodes
+                .filterNot { it.isRecycleBin }
+                .map { it.toModel() }
         }
-    }
+
+    override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            cellsApi.cancelDraft(nodeUuid, versionUuid)
+        }
+
+    override suspend fun getPublicUrl(nodeUuid: String, fileName: String): Either<NetworkFailure, String> =
+        wrapApiRequest {
+            cellsApi.createPublicUrl(nodeUuid, fileName)
+        }
 }
-
-internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> =
-    when (val result = networkCall()) {
-        is NetworkResponse.Success -> Either.Right(result.value)
-        is NetworkResponse.Error -> Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
-    }

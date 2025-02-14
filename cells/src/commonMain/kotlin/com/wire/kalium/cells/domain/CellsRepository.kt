@@ -27,7 +27,9 @@ internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun getFiles(cellName: String): Either<NetworkFailure, List<CellNode>>
+    suspend fun getFiles(cellNames: List<String>): Either<NetworkFailure, List<CellNode>>
     suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit>
-    suspend fun cancelDraft(node: CellNode): Either<NetworkFailure, Unit>
-    suspend fun publishDraft(node: CellNode): Either<NetworkFailure, Unit>
+    suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit>
+    suspend fun publishDraft(nodeUuid: String): Either<NetworkFailure, Unit>
+    suspend fun getPublicUrl(nodeUuid: String, fileName: String): Either<NetworkFailure, String>
 }

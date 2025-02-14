@@ -22,18 +22,24 @@ import com.wire.kalium.cells.data.CellsApi
 import com.wire.kalium.cells.data.CellsApiImpl
 import com.wire.kalium.cells.data.CellsAwsClient
 import com.wire.kalium.cells.data.CellsDataSource
+import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.CellsCredentials
-import com.wire.kalium.cells.domain.usecase.CancelDraftUseCase
-import com.wire.kalium.cells.domain.usecase.CancelDraftUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.DeleteCellFileUseCase
-import com.wire.kalium.cells.domain.usecase.DeleteCellFileUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
-import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.PublishDraftUseCase
-import com.wire.kalium.cells.domain.usecase.PublishDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
+import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
+import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCase
+import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -41,7 +47,14 @@ import kotlin.coroutines.CoroutineContext
 
 public class CellsScope(
     private val cellsClient: HttpClient,
+    private val attachmentDraftDao: MessageAttachmentDraftDao,
+    private val conversationsDAO: ConversationDAO,
 ) : CoroutineScope {
+
+    internal companion object {
+        // Temporary hardcoded root cell
+        const val ROOT_CELL = "wire-cells-android"
+    }
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -49,7 +62,7 @@ public class CellsScope(
     private val cellClientCredentials: CellsCredentials
         get() = CellsCredentials(
             serverUrl = "https://service.zeta.pydiocells.com",
-            accessToken = "mBzSPjZ1qH7weLqHlNK9_W5HNUN0zdESyvhL4KqlhhM.0TUuMHKucKMCfC337jaUof-gdjODmCj2gGML5INWc8w",
+            accessToken = "<your-access-token>",
             gatewaySecret = "gatewaysecret",
         )
 
@@ -68,6 +81,9 @@ public class CellsScope(
             awsClient = cellAwsClient
         )
 
+    private val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository
+        get() = MessageAttachmentDraftDataSource(attachmentDraftDao)
+
     public val uploadManager: CellUploadManager by lazy {
         CellUploadManagerImpl(
             repository = cellsRepository,
@@ -75,15 +91,18 @@ public class CellsScope(
         )
     }
 
-    public val getCellFiles: GetCellFilesUseCase
-        get() = GetCellFilesUseCaseImpl(cellsRepository)
+    public val addAttachment: AddAttachmentDraftUseCase
+        get() = AddAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this)
 
-    public val deleteFromCell: DeleteCellFileUseCase
-        get() = DeleteCellFileUseCaseImpl(cellsRepository)
+    public val removeAttachment: RemoveAttachmentDraftUseCase
+        get() = RemoveAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, cellsRepository)
 
-    public val cancelDraft: CancelDraftUseCase
-        get() = CancelDraftUseCaseImpl(cellsRepository)
+    public val observeAttachments: ObserveAttachmentDraftsUseCase
+        get() = ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager)
 
-    public val publishDraft: PublishDraftUseCase
-        get() = PublishDraftUseCaseImpl(cellsRepository)
+    public val publishAttachments: PublishAttachmentsUseCase
+        get() = PublishAttachmentsUseCaseImpl(cellsRepository, messageAttachmentsDraftRepository)
+
+    public val observeFiles: ObserveCellFilesUseCase
+        get() = ObserveCellFilesUseCaseImpl(conversationsDAO, cellsRepository)
 }

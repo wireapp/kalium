@@ -45,7 +45,7 @@ public interface CellUploadManager {
      * Cancel upload of the node with [nodeUuid].
      * @param nodeUuid UUID of the node to cancel
      */
-    public fun cancelUpload(nodeUuid: String)
+    public suspend fun cancelUpload(nodeUuid: String)
 
     /**
      * Get upload info for the node with [nodeUuid].
@@ -53,20 +53,28 @@ public interface CellUploadManager {
      * @return [CellUploadInfo] or null if the node is not being uploaded
      */
     public fun getUploadInfo(nodeUuid: String): CellUploadInfo?
+
+    /**
+     * Check if the node with [nodeUuid] is being uploaded.
+     * @param nodeUuid UUID of the node to check
+     * @return true if the node is being uploaded
+     */
+    public fun isUploading(nodeUuid: String): Boolean
 }
 
 /**
  * Information about the upload of the file.
  * @param progress upload progress
- * @param uploadFiled true if the upload failed
+ * @param uploadFailed true if the upload failed
  */
 public data class CellUploadInfo(
     val progress: Float = 0f,
-    val uploadFiled: Boolean = false,
+    val uploadFailed: Boolean = false,
 )
 
 public sealed interface CellUploadEvent {
     public data class UploadProgress(val progress: Float) : CellUploadEvent
     public data object UploadCompleted : CellUploadEvent
     public data object UploadError : CellUploadEvent
+    public data object UploadCancelled : CellUploadEvent
 }

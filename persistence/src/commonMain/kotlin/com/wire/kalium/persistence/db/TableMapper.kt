@@ -33,6 +33,7 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageAssetTransferStatus
+import com.wire.kalium.persistence.MessageAttachmentDraft
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
@@ -280,5 +281,9 @@ internal object TableMapper {
 
     val conversationFolderAdapter = ConversationFolder.Adapter(
         folder_typeAdapter = EnumColumnAdapter()
+    )
+
+    val messageAttachmentDraftAdapter = MessageAttachmentDraft.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
     )
 }

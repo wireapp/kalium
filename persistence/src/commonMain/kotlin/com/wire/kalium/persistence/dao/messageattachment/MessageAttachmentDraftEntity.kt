@@ -15,13 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.persistence.dao.messageattachment
 
-/**
- * Represents the result of a pre-check operation to determine if file
- * with the given path and name already exists on the Cell server.
- */
-public sealed interface PreCheckResult {
-    public data object Success : PreCheckResult
-    public data class FileExists(val nextPath: String) : PreCheckResult
-}
+import com.wire.kalium.persistence.dao.ConversationIDEntity
+
+data class MessageAttachmentDraftEntity(
+    val uuid: String,
+    val versionId: String,
+    val conversationId: ConversationIDEntity,
+    val fileName: String,
+    val fileSize: Long,
+    val dataPath: String,
+    val nodePath: String,
+    val uploadStatus: String,
+)

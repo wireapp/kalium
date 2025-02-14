@@ -23,6 +23,7 @@ import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
+import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
 import com.wire.kalium.cells.sdk.kmp.model.RestActionParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateCheckRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestIncomingNode
@@ -31,6 +32,9 @@ import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocators
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
+import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
+import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
+import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
 import com.wire.kalium.cells.sdk.kmp.model.RestVersionCollection
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -46,14 +50,16 @@ import kotlinx.coroutines.CancellationException
 
 internal interface CellsApi {
     suspend fun getFiles(cellName: String): NetworkResponse<GetFilesResponseDTO>
+    suspend fun getFiles(cellNames: List<String>): NetworkResponse<GetFilesResponseDTO>
     suspend fun delete(node: CellNodeDTO): NetworkResponse<Unit>
-    suspend fun cancelDraft(node: CellNodeDTO): NetworkResponse<Unit>
-    suspend fun publishDraft(node: CellNodeDTO): NetworkResponse<Unit>
+    suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit>
+    suspend fun publishDraft(nodeUuid: String): NetworkResponse<Unit>
     suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
+    suspend fun createPublicUrl(uuid: String, fileName: String): NetworkResponse<String>
 }
 
 internal class CellsApiImpl(
-    credentials: CellsCredentials,
+    private val credentials: CellsCredentials,
     httpClient: HttpClient
 ) : CellsApi {
 
@@ -84,6 +90,20 @@ internal class CellsApiImpl(
             )
         }.mapSuccess { response -> response.toDto() }
 
+    override suspend fun getFiles(cellNames: List<String>): NetworkResponse<GetFilesResponseDTO> =
+        wrapCellsResponse {
+            nodeServiceApi.lookup(
+                RestLookupRequest(
+                    locators = RestNodeLocators(
+                        cellNames.map {
+                            RestNodeLocator(path = "$it/*")
+                        }
+                    ),
+                    sortField = "Modified"
+                )
+            )
+        }.mapSuccess { response -> response.toDto() }
+
     override suspend fun delete(node: CellNodeDTO): NetworkResponse<Unit> =
         wrapCellsResponse {
             nodeServiceApi.performAction(
@@ -94,25 +114,22 @@ internal class CellsApiImpl(
             )
         }.mapSuccess {}
 
-    override suspend fun publishDraft(node: CellNodeDTO): NetworkResponse<Unit> =
-        getNodeDraftVersions(node).mapSuccess { response ->
+    override suspend fun publishDraft(uuid: String): NetworkResponse<Unit> =
+        getNodeDraftVersions(uuid).mapSuccess { response ->
             wrapCellsResponse {
                 val version = response.versions?.firstOrNull() ?: error("Draft version not found")
-                nodeServiceApi.promoteVersion(node.uuid, version.versionId, RestPromoteParameters(publish = true))
+                nodeServiceApi.promoteVersion(uuid, version.versionId, RestPromoteParameters(publish = true))
             }
         }
 
-    override suspend fun cancelDraft(node: CellNodeDTO): NetworkResponse<Unit> =
-        getNodeDraftVersions(node).mapSuccess { response ->
-            wrapCellsResponse {
-                val version = response.versions?.firstOrNull() ?: error("Draft version not found")
-                nodeServiceApi.deleteVersion(node.uuid, version.versionId)
-            }
-        }
-
-    private suspend fun getNodeDraftVersions(node: CellNodeDTO): NetworkResponse<RestVersionCollection> =
+    override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit> =
         wrapCellsResponse {
-            nodeServiceApi.nodeVersions(node.uuid, RestNodeVersionsFilter())
+            nodeServiceApi.deleteVersion(nodeUuid, versionUuid)
+        }.mapSuccess {}
+
+    private suspend fun getNodeDraftVersions(uuid: String): NetworkResponse<RestVersionCollection> =
+        wrapCellsResponse {
+            nodeServiceApi.nodeVersions(uuid, RestNodeVersionsFilter())
         }
 
     override suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO> =
@@ -131,11 +148,31 @@ internal class CellsApiImpl(
                 )
             } ?: PreCheckResultDTO()
         }
+
+    override suspend fun createPublicUrl(uuid: String, fileName: String): NetworkResponse<String> {
+        return wrapCellsResponse {
+            nodeServiceApi.createPublicLink(
+                uuid = uuid,
+                publicLinkRequest = RestPublicLinkRequest(
+                    link = RestShareLink(
+                        label = fileName,
+                        permissions = listOf(
+                            RestShareLinkAccessType.Preview,
+                            RestShareLinkAccessType.Download,
+                        )
+                    ),
+                )
+            )
+        }.mapSuccess { response ->
+            response.linkUrl?.let { "${credentials.serverUrl}$it" } ?: error("Link URL not found")
+        }
+    }
+
 }
 
 @Suppress("TooGenericExceptionCaught")
 private suspend inline fun <reified BodyType : Any> wrapCellsResponse(
-    performRequest: () -> com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse<BodyType>
+    performRequest: () -> HttpResponse<BodyType>
 ): NetworkResponse<BodyType> =
     try {
 

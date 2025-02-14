@@ -31,6 +31,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -104,9 +105,10 @@ internal class CellUploadManagerImpl internal constructor(
         }
     }
 
-    override fun cancelUpload(nodeUuid: String) {
+    override suspend fun cancelUpload(nodeUuid: String) {
         uploads[nodeUuid]?.run {
-            job.cancel()
+            events.emit(CellUploadEvent.UploadCancelled)
+            job.cancelAndJoin()
             uploads.remove(nodeUuid)
         }
     }
@@ -119,9 +121,13 @@ internal class CellUploadManagerImpl internal constructor(
         return uploads[nodeUuid]?.run {
             CellUploadInfo(
                 progress = progress,
-                uploadFiled = uploadFiled,
+                uploadFailed = uploadFiled,
             )
         }
+    }
+
+    override fun isUploading(nodeUuid: String): Boolean {
+        return uploads.containsKey(nodeUuid)
     }
 
     private fun updateJobInfo(uuid: String, block: UploadInfo.() -> UploadInfo) {

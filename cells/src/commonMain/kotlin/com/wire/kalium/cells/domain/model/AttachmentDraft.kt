@@ -17,11 +17,16 @@
  */
 package com.wire.kalium.cells.domain.model
 
-/**
- * Represents the result of a pre-check operation to determine if file
- * with the given path and name already exists on the Cell server.
- */
-public sealed interface PreCheckResult {
-    public data object Success : PreCheckResult
-    public data class FileExists(val nextPath: String) : PreCheckResult
+public data class AttachmentDraft(
+    val uuid: String,
+    val versionId: String,
+    val fileName: String,
+    val fileSize: Long,
+    val uploadStatus: AttachmentUploadStatus,
+)
+
+public enum class AttachmentUploadStatus {
+    UPLOADING,
+    UPLOADED,
+    FAILED,
 }
