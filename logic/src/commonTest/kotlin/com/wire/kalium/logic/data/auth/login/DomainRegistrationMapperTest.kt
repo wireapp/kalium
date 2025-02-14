@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.data.auth.login
 
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.auth.LoginRedirectPath
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import kotlinx.coroutines.test.runTest
@@ -70,7 +72,10 @@ class DomainRegistrationMapperTest {
         )
         assertEquals(LoginDomainPath.ExistingAccountWithClaimedDomain::class, result::class)
         assertEquals("wire.com", (result as LoginDomainPath.ExistingAccountWithClaimedDomain).domain)
+        assertEquals(false, result.isCloudAccountCreationPossible)
     }
+
+
 
     private object Arrangement {
 
