@@ -181,7 +181,7 @@ sealed class NetworkFailure : CoreFailure {
     data object FeatureNotSupported : NetworkFailure()
 }
 
-interface MLSFailure : CoreFailure {
+sealed interface MLSFailure : CoreFailure {
 
     data object WrongEpoch : MLSFailure
 
@@ -200,10 +200,16 @@ interface MLSFailure : CoreFailure {
     data object StaleCommit : MLSFailure
     data object InternalErrors : MLSFailure
     data object Disabled : MLSFailure
+<<<<<<< HEAD:common/src/commonMain/kotlin/com/wire/kalium/common/error/CoreFailure.kt
 
     data class Generic(val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
     }
+=======
+    data object Other : MLSFailure
+    data object CommitForMissingProposal : MLSFailure
+    data class Generic(val rootCause: Throwable) : MLSFailure
+>>>>>>> 040b38c54f (chore: bump cc to 3.1.0 [WPB-16041] (#3292)):logic/src/commonMain/kotlin/com/wire/kalium/logic/CoreFailure.kt
 }
 
 interface E2EIFailure : CoreFailure {
