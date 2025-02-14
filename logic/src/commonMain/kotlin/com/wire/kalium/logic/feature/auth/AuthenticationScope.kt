@@ -109,6 +109,7 @@ class AuthenticationScope internal constructor(
 
     private val customServerConfigRepository: CustomServerConfigRepository
         get() = CustomServerConfigDataSource(
+            unauthenticatedNetworkContainer.remoteVersion,
             unauthenticatedNetworkContainer.serverConfigApi,
             kaliumConfigs.developmentApiEnabled,
             globalDatabase.serverConfigurationDAO

@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUse
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManager
+import com.wire.kalium.logic.feature.auth.ObserveLoginContextUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
@@ -103,7 +104,8 @@ class GlobalKaliumScope internal constructor(
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
-            kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
+            kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+            kaliumConfigs.developmentApiEnabled,
         )
     }
 
@@ -124,6 +126,7 @@ class GlobalKaliumScope internal constructor(
 
     private val customServerConfigRepository: CustomServerConfigRepository
         get() = CustomServerConfigDataSource(
+            unboundNetworkContainer.versionApi,
             unboundNetworkContainer.serverConfigApi,
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
             globalDatabase.serverConfigurationDAO
@@ -132,6 +135,7 @@ class GlobalKaliumScope internal constructor(
     val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
+    val observeLoginContext: ObserveLoginContextUseCase get() = ObserveLoginContextUseCase(customServerConfigRepository)
 
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
