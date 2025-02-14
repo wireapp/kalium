@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.functional.Either
@@ -31,6 +33,7 @@ import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class GetLoginFlowForDomainUseCaseTest {
 
@@ -40,9 +43,10 @@ class GetLoginFlowForDomainUseCaseTest {
             .withDomainRegistrationResult(LoginDomainPath.Default.right())
             .arrange()
 
-        useCase(Arrangement.EMAIL)
+        val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result, EnterpriseLoginResult.Success(LoginRedirectPath.Default))
     }
 
     @Test
@@ -51,9 +55,51 @@ class GetLoginFlowForDomainUseCaseTest {
             .withDomainRegistrationResult(NetworkFailure.ServerMiscommunication(RuntimeException()).left())
             .arrange()
 
-        useCase(Arrangement.EMAIL)
+        val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result::class, EnterpriseLoginResult.Failure.Generic::class)
+    }
+
+    @Test
+    fun givenEmail_whenInvokedAndError_thenReturnNoNetwork() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(NetworkFailure.NoNetworkConnection(RuntimeException()).left())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result, EnterpriseLoginResult.Failure.NoNetwork)
+    }
+
+    @Test
+    fun givenEmail_whenInvokedAndErrorBecauseOfNotSupported_thenReturnNotSupported() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(NetworkFailure.FeatureNotSupported.left())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result, EnterpriseLoginResult.Failure.NotSupported)
+    }
+
+    @Test
+    fun givenEmail_whenInvokedCustomBackend_thenFetchTheConfigurationAndMapIt() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(LoginDomainPath.CustomBackend("https://custom-backend.com").right())
+            .withServerLinksResult(ServerConfig.DUMMY.right())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        coVerify { arrangement.customServerConfigRepository.fetchRemoteConfig(any()) }
+        assertEquals(
+            result,
+            EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY))
+        )
     }
 
     private class Arrangement {
@@ -61,11 +107,18 @@ class GetLoginFlowForDomainUseCaseTest {
         @Mock
         val loginRepository: LoginRepository = mock(LoginRepository::class)
 
+        @Mock
+        val customServerConfigRepository = mock(CustomServerConfigRepository::class)
+
         suspend fun withDomainRegistrationResult(result: Either<NetworkFailure, LoginDomainPath>) = apply {
             coEvery { loginRepository.getDomainRegistration(any()) }.returns(result)
         }
 
-        fun arrange() = this to GetLoginFlowForDomainUseCase(loginRepository)
+        suspend fun withServerLinksResult(result: Either<NetworkFailure, ServerConfig.Links>) = apply {
+            coEvery { customServerConfigRepository.fetchRemoteConfig(any()) }.returns(result)
+        }
+
+        fun arrange() = this to GetLoginFlowForDomainUseCase(loginRepository, customServerConfigRepository)
 
         companion object {
             const val EMAIL = "user@wire.com"
