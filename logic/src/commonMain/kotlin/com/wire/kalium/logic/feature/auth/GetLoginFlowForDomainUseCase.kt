@@ -83,7 +83,6 @@ internal fun GetLoginFlowForDomainUseCase(
     private fun NetworkFailure.mapFailure() =
         when (this) {
             is NetworkFailure.FeatureNotSupported -> EnterpriseLoginResult.Failure.NotSupported
-            is NetworkFailure.NoNetworkConnection -> EnterpriseLoginResult.Failure.NoNetwork
             else -> EnterpriseLoginResult.Failure.Generic(this)
         }
 }
@@ -103,15 +102,6 @@ sealed interface EnterpriseLoginResult {
         data object NotSupported : Failure() {
             override fun toLogString(): String {
                 return "NotSupported"
-            }
-        }
-
-        /**
-         * No network connection.
-         */
-        data object NoNetwork : Failure() {
-            override fun toLogString(): String {
-                return "NoNetwork"
             }
         }
 

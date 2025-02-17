@@ -62,18 +62,6 @@ class GetLoginFlowForDomainUseCaseTest {
     }
 
     @Test
-    fun givenEmail_whenInvokedAndError_thenReturnNoNetwork() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withDomainRegistrationResult(NetworkFailure.NoNetworkConnection(RuntimeException()).left())
-            .arrange()
-
-        val result = useCase(Arrangement.EMAIL)
-
-        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result, EnterpriseLoginResult.Failure.NoNetwork)
-    }
-
-    @Test
     fun givenEmail_whenInvokedAndErrorBecauseOfNotSupported_thenReturnNotSupported() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withDomainRegistrationResult(NetworkFailure.FeatureNotSupported.left())
