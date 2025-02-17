@@ -21,6 +21,7 @@ public data class AttachmentDraft(
     val uuid: String,
     val versionId: String,
     val fileName: String,
+    val localFilePath: String,
     val fileSize: Long,
     val uploadStatus: AttachmentUploadStatus,
 )

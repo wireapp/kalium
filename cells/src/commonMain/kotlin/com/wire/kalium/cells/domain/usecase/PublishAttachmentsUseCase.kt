@@ -19,6 +19,7 @@ package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
@@ -37,6 +38,7 @@ public interface PublishAttachmentsUseCase {
 internal class PublishAttachmentsUseCaseImpl internal constructor(
     private val cellsRepository: CellsRepository,
     private val repository: MessageAttachmentDraftRepository,
+    private val credentials: CellsCredentials,
 ) : PublishAttachmentsUseCase {
 
     @Suppress("ReturnCount")
@@ -53,7 +55,7 @@ internal class PublishAttachmentsUseCaseImpl internal constructor(
 
             cellsRepository.getPublicUrl(attachment.uuid, attachment.fileName)
                 .onSuccess {
-                    publicUrls.add(it)
+                    publicUrls.add("${credentials.serverUrl}$it")
                 }
                 .onFailure {
                     return Either.Left(it)

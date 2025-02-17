@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.map
 
 public interface ObserveCellFilesUseCase {
     /**
+     * For TESTING purposes only.
      * Observe files from all conversations.
      *
      * @return [Flow] of [List] of [ConversationFiles]
@@ -44,19 +45,6 @@ internal class ObserveCellFilesUseCaseImpl(
 
     override suspend operator fun invoke(): Flow<List<ConversationFiles>> {
         return conversationsDAO.getAllConversationDetails(fromArchive = false, filter = ConversationFilterEntity.ALL).map { conversations ->
-
-//             val files = cellsRepository.getFiles(conversations.map { "${ROOT_CELL}/${it.id}" })
-//                 .getOrElse { emptyList() }
-//                 .groupBy { it.path.substringBeforeLast("/") }
-//                 .map { group ->
-//                     val conversation = conversations.first { it.id.toString() == group.key.substringAfterLast("/") }
-//                     ConversationFiles(
-//                         conversationId = QualifiedID(conversation.id.value, conversation.id.domain),
-//                         conversationTitle = conversation.name ?: "",
-//                         files = group.value
-//                     )
-//                 }
-
             conversations.map { conversation ->
                 ConversationFiles(
                     conversationId = QualifiedID(conversation.id.value, conversation.id.domain),

@@ -20,6 +20,7 @@ package com.wire.kalium.cells.data
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
+import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
@@ -85,15 +86,6 @@ internal class CellsDataSource internal constructor(
     override suspend fun publishDraft(nodeUuid: String): Either<NetworkFailure, Unit> =
         wrapApiRequest {
             cellsApi.publishDraft(nodeUuid)
-        }
-
-    override suspend fun getFiles(cellNames: List<String>): Either<NetworkFailure, List<CellNode>> =
-        wrapApiRequest {
-            cellsApi.getFiles(cellNames)
-        }.map { response ->
-            response.nodes
-                .filterNot { it.isRecycleBin }
-                .map { it.toModel() }
         }
 
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit> =

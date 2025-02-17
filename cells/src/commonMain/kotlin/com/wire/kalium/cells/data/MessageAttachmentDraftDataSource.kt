@@ -75,6 +75,7 @@ private fun MessageAttachmentDraftEntity.toModel() = AttachmentDraft(
     uuid = uuid,
     versionId = versionId,
     fileName = fileName,
+    localFilePath = dataPath,
     fileSize = fileSize,
     uploadStatus = AttachmentUploadStatus.valueOf(uploadStatus),
 )

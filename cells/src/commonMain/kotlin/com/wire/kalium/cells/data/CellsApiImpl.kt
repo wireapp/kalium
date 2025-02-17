@@ -21,7 +21,7 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetFilesResponseDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.data.model.toDto
-import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
 import com.wire.kalium.cells.sdk.kmp.model.RestActionParameters
@@ -38,67 +38,21 @@ import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
 import com.wire.kalium.cells.sdk.kmp.model.RestVersionCollection
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.auth.providers.BearerAuthProvider
-import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 
-internal interface CellsApi {
-    suspend fun getFiles(cellName: String): NetworkResponse<GetFilesResponseDTO>
-    suspend fun getFiles(cellNames: List<String>): NetworkResponse<GetFilesResponseDTO>
-    suspend fun delete(node: CellNodeDTO): NetworkResponse<Unit>
-    suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit>
-    suspend fun publishDraft(nodeUuid: String): NetworkResponse<Unit>
-    suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
-    suspend fun createPublicUrl(uuid: String, fileName: String): NetworkResponse<String>
-}
-
 internal class CellsApiImpl(
-    private val credentials: CellsCredentials,
-    httpClient: HttpClient
+    private val nodeServiceApi: NodeServiceApi,
 ) : CellsApi {
-
-    private companion object {
-        const val API_VERSION = "v2"
-    }
-
-    private var nodeServiceApi: NodeServiceApi = NodeServiceApi(
-        baseUrl = "${credentials.serverUrl}/$API_VERSION",
-        httpClient = httpClient.config {
-            installAuth(
-                BearerAuthProvider(
-                    loadTokens = { BearerTokens(credentials.accessToken, "") },
-                    refreshTokens = { null },
-                    realm = null
-                )
-            )
-        }
-    )
 
     override suspend fun getFiles(cellName: String): NetworkResponse<GetFilesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(
                     locators = RestNodeLocators(listOf(RestNodeLocator(path = "$cellName/*"))),
-                    sortField = "Modified"
-                )
-            )
-        }.mapSuccess { response -> response.toDto() }
-
-    override suspend fun getFiles(cellNames: List<String>): NetworkResponse<GetFilesResponseDTO> =
-        wrapCellsResponse {
-            nodeServiceApi.lookup(
-                RestLookupRequest(
-                    locators = RestNodeLocators(
-                        cellNames.map {
-                            RestNodeLocator(path = "$it/*")
-                        }
-                    ),
                     sortField = "Modified"
                 )
             )
@@ -114,11 +68,11 @@ internal class CellsApiImpl(
             )
         }.mapSuccess {}
 
-    override suspend fun publishDraft(uuid: String): NetworkResponse<Unit> =
-        getNodeDraftVersions(uuid).mapSuccess { response ->
+    override suspend fun publishDraft(nodeUuid: String): NetworkResponse<Unit> =
+        getNodeDraftVersions(nodeUuid).mapSuccess { response ->
             wrapCellsResponse {
                 val version = response.versions?.firstOrNull() ?: error("Draft version not found")
-                nodeServiceApi.promoteVersion(uuid, version.versionId, RestPromoteParameters(publish = true))
+                nodeServiceApi.promoteVersion(nodeUuid, version.versionId, RestPromoteParameters(publish = true))
             }
         }
 
@@ -164,7 +118,7 @@ internal class CellsApiImpl(
                 )
             )
         }.mapSuccess { response ->
-            response.linkUrl?.let { "${credentials.serverUrl}$it" } ?: error("Link URL not found")
+            response.linkUrl ?: error("Link URL not found")
         }
     }
 

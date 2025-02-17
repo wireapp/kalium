@@ -18,15 +18,16 @@
 package com.wire.kalium.cells
 
 import com.wire.kalium.cells.data.CellUploadManagerImpl
-import com.wire.kalium.cells.data.CellsApi
 import com.wire.kalium.cells.data.CellsApiImpl
 import com.wire.kalium.cells.data.CellsAwsClient
 import com.wire.kalium.cells.data.CellsDataSource
 import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
 import com.wire.kalium.cells.domain.CellUploadManager
+import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
@@ -38,6 +39,7 @@ import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import io.ktor.client.HttpClient
@@ -69,11 +71,14 @@ public class CellsScope(
     private val cellAwsClient: CellsAwsClient
         get() = cellsAwsClient(cellClientCredentials)
 
+    private val nodeServiceApi: NodeServiceApi
+        get() = NodeServiceBuilder
+            .withHttpClient(cellsClient)
+            .withCredentials(cellClientCredentials)
+            .build()
+
     private val cellsApi: CellsApi
-        get() = CellsApiImpl(
-            credentials = cellClientCredentials,
-            httpClient = cellsClient
-        )
+        get() = CellsApiImpl(nodeServiceApi = nodeServiceApi)
 
     private val cellsRepository: CellsRepository
         get() = CellsDataSource(
@@ -101,7 +106,7 @@ public class CellsScope(
         get() = ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager)
 
     public val publishAttachments: PublishAttachmentsUseCase
-        get() = PublishAttachmentsUseCaseImpl(cellsRepository, messageAttachmentsDraftRepository)
+        get() = PublishAttachmentsUseCaseImpl(cellsRepository, messageAttachmentsDraftRepository, cellClientCredentials)
 
     public val observeFiles: ObserveCellFilesUseCase
         get() = ObserveCellFilesUseCaseImpl(conversationsDAO, cellsRepository)

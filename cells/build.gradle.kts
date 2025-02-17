@@ -18,6 +18,7 @@
 plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -28,7 +29,7 @@ kaliumLibrary {
 kotlin {
     explicitApi()
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 implementation(project(":common"))
                 implementation(project(":network"))
@@ -42,15 +43,44 @@ kotlin {
                 implementation(libs.wire.cells.sdk)
             }
         }
-        commonTest {
+        val commonTest by getting {
             dependencies {
+                // coroutines
+                implementation(libs.coroutines.test)
+                implementation(libs.turbine)
+                // ktor test
+                implementation(libs.ktor.mock)
+                // mocks
+                implementation(libs.mockative.runtime)
+                implementation(libs.okio.test)
             }
         }
-        androidMain {
+
+        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+        }
+
+        val jvmMain by getting {
+            addCommonKotlinJvmSourceDir()
+            dependencies {
+                implementation(libs.ktor.okHttp)
+                implementation(awssdk.services.s3)
+            }
+        }
+        val androidMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.ktor.okHttp)
                 implementation(awssdk.services.s3)
             }
         }
     }
+}
+
+dependencies {
+    configurations
+        .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
+        .forEach {
+            add(it.name, libs.mockative.processor)
+        }
 }
