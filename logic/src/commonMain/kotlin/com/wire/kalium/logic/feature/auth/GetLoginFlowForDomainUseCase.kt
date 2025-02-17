@@ -57,7 +57,7 @@ internal fun GetLoginFlowForDomainUseCase(
             logger.logStructuredJson(
                 level = KaliumLogLevel.DEBUG,
                 leadingMessage = "Get domain registration",
-                jsonStringKeyValues = mapOf("path" to it)
+                jsonStringKeyValues = mapOf("path" to it.toLogString())
             )
             it.mapLoginPathToResult()
         })
