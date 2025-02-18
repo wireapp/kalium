@@ -138,7 +138,9 @@ internal class ConnectionDataSource(
             return Either.Left(InvalidMappingFailure)
         }
 
-        return wrapApiRequest { connectionApi.updateConnection(userId.toApi(), newConnectionStatus) }.onFailure { networkFailure ->
+        return wrapApiRequest {
+            connectionApi.updateConnection(userId.toApi(), newConnectionStatus)
+        }.onFailure { networkFailure ->
             if (networkFailure is NetworkFailure.ServerMiscommunication &&
                 networkFailure.kaliumException is KaliumException.InvalidRequestError &&
                 networkFailure.kaliumException.isBadConnectionStatusUpdate()
