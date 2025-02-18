@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
  */
 package com.wire.kalium.logic.feature.user
 
@@ -24,13 +25,13 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 
 /**
- * Use case that returns [Boolean] if user should be asked for a feedback about call quality or not.
+ * Use case to determine if the call feedback should be asked.
  */
 interface ShouldAskCallFeedbackUseCase {
-    /**
-     * @return [Boolean] if user should be asked for a feedback about call quality or not.
-     */
-    suspend operator fun invoke(): Boolean
+    suspend operator fun invoke(
+        establishedTime: Instant?,
+        currentTime: Instant = DateTimeUtil.currentInstant()
+    ): ShouldAskCallFeedbackUseCaseResult
 }
 
 @Suppress("FunctionNaming")
@@ -38,9 +39,46 @@ internal fun ShouldAskCallFeedbackUseCase(
     userConfigRepository: UserConfigRepository
 ) = object : ShouldAskCallFeedbackUseCase {
 
-    override suspend fun invoke(): Boolean =
-        userConfigRepository.getNextTimeForCallFeedback().map {
+    override suspend fun invoke(
+        establishedTime: Instant?,
+        currentTime: Instant
+    ): ShouldAskCallFeedbackUseCaseResult {
+        val callDurationInSeconds = establishedTime?.let {
+            DateTimeUtil.calculateMillisDifference(it, currentTime) / MILLIS_IN_SECOND
+        } ?: 0L
+
+        return when {
+            callDurationInSeconds in 1..<ONE_MINUTE -> {
+                ShouldAskCallFeedbackUseCaseResult.ShouldNotAskCallFeedback.CallDurationIsLessThanOneMinute(callDurationInSeconds)
+            }
+
+            !isNextTimeForCallFeedbackReached() -> {
+                ShouldAskCallFeedbackUseCaseResult.ShouldNotAskCallFeedback.NextTimeForCallFeedbackIsNotReached(callDurationInSeconds)
+            }
+
+            else -> {
+                ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(callDurationInSeconds)
+            }
+        }
+    }
+
+    private suspend fun isNextTimeForCallFeedbackReached(): Boolean {
+        return userConfigRepository.getNextTimeForCallFeedback().map {
             it > 0L && DateTimeUtil.currentInstant() > Instant.fromEpochMilliseconds(it)
         }.getOrElse(true)
-
+    }
 }
+
+sealed class ShouldAskCallFeedbackUseCaseResult {
+    data class ShouldAskCallFeedback(val callDurationInSeconds: Long) : ShouldAskCallFeedbackUseCaseResult()
+    sealed class ShouldNotAskCallFeedback(val reason: String) : ShouldAskCallFeedbackUseCaseResult() {
+        data class CallDurationIsLessThanOneMinute(val callDurationInSeconds: Long) :
+            ShouldNotAskCallFeedback("Call duration is less than 1 minute")
+
+        data class NextTimeForCallFeedbackIsNotReached(val callDurationInSeconds: Long) :
+            ShouldNotAskCallFeedback("Next time for call feedback is not reached")
+    }
+}
+
+private const val MILLIS_IN_SECOND = 1_000L
+private const val ONE_MINUTE = 60
