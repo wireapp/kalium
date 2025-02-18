@@ -17,26 +17,26 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCaseResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 
 /**
- * The useCase for observing when the ongoing call was ended because of degradation of conversation verification status (Proteus or MLS)
+ * Use case to observe if we should ask for feedback after the call has ended.
  */
 interface ObserveAskCallFeedbackUseCase {
     /**
-     * @return [Flow] that emits only when the call was ended because of degradation of conversation verification status (Proteus or MLS)
+     * @return [Flow] that emits [ShouldAskCallFeedbackUseCaseResult] when the call has ended and we should ask for feedback.
      */
-    suspend operator fun invoke(): Flow<Boolean>
+    suspend operator fun invoke(): Flow<ShouldAskCallFeedbackUseCaseResult>
 }
 
-@Suppress("FunctionNaming")
-internal fun ObserveAskCallFeedbackUseCase(
+internal fun observeAskCallFeedbackUseCase(
     endCallListener: EndCallResultListener
 ) = object : ObserveAskCallFeedbackUseCase {
-    override suspend fun invoke(): Flow<Boolean> =
+    override suspend fun invoke(): Flow<ShouldAskCallFeedbackUseCaseResult> =
         endCallListener.observeCallEndedResult()
             .filterIsInstance(EndCallResult.AskForFeedback::class)
-            .map { it.shouldAsk }
+            .map { it.shouldAskCallFeedback }
 }

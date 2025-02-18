@@ -53,6 +53,7 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.call.usecase.observeAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
@@ -229,7 +230,7 @@ class CallsScope internal constructor(
     val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
         get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
     val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
-        get() = ObserveAskCallFeedbackUseCase(EndCallResultListenerImpl)
+        get() = observeAskCallFeedbackUseCase(EndCallResultListenerImpl)
 
     private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase by lazy {
         ShouldAskCallFeedbackUseCase(userConfigRepository)
