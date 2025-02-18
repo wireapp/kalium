@@ -93,6 +93,7 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.ContactsSizeProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.GroupID
@@ -498,12 +499,20 @@ class UserSessionScope internal constructor(
     )
 
     private var _clientId: ClientId? = null
+    private var _contactsSize: Int? = null
 
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
     private suspend fun clientId(): Either<CoreFailure, ClientId> =
         if (_clientId != null) Either.Right(_clientId!!) else {
             clientRepository.currentClientId().onSuccess {
                 _clientId = it
+            }
+        }
+
+    private suspend fun contactsSize(): Either<CoreFailure, Int> =
+        if (_contactsSize != null) Either.Right(_contactsSize!!) else {
+            userRepository.getContactsCount().onSuccess {
+                _contactsSize = it
             }
         }
 
@@ -527,6 +536,8 @@ class UserSessionScope internal constructor(
         )
 
     val clientIdProvider = CurrentClientIdProvider { clientId() }
+    val contactsSizeProvider = ContactsSizeProvider { contactsSize() }
+
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
         MLSSelfConversationIdProviderImpl(
             conversationRepository
@@ -1204,19 +1215,25 @@ class UserSessionScope internal constructor(
             callRepository
         )
 
-    internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
+    internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(
+        featureSupport,
         incrementalSyncRepository,
         lazy { clientRepository },
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository })
-    internal val keyingMaterialsManager: KeyingMaterialsManager = KeyingMaterialsManagerImpl(featureSupport,
+        lazy { users.timestampKeyRepository }
+    )
+
+    internal val keyingMaterialsManager: KeyingMaterialsManager = KeyingMaterialsManagerImpl(
+        featureSupport,
         incrementalSyncRepository,
         lazy { clientRepository },
         lazy { conversations.updateMLSGroupsKeyingMaterials },
-        lazy { users.timestampKeyRepository })
+        lazy { users.timestampKeyRepository }
+    )
 
-    val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
+    val mlsClientManager: MLSClientManager = MLSClientManagerImpl(
+        clientIdProvider,
         isAllowedToRegisterMLSClient,
         incrementalSyncRepository,
         lazy { slowSyncRepository },
@@ -1225,7 +1242,8 @@ class UserSessionScope internal constructor(
             RegisterMLSClientUseCaseImpl(
                 mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
             )
-        })
+        }
+    )
 
     internal val mlsMigrationWorker
         get() =
