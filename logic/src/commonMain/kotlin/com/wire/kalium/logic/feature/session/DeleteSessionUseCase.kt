@@ -18,12 +18,12 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onSuccess
 import kotlinx.coroutines.cancel
 
 /**

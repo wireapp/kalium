@@ -23,8 +23,8 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -51,18 +51,18 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.logic.logStructuredJson
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.onlyRight
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -83,7 +83,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -136,7 +135,6 @@ interface CallRepository {
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
     suspend fun advanceEpoch(conversationId: ConversationId)
     fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
-    suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
 
     suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
     suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata>
@@ -172,30 +170,8 @@ internal class CallDataSource(
         extraBufferCapacity = 1
     )
 
-    override suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?> = _callMetadataProfile.map {
-        it[conversationId]?.mapCallMetadataToCall(conversationId)
-    }
-
     override suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
         _recentlyEndedCallFlow.emit(recentlyEndedCallMetadata)
-    }
-
-    private fun CallMetadata.mapCallMetadataToCall(conversationId: ConversationId): Call {
-        return Call(
-            conversationId = conversationId,
-            status = callStatus,
-            isMuted = isMuted,
-            isCameraOn = isCameraOn,
-            isCbrEnabled = isCbrEnabled,
-            callerId = callerId,
-            conversationName = conversationName,
-            conversationType = conversationType,
-            callerName = callerName,
-            callerTeamName = callerTeamName,
-            establishedTime = establishedTime,
-            participants = getFullParticipants(),
-            maxParticipants = maxParticipants
-        )
     }
 
     override suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata> {
@@ -475,7 +451,7 @@ internal class CallDataSource(
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                     this[conversationId] = call.copy(
                         participants = participants,
-                        maxParticipants = max(call.maxParticipants, participants.size + 1),
+                        maxParticipants = max(call.maxParticipants, participants.size),
                         users = updatedUsers,
                         screenShareMetadata = updateScreenSharingMetadata(
                             metadata = call.screenShareMetadata,
@@ -686,8 +662,11 @@ internal class CallDataSource(
         callJobs.remove(conversationId)?.cancel()
 
         // Cancel all jobs for removing stale participants
-        staleParticipantJobs.values.forEach { it.cancel() }
-        staleParticipantJobs.clear()
+        staleParticipantJobs.block { map ->
+            val jobsSnapshot = map.values.toList()
+            jobsSnapshot.forEach { it.cancel() }
+            map.clear()
+        }
 
         leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
             .onSuccess {

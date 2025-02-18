@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
@@ -30,8 +30,8 @@ import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch

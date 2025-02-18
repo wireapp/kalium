@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.sync
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import kotlin.time.Duration
 
 sealed interface IncrementalSyncStatus {

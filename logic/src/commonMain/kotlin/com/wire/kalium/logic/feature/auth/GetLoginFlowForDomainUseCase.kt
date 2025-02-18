@@ -17,15 +17,15 @@
  */
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.logStructuredJson
 
 /**
  * Use case to get the login flow for the client app/user to follow.

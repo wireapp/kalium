@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
@@ -40,22 +40,22 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.isLeft
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.mapToRightOr
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.mapToRightOr
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -319,6 +319,9 @@ interface ConversationRepository {
     suspend fun addConversationToDeleteQueue(conversationId: ConversationId)
     suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId)
     suspend fun getConversationsDeleteQueue(): List<ConversationId>
+    suspend fun observeOneToOneConversationDetailsWithOtherUser(
+        otherUserId: UserId
+    ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -791,6 +794,14 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.observeOneOnOneConversationWithOtherUser(otherUserId.toDao())
             .wrapStorageRequest()
             .mapRight { conversationMapper.fromDaoModel(it) }
+    }
+
+    override suspend fun observeOneToOneConversationDetailsWithOtherUser(
+        otherUserId: UserId
+    ): Flow<Either<StorageFailure, ConversationDetails.OneOne>> {
+        return conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(otherUserId.toDao())
+            .map { it?.let { conversationMapper.fromDaoModelToDetails(it) as? ConversationDetails.OneOne } }
+            .wrapStorageRequest()
     }
 
     override suspend fun getOneOnOneConversationsWithOtherUser(

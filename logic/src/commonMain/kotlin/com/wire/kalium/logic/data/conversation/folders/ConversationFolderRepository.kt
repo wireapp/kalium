@@ -20,8 +20,8 @@ package com.wire.kalium.logic.data.conversation.folders
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS_FOLDERS
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.ConversationMapper
@@ -30,16 +30,16 @@ import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -47,6 +47,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 internal interface ConversationFolderRepository {
@@ -93,7 +94,7 @@ internal class ConversationFolderDataSource internal constructor(
         .flatMapLeft {
             if (it is NetworkFailure.ServerMiscommunication
                 && it.kaliumException is KaliumException.InvalidRequestError
-                && it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
+                && (it.kaliumException as KaliumException.InvalidRequestError).errorResponse.code == HttpStatusCode.NotFound.value
             ) {
                 kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).v("User has no labels, creating an empty list")
                 // If the user has no labels, we create an empty list and on next stage we will create a favorite label
@@ -142,6 +143,12 @@ internal class ConversationFolderDataSource internal constructor(
             .v("Removing conversation ${conversationId.toLogString()} from folder ${folderId.obfuscateId()}")
         return wrapStorageRequest {
             conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId)
+            val conversations = conversationFolderDAO.observeConversationListFromFolder(folderId).first()
+            if (conversations.isEmpty()) {
+                conversationFolderDAO.removeFolder(folderId)
+            } else {
+                Unit
+            }
         }
     }
 

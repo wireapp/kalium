@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.search
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
@@ -25,7 +25,7 @@ import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUse
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.PROTEUS_PROTOCOL_INFO
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mock
 import io.mockative.any

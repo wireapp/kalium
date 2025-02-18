@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed

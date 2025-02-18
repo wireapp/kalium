@@ -18,12 +18,12 @@
 
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isHandleExists
@@ -59,9 +59,10 @@ class SetUserHandleUseCase internal constructor(
                 is ValidateUserHandleResult.Valid -> accountRepository.updateSelfHandle(handleState.handle).fold(
                     {
                         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
-                            handleSpecificError(it.kaliumException)
+                            handleSpecificError(it.kaliumException as KaliumException.InvalidRequestError)
                         else SetUserHandleResult.Failure.Generic(it)
-                    }, {
+                    },
+                    {
                         if (syncManager.isSlowSyncCompleted()) accountRepository.updateLocalSelfUserHandle(handleState.handle)
                         SetUserHandleResult.Success
                     }

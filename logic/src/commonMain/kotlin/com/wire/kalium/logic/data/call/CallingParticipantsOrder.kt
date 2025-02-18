@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 internal interface CallingParticipantsOrder {
     suspend fun reorderItems(participants: List<Participant>): List<Participant>

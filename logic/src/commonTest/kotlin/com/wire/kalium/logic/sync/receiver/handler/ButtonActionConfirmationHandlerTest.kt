@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement

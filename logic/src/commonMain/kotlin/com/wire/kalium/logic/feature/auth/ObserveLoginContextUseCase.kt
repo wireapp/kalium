@@ -18,11 +18,11 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.mapToRightOr
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.mapToRightOr
-import com.wire.kalium.logic.functional.right
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

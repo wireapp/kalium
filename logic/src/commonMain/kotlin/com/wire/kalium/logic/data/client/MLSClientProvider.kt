@@ -26,25 +26,25 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
@@ -53,6 +53,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 interface MLSClientProvider {
     suspend fun isMLSClientInitialised(): Boolean
@@ -173,14 +174,14 @@ class MLSClientProviderImpl(
                         rootDir = "$location/$KEYSTORE_NAME",
                         databaseKey = passphrase
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-
                     val logMap = mapOf(
                         "exception" to e,
                         "message" to e.message,
                         "stackTrace" to e.stackTraceToString()
                     )
-
                     kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
                     return@run Either.Left(CoreFailure.Unknown(e))
                 }

@@ -35,6 +35,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.isSuccess
 import kotlinx.serialization.SerializationException
+import kotlin.coroutines.cancellation.CancellationException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
@@ -156,6 +157,8 @@ private inline fun <reified ResponseType : Any> handlingNetworkException(
     performRequest: () -> NetworkResponse<ResponseType>
 ): NetworkResponse<ResponseType> = try {
     performRequest()
+} catch (e: CancellationException) {
+    throw e
 } catch (e: Exception) {
     NetworkResponse.Error(KaliumException.GenericError(e))
 }

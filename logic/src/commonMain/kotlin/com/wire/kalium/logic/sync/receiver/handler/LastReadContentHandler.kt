@@ -24,8 +24,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 
 internal interface LastReadContentHandler {
     suspend fun handle(

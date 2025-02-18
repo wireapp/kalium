@@ -40,8 +40,8 @@ import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.FlipToBackCameraUseCase
 import com.wire.kalium.logic.feature.call.usecase.FlipToFrontCameraUseCase
-import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
-import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
@@ -53,12 +53,11 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.call.usecase.observeAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCase
@@ -112,8 +111,8 @@ class CallsScope internal constructor(
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
-        get() = GetAllCallsWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
+    val allCallsWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
+        get() = ObserveEstablishedCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
 
     val establishedCall: ObserveEstablishedCallsUseCase
         get() = ObserveEstablishedCallsUseCaseImpl(
@@ -159,7 +158,7 @@ class CallsScope internal constructor(
 
     val answerCall: AnswerCallUseCase
         get() = AnswerCallUseCaseImpl(
-            allCallsWithSortedParticipants,
+            getIncomingCalls,
             callManager,
             muteCall,
             unMuteCall,
@@ -231,7 +230,7 @@ class CallsScope internal constructor(
     val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
         get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
     val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
-        get() = ObserveAskCallFeedbackUseCase(EndCallResultListenerImpl)
+        get() = observeAskCallFeedbackUseCase(EndCallResultListenerImpl)
 
     private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase by lazy {
         ShouldAskCallFeedbackUseCase(userConfigRepository)

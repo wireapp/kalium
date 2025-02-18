@@ -17,66 +17,78 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
 class ShouldAskCallFeedbackUseCaseTest {
 
     @Test
-    fun givenNoNextTimeForCallFeedbackSaved_whenInvoked_thenTrueIsReturned() = runTest {
+    fun givenNoNextTimeForCallFeedbackSaved_whenInvoked_thenShouldAskCallFeedbackIsReturned() = runTest {
         val (_, useCase) = Arrangement().arrange {
             withGetNextTimeForCallFeedback(StorageFailure.DataNotFound.left())
         }
 
-        val result = useCase()
+        val result = useCase(ESTABLISHED_TIME)
 
-        assertTrue(result)
+        assertTrue(result is ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback)
     }
 
     @Test
-    fun givenNextTimeForCallFeedbackInPast_whenInvoked_thenTrueIsReturned() = runTest {
+    fun givenNextTimeForCallFeedbackInPast_whenInvoked_thenShouldAskCallFeedbackIsReturned() = runTest {
         val nextTimeToAsk = DateTimeUtil.currentInstant().minus(1.days).toEpochMilliseconds()
         val (_, useCase) = Arrangement().arrange {
             withGetNextTimeForCallFeedback(nextTimeToAsk.right())
         }
 
-        val result = useCase()
+        val result = useCase(ESTABLISHED_TIME)
 
-        assertTrue(result)
+        assertTrue(result is ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback)
     }
 
     @Test
-    fun givenNextTimeForCallFeedbackInFuture_whenInvoked_thenFalseIsReturned() = runTest {
+    fun givenNextTimeForCallFeedbackInFuture_whenInvoked_thenNextTimeForCallFeedbackIsNotReachedIsReturned() = runTest {
         val nextTimeToAsk = DateTimeUtil.currentInstant().plus(1.days).toEpochMilliseconds()
         val (_, useCase) = Arrangement().arrange {
             withGetNextTimeForCallFeedback(nextTimeToAsk.right())
         }
 
-        val result = useCase()
+        val result = useCase(ESTABLISHED_TIME)
 
-        assertFalse(result)
+        assertTrue(result is ShouldAskCallFeedbackUseCaseResult.ShouldNotAskCallFeedback.NextTimeForCallFeedbackIsNotReached)
     }
 
     @Test
-    fun givenNextTimeForCallFeedbackIsNegative_whenInvoked_thenFalseIsReturned() = runTest {
+    fun givenNextTimeForCallFeedbackIsNegative_whenInvoked_thenNextTimeForCallFeedbackIsNotReachedReturned() = runTest {
         val nextTimeToAsk = -1L
         val (_, useCase) = Arrangement().arrange {
             withGetNextTimeForCallFeedback(nextTimeToAsk.right())
         }
 
-        val result = useCase()
+        val result = useCase(ESTABLISHED_TIME)
 
-        assertFalse(result)
+        assertTrue(result is ShouldAskCallFeedbackUseCaseResult.ShouldNotAskCallFeedback.NextTimeForCallFeedbackIsNotReached)
+    }
+
+    @Test
+    fun givenCallDurationLessThanOneMinute_whenInvoked_thenCallDurationIsLessThanOneMinuteIsReturned() = runTest {
+        val nextTimeToAsk = -1L
+        val (_, useCase) = Arrangement().arrange {
+            withGetNextTimeForCallFeedback(nextTimeToAsk.right())
+        }
+
+        val result = useCase(ESTABLISHED_TIME, CURRENT_TIME)
+
+        assertTrue(result is ShouldAskCallFeedbackUseCaseResult.ShouldNotAskCallFeedback.CallDurationIsLessThanOneMinute)
     }
 
     private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
@@ -85,5 +97,10 @@ class ShouldAskCallFeedbackUseCaseTest {
             runBlocking { block() }
             return this to ShouldAskCallFeedbackUseCase(userConfigRepository)
         }
+    }
+
+    companion object {
+        val ESTABLISHED_TIME = Instant.parse("2024-02-03T15:36:00.000Z")
+        val CURRENT_TIME = Instant.parse("2024-02-03T15:36:09.000Z")
     }
 }

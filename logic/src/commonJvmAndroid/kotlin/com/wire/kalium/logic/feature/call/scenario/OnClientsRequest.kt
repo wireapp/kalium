@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.ClientsRequestHandler
 import com.wire.kalium.calling.types.Handle
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import kotlinx.coroutines.CoroutineScope

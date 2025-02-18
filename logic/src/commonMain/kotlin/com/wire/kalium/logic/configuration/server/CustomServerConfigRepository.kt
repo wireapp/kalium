@@ -17,16 +17,16 @@
  */
 package com.wire.kalium.logic.configuration.server
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi

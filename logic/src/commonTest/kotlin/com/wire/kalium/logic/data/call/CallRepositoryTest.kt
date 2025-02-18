@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.call
 import app.cash.turbine.test
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.callerId
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.participant
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
@@ -52,8 +52,8 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi

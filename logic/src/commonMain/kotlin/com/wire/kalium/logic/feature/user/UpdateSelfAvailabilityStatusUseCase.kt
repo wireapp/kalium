@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.BroadcastMessageTarget
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
