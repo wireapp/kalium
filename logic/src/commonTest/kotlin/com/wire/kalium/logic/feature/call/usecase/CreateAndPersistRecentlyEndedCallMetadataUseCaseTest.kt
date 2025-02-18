@@ -161,12 +161,29 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
         fun withOutgoingCall() = apply {
             every { callRepository.getCallMetadataProfile() }
-                .returns(CallMetadataProfile(mapOf(CONVERSATION_ID to callMetadata())))
+                .returns(
+                    CallMetadataProfile(
+                        mapOf(
+                            CONVERSATION_ID to callMetadata().copy(
+                                callStatus = CallStatus.STARTED
+                            )
+                        )
+                    )
+                )
         }
 
         fun withIncomingCall() = apply {
             every { callRepository.getCallMetadataProfile() }
-                .returns(CallMetadataProfile(mapOf(CONVERSATION_ID to callMetadata().copy(callerId = CALLER_ID.copy(value = "external")))))
+                .returns(
+                    CallMetadataProfile(
+                        mapOf(
+                            CONVERSATION_ID to callMetadata().copy(
+                                callerId = CALLER_ID.copy(value = "external"),
+                                callStatus = CallStatus.INCOMING
+                            )
+                        )
+                    )
+                )
         }
 
         suspend fun withConversationMembers() = apply {
