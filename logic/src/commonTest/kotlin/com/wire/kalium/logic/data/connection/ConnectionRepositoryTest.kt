@@ -58,6 +58,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import io.mockative.Matchers
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -132,7 +133,9 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
-            .withSuccessfulCreateConnectionResponse(userId)
+            .withSuccessfulCreateConnectionResponse(
+                userId = EqualsMatcher(userId)
+            )
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
             .withFetchSentConversationSucceed()
 
@@ -176,11 +179,15 @@ class ConnectionRepositoryTest {
     fun givenAConnectionRequest_WhenSendingAConnectionAndPersistingReturnsAnError_thenTheConnectionShouldNotBePersisted() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
+        val expectedConnection = Arrangement.stubConnectionOne.copy(status = ConnectionStateDTO.SENT)
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulGetUserById(arrangement.stubUserEntity.id)
-            .withSuccessfulCreateConnectionResponse(userId)
+            .withSuccessfulCreateConnectionResponse(
+                result = expectedConnection,
+                userId = EqualsMatcher(userId)
+            )
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
@@ -211,7 +218,7 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
@@ -334,7 +341,7 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
@@ -374,7 +381,7 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
@@ -394,7 +401,7 @@ class ConnectionRepositoryTest {
 
             // when
             val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-            result.shouldFail { arrangement.stubConnectionOne }
+            result.shouldFail { Arrangement.stubConnectionOne }
 
             // then
             coVerify {
@@ -469,15 +476,7 @@ class ConnectionRepositoryTest {
             conversationRepository = conversationRepository
         )
 
-        val stubConnectionOne = ConnectionDTO(
-            conversationId = "conversationId1",
-            from = "fromId",
-            lastUpdate = Instant.UNIX_FIRST_DATE,
-            qualifiedConversationId = ConversationId("conversationId1", "domain"),
-            qualifiedToId = NetworkUserId("connectionId1", "domain"),
-            status = ConnectionStateDTO.ACCEPTED,
-            toId = "connectionId1"
-        )
+
         val stubConnectionTwo = ConnectionDTO(
             conversationId = "conversationId2",
             from = "fromId",
@@ -544,10 +543,13 @@ class ConnectionRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessfulCreateConnectionResponse(userId: NetworkUserId): Arrangement {
+        suspend fun withSuccessfulCreateConnectionResponse(
+            result: ConnectionDTO = stubConnectionOne,
+            userId: Matcher<NetworkUserId>
+        ): Arrangement {
             coEvery {
-                connectionApi.createConnection(eq(userId))
-            }.returns(NetworkResponse.Success(stubConnectionOne, mapOf(), 200))
+                connectionApi.createConnection(matches { userId.matches(it) })
+            }.returns(NetworkResponse.Success(result, mapOf(), 200))
 
             return this
         }

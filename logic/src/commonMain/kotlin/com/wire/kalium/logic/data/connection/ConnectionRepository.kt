@@ -126,8 +126,7 @@ internal class ConnectionDataSource(
         return wrapApiRequest {
             connectionApi.createConnection(userId.toApi())
         }.flatMap { connection ->
-            val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
-            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionSent))
+            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connection))
         }.map { }
     }
 
