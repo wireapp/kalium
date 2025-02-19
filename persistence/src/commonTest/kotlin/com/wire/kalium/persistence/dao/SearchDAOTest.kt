@@ -26,7 +26,9 @@ import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class SearchDAOTest : BaseDatabaseTest() {
 
@@ -279,5 +281,40 @@ class SearchDAOTest : BaseDatabaseTest() {
             assertEquals(1, it.size)
             assertEquals(connectedUser2.id, it[0].id)
         }
+    }
+
+    @Test
+    fun givenConnectedUser_whenSearchWithName_thenReturnExactHandleMatchIncluded() = runTest {
+        val searchQuery = "searchQuery"
+        val exactHandleMatch = newUserEntity(id = "1").copy(handle = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
+        val similarButNotTheSame =
+            newUserEntity(id = "2").copy(handle = searchQuery + "whatEver", connectionStatus = ConnectionEntity.State.ACCEPTED)
+        val totalDifferentHandle = newUserEntity(id = "3").copy(handle = "whatEver", connectionStatus = ConnectionEntity.State.ACCEPTED)
+        val similarNameDifferentHandle = newUserEntity(id = "4").copy(
+            handle = "whatEver",
+            name = "321" + searchQuery + "123",
+            connectionStatus = ConnectionEntity.State.ACCEPTED
+        )
+
+        val conversation = newConversationEntity(id = "1")
+
+        userDAO.insertOrIgnoreUsers(
+            listOf(
+                exactHandleMatch,
+                similarButNotTheSame,
+                totalDifferentHandle,
+                similarNameDifferentHandle,
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+
+        searchDAO.searchList(searchQuery).also { searchEntities ->
+            assertEquals(2, searchEntities.size)
+            assertTrue {
+                searchEntities.find { it.id == exactHandleMatch.id } != null
+                searchEntities.find { it.id == similarNameDifferentHandle.id } != null
+            }
+        }
+
     }
 }
