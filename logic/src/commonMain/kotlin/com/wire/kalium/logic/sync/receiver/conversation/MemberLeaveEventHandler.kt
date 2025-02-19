@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
@@ -34,25 +35,33 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 
 interface MemberLeaveEventHandler {
     suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class MemberLeaveEventHandlerImpl(
     private val memberDAO: MemberDAO,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
+    private val mlsClientProvider: MLSClientProvider,
+    private val conversationDAO: ConversationDAO, // TODO: refactor to not have DAO here
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
     private val legalHoldHandler: LegalHoldHandler,
-    private val selfTeamIdProvider: SelfTeamIdProvider
+    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val selfUserId: UserId
 ) : MemberLeaveEventHandler {
 
     override suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> {
@@ -125,10 +134,28 @@ internal class MemberLeaveEventHandlerImpl(
         userIDList: List<UserId>,
         conversationID: ConversationId
     ): Either<CoreFailure, Long> =
-        wrapStorageRequest {
-            memberDAO.deleteMembersByQualifiedID(
-                userIDList.map { it.toDao() },
-                conversationID.toDao()
-            )
-        }
+        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationID.toDao()) }
+            .onSuccess { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.MLSCapable -> {
+                        if (userIDList.contains(selfUserId)) {
+                            mlsClientProvider.getMLSClient().map { mlsClient ->
+                                wrapMLSRequest {
+                                    mlsClient.wipeConversation(protocol.groupId)
+                                }
+                            }
+                        }
+                    }
+
+                    ConversationEntity.ProtocolInfo.Proteus -> {}
+                }
+            }
+            .flatMap {
+                wrapStorageRequest {
+                    memberDAO.deleteMembersByQualifiedID(
+                        userIDList.map { it.toDao() },
+                        conversationID.toDao()
+                    )
+                }
+            }
 }
