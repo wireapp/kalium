@@ -17,7 +17,13 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+<<<<<<< HEAD
 import com.wire.kalium.common.error.CoreFailure
+=======
+import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
+>>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
@@ -40,6 +46,8 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
@@ -71,6 +79,7 @@ class MemberLeaveEventHandlerTest {
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
                     memberIdList = EqualsMatcher(list)
                 )
+                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(event)
@@ -101,6 +110,7 @@ class MemberLeaveEventHandlerTest {
                 )
                 withPersistingMessage(Either.Left(failure))
                 withDeleteMembersByQualifiedIDThrows(throws = IllegalArgumentException())
+                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(event)
@@ -131,6 +141,7 @@ class MemberLeaveEventHandlerTest {
                 withPersistingMessage(Either.Right(Unit), messageMatcher = EqualsMatcher(message))
                 withTeamId(Either.Right(TeamId("teamId")))
                 withIsAtLeastOneUserATeamMember(Either.Right(true))
+                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(event)
@@ -162,6 +173,7 @@ class MemberLeaveEventHandlerTest {
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withTeamId(Either.Right(null))
                 withPersistingMessage(Either.Right(Unit))
+                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(event)
@@ -206,6 +218,7 @@ class MemberLeaveEventHandlerTest {
                     memberIdList = EqualsMatcher(list)
                 )
                 withIsAtLeastOneUserATeamMember(Either.Right(false))
+                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(event)
@@ -244,6 +257,7 @@ class MemberLeaveEventHandlerTest {
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
                     memberIdList = EqualsMatcher(list)
                 )
+                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
         // when
         memberLeaveEventHandler.handle(event)
@@ -254,6 +268,7 @@ class MemberLeaveEventHandlerTest {
     }
 
     @Test
+<<<<<<< HEAD
     fun givenDaoReturnsSuccessAndConversationInDeleteQueue_whenDeletingSelfMember_thenConversationDeleted() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Left).copy(removedList = listOf(selfUserId), removedBy = selfUserId)
 
@@ -269,16 +284,59 @@ class MemberLeaveEventHandlerTest {
                 withPersistingMessage(Either.Right(Unit))
                 withGetConversationsDeleteQueue(listOf(event.conversationId))
                 withDeletingConversationSucceeding(EqualsMatcher(event.conversationId))
+=======
+    fun givenUserLeavesMLSGroup_whenHandlingMemberLeaveEvent_thenMLSClientShouldWipeConversation() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Left)
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withPersistingMessage(Either.Right(Unit))
+                withDeleteMembersByQualifiedID(
+                    result = list.size.toLong(),
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(list)
+                )
+                withGetConversationProtocolInfoReturns(mlsProtocolInfo1)
+>>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
             }
 
         memberLeaveEventHandler.handle(event)
 
         coVerify {
+<<<<<<< HEAD
             arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
         }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.getConversationsDeleteQueue() }.wasInvoked(once)
         coVerify { arrangement.conversationRepository.deleteConversation(event.conversationId) }.wasInvoked(once)
         coVerify { arrangement.conversationRepository.removeConversationFromDeleteQueue(event.conversationId) }.wasInvoked(once)
+=======
+            arrangement.mlsClient.wipeConversation(eq(mlsProtocolInfo1.groupId))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenOtherUsersRemainInMLSGroup_whenHandlingMemberLeaveEvent_thenDoNotWipeConversation() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
+            removedList = listOf(UserId("userId1", "domain"), UserId("userId2", "domain"))
+        )
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withPersistingMessage(Either.Right(Unit))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withDeleteMembersByQualifiedID(
+                    result = list.size.toLong(),
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(list)
+                )
+                withGetConversationProtocolInfoReturns(mlsProtocolInfo1)
+            }
+
+        memberLeaveEventHandler.handle(event)
+
+        coVerify { arrangement.mlsClient.wipeConversation(any()) }.wasNotInvoked()
+>>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
     }
 
     private class Arrangement :
@@ -294,13 +352,37 @@ class MemberLeaveEventHandlerTest {
         @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
+        @Mock
+        val mlsClientProvider = mock(MLSClientProvider::class)
+
+        @Mock
+        val conversationDAO = mock(ConversationDAO::class)
+
+        @Mock
+        val mlsClient = mock(MLSClient::class)
+
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
+
+        suspend fun withGetConversationProtocolInfoReturns(protocolInfo: ConversationEntity.ProtocolInfo) = apply {
+            coEvery {
+                conversationDAO.getConversationProtocolInfo(any())
+            }.returns(protocolInfo)
+        }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, MemberLeaveEventHandler> = run {
             coEvery {
                 legalHoldHandler.handleConversationMembersChanged(any())
             }.returns(Either.Right(Unit))
+<<<<<<< HEAD
             withRemoveConversationToDeleteQueue()
+=======
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Right(mlsClient))
+            coEvery {
+                mlsClient.wipeConversation(any())
+            }.returns(Unit)
+>>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
             block()
             memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
                 memberDAO = memberDAO,
@@ -310,7 +392,13 @@ class MemberLeaveEventHandlerTest {
                 updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
                 legalHoldHandler = legalHoldHandler,
                 selfTeamIdProvider = selfTeamIdProvider,
+<<<<<<< HEAD
                 selfUserId = selfUserId
+=======
+                mlsClientProvider = mlsClientProvider,
+                conversationDAO = conversationDAO,
+                selfUserId = userId
+>>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
             )
             this to memberLeaveEventHandler
         }
@@ -325,6 +413,14 @@ class MemberLeaveEventHandlerTest {
 
         val conversationId = ConversationId("conversationId", "domain")
         val list = listOf(qualifiedUserIdEntity)
+
+        val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
+            "group2",
+            ConversationEntity.GroupState.ESTABLISHED,
+            0UL,
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        )
 
         fun memberLeaveEvent(reason: MemberLeaveReason) = Event.Conversation.MemberLeave(
             id = "id",
