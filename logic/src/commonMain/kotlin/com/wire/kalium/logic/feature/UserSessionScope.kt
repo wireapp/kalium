@@ -1440,7 +1440,10 @@ class UserSessionScope internal constructor(
             persistMessage = persistMessage,
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
-            selfTeamIdProvider = selfTeamId
+            selfTeamIdProvider = selfTeamId,
+            mlsClientProvider = mlsClientProvider,
+            conversationDAO = userStorage.database.conversationDAO,
+            selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(
