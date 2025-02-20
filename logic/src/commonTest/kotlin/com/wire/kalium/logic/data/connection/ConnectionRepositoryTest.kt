@@ -23,6 +23,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -41,6 +43,7 @@ import com.wire.kalium.network.api.authenticated.connection.ConnectionResponse
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID
@@ -406,6 +409,41 @@ class ConnectionRepositoryTest {
             }.wasInvoked(exactly = once)
         }
 
+    @Test
+    fun givenBadConnectionRequestError_whenUpdatingRemote_thenRecoverByGettingTheCorrectStatus() = runTest {
+        // given
+        val userId = UserId("user_id", "domain_id")
+        val expectedRecoveryResponse = Arrangement.stubConnectionOne.copy(
+            qualifiedToId = userId.toApi(),
+            status = ConnectionStateDTO.BLOCKED
+        )
+        val (arrangement, connectionRepository) = Arrangement()
+            .withErrorUpdatingConnectionStatusResponse(
+                userId = userId.toApi(),
+                exception = KaliumException.InvalidRequestError(
+                    ErrorResponse(
+                        message = "bad connection update",
+                        code = 403,
+                        label = "bad-conn-update"
+                    )
+                )
+            ).withUserConnectionInfo(
+                result = NetworkResponse.Success(
+                    expectedRecoveryResponse,
+                    emptyMap(),
+                    200
+                ),
+                userId = EqualsMatcher(userId.toApi())
+            )
+            .arrange()
+
+        connectionRepository.updateRemoteConnectionStatus(userId, ConnectionState.ACCEPTED)
+
+        coVerify {
+            arrangement.connectionDAO.insertConnection(ConnectionMapperImpl().fromApiToDao(expectedRecoveryResponse))
+        }.wasInvoked(exactly = 1)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -574,6 +612,17 @@ class ConnectionRepositoryTest {
             coEvery {
                 connectionApi.updateConnection(eq(userId), any())
             }.returns(NetworkResponse.Error(exception))
+        }
+
+        suspend fun withUserConnectionInfo(
+            result: NetworkResponse<ConnectionDTO>,
+            userId: Matcher<com.wire.kalium.network.api.model.UserId>
+        ) = apply {
+            coEvery {
+                connectionApi.userConnectionInfo(
+                    matches { userId.matches(it) }
+                )
+            }.returns(result)
         }
 
         suspend fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
