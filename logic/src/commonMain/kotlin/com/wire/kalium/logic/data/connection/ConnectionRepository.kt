@@ -54,12 +54,9 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
-<<<<<<< HEAD
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
-=======
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadConnectionStatusUpdate
->>>>>>> 7baa25acf4 (fix: recover when getting error for updating connection status [WPB-16146] (#3297))
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -146,7 +143,7 @@ internal class ConnectionDataSource(
         }.onFailure { networkFailure ->
             if (networkFailure is NetworkFailure.ServerMiscommunication &&
                 networkFailure.kaliumException is KaliumException.InvalidRequestError &&
-                networkFailure.kaliumException.isBadConnectionStatusUpdate()
+                (networkFailure.kaliumException as KaliumException.InvalidRequestError).isBadConnectionStatusUpdate()
             ) {
                 kaliumLogger.e(
                     "Failed to update connection status for ${userId.toLogString()}" +
