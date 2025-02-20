@@ -54,7 +54,12 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+<<<<<<< HEAD
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
+=======
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isBadConnectionStatusUpdate
+>>>>>>> 7baa25acf4 (fix: recover when getting error for updating connection status [WPB-16146] (#3297))
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -129,14 +134,29 @@ internal class ConnectionDataSource(
         }.map { }
     }
 
-    private suspend fun updateRemoteConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, ConnectionDTO> {
+    suspend fun updateRemoteConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, ConnectionDTO> {
         val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!isValidConnectionState || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
 
-        return wrapApiRequest { connectionApi.updateConnection(userId.toApi(), newConnectionStatus) }
+        return wrapApiRequest {
+            connectionApi.updateConnection(userId.toApi(), newConnectionStatus)
+        }.onFailure { networkFailure ->
+            if (networkFailure is NetworkFailure.ServerMiscommunication &&
+                networkFailure.kaliumException is KaliumException.InvalidRequestError &&
+                networkFailure.kaliumException.isBadConnectionStatusUpdate()
+            ) {
+                kaliumLogger.e(
+                    "Failed to update connection status for ${userId.toLogString()}" +
+                            " to $connectionState, probably due to internal data error recovering"
+                )
+                wrapApiRequest { connectionApi.userConnectionInfo(userId.toApi()) }.flatMap {
+                    persistConnection(connectionMapper.fromApiToModel(it))
+                }
+            }
+        }
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> =
@@ -276,7 +296,7 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun getConnection(conversationId: ConversationId) = wrapStorageRequest {
-            connectionDAO.getConnection(conversationId.toDao())?.let { connectionMapper.fromDaoToConversationDetails(it) }
+        connectionDAO.getConnection(conversationId.toDao())?.let { connectionMapper.fromDaoToConversationDetails(it) }
     }
 
     /**
