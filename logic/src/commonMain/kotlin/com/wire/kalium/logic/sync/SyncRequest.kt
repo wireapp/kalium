@@ -34,7 +34,6 @@ interface SyncRequest {
      */
     suspend fun waitUntilOrFailure(syncState: SyncState): Either<CoreFailure, Unit>
 
-
     /**
      * Shortcut for [waitUntilOrFailure] with Live state.
      * @see waitUntilOrFailure
