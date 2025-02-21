@@ -140,6 +140,7 @@ class MLSClientImpl(
         return applicationMessage
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
         var decryptedMessage: DecryptedMessage? = null
 
