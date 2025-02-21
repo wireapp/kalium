@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -127,7 +126,6 @@ class MessageScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
     private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
-    private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -236,7 +234,6 @@ class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             selfDeleteTimer = observeSelfDeletingMessages,
-            publishAttachmentsUseCase = publishAttachmentsUseCase,
             scope = scope
         )
 

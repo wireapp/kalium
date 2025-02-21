@@ -23,7 +23,8 @@ data class AssetContent(
     val name: String? = null,
     val mimeType: String,
     val metadata: AssetMetadata? = null,
-    val remoteData: RemoteData
+    val remoteData: RemoteData,
+    val localData: LocalData? = null,
 ) {
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
@@ -62,6 +63,10 @@ data class AssetContent(
             }
         }
     }
+
+    data class LocalData(
+        val assetDataPath: String,
+    )
 
     data class RemoteData(
         val otrKey: ByteArray,
