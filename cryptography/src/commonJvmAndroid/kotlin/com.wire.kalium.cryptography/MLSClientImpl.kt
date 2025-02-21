@@ -24,6 +24,7 @@ import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCommand
 import com.wire.crypto.CoreCryptoContext
+import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CustomConfiguration
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.E2eiConversationState
@@ -154,10 +155,10 @@ class MLSClientImpl(
                     decryptedMessage = result
 
                 } catch (throwable: Throwable) {
-                    val isBufferedFutureError = throwable.cause is MlsException.BufferedFutureMessage ||
-                            throwable.message?.contains("BufferedFutureMessage") == true ||
-                            throwable.message
-                                ?.contains("Incoming message is a commit for which we have not yet received all the proposals") == true
+                    val isBufferedFutureError = (
+                            throwable is CoreCryptoException.Mls && throwable.v1 is MlsException.BufferedFutureMessage)
+                            || throwable.message
+                        ?.contains("Incoming message is a commit for which we have not yet received all the proposals") == true
                     if (!isBufferedFutureError) {
                         throw throwable
                     }
