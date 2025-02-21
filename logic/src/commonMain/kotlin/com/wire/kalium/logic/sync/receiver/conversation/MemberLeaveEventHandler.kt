@@ -18,13 +18,19 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-<<<<<<< HEAD
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-=======
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.MLSClientProvider
->>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
@@ -36,33 +42,10 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
-<<<<<<< HEAD
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.common.error.wrapStorageRequest
-=======
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
->>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
 import com.wire.kalium.persistence.dao.member.MemberDAO
 
 interface MemberLeaveEventHandler {
@@ -80,11 +63,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
     private val legalHoldHandler: LegalHoldHandler,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-<<<<<<< HEAD
     private val selfUserId: UserId,
-=======
-    private val selfUserId: UserId
->>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
 ) : MemberLeaveEventHandler {
 
     override suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> {
@@ -151,18 +130,6 @@ internal class MemberLeaveEventHandlerImpl(
         }
     }
 
-    private suspend fun deleteMembers(
-        userIDList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Long> =
-<<<<<<< HEAD
-        wrapStorageRequest {
-            memberDAO.deleteMembersByQualifiedID(
-                userIDList.map { it.toDao() },
-                conversationID.toDao()
-            )
-        }
-
     private suspend fun deleteConversationIfNeeded(event: Event.Conversation.MemberLeave) {
         val isSelfUserLeftConversation = event.removedList == listOf(selfUserId) && event.reason == MemberLeaveReason.Left
         if (!isSelfUserLeftConversation) return
@@ -174,7 +141,11 @@ internal class MemberLeaveEventHandlerImpl(
         conversationRepository.deleteConversation(event.conversationId)
         conversationRepository.removeConversationFromDeleteQueue(event.conversationId)
     }
-=======
+
+    private suspend fun deleteMembers(
+        userIDList: List<UserId>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Long> =
         wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationID.toDao()) }
             .onSuccess { protocol ->
                 when (protocol) {
@@ -199,5 +170,4 @@ internal class MemberLeaveEventHandlerImpl(
                     )
                 }
             }
->>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
 }

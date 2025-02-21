@@ -1448,11 +1448,8 @@ class UserSessionScope internal constructor(
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
-<<<<<<< HEAD
-=======
             mlsClientProvider = mlsClientProvider,
             conversationDAO = userStorage.database.conversationDAO,
->>>>>>> d2d82b8f66 (fix: wipe conversation after member leave event (#3301))
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
