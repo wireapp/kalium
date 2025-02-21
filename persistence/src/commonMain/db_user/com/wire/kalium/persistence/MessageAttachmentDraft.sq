@@ -1,0 +1,54 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlin.Float;
+import kotlin.Int;
+import kotlin.String;
+
+CREATE TABLE MessageAttachmentDraft (
+      attachment_id TEXT NOT NULL,
+      version_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      file_name TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      data_path TEXT NOT NULL,
+      node_path TEXT NOT NULL,
+      upload_status TEXT NOT NULL,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (attachment_id)
+);
+
+getDraft:
+SELECT * FROM MessageAttachmentDraft WHERE attachment_id = ?;
+
+getDrafts:
+SELECT * FROM MessageAttachmentDraft WHERE conversation_id = ?;
+
+upsertDraft:
+INSERT INTO MessageAttachmentDraft(
+    attachment_id,
+    version_id,
+    conversation_id,
+    file_name,
+    file_size,
+    data_path,
+    node_path,
+    upload_status
+) VALUES(?,?,?,?,?,?,?,?)
+ON CONFLICT(attachment_id) DO UPDATE SET
+    version_id = excluded.version_id,
+    conversation_id = excluded.conversation_id,
+    file_name = excluded.file_name,
+    file_size = excluded.file_size,
+    data_path = excluded.data_path,
+    node_path = excluded.node_path,
+    upload_status = excluded.upload_status;
+
+updateUploadStatus:
+UPDATE MessageAttachmentDraft SET upload_status = ? WHERE attachment_id = ?;
+
+deleteDraft:
+DELETE FROM MessageAttachmentDraft WHERE attachment_id = ?;
+
+selectChanges:
+SELECT changes();

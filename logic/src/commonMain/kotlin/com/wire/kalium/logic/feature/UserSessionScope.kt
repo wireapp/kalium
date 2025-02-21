@@ -19,6 +19,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
@@ -1879,6 +1880,7 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
+            cells.publishAttachments,
             this,
             userScopedLogger,
         )
@@ -2177,6 +2179,14 @@ class UserSessionScope internal constructor(
 
     private val inCallReactionsRepository: InCallReactionsRepository by lazy {
         InCallReactionsDataSource()
+    }
+
+    val cells: CellsScope by lazy {
+        CellsScope(
+            cellsClient = globalScope.unboundNetworkContainer.cellsClient,
+            attachmentDraftDao = userStorage.database.messageAttachmentDraftDao,
+            conversationsDAO = userStorage.database.conversationDAO,
+        )
     }
 
     /**

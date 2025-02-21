@@ -71,6 +71,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -165,7 +167,8 @@ class UserDatabaseBuilder internal constructor(
         MessageDraftAdapter = TableMapper.messageDraftsAdapter,
         LastMessageAdapter = TableMapper.lastMessageAdapter,
         LabeledConversationAdapter = TableMapper.labeledConversationAdapter,
-        ConversationFolderAdapter = TableMapper.conversationFolderAdapter
+        ConversationFolderAdapter = TableMapper.conversationFolderAdapter,
+        MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
     )
 
     init {
@@ -317,6 +320,9 @@ class UserDatabaseBuilder internal constructor(
             database.conversationsQueries,
             queriesContext
         )
+
+    val messageAttachmentDraftDao: MessageAttachmentDraftDao
+        get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

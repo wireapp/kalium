@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -311,6 +312,9 @@ class SendTextMessageCaseTest {
         @Mock
         val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
+        @Mock
+        val publishAttachmentsUseCase = mock(PublishAttachmentsUseCase::class)
+
         suspend fun withSendMessageSuccess() = apply {
             coEvery {
                 messageSender.sendMessage(any(), any())
@@ -376,6 +380,7 @@ class SendTextMessageCaseTest {
             messageSendFailureHandler,
             userPropertyRepository,
             observeSelfDeletionTimerSettingsForConversation,
+            publishAttachmentsUseCase,
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher
         )
