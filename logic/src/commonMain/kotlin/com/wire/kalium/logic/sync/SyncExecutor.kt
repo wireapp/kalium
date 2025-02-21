@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
-import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -41,9 +40,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
-abstract class SyncExecutor internal constructor() {
+abstract class SyncExecutor {
 
     abstract fun startAndStopSyncAsNeeded()
 
@@ -53,25 +53,13 @@ abstract class SyncExecutor internal constructor() {
      *
      * Sync will keep ongoing if at least one request is still active (not released).
      */
-    abstract suspend fun <T> request(executorAction: suspend Request.() -> T): T
+    abstract suspend fun <T> request(executorAction: suspend SyncRequest.() -> T): T
 
     inner class Request internal constructor(
         private val syncStateFlow: StateFlow<SyncState>,
         private val job: Job,
         private val logger: KaliumLogger
-    ) {
-
-        /**
-         * Indicates whether the sync request will run indefinitely.
-         *
-         * When set to `true`, the sync process continues without being automatically released,
-         * ensuring synchronization persists as long as the sync scope lives. This is particularly useful
-         * for services that do not care about the lifecycle, like TestService, CLI, etc.
-         *
-         * **Usage:**
-         * - If `true`, the synchronization process will remain active unless explicitly stopped.
-         * - If `false`, the request follows its standard lifecycle and can be released normally.
-         */
+    ) : SyncRequest {
 
         private var isEndless = false
 
@@ -87,15 +75,7 @@ abstract class SyncExecutor internal constructor() {
             job.cancel()
         }
 
-        /**
-         * Suspends execution until the specified [syncState] is reached or a failure occurs.
-         *
-         * @see
-         * @param syncState The desired [SyncState] to wait for.
-         * @return An [Either] containing [CoreFailure] if [SyncState.Failed] is encountered,
-         * or [Unit] if the specified [syncState] is reached.
-         */
-        suspend fun waitUntilOrFailure(
+        override suspend fun waitUntilOrFailure(
             syncState: SyncState
         ): Either<CoreFailure, Unit> = syncStateFlow.map { state ->
             when (state) {
@@ -105,20 +85,9 @@ abstract class SyncExecutor internal constructor() {
             }
         }.filterNotNull().first()
 
-        /**
-         * Shortcut for [waitUntilOrFailure] with Live state.
-         * @see waitUntilOrFailure
-         */
-        suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = waitUntilOrFailure(SyncState.Live)
+        override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = waitUntilOrFailure(SyncState.Live)
 
-        /**
-         * When called, the sync process continues without being released.
-         * This ensuring synchronization persists as long as the sync scope lives.
-         * This is particularly useful for services that do not care about the lifecycle, like TestService, CLI, etc. and shouldn't
-         * be used by applications that turn sync on/off, like Mobile apps.
-         */
-        @DelicateKaliumApi("By calling this, Sync will run indefinitely.")
-        fun keepSyncAlwaysOn() {
+        override fun keepSyncAlwaysOn() {
             isEndless = true
         }
     }
@@ -141,10 +110,14 @@ internal class SyncExecutorImpl(
         }
         scope.launch {
             syncStateFlow.subscriptionCount
+                .onEach {
+                    logger.d("!! Sync requester count changed to $it")
+                }
                 .map { count -> count > 0 }
                 .distinctUntilChanged()
                 .collectLatest { shouldSync ->
                     if (shouldSync) {
+                        logger.i("!! Starting Sync to fulfill requests !!")
                         performSync()
                     } else {
                         logger.i("!! Stopping sync, as there are no requests for it. !!")
@@ -182,7 +155,7 @@ internal class SyncExecutorImpl(
     }
 
     override suspend fun <T> request(
-        requestAction: suspend Request.() -> T
+        requestAction: suspend SyncRequest.() -> T
     ): T = coroutineScope {
         val request = startNewSyncRequest()
         val result = async {

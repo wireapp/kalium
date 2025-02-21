@@ -18,13 +18,13 @@
 
 package com.wire.kalium.logic.sync.slow
 
+import com.wire.kalium.common.functional.combine
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.common.functional.combine
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
@@ -133,6 +133,8 @@ internal fun SlowSyncManager(
         }
     )
 
+    private val exceptionHandler = coroutineExceptionHandler { doSync() }
+
     private suspend fun isSlowSyncNeededFlow(): Flow<SlowSyncParam> =
         slowSyncRepository.observeLastSlowSyncCompletionInstant()
             .map { latestSlowSync ->
@@ -163,17 +165,6 @@ internal fun SlowSyncManager(
             }
 
     override fun performSyncFlow(): Flow<SlowSyncStatus> = channelFlow {
-        suspend fun doSync() {
-            slowSyncCriteriaProvider
-                .syncCriteriaFlow()
-                .combine(isSlowSyncNeededFlow())
-                .distinctUntilChanged()
-                // Collect latest will cancel whatever is running inside the collector when a new value is emitted
-                .collectLatest { (syncCriteriaResolution, isSlowSyncNeeded) ->
-                    handleCriteriaResolution(syncCriteriaResolution, isSlowSyncNeeded)
-                }
-        }
-
         coroutineScope {
             launch {
                 // TODO: Instead of forwarding repository state, we could just emit within the flow. Killing the repository completely.
@@ -181,16 +172,22 @@ internal fun SlowSyncManager(
                     send(slowSyncStatus)
                 }
             }
-            val exceptionHandler = coroutineExceptionHandler { doSync() }
-            launch {
-                @Suppress("TooGenericExceptionCaught")
-                try {
-                    doSync()
-                } catch (t: Throwable) {
-                    exceptionHandler.handleException(t)
-                }
-            }
+            launch { doSync() }
         }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun doSync(): Unit = try {
+        slowSyncCriteriaProvider
+            .syncCriteriaFlow()
+            .combine(isSlowSyncNeededFlow())
+            .distinctUntilChanged()
+            // Collect latest will cancel whatever is running inside the collector when a new value is emitted
+            .collectLatest { (syncCriteriaResolution, isSlowSyncNeeded) ->
+                handleCriteriaResolution(syncCriteriaResolution, isSlowSyncNeeded)
+            }
+    } catch (t: Throwable) {
+        exceptionHandler.handleException(t)
     }
 
     private suspend fun handleCriteriaResolution(

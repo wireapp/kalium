@@ -19,12 +19,12 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
@@ -139,6 +139,8 @@ internal fun IncrementalSyncManager(
         }
     )
 
+    private val exceptionHandler = coroutineExceptionHandler { doIncrementalSync() }
+
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
     override fun performSyncFlow(): Flow<IncrementalSyncStatus> = channelFlow {
@@ -151,19 +153,12 @@ internal fun IncrementalSyncManager(
             }
             // Always start sync with a fresh retry delay
             exponentialDurationHelper.reset()
-            val exceptionHandler = coroutineExceptionHandler { doIncrementalSync() }
-            launch {
-                @Suppress("TooGenericExceptionCaught")
-                try {
-                    doIncrementalSync()
-                } catch (t: Throwable) {
-                    exceptionHandler.handleException(t)
-                }
-            }
+            launch { doIncrementalSync() }
         }
     }
 
-    private suspend fun doIncrementalSync() {
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun doIncrementalSync(): Unit = try {
         incrementalSyncWorker
             .processEventsFlow()
             .cancellable()
@@ -188,5 +183,7 @@ internal fun IncrementalSyncManager(
             }.collect()
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
         logger.i("IncrementalSync stopped.")
+    } catch (t: Throwable) {
+        exceptionHandler.handleException(t)
     }
 }
