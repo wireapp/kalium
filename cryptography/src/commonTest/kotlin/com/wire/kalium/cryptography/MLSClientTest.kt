@@ -197,6 +197,105 @@ class MLSClientTest : BaseMLSClientTest() {
         assertNull(aliceClient.decryptMessage(welcomeBundle.groupId, commit).first().message)
     }
 
+    @Test
+    fun givenThreeClients_whenProcessingCommitOutOfOrder_shouldCatchBufferedFutureMessageAndBuffer() = runTest {
+        // Bob creates a conversation.
+        val bobClient = createClient(BOB1)
+        bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+
+        // Bob adds Alice, Alice processes the welcome.
+        val aliceClient = createClient(ALICE1)
+        val welcomeAlice = bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(aliceClient.generateKeyPackages(1).first())
+        )!!.welcome!!
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        aliceClient.processWelcomeMessage(welcomeAlice)
+
+        // Bob adds Carol but Alice does NOT process that commit => out of order for Alice later.
+        val carolClient = createClient(CAROL1)
+        val addCarolResult = bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(carolClient.generateKeyPackages(1).first())
+        )
+        val commitAddCarol = addCarolResult!!.commit
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+
+        // Bob immediately removes Carol => definitely out of order for Alice.
+        val removeCarolResult = bobClient.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId))
+        val commitRemoveCarol = removeCarolResult.commit
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+
+        // Alice tries to decrypt the removeCarol commit, which references an epoch Alice hasn't seen yet.
+        // In normal MLS logic, this triggers a "buffering" error, typically thrown as MlsException.BufferedFutureMessage
+        // wrapped in CoreCryptoException.Mls. The client code is supposed to swallow that error in a transaction
+        // and return an empty DecryptedMessage list.
+
+        val decryptedBundlesResult = runCatching {
+            aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol)
+        }
+
+        // The exception should be caught internally, so from the caller's perspective we succeed with an empty result.
+        // That indicates the message was buffered instead of fully decrypted.
+        assertTrue(
+            decryptedBundlesResult.isSuccess,
+            "Out-of-order commit should not propagate BufferedFutureMessage as an unhandled exception."
+        )
+
+        val decryptedBundles = decryptedBundlesResult.getOrThrow()
+        assertTrue(
+            decryptedBundles.isEmpty(),
+            "Decryption result should be empty for a buffered out-of-order commit."
+        )
+    }
+
+    @Test
+    fun givenOutOfOrderCommits_whenProcessingMissingCommitLater_shouldAlsoProcessBufferedOne() = runTest {
+        val bobClient = createClient(BOB1)
+        bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+
+        val aliceClient = createClient(ALICE1)
+        // Bob adds Alice to the conversation
+        val welcomeForAlice = bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(aliceClient.generateKeyPackages(1).first())
+        )!!.welcome!!
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        aliceClient.processWelcomeMessage(welcomeForAlice)
+
+        // Bob adds Carol, but Alice never sees this commit => out-of-order for Alice
+        val carolClient = createClient(CAROL1)
+        val addCarolResult = bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(carolClient.generateKeyPackages(1).first())
+        )
+        val commitAddCarol = addCarolResult!!.commit
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+
+        // Immediately Bob removes Carol => definitely out-of-order for Alice
+        val removeCarolResult = bobClient.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId))
+        val commitRemoveCarol = removeCarolResult.commit
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+
+        // Alice tries to decrypt the removeCarol commit first => out-of-order => should buffer
+        val removeResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol)
+        assertTrue(
+            removeResult.isEmpty(),
+            "Out-of-order remove commit should be buffered and return an empty list."
+        )
+
+        // Now Alice processes the missing 'addCarol' commit.
+        // By processing the addCarol commit, MLS should also flush any previously buffered commits (the removeCarol).
+        val addResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitAddCarol)
+
+        // We expect 2 total commits to be processed now: (1) addCarol, (2) removeCarol.
+        assertEquals(
+            2,
+            addResult.size,
+            "Processing the older 'addCarol' commit should also flush the buffered 'removeCarol' commit, resulting in 2 items."
+        )
+    }
+
     companion object {
         val externalSenderKey = ByteArray(32)
         val DEFAULT_CIPHER_SUITES = 1.toUShort()

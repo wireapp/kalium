@@ -22,10 +22,14 @@ import com.wire.crypto.BufferedDecryptedMessage
 import com.wire.crypto.Ciphersuite
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoCommand
+import com.wire.crypto.CoreCryptoContext
+import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CustomConfiguration
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.E2eiConversationState
 import com.wire.crypto.MlsCredentialType
+import com.wire.crypto.MlsException
 import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
@@ -137,22 +141,41 @@ class MLSClientImpl(
         return applicationMessage
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
-        val decryptedMessage = coreCrypto.decryptMessage(
-            groupId.decodeBase64Bytes(),
-            message
-        )
+        var decryptedMessage: DecryptedMessage? = null
 
-        val messageBundle = listOf(
-            toDecryptedMessageBundle(
-                decryptedMessage
-            )
-        )
-        val bufferedMessages = decryptedMessage.bufferedMessages?.map {
-            toDecryptedMessageBundle(it)
-        } ?: emptyList()
+        coreCrypto.transaction(object : CoreCryptoCommand {
+            override suspend fun execute(context: CoreCryptoContext) {
+                try {
+                    val result = context.decryptMessage(
+                        groupId.decodeBase64Bytes(),
+                        message
+                    )
+                    decryptedMessage = result
 
-        return messageBundle + bufferedMessages
+                } catch (throwable: Throwable) {
+                    val isBufferedFutureError = (
+                            throwable is CoreCryptoException.Mls && throwable.v1 is MlsException.BufferedFutureMessage
+                            ) || throwable.message
+                        ?.contains("Incoming message is a commit for which we have not yet received all the proposals") == true
+                    if (!isBufferedFutureError) {
+                        throw throwable
+                    }
+                }
+            }
+        })
+
+        if (decryptedMessage == null) {
+            return emptyList()
+        }
+
+        val mainMessageBundle = listOf(toDecryptedMessageBundle(decryptedMessage!!))
+        val bufferedBundles = decryptedMessage!!.bufferedMessages
+            ?.map { toDecryptedMessageBundle(it) }
+            ?: emptyList()
+
+        return mainMessageBundle + bufferedBundles
     }
 
     override suspend fun commitAccepted(groupId: MLSGroupId) {
