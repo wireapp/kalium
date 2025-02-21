@@ -156,8 +156,8 @@ class MLSClientImpl(
 
                 } catch (throwable: Throwable) {
                     val isBufferedFutureError = (
-                            throwable is CoreCryptoException.Mls && throwable.v1 is MlsException.BufferedFutureMessage)
-                            || throwable.message
+                            throwable is CoreCryptoException.Mls && throwable.v1 is MlsException.BufferedFutureMessage
+                            ) || throwable.message
                         ?.contains("Incoming message is a commit for which we have not yet received all the proposals") == true
                     if (!isBufferedFutureError) {
                         throw throwable
