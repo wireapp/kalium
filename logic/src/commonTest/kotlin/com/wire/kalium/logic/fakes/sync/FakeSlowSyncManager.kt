@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.fakes.sync
 
-package com.wire.kalium.logic.sync
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.sync.slow.SlowSyncManager
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 
-import com.wire.kalium.logic.data.sync.ConnectionPolicy
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-
-@Suppress("konsist.classesWithUseCaseSuffixShouldResideInFeaturePackage")
-class SetConnectionPolicyUseCase internal constructor(
-    private val incrementalSyncRepository: IncrementalSyncRepository,
-) {
-    suspend operator fun invoke(connectionPolicy: ConnectionPolicy) {
-        incrementalSyncRepository.setConnectionPolicy(connectionPolicy)
-    }
+class FakeSlowSyncManager(
+    val fakeSyncFlow: MutableSharedFlow<SlowSyncStatus> = MutableStateFlow(SlowSyncStatus.Pending)
+) : SlowSyncManager {
+    override fun performSyncFlow(): Flow<SlowSyncStatus> = fakeSyncFlow
 }

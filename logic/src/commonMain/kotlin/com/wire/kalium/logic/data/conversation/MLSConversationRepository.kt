@@ -866,7 +866,9 @@ internal class MLSConversationDataSource(
 
     private suspend fun keepCommitAndRetry(groupID: GroupID): Either<CoreFailure, Unit> {
         kaliumLogger.w("Migrating failed commit to new epoch and re-trying.")
-
+        // FIXME: Sync Cyclic Dependency.
+        //        This function can be called DURING sync. And at the same time, it waits for Sync.
+        //        Perhaps it should be scheduled for a retry in the future, after Sync is done.
         return syncManager.waitUntilLiveOrFailure().flatMap {
             commitPendingProposalsWithoutRetry(groupID)
         }
@@ -878,6 +880,9 @@ internal class MLSConversationDataSource(
         wrapMLSRequest {
             mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
         }.flatMap {
+            // FIXME: Sync Cyclic Dependency.
+            //        This function can be called DURING sync. And at the same time, it waits for Sync.
+            //        Perhaps it should be scheduled for a retry in the future, after Sync is done.
             syncManager.waitUntilLiveOrFailure()
         }
     }

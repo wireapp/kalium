@@ -82,6 +82,11 @@ internal class LegalHoldHandlerImpl internal constructor(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : LegalHoldHandler {
     private val scope = CoroutineScope(kaliumDispatcher.default)
+
+    // FIXME: Sync Cyclic Dependency.
+    //        Many functions of this Handler can be called DURING sync. It should not observe sync.
+    //        If this is intentional, the `scope.launch` and `bufferedUpdatedConversationIds` should live
+    //        In a different class, so we have an entity responsible for scheduling work, and another for performing it.
     private val bufferedUpdatedConversationIds =
         TriggerBuffer<ConversationId>(observeSyncState().distinctUntilChanged().map { it == SyncState.Live }, scope)
 

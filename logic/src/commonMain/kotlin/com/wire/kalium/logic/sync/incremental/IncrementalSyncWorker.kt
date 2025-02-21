@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -36,13 +35,8 @@ interface IncrementalSyncWorker {
     /**
      * Upon collection, will start collecting and processing events,
      * emitting the source of current events.
-     *
-     * Flow will finish only if the [ConnectionPolicy]
-     * is [ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS].
-     * Otherwise, it will keep collecting and processing events
-     * indeterminately until a failure or cancellation.
      */
-    suspend fun processEventsWhilePolicyAllowsFlow(): Flow<EventSource>
+    suspend fun processEventsFlow(): Flow<EventSource>
 }
 
 internal class IncrementalSyncWorkerImpl(
@@ -53,7 +47,7 @@ internal class IncrementalSyncWorkerImpl(
 
     private val logger = logger.withFeatureId(SYNC)
 
-    override suspend fun processEventsWhilePolicyAllowsFlow() = channelFlow {
+    override suspend fun processEventsFlow() = channelFlow {
         val sourceJob = launch {
             eventGatherer.currentSource.collect { send(it) }
         }

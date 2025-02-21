@@ -25,7 +25,6 @@ import kotlinx.coroutines.await
 import org.khronos.webgl.Uint8Array
 
 object BackupSamplesJs : BackupSamples() {
-
     suspend fun exportBackup() {
         val backupPassword = "Aqa123456!"
         // Create a MPBackupExporter
