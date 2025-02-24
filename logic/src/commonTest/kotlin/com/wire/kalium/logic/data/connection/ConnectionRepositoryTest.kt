@@ -358,7 +358,7 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
@@ -424,7 +424,7 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
