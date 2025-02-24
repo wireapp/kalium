@@ -49,12 +49,12 @@ import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ServiceAddedResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationHasNoCode
@@ -493,13 +493,8 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.Proteus ->
                         deleteMemberFromCloudAndStorage(userId, conversationId)
 
-                    is ConversationEntity.ProtocolInfo.Mixed ->
-                        deleteMemberFromCloudAndStorage(userId, conversationId)
-                            .flatMap { deleteMemberFromMlsGroup(userId, conversationId, protocol) }
-
-                    is ConversationEntity.ProtocolInfo.MLS -> {
+                    is ConversationEntity.ProtocolInfo.MLSCapable ->
                         deleteMemberFromMlsGroup(userId, conversationId, protocol)
-                    }
                 }
             }
 
@@ -547,15 +542,24 @@ internal class ConversationGroupRepositoryImpl(
         userId: UserId,
         conversationId: ConversationId,
         protocol: ConversationEntity.ProtocolInfo.MLSCapable
-    ) =
-        if (userId == selfUserId) {
-            deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
-                mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))
+    ) = when (protocol) {
+        is ConversationEntity.ProtocolInfo.MLS -> {
+            if (userId == selfUserId) {
+                deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                    mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))
+                }
+            } else {
+                // when removing a member from an MLS group, don't need to call the api
+                mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
             }
-        } else {
-            // when removing a member from an MLS group, don't need to call the api
-            mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
         }
+
+        is ConversationEntity.ProtocolInfo.Mixed -> {
+            deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
+            }
+        }
+    }
 
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
         wrapApiRequest {
