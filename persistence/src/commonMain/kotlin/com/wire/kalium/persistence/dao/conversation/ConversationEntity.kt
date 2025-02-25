@@ -46,7 +46,8 @@ data class ConversationEntity(
     val archivedInstant: Instant?,
     val mlsVerificationStatus: VerificationStatus,
     val proteusVerificationStatus: VerificationStatus,
-    val legalHoldStatus: LegalHoldStatus
+    val legalHoldStatus: LegalHoldStatus,
+    val wireCell: String?,
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 

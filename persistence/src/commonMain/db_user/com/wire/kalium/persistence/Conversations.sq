@@ -44,7 +44,8 @@ CREATE TABLE Conversation (
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
-    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED'
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
+    wire_cell TEXT
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
@@ -397,3 +398,8 @@ BEGIN
     SET degraded_conversation_notified = (new.proteus_verification_status != 'DEGRADED')
     WHERE qualified_id = new.qualified_id;
 END;
+
+updateWireCell:
+UPDATE Conversation
+SET wire_cell = ?
+WHERE qualified_id = ?;

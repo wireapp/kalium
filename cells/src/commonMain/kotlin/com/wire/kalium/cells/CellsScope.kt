@@ -39,6 +39,7 @@ import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCase
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
@@ -110,4 +111,7 @@ public class CellsScope(
 
     public val observeFiles: ObserveCellFilesUseCase
         get() = ObserveCellFilesUseCaseImpl(conversationsDAO, cellsRepository)
+
+    public val enableWireCell: SetWireCellForConversationUseCase
+        get() = SetWireCellForConversationUseCase(conversationsDAO)
 }
