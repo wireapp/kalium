@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase.Result
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold

@@ -20,19 +20,13 @@ package com.wire.kalium.logic.sync
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,164 +35,53 @@ import kotlin.time.Duration
 class ObserveSyncStateUseCaseTest {
 
     @Test
-    fun givenSlowSyncStatusEmitsFailedState_whenRunningUseCase_thenEmitFailedState() = runTest(TestKaliumDispatcher.default) {
+    fun givenObserverFlowEmitsValues_whenInvoking_thenShouldForwardTheSameValues() = runTest(TestKaliumDispatcher.default) {
+        val expectedValues = listOf(
+            SyncState.Waiting,
+            SyncState.GatheringPendingEvents,
+            SyncState.Live,
+            SyncState.SlowSync,
+            SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, Duration.ZERO)
+        ).iterator()
+        var currentExpectedValue = expectedValues.next()
+        val statesFlow = MutableStateFlow<SyncState>(currentExpectedValue)
+
         val (_, useCase) = Arrangement()
-            .withSlowSyncFailureState()
-            .withIncrementalSyncLiveState()
+            .withSyncStates(statesFlow)
             .arrange()
 
         useCase().test {
+            // Item 0
             val item = awaitItem()
-            assertEquals(SyncState.Failed(coreFailure, Duration.ZERO), item)
-        }
-    }
+            assertEquals(currentExpectedValue, item)
 
-    @Test
-    fun givenSlowSyncStatusEmitsOngoingState_whenRunningUseCase_thenEmitSlowSyncState() = runTest(TestKaliumDispatcher.default) {
-        val (_, useCase) = Arrangement()
-            .withSlowSyncOngoingState()
-            .withIncrementalSyncLiveState()
-            .arrange()
-
-        useCase().test {
-            val item = awaitItem()
-            assertEquals(SyncState.SlowSync, item)
-        }
-    }
-
-    @Test
-    fun givenSlowSyncStatusEmitsPendingState_whenRunningUseCase_thenEmitWaitingState() = runTest(TestKaliumDispatcher.default) {
-        val (_, useCase) = Arrangement()
-            .withSlowSyncPendingState()
-            .withIncrementalSyncLiveState()
-            .arrange()
-
-        useCase().test {
-            val item = awaitItem()
-            assertEquals(SyncState.Waiting, item)
-        }
-    }
-
-    @Test
-    fun givenIncrementalSyncStateEmitsLiveState_whenRunningUseCase_thenEmitLiveState() = runTest(TestKaliumDispatcher.default) {
-        val (_, useCase) = Arrangement()
-            .withSlowSyncCompletedState()
-            .withIncrementalSyncLiveState()
-            .arrange()
-
-        useCase().test {
-            val item = awaitItem()
-            assertEquals(SyncState.Live, item)
-        }
-    }
-
-    @Test
-    fun givenIncrementalSyncStateEmitsFailedState_whenRunningUseCase_thenEmitFailedState() =
-        runTest(TestKaliumDispatcher.default) {
-            val (_, useCase) = Arrangement()
-                .withSlowSyncCompletedState()
-                .withIncrementalSyncFailedState()
-                .arrange()
-
-            useCase().test {
+            // Remaining items
+            while(expectedValues.hasNext()) {
+                currentExpectedValue = expectedValues.next()
+                statesFlow.emit(currentExpectedValue)
                 val item = awaitItem()
-                assertEquals(SyncState.Failed(coreFailure, Duration.ZERO), item)
+                assertEquals(currentExpectedValue, item)
             }
+
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
         }
-
-    @Test
-    fun givenIncrementalSyncStateEmitsFetchingPendingEventsState_whenRunningUseCase_thenEmitGatheringPendingEventsState() =
-        runTest(TestKaliumDispatcher.default) {
-            val (_, useCase) = Arrangement()
-                .withSlowSyncCompletedState()
-                .withIncrementalSyncFetchingPendingEventsState()
-                .arrange()
-
-            useCase().test {
-                val item = awaitItem()
-                assertEquals(SyncState.GatheringPendingEvents, item)
-            }
-        }
-
-    @Test
-    fun givenIncrementalSyncStateEmitsPendingState_whenRunningUseCase_thenEmitGatheringPendingEventsState() =
-        runTest(TestKaliumDispatcher.default) {
-            val (_, useCase) = Arrangement()
-                .withSlowSyncCompletedState()
-                .withIncrementalSyncPendingState()
-                .arrange()
-
-            useCase().test {
-                val item = awaitItem()
-                assertEquals(SyncState.GatheringPendingEvents, item)
-            }
-        }
+    }
 
     private class Arrangement {
 
         @Mock
-        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
+        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
 
-        @Mock
-        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
+        fun withSyncStates(flow: StateFlow<SyncState>) = apply {
+            every {
+                syncStateObserver.syncState
+            }.returns(flow)
+        }
 
         fun arrange() = this to ObserveSyncStateUseCaseImpl(
-            slowSyncRepository = slowSyncRepository,
-            incrementalSyncRepository = incrementalSyncRepository
+            syncStateObserver = syncStateObserver
         )
 
-        fun withSlowSyncFailureState() = apply {
-            every {
-                slowSyncRepository.slowSyncStatus
-            }.returns(slowSyncFailureFlow)
-        }
-
-        fun withSlowSyncOngoingState() = apply {
-            every {
-                slowSyncRepository.slowSyncStatus
-            }.returns(MutableStateFlow(SlowSyncStatus.Ongoing(SlowSyncStep.CONTACTS)).asStateFlow())
-        }
-
-        fun withSlowSyncPendingState() = apply {
-            every {
-                slowSyncRepository.slowSyncStatus
-            }.returns(MutableStateFlow(SlowSyncStatus.Pending).asStateFlow())
-        }
-
-        fun withSlowSyncCompletedState() = apply {
-            every {
-                slowSyncRepository.slowSyncStatus
-            }.returns(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
-        }
-
-        fun withIncrementalSyncLiveState() = apply {
-            every {
-                incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.Live))
-        }
-
-        fun withIncrementalSyncFailedState() = apply {
-            every {
-                incrementalSyncRepository.incrementalSyncState
-            }.returns(incrementalSyncFailureFlow)
-        }
-
-        fun withIncrementalSyncFetchingPendingEventsState() = apply {
-            every {
-                incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
-        }
-
-        fun withIncrementalSyncPendingState() = apply {
-            every {
-                incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.Pending))
-        }
-    }
-
-    companion object {
-        val coreFailure = CoreFailure.Unknown(null)
-        val slowSyncFailureFlow = MutableStateFlow(SlowSyncStatus.Failed(coreFailure, Duration.ZERO)).asStateFlow()
-        val incrementalSyncFailureFlow = flowOf(IncrementalSyncStatus.Failed(coreFailure, Duration.ZERO))
     }
 }
