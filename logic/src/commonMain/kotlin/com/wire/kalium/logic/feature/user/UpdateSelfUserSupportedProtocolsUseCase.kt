@@ -59,13 +59,25 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
             logger.d("Skip updating supported protocols, since MLS is not supported.")
             Either.Right(false)
         } else {
+<<<<<<< HEAD
             (userRepository.getSelfUser().flatMap { selfUser ->
                 selfSupportedProtocols().flatMap { newSupportedProtocols ->
+=======
+            (userRepository.getSelfUser()?.let { selfUser ->
+                selfSupportedProtocols().flatMap { calculatedSupportedProtocols ->
+                    val finalizedSupportedProtocols = if (selfUser.supportedProtocols?.contains(SupportedProtocol.MLS) == true) {
+                        calculatedSupportedProtocols + SupportedProtocol.MLS
+                    } else {
+                        calculatedSupportedProtocols
+                    }
+>>>>>>> 09bb71735b (fix: do not remove MLS from the set of supported protocols [WPB-16254] (#3311))
                     logger.i(
-                        "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
+                        "Updating supported protocols = $calculatedSupportedProtocols " +
+                                "previously = ${selfUser.supportedProtocols}, " +
+                                "finalized = $finalizedSupportedProtocols"
                     )
-                    if (newSupportedProtocols != selfUser.supportedProtocols) {
-                        userRepository.updateSupportedProtocols(newSupportedProtocols).map { true }
+                    if (finalizedSupportedProtocols != selfUser.supportedProtocols) {
+                        userRepository.updateSupportedProtocols(finalizedSupportedProtocols).map { true }
                     } else {
                         Either.Right(false)
                     }
@@ -97,13 +109,23 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
                         }
                     }
                     .flatMap { migrationConfiguration ->
-                        userConfigRepository.getSupportedProtocols().map { supportedProtocols ->
+                        userConfigRepository.getSupportedProtocols().map { teamSupportedProtocols ->
                             val selfSupportedProtocols = mutableSetOf<SupportedProtocol>()
-                            if (proteusIsSupported(supportedProtocols, migrationConfiguration)) {
+                            if (proteusIsSupported(
+                                    teamSettingsSupportedProtocols = teamSupportedProtocols,
+                                    migrationConfiguration = migrationConfiguration
+                                )
+                            ) {
                                 selfSupportedProtocols.add(SupportedProtocol.PROTEUS)
                             }
 
-                            if (mlsIsSupported(supportedProtocols, migrationConfiguration, selfClients, currentClientId)) {
+                            if (mlsIsSupported(
+                                    teamSettingsSupportedProtocols = teamSupportedProtocols,
+                                    migrationConfiguration = migrationConfiguration,
+                                    selfClients = selfClients,
+                                    selfClientId = currentClientId
+                                )
+                            ) {
                                 selfSupportedProtocols.add(SupportedProtocol.MLS)
                             }
                             selfSupportedProtocols
@@ -113,12 +135,12 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
         }
 
     private fun mlsIsSupported(
-        supportedProtocols: Set<SupportedProtocol>,
+        teamSettingsSupportedProtocols: Set<SupportedProtocol>,
         migrationConfiguration: MLSMigrationModel,
         selfClients: List<Client>,
         selfClientId: ClientId
     ): Boolean {
-        val mlsIsSupported = supportedProtocols.contains(SupportedProtocol.MLS)
+        val mlsIsSupported = teamSettingsSupportedProtocols.contains(SupportedProtocol.MLS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
         val allSelfClientsAreMLSCapable = selfClients
             .filter { it.isActive || it.id == selfClientId }
@@ -136,10 +158,10 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
     }
 
     private fun proteusIsSupported(
-        supportedProtocols: Set<SupportedProtocol>,
+        teamSettingsSupportedProtocols: Set<SupportedProtocol>,
         migrationConfiguration: MLSMigrationModel
     ): Boolean {
-        val proteusIsSupported = supportedProtocols.contains(SupportedProtocol.PROTEUS)
+        val proteusIsSupported = teamSettingsSupportedProtocols.contains(SupportedProtocol.PROTEUS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
         logger.d(
             "proteus is supported = $proteusIsSupported, " +
