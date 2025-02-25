@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.unauthenticated.domainregistration
 
-package com.wire.kalium.logic.feature.session
+import com.wire.kalium.network.api.base.authenticated.BaseApi
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
+import com.wire.kalium.network.utils.NetworkResponse
 
-import com.wire.kalium.logic.data.session.SessionRepository
+interface GetDomainRegistrationApi : BaseApi {
+    suspend fun getDomainRegistration(email: String): NetworkResponse<DomainRegistrationDTO>
 
-class SessionScope(
-    private val sessionRepository: SessionRepository
-) {
-    val allSessions get() = GetSessionsUseCase(sessionRepository)
-    val allSessionsFlow get() = ObserveSessionsUseCase(sessionRepository)
-    val currentSession get() = CurrentSessionUseCase(sessionRepository)
-    val currentSessionFlow get() = CurrentSessionFlowUseCase(sessionRepository)
-    val updateCurrentSession get() = UpdateCurrentSessionUseCase(sessionRepository)
+    companion object {
+        const val MIN_API_VERSION = 8
+    }
 }

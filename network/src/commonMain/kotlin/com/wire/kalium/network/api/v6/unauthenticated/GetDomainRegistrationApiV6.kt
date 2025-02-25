@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v6.unauthenticated
 
-package com.wire.kalium.logic.feature.session
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v5.unauthenticated.GetDomainRegistrationApiV5
 
-import com.wire.kalium.logic.data.session.SessionRepository
-
-class SessionScope(
-    private val sessionRepository: SessionRepository
-) {
-    val allSessions get() = GetSessionsUseCase(sessionRepository)
-    val allSessionsFlow get() = ObserveSessionsUseCase(sessionRepository)
-    val currentSession get() = CurrentSessionUseCase(sessionRepository)
-    val currentSessionFlow get() = CurrentSessionFlowUseCase(sessionRepository)
-    val updateCurrentSession get() = UpdateCurrentSessionUseCase(sessionRepository)
-}
+internal open class GetDomainRegistrationApiV6 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : GetDomainRegistrationApiV5(unauthenticatedNetworkClient)
