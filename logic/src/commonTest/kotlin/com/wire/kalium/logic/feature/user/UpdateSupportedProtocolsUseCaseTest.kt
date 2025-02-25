@@ -73,7 +73,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful(supportedProtocols = setOf(SupportedProtocol.PROTEUS))
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.PROTEUS))
                 withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(clients = emptyList())
                 withUpdateSupportedProtocolsSuccessful()
@@ -93,7 +93,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.PROTEUS))
                 withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(clients = emptyList())
                 withUpdateSupportedProtocolsSuccessful()
@@ -113,7 +113,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.MLS))
                 withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(clients = emptyList())
                 withUpdateSupportedProtocolsSuccessful()
@@ -133,7 +133,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.MLS))
                 withGetMigrationConfigurationSuccessful(COMPLETED_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(clients = emptyList())
                 withUpdateSupportedProtocolsSuccessful()
@@ -153,7 +153,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.MLS))
                 withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(
                     clients = listOf(
@@ -177,7 +177,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.MLS))
                 withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(
                     clients = listOf(
@@ -202,7 +202,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.MLS))
                 withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(
                     clients = listOf(
@@ -227,7 +227,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.MLS))
                 withGetMigrationConfigurationSuccessful(COMPLETED_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(
                     clients = listOf(
@@ -252,7 +252,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS))
                 withGetMigrationConfigurationFailing(StorageFailure.DataNotFound)
                 withGetSelfClientsSuccessful(
                     clients = listOf(
@@ -276,7 +276,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withCurrentClientIdSuccess(ClientId("1"))
                 withIsMLSSupported(true)
                 withGetSelfUserSuccessful()
-                withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.PROTEUS))
                 withGetMigrationConfigurationSuccessful(DISABLED_MIGRATION_CONFIGURATION)
                 withGetSelfClientsSuccessful(
                     clients = listOf(
@@ -311,6 +311,31 @@ class UpdateSupportedProtocolsUseCaseTest {
         coVerify {
             arrangement.userRepository.updateSupportedProtocols(any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenSelfSupportedProtocolsContainsMLS_whenCalculatedDoesNotContainsMLS_thenUpdateSupportedProtocolsContainsMLS() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .arrange {
+                withCurrentClientIdSuccess(ClientId("1"))
+                withIsMLSSupported(true)
+                withGetSelfUserSuccessful(supportedProtocols = setOf(SupportedProtocol.MLS))
+                withTeamSupportedProtocol(setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS))
+                withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
+                withGetSelfClientsSuccessful(
+                    clients = listOf(
+                        TestClient.CLIENT.copy(isMLSCapable = true, lastActive = Clock.System.now()),
+                        TestClient.CLIENT.copy(isMLSCapable = false, lastActive = Instant.DISTANT_PAST)
+                    )
+                )
+                withUpdateSupportedProtocolsSuccessful()
+            }
+
+        useCase()
+
+        coVerify {
+            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) && it.contains(SupportedProtocol.PROTEUS) })
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
@@ -357,7 +382,7 @@ class UpdateSupportedProtocolsUseCaseTest {
             }.returns(Either.Left(failure))
         }
 
-        suspend fun withGetSupportedProtocolsSuccessful(supportedProtocols: Set<SupportedProtocol>) = apply {
+        suspend fun withTeamSupportedProtocol(supportedProtocols: Set<SupportedProtocol>) = apply {
             coEvery {
                 userConfigRepository.getSupportedProtocols()
             }.returns(Either.Right(supportedProtocols))
