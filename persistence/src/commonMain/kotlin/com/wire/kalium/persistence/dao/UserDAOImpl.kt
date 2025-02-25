@@ -250,13 +250,13 @@ class UserDAOImpl internal constructor(
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             val anyInsertedOrModified = users.map { user ->
-                    if (user.deleted) {
-                        // mark as deleted and remove from groups
-                        safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
-                    } else {
-                        insertUser(user)
-                    }
-                }.any { it }
+                if (user.deleted) {
+                    // mark as deleted and remove from groups
+                    safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
+                } else {
+                    insertUser(user)
+                }
+            }.any { it }
             if (!anyInsertedOrModified) {
                 // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
                 this.rollback()
@@ -505,4 +505,13 @@ class UserDAOImpl internal constructor(
     override suspend fun updateTeamId(userId: UserIDEntity, teamId: String) {
         userQueries.updateTeamId(teamId, userId)
     }
+
+    override suspend fun countContactsAmount(): Int = withContext(queriesContext) {
+        userQueries.selectContactsAmount().executeAsOneOrNull()?.toInt() ?: 0
+    }
+
+    override suspend fun countTeamMembersAmount(): Int = withContext(queriesContext) {
+        userQueries.selectTeamMemebersAmount().executeAsOneOrNull()?.toInt() ?: 0
+    }
+
 }

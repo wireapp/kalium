@@ -164,8 +164,12 @@ import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
+import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
+import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCaseImpl
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
+import com.wire.kalium.logic.feature.analytics.UpdateContactsAmountsCacheUseCase
+import com.wire.kalium.logic.feature.analytics.UpdateContactsAmountsCacheUseCaseImpl
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -826,6 +830,7 @@ class UserSessionScope internal constructor(
             selfUserId = userId,
             selfTeamIdProvider = selfTeamId,
             legalHoldHandler = legalHoldHandler,
+            metadataDAO = userStorage.database.metadataDAO
         )
 
     private val accountRepository: AccountRepository
@@ -2202,6 +2207,19 @@ class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
         )
 
+    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase = GetAnalyticsContactsDataUseCaseImpl(
+        selfTeamIdProvider = selfTeamId,
+        slowSyncRepository = slowSyncRepository,
+        userRepository = userRepository,
+        userConfigRepository = userConfigRepository
+    )
+
+    private val updateContactsAmountsCache: UpdateContactsAmountsCacheUseCase = UpdateContactsAmountsCacheUseCaseImpl(
+        selfTeamIdProvider = selfTeamId,
+        slowSyncRepository = slowSyncRepository,
+        userRepository = userRepository,
+    )
+
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
@@ -2258,6 +2276,11 @@ class UserSessionScope internal constructor(
         launch {
             messages.confirmationDeliveryHandler.sendPendingConfirmations()
         }
+
+        launch {
+            updateContactsAmountsCache()
+        }
+
         syncExecutor.startAndStopSyncAsNeeded()
     }
 }

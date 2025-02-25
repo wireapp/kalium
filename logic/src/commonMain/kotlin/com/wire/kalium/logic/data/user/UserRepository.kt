@@ -18,10 +18,22 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -44,19 +56,7 @@ import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.mapRight
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
@@ -72,6 +72,7 @@ import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -79,6 +80,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface UserRepository {
@@ -156,12 +158,21 @@ interface UserRepository {
     suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
     suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
     suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean>
+    suspend fun getContactsAmountCached(): Either<StorageFailure, Int>
+    suspend fun getTeamMembersAmountCached(): Either<StorageFailure, Int>
+    suspend fun setContactsAmountCached(amount: Int)
+    suspend fun setTeamMembersAmountCached(amount: Int)
+    suspend fun getLastContactsDateUpdateDate(): Either<StorageFailure, Instant>
+    suspend fun setContactsAmountCachingDate(date: Instant)
+    suspend fun countContactsAmount(): Either<StorageFailure, Int>
+    suspend fun countTeamMembersAmount(): Either<StorageFailure, Int>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class UserDataSource internal constructor(
     private val userDAO: UserDAO,
     private val clientDAO: ClientDAO,
+    private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
     private val upgradePersonalToTeamApi: UpgradePersonalToTeamApi,
@@ -368,7 +379,7 @@ internal class UserDataSource internal constructor(
     }
 
     override suspend fun observeSelfUser(): Flow<SelfUser> = userDAO.observeUserDetailsByQualifiedID(selfUserId.toDao()).filterNotNull()
-            .map(userMapper::fromUserDetailsEntityToSelfUser)
+        .map(userMapper::fromUserDetailsEntityToSelfUser)
 
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
         return userDAO.getUserDetailsWithTeamByQualifiedID(selfUserId.toDao()).filterNotNull()
@@ -600,8 +611,40 @@ internal class UserDataSource internal constructor(
         clientDAO.isMLSCapable(userId.toDao(), clientId.value)
     }
 
+    override suspend fun getContactsAmountCached(): Either<StorageFailure, Int> = wrapStorageRequest {
+        metadataDAO.valueByKey(CONTACTS_AMOUNT_KEY)?.toInt()
+    }
+
+    override suspend fun getTeamMembersAmountCached(): Either<StorageFailure, Int> = wrapStorageRequest {
+        metadataDAO.valueByKey(TEAM_MEMBERS_AMOUNT_KEY)?.toInt()
+    }
+
+    override suspend fun setContactsAmountCached(amount: Int) =
+        metadataDAO.insertValue(CONTACTS_AMOUNT_KEY, amount.toString())
+
+    override suspend fun setTeamMembersAmountCached(amount: Int) =
+        metadataDAO.insertValue(TEAM_MEMBERS_AMOUNT_KEY, amount.toString())
+
+    override suspend fun getLastContactsDateUpdateDate(): Either<StorageFailure, Instant> = wrapStorageRequest {
+        metadataDAO.valueByKey(LAST_CONTACTS_UPDATE_KEY)?.let { Instant.parse(it) }
+    }
+
+    override suspend fun setContactsAmountCachingDate(date: Instant) =
+        metadataDAO.insertValue(LAST_CONTACTS_UPDATE_KEY, date.toString())
+
+    override suspend fun countContactsAmount(): Either<StorageFailure, Int> = wrapStorageRequest {
+        userDAO.countContactsAmount()
+    }
+
+    override suspend fun countTeamMembersAmount(): Either<StorageFailure, Int> = wrapStorageRequest {
+        userDAO.countTeamMembersAmount()
+    }
+
     companion object {
 
         internal const val BATCH_SIZE = 500
+        internal const val CONTACTS_AMOUNT_KEY = "all_contacts_amount"
+        internal const val TEAM_MEMBERS_AMOUNT_KEY = "team_members_amount"
+        internal const val LAST_CONTACTS_UPDATE_KEY = "last_contacts_update_date"
     }
 }
