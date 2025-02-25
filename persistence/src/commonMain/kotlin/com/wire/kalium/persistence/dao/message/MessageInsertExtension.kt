@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.content.ButtonContentQueries
@@ -48,6 +49,7 @@ internal interface MessageInsertExtension {
 
 internal class MessageInsertExtensionImpl(
     private val messagesQueries: MessagesQueries,
+    private val attachmentQueries: MessageAttachmentsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
     private val buttonContentQueries: ButtonContentQueries,

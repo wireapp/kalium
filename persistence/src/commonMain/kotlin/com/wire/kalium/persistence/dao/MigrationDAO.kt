@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.MigrationQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
@@ -41,12 +42,14 @@ interface MigrationDAO {
 internal class MigrationDAOImpl(
     private val migrationQueries: MigrationQueries,
     messagesQueries: MessagesQueries,
+    attachmentsQueries: MessageAttachmentsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
     buttonContentQueries: ButtonContentQueries,
     selfUserIDEntity: UserIDEntity,
 ) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(
     messagesQueries,
+    attachmentsQueries,
     unreadEventsQueries,
     conversationsQueries,
     buttonContentQueries,

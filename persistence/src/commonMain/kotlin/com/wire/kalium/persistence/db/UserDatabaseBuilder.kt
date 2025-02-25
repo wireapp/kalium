@@ -70,6 +70,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
@@ -169,6 +171,7 @@ class UserDatabaseBuilder internal constructor(
         LabeledConversationAdapter = TableMapper.labeledConversationAdapter,
         ConversationFolderAdapter = TableMapper.conversationFolderAdapter,
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
+        MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
     )
 
     init {
@@ -264,6 +267,7 @@ class UserDatabaseBuilder internal constructor(
     val messageDAO: MessageDAO
         get() = MessageDAOImpl(
             database.messagesQueries,
+            database.messageAttachmentsQueries,
             database.messageAssetViewQueries,
             database.notificationQueries,
             database.conversationsQueries,
@@ -306,6 +310,7 @@ class UserDatabaseBuilder internal constructor(
         get() = MigrationDAOImpl(
             database.migrationQueries,
             database.messagesQueries,
+            database.messageAttachmentsQueries,
             database.unreadEventsQueries,
             database.conversationsQueries,
             database.buttonContentQueries,
@@ -323,6 +328,9 @@ class UserDatabaseBuilder internal constructor(
 
     val messageAttachmentDraftDao: MessageAttachmentDraftDao
         get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries)
+
+    val messageAttachments: MessageAttachmentsDao
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

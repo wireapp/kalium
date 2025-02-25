@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAttachmentDraft
+import com.wire.kalium.persistence.MessageAttachments
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
@@ -284,6 +285,10 @@ internal object TableMapper {
     )
 
     val messageAttachmentDraftAdapter = MessageAttachmentDraft.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+    )
+
+    val messageAttachmentsAdapter = MessageAttachments.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
     )
 }

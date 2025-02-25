@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
@@ -493,6 +494,7 @@ object MessageMapper {
         allReactionsJson: String,
         selfReactionsJson: String,
         mentions: String,
+        attachments: String?,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
@@ -742,6 +744,11 @@ object MessageMapper {
 
     private fun messageMentionsFromJsonString(messageMentions: String?): List<MessageEntity.Mention> =
         messageMentions?.let {
+            serializer.decodeFromString(it)
+        } ?: emptyList()
+
+    private fun messageAttachmentsFromJsonString(messageAttachments: String?): List<MessageAttachmentEntity> =
+        messageAttachments?.let {
             serializer.decodeFromString(it)
         } ?: emptyList()
 }

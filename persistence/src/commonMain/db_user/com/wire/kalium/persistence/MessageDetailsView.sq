@@ -105,6 +105,19 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('{
+        "id":"' || asset_id || '",
+        "mime_type":"' || asset_mime_type || '",
+        "cell_asset":"' || cell_asset || '",
+        "local_path":"' || IFNULL(local_path,'') || '",
+        "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
+    FROM MessageAttachments
+    WHERE MessageAttachments.message_id = Message.id
+        AND MessageAttachments.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS attachments,
 TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,

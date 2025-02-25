@@ -12,6 +12,34 @@ CREATE TABLE IF NOT EXISTS MessageAttachmentDraft (
     PRIMARY KEY (attachment_id)
 );
 
+CREATE TABLE IF NOT EXISTS MessageAttachments (
+      asset_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      cell_asset INTEGER AS Boolean NOT NULL,
+      local_path TEXT NOT NULL DEFAULT '',
+      preview_url TEXT NOT NULL DEFAULT '',
+      asset_mime_type TEXT NOT NULL,
+      asset_size INTEGER,
+      asset_name TEXT,
+
+--       -- remote data fields
+--       asset_otr_key BLOB,
+--       asset_sha256 BLOB,
+--       asset_token TEXT,
+--       asset_domain TEXT,
+--       asset_encryption_algorithm TEXT,
+--
+--       -- metadata fields
+--       asset_width INTEGER AS Int,
+--       asset_height INTEGER AS Int,
+--       asset_duration_ms INTEGER,
+--       asset_normalized_loudness BLOB,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (asset_id, message_id, conversation_id)
+);
+
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -109,6 +137,19 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('{
+        "id":"' || asset_id || '",
+        "mime_type":"' || asset_mime_type || '",
+        "cell_asset":"' || cell_asset || '",
+        "local_path":"' || IFNULL(local_path,'') || '",
+        "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
+    FROM MessageAttachments
+    WHERE MessageAttachments.message_id = Message.id
+        AND MessageAttachments.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS attachments,
 TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,

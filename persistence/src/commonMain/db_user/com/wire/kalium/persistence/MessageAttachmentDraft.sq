@@ -50,5 +50,8 @@ UPDATE MessageAttachmentDraft SET upload_status = ? WHERE attachment_id = ?;
 deleteDraft:
 DELETE FROM MessageAttachmentDraft WHERE attachment_id = ?;
 
+deleteDraftsForConversation:
+DELETE FROM MessageAttachmentDraft WHERE conversation_id = ?;
+
 selectChanges:
 SELECT changes();
