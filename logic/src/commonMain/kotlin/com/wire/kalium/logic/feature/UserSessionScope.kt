@@ -453,6 +453,10 @@ import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.common.error.wrapStorageNullableRequest
+import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
+import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCaseImpl
+import com.wire.kalium.logic.feature.analytics.UpdateContactsAmountsCacheUseCase
+import com.wire.kalium.logic.feature.analytics.UpdateContactsAmountsCacheUseCaseImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
@@ -821,6 +825,7 @@ class UserSessionScope internal constructor(
         selfUserId = userId,
         selfTeamIdProvider = selfTeamId,
         legalHoldHandler = legalHoldHandler,
+        metadataDAO = userStorage.database.metadataDAO
     )
 
     private val accountRepository: AccountRepository
@@ -2175,6 +2180,19 @@ class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
         )
 
+    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase = GetAnalyticsContactsDataUseCaseImpl(
+        selfTeamIdProvider = selfTeamId,
+        slowSyncRepository = slowSyncRepository,
+        userRepository = userRepository,
+        userConfigRepository = userConfigRepository
+    )
+
+    private val updateContactsAmountsCache: UpdateContactsAmountsCacheUseCase = UpdateContactsAmountsCacheUseCaseImpl(
+        selfTeamIdProvider = selfTeamId,
+        slowSyncRepository = slowSyncRepository,
+        userRepository = userRepository,
+    )
+
     private val inCallReactionsRepository: InCallReactionsRepository by lazy {
         InCallReactionsDataSource()
     }
@@ -2238,6 +2256,10 @@ class UserSessionScope internal constructor(
 
         launch {
             messages.confirmationDeliveryHandler.sendPendingConfirmations()
+        }
+
+        launch {
+            updateContactsAmountsCache()
         }
     }
 }

@@ -40,6 +40,7 @@ import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.datetime.Instant
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal interface UserRepositoryArrangement {
@@ -102,6 +103,15 @@ internal interface UserRepositoryArrangement {
         userId: Matcher<UserId> = AnyMatcher(valueOf()),
         clientId: Matcher<ClientId> = AnyMatcher(valueOf())
     )
+
+    suspend fun withContactsAmountCached(result: Either<StorageFailure, Int>)
+    suspend fun withCountContactsAmount(result: Either<StorageFailure, Int>)
+    suspend fun withTeamMembersAmountCached(result: Either<StorageFailure, Int>)
+    suspend fun withCountTeamMembersAmount(result: Either<StorageFailure, Int>)
+    suspend fun withSetContactsAmountCachingDate()
+    suspend fun withSetTeamMembersAmountCached()
+    suspend fun withSetContactsAmountCached()
+    suspend fun withLastContactsDateUpdateDate(result: Either<StorageFailure, Instant>)
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -241,12 +251,48 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
         coEvery { userRepository.getNameAndHandle(matches { userId.matches(it) }) }.returns(result)
     }
 
-    override suspend fun withIsClientMlsCapable(result: Either<StorageFailure, Boolean>, userId: Matcher<UserId>, clientId: Matcher<ClientId>) {
+    override suspend fun withIsClientMlsCapable(
+        result: Either<StorageFailure, Boolean>,
+        userId: Matcher<UserId>,
+        clientId: Matcher<ClientId>
+    ) {
         coEvery {
             userRepository.isClientMlsCapable(
                 userId = matches { userId.matches(it) },
                 clientId = matches { clientId.matches(it) }
             )
         }.returns(result)
+    }
+
+    override suspend fun withContactsAmountCached(result: Either<StorageFailure, Int>) {
+        coEvery { userRepository.getContactsAmountCached() }.returns(result)
+    }
+
+    override suspend fun withCountContactsAmount(result: Either<StorageFailure, Int>) {
+        coEvery { userRepository.countContactsAmount() }.returns(result)
+    }
+
+    override suspend fun withTeamMembersAmountCached(result: Either<StorageFailure, Int>) {
+        coEvery { userRepository.getTeamMembersAmountCached() }.returns(result)
+    }
+
+    override suspend fun withCountTeamMembersAmount(result: Either<StorageFailure, Int>) {
+        coEvery { userRepository.countTeamMembersAmount() }.returns(result)
+    }
+
+    override suspend fun withSetContactsAmountCachingDate() {
+        coEvery { userRepository.setContactsAmountCachingDate(any()) }.returns(Unit)
+    }
+
+    override suspend fun withSetTeamMembersAmountCached() {
+        coEvery { userRepository.setTeamMembersAmountCached(any()) }.returns(Unit)
+    }
+
+    override suspend fun withSetContactsAmountCached() {
+        coEvery { userRepository.setContactsAmountCached(any()) }.returns(Unit)
+    }
+
+    override suspend fun withLastContactsDateUpdateDate(result: Either<StorageFailure, Instant>) {
+        coEvery { userRepository.getLastContactsDateUpdateDate() }.returns(result)
     }
 }

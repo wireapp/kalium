@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.user
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
@@ -34,8 +36,6 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
@@ -57,6 +57,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -678,6 +679,96 @@ class UserRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenCachedContactsAmountAbsent_whenGettingContactsAmountCached_thenShouldPropagateError() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withGetMetaDataDaoValue(UserDataSource.CONTACTS_AMOUNT_KEY, null)
+            .arrange()
+        // when
+        val result = userRepository.getContactsAmountCached()
+        // then
+        result.shouldFail()
+        coVerify {
+            arrangement.metadataDAO.valueByKey(UserDataSource.CONTACTS_AMOUNT_KEY)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCachedContactsAmount_whenGettingContactsAmountCached_thenShouldPropagateResult() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withGetMetaDataDaoValue(UserDataSource.CONTACTS_AMOUNT_KEY, "12")
+            .arrange()
+        // when
+        val result = userRepository.getContactsAmountCached()
+        // then
+        result.shouldSucceed { assertEquals(12, it) }
+        coVerify {
+            arrangement.metadataDAO.valueByKey(UserDataSource.CONTACTS_AMOUNT_KEY)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCachedTeamSizeAbsent_whenGettingTeamSizeCached_thenShouldPropagateError() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withGetMetaDataDaoValue(UserDataSource.TEAM_MEMBERS_AMOUNT_KEY, null)
+            .arrange()
+        // when
+        val result = userRepository.getTeamMembersAmountCached()
+        // then
+        result.shouldFail()
+        coVerify {
+            arrangement.metadataDAO.valueByKey(UserDataSource.TEAM_MEMBERS_AMOUNT_KEY)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCachedTeamSize_whenGettingTeamSizeCached_thenShouldPropagateResult() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withGetMetaDataDaoValue(UserDataSource.TEAM_MEMBERS_AMOUNT_KEY, "12")
+            .arrange()
+        // when
+        val result = userRepository.getTeamMembersAmountCached()
+        // then
+        result.shouldSucceed { assertEquals(12, it) }
+        coVerify {
+            arrangement.metadataDAO.valueByKey(UserDataSource.TEAM_MEMBERS_AMOUNT_KEY)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCountingContactsSucceed_whenCountingContactsCalled_thenShouldPropagateResult() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withCountContactsAmountResult(12)
+            .arrange()
+        // when
+        val result = userRepository.countContactsAmount()
+        // then
+        result.shouldSucceed { assertEquals(12, it) }
+        coVerify {
+            arrangement.userDAO.countContactsAmount()
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCountingTeamSizeSucceed_whenCountingTeamSize_thenShouldPropagateResult() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withCountTeamMembersAmount(12)
+            .arrange()
+        // when
+        val result = userRepository.countTeamMembersAmount()
+        // then
+        result.shouldSucceed { assertEquals(12, it) }
+        coVerify {
+            arrangement.userDAO.countTeamMembersAmount()
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = mock(UserDAO::class)
@@ -704,6 +795,9 @@ class UserRepositoryTest {
         val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
 
         @Mock
+        val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
+
+        @Mock
         val upgradePersonalToTeamApi: UpgradePersonalToTeamApi =
             mock(UpgradePersonalToTeamApi::class)
 
@@ -721,6 +815,7 @@ class UserRepositoryTest {
                 selfTeamIdProvider = selfTeamIdProvider,
                 legalHoldHandler = legalHoldHandler,
                 upgradePersonalToTeamApi = upgradePersonalToTeamApi,
+                metadataDAO = metadataDAO,
             )
         }
 
@@ -841,7 +936,7 @@ class UserRepositoryTest {
         suspend fun withSuccessfulGetMultipleUsers() = apply {
             coEvery {
                 userDetailsApi.getMultipleUsers(any())
-            }.returns(NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) )
+            }.returns(NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200))
         }
 
         suspend fun withAllOtherUsersIdSuccess(
@@ -900,6 +995,18 @@ class UserRepositoryTest {
             }.returns(NetworkResponse.Error(generic))
         }
 
+        suspend fun withGetMetaDataDaoValue(key: String, result: String?) = apply {
+            coEvery { metadataDAO.valueByKey(eq(key)) }.returns(result)
+        }
+
+        suspend fun withCountContactsAmountResult(result: Int) = apply {
+            coEvery { userDAO.countContactsAmount() }.returns(result)
+        }
+
+        suspend fun withCountTeamMembersAmount(result: Int) = apply {
+            coEvery { userDAO.countTeamMembersAmount() }.returns(result)
+        }
+
         suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
             coEvery {
                 userDAO.observeUserDetailsByQualifiedID(any())
@@ -915,6 +1022,7 @@ class UserRepositoryTest {
             coEvery {
                 legalHoldHandler.handleUserFetch(any(), any())
             }.returns(Either.Right(Unit))
+            coEvery { metadataDAO.insertValue(any(), any()) }.returns(Unit)
             apply(block)
             return this to userRepository
         }

@@ -299,3 +299,10 @@ UPDATE User SET team = ? WHERE qualified_id = ?;
 selectNameByMessageId:
 SELECT name FROM User
 WHERE qualified_id = (SELECT Message.sender_user_id FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId);
+
+selectContactsAmount:
+SELECT COUNT() FROM User WHERE User.connection_status = 'ACCEPTED' AND qualified_id != (SELECT id FROM SelfUser);
+
+selectTeamMemebersAmount:
+SELECT COUNT() FROM User WHERE User.team = (SELECT User.team FROM User WHERE User.qualified_id = (SELECT id FROM SelfUser))
+AND qualified_id != (SELECT id FROM SelfUser);
