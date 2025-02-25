@@ -30,7 +30,9 @@ import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import kotlinx.coroutines.flow.first
 
 suspend fun getConversations(userSession: UserSessionScope): List<Conversation> {
-    userSession.syncManager.waitUntilLive()
+    userSession.syncExecutor.request {
+        waitUntilLiveOrFailure()
+    }
 
     val conversations = userSession.conversations.getConversations().let {
         when (it) {
@@ -53,7 +55,9 @@ suspend fun UserSessionScope.listConversations(): List<Conversation> {
 }
 
 suspend fun UserSessionScope.selectConversation(): Conversation {
-    syncManager.waitUntilLive()
+    syncExecutor.request {
+        waitUntilLiveOrFailure()
+    }
 
     val conversations = listConversations()
 
