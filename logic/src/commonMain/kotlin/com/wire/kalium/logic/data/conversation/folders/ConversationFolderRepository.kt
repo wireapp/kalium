@@ -152,9 +152,13 @@ internal class ConversationFolderDataSource internal constructor(
             .v("Removing conversation ${conversationId.toLogString()} from folder ${folderId.obfuscateId()}")
         return wrapStorageRequest {
             conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId)
-            val conversations = conversationFolderDAO.observeConversationListFromFolder(folderId).first()
-            if (!isFavorite && conversations.isEmpty()) {
-                conversationFolderDAO.removeFolder(folderId)
+            if (!isFavorite) {
+                val conversations = conversationFolderDAO.observeConversationListFromFolder(folderId).first()
+                if (conversations.isEmpty()) {
+                    conversationFolderDAO.removeFolder(folderId)
+                } else {
+                    Unit
+                }
             } else {
                 Unit
             }
