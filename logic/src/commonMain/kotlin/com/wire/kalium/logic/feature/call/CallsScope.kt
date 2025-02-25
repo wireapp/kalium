@@ -99,7 +99,7 @@ class CallsScope internal constructor(
     private val userRepository: UserRepository,
     private val flowManagerService: FlowManagerService,
     private val mediaManagerService: MediaManagerService,
-    private val syncManager: SyncManager,
+    private val syncManager: Lazy<SyncManager>,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,
@@ -149,7 +149,7 @@ class CallsScope internal constructor(
     val startCall: StartCallUseCase
         get() = StartCallUseCase(
             callManager = callManager,
-            syncManager = syncManager,
+            syncManager = syncManager.value,
             callRepository = callRepository,
             answerCall = answerCall,
             getCallConversationType = getCallConversationType,
