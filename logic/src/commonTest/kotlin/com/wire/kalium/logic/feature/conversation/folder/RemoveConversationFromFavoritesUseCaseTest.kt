@@ -54,7 +54,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id)
+            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id, true)
         }.wasInvoked(exactly = once)
     }
 
@@ -95,7 +95,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id)
+            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id, true)
         }.wasInvoked(exactly = once)
     }
 
@@ -119,7 +119,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
             either: Either<CoreFailure, Unit>
         ) = apply {
             coEvery {
-                conversationFolderRepository.removeConversationFromFolder(conversationId, folderId)
+                conversationFolderRepository.removeConversationFromFolder(conversationId, folderId, true)
             }.returns(either)
         }
 
