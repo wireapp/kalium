@@ -67,7 +67,9 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
                         calculatedSupportedProtocols
                     }
                     logger.i(
-                        "Updating supported protocols = $calculatedSupportedProtocols previously = ${selfUser.supportedProtocols}, finalized = $finalizedSupportedProtocols"
+                        "Updating supported protocols = $calculatedSupportedProtocols " +
+                                "previously = ${selfUser.supportedProtocols}, " +
+                                "finalized = $finalizedSupportedProtocols"
                     )
                     if (finalizedSupportedProtocols != selfUser.supportedProtocols) {
                         userRepository.updateSupportedProtocols(finalizedSupportedProtocols).map { true }
