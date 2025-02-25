@@ -312,9 +312,6 @@ class SendTextMessageCaseTest {
         @Mock
         val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
-        @Mock
-        val publishAttachmentsUseCase = mock(PublishAttachmentsUseCase::class)
-
         suspend fun withSendMessageSuccess() = apply {
             coEvery {
                 messageSender.sendMessage(any(), any())
@@ -380,7 +377,6 @@ class SendTextMessageCaseTest {
             messageSendFailureHandler,
             userPropertyRepository,
             observeSelfDeletionTimerSettingsForConversation,
-            publishAttachmentsUseCase,
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher
         )

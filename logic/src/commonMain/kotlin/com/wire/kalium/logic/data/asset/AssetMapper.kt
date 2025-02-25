@@ -118,7 +118,8 @@ class AssetMapperImpl(
                         assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
                         else -> AES_CBC
                     }
-                )
+                ),
+                localData = assetDataPath?.let { AssetContent.LocalData(it) }
             )
         }
     }
