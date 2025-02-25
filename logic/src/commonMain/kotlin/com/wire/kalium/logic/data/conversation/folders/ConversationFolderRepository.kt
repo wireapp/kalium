@@ -18,18 +18,10 @@
 package com.wire.kalium.logic.data.conversation.folders
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS_FOLDERS
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
-import com.wire.kalium.logic.data.conversation.ConversationFolder
-import com.wire.kalium.logic.data.conversation.ConversationMapper
-import com.wire.kalium.logic.data.conversation.FolderType
-import com.wire.kalium.logic.data.conversation.FolderWithConversations
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -38,8 +30,16 @@ import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS_FOLDERS
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
+import com.wire.kalium.logic.data.conversation.ConversationFolder
+import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.conversation.FolderType
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -57,7 +57,12 @@ internal interface ConversationFolderRepository {
     suspend fun updateConversationFolders(folderWithConversations: List<FolderWithConversations>): Either<CoreFailure, Unit>
     suspend fun fetchConversationFolders(): Either<CoreFailure, Unit>
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
-    suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
+    suspend fun removeConversationFromFolder(
+        conversationId: QualifiedID,
+        folderId: String,
+        isFavorite: Boolean = false
+    ): Either<CoreFailure, Unit>
+
     suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit>
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
     suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
@@ -138,13 +143,17 @@ internal class ConversationFolderDataSource internal constructor(
         }
     }
 
-    override suspend fun removeConversationFromFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit> {
+    override suspend fun removeConversationFromFolder(
+        conversationId: QualifiedID,
+        folderId: String,
+        isFavorite: Boolean
+    ): Either<CoreFailure, Unit> {
         kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS)
             .v("Removing conversation ${conversationId.toLogString()} from folder ${folderId.obfuscateId()}")
         return wrapStorageRequest {
             conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId)
             val conversations = conversationFolderDAO.observeConversationListFromFolder(folderId).first()
-            if (conversations.isEmpty()) {
+            if (!isFavorite && conversations.isEmpty()) {
                 conversationFolderDAO.removeFolder(folderId)
             } else {
                 Unit
