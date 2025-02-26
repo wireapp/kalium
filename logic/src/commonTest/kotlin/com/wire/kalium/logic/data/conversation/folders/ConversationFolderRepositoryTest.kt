@@ -267,6 +267,26 @@ class ConversationFolderRepositoryTest {
     }
 
     @Test
+    fun givenLastConversationRemovedFromFavorite_whenRemovingConversation_thenFavoriteShouldNotBeDeleted() = runTest {
+        // given
+        val folderId = "folder1"
+        val conversationId = TestConversation.ID
+
+        val arrangement = Arrangement()
+            .withRemoveConversationFromFolder()
+            .withConversationsFromFolder(folderId, emptyList())
+
+        // when
+        val result = arrangement.repository.removeConversationFromFolder(conversationId, folderId, true)
+
+        // then
+        result.shouldSucceed()
+
+        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
+        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasNotInvoked()
+    }
+
+    @Test
     fun givenRemainingConversationsInFolder_whenRemovingConversation_thenFolderShouldNotBeDeleted() = runTest {
         // given
         val folderId = "folder1"
@@ -291,6 +311,7 @@ class ConversationFolderRepositoryTest {
         coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
         coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasNotInvoked()
     }
+
 
     private class Arrangement {
 
