@@ -26,6 +26,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.days
 
+/**
+ * Use case that checks if users ContactsAmount and TeamSize cache are too old and updates it.
+ * Currently max live period is [UpdateContactsAmountsCacheUseCaseImpl.CACHE_PERIOD] 7 days
+ */
 interface UpdateContactsAmountsCacheUseCase {
     suspend operator fun invoke()
 }

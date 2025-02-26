@@ -28,6 +28,10 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.flow.first
 
+/**
+ * Use case that combine contacts data necessary for analytics [AnalyticsContactsData].
+ * It always get a Cached data and, except case when there is no cache, in that case useCase selects all the data from DB.
+ */
 interface GetAnalyticsContactsDataUseCase {
     suspend operator fun invoke(): AnalyticsContactsData
 }
@@ -91,6 +95,10 @@ class GetAnalyticsContactsDataUseCaseImpl internal constructor(
 
 }
 
+/**
+ * If val is null mean it shouldn't be provided to the analytics.
+ * More details in task https://wearezeta.atlassian.net/browse/WPB-16121
+ */
 data class AnalyticsContactsData(
     val teamId: String?,
     val contactsSize: Int?,
