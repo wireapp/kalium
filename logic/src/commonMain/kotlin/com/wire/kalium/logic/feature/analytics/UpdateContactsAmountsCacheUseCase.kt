@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.analytics
 
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -37,20 +38,20 @@ interface UpdateContactsAmountsCacheUseCase {
 class UpdateContactsAmountsCacheUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
-    private val userRepository: UserRepository,
+    private val analyticsRepository: AnalyticsRepository,
 ) : UpdateContactsAmountsCacheUseCase {
 
     override suspend fun invoke() {
         slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
 
         val nowDate = Clock.System.now()
-        val updateTime = userRepository.getLastContactsDateUpdateDate().getOrNull()
+        val updateTime = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
 
         if (updateTime != null && nowDate.minus(updateTime) < CACHE_PERIOD) return
 
         val teamId = selfTeamIdProvider().getOrNull()
 
-        with(userRepository) {
+        with(analyticsRepository) {
             val contactsAmount = countContactsAmount().getOrNull() ?: 0
             val teamAmount = teamId?.let { countTeamMembersAmount().getOrNull() } ?: 0
 

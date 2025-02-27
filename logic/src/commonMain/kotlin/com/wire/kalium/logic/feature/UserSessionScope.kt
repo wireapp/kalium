@@ -39,6 +39,8 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
+import com.wire.kalium.logic.data.analytics.AnalyticsDataSource
+import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -829,8 +831,7 @@ class UserSessionScope internal constructor(
             sessionRepository = globalScope.sessionRepository,
             selfUserId = userId,
             selfTeamIdProvider = selfTeamId,
-            legalHoldHandler = legalHoldHandler,
-            metadataDAO = userStorage.database.metadataDAO
+            legalHoldHandler = legalHoldHandler
         )
 
     private val accountRepository: AccountRepository
@@ -2201,6 +2202,13 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
+    private val analyticsRepository: AnalyticsRepository
+        get() = AnalyticsDataSource(
+            userDAO = userStorage.database.userDAO,
+            selfTeamIdProvider = selfTeamId,
+            metadataDAO = userStorage.database.metadataDAO
+        )
+
     val getTeamUrlUseCase: GetTeamUrlUseCase
         get() = GetTeamUrlUseCase(
             userId,
@@ -2210,14 +2218,14 @@ class UserSessionScope internal constructor(
     val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase = GetAnalyticsContactsDataUseCaseImpl(
         selfTeamIdProvider = selfTeamId,
         slowSyncRepository = slowSyncRepository,
-        userRepository = userRepository,
+        analyticsRepository = analyticsRepository,
         userConfigRepository = userConfigRepository
     )
 
     private val updateContactsAmountsCache: UpdateContactsAmountsCacheUseCase = UpdateContactsAmountsCacheUseCaseImpl(
         selfTeamIdProvider = selfTeamId,
         slowSyncRepository = slowSyncRepository,
-        userRepository = userRepository,
+        analyticsRepository = analyticsRepository,
     )
 
     /**

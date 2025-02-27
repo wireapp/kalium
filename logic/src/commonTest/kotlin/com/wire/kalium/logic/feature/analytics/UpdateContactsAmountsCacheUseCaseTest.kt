@@ -24,8 +24,8 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -53,11 +53,11 @@ class UpdateContactsAmountsCacheUseCaseTest {
 
         useCase.invoke()
 
-        coVerify { arrangement.userRepository.countContactsAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.countTeamMembersAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.setContactsAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.setTeamMembersAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.setContactsAmountCachingDate(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -71,11 +71,11 @@ class UpdateContactsAmountsCacheUseCaseTest {
 
         useCase.invoke()
 
-        coVerify { arrangement.userRepository.countContactsAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.countTeamMembersAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.setContactsAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.setTeamMembersAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.userRepository.setContactsAmountCachingDate(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -89,11 +89,11 @@ class UpdateContactsAmountsCacheUseCaseTest {
 
         useCase.invoke()
 
-        coVerify { arrangement.userRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.userRepository.countTeamMembersAmount() }.wasNotInvoked()
-        coVerify { arrangement.userRepository.setContactsAmountCached(any()) }.wasNotInvoked()
-        coVerify { arrangement.userRepository.setTeamMembersAmountCached(any()) }.wasNotInvoked()
-        coVerify { arrangement.userRepository.setContactsAmountCachingDate(any()) }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }.wasNotInvoked()
     }
 
     private companion object {
@@ -101,7 +101,7 @@ class UpdateContactsAmountsCacheUseCaseTest {
     }
 
     private class Arrangement :
-        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+        AnalyticsRepositoryArrangement by AnalyticsRepositoryArrangementImpl() {
 
         @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
@@ -117,7 +117,7 @@ class UpdateContactsAmountsCacheUseCaseTest {
         private val useCase: UpdateContactsAmountsCacheUseCase = UpdateContactsAmountsCacheUseCaseImpl(
             selfTeamIdProvider = selfTeamIdProvider,
             slowSyncRepository = slowSyncRepository,
-            userRepository = userRepository,
+            analyticsRepository = analyticsRepository,
         )
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UpdateContactsAmountsCacheUseCase> {

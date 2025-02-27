@@ -510,8 +510,8 @@ class UserDAOImpl internal constructor(
         userQueries.selectContactsAmount().executeAsOneOrNull()?.toInt() ?: 0
     }
 
-    override suspend fun countTeamMembersAmount(): Int = withContext(queriesContext) {
-        userQueries.selectTeamMemebersAmount().executeAsOneOrNull()?.toInt() ?: 0
+    override suspend fun countTeamMembersAmount(teamId: String): Int = withContext(queriesContext) {
+        userQueries.selectTeamMemebersAmount(teamId).executeAsOneOrNull()?.toInt() ?: 0
     }
 
 }

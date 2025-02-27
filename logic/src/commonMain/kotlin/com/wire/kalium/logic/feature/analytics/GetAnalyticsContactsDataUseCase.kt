@@ -21,11 +21,11 @@ import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.flow.first
 
 /**
@@ -39,7 +39,7 @@ interface GetAnalyticsContactsDataUseCase {
 class GetAnalyticsContactsDataUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
-    private val userRepository: UserRepository,
+    private val analyticsRepository: AnalyticsRepository,
     private val userConfigRepository: UserConfigRepository,
 ) : GetAnalyticsContactsDataUseCase {
 
@@ -52,8 +52,8 @@ class GetAnalyticsContactsDataUseCaseImpl internal constructor(
 
     private suspend fun getAnalyticsContactsData(teamId: TeamId?): AnalyticsContactsData =
         if (teamId == null) {
-            val contactsSize = userRepository.getContactsAmountCached()
-                .flatMapLeft { userRepository.countContactsAmount() }
+            val contactsSize = analyticsRepository.getContactsAmountCached()
+                .flatMapLeft { analyticsRepository.countContactsAmount() }
                 .getOrNull()
 
             AnalyticsContactsData(
@@ -64,8 +64,8 @@ class GetAnalyticsContactsDataUseCaseImpl internal constructor(
                 isTeamMember = false
             )
         } else {
-            val teamSize = userRepository.getTeamMembersAmountCached()
-                .flatMapLeft { userRepository.countTeamMembersAmount() }
+            val teamSize = analyticsRepository.getTeamMembersAmountCached()
+                .flatMapLeft { analyticsRepository.countTeamMembersAmount() }
                 .getOrNull() ?: 0
             val isEnterprise = userConfigRepository.isConferenceCallingEnabled().getOrElse { false }
 
