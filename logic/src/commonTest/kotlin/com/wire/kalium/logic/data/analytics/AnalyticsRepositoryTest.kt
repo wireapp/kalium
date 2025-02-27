@@ -112,7 +112,7 @@ class AnalyticsRepositoryTest {
         // then
         result.shouldSucceed { assertEquals(12, it) }
         coVerify {
-            arrangement.userDAO.countContactsAmount()
+            arrangement.userDAO.countContactsAmount(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -127,7 +127,7 @@ class AnalyticsRepositoryTest {
         // then
         result.shouldSucceed { assertEquals(12, it) }
         coVerify {
-            arrangement.userDAO.countTeamMembersAmount(any())
+            arrangement.userDAO.countTeamMembersAmount(any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -148,6 +148,7 @@ class AnalyticsRepositoryTest {
             AnalyticsDataSource(
                 userDAO = userDAO,
                 selfTeamIdProvider = selfTeamIdProvider,
+                selfUserId = TestUser.USER_ID,
                 metadataDAO = metadataDAO,
             )
         }
@@ -157,11 +158,11 @@ class AnalyticsRepositoryTest {
         }
 
         suspend fun withCountContactsAmountResult(result: Int) = apply {
-            coEvery { userDAO.countContactsAmount() }.returns(result)
+            coEvery { userDAO.countContactsAmount(any()) }.returns(result)
         }
 
         suspend fun withCountTeamMembersAmount(result: Int) = apply {
-            coEvery { userDAO.countTeamMembersAmount(any()) }.returns(result)
+            coEvery { userDAO.countTeamMembersAmount(any(), any()) }.returns(result)
         }
 
         suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, AnalyticsRepository> {

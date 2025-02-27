@@ -1076,7 +1076,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(users.plus(selfUser))
 
         // when
-        val result = db.userDAO.countTeamMembersAmount()
+        val result = db.userDAO.countTeamMembersAmount(teamId = selfUser.team!!, selfUserId = selfUserId)
 
         // then
         assertEquals(4, result)
@@ -1125,7 +1125,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(users.plus(selfUser))
 
         // when
-        val result = db.userDAO.countContactsAmount()
+        val result = db.userDAO.countContactsAmount(selfUserId)
 
         // then
         assertEquals(3, result)

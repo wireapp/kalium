@@ -2206,6 +2206,7 @@ class UserSessionScope internal constructor(
         get() = AnalyticsDataSource(
             userDAO = userStorage.database.userDAO,
             selfTeamIdProvider = selfTeamId,
+            selfUserId = userId,
             metadataDAO = userStorage.database.metadataDAO
         )
 

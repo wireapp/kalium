@@ -24,6 +24,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.datetime.Instant
@@ -42,6 +44,7 @@ interface AnalyticsRepository {
 internal class AnalyticsDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
+    private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : AnalyticsRepository {
 
@@ -67,13 +70,13 @@ internal class AnalyticsDataSource(
         metadataDAO.insertValue(LAST_CONTACTS_UPDATE_KEY, date.toString())
 
     override suspend fun countContactsAmount(): Either<StorageFailure, Int> = wrapStorageRequest {
-        userDAO.countContactsAmount()
+        userDAO.countContactsAmount(selfUserId.toDao())
     }
 
     override suspend fun countTeamMembersAmount(): Either<CoreFailure, Int> = selfTeamIdProvider()
         .flatMap { teamId ->
             teamId?.let {
-                wrapStorageRequest { userDAO.countTeamMembersAmount(it.value) }
+                wrapStorageRequest { userDAO.countTeamMembersAmount(it.value, selfUserId.toDao()) }
             } ?: StorageFailure.DataNotFound.left()
         }
 
