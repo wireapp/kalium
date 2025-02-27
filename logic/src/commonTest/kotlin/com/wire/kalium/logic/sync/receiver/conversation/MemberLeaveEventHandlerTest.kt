@@ -41,6 +41,8 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -346,6 +348,39 @@ class MemberLeaveEventHandlerTest {
         coVerify { arrangement.mlsClient.wipeConversation(any()) }.wasNotInvoked()
     }
 
+    @Test
+    fun givenEventWithConversationMissingFormDB_whenConversationIsMissingFromDB_thenIgnoreAndReturnSuccess() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
+            removedList = listOf(selfUserId)
+        )
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withDeleteMembersByQualifiedID(
+                    result = event.removedList.size.toLong(),
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
+                )
+                withPersistingMessage(Either.Right(Unit))
+                withGetConversationProtocolInfoReturns(null)
+            }
+
+        memberLeaveEventHandler.handle(event).shouldSucceed()
+
+        coVerify {
+            arrangement.memberDAO.deleteMembersByQualifiedID(any(), any())
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.updateConversationClientsForCurrentCall.invoke(any())
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any())
+        }.wasInvoked(once)
+    }
+
     private class Arrangement :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
@@ -370,7 +405,7 @@ class MemberLeaveEventHandlerTest {
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
 
-        suspend fun withGetConversationProtocolInfoReturns(protocolInfo: ConversationEntity.ProtocolInfo) = apply {
+        suspend fun withGetConversationProtocolInfoReturns(protocolInfo: ConversationEntity.ProtocolInfo?) = apply {
             coEvery {
                 conversationDAO.getConversationProtocolInfo(any())
             }.returns(protocolInfo)
@@ -402,6 +437,10 @@ class MemberLeaveEventHandlerTest {
                 selfUserId = selfUserId,
                 mlsClientProvider = mlsClientProvider,
                 conversationDAO = conversationDAO,
+<<<<<<< HEAD
+=======
+                selfUserId = selfUserId
+>>>>>>> 652072fe38 (fix: sync blocked when joining conv and leaving while offline (#3314))
             )
             this to memberLeaveEventHandler
         }
@@ -409,8 +448,12 @@ class MemberLeaveEventHandlerTest {
 
     companion object {
         val failure = CoreFailure.MissingClientRegistration
+<<<<<<< HEAD
         val selfUserId = UserId("self-userId", "domain")
         val userId = UserId("userId", "domain")
+=======
+        val selfUserId = UserId("userId", "domain")
+>>>>>>> 652072fe38 (fix: sync blocked when joining conv and leaving while offline (#3314))
         private val qualifiedUserIdEntity = QualifiedIDEntity("userId", "domain")
         private val qualifiedConversationIdEntity = QualifiedIDEntity("conversationId", "domain")
 
@@ -428,8 +471,8 @@ class MemberLeaveEventHandlerTest {
         fun memberLeaveEvent(reason: MemberLeaveReason) = Event.Conversation.MemberLeave(
             id = "id",
             conversationId = conversationId,
-            removedBy = userId,
-            removedList = listOf(userId),
+            removedBy = selfUserId,
+            removedList = listOf(selfUserId),
             dateTime = Instant.UNIX_FIRST_DATE,
             reason = reason
         )
