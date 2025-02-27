@@ -19,10 +19,10 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -53,7 +53,11 @@ internal class RemoveConversationFromFavoritesUseCaseImpl(
         conversationFolderRepository.getFavoriteConversationFolder().fold(
             { RemoveConversationFromFavoritesUseCase.Result.Failure(it) },
             { folder ->
-                conversationFolderRepository.removeConversationFromFolder(conversationId, folder.id)
+                conversationFolderRepository.removeConversationFromFolder(
+                    conversationId = conversationId,
+                    folderId = folder.id,
+                    isFavorite = true
+                )
                     .flatMap {
                         conversationFolderRepository.syncConversationFoldersFromLocal()
                     }

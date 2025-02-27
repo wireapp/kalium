@@ -18,22 +18,45 @@
 
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.sync.SyncState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.combineTransform
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
 
-interface SyncManager {
+@Deprecated("Use SyncStateObserver instead", ReplaceWith("SyncStateObserver"))
+typealias SyncManager = SyncStateObserver
+
+interface SyncStateObserver {
+
+    /**
+     * Allows observing of [SyncState].
+     * A value is always available immediately for new observers.
+     * Assumes that old SyncStates are not relevant anymore, so the available [Flow]
+     * has a limited buffer size and will drop the oldest values as there's no point
+     * in waiting for slow collectors.
+     * In case a slow collector is interested in receiving all values, it should add a buffer of its own.
+     */
+    val syncState: StateFlow<SyncState>
+
     /**
      * Suspends the caller until all pending events are processed,
      * and the client has finished processing all pending events.
@@ -59,45 +82,78 @@ interface SyncManager {
     suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit>
 }
 
-internal class SyncManagerImpl(
+@Deprecated("Use SyncStateObserverImpl instead", ReplaceWith("SyncStateObserverImpl"))
+internal typealias SyncManagerImpl = SyncStateObserverImpl
+
+@Suppress("LongParameterList")
+internal class SyncStateObserverImpl(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    syncScope: CoroutineScope,
     logger: KaliumLogger = kaliumLogger,
-) : SyncManager {
+) : SyncStateObserver {
 
+    private val mutableSyncState = MutableStateFlow<SyncState>(SyncState.Waiting)
+    override val syncState = mutableSyncState.asStateFlow()
     private val logger by lazy { logger.withFeatureId(SYNC) }
+
+    init {
+        syncScope.launch { emitSyncStatus() }
+    }
+
+    private suspend fun emitSyncStatus() {
+        val combinedStatusFlow = combine(
+            slowSyncRepository.slowSyncStatus,
+            incrementalSyncRepository.incrementalSyncState
+        ) { slowStatus, incrementalStatus ->
+            when (slowStatus) {
+                is SlowSyncStatus.Failed -> SyncState.Failed(slowStatus.failure, slowStatus.retryDelay)
+                is SlowSyncStatus.Ongoing -> SyncState.SlowSync
+                SlowSyncStatus.Pending -> SyncState.Waiting
+                SlowSyncStatus.Complete -> {
+                    when (incrementalStatus) {
+                        IncrementalSyncStatus.Live -> SyncState.Live
+                        is IncrementalSyncStatus.Failed -> SyncState.Failed(incrementalStatus.failure, incrementalStatus.retryDelay)
+                        IncrementalSyncStatus.FetchingPendingEvents -> SyncState.GatheringPendingEvents
+                        IncrementalSyncStatus.Pending -> SyncState.GatheringPendingEvents
+                    }
+                }
+            }
+        }
+        mutableSyncState.emitAll(combinedStatusFlow)
+    }
 
     override suspend fun waitUntilLive() {
         incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
     }
 
-    override suspend fun waitUntilLiveOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit> = slowSyncRepository.slowSyncStatus
-        .filter { it !is SlowSyncStatus.Pending }
-        .combineTransform(incrementalSyncRepository.incrementalSyncState) { slowSyncState, incrementalSyncState ->
-            logger.d("Waiting until or failure. Current status: slowSync: $slowSyncState; incrementalSync: $incrementalSyncState")
-            val didSlowSyncFail = slowSyncState is SlowSyncStatus.Failed
-            val didIncrementalSyncFail = incrementalSyncState is IncrementalSyncStatus.Failed
-            val didSyncFail = didSlowSyncFail || didIncrementalSyncFail
-            if (didSyncFail) {
-                emit(false)
+    override suspend fun waitUntilLiveOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit> =
+        slowSyncRepository.slowSyncStatus.filter { it !is SlowSyncStatus.Pending }
+            .combineTransform(incrementalSyncRepository.incrementalSyncState) { slowSyncState, incrementalSyncState ->
+                logger.d("Waiting until or failure. Current status: slowSync: $slowSyncState; incrementalSync: $incrementalSyncState")
+                val didSlowSyncFail = slowSyncState is SlowSyncStatus.Failed
+                val didIncrementalSyncFail = incrementalSyncState is IncrementalSyncStatus.Failed
+                val didSyncFail = didSlowSyncFail || didIncrementalSyncFail
+                if (didSyncFail) {
+                    emit(false)
+                }
+
+                val isSyncComplete = incrementalSyncState is IncrementalSyncStatus.Live
+                if (isSyncComplete) {
+                    emit(true)
+                }
+            }.first().let { didWaitingSucceed ->
+                if (didWaitingSucceed) {
+                    logger.d("Waiting until live or failure succeeded")
+                    Either.Right(Unit)
+                } else {
+                    logger.d("Waiting until live or failure failed")
+                    Either.Left(NetworkFailure.NoNetworkConnection(null))
+                }
             }
 
-            val isSyncComplete = incrementalSyncState is IncrementalSyncStatus.Live
-            if (isSyncComplete) {
-                emit(true)
-            }
-        }.first().let { didWaitingSucceed ->
-            if (didWaitingSucceed) {
-                logger.d("Waiting until live or failure succeeded")
-                Either.Right(Unit)
-            } else {
-                logger.d("Waiting until live or failure failed")
-                Either.Left(NetworkFailure.NoNetworkConnection(null))
-            }
-        }
-
-    override suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit> = slowSyncRepository.slowSyncStatus
-        .transform { slowSyncState ->
+    override suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit> =
+        slowSyncRepository.slowSyncStatus.transform { slowSyncState ->
             logger.d("Waiting until started or failure. Current status: slowSync: $slowSyncState")
 
             val didSlowSyncFail = slowSyncState is SlowSyncStatus.Failed
@@ -109,9 +165,7 @@ internal class SyncManagerImpl(
             if (isSyncStarted) {
                 emit(true)
             }
-        }
-        .first()
-        .let { didWaitingSucceed ->
+        }.first().let { didWaitingSucceed ->
             if (didWaitingSucceed) {
                 logger.d("Waiting until started or failure succeeded")
                 Either.Right(Unit)
@@ -122,6 +176,6 @@ internal class SyncManagerImpl(
         }
 
     override suspend fun isSlowSyncOngoing(): Boolean = slowSyncRepository.slowSyncStatus.value is SlowSyncStatus.Ongoing
-    override suspend fun isSlowSyncCompleted(): Boolean =
-        slowSyncRepository.slowSyncStatus.value is SlowSyncStatus.Complete
+
+    override suspend fun isSlowSyncCompleted(): Boolean = slowSyncRepository.slowSyncStatus.value is SlowSyncStatus.Complete
 }

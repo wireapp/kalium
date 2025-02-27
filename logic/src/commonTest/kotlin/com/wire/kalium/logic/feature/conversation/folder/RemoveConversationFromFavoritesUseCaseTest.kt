@@ -18,12 +18,12 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestFolder
-import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -54,7 +54,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id)
+            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id, true)
         }.wasInvoked(exactly = once)
     }
 
@@ -95,7 +95,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id)
+            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, TestFolder.FAVORITE.id, true)
         }.wasInvoked(exactly = once)
     }
 
@@ -119,7 +119,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
             either: Either<CoreFailure, Unit>
         ) = apply {
             coEvery {
-                conversationFolderRepository.removeConversationFromFolder(conversationId, folderId)
+                conversationFolderRepository.removeConversationFromFolder(conversationId, folderId, true)
             }.returns(either)
         }
 

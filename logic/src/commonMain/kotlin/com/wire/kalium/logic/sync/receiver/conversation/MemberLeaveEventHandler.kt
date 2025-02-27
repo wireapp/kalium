@@ -19,6 +19,17 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
@@ -31,16 +42,10 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 
 interface MemberLeaveEventHandler {
@@ -53,6 +58,8 @@ internal class MemberLeaveEventHandlerImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
+    private val mlsClientProvider: MLSClientProvider,
+    private val conversationDAO: ConversationDAO, // TODO: refactor to not have DAO here
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
     private val legalHoldHandler: LegalHoldHandler,
     private val selfTeamIdProvider: SelfTeamIdProvider,
@@ -123,17 +130,6 @@ internal class MemberLeaveEventHandlerImpl(
         }
     }
 
-    private suspend fun deleteMembers(
-        userIDList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Long> =
-        wrapStorageRequest {
-            memberDAO.deleteMembersByQualifiedID(
-                userIDList.map { it.toDao() },
-                conversationID.toDao()
-            )
-        }
-
     private suspend fun deleteConversationIfNeeded(event: Event.Conversation.MemberLeave) {
         val isSelfUserLeftConversation = event.removedList == listOf(selfUserId) && event.reason == MemberLeaveReason.Left
         if (!isSelfUserLeftConversation) return
@@ -145,4 +141,33 @@ internal class MemberLeaveEventHandlerImpl(
         conversationRepository.deleteConversation(event.conversationId)
         conversationRepository.removeConversationFromDeleteQueue(event.conversationId)
     }
+
+    private suspend fun deleteMembers(
+        userIDList: List<UserId>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Long> =
+        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationID.toDao()) }
+            .onSuccess { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.MLSCapable -> {
+                        if (userIDList.contains(selfUserId)) {
+                            mlsClientProvider.getMLSClient().map { mlsClient ->
+                                wrapMLSRequest {
+                                    mlsClient.wipeConversation(protocol.groupId)
+                                }
+                            }
+                        }
+                    }
+
+                    ConversationEntity.ProtocolInfo.Proteus -> {}
+                }
+            }
+            .flatMap {
+                wrapStorageRequest {
+                    memberDAO.deleteMembersByQualifiedID(
+                        userIDList.map { it.toDao() },
+                        conversationID.toDao()
+                    )
+                }
+            }
 }
