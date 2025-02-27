@@ -301,8 +301,8 @@ selectNameByMessageId:
 SELECT name FROM User
 WHERE qualified_id = (SELECT Message.sender_user_id FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId);
 
-selectContactsAmount:
+countContacts:
 SELECT COUNT() FROM User WHERE User.connection_status = 'ACCEPTED' AND User.qualified_id != :self_user_id;
 
-selectTeamMemebersAmount:
+countTeamMembersFromTeam:
 SELECT COUNT() FROM User WHERE User.team = :team_id AND User.qualified_id != :self_user_id;
