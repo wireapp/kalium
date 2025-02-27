@@ -24,6 +24,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
+import com.wire.kalium.logic.data.auth.DomainRegistrationMapper
+import com.wire.kalium.logic.data.auth.DomainRegistrationMapperImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -176,4 +178,5 @@ internal object MapperProvider {
     fun serviceMapper(): ServiceMapper = ServiceMapper()
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
     fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
+    fun domainRegistrationMapper(): DomainRegistrationMapper = DomainRegistrationMapperImpl
 }

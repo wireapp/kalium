@@ -114,7 +114,7 @@ class ObserveIsAppLockEditableUseCaseTest {
         }
 
         fun arrange() = this to useCase
-        suspend fun withAllValidSessionsFlow(result: Flow<List<AccountInfo>>) = apply {
+        suspend fun withAllValidSessionsFlow(result: Flow<List<AccountInfo.Valid>>) = apply {
             coEvery {
                 sessionRepository.allValidSessionsFlow()
             }.returns(result.map { Either.Right(it) })
