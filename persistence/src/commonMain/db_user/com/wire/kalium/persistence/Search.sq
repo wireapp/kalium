@@ -11,7 +11,7 @@ SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, conne
     WHERE connection_status = 'ACCEPTED' AND
     qualified_id != (SELECT id FROM SelfUser LIMIT 1) AND
     deleted = 0 AND
-    name LIKE ('%' || :searchQuery || '%');
+    (name LIKE ('%' || :searchQuery || '%') OR handle = :searchQuery);
 
 selectAllConnectedUsersNotInConversation:
 SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status, handle
