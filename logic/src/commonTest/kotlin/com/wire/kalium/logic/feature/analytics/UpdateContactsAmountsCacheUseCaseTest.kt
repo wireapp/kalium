@@ -43,7 +43,7 @@ import kotlin.time.Duration.Companion.days
 class UpdateContactsAmountsCacheUseCaseTest {
 
     @Test
-    fun givenNoCacheUpdateDate_whenInvoked_thenUpdateCalled() = runTest {
+    fun givenNoCacheUpdateDateAndUserInTeam_whenInvoked_thenUpdateTeamSizeCalled() = runTest {
         val (arrangement, useCase) = Arrangement().arrange {
             coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
             withLastContactsDateUpdateDate(StorageFailure.DataNotFound.left())
@@ -53,30 +53,65 @@ class UpdateContactsAmountsCacheUseCaseTest {
 
         useCase.invoke()
 
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+            .wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+            .wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+            .wasInvoked(exactly = 1)
     }
 
     @Test
-    fun givenCacheUpdateDateLongTimeAgo_whenInvoked_thenUpdateCalled() = runTest {
-        val (arrangement, useCase) = Arrangement().arrange {
-            coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
-            withLastContactsDateUpdateDate(Clock.System.now().minus(10.days).right())
-            withCountContactsAmount(112.right())
-            withCountTeamMembersAmount(12.right())
+    fun givenCacheUpdateDateLongTimeAgoAndUseInTeam_whenInvoked_thenUpdateTeamSizeCalled() =
+        runTest {
+            val (arrangement, useCase) = Arrangement().arrange {
+                coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
+                withLastContactsDateUpdateDate(Clock.System.now().minus(10.days).right())
+                withCountContactsAmount(112.right())
+                withCountTeamMembersAmount(12.right())
+            }
+
+            useCase.invoke()
+
+            coVerify { arrangement.analyticsRepository.countContactsAmount() }
+                .wasNotInvoked()
+            coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+                .wasInvoked(exactly = 1)
+            coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+                .wasNotInvoked()
+            coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+                .wasInvoked(exactly = 1)
+            coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+                .wasInvoked(exactly = 1)
         }
 
-        useCase.invoke()
+    @Test
+    fun givenCacheUpdateDateLongTimeAgoAnsUserNotInTeam_whenInvoke_thenUpdateContactsCalled() =
+        runTest {
+            val (arrangement, useCase) = Arrangement().arrange {
+                coEvery { selfTeamIdProvider.invoke() }.returns(null.right())
+                withLastContactsDateUpdateDate(Clock.System.now().minus(10.days).right())
+                withCountContactsAmount(112.right())
+                withCountTeamMembersAmount(12.right())
+            }
 
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }.wasInvoked(exactly = 1)
-    }
+            useCase.invoke()
+
+            coVerify { arrangement.analyticsRepository.countContactsAmount() }
+                .wasInvoked(exactly = 1)
+            coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+                .wasNotInvoked()
+            coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+                .wasInvoked(exactly = 1)
+            coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+                .wasNotInvoked()
+            coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+                .wasInvoked(exactly = 1)
+        }
 
     @Test
     fun givenCacheUpdateDateNotLongTimeAgo_whenInvoked_thenUpdateNotCalled() = runTest {
@@ -89,11 +124,16 @@ class UpdateContactsAmountsCacheUseCaseTest {
 
         useCase.invoke()
 
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+            .wasNotInvoked()
     }
 
     private companion object {
@@ -114,11 +154,12 @@ class UpdateContactsAmountsCacheUseCaseTest {
                 .returns(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
         }
 
-        private val useCase: UpdateContactsAmountsCacheUseCase = UpdateContactsAmountsCacheUseCaseImpl(
-            selfTeamIdProvider = selfTeamIdProvider,
-            slowSyncRepository = slowSyncRepository,
-            analyticsRepository = analyticsRepository,
-        )
+        private val useCase: UpdateContactsAmountsCacheUseCase =
+            UpdateContactsAmountsCacheUseCaseImpl(
+                selfTeamIdProvider = selfTeamIdProvider,
+                slowSyncRepository = slowSyncRepository,
+                analyticsRepository = analyticsRepository,
+            )
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UpdateContactsAmountsCacheUseCase> {
             runBlocking { block() }

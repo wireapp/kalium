@@ -57,7 +57,7 @@ internal open class AnalyticsRepositoryArrangementImpl : AnalyticsRepositoryArra
     }
 
     override suspend fun withCountTeamMembersAmount(result: Either<StorageFailure, Int>) {
-        coEvery { analyticsRepository.countTeamMembersAmount() }.returns(result)
+        coEvery { analyticsRepository.countTeamMembersAmount(any()) }.returns(result)
     }
 
     override suspend fun withSetContactsAmountCachingDate() {

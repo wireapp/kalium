@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -38,7 +39,7 @@ interface AnalyticsRepository {
     suspend fun getLastContactsDateUpdateDate(): Either<StorageFailure, Instant>
     suspend fun setContactsAmountCachingDate(date: Instant)
     suspend fun countContactsAmount(): Either<StorageFailure, Int>
-    suspend fun countTeamMembersAmount(): Either<CoreFailure, Int>
+    suspend fun countTeamMembersAmount(teamId: TeamId): Either<CoreFailure, Int>
 }
 
 internal class AnalyticsDataSource(
@@ -73,12 +74,8 @@ internal class AnalyticsDataSource(
         userDAO.countContactsAmount(selfUserId.toDao())
     }
 
-    override suspend fun countTeamMembersAmount(): Either<CoreFailure, Int> = selfTeamIdProvider()
-        .flatMap { teamId ->
-            teamId?.let {
-                wrapStorageRequest { userDAO.countTeamMembersAmount(it.value, selfUserId.toDao()) }
-            } ?: StorageFailure.DataNotFound.left()
-        }
+    override suspend fun countTeamMembersAmount(teamId: TeamId): Either<CoreFailure, Int> =
+        wrapStorageRequest { userDAO.countTeamMembersAmount(teamId.value, selfUserId.toDao()) }
 
     companion object {
         internal const val CONTACTS_AMOUNT_KEY = "all_contacts_amount"

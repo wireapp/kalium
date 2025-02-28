@@ -65,7 +65,7 @@ class GetAnalyticsContactsDataUseCaseImpl internal constructor(
             )
         } else {
             val teamSize = analyticsRepository.getTeamMembersAmountCached()
-                .flatMapLeft { analyticsRepository.countTeamMembersAmount() }
+                .flatMapLeft { analyticsRepository.countTeamMembersAmount(teamId) }
                 .getOrNull() ?: 0
             val isEnterprise = userConfigRepository.isConferenceCallingEnabled().getOrElse { false }
 

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.analytics
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
@@ -123,7 +124,7 @@ class AnalyticsRepositoryTest {
             .withCountTeamMembersAmount(12)
             .arrange()
         // when
-        val result = userRepository.countTeamMembersAmount()
+        val result = userRepository.countTeamMembersAmount(TeamId("teamId"))
         // then
         result.shouldSucceed { assertEquals(12, it) }
         coVerify {

@@ -29,6 +29,7 @@ import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArra
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -60,7 +61,7 @@ class GetAnalyticsContactsDataUseCaseTest {
 
         assertEquals(expected, result)
         coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }.wasNotInvoked()
         coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }.wasNotInvoked()
     }
 
@@ -83,7 +84,7 @@ class GetAnalyticsContactsDataUseCaseTest {
 
         assertEquals(expected, result)
         coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }.wasNotInvoked()
         coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }.wasNotInvoked()
     }
 
@@ -106,9 +107,10 @@ class GetAnalyticsContactsDataUseCaseTest {
 
         assertEquals(expected, result)
         coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }
+            .wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -132,8 +134,10 @@ class GetAnalyticsContactsDataUseCaseTest {
         assertEquals(expected, result)
         coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
         coVerify { arrangement.analyticsRepository.getContactsAmountCached() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }
+            .wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+            .wasInvoked(exactly = 1)
     }
 
     @Test
@@ -154,10 +158,14 @@ class GetAnalyticsContactsDataUseCaseTest {
         val result = useCase()
 
         assertEquals(expected, result)
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount() }.wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.countContactsAmount() }
+            .wasNotInvoked()
+        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }
+            .wasInvoked(exactly = 1)
+        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+            .wasNotInvoked()
     }
 
     private companion object {

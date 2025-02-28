@@ -20,11 +20,13 @@ package com.wire.kalium.logic.feature.analytics
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -50,14 +52,29 @@ class UpdateContactsAmountsCacheUseCaseImpl internal constructor(
         if (updateTime != null && nowDate.minus(updateTime) < CACHE_PERIOD) return
 
         val teamId = selfTeamIdProvider().getOrNull()
+        if (teamId == null) {
+            updateContactsAmountCache(nowDate)
+        } else {
+            updateTeamSizeCache(teamId, nowDate)
+        }
+    }
 
+    private suspend fun updateContactsAmountCache(nowDate: Instant) {
         with(analyticsRepository) {
             val contactsAmount = countContactsAmount().getOrNull() ?: 0
-            val teamAmount = teamId?.let { countTeamMembersAmount().getOrNull() } ?: 0
 
             setContactsAmountCached(contactsAmount)
-            setTeamMembersAmountCached(teamAmount)
             setContactsAmountCachingDate(nowDate)
+        }
+    }
+
+    private suspend fun updateTeamSizeCache(teamId: TeamId, nowDate: Instant) {
+        with(analyticsRepository) {
+            countTeamMembersAmount(teamId).getOrNull()?.let { teamAmount ->
+
+                setTeamMembersAmountCached(teamAmount)
+                setContactsAmountCachingDate(nowDate)
+            }
         }
     }
 
