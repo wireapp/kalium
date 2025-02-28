@@ -26,7 +26,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -43,34 +42,36 @@ class AnalyticsRepositoryTest {
 
 
     @Test
-    fun givenCachedContactsAmountAbsent_whenGettingContactsAmountCached_thenShouldPropagateError() = runTest {
-        // given
-        val (arrangement, userRepository) = Arrangement()
-            .withGetMetaDataDaoValue(AnalyticsDataSource.CONTACTS_AMOUNT_KEY, null)
-            .arrange()
-        // when
-        val result = userRepository.getContactsAmountCached()
-        // then
-        result.shouldFail()
-        coVerify {
-            arrangement.metadataDAO.valueByKey(AnalyticsDataSource.CONTACTS_AMOUNT_KEY)
-        }.wasInvoked(exactly = once)
-    }
+    fun givenCachedContactsAmountAbsent_whenGettingContactsAmountCached_thenShouldPropagateError() =
+        runTest {
+            // given
+            val (arrangement, userRepository) = Arrangement()
+                .withGetMetaDataDaoValue(AnalyticsDataSource.CONTACTS_AMOUNT_KEY, null)
+                .arrange()
+            // when
+            val result = userRepository.getContactsAmountCached()
+            // then
+            result.shouldFail()
+            coVerify {
+                arrangement.metadataDAO.valueByKey(AnalyticsDataSource.CONTACTS_AMOUNT_KEY)
+            }.wasInvoked(exactly = once)
+        }
 
     @Test
-    fun givenCachedContactsAmount_whenGettingContactsAmountCached_thenShouldPropagateResult() = runTest {
-        // given
-        val (arrangement, userRepository) = Arrangement()
-            .withGetMetaDataDaoValue(AnalyticsDataSource.CONTACTS_AMOUNT_KEY, "12")
-            .arrange()
-        // when
-        val result = userRepository.getContactsAmountCached()
-        // then
-        result.shouldSucceed { assertEquals(12, it) }
-        coVerify {
-            arrangement.metadataDAO.valueByKey(AnalyticsDataSource.CONTACTS_AMOUNT_KEY)
-        }.wasInvoked(exactly = once)
-    }
+    fun givenCachedContactsAmount_whenGettingContactsAmountCached_thenShouldPropagateResult() =
+        runTest {
+            // given
+            val (arrangement, userRepository) = Arrangement()
+                .withGetMetaDataDaoValue(AnalyticsDataSource.CONTACTS_AMOUNT_KEY, "12")
+                .arrange()
+            // when
+            val result = userRepository.getContactsAmountCached()
+            // then
+            result.shouldSucceed { assertEquals(12, it) }
+            coVerify {
+                arrangement.metadataDAO.valueByKey(AnalyticsDataSource.CONTACTS_AMOUNT_KEY)
+            }.wasInvoked(exactly = once)
+        }
 
     @Test
     fun givenCachedTeamSizeAbsent_whenGettingTeamSizeCached_thenShouldPropagateError() = runTest {
@@ -103,19 +104,20 @@ class AnalyticsRepositoryTest {
     }
 
     @Test
-    fun givenCountingContactsSucceed_whenCountingContactsCalled_thenShouldPropagateResult() = runTest {
-        // given
-        val (arrangement, userRepository) = Arrangement()
-            .withCountContactsAmountResult(12)
-            .arrange()
-        // when
-        val result = userRepository.countContactsAmount()
-        // then
-        result.shouldSucceed { assertEquals(12, it) }
-        coVerify {
-            arrangement.userDAO.countContactsAmount(any())
-        }.wasInvoked(exactly = once)
-    }
+    fun givenCountingContactsSucceed_whenCountingContactsCalled_thenShouldPropagateResult() =
+        runTest {
+            // given
+            val (arrangement, userRepository) = Arrangement()
+                .withCountContactsAmountResult(12)
+                .arrange()
+            // when
+            val result = userRepository.countContactsAmount()
+            // then
+            result.shouldSucceed { assertEquals(12, it) }
+            coVerify {
+                arrangement.userDAO.countContactsAmount(any())
+            }.wasInvoked(exactly = once)
+        }
 
     @Test
     fun givenCountingTeamSizeSucceed_whenCountingTeamSize_thenShouldPropagateResult() = runTest {
@@ -137,9 +139,6 @@ class AnalyticsRepositoryTest {
         val userDAO = mock(UserDAO::class)
 
         @Mock
-        val clientDAO = mock(ClientDAO::class)
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
@@ -148,7 +147,6 @@ class AnalyticsRepositoryTest {
         val analyticsRepository: AnalyticsRepository by lazy {
             AnalyticsDataSource(
                 userDAO = userDAO,
-                selfTeamIdProvider = selfTeamIdProvider,
                 selfUserId = TestUser.USER_ID,
                 metadataDAO = metadataDAO,
             )

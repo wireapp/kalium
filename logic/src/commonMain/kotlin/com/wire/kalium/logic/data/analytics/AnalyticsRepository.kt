@@ -21,9 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.left
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
@@ -45,8 +42,7 @@ interface AnalyticsRepository {
 internal class AnalyticsDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
-    private val selfUserId: UserId,
-    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val selfUserId: UserId
 ) : AnalyticsRepository {
 
     override suspend fun getContactsAmountCached(): Either<StorageFailure, Int> = wrapStorageRequest {

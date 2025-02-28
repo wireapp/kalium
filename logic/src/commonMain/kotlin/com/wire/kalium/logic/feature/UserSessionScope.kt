@@ -2205,7 +2205,6 @@ class UserSessionScope internal constructor(
     private val analyticsRepository: AnalyticsRepository
         get() = AnalyticsDataSource(
             userDAO = userStorage.database.userDAO,
-            selfTeamIdProvider = selfTeamId,
             selfUserId = userId,
             metadataDAO = userStorage.database.metadataDAO
         )
