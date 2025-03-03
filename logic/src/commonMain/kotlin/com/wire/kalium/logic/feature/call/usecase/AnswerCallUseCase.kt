@@ -24,8 +24,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
@@ -38,10 +36,9 @@ interface AnswerCallUseCase {
 }
 
 internal class AnswerCallUseCaseImpl(
-    private val incomingCalls: GetIncomingCallsUseCase,
+    private val observeOngoingAndIncomingCalls: ObserveOngoingAndIncomingCallsUseCase,
     private val callManager: Lazy<CallManager>,
     private val muteCall: MuteCallUseCase,
-    private val unMuteCall: UnMuteCallUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : AnswerCallUseCase {
@@ -52,23 +49,18 @@ internal class AnswerCallUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId
     ) {
-        // mute or un-mute call when answering/joining
-        incomingCalls().map {
-            it.find { call ->
-                call.conversationId == conversationId
-            }
-        }.flowOn(dispatchers.default).first()?.let {
-            if (it.isMuted) {
-                muteCall(conversationId)
-            } else {
-                unMuteCall(conversationId)
-            }
-        }
+        val call = observeOngoingAndIncomingCalls().first().find { it.conversationId == conversationId }
+        val isVideoCall = call?.isCameraOn ?: false
         withContext(dispatchers.default) {
             callManager.value.answerCall(
                 conversationId = conversationId,
-                isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
-            )
+                isAudioCbr = kaliumConfigs.forceConstantBitrateCalls,
+                isVideoCall = isVideoCall
+            ).also {
+                if (call?.isMuted == true) {
+                    muteCall(conversationId)
+                }
+            }
         }
     }
 }

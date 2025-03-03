@@ -329,17 +329,19 @@ class CallManagerImpl internal constructor(
 
     override suspend fun answerCall(
         conversationId: ConversationId,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isVideoCall: Boolean
     ) {
         withCalling {
             callingLogger.d(
                 "$TAG -> answering call for conversation = " +
                         "${conversationId.toLogString()}.."
             )
+            val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
             wcall_answer(
                 inst = deferredHandle.await(),
                 conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-                callType = CallTypeCalling.AUDIO.avsValue,
+                callType = callType.avsValue,
                 cbrEnabled = isAudioCbr
             )
             callingLogger.d(
