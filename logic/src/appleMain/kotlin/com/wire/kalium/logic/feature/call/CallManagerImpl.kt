@@ -45,7 +45,7 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
-    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean) {
+    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) {
         TODO("Not yet implemented")
     }
 
