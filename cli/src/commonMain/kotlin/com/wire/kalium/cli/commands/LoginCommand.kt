@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScop
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.server.GetServerConfigResult
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.runBlocking
 
 class LoginCommand : CliktCommand(name = "login") {
@@ -110,6 +111,7 @@ class LoginCommand : CliktCommand(name = "login") {
             }
         }
 
+    @OptIn(DelicateKaliumApi::class)
     override fun run(): Unit = runBlocking {
         val loginResult = authenticate().let {
             if (it !is AuthenticationResult.Success) {
@@ -132,6 +134,10 @@ class LoginCommand : CliktCommand(name = "login") {
             }
         }
 
-        userSession = currentContext.findOrSetObject { coreLogic.getSessionScope(userId) }
+        userSession = currentContext.findOrSetObject {
+            coreLogic.getSessionScope(userId).also {
+                it.syncExecutor.request { keepSyncAlwaysOn() }
+            }
+        }
     }
 }
