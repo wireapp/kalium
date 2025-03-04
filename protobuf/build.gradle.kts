@@ -16,7 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.google.protobuf.gradle.GenerateProtoTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
@@ -84,31 +83,21 @@ kotlin {
 
 val compileTasks = tasks.matching { it is KotlinCompile || it is KotlinNativeCompile }
 
-codegenProject.tasks
-    .matching { it.name == "generateProto" }
-    .all {
-        this as GenerateProtoTask
-        compileTasks.forEach { compileTask ->
-            compileTask.dependsOn(this)
-        }
-        // Always generate protobuf files. So we make sure they exist.
-        outputs.upToDateWhen {
-            false
-        }
-        doLast {
-            outputSourceDirectorySet.srcDirs.forEach { generatedDirectory ->
-                generatedFilesBaseDir.mkdirs()
-                val targetDirectory = File(generatedFilesBaseDir, generatedDirectory.name)
-                // Delete already existing files
-                targetDirectory.deleteRecursively()
+tasks.register("setupProtoTools") {
+    providers.exec {
+        commandLine("bash")
+        args = listOf("$rootDir/scripts/setup_proto_tools.sh")
+    }.standardOutput.asText.get().trim()
+}
 
-                // Move generated files to target directory
-                val movingSucceeded = generatedDirectory.renameTo(targetDirectory)
+tasks.register("generateProto") {
+    dependsOn("setupProtoTools")
+    providers.exec {
+        commandLine("bash")
+        args = listOf("$rootDir/scripts/protoc_gen_kotlin.sh")
+    }.standardOutput.asText.get().trim()
+}
 
-                require(movingSucceeded) {
-                    "Failed to move Generated protobuf files from '${generatedDirectory.absolutePath}' " +
-                            "to destination directory '${targetDirectory.absolutePath}'"
-                }
-            }
-        }
-    }
+compileTasks.forEach {
+    it.dependsOn("generateProto")
+}

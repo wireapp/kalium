@@ -32,7 +32,6 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
         classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
-        classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
         classpath("io.github.leandroborgesferreira:dag-command:${libs.versions.dagCommand.get()}")
