@@ -286,9 +286,13 @@ internal object TableMapper {
 
     val messageAttachmentDraftAdapter = MessageAttachmentDraft.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
+        asset_widthAdapter = IntColumnAdapter,
+        asset_heightAdapter = IntColumnAdapter,
     )
 
     val messageAttachmentsAdapter = MessageAttachments.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
+        asset_widthAdapter = IntColumnAdapter,
+        asset_heightAdapter = IntColumnAdapter,
     )
 }

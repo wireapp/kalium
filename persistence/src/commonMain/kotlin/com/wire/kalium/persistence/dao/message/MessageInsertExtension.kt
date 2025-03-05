@@ -319,6 +319,53 @@ internal class MessageInsertExtensionImpl(
                 legal_hold_member_list = content.memberUserIdList,
                 legal_hold_type = content.type
             )
+
+            is MessageEntityContent.Multipart -> {
+                messagesQueries.insertMessageTextContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    text_body = content.messageBody,
+                    quoted_message_id = content.quotedMessageId,
+                    is_quote_verified = content.isQuoteVerified
+                )
+                content.linkPreview.forEach {
+                    messagesQueries.insertMessageLinkPreview(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        url = it.url,
+                        url_offset = it.urlOffset,
+                        permanent_url = it.permanentUrl,
+                        summary = it.summary,
+                        title = it.title
+                    )
+                }
+                content.mentions.forEach {
+                    messagesQueries.insertMessageMention(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId
+                    )
+                }
+                content.attachments.forEach {
+                    attachmentQueries.insertCellAttachment(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        asset_id = it.assetId,
+                        asset_version_id = it.assetVersionId,
+                        cell_asset = true,
+                        asset_mime_type = it.mimeType,
+                        asset_path = it.assetPath,
+                        asset_size = it.assetSize,
+                        local_path = it.localPath ?: "",
+                        asset_width = it.assetWidth,
+                        asset_height = it.assetHeight,
+                        asset_duration_ms = it.assetDuration,
+                        asset_transfer_status = it.assetTransferStatus,
+                    )
+                }
+            }
         }
     }
 
@@ -344,6 +391,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
                 is MessageEntityContent.Location,
+                is MessageEntityContent.Multipart,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
@@ -479,5 +527,6 @@ internal class MessageInsertExtensionImpl(
 
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
         is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
+        is MessageEntityContent.Multipart -> MessageEntity.ContentType.MULTIPART
     }
 }

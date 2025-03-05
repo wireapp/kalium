@@ -229,6 +229,27 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.MULTIPART -> when {
+                isSelfMessage -> MessagePreviewEntityContent.Text(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
+
+                (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+                    senderName = senderName,
+                    // requireField here is safe since if a message have a quote, it must have a text
+                    messageBody = text.requireField("text")
+                )
+
+                (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
+                    senderName = senderName, messageBody = text.requireField("text")
+                )
+
+                else -> MessagePreviewEntityContent.Text(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
+            }
         }
     }
 
@@ -671,6 +692,30 @@ object MessageMapper {
             MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
                 memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
                 type = legalHoldType.requireField("legalHoldType")
+            )
+
+            MessageEntity.ContentType.MULTIPART -> MessageEntityContent.Multipart(
+                messageBody = text,
+                mentions = messageMentionsFromJsonString(mentions),
+                quotedMessageId = quotedMessageId,
+                quotedMessage = quotedMessageContentType?.let {
+                    MessageEntityContent.Text.QuotedMessage(
+                        id = quotedMessageId.requireField("quotedMessageId"),
+                        senderId = quotedSenderId.requireField("quotedSenderId"),
+                        isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
+                        isVerified = isQuoteVerified ?: false,
+                        senderName = quotedSenderName,
+                        dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime").toIsoDateTimeString(),
+                        editTimestamp = quotedMessageEditTimestamp?.toIsoDateTimeString(),
+                        visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
+                        contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
+                        textBody = quotedTextBody,
+                        assetMimeType = quotedAssetMimeType,
+                        assetName = quotedAssetName,
+                        locationName = quotedLocationName
+                    )
+                },
+                attachments = messageAttachmentsFromJsonString(attachments),
             )
         }
 

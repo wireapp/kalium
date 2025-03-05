@@ -403,3 +403,6 @@ updateWireCell:
 UPDATE Conversation
 SET wire_cell = ?
 WHERE qualified_id = ?;
+
+getCellName:
+SELECT wire_cell FROM Conversation WHERE qualified_id = ?;

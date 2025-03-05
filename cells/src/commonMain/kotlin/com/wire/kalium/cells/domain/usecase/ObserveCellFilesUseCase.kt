@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.CellsScope.Companion.ROOT_CELL
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.functional.getOrElse
@@ -45,12 +44,14 @@ internal class ObserveCellFilesUseCaseImpl(
 
     override suspend operator fun invoke(): Flow<List<ConversationFiles>> {
         return conversationsDAO.getAllConversationDetails(fromArchive = false, filter = ConversationFilterEntity.ALL).map { conversations ->
-            conversations.map { conversation ->
-                ConversationFiles(
-                    conversationId = QualifiedID(conversation.id.value, conversation.id.domain),
-                    conversationTitle = conversation.name ?: "",
-                    files = cellsRepository.getFiles("${ROOT_CELL}/${conversation.id}").getOrElse { emptyList() }
-                )
+            conversations.mapNotNull { conversation ->
+                conversation.wireCell?.let { cellName ->
+                    ConversationFiles(
+                        conversationId = QualifiedID(conversation.id.value, conversation.id.domain),
+                        conversationTitle = conversation.name ?: "",
+                        files = cellsRepository.getFiles(cellName).getOrElse { emptyList() }
+                    )
+                }
             }.filter { it.files.isNotEmpty() }
         }
     }

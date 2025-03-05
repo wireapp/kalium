@@ -1886,6 +1886,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             messageRepository,
             conversationRepository,
+            cells.messageAttachmentsDraftRepository,
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
@@ -1907,6 +1908,8 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
+            cells.publishAttachments,
+            cells.removeAttachments,
             this,
             userScopedLogger,
         )
@@ -2208,6 +2211,7 @@ class UserSessionScope internal constructor(
             cellsClient = globalScope.unboundNetworkContainer.cellsClient,
             attachmentDraftDao = userStorage.database.messageAttachmentDraftDao,
             conversationsDAO = userStorage.database.conversationDAO,
+            attachmentsDao = userStorage.database.messageAttachments,
         )
     }
 

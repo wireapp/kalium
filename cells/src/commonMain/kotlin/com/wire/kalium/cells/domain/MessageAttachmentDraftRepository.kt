@@ -24,13 +24,23 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.AssetContent
 import kotlinx.coroutines.flow.Flow
 
-internal interface MessageAttachmentDraftRepository {
-    suspend fun add(conversationId: QualifiedID, node: CellNode, dataPath: String): Either<CoreFailure, Unit>
-    suspend fun get(uuid: String): Either<CoreFailure, AttachmentDraft?>
-    suspend fun getAll(conversationId: ConversationId): Either<CoreFailure, List<AttachmentDraft>>
-    suspend fun observe(conversationId: QualifiedID): Flow<List<AttachmentDraft>>
-    suspend fun updateStatus(uuid: String, status: AttachmentUploadStatus): Either<CoreFailure, Unit>
-    suspend fun remove(uuid: String): Either<CoreFailure, Unit>
+public interface MessageAttachmentDraftRepository {
+    @Suppress("LongParameterList")
+    public suspend fun add(
+        conversationId: QualifiedID,
+        node: CellNode,
+        mimeType: String,
+        dataPath: String,
+        metadata: AssetContent.AssetMetadata?,
+        uploadStatus: AttachmentUploadStatus = AttachmentUploadStatus.UPLOADING,
+    ): Either<CoreFailure, Unit>
+    public suspend fun get(uuid: String): Either<CoreFailure, AttachmentDraft?>
+    public suspend fun getAll(conversationId: ConversationId): Either<CoreFailure, List<AttachmentDraft>>
+    public suspend fun observe(conversationId: QualifiedID): Flow<List<AttachmentDraft>>
+    public suspend fun updateStatus(uuid: String, status: AttachmentUploadStatus): Either<CoreFailure, Unit>
+    public suspend fun remove(uuid: String): Either<CoreFailure, Unit>
+    public suspend fun removeAttachmentDrafts(conversationId: ConversationId)
 }

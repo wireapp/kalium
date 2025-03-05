@@ -23,19 +23,26 @@ import aws.sdk.kotlin.services.s3.completeMultipartUpload
 import aws.sdk.kotlin.services.s3.createMultipartUpload
 import aws.sdk.kotlin.services.s3.model.CompletedMultipartUpload
 import aws.sdk.kotlin.services.s3.model.CompletedPart
+import aws.sdk.kotlin.services.s3.model.GetObjectRequest
+import aws.sdk.kotlin.services.s3.presigners.presignGetObject
 import aws.sdk.kotlin.services.s3.putObject
 import aws.sdk.kotlin.services.s3.uploadPart
 import aws.sdk.kotlin.services.s3.withConfig
 import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.asByteStream
+import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import okhttp3.internal.http2.Header
 import okio.Path
+import okio.Sink
+import okio.buffer
+import okio.source
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
+import kotlin.time.Duration.Companion.hours
 
 internal actual fun cellsAwsClient(credentials: CellsCredentials): CellsAwsClient = CellsAwsClientJvm(credentials)
 
@@ -63,6 +70,23 @@ private class CellsAwsClientJvm(
                 )
             )
             endpointUrl = Url.parse(serverUrl)
+        }
+    }
+
+    override suspend fun download(objectKey: String, outFileSink: Sink) {
+        withS3Client {
+            getObject(
+                GetObjectRequest {
+                    bucket = DEFAULT_BUCKET_NAME
+                    key = objectKey
+                }
+            ) { response ->
+                response.body?.toInputStream()?.let { input ->
+                    outFileSink.buffer().use { out ->
+                        out.writeAll(input.source())
+                    }
+                }
+            }
         }
     }
 
@@ -135,6 +159,15 @@ private class CellsAwsClientJvm(
             }
         }
     }
+
+    override suspend fun getPreSignedUrl(objectKey: String): String =
+        withS3Client {
+            val request = GetObjectRequest {
+                key = objectKey
+            }
+            val preSignedRequest = presignGetObject(request, 24.hours)
+            preSignedRequest.url.toString()
+        }
 
     private suspend fun <T> withS3Client(
         uploadProgressListener: ((Long) -> Unit)? = null,

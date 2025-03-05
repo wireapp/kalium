@@ -1,12 +1,16 @@
 CREATE TABLE IF NOT EXISTS MessageAttachmentDraft (
       attachment_id TEXT NOT NULL,
-      verison_id TEXT NOT NULL,
+      version_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      mime_type TEXT NOT NULL,
       file_name TEXT NOT NULL,
       file_size INTEGER NOT NULL,
       data_path TEXT NOT NULL,
       node_path TEXT NOT NULL,
       upload_status TEXT NOT NULL,
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (attachment_id)
@@ -14,6 +18,7 @@ CREATE TABLE IF NOT EXISTS MessageAttachmentDraft (
 
 CREATE TABLE IF NOT EXISTS MessageAttachments (
       asset_id TEXT NOT NULL,
+      asset_version_id TEXT NOT NULL,
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       cell_asset INTEGER AS Boolean NOT NULL,
@@ -21,20 +26,12 @@ CREATE TABLE IF NOT EXISTS MessageAttachments (
       preview_url TEXT NOT NULL DEFAULT '',
       asset_mime_type TEXT NOT NULL,
       asset_size INTEGER,
-      asset_name TEXT,
+      asset_path TEXT,
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
 
---       -- remote data fields
---       asset_otr_key BLOB,
---       asset_sha256 BLOB,
---       asset_token TEXT,
---       asset_domain TEXT,
---       asset_encryption_algorithm TEXT,
---
---       -- metadata fields
---       asset_width INTEGER AS Int,
---       asset_height INTEGER AS Int,
---       asset_duration_ms INTEGER,
---       asset_normalized_loudness BLOB,
+      asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (asset_id, message_id, conversation_id)
@@ -142,7 +139,13 @@ IFNULL(
         "id":"' || asset_id || '",
         "mime_type":"' || asset_mime_type || '",
         "cell_asset":"' || cell_asset || '",
+        "asset_path":"' || IFNULL(asset_path,'') || '",
+        "asset_size":' || IFNULL(asset_size,0) || ',
         "local_path":"' || IFNULL(local_path,'') || '",
+        "asset_width":"' || IFNULL(asset_width,0) || '",
+        "asset_height":"' || IFNULL(asset_height,0) || '",
+        "asset_transfer_status":"' || asset_transfer_status || '",
+        "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
         "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
     FROM MessageAttachments
     WHERE MessageAttachments.message_id = Message.id

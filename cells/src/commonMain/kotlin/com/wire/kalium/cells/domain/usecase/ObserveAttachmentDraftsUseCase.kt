@@ -23,7 +23,10 @@ import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 public interface ObserveAttachmentDraftsUseCase {
     /**
@@ -38,6 +41,7 @@ public interface ObserveAttachmentDraftsUseCase {
 internal class ObserveAttachmentDraftsUseCaseImpl internal constructor(
     private val repository: MessageAttachmentDraftRepository,
     private val uploadManager: CellUploadManager,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveAttachmentDraftsUseCase {
 
     override suspend fun invoke(conversationId: QualifiedID): Flow<List<AttachmentDraft>> {
@@ -49,11 +53,13 @@ internal class ObserveAttachmentDraftsUseCaseImpl internal constructor(
      * Remove uploads that are in UPLOADING status but not being uploaded.
      */
     private suspend fun removeStaleUploads(conversationId: QualifiedID) {
-        repository.getAll(conversationId).getOrNull()
-            ?.filter { it.uploadStatus == AttachmentUploadStatus.UPLOADING }
-            ?.filterNot { uploadManager.isUploading(it.uuid) }
-            ?.onEach {
-                repository.remove(it.uuid)
-            }
+        withContext(dispatchers.io) {
+            repository.getAll(conversationId).getOrNull()
+                ?.filter { it.uploadStatus == AttachmentUploadStatus.UPLOADING }
+                ?.filterNot { uploadManager.isUploading(it.uuid) }
+                ?.onEach {
+                    repository.remove(it.uuid)
+                }
+        }
     }
 }

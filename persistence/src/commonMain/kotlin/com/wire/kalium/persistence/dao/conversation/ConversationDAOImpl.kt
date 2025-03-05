@@ -243,6 +243,9 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.updateWireCell(wireCell, conversationId)
     }
 
+    override suspend fun getCellName(conversationId: QualifiedIDEntity): String? =
+        conversationQueries.getCellName(conversationId).executeAsOneOrNull()?.wire_cell
+
     override suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,

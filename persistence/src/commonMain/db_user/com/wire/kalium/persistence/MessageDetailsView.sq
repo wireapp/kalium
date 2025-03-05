@@ -110,7 +110,13 @@ IFNULL(
         "id":"' || asset_id || '",
         "mime_type":"' || asset_mime_type || '",
         "cell_asset":"' || cell_asset || '",
+        "asset_path":"' || IFNULL(asset_path,'') || '",
+        "asset_size":' || IFNULL(asset_size,0) || ',
         "local_path":"' || IFNULL(local_path,'') || '",
+        "asset_width":"' || IFNULL(asset_width,0) || '",
+        "asset_height":"' || IFNULL(asset_height,0) || '",
+        "asset_transfer_status":"' || asset_transfer_status || '",
+        "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
         "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
     FROM MessageAttachments
     WHERE MessageAttachments.message_id = Message.id

@@ -39,6 +39,7 @@ interface MigrationDAO {
     suspend fun insertMessages(messageList: List<MessageEntity>)
 }
 
+@Suppress("LongParameterList")
 internal class MigrationDAOImpl(
     private val migrationQueries: MigrationQueries,
     messagesQueries: MessagesQueries,
@@ -47,14 +48,15 @@ internal class MigrationDAOImpl(
     private val conversationsQueries: ConversationsQueries,
     buttonContentQueries: ButtonContentQueries,
     selfUserIDEntity: UserIDEntity,
-) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(
-    messagesQueries,
-    attachmentsQueries,
-    unreadEventsQueries,
-    conversationsQueries,
-    buttonContentQueries,
-    selfUserIDEntity
-) {
+) : MigrationDAO,
+    MessageInsertExtension by MessageInsertExtensionImpl(
+        messagesQueries,
+        attachmentsQueries,
+        unreadEventsQueries,
+        conversationsQueries,
+        buttonContentQueries,
+        selfUserIDEntity
+    ) {
     override suspend fun insertConversation(conversationList: List<ConversationEntity>) {
         migrationQueries.transaction {
             conversationList.forEach {

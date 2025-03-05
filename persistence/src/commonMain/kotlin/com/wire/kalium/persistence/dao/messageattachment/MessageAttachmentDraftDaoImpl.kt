@@ -32,8 +32,12 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
         uuid: String,
         versionId: String,
         conversationId: QualifiedIDEntity,
+        mimeType: String,
         fileName: String,
         fileSize: Long,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        assetDuration: Long?,
         dataPath: String,
         nodePath: String,
         status: String,
@@ -42,8 +46,12 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
             attachment_id = uuid,
             version_id = versionId,
             conversation_id = conversationId,
+            mime_type = mimeType,
             file_name = fileName,
             file_size = fileSize,
+            asset_width = assetWidth,
+            asset_height = assetHeight,
+            asset_duration_ms = assetDuration,
             data_path = dataPath,
             node_path = nodePath,
             upload_status = status,
@@ -68,5 +76,9 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
 
     override suspend fun deleteAttachment(uuid: String) {
         queries.deleteDraft(uuid)
+    }
+
+    override suspend fun deleteAttachments(conversationId: QualifiedIDEntity) {
+        queries.deleteDraftsForConversation(conversationId)
     }
 }

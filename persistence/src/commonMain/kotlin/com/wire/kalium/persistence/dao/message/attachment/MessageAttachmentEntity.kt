@@ -24,9 +24,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MessageAttachmentEntity(
     @SerialName("id") val assetId: String,
+    @SerialName("version_id") val assetVersionId: String = "",
     @Serializable(with = BooleanIntSerializer::class)
     @SerialName("cell_asset") val cellAsset: Boolean,
     @SerialName("mime_type") val mimeType: String,
+    @SerialName("asset_path") val assetPath: String?,
+    @SerialName("asset_size") val assetSize: Long?,
     @SerialName("local_path") val localPath: String? = null,
     @SerialName("preview_url") val previewUrl: String? = null,
+    @SerialName("asset_width") val assetWidth: Int?,
+    @SerialName("asset_height") val assetHeight: Int?,
+    @SerialName("asset_duration_ms") val assetDuration: Long?,
+    @SerialName("asset_transfer_status") val assetTransferStatus: String,
 )

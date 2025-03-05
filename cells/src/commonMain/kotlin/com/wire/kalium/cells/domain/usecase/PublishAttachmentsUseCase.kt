@@ -18,52 +18,29 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
-import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.CellAssetContent
+import com.wire.kalium.logic.data.message.MessageAttachment
 
 public interface PublishAttachmentsUseCase {
     /**
      * For TESTING purposes only.
      * Use case for publishing all draft attachments and creating public URLs.
      */
-    public suspend operator fun invoke(conversationId: ConversationId): Either<NetworkFailure, List<String>>
+    public suspend operator fun invoke(attachments: List<MessageAttachment>): Either<NetworkFailure, Unit>
 }
 
 internal class PublishAttachmentsUseCaseImpl internal constructor(
     private val cellsRepository: CellsRepository,
-    private val repository: MessageAttachmentDraftRepository,
-    private val credentials: CellsCredentials,
 ) : PublishAttachmentsUseCase {
 
     @Suppress("ReturnCount")
-    override suspend fun invoke(conversationId: ConversationId): Either<NetworkFailure, List<String>> {
-
-        val publicUrls = mutableListOf<String>()
-        val attachments = repository.getAll(conversationId).getOrNull()
-
-        attachments?.forEach { attachment ->
-
-            cellsRepository.publishDraft(attachment.uuid).onFailure {
-                return Either.Left(it)
-            }
-
-            cellsRepository.getPublicUrl(attachment.uuid, attachment.fileName)
-                .onSuccess {
-                    publicUrls.add("${credentials.serverUrl}$it")
-                }
-                .onFailure {
-                    return Either.Left(it)
-                }
-
-            repository.remove(attachment.uuid)
-        }
-
-        return Either.Right(publicUrls.toList())
+    override suspend fun invoke(attachments: List<MessageAttachment>): Either<NetworkFailure, Unit> {
+        val assets = attachments.filterIsInstance<CellAssetContent>().map {
+            NodeIdAndVersion(it.id, it.versionId)
+        }.toList()
+        return cellsRepository.publishDrafts(assets)
     }
 }

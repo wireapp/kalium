@@ -15,17 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.data
+package com.wire.kalium.cells.domain.model
 
-import com.wire.kalium.cells.data.model.CellNodeDTO
-import com.wire.kalium.cells.domain.model.CellsCredentials
-import okio.Path
-import okio.Sink
-
-internal interface CellsAwsClient {
-    suspend fun download(objectKey: String, outFileSink: Sink)
-    suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
-    suspend fun getPreSignedUrl(objectKey: String): String
-}
-
-internal expect fun cellsAwsClient(credentials: CellsCredentials): CellsAwsClient
+internal data class NodePreview(
+    val url: String,
+    val density: Int,
+)

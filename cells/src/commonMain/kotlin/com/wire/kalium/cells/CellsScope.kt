@@ -31,6 +31,9 @@ import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.GetPreviewUrlUseCase
+import com.wire.kalium.cells.domain.usecase.GetPreviewUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCase
@@ -39,25 +42,26 @@ import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCase
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import okio.FileSystem
+import okio.SYSTEM
 import kotlin.coroutines.CoroutineContext
 
 public class CellsScope(
     private val cellsClient: HttpClient,
     private val attachmentDraftDao: MessageAttachmentDraftDao,
     private val conversationsDAO: ConversationDAO,
+    private val attachmentsDao: MessageAttachmentsDao,
 ) : CoroutineScope {
-
-    internal companion object {
-        // Temporary hardcoded root cell
-        const val ROOT_CELL = "wire-cells-android"
-    }
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -84,10 +88,12 @@ public class CellsScope(
     private val cellsRepository: CellsRepository
         get() = CellsDataSource(
             cellsApi = cellsApi,
-            awsClient = cellAwsClient
+            awsClient = cellAwsClient,
+            messageAttachments = attachmentsDao,
+            fileSystem = FileSystem.SYSTEM
         )
 
-    private val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository
+    public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository
         get() = MessageAttachmentDraftDataSource(attachmentDraftDao)
 
     public val uploadManager: CellUploadManager by lazy {
@@ -98,20 +104,29 @@ public class CellsScope(
     }
 
     public val addAttachment: AddAttachmentDraftUseCase
-        get() = AddAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this)
+        get() = AddAttachmentDraftUseCaseImpl(uploadManager, conversationsDAO, messageAttachmentsDraftRepository, this)
 
     public val removeAttachment: RemoveAttachmentDraftUseCase
         get() = RemoveAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, cellsRepository)
+
+    public val removeAttachments: RemoveAttachmentDraftsUseCase
+        get() = RemoveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository)
 
     public val observeAttachments: ObserveAttachmentDraftsUseCase
         get() = ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager)
 
     public val publishAttachments: PublishAttachmentsUseCase
-        get() = PublishAttachmentsUseCaseImpl(cellsRepository, messageAttachmentsDraftRepository, cellClientCredentials)
+        get() = PublishAttachmentsUseCaseImpl(cellsRepository)
 
     public val observeFiles: ObserveCellFilesUseCase
         get() = ObserveCellFilesUseCaseImpl(conversationsDAO, cellsRepository)
 
     public val enableWireCell: SetWireCellForConversationUseCase
         get() = SetWireCellForConversationUseCase(conversationsDAO)
+
+    public val loadPreview: GetPreviewUrlUseCase
+        get() = GetPreviewUrlUseCaseImpl(cellsRepository)
+
+    public val downloadFile: DownloadCellFileUseCase
+        get() = DownloadCellFileUseCase(cellsRepository)
 }

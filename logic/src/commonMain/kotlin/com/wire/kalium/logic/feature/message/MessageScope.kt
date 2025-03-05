@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -105,6 +108,7 @@ class MessageScope internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val attachmentsRepository: MessageAttachmentDraftRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
@@ -126,6 +130,8 @@ class MessageScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
     private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
+    private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
+    private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -237,6 +243,25 @@ class MessageScope internal constructor(
             scope = scope
         )
 
+    val sendMultipartMessage: SendMultipartMessageUseCase
+        get() = SendMultipartMessageUseCase(
+            persistMessage = persistMessage,
+            selfUserId = selfUserId,
+            provideClientId = currentClientIdProvider,
+            assetDataSource = assetRepository,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            userPropertyRepository = userPropertyRepository,
+            conversationRepository = conversationRepository,
+            attachmentsRepository = attachmentsRepository,
+            selfDeleteTimer = observeSelfDeletingMessages,
+            publishAttachments = publishAttachmentsUseCase,
+            removeAttachmentDrafts = removeAttachmentDraftsUseCase,
+            sendAssetMessage = sendAssetMessage,
+            scope = scope
+        )
+
     val sendEditTextMessage: SendEditTextMessageUseCase
         get() = SendEditTextMessageUseCase(
             messageRepository,
@@ -256,7 +281,10 @@ class MessageScope internal constructor(
         get() = RetryFailedMessageUseCase(
             messageRepository,
             assetRepository,
+            conversationRepository,
+            attachmentsRepository,
             persistMessage,
+            publishAttachmentsUseCase,
             scope,
             dispatcher,
             messageSender,

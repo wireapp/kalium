@@ -322,6 +322,8 @@ interface ConversationRepository {
     suspend fun observeOneToOneConversationDetailsWithOtherUser(
         otherUserId: UserId
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
+
+    suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -802,6 +804,10 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(otherUserId.toDao())
             .map { it?.let { conversationMapper.fromDaoModelToDetails(it) as? ConversationDetails.OneOne } }
             .wrapStorageRequest()
+    }
+
+    override suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        conversationDAO.getCellName(conversationId.toDao()) != null
     }
 
     override suspend fun getOneOnOneConversationsWithOtherUser(

@@ -17,25 +17,41 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
 import com.wire.kalium.cells.domain.CellsApi
+import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import okio.FileSystem
 import okio.Path
+import okio.use
 
 internal class CellsDataSource internal constructor(
     private val cellsApi: CellsApi,
     private val awsClient: CellsAwsClient,
+    private val messageAttachments: MessageAttachmentsDao,
+    private val fileSystem: FileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CellsRepository {
 
@@ -83,9 +99,13 @@ internal class CellsDataSource internal constructor(
             cellsApi.delete(node.toDto())
         }
 
-    override suspend fun publishDraft(nodeUuid: String): Either<NetworkFailure, Unit> =
-        wrapApiRequest {
-            cellsApi.publishDraft(nodeUuid)
+    override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit> =
+        coroutineScope {
+            nodes.map { (nodeId, versionId) ->
+                async {
+                    wrapApiRequest { cellsApi.publishDraft(nodeId, versionId) }
+                }
+            }.awaitAll().firstOrNull { it.isLeft() } ?: Unit.right()
         }
 
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit> =
@@ -93,8 +113,52 @@ internal class CellsDataSource internal constructor(
             cellsApi.cancelDraft(nodeUuid, versionUuid)
         }
 
-    override suspend fun getPublicUrl(nodeUuid: String, fileName: String): Either<NetworkFailure, String> =
+    override suspend fun savePreviewUrl(assetId: String, url: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachments.setPreviewUrl(assetId, url)
+        }
+    }
+
+    override suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?> = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachments.getAssetPath(assetId)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
+        return try {
+            fileSystem.sink(out, true).use { sink ->
+                awsClient.download(cellPath, sink)
+                Either.Right(Unit)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Either.Left(NetworkFailure.ServerMiscommunication(e))
+        }
+    }
+
+    override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            messageAttachments.setTransferStatus(assetId, status.name)
+        }
+
+    override suspend fun saveLocalPath(assetId: String, path: String): Either<StorageFailure, Unit> = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachments.setLocalPath(assetId, path)
+        }
+    }
+
+    override suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>> =
         wrapApiRequest {
-            cellsApi.createPublicUrl(nodeUuid, fileName)
+            cellsApi.getNode(nodeUuid).mapSuccess { response ->
+                response.previews.map { preview ->
+                    NodePreview(
+                        preview.url,
+                        preview.dimension ?: 0,
+                    )
+                }
+            }
         }
 }

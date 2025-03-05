@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -29,10 +28,15 @@ public class SetWireCellForConversationUseCase internal constructor(
     private val conversationDAO: ConversationDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
+    private companion object {
+        // Temporary hardcoded root cell
+        const val ROOT_CELL = "wire-cells-android"
+    }
+
     public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
         withContext(dispatchers.io) {
             if (enabled) {
-                conversationDAO.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), CellsScope.ROOT_CELL)
+                conversationDAO.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), "$ROOT_CELL/$conversationId")
             } else {
                 conversationDAO.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), null)
             }

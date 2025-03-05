@@ -30,6 +30,7 @@ internal data class CellNodeDTO(
     val type: String? = null,
     val isRecycleBin: Boolean = false,
     val isDraft: Boolean = false,
+    val previews: List<PreviewDto> = emptyList(),
 )
 
 internal fun CellNodeDTO.toModel() = CellNode(
@@ -66,8 +67,21 @@ internal fun RestNode.toDto() = CellNodeDTO(
     eTag = storageETag,
     isRecycleBin = isRecycleBin ?: false,
     isDraft = isDraft(),
+    previews = previews?.mapNotNull {
+        it.url?.let { url ->
+            PreviewDto(
+                url,
+                it.dimension ?: 0,
+            )
+        }
+    } ?: emptyList(),
 )
 
 private fun RestNode.isDraft(): Boolean {
     return userMetadata?.firstOrNull { it.namespace == "usermeta-draft" }?.jsonValue == "true"
 }
+
+internal data class PreviewDto(
+    val url: String,
+    val dimension: Int?,
+)

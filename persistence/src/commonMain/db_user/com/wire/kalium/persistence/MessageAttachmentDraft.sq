@@ -8,11 +8,15 @@ CREATE TABLE MessageAttachmentDraft (
       attachment_id TEXT NOT NULL,
       version_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      mime_type TEXT NOT NULL,
       file_name TEXT NOT NULL,
       file_size INTEGER NOT NULL,
       data_path TEXT NOT NULL,
       node_path TEXT NOT NULL,
       upload_status TEXT NOT NULL,
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (attachment_id)
@@ -29,12 +33,16 @@ INSERT INTO MessageAttachmentDraft(
     attachment_id,
     version_id,
     conversation_id,
+    mime_type,
     file_name,
     file_size,
+    asset_width,
+    asset_height,
+    asset_duration_ms,
     data_path,
     node_path,
     upload_status
-) VALUES(?,?,?,?,?,?,?,?)
+) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(attachment_id) DO UPDATE SET
     version_id = excluded.version_id,
     conversation_id = excluded.conversation_id,

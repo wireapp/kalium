@@ -23,9 +23,10 @@ import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 internal interface CellsApi {
+    suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
     suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit>
-    suspend fun publishDraft(nodeUuid: String): NetworkResponse<Unit>
+    suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit>
     suspend fun delete(node: CellNodeDTO): NetworkResponse<Unit>
     suspend fun getFiles(cellName: String): NetworkResponse<GetFilesResponseDTO>
     suspend fun createPublicUrl(uuid: String, fileName: String): NetworkResponse<String>

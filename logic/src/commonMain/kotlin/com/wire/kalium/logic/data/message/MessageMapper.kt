@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.attachment.MessageAttachmentMapper
+import com.wire.kalium.logic.data.message.attachment.toModel
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.toModel
@@ -69,7 +71,8 @@ class MessageMapperImpl(
     private val selfUserId: UserId,
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val userMapper: UserMapper = MapperProvider.userMapper()
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val attachmentsMapper: MessageAttachmentMapper = MapperProvider.attachmentsMapper(),
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity =
@@ -325,6 +328,14 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> null
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
             MessageEntity.ContentType.LEGAL_HOLD -> null
+
+            MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
+                messageId = message.id,
+                author = sender,
+                text = message.text.orEmpty(),
+                time = message.date,
+                isQuotingSelfUser = message.isQuotingSelf
+            )
         }
     }
 
@@ -404,6 +415,17 @@ class MessageMapperImpl(
             name = regularMessage.name,
             zoom = regularMessage.zoom
         )
+
+        is MessageContent.Multipart -> MessageEntityContent.Multipart(
+                messageBody = regularMessage.value,
+                linkPreview = regularMessage.linkPreviews.map(linkPreviewMapper::fromModelToDao),
+                mentions = regularMessage.mentions.map(messageMentionMapper::fromModelToDao),
+                attachments = regularMessage.attachments.map {
+                    attachmentsMapper.fromModelToDao(it)
+                                                             },
+                quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
+                isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
+            )
     }
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
@@ -571,6 +593,7 @@ fun MessageEntity.Status.toModel(readCount: Long) =
         MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FailedRemotely
     }
 
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: UserId): MessageContent.Regular = when (this) {
     is MessageEntityContent.Text -> {
         val quotedMessageDetails = this.quotedMessage?.let {
@@ -635,6 +658,34 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
         name = this.name,
         zoom = this.zoom
     )
+
+    is MessageEntityContent.Multipart -> {
+        val quotedMessageDetails = quotedMessage?.let {
+            MessageContent.QuotedMessageDetails(
+                senderId = it.senderId.toModel(),
+                senderName = it.senderName,
+                isQuotingSelfUser = it.isQuotingSelfUser,
+                isVerified = it.isVerified,
+                messageId = it.id,
+                timeInstant = Instant.parse(it.dateTime),
+                editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
+                quotedContent = quotedContentFromEntity(it)
+            )
+        }
+        MessageContent.Multipart(
+            value = messageBody,
+            mentions = mentions.map { it.toModel(selfUserId = selfUserId) },
+            quotedMessageReference = quotedMessageId?.let {
+                MessageContent.QuoteReference(
+                    quotedMessageId = it,
+                    quotedMessageSha256 = null,
+                    isVerified = quotedMessageDetails?.isVerified ?: false
+                )
+            },
+            quotedMessageDetails = quotedMessageDetails,
+            attachments = attachments.map { it.toModel() }
+        )
+    }
 }
 
 private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
