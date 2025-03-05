@@ -30,7 +30,9 @@ class UpdateSupportedProtocolsCommand : CliktCommand(name = "update-supported-pr
     private val userSession by requireObject<UserSessionScope>()
 
     override fun run() = runBlocking {
-        userSession.syncManager.waitUntilLive()
+        userSession.syncExecutor.request {
+            waitUntilLiveOrFailure()
+        }
         userSession.users.updateSupportedProtocols().fold({ failure ->
             throw PrintMessage("updating supported protocols failed: $failure")
         }, {

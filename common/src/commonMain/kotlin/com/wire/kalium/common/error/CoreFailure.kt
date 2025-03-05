@@ -181,7 +181,7 @@ sealed class NetworkFailure : CoreFailure {
     data object FeatureNotSupported : NetworkFailure()
 }
 
-interface MLSFailure : CoreFailure {
+sealed interface MLSFailure : CoreFailure {
 
     data object WrongEpoch : MLSFailure
 
@@ -200,10 +200,9 @@ interface MLSFailure : CoreFailure {
     data object StaleCommit : MLSFailure
     data object InternalErrors : MLSFailure
     data object Disabled : MLSFailure
-
-    data class Generic(val exception: Exception) : MLSFailure {
-        val rootCause: Throwable get() = exception
-    }
+    data object Other : MLSFailure
+    data object CommitForMissingProposal : MLSFailure
+    data class Generic(val rootCause: Throwable) : MLSFailure
 }
 
 interface E2EIFailure : CoreFailure {
