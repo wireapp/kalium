@@ -1880,7 +1880,6 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
-            cells.publishAttachments,
             this,
             userScopedLogger,
         )
