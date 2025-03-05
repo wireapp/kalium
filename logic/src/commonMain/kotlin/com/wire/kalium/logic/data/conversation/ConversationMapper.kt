@@ -682,6 +682,7 @@ internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) 
     ConversationFilter.Favorites -> ConversationFilterEntity.FAVORITES
     ConversationFilter.Groups -> ConversationFilterEntity.GROUPS
     ConversationFilter.OneOnOne -> ConversationFilterEntity.ONE_ON_ONE
+    ConversationFilter.Channels -> ConversationFilterEntity.ALL // TODO change when model exists on dbo
     is ConversationFilter.Folder -> ConversationFilterEntity.ALL // TODO think how to secure that
 }
 
