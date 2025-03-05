@@ -21,14 +21,18 @@ import app.cash.turbine.test
 import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -56,8 +60,8 @@ class CellUploadManagerTest {
         const val assetSize = 1000L
         const val fileName = "testfile.test"
         const val suggestedFileName = "testfile-1.test"
-        val destNodePath = "${CellsScope.ROOT_CELL}/$fileName"
-        val suggestedDestNodePath = "${CellsScope.ROOT_CELL}/$suggestedFileName"
+        val destNodePath = "wire-cells-android/$fileName"
+        val suggestedDestNodePath = "wire-cells-android/$suggestedFileName"
     }
 
     @Test
@@ -233,9 +237,14 @@ private class TestRepository : CellsRepository {
     }
 
     override suspend fun preCheck(nodePath: String) = PreCheckResult.Success.right()
+    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) = Unit.right()
     override suspend fun getFiles(cellName: String) = emptyList<CellNode>().right()
     override suspend fun deleteFile(node: CellNode) = Unit.right()
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String) = Unit.right()
-    override suspend fun publishDraft(nodeUuid: String) = Unit.right()
-    override suspend fun getPublicUrl(nodeUuid: String, fileName: String) = "".right()
+    override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = Unit.right()
+    override suspend fun savePreviewUrl(assetId: String, url: String) = Unit.right()
+    override suspend fun saveLocalPath(assetId: String, path: String) = Unit.right()
+    override suspend fun getPreviews(nodeUuid: String) = emptyList<NodePreview>().right()
+    override suspend fun getAssetPath(assetId: String) = "".right()
+    override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus) = Unit.right()
 }

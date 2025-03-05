@@ -169,7 +169,12 @@ class RemoveAttachmentDraftUseCaseTest {
                     fileName = "",
                     localFilePath = "",
                     fileSize = 1,
-                    uploadStatus = status
+                    uploadStatus = status,
+                    remoteFilePath = "",
+                    mimeType = "",
+                    assetWidth = 0,
+                    assetHeight = 0,
+                    assetDuration = 0,
                 ).right()
             )
         }
