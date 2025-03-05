@@ -23,7 +23,7 @@ import okio.Path
 import okio.Sink
 
 internal interface CellsAwsClient {
-    suspend fun download(objectKey: String, outFileSink: Sink)
+    suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit)
     suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
     suspend fun getPreSignedUrl(objectKey: String): String
 }

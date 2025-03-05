@@ -22,27 +22,33 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 import okio.Path
 
 public class DownloadCellFileUseCase internal constructor(
     private val cellsRepository: CellsRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
-
     public suspend operator fun invoke(
         assetId: String,
         outFilePath: Path,
+        onProgressUpdate: (Long) -> Unit,
     ) {
-        cellsRepository.getAssetPath(assetId).map { path ->
-            path?.let {
-                cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
-                cellsRepository.downloadFile(outFilePath, path, onProgressUpdate = {})
-                    .onSuccess {
-                        cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
-                        cellsRepository.saveLocalPath(assetId, outFilePath.toString())
-                    }
-                    .onFailure {
-                        cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
-                    }
+        withContext(dispatchers.io) {
+            cellsRepository.getAssetPath(assetId).map { path ->
+                path?.let {
+                    cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
+                    cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
+                        .onSuccess {
+                            cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+                            cellsRepository.saveLocalPath(assetId, outFilePath.toString())
+                        }
+                        .onFailure {
+                            cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
+                        }
+                }
             }
         }
     }

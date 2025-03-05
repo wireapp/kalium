@@ -73,8 +73,8 @@ private class CellsAwsClientJvm(
         }
     }
 
-    override suspend fun download(objectKey: String, outFileSink: Sink) {
-        withS3Client {
+    override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
+        withS3Client(downloadProgressListener = onProgressUpdate) {
             getObject(
                 GetObjectRequest {
                     bucket = DEFAULT_BUCKET_NAME

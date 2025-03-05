@@ -129,7 +129,7 @@ internal class CellsDataSource internal constructor(
     override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
         return try {
             fileSystem.sink(out, true).use { sink ->
-                awsClient.download(cellPath, sink)
+                awsClient.download(cellPath, sink, onProgressUpdate)
                 Either.Right(Unit)
             }
         } catch (e: CancellationException) {
