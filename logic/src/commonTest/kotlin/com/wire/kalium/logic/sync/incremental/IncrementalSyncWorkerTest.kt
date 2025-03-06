@@ -60,7 +60,7 @@ class IncrementalSyncWorkerTest {
             .arrange()
 
         // When
-        worker.processEventsWhilePolicyAllowsFlow().collect()
+        worker.processEventsFlow().collect()
 
         // Then
         coVerify {
@@ -79,7 +79,7 @@ class IncrementalSyncWorkerTest {
                 .arrange()
 
             // When
-            worker.processEventsWhilePolicyAllowsFlow().test {
+            worker.processEventsFlow().test {
                 // Then
                 assertEquals(EventSource.LIVE, awaitItem())
                 awaitComplete()
@@ -97,7 +97,7 @@ class IncrementalSyncWorkerTest {
                 .arrange()
 
             // When
-            worker.processEventsWhilePolicyAllowsFlow().test {
+            worker.processEventsFlow().test {
                 // Then
                 assertEquals(EventSource.PENDING, awaitItem())
                 awaitComplete()
@@ -116,7 +116,7 @@ class IncrementalSyncWorkerTest {
 
         // When
         val resultException = assertFails {
-            worker.processEventsWhilePolicyAllowsFlow().collect()
+            worker.processEventsFlow().collect()
         }
 
         assertEquals(exception, resultException)
@@ -132,7 +132,7 @@ class IncrementalSyncWorkerTest {
             .arrange()
 
         val resultException = assertFailsWith<KaliumSyncException> {
-            worker.processEventsWhilePolicyAllowsFlow().collect()
+            worker.processEventsFlow().collect()
         }
 
         assertEquals(coreFailureCause, resultException.coreFailureCause)

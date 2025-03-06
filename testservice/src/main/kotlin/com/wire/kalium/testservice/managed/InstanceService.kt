@@ -252,10 +252,12 @@ class InstanceService(
                             )
                             instances.put(instanceId, instance)
 
-                            syncManager.waitUntilLiveOrFailure().onFailure {
-                                log.error("Instance $instanceId: Sync failed with $it")
+                            syncExecutor.request {
+                                keepSyncAlwaysOn()
+                                waitUntilLiveOrFailure().onFailure {
+                                    log.error("Instance $instanceId: Sync failed with $it")
+                                }
                             }
-
                             return@runBlocking instance
                         }
                         is RegisterClientResult.E2EICertificateRequired ->

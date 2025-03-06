@@ -18,21 +18,18 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.event.EventEnvelope
-import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.sync.ConnectionPolicy
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.combine
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.event.EventEnvelope
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
@@ -53,7 +50,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.transformWhile
 import kotlinx.datetime.toInstant
 
 /**
@@ -70,7 +66,6 @@ internal interface EventGatherer {
      * - Updates status to Online
      * - Emits Websocket events as they come, omitting duplications.
      *
-     * Will stop or keep gathering accordingly to the current [ConnectionPolicy]
      */
     suspend fun gatherEvents(): Flow<EventEnvelope>
 
@@ -79,7 +74,6 @@ internal interface EventGatherer {
 
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
@@ -97,7 +91,7 @@ internal class EventGathererImpl(
         eventRepository.lastProcessedEventId().flatMap {
             eventRepository.liveEvents()
         }.onSuccess { webSocketEventFlow ->
-            handleWebSocketEventsWhilePolicyAllows(webSocketEventFlow)
+            emitEvents(webSocketEventFlow)
         }.onFailure {
             // throw so it is handled by coroutineExceptionHandler
             throw KaliumSyncException("Failure when gathering events", it)
@@ -106,21 +100,10 @@ internal class EventGathererImpl(
         _currentSource.value = EventSource.PENDING
     }
 
-    private suspend fun FlowCollector<EventEnvelope>.handleWebSocketEventsWhilePolicyAllows(
+    private suspend fun FlowCollector<EventEnvelope>.emitEvents(
         webSocketEventFlow: Flow<WebSocketEvent<EventEnvelope>>
-    ) = webSocketEventFlow.combine(incrementalSyncRepository.connectionPolicyState)
+    ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
-        .transformWhile { (webSocketEvent, policy) ->
-            val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
-            val isOpenEvent = webSocketEvent is WebSocketEvent.Open
-            if (isKeepAlivePolicy || isOpenEvent) {
-                // Emit if keeping alive, always emit if is an Open event
-                emit(webSocketEvent)
-            }
-            // Only continue collecting if the Policy allows it
-            isKeepAlivePolicy
-        }
-        // Prevent repetition of events, in case the policy changed
         .distinctUntilChanged()
         .cancellable()
         .collect { handleWebsocketEvent(it) }
