@@ -586,7 +586,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 archivedInstant = null,
                 mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+                legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                wireCell = null,
             )
 
             conversationAdded.add(overlappingConversation)
