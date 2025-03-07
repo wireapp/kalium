@@ -318,7 +318,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val selfRole: Conversation.Member.Role?,
         val isFavorite: Boolean = false,
         val folder: ConversationFolder? = null,
-        val wireCell: String?,
+        val wireCell: String? = null,
 //         val isTeamAdmin: Boolean, TODO kubaz
     ) : ConversationDetails(conversation)
 
