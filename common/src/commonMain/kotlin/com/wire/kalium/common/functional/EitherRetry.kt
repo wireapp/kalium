@@ -15,14 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.common.functional
 
-/**
- * Node preview data.
- * @param url URL of the preview.
- * @param density max preview thumbnail dimension.
- */
-internal data class NodePreview(
-    val url: String,
-    val density: Int,
-)
+import kotlinx.coroutines.delay
+
+suspend fun <L, R> retry(
+    times: Int = Int.MAX_VALUE,
+    delay: Long = 0,
+    maxDelay: Long = 1000,
+    factor: Double = 1.0,
+    action: suspend () -> Either<L, R>
+): Either<L, R> {
+
+    var currentDelay = delay
+
+    repeat(times - 1) {
+        action()
+            .onSuccess { return it.right() }
+            .onFailure {
+                delay(delay)
+                currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
+            }
+    }
+
+    return action()
+}

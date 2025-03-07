@@ -34,7 +34,10 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -50,6 +53,7 @@ import okio.use
 internal class CellsDataSource internal constructor(
     private val cellsApi: CellsApi,
     private val awsClient: CellsAwsClient,
+    private val conversation: ConversationDAO,
     private val messageAttachments: MessageAttachmentsDao,
     private val fileSystem: FileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
@@ -159,6 +163,13 @@ internal class CellsDataSource internal constructor(
                         preview.dimension ?: 0,
                     )
                 }
+            }
+        }
+
+    override suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversation.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), cellName)
             }
         }
 }

@@ -17,15 +17,14 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 public class SetWireCellForConversationUseCase internal constructor(
-    private val conversationDAO: ConversationDAO,
+    private val repository: CellsRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
     private companion object {
@@ -35,11 +34,8 @@ public class SetWireCellForConversationUseCase internal constructor(
 
     public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
         withContext(dispatchers.io) {
-            if (enabled) {
-                conversationDAO.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), "$ROOT_CELL/$conversationId")
-            } else {
-                conversationDAO.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), null)
-            }
+            val cellName = if (enabled) "$ROOT_CELL/$conversationId" else null
+            repository.setWireCell(conversationId, cellName)
         }
     }
 }

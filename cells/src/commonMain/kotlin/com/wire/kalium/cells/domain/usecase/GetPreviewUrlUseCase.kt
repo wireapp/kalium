@@ -18,45 +18,44 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.cells.domain.model.NodePreview
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.retry
 import com.wire.kalium.common.functional.right
-import kotlinx.coroutines.delay
 
+/**
+ * Get preview URL for the asset from Wire Cell server.
+ * Url is saved in the app database.
+ */
 public interface GetPreviewUrlUseCase {
-    public suspend operator fun invoke(assetId: String): Either<NetworkFailure, Unit>
+    public suspend operator fun invoke(assetId: String): Either<CoreFailure, String?>
 }
 
-@Suppress("MagicNumber")
 internal class GetPreviewUrlUseCaseImpl internal constructor(
     private val cellsRepository: CellsRepository,
 ) : GetPreviewUrlUseCase {
-    override suspend fun invoke(assetId: String): Either<NetworkFailure, Unit> {
 
-        var retry = 0
-        val previewList = mutableListOf<NodePreview>()
+    private companion object {
+        private const val MAX_RETRIES = 20
+        private const val DELAY = 500L
+    }
 
-        do {
-            previewList.addAll(
-                cellsRepository.getPreviews(assetId)
-                    .onFailure { return it.left() }
-                    .getOrElse { emptyList() }
-            )
-
-            if (previewList.isEmpty()) {
-                delay(500)
+    override suspend fun invoke(assetId: String): Either<CoreFailure, String?> {
+        return retry(MAX_RETRIES, DELAY) {
+            cellsRepository.getPreviews(assetId).flatMap { response ->
+                when {
+                    response.isEmpty() -> StorageFailure.DataNotFound.left()
+                    else -> response.right()
+                }
             }
-
-        } while (previewList.isEmpty() && retry++ < 20)
-
-        previewList.maxByOrNull { it.density }?.let {
-            cellsRepository.savePreviewUrl(assetId, it.url)
+        }.flatMap { previews ->
+            previews.maxBy { it.density }.let { preview ->
+                cellsRepository.savePreviewUrl(assetId, preview.url).map { preview.url }
+            }
         }
-
-        return Unit.right()
     }
 }

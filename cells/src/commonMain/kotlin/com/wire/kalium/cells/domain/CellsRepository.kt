@@ -25,6 +25,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import okio.Path
 
 internal interface CellsRepository {
@@ -40,4 +41,5 @@ internal interface CellsRepository {
     suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>>
     suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?>
     suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
+    suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit>
 }

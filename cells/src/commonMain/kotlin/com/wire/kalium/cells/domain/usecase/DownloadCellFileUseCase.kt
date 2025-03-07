@@ -18,7 +18,10 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
@@ -27,29 +30,40 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import okio.Path
 
+/**
+ * Download an asset file from the wire cell server.
+ */
 public class DownloadCellFileUseCase internal constructor(
     private val cellsRepository: CellsRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
+    /**
+     * Download an asset file from the wire cell server.
+     * The asset transfer status is updated in the database.
+     * The local path of the downloaded file is saved in the database.
+     *
+     * @param assetId The uuid of the cell asset to download.
+     * @param outFilePath The path to save the downloaded file.
+     * @param onProgressUpdate Callback to receive download progress updates.
+     * @return download operation result
+     */
     public suspend operator fun invoke(
         assetId: String,
         outFilePath: Path,
         onProgressUpdate: (Long) -> Unit,
-    ) {
-        withContext(dispatchers.io) {
-            cellsRepository.getAssetPath(assetId).map { path ->
-                path?.let {
-                    cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
-                    cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
-                        .onSuccess {
-                            cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
-                            cellsRepository.saveLocalPath(assetId, outFilePath.toString())
-                        }
-                        .onFailure {
-                            cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
-                        }
-                }
-            }
+    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+        cellsRepository.getAssetPath(assetId).flatMap { path ->
+            path?.let {
+                cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
+                cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
+                    .onSuccess {
+                        cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+                        cellsRepository.saveLocalPath(assetId, outFilePath.toString())
+                    }
+                    .onFailure {
+                        cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
+                    }
+            } ?: Either.Left(StorageFailure.DataNotFound)
         }
     }
 }

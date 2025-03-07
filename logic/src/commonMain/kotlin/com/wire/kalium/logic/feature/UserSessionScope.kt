@@ -2210,7 +2210,7 @@ class UserSessionScope internal constructor(
         CellsScope(
             cellsClient = globalScope.unboundNetworkContainer.cellsClient,
             attachmentDraftDao = userStorage.database.messageAttachmentDraftDao,
-            conversationsDAO = userStorage.database.conversationDAO,
+            conversationsDao = userStorage.database.conversationDAO,
             attachmentsDao = userStorage.database.messageAttachments,
         )
     }

@@ -59,7 +59,7 @@ import kotlin.coroutines.CoroutineContext
 public class CellsScope(
     private val cellsClient: HttpClient,
     private val attachmentDraftDao: MessageAttachmentDraftDao,
-    private val conversationsDAO: ConversationDAO,
+    private val conversationsDao: ConversationDAO,
     private val attachmentsDao: MessageAttachmentsDao,
 ) : CoroutineScope {
 
@@ -89,6 +89,7 @@ public class CellsScope(
         get() = CellsDataSource(
             cellsApi = cellsApi,
             awsClient = cellAwsClient,
+            conversation = conversationsDao,
             messageAttachments = attachmentsDao,
             fileSystem = FileSystem.SYSTEM
         )
@@ -104,7 +105,7 @@ public class CellsScope(
     }
 
     public val addAttachment: AddAttachmentDraftUseCase
-        get() = AddAttachmentDraftUseCaseImpl(uploadManager, conversationsDAO, messageAttachmentsDraftRepository, this)
+        get() = AddAttachmentDraftUseCaseImpl(uploadManager, conversationsDao, messageAttachmentsDraftRepository, this)
 
     public val removeAttachment: RemoveAttachmentDraftUseCase
         get() = RemoveAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, cellsRepository)
@@ -119,10 +120,10 @@ public class CellsScope(
         get() = PublishAttachmentsUseCaseImpl(cellsRepository)
 
     public val observeFiles: ObserveCellFilesUseCase
-        get() = ObserveCellFilesUseCaseImpl(conversationsDAO, cellsRepository)
+        get() = ObserveCellFilesUseCaseImpl(conversationsDao, cellsRepository)
 
     public val enableWireCell: SetWireCellForConversationUseCase
-        get() = SetWireCellForConversationUseCase(conversationsDAO)
+        get() = SetWireCellForConversationUseCase(cellsRepository)
 
     public val loadPreview: GetPreviewUrlUseCase
         get() = GetPreviewUrlUseCaseImpl(cellsRepository)
