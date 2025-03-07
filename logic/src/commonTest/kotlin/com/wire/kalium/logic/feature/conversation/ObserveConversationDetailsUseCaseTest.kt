@@ -78,14 +78,14 @@ class ObserveConversationDetailsUseCaseTest {
             val conversation = TestConversation.GROUP()
             val conversationDetailsValues = listOf(
                 Either.Right(
-                    ConversationDetails.Group(
+                    ConversationDetails.Group.Regular(
                         conversation,
                         isSelfUserMember = true,
                         selfRole = Conversation.Member.Role.Member
                     )
                 ),
                 Either.Right(
-                    ConversationDetails.Group(
+                    ConversationDetails.Group.Regular(
                         conversation.copy(name = "New Name"),
                         isSelfUserMember = true,
                         selfRole = Conversation.Member.Role.Member

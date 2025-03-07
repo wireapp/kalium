@@ -467,7 +467,7 @@ internal class CallDataSource(
         }
 
         if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS &&
-            _callMetadataProfile.value[conversationId]?.conversationType == Conversation.Type.GROUP
+            _callMetadataProfile.value[conversationId]?.conversationType is Conversation.Type.Group
         ) {
             participants.forEach { participant ->
                 if (participant.hasEstablishedAudio) {

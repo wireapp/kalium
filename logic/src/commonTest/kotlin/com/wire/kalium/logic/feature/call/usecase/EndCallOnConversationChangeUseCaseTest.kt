@@ -195,7 +195,7 @@ class EndCallOnConversationChangeUseCaseTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.Group.Regular,
             callerName = null,
             callerTeamName = null,
             establishedTime = null
@@ -204,7 +204,7 @@ class EndCallOnConversationChangeUseCaseTest {
         val conversation = Conversation(
             id = conversationId,
             name = "Conv Name",
-            type = Conversation.Type.ONE_ON_ONE,
+            type = Conversation.Type.OneOnOne,
             teamId = TeamId("team_id"),
             protocol = Conversation.ProtocolInfo.Proteus,
             mutedStatus = MutedConversationStatus.AllAllowed,
@@ -245,7 +245,7 @@ class EndCallOnConversationChangeUseCaseTest {
             supportedProtocols = setOf(SupportedProtocol.PROTEUS)
         )
 
-        private val groupConversationDetail = ConversationDetails.Group(
+        private val groupConversationDetail = ConversationDetails.Group.Regular(
             conversation = conversation,
             hasOngoingCall = true,
             isSelfUserMember = false,

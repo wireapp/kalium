@@ -137,7 +137,7 @@ internal fun SendConfirmationUseCase(
             false
         }, { conversation ->
             when (conversation.type) {
-                Conversation.Type.ONE_ON_ONE -> userPropertyRepository.getReadReceiptsStatus()
+                Conversation.Type.OneOnOne -> userPropertyRepository.getReadReceiptsStatus()
                 else -> conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })
