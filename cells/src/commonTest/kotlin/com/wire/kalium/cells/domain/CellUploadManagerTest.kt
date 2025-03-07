@@ -18,14 +18,12 @@
 package com.wire.kalium.cells.domain
 
 import app.cash.turbine.test
-import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
@@ -33,6 +31,7 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -247,4 +246,5 @@ private class TestRepository : CellsRepository {
     override suspend fun getPreviews(nodeUuid: String) = emptyList<NodePreview>().right()
     override suspend fun getAssetPath(assetId: String) = "".right()
     override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus) = Unit.right()
+    override suspend fun setWireCell(conversationId: ConversationId, cellName: String?) = Unit.right()
 }
