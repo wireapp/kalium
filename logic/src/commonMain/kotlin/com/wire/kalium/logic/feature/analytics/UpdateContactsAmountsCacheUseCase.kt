@@ -21,9 +21,6 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
@@ -32,19 +29,13 @@ import kotlin.time.Duration.Companion.days
  * Use case that checks if users ContactsAmount and TeamSize cache are too old and updates it.
  * Currently max live period is [UpdateContactsAmountsCacheUseCaseImpl.CACHE_PERIOD] 7 days
  */
-interface UpdateContactsAmountsCacheUseCase {
-    suspend operator fun invoke()
-}
 
-class UpdateContactsAmountsCacheUseCaseImpl internal constructor(
+class UpdateContactsAmountsCacheUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val slowSyncRepository: SlowSyncRepository,
     private val analyticsRepository: AnalyticsRepository,
-) : UpdateContactsAmountsCacheUseCase {
+) {
 
-    override suspend fun invoke() {
-        slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
-
+    suspend operator fun invoke() {
         val nowDate = Clock.System.now()
         val updateTime = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
 

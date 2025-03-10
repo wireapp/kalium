@@ -171,7 +171,6 @@ import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCaseIm
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
 import com.wire.kalium.logic.feature.analytics.UpdateContactsAmountsCacheUseCase
-import com.wire.kalium.logic.feature.analytics.UpdateContactsAmountsCacheUseCaseImpl
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -2215,16 +2214,15 @@ class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
         )
 
-    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase = GetAnalyticsContactsDataUseCaseImpl(
+    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase get() = GetAnalyticsContactsDataUseCaseImpl(
         selfTeamIdProvider = selfTeamId,
         slowSyncRepository = slowSyncRepository,
         analyticsRepository = analyticsRepository,
         userConfigRepository = userConfigRepository
     )
 
-    private val updateContactsAmountsCache: UpdateContactsAmountsCacheUseCase = UpdateContactsAmountsCacheUseCaseImpl(
+    val updateContactsAmountsCache: UpdateContactsAmountsCacheUseCase get() = UpdateContactsAmountsCacheUseCase(
         selfTeamIdProvider = selfTeamId,
-        slowSyncRepository = slowSyncRepository,
         analyticsRepository = analyticsRepository,
     )
 
@@ -2283,10 +2281,6 @@ class UserSessionScope internal constructor(
 
         launch {
             messages.confirmationDeliveryHandler.sendPendingConfirmations()
-        }
-
-        launch {
-            updateContactsAmountsCache()
         }
 
         syncExecutor.startAndStopSyncAsNeeded()
