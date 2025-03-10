@@ -30,8 +30,6 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -241,10 +239,12 @@ private class TestRepository : CellsRepository {
     override suspend fun deleteFile(node: CellNode) = Unit.right()
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String) = Unit.right()
     override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = Unit.right()
-    override suspend fun savePreviewUrl(assetId: String, url: String) = Unit.right()
-    override suspend fun saveLocalPath(assetId: String, path: String) = Unit.right()
     override suspend fun getPreviews(nodeUuid: String) = emptyList<NodePreview>().right()
-    override suspend fun getAssetPath(assetId: String) = "".right()
-    override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus) = Unit.right()
-    override suspend fun setWireCell(conversationId: ConversationId, cellName: String?) = Unit.right()
+    override suspend fun getNode(nodeUuid: String) = CellNode(
+        uuid = nodeUuid,
+        versionId = "versionId",
+        path = "path",
+        size = 1000,
+    ).right()
+
 }

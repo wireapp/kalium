@@ -26,19 +26,12 @@ import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
@@ -53,8 +46,6 @@ import okio.use
 internal class CellsDataSource internal constructor(
     private val cellsApi: CellsApi,
     private val awsClient: CellsAwsClient,
-    private val conversation: ConversationDAO,
-    private val messageAttachments: MessageAttachmentsDao,
     private val fileSystem: FileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CellsRepository {
@@ -93,9 +84,7 @@ internal class CellsDataSource internal constructor(
         wrapApiRequest {
             cellsApi.getFiles(cellName)
         }.map { response ->
-            response.nodes
-                .filterNot { it.isRecycleBin }
-                .map { it.toModel() }
+            response.nodes.map { it.toModel() }
         }
 
     override suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit> =
@@ -117,18 +106,6 @@ internal class CellsDataSource internal constructor(
             cellsApi.cancelDraft(nodeUuid, versionUuid)
         }
 
-    override suspend fun savePreviewUrl(assetId: String, url: String) = withContext(dispatchers.io) {
-        wrapStorageRequest {
-            messageAttachments.setPreviewUrl(assetId, url)
-        }
-    }
-
-    override suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?> = withContext(dispatchers.io) {
-        wrapStorageRequest {
-            messageAttachments.getAssetPath(assetId)
-        }
-    }
-
     @Suppress("TooGenericExceptionCaught")
     override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
         return try {
@@ -140,17 +117,6 @@ internal class CellsDataSource internal constructor(
             throw e
         } catch (e: Exception) {
             Either.Left(NetworkFailure.ServerMiscommunication(e))
-        }
-    }
-
-    override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            messageAttachments.setTransferStatus(assetId, status.name)
-        }
-
-    override suspend fun saveLocalPath(assetId: String, path: String): Either<StorageFailure, Unit> = withContext(dispatchers.io) {
-        wrapStorageRequest {
-            messageAttachments.setLocalPath(assetId, path)
         }
     }
 
@@ -166,10 +132,8 @@ internal class CellsDataSource internal constructor(
             }
         }
 
-    override suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit> =
-        withContext(dispatchers.io) {
-            wrapStorageRequest {
-                conversation.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), cellName)
-            }
+    override suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode> =
+        wrapApiRequest {
+            cellsApi.getNode(nodeUuid).mapSuccess { it.toModel() }
         }
 }

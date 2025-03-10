@@ -12,11 +12,14 @@ CREATE TABLE MessageAttachments (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       cell_asset INTEGER AS Boolean NOT NULL,
-      local_path TEXT NOT NULL DEFAULT '',
-      preview_url TEXT NOT NULL DEFAULT '',
+      local_path TEXT,
+      content_url TEXT,
+      preview_url TEXT,
       asset_mime_type TEXT NOT NULL,
       asset_size INTEGER,
       asset_path TEXT,
+
+      content_hash TEXT,
 
 --       -- remote data fields
 --       asset_otr_key BLOB,
@@ -54,6 +57,9 @@ INSERT INTO MessageAttachments (
     asset_transfer_status
 ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);
 
+getAttachment:
+SELECT * FROM MessageAttachments WHERE asset_id = ?;
+
 setPreviewUrl:
 UPDATE MessageAttachments SET preview_url = ? WHERE asset_id = ?;
 
@@ -65,4 +71,10 @@ SELECT asset_path FROM MessageAttachments WHERE asset_id = ?;
 
 setTransferStatus:
 UPDATE MessageAttachments SET asset_transfer_status = ? WHERE asset_id = ?;
+
+setContentHash:
+UPDATE MessageAttachments SET content_hash = ? WHERE asset_id = ?;
+
+setContentUrlAndHash:
+UPDATE MessageAttachments SET content_url = ?, content_hash = ? WHERE asset_id = ?;
 

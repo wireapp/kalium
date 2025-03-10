@@ -50,7 +50,9 @@ class MessageAttachmentMapperImpl : MessageAttachmentMapper {
                 previewUrl = attachment.previewUrl?.takeIf { it.isNotEmpty() },
                 localPath = attachment.localPath?.takeIf { it.isNotEmpty() },
                 metadata = attachment.metadata(),
-                transferStatus = AssetTransferStatus.valueOf(attachment.assetTransferStatus)
+                transferStatus = AssetTransferStatus.valueOf(attachment.assetTransferStatus),
+                contentHash = attachment.contentHash?.takeIf { it.isNotEmpty() },
+                contentUrl = attachment.contentUrl?.takeIf { it.isNotEmpty() },
             )
         } else {
             TODO()
@@ -122,7 +124,9 @@ fun MessageAttachmentEntity.toModel() =
             previewUrl = previewUrl?.takeIf { it.isNotEmpty() },
             localPath = localPath?.takeIf { it.isNotEmpty() },
             metadata = metadata(),
-            transferStatus = AssetTransferStatus.valueOf(assetTransferStatus)
+            transferStatus = AssetTransferStatus.valueOf(assetTransferStatus),
+            contentHash = contentHash?.takeIf { it.isNotEmpty() },
+            contentUrl = contentUrl?.takeIf { it.isNotEmpty() },
         )
     } else {
         TODO()

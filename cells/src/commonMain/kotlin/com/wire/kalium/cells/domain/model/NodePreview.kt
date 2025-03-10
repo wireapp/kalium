@@ -20,9 +20,9 @@ package com.wire.kalium.cells.domain.model
 /**
  * Node preview data.
  * @param url URL of the preview.
- * @param density max preview thumbnail dimension.
+ * @param dimension max preview thumbnail dimension.
  */
-internal data class NodePreview(
+public data class NodePreview(
     val url: String,
-    val density: Int,
+    val dimension: Int,
 )

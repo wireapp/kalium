@@ -17,15 +17,12 @@
  */
 package com.wire.kalium.cells.domain
 
-import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import com.wire.kalium.logic.data.id.ConversationId
 import okio.Path
 
 internal interface CellsRepository {
@@ -36,10 +33,6 @@ internal interface CellsRepository {
     suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit>
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit>
     suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit>
-    suspend fun savePreviewUrl(assetId: String, url: String): Either<StorageFailure, Unit>
-    suspend fun saveLocalPath(assetId: String, path: String): Either<StorageFailure, Unit>
     suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>>
-    suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?>
-    suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
-    suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit>
+    suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode>
 }

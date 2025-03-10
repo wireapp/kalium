@@ -116,7 +116,9 @@ data class CellAssetContent(
     val mimeType: String,
     val assetPath: String?,
     val assetSize: Long?,
+    val contentHash: String? = null,
     val localPath: String? = null,
+    val contentUrl: String? = null,
     val previewUrl: String? = null,
     val metadata: AssetMetadata?,
     val transferStatus: AssetTransferStatus,
@@ -142,4 +144,9 @@ fun AssetMetadata.durationMs() = when (this) {
     is AssetMetadata.Video -> durationMs
     is AssetMetadata.Audio -> durationMs
     else -> null
+}
+
+fun MessageAttachment.localPath() = when (this) {
+    is CellAssetContent -> localPath
+    is AssetContent -> localData?.assetDataPath
 }

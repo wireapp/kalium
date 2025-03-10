@@ -17,12 +17,16 @@
  */
 package com.wire.kalium.cells
 
+import com.wire.kalium.cells.data.CellAttachmentsDataSource
+import com.wire.kalium.cells.data.CellConversationDataSource
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellsApiImpl
 import com.wire.kalium.cells.data.CellsAwsClient
 import com.wire.kalium.cells.data.CellsDataSource
 import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
+import com.wire.kalium.cells.domain.CellAttachmentsRepository
+import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
@@ -32,14 +36,14 @@ import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
-import com.wire.kalium.cells.domain.usecase.GetPreviewUrlUseCase
-import com.wire.kalium.cells.domain.usecase.GetPreviewUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RefreshCellAssetStateUseCase
+import com.wire.kalium.cells.domain.usecase.RefreshCellAssetStateUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
@@ -89,10 +93,14 @@ public class CellsScope(
         get() = CellsDataSource(
             cellsApi = cellsApi,
             awsClient = cellAwsClient,
-            conversation = conversationsDao,
-            messageAttachments = attachmentsDao,
             fileSystem = FileSystem.SYSTEM
         )
+
+    private val cellsConversationRepository: CellConversationRepository
+        get() = CellConversationDataSource(conversationsDao)
+
+    private val cellAttachmentsRepository: CellAttachmentsRepository
+        get() = CellAttachmentsDataSource(attachmentsDao)
 
     public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository
         get() = MessageAttachmentDraftDataSource(attachmentDraftDao)
@@ -105,7 +113,7 @@ public class CellsScope(
     }
 
     public val addAttachment: AddAttachmentDraftUseCase
-        get() = AddAttachmentDraftUseCaseImpl(uploadManager, conversationsDao, messageAttachmentsDraftRepository, this)
+        get() = AddAttachmentDraftUseCaseImpl(uploadManager, cellsConversationRepository, messageAttachmentsDraftRepository, this)
 
     public val removeAttachment: RemoveAttachmentDraftUseCase
         get() = RemoveAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, cellsRepository)
@@ -123,11 +131,11 @@ public class CellsScope(
         get() = ObserveCellFilesUseCaseImpl(conversationsDao, cellsRepository)
 
     public val enableWireCell: SetWireCellForConversationUseCase
-        get() = SetWireCellForConversationUseCase(cellsRepository)
-
-    public val loadPreview: GetPreviewUrlUseCase
-        get() = GetPreviewUrlUseCaseImpl(cellsRepository)
+        get() = SetWireCellForConversationUseCase(cellsConversationRepository)
 
     public val downloadFile: DownloadCellFileUseCase
-        get() = DownloadCellFileUseCase(cellsRepository)
+        get() = DownloadCellFileUseCase(cellsRepository, cellAttachmentsRepository)
+
+    public val refreshAsset: RefreshCellAssetStateUseCase
+        get() = RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
 }

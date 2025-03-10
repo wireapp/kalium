@@ -31,11 +31,15 @@ import com.wire.kalium.logic.data.message.width
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftEntity
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 internal class MessageAttachmentDraftDataSource internal constructor(
-    private val messageAttachmentDao: MessageAttachmentDraftDao
+    private val messageAttachmentDao: MessageAttachmentDraftDao,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MessageAttachmentDraftRepository {
 
     override suspend fun add(
@@ -45,49 +49,58 @@ internal class MessageAttachmentDraftDataSource internal constructor(
         dataPath: String,
         metadata: AssetContent.AssetMetadata?,
         uploadStatus: AttachmentUploadStatus,
-    ) = wrapStorageRequest {
-        messageAttachmentDao.addAttachment(
-            uuid = node.uuid,
-            versionId = node.versionId,
-            conversationId = QualifiedIDEntity(conversationId.value, conversationId.domain),
-            mimeType = mimeType,
-            fileName = node.path.substringAfterLast("/"),
-            fileSize = node.size ?: 0,
-            dataPath = dataPath,
-            nodePath = node.path,
-            status = uploadStatus.name,
-            assetWidth = metadata?.width(),
-            assetHeight = metadata?.height(),
-            assetDuration = metadata?.durationMs(),
-        )
+    ) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachmentDao.addAttachment(
+                uuid = node.uuid,
+                versionId = node.versionId,
+                conversationId = QualifiedIDEntity(conversationId.value, conversationId.domain),
+                mimeType = mimeType,
+                fileName = node.path.substringAfterLast("/"),
+                fileSize = node.size ?: 0,
+                dataPath = dataPath,
+                nodePath = node.path,
+                status = uploadStatus.name,
+                assetWidth = metadata?.width(),
+                assetHeight = metadata?.height(),
+                assetDuration = metadata?.durationMs(),
+            )
+        }
     }
 
     override suspend fun observe(conversationId: QualifiedID): Flow<List<AttachmentDraft>> =
         messageAttachmentDao.observeAttachments(QualifiedIDEntity(conversationId.value, conversationId.domain))
             .map { list -> list.map { it.toModel() } }
 
-    override suspend fun updateStatus(uuid: String, status: AttachmentUploadStatus) = wrapStorageRequest {
-        messageAttachmentDao.updateUploadStatus(uuid, status.name)
+    override suspend fun updateStatus(uuid: String, status: AttachmentUploadStatus) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachmentDao.updateUploadStatus(uuid, status.name)
+        }
     }
 
-    override suspend fun remove(uuid: String) = wrapStorageRequest {
-        messageAttachmentDao.deleteAttachment(uuid)
+    override suspend fun remove(uuid: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachmentDao.deleteAttachment(uuid)
+        }
     }
 
-    override suspend fun removeAttachmentDrafts(conversationId: ConversationId) {
+    override suspend fun removeAttachmentDrafts(conversationId: ConversationId) = withContext(dispatchers.io) {
         messageAttachmentDao.deleteAttachments(QualifiedIDEntity(conversationId.value, conversationId.domain))
     }
 
-    override suspend fun get(uuid: String) = wrapStorageRequest {
-        messageAttachmentDao.getAttachment(uuid)?.toModel()
+    override suspend fun get(uuid: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachmentDao.getAttachment(uuid)?.toModel()
+        }
     }
 
-    override suspend fun getAll(conversationId: ConversationId) =
+    override suspend fun getAll(conversationId: ConversationId) = withContext(dispatchers.io) {
         wrapStorageRequest {
             messageAttachmentDao.getAttachments(
                 QualifiedIDEntity(conversationId.value, conversationId.domain)
             ).map { it.toModel() }
         }
+    }
 }
 
 private fun MessageAttachmentDraftEntity.toModel() = AttachmentDraft(

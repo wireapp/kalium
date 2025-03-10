@@ -117,6 +117,8 @@ IFNULL(
         "asset_height":"' || IFNULL(asset_height,0) || '",
         "asset_transfer_status":"' || asset_transfer_status || '",
         "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
+        "content_hash":"' || IFNULL(content_hash,'') || '",
+        "content_url":"' || IFNULL(content_url,'') || '",
         "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
     FROM MessageAttachments
     WHERE MessageAttachments.message_id = Message.id

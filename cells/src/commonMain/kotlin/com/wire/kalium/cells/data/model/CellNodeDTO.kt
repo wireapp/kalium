@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.data.model
 
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.sdk.kmp.model.RestNode
 
 internal data class CellNodeDTO(
@@ -28,8 +29,11 @@ internal data class CellNodeDTO(
     val size: Long?,
     val eTag: String? = null,
     val type: String? = null,
-    val isRecycleBin: Boolean = false,
+    val isRecycled: Boolean = false,
     val isDraft: Boolean = false,
+    val contentUrl: String?,
+    val contentHash: String?,
+    val mimeType: String?,
     val previews: List<PreviewDto> = emptyList(),
 )
 
@@ -41,8 +45,12 @@ internal fun CellNodeDTO.toModel() = CellNode(
     size = size,
     eTag = eTag,
     type = type,
-    isRecycleBin = isRecycleBin,
+    isRecycled = isRecycled,
     isDraft = isDraft,
+    contentUrl = contentUrl,
+    contentHash = contentHash,
+    mimeType = mimeType,
+    previews = previews.map { it.toModel() },
 )
 
 internal fun CellNode.toDto() = CellNodeDTO(
@@ -53,8 +61,11 @@ internal fun CellNode.toDto() = CellNodeDTO(
     size = size,
     eTag = eTag,
     type = type,
-    isRecycleBin = isRecycleBin,
+    isRecycled = isRecycled,
     isDraft = isDraft,
+    contentUrl = contentUrl,
+    contentHash = contentHash,
+    mimeType = mimeType,
 )
 
 internal fun RestNode.toDto() = CellNodeDTO(
@@ -65,10 +76,13 @@ internal fun RestNode.toDto() = CellNodeDTO(
     size = propertySize?.toLong(),
     type = type?.name ?: "",
     eTag = storageETag,
-    isRecycleBin = isRecycleBin ?: false,
+    isRecycled = isRecycled ?: false,
     isDraft = isDraft(),
+    contentUrl = preSignedGET?.url,
+    contentHash = contentHash,
+    mimeType = contentType,
     previews = previews?.mapNotNull {
-        it.url?.let { url ->
+        it.preSignedGET?.url?.let { url ->
             PreviewDto(
                 url,
                 it.dimension ?: 0,
@@ -84,4 +98,9 @@ private fun RestNode.isDraft(): Boolean {
 internal data class PreviewDto(
     val url: String,
     val dimension: Int?,
+)
+
+internal fun PreviewDto.toModel() = NodePreview(
+    url = url,
+    dimension = dimension ?: 0,
 )

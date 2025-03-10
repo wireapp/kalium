@@ -36,4 +36,6 @@ data class MessageAttachmentEntity(
     @SerialName("asset_height") val assetHeight: Int?,
     @SerialName("asset_duration_ms") val assetDuration: Long?,
     @SerialName("asset_transfer_status") val assetTransferStatus: String,
+    @SerialName("content_url") val contentUrl: String? = null,
+    @SerialName("content_hash") val contentHash: String? = null,
 )
