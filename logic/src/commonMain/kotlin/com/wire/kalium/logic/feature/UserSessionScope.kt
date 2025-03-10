@@ -2223,8 +2223,7 @@ class UserSessionScope internal constructor(
 
     val asyncUpdateContactsAmountsCache: AsyncUpdateContactsAmountsCacheUseCase get() = AsyncUpdateContactsAmountsCacheUseCase(
         selfTeamIdProvider = selfTeamId,
-        analyticsRepository = analyticsRepository,
-        coroutineScope = this
+        analyticsRepository = analyticsRepository
     )
 
     /**

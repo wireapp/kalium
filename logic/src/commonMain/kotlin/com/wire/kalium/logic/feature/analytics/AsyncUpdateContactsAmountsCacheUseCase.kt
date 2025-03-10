@@ -36,22 +36,19 @@ import kotlin.time.Duration.Companion.days
 class AsyncUpdateContactsAmountsCacheUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val analyticsRepository: AnalyticsRepository,
-    private val coroutineScope: CoroutineScope,
 ) {
 
-    operator fun invoke(): Deferred<Unit> {
-        return coroutineScope.async {
-            val nowDate = Clock.System.now()
-            val updateTime = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
+    suspend operator fun invoke() {
+        val nowDate = Clock.System.now()
+        val updateTime = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
 
-            if (updateTime != null && nowDate.minus(updateTime) < CACHE_PERIOD) return@async
+        if (updateTime != null && nowDate.minus(updateTime) < CACHE_PERIOD) return
 
-            val teamId = selfTeamIdProvider().getOrNull()
-            if (teamId == null) {
-                updateContactsAmountCache(nowDate)
-            } else {
-                updateTeamSizeCache(teamId, nowDate)
-            }
+        val teamId = selfTeamIdProvider().getOrNull()
+        if (teamId == null) {
+            updateContactsAmountCache(nowDate)
+        } else {
+            updateTeamSizeCache(teamId, nowDate)
         }
     }
 

@@ -22,18 +22,13 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.every
 import io.mockative.mock
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -144,26 +139,14 @@ class AsyncUpdateContactsAmountsCacheUseCaseTest {
         AnalyticsRepositoryArrangement by AnalyticsRepositoryArrangementImpl() {
 
         @Mock
-        val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        init {
-            every { slowSyncRepository.slowSyncStatus }
-                .returns(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
-        }
-
-        private val useCase: AsyncUpdateContactsAmountsCacheUseCase =
-            UpdateContactsAmountsCacheUseCaseImpl(
-                selfTeamIdProvider = selfTeamIdProvider,
-                slowSyncRepository = slowSyncRepository,
-                analyticsRepository = analyticsRepository,
-            )
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, AsyncUpdateContactsAmountsCacheUseCase> {
             runBlocking { block() }
-            return this to useCase
+            return this to AsyncUpdateContactsAmountsCacheUseCase(
+                    selfTeamIdProvider = selfTeamIdProvider,
+                    analyticsRepository = analyticsRepository,
+            )
         }
     }
 }
