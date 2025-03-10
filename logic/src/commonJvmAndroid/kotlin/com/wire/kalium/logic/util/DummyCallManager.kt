@@ -41,7 +41,7 @@ class DummyCallManager : CallManager {
     ) {
     }
 
-    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean) {}
+    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) {}
 
     override suspend fun endCall(conversationId: ConversationId) {}
 
