@@ -21,6 +21,9 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
@@ -30,22 +33,25 @@ import kotlin.time.Duration.Companion.days
  * Currently max live period is [UpdateContactsAmountsCacheUseCaseImpl.CACHE_PERIOD] 7 days
  */
 
-class UpdateContactsAmountsCacheUseCase internal constructor(
+class AsyncUpdateContactsAmountsCacheUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val analyticsRepository: AnalyticsRepository,
+    private val coroutineScope: CoroutineScope,
 ) {
 
-    suspend operator fun invoke() {
-        val nowDate = Clock.System.now()
-        val updateTime = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
+    operator fun invoke(): Deferred<Unit> {
+        return coroutineScope.async {
+            val nowDate = Clock.System.now()
+            val updateTime = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
 
-        if (updateTime != null && nowDate.minus(updateTime) < CACHE_PERIOD) return
+            if (updateTime != null && nowDate.minus(updateTime) < CACHE_PERIOD) return@async
 
-        val teamId = selfTeamIdProvider().getOrNull()
-        if (teamId == null) {
-            updateContactsAmountCache(nowDate)
-        } else {
-            updateTeamSizeCache(teamId, nowDate)
+            val teamId = selfTeamIdProvider().getOrNull()
+            if (teamId == null) {
+                updateContactsAmountCache(nowDate)
+            } else {
+                updateTeamSizeCache(teamId, nowDate)
+            }
         }
     }
 

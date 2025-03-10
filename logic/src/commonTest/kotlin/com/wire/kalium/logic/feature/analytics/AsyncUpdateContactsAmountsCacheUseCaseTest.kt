@@ -40,7 +40,7 @@ import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.days
 
-class UpdateContactsAmountsCacheUseCaseTest {
+class AsyncUpdateContactsAmountsCacheUseCaseTest {
 
     @Test
     fun givenNoCacheUpdateDateAndUserInTeam_whenInvoked_thenUpdateTeamSizeCalled() = runTest {
@@ -154,14 +154,14 @@ class UpdateContactsAmountsCacheUseCaseTest {
                 .returns(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
         }
 
-        private val useCase: UpdateContactsAmountsCacheUseCase =
+        private val useCase: AsyncUpdateContactsAmountsCacheUseCase =
             UpdateContactsAmountsCacheUseCaseImpl(
                 selfTeamIdProvider = selfTeamIdProvider,
                 slowSyncRepository = slowSyncRepository,
                 analyticsRepository = analyticsRepository,
             )
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UpdateContactsAmountsCacheUseCase> {
+        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, AsyncUpdateContactsAmountsCacheUseCase> {
             runBlocking { block() }
             return this to useCase
         }

@@ -170,7 +170,7 @@ import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCaseImpl
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
-import com.wire.kalium.logic.feature.analytics.UpdateContactsAmountsCacheUseCase
+import com.wire.kalium.logic.feature.analytics.AsyncUpdateContactsAmountsCacheUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -2221,9 +2221,10 @@ class UserSessionScope internal constructor(
         userConfigRepository = userConfigRepository
     )
 
-    val updateContactsAmountsCache: UpdateContactsAmountsCacheUseCase get() = UpdateContactsAmountsCacheUseCase(
+    val asyncUpdateContactsAmountsCache: AsyncUpdateContactsAmountsCacheUseCase get() = AsyncUpdateContactsAmountsCacheUseCase(
         selfTeamIdProvider = selfTeamId,
         analyticsRepository = analyticsRepository,
+        coroutineScope = this
     )
 
     /**
