@@ -18,29 +18,39 @@
 package com.wire.kalium.persistence.dao.message.attachment
 
 import com.wire.kalium.persistence.MessageAttachmentsQueries
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper.toDao
 
 interface MessageAttachmentsDao {
     suspend fun getAssetPath(assetId: String): String?
-    suspend fun setLocalPath(assetId: String, path: String)
-    suspend fun setPreviewUrl(assetId: String, previewUrl: String)
+    suspend fun setLocalPath(assetId: String, path: String?)
+    suspend fun setPreviewUrl(assetId: String, previewUrl: String?)
     suspend fun setTransferStatus(assetId: String, status: String)
+    suspend fun getAttachment(assetId: String): MessageAttachmentEntity
+    suspend fun setContentUrlAndHash(assetId: String, url: String?, hash: String?)
 }
 
 internal class MessageAttachmentsDaoImpl(
     private val queries: MessageAttachmentsQueries,
 ) : MessageAttachmentsDao {
 
+    override suspend fun getAttachment(assetId: String): MessageAttachmentEntity =
+        queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
+
+    override suspend fun setContentUrlAndHash(assetId: String, url: String?, hash: String?) {
+        queries.setContentUrlAndHash(url, hash, assetId)
+    }
+
     override suspend fun getAssetPath(assetId: String): String? =
         queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path
 
-    override suspend fun setLocalPath(assetId: String, path: String) {
+    override suspend fun setLocalPath(assetId: String, path: String?) {
         queries.setLocalPath(
             local_path = path,
             asset_id = assetId
         )
     }
 
-    override suspend fun setPreviewUrl(assetId: String, previewUrl: String) {
+    override suspend fun setPreviewUrl(assetId: String, previewUrl: String?) {
         queries.setPreviewUrl(
             preview_url = previewUrl,
             asset_id = assetId

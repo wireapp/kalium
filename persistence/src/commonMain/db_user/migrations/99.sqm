@@ -22,15 +22,16 @@ CREATE TABLE IF NOT EXISTS MessageAttachments (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       cell_asset INTEGER AS Boolean NOT NULL,
-      local_path TEXT NOT NULL DEFAULT '',
-      preview_url TEXT NOT NULL DEFAULT '',
+      local_path TEXT,
+      content_url TEXT,
+      preview_url TEXT,
       asset_mime_type TEXT NOT NULL,
       asset_size INTEGER,
       asset_path TEXT,
+      content_hash TEXT,
       asset_width INTEGER AS Int,
       asset_height INTEGER AS Int,
       asset_duration_ms INTEGER,
-
       asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -146,6 +147,8 @@ IFNULL(
         "asset_height":"' || IFNULL(asset_height,0) || '",
         "asset_transfer_status":"' || asset_transfer_status || '",
         "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
+        "content_hash":"' || IFNULL(content_hash,'') || '",
+        "content_url":"' || IFNULL(content_url,'') || '",
         "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
     FROM MessageAttachments
     WHERE MessageAttachments.message_id = Message.id
