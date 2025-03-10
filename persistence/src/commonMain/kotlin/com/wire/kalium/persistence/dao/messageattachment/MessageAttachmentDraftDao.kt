@@ -25,13 +25,18 @@ interface MessageAttachmentDraftDao {
     suspend fun getAttachment(uuid: String): MessageAttachmentDraftEntity?
     suspend fun getAttachments(conversationId: QualifiedIDEntity): List<MessageAttachmentDraftEntity>
     suspend fun deleteAttachment(uuid: String)
+    suspend fun deleteAttachments(conversationId: QualifiedIDEntity)
     suspend fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>>
     suspend fun addAttachment(
         uuid: String,
         versionId: String,
         conversationId: QualifiedIDEntity,
+        mimeType: String,
         fileName: String,
         fileSize: Long,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        assetDuration: Long?,
         dataPath: String,
         nodePath: String,
         status: String,

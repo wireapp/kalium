@@ -18,6 +18,11 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
+
+sealed interface MessageAttachment
+
 data class AssetContent(
     val sizeInBytes: Long,
     val name: String? = null,
@@ -25,7 +30,7 @@ data class AssetContent(
     val metadata: AssetMetadata? = null,
     val remoteData: RemoteData,
     val localData: LocalData? = null,
-) {
+) : MessageAttachment {
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
 
@@ -105,6 +110,36 @@ data class AssetContent(
     }
 }
 
+data class CellAssetContent(
+    val id: String,
+    val versionId: String,
+    val mimeType: String,
+    val assetPath: String?,
+    val assetSize: Long?,
+    val localPath: String? = null,
+    val previewUrl: String? = null,
+    val metadata: AssetMetadata?,
+    val transferStatus: AssetTransferStatus,
+) : MessageAttachment
+
 fun AssetContent.hasValidRemoteData() = remoteData.hasValidData()
 
 fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()
+
+fun AssetMetadata.width() = when (this) {
+    is AssetMetadata.Image -> width
+    is AssetMetadata.Video -> width
+    else -> null
+}
+
+fun AssetMetadata.height() = when (this) {
+    is AssetMetadata.Image -> height
+    is AssetMetadata.Video -> height
+    else -> null
+}
+
+fun AssetMetadata.durationMs() = when (this) {
+    is AssetMetadata.Video -> durationMs
+    is AssetMetadata.Audio -> durationMs
+    else -> null
+}

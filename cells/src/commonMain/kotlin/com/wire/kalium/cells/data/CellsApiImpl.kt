@@ -48,6 +48,11 @@ internal class CellsApiImpl(
     private val nodeServiceApi: NodeServiceApi,
 ) : CellsApi {
 
+    override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
+        wrapCellsResponse {
+            nodeServiceApi.getByUuid(uuid)
+        }.mapSuccess { response -> response.toDto() }
+
     override suspend fun getFiles(cellName: String): NetworkResponse<GetFilesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
@@ -68,13 +73,10 @@ internal class CellsApiImpl(
             )
         }.mapSuccess {}
 
-    override suspend fun publishDraft(nodeUuid: String): NetworkResponse<Unit> =
-        getNodeDraftVersions(nodeUuid).mapSuccess { response ->
-            wrapCellsResponse {
-                val version = response.versions?.firstOrNull() ?: error("Draft version not found")
-                nodeServiceApi.promoteVersion(nodeUuid, version.versionId, RestPromoteParameters(publish = true))
-            }
-        }
+    override suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit> =
+        wrapCellsResponse {
+            nodeServiceApi.promoteVersion(nodeUuid, versionId, RestPromoteParameters(publish = true))
+        }.mapSuccess {}
 
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit> =
         wrapCellsResponse {

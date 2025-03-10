@@ -37,6 +37,7 @@ import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.CellAsset
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -284,3 +285,40 @@ fun AssetMessageEntity.toModel(): AssetMessage {
         isSelfAsset = isSelfAsset
     )
 }
+
+fun AssetContent.AssetMetadata.toProto(): CellAsset.InitialMetaData<*> =
+    when (this) {
+        is Image -> CellAsset.InitialMetaData.Image(
+            image = CellAsset.ImageMetaData(
+                width = width,
+                height = height
+            )
+        )
+        is Audio -> CellAsset.InitialMetaData.Audio(
+            audio = CellAsset.AudioMetaData(durationMs)
+        )
+        is Video -> CellAsset.InitialMetaData.Video(
+            video = CellAsset.VideoMetaData(
+                width = width,
+                height = height,
+                durationInMillis = durationMs
+            )
+        )
+    }
+
+fun CellAsset.InitialMetaData<*>.toModel(): AssetContent.AssetMetadata =
+    when (this) {
+        is CellAsset.InitialMetaData.Image -> Image(
+            width = value.width,
+            height = value.height
+        )
+        is CellAsset.InitialMetaData.Audio -> Audio(
+            durationMs = value.durationInMillis,
+            normalizedLoudness = null,
+        )
+        is CellAsset.InitialMetaData.Video -> Video(
+            width = value.width,
+            height = value.height,
+            durationMs = value.durationInMillis
+        )
+    }

@@ -23,9 +23,13 @@ data class MessageAttachmentDraftEntity(
     val uuid: String,
     val versionId: String,
     val conversationId: ConversationIDEntity,
+    val mimeType: String,
     val fileName: String,
     val fileSize: Long,
     val dataPath: String,
     val nodePath: String,
     val uploadStatus: String,
+    val assetHeight: Int?,
+    val assetWidth: Int?,
+    val assetDuration: Long?,
 )

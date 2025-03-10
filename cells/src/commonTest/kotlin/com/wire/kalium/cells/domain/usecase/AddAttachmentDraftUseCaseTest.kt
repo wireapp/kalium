@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -25,6 +24,8 @@ import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -51,7 +52,9 @@ class AddAttachmentDraftUseCaseTest {
         val assetPath = "path".toPath()
         const val assetSize = 1000L
         const val fileName = "testfile.test"
-        val destNodePath = "${CellsScope.ROOT_CELL}/$conversationId/$fileName"
+        val destNodePath = "wire-cells-android/$conversationId/$fileName"
+        val mimeType = "image/jpeg"
+        val metadata = AssetContent.AssetMetadata.Image(0, 0)
     }
 
     @Test
@@ -61,7 +64,7 @@ class AddAttachmentDraftUseCaseTest {
             .withSuccessPreCheck()
             .arrange()
 
-        useCase(conversationId, fileName, assetPath, assetSize)
+        useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
 
         coVerify {
             arrangement.uploadManager.upload(
@@ -79,13 +82,16 @@ class AddAttachmentDraftUseCaseTest {
             .withSuccessPreCheck()
             .arrange()
 
-        useCase(conversationId, fileName, assetPath, assetSize)
+        useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
 
         coVerify {
             arrangement.repository.add(
                 conversationId = conversationId,
                 node = testNode,
                 dataPath = assetPath.toString(),
+                mimeType = mimeType,
+                metadata = AssetContent.AssetMetadata.Image(0, 0),
+                uploadStatus = AttachmentUploadStatus.UPLOADING,
             )
         }.wasInvoked(once)
     }
@@ -98,7 +104,7 @@ class AddAttachmentDraftUseCaseTest {
             .withUploadEvents()
             .arrange()
 
-        useCase(conversationId, fileName, assetPath, assetSize)
+        useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
 
         advanceTimeBy(1)
 
@@ -116,7 +122,7 @@ class AddAttachmentDraftUseCaseTest {
             .withUploadCompleteEvent()
             .arrange()
 
-        useCase(conversationId, fileName, assetPath, assetSize)
+        useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
 
         advanceTimeBy(1)
 
@@ -134,7 +140,7 @@ class AddAttachmentDraftUseCaseTest {
             .withUploadErrorEvent()
             .arrange()
 
-        useCase(conversationId, fileName, assetPath, assetSize)
+        useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
 
         advanceTimeBy(1)
 
@@ -150,6 +156,9 @@ class AddAttachmentDraftUseCaseTest {
 
         @Mock
         val repository = mock(MessageAttachmentDraftRepository::class)
+
+        @Mock
+        val conversationDao = mock(ConversationDAO::class)
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()
 
@@ -168,7 +177,10 @@ class AddAttachmentDraftUseCaseTest {
                 repository.add(
                     conversationId = any(),
                     node = any(),
-                    dataPath = any()
+                    dataPath = any(),
+                    mimeType = any(),
+                    metadata = any(),
+                    uploadStatus = any(),
                 )
             }.returns(Unit.right())
         }
@@ -200,11 +212,17 @@ class AddAttachmentDraftUseCaseTest {
             }.returns(flowOf(CellUploadEvent.UploadError))
         }
 
-        fun arrange() = this to AddAttachmentDraftUseCaseImpl(
-            uploadManager = uploadManager,
-            repository = repository,
-            scope = useCaseScope,
-        )
+        suspend fun arrange(): Pair<Arrangement, AddAttachmentDraftUseCaseImpl> {
+
+            coEvery { conversationDao.getCellName(any()) }.returns("wire-cells-android/$conversationId")
+
+            return this to AddAttachmentDraftUseCaseImpl(
+                uploadManager = uploadManager,
+                repository = repository,
+                scope = useCaseScope,
+                conversationDao = conversationDao,
+            )
+        }
     }
 }
 

@@ -20,9 +20,12 @@ package com.wire.kalium.cells.data
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import okio.Path
+import okio.Sink
 
 internal interface CellsAwsClient {
+    suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit)
     suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
+    suspend fun getPreSignedUrl(objectKey: String): String
 }
 
 internal expect fun cellsAwsClient(credentials: CellsCredentials): CellsAwsClient

@@ -1,15 +1,40 @@
 CREATE TABLE IF NOT EXISTS MessageAttachmentDraft (
       attachment_id TEXT NOT NULL,
-      verison_id TEXT NOT NULL,
+      version_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      mime_type TEXT NOT NULL,
       file_name TEXT NOT NULL,
       file_size INTEGER NOT NULL,
       data_path TEXT NOT NULL,
       node_path TEXT NOT NULL,
       upload_status TEXT NOT NULL,
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (attachment_id)
+);
+
+CREATE TABLE IF NOT EXISTS MessageAttachments (
+      asset_id TEXT NOT NULL,
+      asset_version_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      cell_asset INTEGER AS Boolean NOT NULL,
+      local_path TEXT NOT NULL DEFAULT '',
+      preview_url TEXT NOT NULL DEFAULT '',
+      asset_mime_type TEXT NOT NULL,
+      asset_size INTEGER,
+      asset_path TEXT,
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
+
+      asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (asset_id, message_id, conversation_id)
 );
 
 DROP VIEW IF EXISTS MessageDetailsView;
@@ -109,6 +134,25 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('{
+        "id":"' || asset_id || '",
+        "mime_type":"' || asset_mime_type || '",
+        "cell_asset":"' || cell_asset || '",
+        "asset_path":"' || IFNULL(asset_path,'') || '",
+        "asset_size":' || IFNULL(asset_size,0) || ',
+        "local_path":"' || IFNULL(local_path,'') || '",
+        "asset_width":"' || IFNULL(asset_width,0) || '",
+        "asset_height":"' || IFNULL(asset_height,0) || '",
+        "asset_transfer_status":"' || asset_transfer_status || '",
+        "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
+        "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
+    FROM MessageAttachments
+    WHERE MessageAttachments.message_id = Message.id
+        AND MessageAttachments.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS attachments,
 TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,
@@ -178,3 +222,138 @@ LEFT JOIN MessageConversationProtocolChangedContent AS ConversationProtocolChang
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN MessageLegalHoldContent AS LegalHoldContent ON Message.id = LegalHoldContent.message_id AND Message.conversation_id = LegalHoldContent.conversation_id
 LEFT JOIN SelfUser;
+
+ALTER TABLE Conversation ADD COLUMN wire_cell TEXT;
+
+DROP VIEW IF EXISTS ConversationDetails;
+
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
+SELECT
+Conversation.qualified_id AS qualifiedId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.name
+    WHEN 'CONNECTION_PENDING' THEN connection_user.name
+    ELSE Conversation.name
+END AS name,
+Conversation.type,
+Call.status AS callStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.preview_asset_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.preview_asset_id
+END AS previewAssetId,
+Conversation.muted_status AS mutedStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.team
+    ELSE Conversation.team_id
+END AS teamId,
+CASE (Conversation.type)
+    WHEN 'CONNECTION_PENDING' THEN Connection.last_update_date
+    ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_availability_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_availability_status
+END AS userAvailabilityStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_type
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_type
+END AS userType,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.bot_service
+    WHEN 'CONNECTION_PENDING' THEN connection_user.bot_service
+END AS botService,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.deleted
+    WHEN 'CONNECTION_PENDING' THEN connection_user.deleted
+END AS userDeleted,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.defederated
+    WHEN 'CONNECTION_PENDING' THEN connection_user.defederated
+END AS userDefederated,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.supported_protocols
+    WHEN 'CONNECTION_PENDING' THEN connection_user.supported_protocols
+END AS userSupportedProtocols,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.connection_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.connection_status
+END AS connectionStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.qualified_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.qualified_id
+END AS otherUserId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
+END AS otherUserActiveConversationId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
+    ELSE 1
+END AS isActive,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.accent_id
+    ELSE 0
+END AS accentId,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
+memberRole. role AS selfRole,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update_date,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.receipt_mode,
+Conversation.message_timer,
+Conversation.user_message_timer,
+Conversation.incomplete_metadata,
+Conversation.archived,
+Conversation.archived_date_time,
+Conversation.verification_status AS mls_verification_status,
+Conversation.proteus_verification_status,
+Conversation.legal_hold_status,
+SelfUser.id AS selfUserId,
+CASE
+    WHEN Conversation.type = 'GROUP' THEN
+        CASE
+            WHEN memberRole.role IS NOT NULL THEN 1
+            ELSE 0
+        END
+    WHEN Conversation.type = 'ONE_ON_ONE' THEN
+        CASE
+            WHEN User.defederated = 1 THEN 0
+            WHEN User.deleted = 1 THEN 0
+            WHEN User.connection_status = 'BLOCKED' THEN 0
+            WHEN Conversation.legal_hold_status = 'DEGRADED' THEN 0
+            ELSE 1
+        END
+    ELSE 0
+END AS interactionEnabled,
+LabeledConversation.folder_id IS NOT NULL AS isFavorite,
+CurrentFolder.id AS folderId,
+CurrentFolder.name AS folderName,
+Conversation.wire_cell AS wireCell
+FROM Conversation
+LEFT JOIN SelfUser
+LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT SelfUser.id
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS SelfUser.id
+LEFT JOIN User ON User.qualified_id = Member.user
+LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
+    AND (Connection.status = 'SENT'
+         OR Connection.status = 'PENDING'
+         OR Connection.status = 'NOT_CONNECTED'
+         AND Conversation.type IS 'CONNECTION_PENDING')
+LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1)
+LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 'FAVORITE'
+LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
+LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
+LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE';

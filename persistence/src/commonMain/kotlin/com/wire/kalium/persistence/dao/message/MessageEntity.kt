@@ -24,6 +24,8 @@ import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent.Text.QuotedMessage
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -145,7 +147,7 @@ sealed interface MessageEntity {
         CONVERSATION_MESSAGE_TIMER_CHANGED, CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS,
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
-        CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD
+        CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
     }
 
     enum class MemberChangeType {
@@ -357,6 +359,20 @@ sealed class MessageEntityContent {
     data object ConversationStartedUnverifiedWarning : System()
     data class Federation(val domainList: List<String>, val type: MessageEntity.FederationType) : System()
     data class LegalHold(val memberUserIdList: List<QualifiedIDEntity>, val type: MessageEntity.LegalHoldType) : System()
+
+    data class Multipart(
+        val messageBody: String?,
+        val linkPreview: List<MessageEntity.LinkPreview> = listOf(),
+        val mentions: List<MessageEntity.Mention> = listOf(),
+        val attachments: List<MessageAttachmentEntity> = listOf(),
+        val quotedMessageId: String? = null,
+        val isQuoteVerified: Boolean? = null,
+        /**
+         * Details of the message being quoted.
+         * Unused when inserting into the DB.
+         */
+        val quotedMessage: QuotedMessage? = null,
+    ) : Regular()
 }
 
 /**

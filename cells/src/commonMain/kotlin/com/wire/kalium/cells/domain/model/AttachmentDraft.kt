@@ -21,9 +21,14 @@ public data class AttachmentDraft(
     val uuid: String,
     val versionId: String,
     val fileName: String,
+    val remoteFilePath: String,
     val localFilePath: String,
     val fileSize: Long,
     val uploadStatus: AttachmentUploadStatus,
+    val mimeType: String,
+    val assetWidth: Int?,
+    val assetHeight: Int?,
+    val assetDuration: Long?,
 )
 
 public enum class AttachmentUploadStatus {

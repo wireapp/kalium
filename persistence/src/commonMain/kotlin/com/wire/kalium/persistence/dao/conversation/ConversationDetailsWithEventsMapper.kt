@@ -82,6 +82,7 @@ data object ConversationDetailsWithEventsMapper {
         isFavorite: Boolean,
         folderId: String?,
         folderName: String?,
+        wireCell: String?,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
         unreadMentionsCount: Long?,
@@ -158,6 +159,7 @@ data object ConversationDetailsWithEventsMapper {
             isFavorite = isFavorite,
             folderId = folderId,
             folderName = folderName,
+            wireCell = wireCell,
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(
             conversationId = qualifiedId,

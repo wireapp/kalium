@@ -24,6 +24,10 @@ import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.durationMs
+import com.wire.kalium.logic.data.message.height
+import com.wire.kalium.logic.data.message.width
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftEntity
@@ -34,16 +38,27 @@ internal class MessageAttachmentDraftDataSource internal constructor(
     private val messageAttachmentDao: MessageAttachmentDraftDao
 ) : MessageAttachmentDraftRepository {
 
-    override suspend fun add(conversationId: QualifiedID, node: CellNode, dataPath: String) = wrapStorageRequest {
+    override suspend fun add(
+        conversationId: QualifiedID,
+        node: CellNode,
+        mimeType: String,
+        dataPath: String,
+        metadata: AssetContent.AssetMetadata?,
+        uploadStatus: AttachmentUploadStatus,
+    ) = wrapStorageRequest {
         messageAttachmentDao.addAttachment(
             uuid = node.uuid,
             versionId = node.versionId,
             conversationId = QualifiedIDEntity(conversationId.value, conversationId.domain),
+            mimeType = mimeType,
             fileName = node.path.substringAfterLast("/"),
             fileSize = node.size ?: 0,
             dataPath = dataPath,
             nodePath = node.path,
-            status = AttachmentUploadStatus.UPLOADING.name
+            status = uploadStatus.name,
+            assetWidth = metadata?.width(),
+            assetHeight = metadata?.height(),
+            assetDuration = metadata?.durationMs(),
         )
     }
 
@@ -57,6 +72,10 @@ internal class MessageAttachmentDraftDataSource internal constructor(
 
     override suspend fun remove(uuid: String) = wrapStorageRequest {
         messageAttachmentDao.deleteAttachment(uuid)
+    }
+
+    override suspend fun removeAttachmentDrafts(conversationId: ConversationId) {
+        messageAttachmentDao.deleteAttachments(QualifiedIDEntity(conversationId.value, conversationId.domain))
     }
 
     override suspend fun get(uuid: String) = wrapStorageRequest {
@@ -75,7 +94,12 @@ private fun MessageAttachmentDraftEntity.toModel() = AttachmentDraft(
     uuid = uuid,
     versionId = versionId,
     fileName = fileName,
+    remoteFilePath = nodePath,
     localFilePath = dataPath,
     fileSize = fileSize,
     uploadStatus = AttachmentUploadStatus.valueOf(uploadStatus),
+    mimeType = mimeType,
+    assetWidth = assetWidth,
+    assetHeight = assetHeight,
+    assetDuration = assetDuration,
 )

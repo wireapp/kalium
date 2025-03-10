@@ -76,6 +76,7 @@ data class ConversationViewEntity(
     val isFavorite: Boolean,
     val folderId: String?,
     val folderName: String?,
+    val wireCell: String?,
 ) {
     val isMember: Boolean get() = selfRole != null
 }

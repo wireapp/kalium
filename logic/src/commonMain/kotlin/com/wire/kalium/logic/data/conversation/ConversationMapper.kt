@@ -137,7 +137,8 @@ internal class ConversationMapperImpl(
         archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        wireCell = null,
     )
 
     private fun fromConversationViewToEntity(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
@@ -276,6 +277,7 @@ internal class ConversationMapperImpl(
                         selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                         isFavorite = isFavorite,
                         folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
+                        wireCell = wireCell,
                     )
                 }
 
@@ -442,7 +444,8 @@ internal class ConversationMapperImpl(
             archivedInstant = archivedDateTime,
             mlsVerificationStatus = verificationStatusToEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus),
-            legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus)
+            legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus),
+            wireCell = null,
         )
     }
 
@@ -473,7 +476,8 @@ internal class ConversationMapperImpl(
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        wireCell = null,
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {

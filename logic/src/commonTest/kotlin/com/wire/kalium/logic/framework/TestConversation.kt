@@ -180,7 +180,8 @@ object TestConversation {
         accentId = null,
         isFavorite = false,
         folderId = null,
-        folderName = null
+        folderName = null,
+        wireCell = null,
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -297,7 +298,8 @@ object TestConversation {
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        wireCell = null,
     )
     val ENTITY_GROUP = ENTITY.copy(
         type = ConversationEntity.Type.GROUP
@@ -348,7 +350,8 @@ object TestConversation {
         accentId = null,
         isFavorite = false,
         folderId = null,
-        folderName = null
+        folderName = null,
+        wireCell = null,
     )
 
     val VIEW_ONE_ON_ONE = VIEW_ENTITY.copy(

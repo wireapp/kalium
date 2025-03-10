@@ -71,6 +71,11 @@ class ObserveAttachmentDraftsUseCaseTest {
                     fileName = "",
                     localFilePath = "",
                     fileSize = 1,
+                    remoteFilePath = "",
+                    mimeType = "",
+                    assetWidth = 0,
+                    assetHeight = 0,
+                    assetDuration = 0,
                 )
             ).right())
 
