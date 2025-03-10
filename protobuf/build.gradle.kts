@@ -85,7 +85,7 @@ val compileTasks = tasks.matching { it is KotlinCompile || it is KotlinNativeCom
 
 tasks.register("setupProtoTools") {
     providers.exec {
-        commandLine("sh")
+        commandLine("bash")
         args = listOf("$rootDir/scripts/setup_proto_tools.sh")
     }.standardOutput.asText.get().trim()
 }
@@ -93,7 +93,7 @@ tasks.register("setupProtoTools") {
 tasks.register("generateProto") {
     dependsOn("setupProtoTools")
     providers.exec {
-        commandLine("sh")
+        commandLine("bash")
         args = listOf("$rootDir/scripts/protoc_gen_kotlin.sh")
     }.standardOutput.asText.get().trim()
 }
