@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -25,7 +26,6 @@ import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -155,10 +155,10 @@ class AddAttachmentDraftUseCaseTest {
         val uploadManager = mock(CellUploadManager::class)
 
         @Mock
-        val repository = mock(MessageAttachmentDraftRepository::class)
+        val conversationRepository = mock(CellConversationRepository::class)
 
         @Mock
-        val conversationDao = mock(ConversationDAO::class)
+        val repository = mock(MessageAttachmentDraftRepository::class)
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()
 
@@ -214,13 +214,13 @@ class AddAttachmentDraftUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, AddAttachmentDraftUseCaseImpl> {
 
-            coEvery { conversationDao.getCellName(any()) }.returns("wire-cells-android/$conversationId")
+            coEvery { conversationRepository.getCellName(any()) }.returns("wire-cells-android/$conversationId".right())
 
             return this to AddAttachmentDraftUseCaseImpl(
                 uploadManager = uploadManager,
+                conversationRepository = conversationRepository,
                 repository = repository,
                 scope = useCaseScope,
-                conversationDao = conversationDao,
             )
         }
     }
@@ -234,6 +234,6 @@ private val testNode = CellNode(
     size = 0,
     eTag = "eTag",
     type = "type",
-    isRecycleBin = false,
+    isRecycled = false,
     isDraft = false
 )
