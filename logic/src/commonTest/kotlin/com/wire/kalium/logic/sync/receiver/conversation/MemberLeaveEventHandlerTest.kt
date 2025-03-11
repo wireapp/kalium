@@ -437,10 +437,6 @@ class MemberLeaveEventHandlerTest {
                 selfUserId = selfUserId,
                 mlsClientProvider = mlsClientProvider,
                 conversationDAO = conversationDAO,
-<<<<<<< HEAD
-=======
-                selfUserId = selfUserId
->>>>>>> 652072fe38 (fix: sync blocked when joining conv and leaving while offline (#3314))
             )
             this to memberLeaveEventHandler
         }
@@ -448,12 +444,8 @@ class MemberLeaveEventHandlerTest {
 
     companion object {
         val failure = CoreFailure.MissingClientRegistration
-<<<<<<< HEAD
         val selfUserId = UserId("self-userId", "domain")
         val userId = UserId("userId", "domain")
-=======
-        val selfUserId = UserId("userId", "domain")
->>>>>>> 652072fe38 (fix: sync blocked when joining conv and leaving while offline (#3314))
         private val qualifiedUserIdEntity = QualifiedIDEntity("userId", "domain")
         private val qualifiedConversationIdEntity = QualifiedIDEntity("conversationId", "domain")
 
