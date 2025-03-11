@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.model.PaginationRequest
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -55,6 +56,10 @@ internal open class ConnectionApiV0 internal constructor(private val authenticat
                 setBody(UpdateConnectionRequest(connectionStatus))
             }
         }
+
+    override suspend fun userConnectionInfo(userId: UserId): NetworkResponse<ConnectionDTO> = wrapKaliumResponse {
+        httpClient.get("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}")
+    }
 
     protected companion object {
         const val PATH_CONNECTIONS = "list-connections"
