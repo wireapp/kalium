@@ -54,8 +54,7 @@ internal interface JoinSubconversationUseCase {
 internal class JoinSubconversationUseCaseImpl(
     private val conversationApi: ConversationApi,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val subconversationRepository: SubconversationRepository,
-    private val mlsMessageUnpacker: MLSMessageUnpacker,
+    private val subconversationRepository: SubconversationRepository
 ) : JoinSubconversationUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,

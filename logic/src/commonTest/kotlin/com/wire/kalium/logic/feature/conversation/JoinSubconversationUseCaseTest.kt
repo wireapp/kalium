@@ -187,14 +187,10 @@ class JoinSubconversationUseCaseTest {
         @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
 
-        @Mock
-        val mlsMessageUnpacker = mock(MLSMessageUnpacker::class)
-
         fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
             mlsConversationRepository,
-            subconversationRepository,
-            mlsMessageUnpacker
+            subconversationRepository
         )
 
         suspend fun withEstablishMLSSubConversationGroupSuccessful() = apply {
