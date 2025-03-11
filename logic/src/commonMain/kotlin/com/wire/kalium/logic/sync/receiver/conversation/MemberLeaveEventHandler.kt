@@ -72,8 +72,11 @@ internal class MemberLeaveEventHandlerImpl(
             userRepository.markAsDeleted(event.removedList)
         }
         return deleteMembers(event.removedList, event.conversationId)
-            .onSuccess { updateConversationClientsForCurrentCall.value(event.conversationId) }
-            .onSuccess { deleteConversationIfNeeded(event) }
+            .onSuccess {
+                updateConversationClientsForCurrentCall.value(event.conversationId) }
+            .onSuccess {
+                deleteConversationIfNeeded(event)
+            }
             .onSuccess {
                 // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
                 // and keep them to properly show this member-leave message

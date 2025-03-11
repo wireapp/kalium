@@ -41,7 +41,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -73,17 +72,18 @@ class MemberLeaveEventHandlerTest {
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withPersistingMessage(Either.Right(Unit), messageMatcher = EqualsMatcher(message))
                 withDeleteMembersByQualifiedID(
-                    result = list.size.toLong(),
+                    result = event.removedList.size.toLong(),
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
-                    memberIdList = EqualsMatcher(list)
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
+                withGetConversationsDeleteQueue(emptyList())
             }
 
         memberLeaveEventHandler.handle(event)
 
         coVerify {
-            arrangement.memberDAO.deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
+            arrangement.memberDAO.deleteMembersByQualifiedID(event.removedList.map { it.toDao() }, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
         coVerify {
@@ -114,7 +114,7 @@ class MemberLeaveEventHandlerTest {
         memberLeaveEventHandler.handle(event)
 
         coVerify {
-            arrangement.memberDAO.deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
+            arrangement.memberDAO.deleteMembersByQualifiedID(event.removedList.map { it.toDao() }, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
         coVerify {
@@ -131,9 +131,9 @@ class MemberLeaveEventHandlerTest {
             .arrange {
                 withMarkAsDeleted(Either.Right(Unit), userId = EqualsMatcher(event.removedList))
                 withDeleteMembersByQualifiedID(
-                    result = list.size.toLong(),
+                    result = event.removedList.size.toLong(),
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
-                    memberIdList = EqualsMatcher(list)
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withPersistingMessage(Either.Right(Unit), messageMatcher = EqualsMatcher(message))
@@ -164,9 +164,9 @@ class MemberLeaveEventHandlerTest {
             .arrange {
                 withMarkAsDeleted(Either.Right(Unit), userId = EqualsMatcher(event.removedList))
                 withDeleteMembersByQualifiedID(
-                    result = list.size.toLong(),
+                    result = event.removedList.size.toLong(),
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
-                    memberIdList = EqualsMatcher(list)
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withTeamId(Either.Right(null))
@@ -178,7 +178,7 @@ class MemberLeaveEventHandlerTest {
 
         coVerify {
             arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
-        }.wasInvoked(once)
+        }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.userRepository.markAsDeleted(any())
@@ -213,7 +213,7 @@ class MemberLeaveEventHandlerTest {
                 withDeleteMembersByQualifiedID(
                     result = 0,
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
-                    memberIdList = EqualsMatcher(list)
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withIsAtLeastOneUserATeamMember(Either.Right(false))
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
@@ -251,11 +251,12 @@ class MemberLeaveEventHandlerTest {
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withPersistingMessage(Either.Right(Unit))
                 withDeleteMembersByQualifiedID(
-                    result = list.size.toLong(),
+                    result = event.removedList.size.toLong(),
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
-                    memberIdList = EqualsMatcher(list)
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
+                withGetConversationsDeleteQueue(emptyList())
             }
         // when
         memberLeaveEventHandler.handle(event)
@@ -334,9 +335,9 @@ class MemberLeaveEventHandlerTest {
                 withPersistingMessage(Either.Right(Unit))
                 withTeamId(Either.Right(null))
                 withDeleteMembersByQualifiedID(
-                    result = list.size.toLong(),
+                    result = event.removedList.size.toLong(),
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
-                    memberIdList = EqualsMatcher(list)
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withGetConversationsDeleteQueue(listOf(event.conversationId))
                 withDeletingConversationSucceeding(EqualsMatcher(event.conversationId))
@@ -446,11 +447,9 @@ class MemberLeaveEventHandlerTest {
         val failure = CoreFailure.MissingClientRegistration
         val selfUserId = UserId("self-userId", "domain")
         val userId = UserId("userId", "domain")
-        private val qualifiedUserIdEntity = QualifiedIDEntity("userId", "domain")
         private val qualifiedConversationIdEntity = QualifiedIDEntity("conversationId", "domain")
 
         val conversationId = ConversationId("conversationId", "domain")
-        val list = listOf(qualifiedUserIdEntity)
 
         val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
             "group2",
