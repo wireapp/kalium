@@ -320,7 +320,8 @@ class CallManagerImpl internal constructor(
                     },
                     onEpochChange = { conversationId, epochInfo ->
                         updateEpochInfo(conversationId, epochInfo)
-                    })
+                    }
+                )
             } else {
                 // TODO: Handle response. Possible failure?
                 wcall_start(
