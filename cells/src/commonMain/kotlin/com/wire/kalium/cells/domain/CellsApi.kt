@@ -30,4 +30,5 @@ internal interface CellsApi {
     suspend fun delete(node: CellNodeDTO): NetworkResponse<Unit>
     suspend fun getFiles(cellName: String): NetworkResponse<GetFilesResponseDTO>
     suspend fun createPublicUrl(uuid: String, fileName: String): NetworkResponse<String>
+    suspend fun delete(paths: List<String>): NetworkResponse<Unit>
 }

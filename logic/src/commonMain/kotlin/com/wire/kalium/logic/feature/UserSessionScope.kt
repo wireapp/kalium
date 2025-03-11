@@ -1916,6 +1916,7 @@ class UserSessionScope internal constructor(
             observeFileSharingStatus,
             cells.publishAttachments,
             cells.removeAttachments,
+            cells.deleteAttachmentsUseCase,
             this,
             userScopedLogger,
         )
