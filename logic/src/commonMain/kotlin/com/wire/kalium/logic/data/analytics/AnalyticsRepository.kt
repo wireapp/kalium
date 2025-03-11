@@ -34,7 +34,7 @@ interface AnalyticsRepository {
     suspend fun setContactsAmountCached(amount: Int)
     suspend fun setTeamMembersAmountCached(amount: Int)
     suspend fun getLastContactsDateUpdateDate(): Either<StorageFailure, Instant>
-    suspend fun setContactsAmountCachingDate(date: Instant)
+    suspend fun setLastContactsDateUpdateDate(date: Instant)
     suspend fun countContactsAmount(): Either<StorageFailure, Int>
     suspend fun countTeamMembersAmount(teamId: TeamId): Either<CoreFailure, Int>
 }
@@ -54,17 +54,29 @@ internal class AnalyticsDataSource(
     }
 
     override suspend fun setContactsAmountCached(amount: Int) =
-        metadataDAO.insertValue(CONTACTS_AMOUNT_KEY, amount.toString())
+        metadataDAO.insertValue(
+            value = amount.toString(),
+            key = CONTACTS_AMOUNT_KEY
+        )
 
     override suspend fun setTeamMembersAmountCached(amount: Int) =
-        metadataDAO.insertValue(TEAM_MEMBERS_AMOUNT_KEY, amount.toString())
+        metadataDAO.insertValue(
+            value = amount.toString(),
+            key = TEAM_MEMBERS_AMOUNT_KEY
+        )
 
     override suspend fun getLastContactsDateUpdateDate(): Either<StorageFailure, Instant> = wrapStorageRequest {
-        metadataDAO.valueByKey(LAST_CONTACTS_UPDATE_KEY)?.let { Instant.parse(it) }
+        metadataDAO.valueByKey(LAST_CONTACTS_UPDATE_KEY)?.let {
+            Instant.parse(it)
+        }
     }
 
-    override suspend fun setContactsAmountCachingDate(date: Instant) =
-        metadataDAO.insertValue(LAST_CONTACTS_UPDATE_KEY, date.toString())
+    override suspend fun setLastContactsDateUpdateDate(date: Instant) {
+        metadataDAO.insertValue(
+            value = date.toString(),
+            key = LAST_CONTACTS_UPDATE_KEY
+        )
+    }
 
     override suspend fun countContactsAmount(): Either<StorageFailure, Int> = wrapStorageRequest {
         userDAO.countContactsAmount(selfUserId.toDao())

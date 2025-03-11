@@ -56,7 +56,7 @@ class AsyncUpdateContactsAmountsCacheUseCaseTest {
             .wasNotInvoked()
         coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
             .wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+        coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
             .wasInvoked(exactly = 1)
     }
 
@@ -80,7 +80,7 @@ class AsyncUpdateContactsAmountsCacheUseCaseTest {
                 .wasNotInvoked()
             coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
                 .wasInvoked(exactly = 1)
-            coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+            coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
                 .wasInvoked(exactly = 1)
         }
 
@@ -104,7 +104,7 @@ class AsyncUpdateContactsAmountsCacheUseCaseTest {
                 .wasInvoked(exactly = 1)
             coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
                 .wasNotInvoked()
-            coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+            coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
                 .wasInvoked(exactly = 1)
         }
 
@@ -127,7 +127,7 @@ class AsyncUpdateContactsAmountsCacheUseCaseTest {
             .wasNotInvoked()
         coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
             .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setContactsAmountCachingDate(any()) }
+        coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
             .wasNotInvoked()
     }
 

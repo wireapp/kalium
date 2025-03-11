@@ -61,7 +61,7 @@ internal open class AnalyticsRepositoryArrangementImpl : AnalyticsRepositoryArra
     }
 
     override suspend fun withSetContactsAmountCachingDate() {
-        coEvery { analyticsRepository.setContactsAmountCachingDate(any()) }.returns(Unit)
+        coEvery { analyticsRepository.setLastContactsDateUpdateDate(any()) }.returns(Unit)
     }
 
     override suspend fun withSetTeamMembersAmountCached() {
