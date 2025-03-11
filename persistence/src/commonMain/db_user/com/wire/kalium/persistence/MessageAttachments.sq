@@ -78,3 +78,5 @@ UPDATE MessageAttachments SET content_hash = ? WHERE asset_id = ?;
 setContentUrlAndHash:
 UPDATE MessageAttachments SET content_url = ?, content_hash = ? WHERE asset_id = ?;
 
+getAttachments:
+SELECT * FROM MessageAttachments WHERE message_id = ? AND conversation_id = ?;

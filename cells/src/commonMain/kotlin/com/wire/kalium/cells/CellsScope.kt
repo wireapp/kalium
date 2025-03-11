@@ -35,6 +35,8 @@ import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
@@ -138,4 +140,7 @@ public class CellsScope(
 
     public val refreshAsset: RefreshCellAssetStateUseCase
         get() = RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+
+    public val deleteAttachmentsUseCase: DeleteMessageAttachmentsUseCase
+        get() = DeleteMessageAttachmentsUseCaseImpl(cellsRepository, cellAttachmentsRepository)
 }

@@ -50,16 +50,14 @@ internal class CellsDataSource internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CellsRepository {
 
-    override suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult> {
-        return withContext(dispatchers.io) {
-            wrapApiRequest {
-                cellsApi.preCheck(nodePath)
-            }.map { result ->
-                if (result.fileExists) {
-                    PreCheckResult.FileExists(result.nextPath ?: nodePath)
-                } else {
-                    PreCheckResult.Success
-                }
+    override suspend fun preCheck(nodePath: String) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.preCheck(nodePath)
+        }.map { result ->
+            if (result.fileExists) {
+                PreCheckResult.FileExists(result.nextPath ?: nodePath)
+            } else {
+                PreCheckResult.Success
             }
         }
     }
@@ -80,19 +78,27 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getFiles(cellName: String): Either<NetworkFailure, List<CellNode>> =
+    override suspend fun getFiles(cellName: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.getFiles(cellName)
         }.map { response ->
             response.nodes.map { it.toModel() }
         }
+    }
 
-    override suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit> =
+    override suspend fun deleteFile(node: CellNode) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.delete(node.toDto())
         }
+    }
 
-    override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit> =
+    override suspend fun deleteFiles(paths: List<String>) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.delete(paths)
+        }
+    }
+
+    override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = withContext(dispatchers.io) {
         coroutineScope {
             nodes.map { (nodeId, versionId) ->
                 async {
@@ -100,15 +106,17 @@ internal class CellsDataSource internal constructor(
                 }
             }.awaitAll().firstOrNull { it.isLeft() } ?: Unit.right()
         }
+    }
 
-    override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit> =
+    override suspend fun cancelDraft(nodeUuid: String, versionUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.cancelDraft(nodeUuid, versionUuid)
         }
+    }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
-        return try {
+    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) =
+        try {
             fileSystem.sink(out, true).use { sink ->
                 awsClient.download(cellPath, sink, onProgressUpdate)
                 Either.Right(Unit)
@@ -118,9 +126,8 @@ internal class CellsDataSource internal constructor(
         } catch (e: Exception) {
             Either.Left(NetworkFailure.ServerMiscommunication(e))
         }
-    }
 
-    override suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>> =
+    override suspend fun getPreviews(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.getNode(nodeUuid).mapSuccess { response ->
                 response.previews.map { preview ->
@@ -131,9 +138,11 @@ internal class CellsDataSource internal constructor(
                 }
             }
         }
+    }
 
-    override suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode> =
+    override suspend fun getNode(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.getNode(nodeUuid).mapSuccess { it.toModel() }
         }
+    }
 }

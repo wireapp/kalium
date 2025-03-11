@@ -22,8 +22,10 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageAttachment
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.util.KaliumDispatcher
@@ -68,6 +70,18 @@ internal class CellAttachmentsDataSource(
         withContext(dispatchers.io) {
             wrapStorageRequest {
                 messageAttachments.getAttachment(assetId).toModel()
+            }
+        }
+
+    override suspend fun getAttachments(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<StorageFailure, List<MessageAttachment>> = withContext(dispatchers.io) {
+            wrapStorageRequest {
+                messageAttachments.getAttachments(
+                    messageId = messageId,
+                    conversationId = QualifiedIDEntity(conversationId.value, conversationId.domain)
+                ).map { it.toModel() }
             }
         }
 }

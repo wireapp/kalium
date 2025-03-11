@@ -35,4 +35,5 @@ internal interface CellsRepository {
     suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit>
     suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>>
     suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode>
+    suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit>
 }

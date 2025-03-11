@@ -73,6 +73,16 @@ internal class CellsApiImpl(
             )
         }.mapSuccess {}
 
+    override suspend fun delete(paths: List<String>): NetworkResponse<Unit> =
+        wrapCellsResponse {
+            nodeServiceApi.performAction(
+                name = NodeServiceApi.NamePerformAction.delete,
+                parameters = RestActionParameters(
+                    nodes = paths.map { RestNodeLocator(it) }
+                )
+            )
+        }.mapSuccess {}
+
     override suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit> =
         wrapCellsResponse {
             nodeServiceApi.promoteVersion(nodeUuid, versionId, RestPromoteParameters(publish = true))
