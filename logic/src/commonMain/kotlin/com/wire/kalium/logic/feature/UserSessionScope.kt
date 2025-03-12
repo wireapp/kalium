@@ -1057,8 +1057,7 @@ class UserSessionScope internal constructor(
         get() = JoinSubconversationUseCaseImpl(
             authenticatedNetworkContainer.conversationApi,
             mlsConversationRepository,
-            subconversationRepository,
-            mlsUnpacker
+            subconversationRepository
         )
 
     private val leaveSubconversationUseCase: LeaveSubconversationUseCase
