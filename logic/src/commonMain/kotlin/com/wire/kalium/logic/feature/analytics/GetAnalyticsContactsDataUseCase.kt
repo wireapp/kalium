@@ -20,34 +20,49 @@ package com.wire.kalium.logic.feature.analytics
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.days
 
 /**
  * Use case that combine contacts data necessary for analytics [AnalyticsContactsData].
  * It always get a Cached data and, except case when there is no cache, in that case useCase selects all the data from DB.
  */
-interface GetAnalyticsContactsDataUseCase {
-    suspend operator fun invoke(): AnalyticsContactsData
-}
-
-class GetAnalyticsContactsDataUseCaseImpl internal constructor(
+class GetAnalyticsContactsDataUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val userConfigRepository: UserConfigRepository,
-) : GetAnalyticsContactsDataUseCase {
+    private val coroutineScope: CoroutineScope,
+) {
 
-    override suspend fun invoke(): AnalyticsContactsData {
-        slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
+    suspend operator fun invoke(currentTime: Instant = Clock.System.now()): AnalyticsContactsData {
+//         slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
+
+        val lastUpdate = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
+
+        coroutineScope.launch {
+            checkIfCashNeedsUpdate(currentTime = currentTime, lastUpdate = lastUpdate)
+        }.also {
+            if (lastUpdate == null) {
+                it.join()
+            }
+        }
 
         val teamId = selfTeamIdProvider().getOrNull()
-        return getAnalyticsContactsData(teamId)
+        return getAnalyticsContactsData(teamId).also {
+            kaliumLogger.d("cccc: getAnalyticsContactsData $it")
+        }
     }
 
     private suspend fun getAnalyticsContactsData(teamId: TeamId?): AnalyticsContactsData =
@@ -89,7 +104,36 @@ class GetAnalyticsContactsDataUseCaseImpl internal constructor(
             }
         }
 
+    private suspend fun checkIfCashNeedsUpdate(currentTime: Instant, lastUpdate: Instant?) {
+
+        if (lastUpdate != null && currentTime.minus(lastUpdate) < CACHE_PERIOD) return
+
+        val teamId = selfTeamIdProvider().getOrNull()
+        if (teamId == null) {
+            updateContactsAmountCache()
+        } else {
+            updateTeamSizeCache(teamId)
+        }
+        analyticsRepository.setLastContactsDateUpdateDate(currentTime)
+    }
+
+    private suspend fun updateContactsAmountCache() {
+        with(analyticsRepository) {
+            val contactsAmount = countContactsAmount().getOrNull() ?: 0
+            setContactsAmountCached(contactsAmount)
+        }
+    }
+
+    private suspend fun updateTeamSizeCache(teamId: TeamId) {
+        with(analyticsRepository) {
+            countTeamMembersAmount(teamId).getOrNull()?.let { teamAmount ->
+                setTeamMembersAmountCached(teamAmount)
+            }
+        }
+    }
+
     companion object {
+        private val CACHE_PERIOD = 7.days
         private const val SMALL_TEAM_MAX = 5
     }
 

@@ -167,10 +167,8 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
-import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCaseImpl
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
-import com.wire.kalium.logic.feature.analytics.AsyncUpdateContactsAmountsCacheUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -2214,17 +2212,18 @@ class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
         )
 
-    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase get() = GetAnalyticsContactsDataUseCaseImpl(
+    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase get() = GetAnalyticsContactsDataUseCase(
         selfTeamIdProvider = selfTeamId,
         slowSyncRepository = slowSyncRepository,
         analyticsRepository = analyticsRepository,
-        userConfigRepository = userConfigRepository
+        userConfigRepository = userConfigRepository,
+        coroutineScope = this,
     )
 
-    val asyncUpdateContactsAmountsCache: AsyncUpdateContactsAmountsCacheUseCase get() = AsyncUpdateContactsAmountsCacheUseCase(
-        selfTeamIdProvider = selfTeamId,
-        analyticsRepository = analyticsRepository
-    )
+//     val asyncUpdateContactsAmountsCache: AsyncUpdateContactsAmountsCacheUseCase get() = AsyncUpdateContactsAmountsCacheUseCase(
+//         selfTeamIdProvider = selfTeamId,
+//         analyticsRepository = analyticsRepository
+//     )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
