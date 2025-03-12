@@ -20,15 +20,11 @@ package com.wire.kalium.logic.feature.analytics
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

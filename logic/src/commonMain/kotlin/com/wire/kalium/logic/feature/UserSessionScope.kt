@@ -2213,16 +2213,10 @@ class UserSessionScope internal constructor(
 
     val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase get() = GetAnalyticsContactsDataUseCase(
         selfTeamIdProvider = selfTeamId,
-        slowSyncRepository = slowSyncRepository,
         analyticsRepository = analyticsRepository,
         userConfigRepository = userConfigRepository,
         coroutineScope = this,
     )
-
-//     val asyncUpdateContactsAmountsCache: AsyncUpdateContactsAmountsCacheUseCase get() = AsyncUpdateContactsAmountsCacheUseCase(
-//         selfTeamIdProvider = selfTeamId,
-//         analyticsRepository = analyticsRepository
-//     )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
