@@ -471,6 +471,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
@@ -679,6 +680,8 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository
         )
 
+    private val mlsMutex: Mutex = Mutex()
+
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             userId,
@@ -694,7 +697,8 @@ class UserSessionScope internal constructor(
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository
+            certificateRevocationListRepository,
+            mutex = mlsMutex
         )
 
     private val e2eiRepository: E2EIRepository
