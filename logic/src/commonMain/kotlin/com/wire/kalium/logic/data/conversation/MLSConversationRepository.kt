@@ -93,7 +93,27 @@ data class ApplicationMessage(
     val message: ByteArray,
     val senderID: UserId,
     val senderClientID: ClientId
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as ApplicationMessage
+
+        if (!message.contentEquals(other.message)) return false
+        if (senderID != other.senderID) return false
+        if (senderClientID != other.senderClientID) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = message.contentHashCode()
+        result = 31 * result + senderID.hashCode()
+        result = 31 * result + senderClientID.hashCode()
+        return result
+    }
+}
 
 data class DecryptedMessageBundle(
     val groupID: GroupID,
