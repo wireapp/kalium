@@ -47,7 +47,7 @@ class GetAnalyticsContactsDataUseCase internal constructor(
 ) {
 
     suspend operator fun invoke(currentTime: Instant = Clock.System.now()): AnalyticsContactsData {
-//         slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
+        slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
 
         val lastUpdate = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
 
