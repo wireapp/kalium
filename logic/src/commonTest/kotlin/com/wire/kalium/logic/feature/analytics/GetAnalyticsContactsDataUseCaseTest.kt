@@ -328,21 +328,13 @@ class GetAnalyticsContactsDataUseCaseTest {
         AnalyticsRepositoryArrangement by AnalyticsRepositoryArrangementImpl() {
 
         @Mock
-        val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
-        init {
-            every { slowSyncRepository.slowSyncStatus }
-                .returns(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
-        }
 
 
         private val useCase: GetAnalyticsContactsDataUseCase = GetAnalyticsContactsDataUseCase(
             selfTeamIdProvider = selfTeamIdProvider,
             userConfigRepository = userConfigRepository,
-            slowSyncRepository = slowSyncRepository,
             analyticsRepository = analyticsRepository,
             coroutineScope = coroutineScope
 

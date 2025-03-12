@@ -40,14 +40,12 @@ import kotlin.time.Duration.Companion.days
  */
 class GetAnalyticsContactsDataUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val slowSyncRepository: SlowSyncRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val userConfigRepository: UserConfigRepository,
     private val coroutineScope: CoroutineScope,
 ) {
 
     suspend operator fun invoke(currentTime: Instant = Clock.System.now()): AnalyticsContactsData {
-        slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
 
         val lastUpdate = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
 
@@ -60,9 +58,7 @@ class GetAnalyticsContactsDataUseCase internal constructor(
         }
 
         val teamId = selfTeamIdProvider().getOrNull()
-        return getAnalyticsContactsData(teamId).also {
-            kaliumLogger.d("cccc: getAnalyticsContactsData $it")
-        }
+        return getAnalyticsContactsData(teamId)
     }
 
     private suspend fun getAnalyticsContactsData(teamId: TeamId?): AnalyticsContactsData =
