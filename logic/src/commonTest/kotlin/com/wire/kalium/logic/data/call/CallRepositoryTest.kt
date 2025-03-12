@@ -1161,6 +1161,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenJoinMlsConference_thenJoinSubconversation() = runTest {
+        var hasJoined = false
         val (arrangement, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
             .givenJoinSubconversationSuccessful()
@@ -1172,11 +1173,14 @@ class CallRepositoryTest {
             .givenDeriveSecretSuccessful()
             .arrange()
 
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        callRepository.joinMlsConference(Arrangement.conversationId, {
+            hasJoined = true
+        }) { _, _ -> }
 
         coVerify {
             arrangement.joinSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
         }.wasInvoked(exactly = once)
+        assertTrue { hasJoined }
     }
 
     @Test
@@ -1195,7 +1199,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1225,7 +1229,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1259,7 +1263,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1292,7 +1296,7 @@ class CallRepositoryTest {
             .givenLeaveSubconversationSuccessful()
             .arrange()
 
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ -> }
         yield()
         advanceUntilIdle()
 
@@ -1342,7 +1346,7 @@ class CallRepositoryTest {
         callRepository.updateCallParticipants(
             Arrangement.conversationId,
             listOf(
-                Arrangement.participant.copy(
+                participant.copy(
                     hasEstablishedAudio = false
                 )
             )
