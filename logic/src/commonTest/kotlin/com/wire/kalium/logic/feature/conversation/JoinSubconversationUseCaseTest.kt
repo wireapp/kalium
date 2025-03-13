@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
@@ -26,13 +27,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
@@ -187,14 +186,10 @@ class JoinSubconversationUseCaseTest {
         @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
 
-        @Mock
-        val mlsMessageUnpacker = mock(MLSMessageUnpacker::class)
-
         fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
             mlsConversationRepository,
-            subconversationRepository,
-            mlsMessageUnpacker
+            subconversationRepository
         )
 
         suspend fun withEstablishMLSSubConversationGroupSuccessful() = apply {

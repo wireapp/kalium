@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCOUNT_PENDING_ACTIVATION
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCOUNT_SUSPENDED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_CONNECTION_UPDATE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
@@ -234,6 +235,10 @@ fun KaliumException.InvalidRequestError.isMLSProtocol(): Boolean {
 fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
     return (errorResponse.label == WRONG_CONVERSATION_PASSWORD) ||
             (errorResponse.label == BAD_REQUEST && errorResponse.message.contains("password"))
+}
+
+fun KaliumException.InvalidRequestError.isBadConnectionStatusUpdate(): Boolean {
+    return errorResponse.label == BAD_CONNECTION_UPDATE
 }
 
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
