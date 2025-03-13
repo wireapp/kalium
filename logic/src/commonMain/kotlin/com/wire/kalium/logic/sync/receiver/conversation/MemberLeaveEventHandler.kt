@@ -73,7 +73,8 @@ internal class MemberLeaveEventHandlerImpl(
         }
         return deleteMembers(event.removedList, event.conversationId)
             .onSuccess {
-                updateConversationClientsForCurrentCall.value(event.conversationId) }
+                updateConversationClientsForCurrentCall.value(event.conversationId)
+            }
             .onSuccess {
                 deleteConversationIfNeeded(event)
             }
