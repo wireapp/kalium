@@ -39,6 +39,8 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
+import com.wire.kalium.logic.data.analytics.AnalyticsDataSource
+import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -164,6 +166,7 @@ import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
+import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
@@ -829,7 +832,7 @@ class UserSessionScope internal constructor(
             sessionRepository = globalScope.sessionRepository,
             selfUserId = userId,
             selfTeamIdProvider = selfTeamId,
-            legalHoldHandler = legalHoldHandler,
+            legalHoldHandler = legalHoldHandler
         )
 
     private val accountRepository: AccountRepository
@@ -2199,11 +2202,25 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
+    private val analyticsRepository: AnalyticsRepository
+        get() = AnalyticsDataSource(
+            userDAO = userStorage.database.userDAO,
+            selfUserId = userId,
+            metadataDAO = userStorage.database.metadataDAO
+        )
+
     val getTeamUrlUseCase: GetTeamUrlUseCase
         get() = GetTeamUrlUseCase(
             userId,
             authenticationScope.serverConfigRepository,
         )
+
+    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase get() = GetAnalyticsContactsDataUseCase(
+        selfTeamIdProvider = selfTeamId,
+        analyticsRepository = analyticsRepository,
+        userConfigRepository = userConfigRepository,
+        coroutineScope = this,
+    )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
@@ -2261,6 +2278,7 @@ class UserSessionScope internal constructor(
         launch {
             messages.confirmationDeliveryHandler.sendPendingConfirmations()
         }
+
         syncExecutor.startAndStopSyncAsNeeded()
     }
 }
