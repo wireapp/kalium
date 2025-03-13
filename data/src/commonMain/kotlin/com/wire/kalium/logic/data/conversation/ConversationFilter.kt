@@ -34,7 +34,7 @@ sealed class ConversationFilter {
     data object OneOnOne : ConversationFilter()
 
     @Serializable
-    data object Channels: ConversationFilter()
+    data object Channels : ConversationFilter()
 
     @Serializable
     data class Folder(val folderName: String, val folderId: String) : ConversationFilter()
