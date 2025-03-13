@@ -410,6 +410,13 @@ internal class MLSConversationDataSource(
 
     override suspend fun commitPendingProposals(
         groupID: GroupID
+    ): Either<CoreFailure, Unit> = mutex.withLock {
+        kaliumLogger.d("cccc: commitPendingProposals for ${groupID.toLogString()}")
+        internalCommitPendingProposals(groupID)
+    }
+
+    private suspend fun internalCommitPendingProposals(
+        groupID: GroupID
     ): Either<CoreFailure, Unit> =
         produceAndSendCommitWithRetry(groupID) {
             getPendingCommitBundle(groupID)
@@ -482,7 +489,7 @@ internal class MLSConversationDataSource(
         cipherSuite: CipherSuite,
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> =
-        commitPendingProposals(groupID).flatMap {
+        internalCommitPendingProposals(groupID).flatMap {
             kaliumLogger.d("adding ${userIdList.count()} users to MLS group ${groupID.toLogString()}")
             produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
@@ -529,8 +536,9 @@ internal class MLSConversationDataSource(
     override suspend fun removeMembersFromMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>
-    ): Either<CoreFailure, Unit> =
-        commitPendingProposals(groupID).flatMap {
+    ): Either<CoreFailure, Unit> = mutex.withLock {
+        kaliumLogger.d("cccc: removeMembersFromMLSGroup for ${groupID.toLogString()}")
+        internalCommitPendingProposals(groupID).flatMap {
             produceAndSendCommitWithRetry(groupID) {
                 wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { it.toApi() }) }.map { userClientsList ->
                     val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
@@ -547,12 +555,14 @@ internal class MLSConversationDataSource(
                 }
             }
         }
+    }
 
     override suspend fun removeClientsFromMLSGroup(
         groupID: GroupID,
         clientIdList: List<QualifiedClientID>
     ): Either<CoreFailure, Unit> = mutex.withLock {
-        commitPendingProposals(groupID).flatMap {
+        kaliumLogger.d("cccc: removeClientsFromMLSGroup for ${groupID.toLogString()}")
+        internalCommitPendingProposals(groupID).flatMap {
             produceAndSendCommitWithRetry(groupID, retryOnClientMismatch = false) {
                 val qualifiedClientIDs = clientIdList.map { userClient ->
                     CryptoQualifiedClientId(
@@ -579,7 +589,8 @@ internal class MLSConversationDataSource(
         members: List<UserId>,
         publicKeys: MLSPublicKeys?,
         allowSkippingUsersWithoutKeyPackages: Boolean
-    ): Either<CoreFailure, MLSAdditionResult> =
+    ): Either<CoreFailure, MLSAdditionResult> = mutex.withLock {
+        kaliumLogger.d("cccc: establishMLSGroup ${groupID.toLogString()}")
         mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> { mlsClient ->
             val cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
             val keys = publicKeys?.getRemovalKey(cipherSuite) ?: mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite)
@@ -594,11 +605,13 @@ internal class MLSConversationDataSource(
                 )
             }
         }
+    }
 
     override suspend fun establishMLSSubConversationGroup(
         groupID: GroupID,
         parentId: ConversationId
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Unit> = mutex.withLock {
+        kaliumLogger.d("cccc: establishMLSSubConversationGroup ${groupID.toLogString()}")
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
                 val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
@@ -611,6 +624,7 @@ internal class MLSConversationDataSource(
                 ).map { Unit }
             } ?: Either.Left(StorageFailure.DataNotFound)
         }
+    }
 
     private suspend fun establishMLSGroup(
         mlsClient: MLSClient,
@@ -618,9 +632,9 @@ internal class MLSConversationDataSource(
         members: List<UserId>,
         externalSenders: ByteArray,
         allowPartialMemberList: Boolean = false,
-    ): Either<CoreFailure, MLSAdditionResult> = mutex.withLock {
-        kaliumLogger.d("establish MLS group: ${groupID.toLogString()}")
-        wrapMLSRequest {
+    ): Either<CoreFailure, MLSAdditionResult> {
+        kaliumLogger.d("cccc: establish MLS group: ${groupID.toLogString()}")
+        return wrapMLSRequest {
             mlsClient.createConversation(
                 idMapper.toCryptoModel(groupID),
                 externalSenders
