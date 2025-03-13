@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -51,6 +52,7 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withDeletePreviousTrackingIdentifier()
     suspend fun withUpdateNextTimeForCallFeedback()
     suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>)
+    suspend fun withConferenceCallingEnabled(result: Boolean)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -141,5 +143,9 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withUpdateNextTimeForCallFeedback() {
         coEvery { userConfigRepository.updateNextTimeForCallFeedback(any()) }.returns(Unit)
+    }
+
+    override suspend fun withConferenceCallingEnabled(result: Boolean) {
+        every { userConfigRepository.isConferenceCallingEnabled() }.returns(result.right())
     }
 }

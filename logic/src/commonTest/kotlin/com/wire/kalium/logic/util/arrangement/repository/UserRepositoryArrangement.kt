@@ -19,6 +19,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -241,7 +241,11 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
         coEvery { userRepository.getNameAndHandle(matches { userId.matches(it) }) }.returns(result)
     }
 
-    override suspend fun withIsClientMlsCapable(result: Either<StorageFailure, Boolean>, userId: Matcher<UserId>, clientId: Matcher<ClientId>) {
+    override suspend fun withIsClientMlsCapable(
+        result: Either<StorageFailure, Boolean>,
+        userId: Matcher<UserId>,
+        clientId: Matcher<ClientId>
+    ) {
         coEvery {
             userRepository.isClientMlsCapable(
                 userId = matches { userId.matches(it) },
