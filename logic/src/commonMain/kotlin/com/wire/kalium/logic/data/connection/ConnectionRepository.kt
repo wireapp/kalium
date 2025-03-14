@@ -267,7 +267,8 @@ internal class ConnectionDataSource(
                         archivedInstant = null,
                         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+                        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                        isChannel = false
                     )
                 )
             }
