@@ -33,6 +33,8 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
+import com.wire.kalium.network.exceptions.isAccountPendingActivation
+import com.wire.kalium.network.exceptions.isAccountSuspended
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
@@ -67,6 +69,17 @@ sealed class AuthenticationResult {
          * The user has entered a text that isn't considered a valid email or handle
          */
         data object InvalidUserIdentifier : Failure()
+
+        /**
+         * The user's account has been suspended, for instance via backoffice
+         */
+        data object AccountSuspended : Failure()
+
+        /**
+         * The user has been invited to a team but hasn't accepted the invitation yet
+         */
+        data object AccountPendingActivation : Failure()
+
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
@@ -163,6 +176,8 @@ internal class LoginUseCaseImpl internal constructor(
             kaliumException.isInvalidCredentials() || kaliumException.isBadRequest() -> {
                 AuthenticationResult.Failure.InvalidCredentials.InvalidPasswordIdentityCombination
             }
+            kaliumException.isAccountSuspended() -> AuthenticationResult.Failure.AccountSuspended
+            kaliumException.isAccountPendingActivation() -> AuthenticationResult.Failure.AccountPendingActivation
 
             else -> when (kaliumException.authenticationCodeFailure) {
                 AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE ->
