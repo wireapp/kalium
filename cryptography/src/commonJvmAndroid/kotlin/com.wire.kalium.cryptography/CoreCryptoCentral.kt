@@ -17,36 +17,57 @@
  */
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.Ciphersuites
 import com.wire.crypto.ClientId
+import com.wire.crypto.CommitBundle
 import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoCallbacks
+import com.wire.crypto.CoreCryptoContext
+import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
-import com.wire.crypto.coreCryptoDeferredInit
+import com.wire.crypto.MlsTransport
+import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.setLogger
-import com.wire.kalium.cryptography.MLSClientImpl.Companion.toCrlRegistration
+import com.wire.crypto.setMaxLogLevel
 import com.wire.kalium.cryptography.exceptions.CryptographyException
+import com.wire.kalium.cryptography.utils.toCrypto
+import com.wire.kalium.cryptography.utils.toCryptography
 import java.io.File
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    databaseKey: String,
+    mlsTransporter: MLSTransporter?
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(
-        path = path,
-        key = databaseKey
+    val coreCrypto = CoreCrypto(
+        keystore = path,
+        databaseKey = databaseKey
     )
-    coreCrypto.setCallbacks(Callbacks())
-    setLogger(CoreCryptoLoggerImpl(), CoreCryptoLogLevel.INFO)
+
+    setLogger(CoreCryptoLoggerImpl)
+    setMaxLogLevel(CoreCryptoLogLevel.WARN)
+
+    mlsTransporter?.let { transporter ->
+        coreCrypto.provideTransport(object : MlsTransport {
+            override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
+                return transporter.sendCommitBundle(commitBundle.toCryptography()).toCrypto()
+            }
+
+            override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
+                return transporter.sendMessage(mlsMessage).toCrypto()
+            }
+        })
+    }
+
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
         rootDir = rootDir
     )
 }
 
-private class CoreCryptoLoggerImpl : CoreCryptoLogger {
+private object CoreCryptoLoggerImpl : CoreCryptoLogger {
     override fun log(level: CoreCryptoLogLevel, message: String, context: String?) {
         when (level) {
             CoreCryptoLogLevel.TRACE -> kaliumLogger.v("$message. $context")
@@ -61,59 +82,50 @@ private class CoreCryptoLoggerImpl : CoreCryptoLogger {
     }
 }
 
-private class Callbacks : CoreCryptoCallbacks {
-    override suspend fun authorize(conversationId: ByteArray, clientId: ClientId): Boolean {
-        // We always return true because our BE is currently enforcing that this constraint is always true
-        return true
-    }
-
-    override suspend fun clientIsExistingGroupUser(
-        conversationId: ByteArray,
-        clientId: ClientId,
-        existingClients: List<ClientId>,
-        parentConversationClients: List<ClientId>?
-    ): Boolean {
-        // We always return true because our BE is currently enforcing that this constraint is always true
-        return true
-    }
-
-    override suspend fun userAuthorize(conversationId: ByteArray, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
-        // We always return true because our BE is currently enforcing that this constraint is always true
-        return true
-    }
-}
-
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
     private val rootDir: String
 ) : CoreCryptoCentral {
-    fun getCoreCrypto() = cc
+
+    suspend fun transaction(block: suspend (context: CoreCryptoContext) -> Unit) = cc.transaction {
+        block(it)
+    }
 
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite
     ): MLSClient {
-        cc.mlsInit(
-            clientId.toString().encodeToByteArray(),
-            allowedCipherSuites,
-            nbKeyPackage = null
-        )
-        return MLSClientImpl(cc, defaultCipherSuite)
+        try {
+            cc.transaction { context ->
+                context.mlsInit(
+                    ClientId(clientId.toString()),
+                    Ciphersuites(allowedCipherSuites.map { it.toCrypto() }.toSet()),
+                )
+            }
+        } catch (e: CoreCryptoException) {
+            kaliumLogger.e("MLSClient initialization exception: $e")
+        }
+
+        return MLSClientImpl(cc, defaultCipherSuite.toCrypto())
     }
 
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): MLSClient {
         // todo: use DPs list from here, and return alongside with the mls client
-        cc.e2eiMlsInitOnly(
-            (enrollment as E2EIClientImpl).wireE2eIdentity,
-            certificateChain, newMLSKeyPackageCount
-        )
-        return MLSClientImpl(cc, defaultCipherSuite)
+
+        cc.transaction {
+            it.e2eiMlsInitOnly(
+                (enrollment as E2EIClientImpl).wireE2eIdentity,
+                certificateChain,
+                newMLSKeyPackageCount
+            )
+        }
+        return MLSClientImpl(cc, defaultCipherSuite.toCrypto())
     }
 
     override suspend fun proteusClient(): ProteusClient {
@@ -126,24 +138,27 @@ class CoreCryptoCentralImpl(
         handle: String,
         teamId: String?,
         expiry: kotlin.time.Duration,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): E2EIClient {
-        return E2EIClientImpl(
-            cc.e2eiNewEnrollment(
-                clientId.toString(),
-                displayName,
-                handle,
-                teamId,
-                expiry.inWholeSeconds.toUInt(),
-                defaultCipherSuite
+        return cc.transaction {
+            E2EIClientImpl(
+                it.e2eiNewEnrollment(
+                    clientId.toString(),
+                    displayName,
+                    handle,
+                    expiry.inWholeSeconds.toUInt(),
+                    defaultCipherSuite.toCrypto(),
+                    teamId,
+                )
             )
-
-        )
+        }
     }
 
     override suspend fun registerTrustAnchors(pem: CertificateChain) {
         try {
-            cc.e2eiRegisterAcmeCa(pem)
+            cc.transaction {
+                it.e2eiRegisterAcmeCA(pem)
+            }
         } catch (e: CryptographyException) {
             kaliumLogger.w("Registering TrustAnchors failed")
         }
@@ -151,7 +166,9 @@ class CoreCryptoCentralImpl(
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
-        toCrlRegistration(cc.e2eiRegisterCrl(url, crl))
+        cc.transaction {
+            it.e2eiRegisterCRL(url, crl).toCryptography()
+        }
     } catch (exception: Exception) {
         kaliumLogger.w("Registering Crl failed, exception: $exception")
         CrlRegistration(
@@ -163,7 +180,9 @@ class CoreCryptoCentralImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
         try {
-            cc.e2eiRegisterIntermediateCa(pem)
+            cc.transaction {
+                it.e2eiRegisterIntermediateCA(pem)
+            }
         } catch (exception: Exception) {
             kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
         }

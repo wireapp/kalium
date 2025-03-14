@@ -18,23 +18,9 @@
 
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.CertificateChain
-import com.wire.kalium.cryptography.CoreCryptoCentral
-import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.coreCryptoCentral
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.mls.SupportedCipherSuite
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -45,6 +31,20 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.CertificateChain
+import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
@@ -80,6 +80,7 @@ class MLSClientProviderImpl(
     private val passphraseStorage: PassphraseStorage,
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
+    private val mlsTransportProvider: MLSTransportProvider,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSClientProvider {
 
@@ -172,7 +173,8 @@ class MLSClientProviderImpl(
                 val cc = try {
                     coreCryptoCentral(
                         rootDir = "$location/$KEYSTORE_NAME",
-                        databaseKey = passphrase
+                        databaseKey = passphrase,
+                        mlsTransporter = mlsTransportProvider
                     )
                 } catch (e: CancellationException) {
                     throw e
@@ -199,8 +201,8 @@ class MLSClientProviderImpl(
             getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
                 cc.mlsClient(
                     clientId = CryptoQualifiedClientId(clientId.value, userId),
-                    allowedCipherSuites = supportedCipherSuite.map { it.tag.toUShort() },
-                    defaultCipherSuite = defaultCipherSuite.tag.toUShort()
+                    allowedCipherSuites = supportedCipherSuite.map { it.toCrypto() },
+                    defaultCipherSuite = defaultCipherSuite.toCrypto()
                 )
             }
         }
@@ -223,7 +225,7 @@ class MLSClientProviderImpl(
                 enrollment = enrollment,
                 certificateChain = certificateChain,
                 newMLSKeyPackageCount = 0U,
-                defaultCipherSuite = defaultCipherSuite.tag.toUShort()
+                defaultCipherSuite = defaultCipherSuite.toCrypto()
             ).right()
         })
     }

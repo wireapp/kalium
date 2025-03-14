@@ -44,8 +44,8 @@ class MLSClientImpl(
 
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
-    override fun getDefaultCipherSuite(): UShort {
-        return defaultCipherSuite
+    override fun getDefaultCipherSuite(): MLSCiphersuite {
+        TODO("Not yet implemented")
     }
 
     @Suppress("EmptyFunctionBlock")
@@ -209,14 +209,11 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getMLSCredentials(): CredentialType {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun e2eiRotateAll(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
+        newMLSKeyPackageCount: UInt,
+        groupList: List<MLSGroupId>
     ): RotateBundle {
         TODO("Not yet implemented")
     }
@@ -230,6 +227,10 @@ class MLSClientImpl(
     }
 
     override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun removeStaleKeyPackages() {
         TODO("Not yet implemented")
     }
 

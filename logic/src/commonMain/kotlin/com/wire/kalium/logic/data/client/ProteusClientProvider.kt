@@ -103,7 +103,8 @@ class ProteusClientProviderImpl(
             val central = try {
                 coreCryptoCentral(
                     rootDir = rootProteusPath,
-                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
+                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value,
+                    null // we don't need mls transporter in proteus
                 )
             } catch (e: Exception) {
                 val logMap = mapOf(

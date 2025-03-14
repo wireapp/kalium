@@ -18,6 +18,10 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,104 +36,123 @@ class MLSClientTest : BaseMLSClientTest() {
         val qualifiedClientId: CryptoQualifiedClientId = CryptoQualifiedClientId(clientId.value, id)
     }
 
-    private suspend fun createClient(user: SampleUser): MLSClient {
-        return createMLSClient(
-            clientId = user.qualifiedClientId,
-            allowedCipherSuites = ALLOWED_CIPHER_SUITES,
-            defaultCipherSuite = DEFAULT_CIPHER_SUITES
-        )
-    }
-
     @Test
     fun givenMlsClient_whenCallingGetDefaultCipherSuite_ReturnExpectedValue() = runTest {
-        val mlsClient = createClient(ALICE1)
-        assertEquals(DEFAULT_CIPHER_SUITES, mlsClient.getDefaultCipherSuite())
+        val arrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+        assertEquals(DEFAULT_CIPHER_SUITES, arrangement.mlsClient.getDefaultCipherSuite())
     }
 
     @Test
     fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createClient(ALICE1)
-        assertTrue(mlsClient.getPublicKey().first.isNotEmpty())
+        val arrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+        assertTrue(arrangement.mlsClient.getPublicKey().first.isNotEmpty())
     }
 
     @Test
     fun givenClient_whenCallingGenerateKeyPackages_ReturnListOfExpectedSize() = runTest {
-        val mlsClient = createClient(ALICE1)
-        assertTrue(mlsClient.generateKeyPackages(10).isNotEmpty())
+        val arrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+        assertTrue(arrangement.mlsClient.generateKeyPackages(10).isNotEmpty())
     }
 
     @Test
     fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() = runTest {
-        val mlsClient = createClient(ALICE1)
-        mlsClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        assertEquals(0UL, mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
+        val arrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        arrangement.mlsClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+        assertEquals(0UL, arrangement.mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
     }
 
     // TODO figure out why this test crashes on iosX64
     @IgnoreIOS
     @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() = runTest {
-        val aliceClient = createClient(ALICE1)
-        val bobClient = createClient(BOB1)
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
 
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(aliceKeyPackage)
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
-        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
+        bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
+        val welcome = bobArrangement.sendCommitBundleFlow.first()
 
-        val commit = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID).commit
-        val result = aliceClient.decryptMessage(welcomeBundle.groupId, commit)
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome.first.welcome!!)
+
+        bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID)
+
+        val keyMaterialCommit = bobArrangement.sendCommitBundleFlow.first()
+
+        val result = aliceClient.decryptMessage(welcomeBundle.groupId, keyMaterialCommit.first.commit)
 
         assertNull(result.first().message)
     }
 
     @Test
     fun givenTwoClients_whenCallingCreateConversation_weCanProcessTheWelcomeMessage() = runTest {
-        val aliceClient = createClient(ALICE1)
-        val bobClient = createClient(BOB1)
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
 
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(aliceKeyPackage)
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome!!
+        bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
         val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
         assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
     }
 
     @Test
-    fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() = runTest {
-        val alice1Client = createClient(ALICE1)
-        val alice2Client = createClient(ALICE2)
-        val bobClient = createClient(BOB1)
-
-        val alice1KeyPackage = alice1Client.generateKeyPackages(1).first()
-        val clientKeyPackageList = listOf(alice1KeyPackage)
-
-        bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
-        val proposal = alice2Client.joinConversation(MLS_CONVERSATION_ID, 1UL)
-        bobClient.decryptMessage(MLS_CONVERSATION_ID, proposal)
-        val welcome = bobClient.commitPendingProposals(MLS_CONVERSATION_ID)?.welcome
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
-        val welcomeBundle = alice2Client.processWelcomeMessage(welcome!!)
-
-        assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
-    }
-
-    @Test
     fun givenTwoClients_whenCallingEncryptMessage_weCanDecryptTheMessage() = runTest {
-        val aliceClient = createClient(ALICE1)
-        val bobClient = createClient(BOB1)
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
 
         val clientKeyPackageList = listOf(aliceClient.generateKeyPackages(1).first())
 
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
         val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
         val applicationMessage = aliceClient.encryptMessage(welcomeBundle.groupId, PLAIN_TEXT.encodeToByteArray())
@@ -140,14 +163,24 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenTwoClients_whenCallingAddMember_weCanProcessTheWelcomeMessage() = runTest {
-        val aliceClient = createClient(ALICE1)
-        val bobClient = createClient(BOB1)
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
 
         val clientKeyPackageList = listOf(aliceClient.generateKeyPackages(1).first())
 
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
-        bobClient.commitAccepted((MLS_CONVERSATION_ID))
+        bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
         val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
         assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
@@ -155,76 +188,119 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() = runTest {
-        val aliceClient = createClient(ALICE1)
-        val bobClient = createClient(BOB1)
-        val carolClient = createClient(CAROL1)
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val carolArrangement = Arrangement.create(
+            CAROL1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+        val carolClient = carolArrangement.mlsClient
 
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        val welcome = bobClient.addMember(
+        bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(aliceClient.generateKeyPackages(1).first())
-        )?.welcome!!
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
-
+        )
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
         aliceClient.processWelcomeMessage(welcome)
 
-        val commit = bobClient.addMember(
+        bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(carolClient.generateKeyPackages(1).first())
-        )?.commit!!
+        )
+        val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
 
         assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).first().message)
     }
 
     @Test
     fun givenThreeClients_whenCallingRemoveMember_weCanProcessTheHandshakeMessage() = runTest {
-        val aliceClient = createClient(ALICE1)
-        val bobClient = createClient(BOB1)
-        val carolClient = createClient(CAROL1)
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val carolArrangement = Arrangement.create(
+            CAROL1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+        val carolClient = carolArrangement.mlsClient
 
         val clientKeyPackageList = listOf(
             aliceClient.generateKeyPackages(1).first(),
             carolClient.generateKeyPackages(1).first()
         )
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
-        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
         val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
-        val clientRemovalList = listOf(CAROL1.qualifiedClientId)
-        val commit = bobClient.removeMember(welcomeBundle.groupId, clientRemovalList).commit
 
+        val clientRemovalList = listOf(CAROL1.qualifiedClientId)
+        bobClient.removeMember(welcomeBundle.groupId, clientRemovalList)
+        val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
         assertNull(aliceClient.decryptMessage(welcomeBundle.groupId, commit).first().message)
     }
 
     @Test
     fun givenThreeClients_whenProcessingCommitOutOfOrder_shouldCatchBufferedFutureMessageAndBuffer() = runTest {
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val carolArrangement = Arrangement.create(
+            CAROL1,
+            ::createMLSClient,
+        )
+
         // Bob creates a conversation.
-        val bobClient = createClient(BOB1)
+        val bobClient = bobArrangement.mlsClient
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
 
         // Bob adds Alice, Alice processes the welcome.
-        val aliceClient = createClient(ALICE1)
-        val welcomeAlice = bobClient.addMember(
+        val aliceClient = aliceArrangement.mlsClient
+        bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(aliceClient.generateKeyPackages(1).first())
-        )!!.welcome!!
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        )
+        val welcomeAlice = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
         aliceClient.processWelcomeMessage(welcomeAlice)
 
         // Bob adds Carol but Alice does NOT process that commit => out of order for Alice later.
-        val carolClient = createClient(CAROL1)
-        val addCarolResult = bobClient.addMember(
+        val carolClient = carolArrangement.mlsClient
+        bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(carolClient.generateKeyPackages(1).first())
         )
-        val commitAddCarol = addCarolResult!!.commit
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
 
         // Bob immediately removes Carol => definitely out of order for Alice.
-        val removeCarolResult = bobClient.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId))
-        val commitRemoveCarol = removeCarolResult.commit
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        bobClient.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId))
+        val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
 
         // Alice tries to decrypt the removeCarol commit, which references an epoch Alice hasn't seen yet.
         // In normal MLS logic, this triggers a "buffering" error, typically thrown as MlsException.BufferedFutureMessage
@@ -251,31 +327,44 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenOutOfOrderCommits_whenProcessingMissingCommitLater_shouldAlsoProcessBufferedOne() = runTest {
-        val bobClient = createClient(BOB1)
+        val aliceArrangement = Arrangement.create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = Arrangement.create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val carolArrangement = Arrangement.create(
+            CAROL1,
+            ::createMLSClient,
+        )
+
+        val bobClient = bobArrangement.mlsClient
         bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
 
-        val aliceClient = createClient(ALICE1)
+        val aliceClient = aliceArrangement.mlsClient
         // Bob adds Alice to the conversation
-        val welcomeForAlice = bobClient.addMember(
+        bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(aliceClient.generateKeyPackages(1).first())
-        )!!.welcome!!
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        )
+        val welcomeForAlice = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
         aliceClient.processWelcomeMessage(welcomeForAlice)
 
         // Bob adds Carol, but Alice never sees this commit => out-of-order for Alice
-        val carolClient = createClient(CAROL1)
-        val addCarolResult = bobClient.addMember(
+        val carolClient = carolArrangement.mlsClient
+        bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(carolClient.generateKeyPackages(1).first())
         )
-        val commitAddCarol = addCarolResult!!.commit
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        val commitAddCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
 
         // Immediately Bob removes Carol => definitely out-of-order for Alice
-        val removeCarolResult = bobClient.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId))
-        val commitRemoveCarol = removeCarolResult.commit
-        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        bobClient.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId))
+        val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
 
         // Alice tries to decrypt the removeCarol commit first => out-of-order => should buffer
         val removeResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol)
@@ -298,8 +387,8 @@ class MLSClientTest : BaseMLSClientTest() {
 
     companion object {
         val externalSenderKey = ByteArray(32)
-        val DEFAULT_CIPHER_SUITES = 1.toUShort()
-        val ALLOWED_CIPHER_SUITES = listOf(1.toUShort())
+        val DEFAULT_CIPHER_SUITES = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        val ALLOWED_CIPHER_SUITES = listOf(MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
         const val MLS_CONVERSATION_ID = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY="
         const val PLAIN_TEXT = "Hello World"
         val ALICE1 = SampleUser(
@@ -319,4 +408,71 @@ class MLSClientTest : BaseMLSClientTest() {
             "Carol"
         )
     }
+
+    class Arrangement private constructor(
+        val user: SampleUser,
+        val mlsClient: MLSClient,
+        val sendMessageFlow: MutableSharedFlow<Pair<ByteArray, MlsTransportResponse>>,
+        val sendCommitBundleFlow: MutableSharedFlow<Pair<CommitBundle, MlsTransportResponse>>,
+        private val sendMessageResponses: MutableList<MlsTransportResponse>,
+        private val sendCommitResponses: MutableList<MlsTransportResponse>,
+        private val mutex: Mutex,
+    ) {
+
+        companion object {
+            suspend fun create(
+                user: SampleUser,
+                createMLSClient: suspend (
+                    clientId: CryptoQualifiedClientId,
+                    allowedCipherSuites: List<MLSCiphersuite>,
+                    defaultCipherSuite: MLSCiphersuite,
+                    mlsTransporter: MLSTransporter?
+                ) -> MLSClient,
+                initialSendMessageResponses: List<MlsTransportResponse> = listOf(MlsTransportResponse.Success),
+                initialSendCommitResponses: List<MlsTransportResponse> = listOf(MlsTransportResponse.Success)
+            ): Arrangement {
+                val sendMessageFlow = MutableSharedFlow<Pair<ByteArray, MlsTransportResponse>>(replay = 1)
+                val sendCommitBundleFlow = MutableSharedFlow<Pair<CommitBundle, MlsTransportResponse>>(replay = 1)
+                val sendMessageResponses = initialSendMessageResponses.toMutableList()
+                val sendCommitResponses = initialSendCommitResponses.toMutableList()
+                val mutex = Mutex()
+
+                val mlsTransporter = object : MLSTransporter {
+                    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
+                        val response = mutex.withLock {
+                            if (sendMessageResponses.isNotEmpty()) sendMessageResponses.removeFirst() else MlsTransportResponse.Success
+                        }
+                        sendMessageFlow.emit(mlsMessage to response)
+                        return response
+                    }
+
+                    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
+                        val response = mutex.withLock {
+                            if (sendCommitResponses.isNotEmpty()) sendCommitResponses.removeFirst() else MlsTransportResponse.Success
+                        }
+                        sendCommitBundleFlow.emit(commitBundle to response)
+                        return response
+                    }
+                }
+
+                val mlsClient = createMLSClient(
+                    user.qualifiedClientId,
+                    ALLOWED_CIPHER_SUITES,
+                    DEFAULT_CIPHER_SUITES,
+                    mlsTransporter
+                )
+
+                return Arrangement(user, mlsClient, sendMessageFlow, sendCommitBundleFlow, sendMessageResponses, sendCommitResponses, mutex)
+            }
+        }
+
+        suspend fun addSendMessageResponse(response: MlsTransportResponse) {
+            mutex.withLock { sendMessageResponses.add(response) }
+        }
+
+        suspend fun addSendCommitBundleResponse(response: MlsTransportResponse) {
+            mutex.withLock { sendCommitResponses.add(response) }
+        }
+    }
+
 }

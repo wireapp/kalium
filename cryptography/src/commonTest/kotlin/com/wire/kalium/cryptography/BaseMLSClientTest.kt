@@ -22,11 +22,13 @@ expect open class BaseMLSClientTest() {
 
     suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter?
     ): MLSClient
 
     suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
+        clientId: CryptoQualifiedClientId,
+        mlsTransporter: MLSTransporter?
     ): CoreCryptoCentral
 }

@@ -159,6 +159,9 @@ class MLSClientProviderTest {
         @Mock
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
 
+        @Mock
+        val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
+
         fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {
             this to MLSClientProviderImpl(
                 rootKeyStorePath = rootKeyStorePath,
@@ -166,7 +169,8 @@ class MLSClientProviderTest {
                 passphraseStorage = passphraseStorage,
                 userConfigRepository = userConfigRepository,
                 featureConfigRepository = featureConfigRepository,
-                userId = userId
+                userId = userId,
+                mlsTransportProvider = mlsTransportProvider,
             )
         }
     }

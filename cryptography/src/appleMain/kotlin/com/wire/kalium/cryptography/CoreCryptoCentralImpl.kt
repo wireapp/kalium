@@ -26,7 +26,8 @@ import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    databaseKey: String,
+    mlsTransporter: MLSTransporter?
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
@@ -59,23 +60,22 @@ private class Callbacks : CoreCryptoCallbacks {
 
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
-    private val rootDir: String
+    private val rootDir: String,
 ) : CoreCryptoCentral {
 
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite
     ): MLSClient {
-        cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
-        return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite)
+        TODO("Not yet implemented")
     }
 
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): MLSClient {
         TODO("Not yet implemented")
     }
@@ -90,7 +90,7 @@ class CoreCryptoCentralImpl(
         handle: String,
         teamId: String?,
         expiry: Duration,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): E2EIClient {
         TODO("Not yet implemented")
     }
