@@ -64,7 +64,7 @@ object TestConversation {
     fun ONE_ON_ONE(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "1O1 ID"),
         "ONE_ON_ONE Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         protocolInfo,
         MutedConversationStatus.AllAllowed,
@@ -88,7 +88,7 @@ object TestConversation {
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
-        Conversation.Type.SELF,
+        Conversation.Type.Self,
         TestTeam.TEAM_ID,
         protocolInfo,
         MutedConversationStatus.AllAllowed,
@@ -112,7 +112,7 @@ object TestConversation {
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID,
         "GROUP Name",
-        Conversation.Type.GROUP,
+        Conversation.Type.Group.Regular,
         TestTeam.TEAM_ID,
         protocolInfo,
         MutedConversationStatus.AllAllowed,
@@ -186,7 +186,7 @@ object TestConversation {
     fun one_on_one(convId: ConversationId) = Conversation(
         convId,
         "ONE_ON_ONE Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
@@ -376,7 +376,7 @@ object TestConversation {
     val CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "ONE_ON_ONE Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
@@ -400,7 +400,7 @@ object TestConversation {
     val MLS_CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "MLS Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         MLS_PROTOCOL_INFO,
         MutedConversationStatus.AllAllowed,

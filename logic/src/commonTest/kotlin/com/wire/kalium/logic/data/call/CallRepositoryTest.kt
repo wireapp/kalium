@@ -142,7 +142,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -172,7 +172,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             false,
                             isSelfUserMember = true,
@@ -210,7 +210,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -263,7 +263,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -305,7 +305,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -361,7 +361,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -902,7 +902,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -942,7 +942,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -987,7 +987,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1041,7 +1041,7 @@ class CallRepositoryTest {
         val metadata = createCallMetadata().copy(
             isMuted = false,
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername",
             callerTeamName = "team_1"
         )
@@ -1104,7 +1104,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1677,7 +1677,7 @@ class CallRepositoryTest {
         isCbrEnabled = false,
         maxParticipants = 0,
         conversationName = "ONE_ON_ONE Name",
-        conversationType = Conversation.Type.ONE_ON_ONE,
+        conversationType = Conversation.Type.OneOnOne,
         callerName = "otherUsername",
         callerTeamName = "team_1"
     )
@@ -1700,7 +1700,7 @@ class CallRepositoryTest {
         isCameraOn = false,
         isCbrEnabled = false,
         conversationName = null,
-        conversationType = Conversation.Type.GROUP,
+        conversationType = Conversation.Type.Group.Regular,
         callerName = null,
         callerTeamName = null,
         callStatus = CallStatus.ESTABLISHED,

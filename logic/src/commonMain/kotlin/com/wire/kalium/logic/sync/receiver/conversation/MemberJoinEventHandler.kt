@@ -75,15 +75,15 @@ internal class MemberJoinEventHandlerImpl(
             }.onSuccess {
                 conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->
                     when (conversation.type) {
-                        Conversation.Type.ONE_ON_ONE -> {
+                        Conversation.Type.OneOnOne -> {
                             if (event.members.size == 1) {
                                 userRepository.updateActiveOneOnOneConversationIfNotSet(event.members.first().id, event.conversationId)
                             }
                         }
 
-                        Conversation.Type.GROUP -> addSystemMessage(event)
-                        Conversation.Type.SELF,
-                        Conversation.Type.CONNECTION_PENDING -> {
+                        is Conversation.Type.Group -> addSystemMessage(event)
+                        Conversation.Type.Self,
+                        Conversation.Type.ConnectionPending -> {
                             /* no-op */
                         }
                     }
