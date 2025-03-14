@@ -44,6 +44,8 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.id.toModel
 import kotlinx.datetime.Clock
 
 typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
@@ -85,10 +87,11 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                 if (ccGroupStatus == VerificationStatus.VERIFIED) {
                     verifyUsersStatus(groupId)
                 } else {
+                    kaliumLogger.d("cccc: getConversationDetailsByMLSGroupId: groupId: $groupId")
                     conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
                         VerificationStatusData(
-                            conversationId = it.conversation.id,
-                            currentPersistedStatus = it.conversation.mlsVerificationStatus,
+                            conversationId = it.id,
+                            currentPersistedStatus = it.mlsVerificationStatus,
                             newStatus =
                             ccGroupStatus
                         )

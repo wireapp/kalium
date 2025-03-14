@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.conversation
+package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
@@ -33,10 +33,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.FetchMLSVerificationStatusUseCaseTest.Arrangement.Companion.getMockedIdentity
-import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseTest.Arrangement.Companion.getMockedIdentity
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
@@ -53,16 +51,18 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FetchMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenNotVerifiedConversation_whenNotVerifiedStatusComes_thenNothingChanged() = runTest {
-        val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(conversation = TestConversation.MLS_CONVERSATION)
+        val conversationDetails = TestConversation.MLS_CONVERSATION
         val (arrangement, handler) = arrange {
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
             withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))
@@ -86,10 +86,8 @@ class FetchMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenVerifiedConversation_whenNotVerifiedStatusComes_thenStatusSetToDegradedAndSystemMessageAdded() = runTest {
-        val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
-            conversation = TestConversation.MLS_CONVERSATION.copy(
-                mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
-            )
+        val conversationDetails = TestConversation.GROUP().copy(
+            mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
         )
         val (arrangement, handler) = arrange {
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
@@ -102,7 +100,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         coVerify {
             arrangement.conversationRepository.updateMlsVerificationStatus(
                 verificationStatus = eq(Conversation.VerificationStatus.DEGRADED),
-                conversationID = eq(conversationDetails.conversation.id)
+                conversationID = eq(conversationDetails.id)
             )
         }.wasInvoked(once)
 
@@ -117,10 +115,10 @@ class FetchMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenDegradedConversation_whenNotVerifiedStatusComes_thenNothingChanged() = runTest {
-        val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
-            conversation = TestConversation.MLS_CONVERSATION
-                .copy(mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED)
+        val conversationDetails = TestConversation.GROUP().copy(
+            mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
         )
+
         val (arrangement, handler) = arrange {
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
             withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))

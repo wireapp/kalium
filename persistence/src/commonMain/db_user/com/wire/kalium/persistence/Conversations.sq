@@ -397,3 +397,6 @@ BEGIN
     SET degraded_conversation_notified = (new.proteus_verification_status != 'DEGRADED')
     WHERE qualified_id = new.qualified_id;
 END;
+
+selectConversationDetailsByGroupId:
+SELECT * FROM Conversation WHERE mls_group_id = ?;
