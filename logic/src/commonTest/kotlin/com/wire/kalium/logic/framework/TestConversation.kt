@@ -22,12 +22,10 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
-import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.Companion.OTHER_USER_ID
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
@@ -180,7 +178,8 @@ object TestConversation {
         accentId = null,
         isFavorite = false,
         folderId = null,
-        folderName = null
+        folderName = null,
+        isChannel = false,
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -297,7 +296,8 @@ object TestConversation {
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        isChannel = false,
     )
     val ENTITY_GROUP = ENTITY.copy(
         type = ConversationEntity.Type.GROUP
@@ -348,7 +348,8 @@ object TestConversation {
         accentId = null,
         isFavorite = false,
         folderId = null,
-        folderName = null
+        folderName = null,
+        isChannel = false,
     )
 
     val VIEW_ONE_ON_ONE = VIEW_ENTITY.copy(
