@@ -100,7 +100,7 @@ class SyncConversationsUseCaseTest {
             protocol: Conversation.Protocol? = null
         ) = apply {
             coEvery {
-                conversationRepository.getConversationIds(eq(Conversation.Type.GROUP), protocol?.let { eq(it) } ?: any(), eq<TeamId?>(null))
+                conversationRepository.getConversationIds(eq(Conversation.Type.Group.Regular), protocol?.let { eq(it) } ?: any(), eq<TeamId?>(null))
             }.returns(Either.Right(conversationIds))
         }
 

@@ -75,6 +75,8 @@ internal object NetworkErrorLabel {
     const val FEDERATION_NOT_ENABLED = "federation-not-enabled"
     const val FEDERATION_UNREACHABLE_DOMAINS = "federation-unreachable-domains-error"
 
+    // connection
+    const val BAD_CONNECTION_UPDATE = "bad-conn-update"
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"
         const val MISSING_NONCE = "missing-nonce"

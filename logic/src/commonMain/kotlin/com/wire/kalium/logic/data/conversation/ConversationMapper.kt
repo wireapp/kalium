@@ -269,7 +269,7 @@ internal class ConversationMapperImpl(
                 }
 
                 ConversationEntity.Type.GROUP -> {
-                    ConversationDetails.Group(
+                    ConversationDetails.Group.Regular(
                         conversation = fromConversationViewToEntity(daoModel),
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         isSelfUserMember = isMember,
@@ -557,10 +557,10 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
 }
 
 private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
-    ConversationEntity.Type.SELF -> Conversation.Type.SELF
-    ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
-    ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
-    ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
+    ConversationEntity.Type.SELF -> Conversation.Type.Self
+    ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.OneOnOne
+    ConversationEntity.Type.GROUP -> Conversation.Type.Group.Regular
+    ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending
 }
 
 private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {
@@ -603,10 +603,11 @@ internal fun Conversation.ProtocolInfo.MLSCapable.GroupState.toDao(): Conversati
 }
 
 internal fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
-    Conversation.Type.SELF -> ConversationEntity.Type.SELF
-    Conversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
-    Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
-    Conversation.Type.CONNECTION_PENDING -> ConversationEntity.Type.CONNECTION_PENDING
+    Conversation.Type.Self -> ConversationEntity.Type.SELF
+    Conversation.Type.OneOnOne -> ConversationEntity.Type.ONE_ON_ONE
+    Conversation.Type.Group.Regular -> ConversationEntity.Type.GROUP
+    Conversation.Type.Group.Channel -> TODO("Add channels entity type")
+    Conversation.Type.ConnectionPending -> ConversationEntity.Type.CONNECTION_PENDING
 }
 
 private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = when (this) {
@@ -682,6 +683,7 @@ internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) 
     ConversationFilter.Favorites -> ConversationFilterEntity.FAVORITES
     ConversationFilter.Groups -> ConversationFilterEntity.GROUPS
     ConversationFilter.OneOnOne -> ConversationFilterEntity.ONE_ON_ONE
+    ConversationFilter.Channels -> ConversationFilterEntity.CHANNELS
     is ConversationFilter.Folder -> ConversationFilterEntity.ALL // TODO think how to secure that
 }
 
@@ -690,4 +692,5 @@ internal fun ConversationFilterEntity.toModel(): ConversationFilter = when (this
     ConversationFilterEntity.FAVORITES -> ConversationFilter.Favorites
     ConversationFilterEntity.GROUPS -> ConversationFilter.Groups
     ConversationFilterEntity.ONE_ON_ONE -> ConversationFilter.OneOnOne
+    ConversationFilterEntity.CHANNELS -> ConversationFilter.Channels
 }

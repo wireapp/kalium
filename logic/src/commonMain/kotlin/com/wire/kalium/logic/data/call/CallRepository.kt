@@ -128,6 +128,7 @@ interface CallRepository {
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
         conversationId: ConversationId,
+        onJoined: suspend () -> Unit,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ): Either<CoreFailure, Unit>
 
@@ -467,7 +468,7 @@ internal class CallDataSource(
         }
 
         if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS &&
-            _callMetadataProfile.value[conversationId]?.conversationType == Conversation.Type.GROUP
+            _callMetadataProfile.value[conversationId]?.conversationType is Conversation.Type.Group
         ) {
             participants.forEach { participant ->
                 if (participant.hasEstablishedAudio) {
@@ -626,6 +627,7 @@ internal class CallDataSource(
 
     override suspend fun joinMlsConference(
         conversationId: ConversationId,
+        onJoined: suspend () -> Unit,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ): Either<CoreFailure, Unit> {
         callingLogger.i(
@@ -634,6 +636,7 @@ internal class CallDataSource(
         )
 
         return joinSubconversation(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
+            onJoined()
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->

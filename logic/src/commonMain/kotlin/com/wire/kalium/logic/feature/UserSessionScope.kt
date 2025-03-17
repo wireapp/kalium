@@ -39,6 +39,8 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
+import com.wire.kalium.logic.data.analytics.AnalyticsDataSource
+import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -165,6 +167,7 @@ import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
+import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
@@ -475,6 +478,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
@@ -689,6 +693,8 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository
         )
 
+    private val mlsMutex: Mutex = Mutex()
+
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             userId,
@@ -701,7 +707,8 @@ class UserSessionScope internal constructor(
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository
+            certificateRevocationListRepository,
+            mutex = mlsMutex
         )
 
     private val e2eiRepository: E2EIRepository
@@ -832,7 +839,7 @@ class UserSessionScope internal constructor(
             sessionRepository = globalScope.sessionRepository,
             selfUserId = userId,
             selfTeamIdProvider = selfTeamId,
-            legalHoldHandler = legalHoldHandler,
+            legalHoldHandler = legalHoldHandler
         )
 
     private val accountRepository: AccountRepository
@@ -1064,8 +1071,7 @@ class UserSessionScope internal constructor(
         get() = JoinSubconversationUseCaseImpl(
             authenticatedNetworkContainer.conversationApi,
             mlsConversationRepository,
-            subconversationRepository,
-            mlsUnpacker
+            subconversationRepository
         )
 
     private val leaveSubconversationUseCase: LeaveSubconversationUseCase
@@ -2210,11 +2216,25 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
+    private val analyticsRepository: AnalyticsRepository
+        get() = AnalyticsDataSource(
+            userDAO = userStorage.database.userDAO,
+            selfUserId = userId,
+            metadataDAO = userStorage.database.metadataDAO
+        )
+
     val getTeamUrlUseCase: GetTeamUrlUseCase
         get() = GetTeamUrlUseCase(
             userId,
             authenticationScope.serverConfigRepository,
         )
+
+    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase get() = GetAnalyticsContactsDataUseCase(
+        selfTeamIdProvider = selfTeamId,
+        analyticsRepository = analyticsRepository,
+        userConfigRepository = userConfigRepository,
+        coroutineScope = this,
+    )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
@@ -2272,6 +2292,7 @@ class UserSessionScope internal constructor(
         launch {
             messages.confirmationDeliveryHandler.sendPendingConfirmations()
         }
+
         syncExecutor.startAndStopSyncAsNeeded()
         launch {
             localEventManager.startProcessing()

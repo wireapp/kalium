@@ -64,7 +64,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
@@ -82,7 +81,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
-import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -99,6 +97,7 @@ import io.mockative.twice
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
@@ -113,7 +112,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withDecryptMLSMessageSuccessful(Arrangement.DECRYPTED_MESSAGE_BUNDLE)
             .arrange()
@@ -133,7 +132,7 @@ class MLSConversationRepositoryTest {
             val messageWithNewDistributionPoints = Arrangement.DECRYPTED_MESSAGE_BUNDLE.copy(
                 crlNewDistributionPoints = listOf("url")
             )
-            val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            val (arrangement, mlsConversationRepository) = Arrangement()
                 .withGetMLSClientSuccessful()
                 .withDecryptMLSMessageSuccessful(messageWithNewDistributionPoints)
                 .withCheckRevocationListResult()
@@ -159,7 +158,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -184,7 +183,7 @@ class MLSConversationRepositoryTest {
     fun givenPartialKeyClaimingResponses_whenCallingEstablishMLSGroup_thenMissingKeyPackagesFailureIsReturned() = runTest {
         val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
         val usersMissingKeyPackages = setOf(userMissingKeyPackage)
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(usersWithoutKeyPackages = usersMissingKeyPackages)
@@ -227,7 +226,7 @@ class MLSConversationRepositoryTest {
         val usersMissingKeyPackages = setOf(userMissingKeyPackage)
         val usersWithKeyPackages = setOf(userWithKeyPackage)
         val keyPackageSuccess = KEY_PACKAGE.copy(userId = userWithKeyPackage.value, domain = userWithKeyPackage.domain)
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = listOf(keyPackageSuccess), usersWithoutKeyPackages = usersMissingKeyPackages)
@@ -261,7 +260,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenPublicKeysIsNotNull_whenCallingEstablishMLSGroup_ThenGetPublicKeysRepositoryNotCalled() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(kaliumDispatcher = testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -295,7 +294,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenPublicKeysIsNull_whenCallingEstablishMLSGroup_ThenGetPublicKeysRepositoryIsCalled() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -323,7 +322,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNewCrlDistributionPoints_whenEstablishingMLSGroup_thenCheckRevocationList() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -338,7 +337,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNewCrlDistributionPoints_whenAddingMemberToMLSGroup_thenCheckRevocationList() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -361,7 +360,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenMlsClientMismatchError_whenCallingEstablishMLSGroup_thenClearCommitAndRetry() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -379,8 +378,8 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenMlsStaleMessageError_whenCallingEstablishMLSGroup_thenAbortCommitAndWipeData() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+    fun givenMlsStaleMessageError_whenCallingEstablishMLSGroup_thenAbortCommitAndWipeData() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -403,7 +402,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForMembers() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -428,7 +427,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNoOtherClients_whenCallingEstablishMLSGroup_thenCommitIsCreatedByUpdatingKeyMaterial() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = emptyList())
@@ -448,7 +447,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenCommitBundleIsSentAndAccepted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -466,7 +465,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenPendingProposalsAreFirstCommitted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -484,7 +483,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenMlsClientMismatchError_whenCallingAddMemberToMLSGroup_thenRetry() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -501,7 +500,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNonRecoverableError_whenCallingAddMemberToMLSGroup_thenClearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberThrowing(Arrangement.INVALID_REQUEST_ERROR, times = 1)
@@ -515,7 +514,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenRetryLimitIsReached_whenCallingAddMemberToMLSGroup_thenClearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberThrowing(Arrangement.INVALID_REQUEST_ERROR, times = Int.MAX_VALUE)
@@ -529,7 +528,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingJoinByExternalCommit_ThenGroupStateIsUpdated() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
@@ -557,7 +556,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenMlsClientReturnsNewCrlDistributionPoints_whenJoiningGroupByExternalCommit_thenCheckRevocationList() = runTest {
         val welcomeBundleWithDistributionPoints = WELCOME_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCheckRevocationListResult()
             .withSendMLSMessageSuccessful()
@@ -578,7 +577,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNonRecoverableError_whenCallingJoinByExternalCommit_ThenReturnFailure() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withJoinByExternalCommitThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
@@ -589,7 +588,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenCommitBundleIsSentAndAccepted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
             .withSendCommitBundleSuccessful()
@@ -606,7 +605,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenProposalTimerIsClearedOnSuccess() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
             .withSendCommitBundleSuccessful()
@@ -623,7 +622,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNonRecoverableError_whenCallingCommitPendingProposals_thenProposalTimerIsNotCleared() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
@@ -638,7 +637,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenRetryLimitIsReached_whenCallingCommitPendingProposals_thenClearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
             .arrange()
@@ -649,7 +648,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
@@ -667,7 +666,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenPendingProposalsAreFirstCommitted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
@@ -686,7 +685,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNonRecoverableError_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
@@ -700,7 +699,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenRetryLimitIsReached_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
@@ -714,7 +713,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenClientMismatchError_whenCallingRemoveMemberFromGroup_thenClearCommitAndRetry() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
@@ -732,7 +731,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenStaleMessageError_whenCallingRemoveMemberFromGroup_thenRetry() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing(times = 1)
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
@@ -751,7 +750,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveClientsFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
@@ -769,7 +768,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveClientsFromGroup_thenPendingProposalsAreFirstCommitted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
@@ -788,7 +787,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNonRecoverableError_whenCallingRemoveClientsFromGroup_thenClearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
@@ -802,7 +801,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenClientMismatchError_whenCallingRemoveMemberFromGroup_thenFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
@@ -816,7 +815,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenStaleMessageError_whenCallingRemoveClientsFromGroup_thenWaitUntilLiveAndRetry() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing(times = 1)
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
@@ -835,7 +834,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenCommitBundleIsSentAndAccepted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .withSendCommitBundleSuccessful()
@@ -852,7 +851,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenKeyingMaterialTimestampIsUpdated() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .withSendCommitBundleSuccessful()
@@ -868,7 +867,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNonRecoverableError_whenCallingUpdateKeyMaterial_clearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
@@ -879,7 +878,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenRetryLimitIsReached_whenCallingUpdateKeyMaterial_clearCommitAndFail() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .withCommitPendingProposalsSuccessful()
@@ -894,7 +893,7 @@ class MLSConversationRepositoryTest {
     fun givenConversationWithOutdatedEpoch_whenCallingIsGroupOutOfSync_returnsTrue() = runTest {
         val returnEpoch = 10UL
         val conversationEpoch = 5UL
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetGroupEpochReturn(returnEpoch)
             .arrange()
@@ -910,7 +909,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessResponse_whenSendingCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
-        val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (_, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .withSendCommitBundleSuccessful()
@@ -928,7 +927,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessResponse_whenSendingExternalCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
-        val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (_, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
@@ -947,7 +946,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessResponse_whenRotatingKeysAndMigratingConversation_thenReturnsSuccess() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withRotateGroupsSuccessful()
@@ -986,7 +985,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withRotateGroupsSuccessful()
@@ -1017,7 +1016,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withRotateGroupsSuccessful()
@@ -1079,7 +1078,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdSucceed_thenReturnsIdentity() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
@@ -1098,7 +1097,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdFails_thenReturnsError() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(null)
@@ -1117,7 +1116,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenGetClientId_whenGetUserIdentitiesEmpty_thenReturnsNull() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(emptyList())
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
@@ -1137,7 +1136,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSelfUserId_whenGetMLSGroupIdByUserIdSucceed_thenReturnsIdentities() = runTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetUserIdentitiesReturn(
@@ -1166,7 +1165,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenOtherUserId_whenGetMLSGroupIdByUserIdSucceed_thenReturnsIdentities() = runTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(
                 mapOf(
@@ -1193,7 +1192,7 @@ class MLSConversationRepositoryTest {
         val member1 = TestUser.USER_ID
         val member2 = TestUser.USER_ID.copy(value = "member_2_id")
         val member3 = TestUser.USER_ID.copy(value = "member_3_id")
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(
                 mapOf(
@@ -1228,7 +1227,7 @@ class MLSConversationRepositoryTest {
         runTest {
             val defaultCipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
-            val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+            val (arrangement, mlsConversationRepository) = Arrangement()
                 .withCommitPendingProposalsReturningNothing()
                 .withClaimKeyPackagesSuccessful(emptyList()) // empty cause members is empty in case of establishMLSSubConversationGroup
                 .withGetMLSClientSuccessful()
@@ -1264,7 +1263,7 @@ class MLSConversationRepositoryTest {
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
-        val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (_, mlsConversationRepository) = Arrangement()
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
@@ -1294,7 +1293,7 @@ class MLSConversationRepositoryTest {
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
-        val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (_, mlsConversationRepository) = Arrangement()
             .withGetMLSGroupIdByConversationIdReturns(groupId)
             .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
@@ -1315,7 +1314,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenMlsCommitMissingReferencesError_whenEstablishMLSSubConversationGroup_thenShouldDiscardAndRetry() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(emptyList())
             .withGetMLSClientSuccessful()
@@ -1335,7 +1334,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenStaleMessageError_whenUpdateKeyingMaterial_thenShouldKeepAndRetry() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withClaimKeyPackagesSuccessful(emptyList())
             .withGetMLSClientSuccessful()
@@ -1355,7 +1354,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenUnexpectedError_whenEstablishMLSSubConversationGroup_thenShouldAbort() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(emptyList())
             .withGetMLSClientSuccessful()
@@ -1374,9 +1373,7 @@ class MLSConversationRepositoryTest {
         coVerify { arrangement.mlsClient.updateKeyingMaterial(any()) }.wasInvoked(1) // No retry should happen
     }
 
-    private class Arrangement(
-        var kaliumDispatcher: KaliumDispatcher = TestKaliumDispatcher
-    ) {
+    private class Arrangement {
 
         @Mock
         val keyPackageRepository = mock(KeyPackageRepository::class)
@@ -1427,7 +1424,7 @@ class MLSConversationRepositoryTest {
             keyPackageLimitsProvider,
             checkRevocationList,
             certificateRevocationListRepository,
-            kaliumDispatcher = kaliumDispatcher
+            mutex = Mutex()
         )
 
         suspend fun withClearProposalTimerSuccessful() = apply {

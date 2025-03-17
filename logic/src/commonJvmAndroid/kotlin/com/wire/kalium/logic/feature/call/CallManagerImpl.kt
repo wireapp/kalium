@@ -29,9 +29,10 @@ import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
@@ -73,11 +74,10 @@ import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
-import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.logic.util.toInt
@@ -305,52 +305,82 @@ class CallManagerImpl internal constructor(
 
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
-            // TODO: Handle response. Possible failure?
-            wcall_start(
-                deferredHandle.await(),
-                federatedIdMapper.parseToFederatedId(conversationId),
-                avsCallType.avsValue,
-                conversationTypeCalling.avsValue,
-                isAudioCbr.toInt()
-            )
 
-            callingLogger.d(
-                "$TAG - wcall_start() called -> Call for conversation = " +
-                        "${conversationId.toLogString()} started"
-            )
-        }
-
-        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
-                updateEpochInfo(conversationId, epochInfo)
+            if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+                callRepository.joinMlsConference(
+                    conversationId = conversationId,
+                    onJoined = {
+                        wcall_start(
+                            deferredHandle.await(),
+                            federatedIdMapper.parseToFederatedId(conversationId),
+                            avsCallType.avsValue,
+                            conversationTypeCalling.avsValue,
+                            isAudioCbr.toInt()
+                        )
+                    },
+                    onEpochChange = { conversationId, epochInfo ->
+                        updateEpochInfo(conversationId, epochInfo)
+                    }
+                )
+            } else {
+                // TODO: Handle response. Possible failure?
+                wcall_start(
+                    deferredHandle.await(),
+                    federatedIdMapper.parseToFederatedId(conversationId),
+                    avsCallType.avsValue,
+                    conversationTypeCalling.avsValue,
+                    isAudioCbr.toInt()
+                )
+                callingLogger.d(
+                    "$TAG - wcall_start() called -> Call for conversation = " +
+                            "${conversationId.toLogString()} started"
+                )
             }
         }
     }
 
     override suspend fun answerCall(
         conversationId: ConversationId,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isVideoCall: Boolean
     ) {
         withCalling {
             callingLogger.d(
                 "$TAG -> answering call for conversation = " +
                         "${conversationId.toLogString()}.."
             )
-            wcall_answer(
-                inst = deferredHandle.await(),
-                conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-                callType = CallTypeCalling.AUDIO.avsValue,
-                cbrEnabled = isAudioCbr
-            )
-            callingLogger.d(
-                "$TAG - wcall_answer() called -> Incoming call for conversation = " +
-                        "${conversationId.toLogString()} answered"
-            )
-        }
+            val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
 
-        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
-                updateEpochInfo(conversationId, epochInfo)
+            if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+                callRepository.joinMlsConference(
+                    conversationId = conversationId,
+                    onJoined = {
+                        wcall_answer(
+                            inst = deferredHandle.await(),
+                            conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                            callType = callType.avsValue,
+                            cbrEnabled = isAudioCbr
+                        )
+                        callingLogger.i(
+                            "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                                    "${conversationId.toLogString()} answered"
+                        )
+                    },
+                    onEpochChange = { conversationId, epochInfo ->
+                        updateEpochInfo(conversationId, epochInfo)
+                    }
+                )
+            } else {
+                wcall_answer(
+                    inst = deferredHandle.await(),
+                    conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                    callType = callType.avsValue,
+                    cbrEnabled = isAudioCbr
+                )
+                callingLogger.i(
+                    "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                            "${conversationId.toLogString()} answered"
+                )
             }
         }
     }
