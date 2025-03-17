@@ -54,10 +54,16 @@ jobs:
       - name: Verify DB Migrations
         run: |
             make db/verify-all-migrations
+#KBX temporary logs
+      - name: Debug Library Paths
+        run: |
+          echo "Java Library Path:"
+          java -XshowSettings:properties -version | grep 'java.library.path'
 
       - name: Test with Gradle
         run: |
-          ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
+          export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
+          ./gradlew jvmTest koverXmlReport --stacktrace --info -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
       - name: Archive Test Reports
