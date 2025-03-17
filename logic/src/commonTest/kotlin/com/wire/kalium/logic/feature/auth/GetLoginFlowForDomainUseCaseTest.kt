@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
+import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import io.mockative.Mock
 import io.mockative.any
@@ -75,15 +76,19 @@ class GetLoginFlowForDomainUseCaseTest {
 
     @Test
     fun givenEmail_whenInvokedCustomBackend_thenFetchTheConfigurationAndMapIt() = runTest {
+        val backendConfigUrl = "https://custom-backend.com/domain_redirect_backend.json"
+        val configJsonUrl = "https://custom-backend.com/backend_config.json"
         val (arrangement, useCase) = Arrangement()
-            .withDomainRegistrationResult(LoginDomainPath.CustomBackend("https://custom-backend.com").right())
+            .withDomainRegistrationResult(LoginDomainPath.CustomBackend(backendConfigUrl).right())
+            .withDomainRedirectCustomBackendConfig(DomainLookupResult(configJsonUrl, "").right())
             .withServerLinksResult(ServerConfig.DUMMY.right())
             .arrange()
 
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        coVerify { arrangement.customServerConfigRepository.fetchRemoteConfig(any()) }
+        coVerify { arrangement.loginRepository.fetchDomainRedirectCustomBackendConfig(backendConfigUrl) }
+        coVerify { arrangement.customServerConfigRepository.fetchRemoteConfig(configJsonUrl) }
         assertEquals(
             result,
             EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY))
@@ -100,6 +105,10 @@ class GetLoginFlowForDomainUseCaseTest {
 
         suspend fun withDomainRegistrationResult(result: Either<NetworkFailure, LoginDomainPath>) = apply {
             coEvery { loginRepository.getDomainRegistration(any()) }.returns(result)
+        }
+
+        suspend fun withDomainRedirectCustomBackendConfig(result: Either<NetworkFailure, DomainLookupResult>) = apply {
+            coEvery { loginRepository.fetchDomainRedirectCustomBackendConfig(any()) }.returns(result)
         }
 
         suspend fun withServerLinksResult(result: Either<NetworkFailure, ServerConfig.Links>) = apply {

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
@@ -71,11 +72,14 @@ internal fun GetLoginFlowForDomainUseCase(
             is LoginDomainPath.SSO -> EnterpriseLoginResult.Success(mapper.fromModelToResult(this))
 
             is LoginDomainPath.CustomBackend -> {
-                customServerConfigRepository.fetchRemoteConfig(backendConfigUrl).fold({
-                    it.mapFailure()
-                }, {
-                    EnterpriseLoginResult.Success(mapper.fromModelToCustomBackendResult(this, it))
-                })
+                loginRepository.fetchDomainRedirectCustomBackendConfig(backendConfigUrl)
+                    .flatMap {
+                        customServerConfigRepository.fetchRemoteConfig(it.configJsonUrl)
+                    }.fold({
+                        it.mapFailure()
+                    }, {
+                        EnterpriseLoginResult.Success(mapper.fromModelToCustomBackendResult(this, it))
+                    })
             }
         }
     }

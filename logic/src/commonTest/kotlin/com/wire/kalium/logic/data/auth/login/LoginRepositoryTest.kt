@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
+import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import com.wire.kalium.network.api.unauthenticated.login.LoginParam
@@ -108,6 +109,16 @@ class LoginRepositoryTest {
         coVerify { arrangement.getDomainRegistrationApi.getDomainRegistration(eq(TEST_EMAIL)) }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenBackendUrl_whenCallingFetchDomainRedirectCustomBackendConfig_ThenShouldCallTheApiWithTheCorrectParameters() = runTest {
+        val backendUrl = "https://backend.url"
+        val (arrangement, loginRepository) = Arrangement()
+            .withFetchDomainRedirectCustomBackendConfigReturning(DOMAIN_LOOKUP_RESPONSE)
+            .arrange()
+        loginRepository.fetchDomainRedirectCustomBackendConfig(backendUrl = backendUrl)
+        coVerify { arrangement.getDomainRegistrationApi.customBackendConfig(eq(backendUrl)) }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -135,6 +146,18 @@ class LoginRepositoryTest {
                     value = response,
                     mapOf(),
                     HttpStatusCode.OK.value
+                )
+            )
+        }
+
+        suspend fun withFetchDomainRedirectCustomBackendConfigReturning(response: DomainLookupResponse) = apply {
+            coEvery {
+                getDomainRegistrationApi.customBackendConfig(any())
+            }.returns(
+                NetworkResponse.Success(
+                    value = response,
+                    headers = mapOf(),
+                    httpCode = HttpStatusCode.OK.value
                 )
             )
         }
@@ -168,6 +191,11 @@ class LoginRepositoryTest {
             domainRedirect = DomainRedirect.NONE,
             ssoCode = null,
             dueToExistingAccount = null
+        )
+
+        val DOMAIN_LOOKUP_RESPONSE = DomainLookupResponse(
+            configJsonUrl = "configJsonUrl",
+            webappWelcomeUrl = "webappWelcomeUrl",
         )
     }
 }
