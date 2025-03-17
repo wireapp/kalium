@@ -91,7 +91,7 @@ internal class LoginRepositoryImpl internal constructor(
     }
 
     override suspend fun fetchDomainRedirectCustomBackendConfig(backendUrl: String): Either<NetworkFailure, DomainLookupResult> =
-        wrapApiRequest{
+        wrapApiRequest {
             getDomainRegistrationApi.customBackendConfig(backendUrl)
         }.map {
             DomainLookupResult(it.configJsonUrl, it.webappWelcomeUrl)
