@@ -22,7 +22,7 @@ import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 class MLSClientImpl : MLSClient {
-    override fun getDefaultCipherSuite(): UShort {
+    override fun getDefaultCipherSuite(): MLSCiphersuite {
         TODO("Not yet implemented")
     }
 
@@ -30,7 +30,7 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getPublicKey(): Pair<ByteArray, UShort> {
+    override suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite> {
         TODO("Not yet implemented")
     }
 
@@ -42,23 +42,11 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
+    override suspend fun updateKeyingMaterial(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
+    override suspend fun joinByExternalCommit(publicGroupState: ByteArray): WelcomeBundle {
         TODO("Not yet implemented")
     }
 
@@ -86,15 +74,7 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun commitAccepted(groupId: MLSGroupId) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun clearPendingCommit(groupId: MLSGroupId) {
+    override suspend fun commitPendingProposals(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
@@ -110,11 +90,11 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun addMember(groupId: MLSGroupId, membersKeyPackages: List<MLSKeyPackage>): CommitBundle? {
+    override suspend fun addMember(groupId: MLSGroupId, membersKeyPackages: List<MLSKeyPackage>): List<String>? {
         TODO("Not yet implemented")
     }
 
-    override suspend fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): CommitBundle {
+    override suspend fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>) {
         TODO("Not yet implemented")
     }
 
@@ -169,6 +149,18 @@ class MLSClientImpl : MLSClient {
     }
 
     override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun removeStaleKeyPackages() {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun saveX509Credential(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun e2eiRotateGroups(groupList: List<MLSGroupId>) {
         TODO("Not yet implemented")
     }
 }
