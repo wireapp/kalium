@@ -225,8 +225,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                 if (cryptoBoxFilesExists(File(rootDir))) {
                     kaliumLogger.i("migrating from crypto box at: $rootDir")
                     coreCrypto.transaction {
-                        // TODO KBX fix in next release of core crypto
-//                         it.proteusCryptoboxMigrate(rootDir)
+                        it.proteusCryptoboxMigrate(rootDir)
                     }
                     kaliumLogger.i("migration successful")
 
