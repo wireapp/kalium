@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -32,7 +33,6 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
@@ -62,7 +62,7 @@ public interface AddAttachmentDraftUseCase {
 
 internal class AddAttachmentDraftUseCaseImpl internal constructor(
     private val uploadManager: CellUploadManager,
-    private val conversationDao: ConversationDAO,
+    private val conversationRepository: CellConversationRepository,
     private val repository: MessageAttachmentDraftRepository,
     private val scope: CoroutineScope,
 ) : AddAttachmentDraftUseCase {
@@ -74,40 +74,39 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
         assetPath: Path,
         assetSize: Long,
         assetMetadata: AssetContent.AssetMetadata?,
-    ): Either<CoreFailure, Unit> {
-
-        val cellName = conversationDao.getCellName(QualifiedIDEntity(conversationId.value, conversationId.domain))
-
-        return if (cellName != null) {
-            uploadManager.upload(assetPath, assetSize, "$cellName/$fileName").map { node ->
-                persistDraftNode(conversationId, mimeType, assetPath, node, assetMetadata).onSuccess {
-                    scope.launch observer@{
-                        uploadManager.observeUpload(node.uuid)?.collectLatest { event ->
-                            when (event) {
-                                CellUploadEvent.UploadCompleted -> repository.updateStatus(node.uuid, UPLOADED)
-                                CellUploadEvent.UploadError -> repository.updateStatus(node.uuid, FAILED)
-                                CellUploadEvent.UploadCancelled -> this@observer.cancel()
-                                is CellUploadEvent.UploadProgress -> {}
+    ): Either<CoreFailure, Unit> =
+        conversationRepository.getCellName(QualifiedIDEntity(conversationId.value, conversationId.domain)).map { cellName ->
+            if (cellName != null) {
+                uploadManager.upload(assetPath, assetSize, "$cellName/$fileName").map { node ->
+                    persistDraftNode(conversationId, mimeType, assetPath, node, assetMetadata).onSuccess {
+                        scope.launch observer@{
+                            uploadManager.observeUpload(node.uuid)?.collectLatest { event ->
+                                when (event) {
+                                    CellUploadEvent.UploadCompleted -> repository.updateStatus(node.uuid, UPLOADED)
+                                    CellUploadEvent.UploadError -> repository.updateStatus(node.uuid, FAILED)
+                                    CellUploadEvent.UploadCancelled -> this@observer.cancel()
+                                    is CellUploadEvent.UploadProgress -> {}
+                                }
                             }
                         }
                     }
                 }
-            }.map {}
-        } else {
-            persistDraftNode(
-                conversationId = conversationId,
-                assetPath = assetPath,
-                node = CellNode(
-                    uuid = uuid4().toString(),
-                    versionId = "",
-                    path = fileName,
-                    size = assetSize,
-                ),
-                mimeType = mimeType,
-                metadata = assetMetadata,
-            )
+            } else {
+                // Regular encrypted attachment. No cell upload needed.
+                persistDraftNode(
+                    conversationId = conversationId,
+                    assetPath = assetPath,
+                    node = CellNode(
+                        uuid = uuid4().toString(),
+                        versionId = "",
+                        path = fileName,
+                        size = assetSize,
+                    ),
+                    mimeType = mimeType,
+                    metadata = assetMetadata,
+                )
+            }
         }
-    }
 
     private suspend fun persistDraftNode(
         conversationId: QualifiedID,

@@ -15,27 +15,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase
+package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-public class SetWireCellForConversationUseCase internal constructor(
-    private val repository: CellConversationRepository,
+internal class CellConversationDataSource(
+    private val conversation: ConversationDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-) {
-    private companion object {
-        // Temporary hardcoded root cell
-        const val ROOT_CELL = "wire-cells-android"
-    }
+) : CellConversationRepository {
 
-    public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
+    override suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?> =
         withContext(dispatchers.io) {
-            val cellName = if (enabled) "$ROOT_CELL/$conversationId" else null
-            repository.setWireCell(conversationId, cellName)
+            wrapStorageRequest {
+                conversation.getCellName(conversationId)
+            }
         }
-    }
+
+    override suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversation.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), cellName)
+            }
+        }
 }

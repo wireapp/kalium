@@ -15,20 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.cells.domain
 
-public data class CellNode(
-    val uuid: String,
-    val versionId: String,
-    val path: String,
-    val modified: Long? = null,
-    val size: Long? = null,
-    val eTag: String? = null,
-    val type: String? = null,
-    val isRecycled: Boolean = false,
-    val isDraft: Boolean = false,
-    val contentUrl: String? = null,
-    val contentHash: String? = null,
-    val mimeType: String? = null,
-    val previews: List<NodePreview> = emptyList(),
-)
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+
+internal interface CellConversationRepository {
+    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
+    suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit>
+}

@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -35,6 +36,7 @@ import okio.Path
  */
 public class DownloadCellFileUseCase internal constructor(
     private val cellsRepository: CellsRepository,
+    private val attachmentsRepository: CellAttachmentsRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
     /**
@@ -52,16 +54,16 @@ public class DownloadCellFileUseCase internal constructor(
         outFilePath: Path,
         onProgressUpdate: (Long) -> Unit,
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
-        cellsRepository.getAssetPath(assetId).flatMap { path ->
+        attachmentsRepository.getAssetPath(assetId).flatMap { path ->
             path?.let {
-                cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
+                attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
                 cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
                     .onSuccess {
-                        cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
-                        cellsRepository.saveLocalPath(assetId, outFilePath.toString())
+                        attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+                        attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())
                     }
                     .onFailure {
-                        cellsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
+                        attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
                     }
             } ?: Either.Left(StorageFailure.DataNotFound)
         }
