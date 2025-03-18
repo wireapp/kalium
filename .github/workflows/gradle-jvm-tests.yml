@@ -54,12 +54,7 @@ jobs:
       - name: Verify DB Migrations
         run: |
             make db/verify-all-migrations
-#KBX temporary logs
-      - name: Debug Library Paths
-        run: |
-          echo "Java Library Path:"
-          java -XshowSettings:properties -version | grep 'java.library.path'
-
+      #KBX temporary logs stacktrace info
       - name: Test with Gradle
         run: |
           export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
