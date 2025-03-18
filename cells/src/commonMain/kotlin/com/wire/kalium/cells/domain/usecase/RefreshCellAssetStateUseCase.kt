@@ -128,6 +128,14 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
                 }
 
                 attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
+
+                if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
+                    if (attachment.localPath == null) {
+                        attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
+                    } else {
+                        attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
+                    }
+                }
             }
         }
     }
@@ -137,7 +145,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
 private fun NetworkFailure.isAssetNotFound(): Boolean {
     val error = (this as? ServerMiscommunication)?.kaliumException ?: return false
     val response = (error as? KaliumException.ServerError)?.errorResponse ?: return false
-    return response.code == HttpStatusCode.NotFound.value
+    return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
 }
 
 private fun CellNode.isPreviewSupported(): Boolean = when {

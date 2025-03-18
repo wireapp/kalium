@@ -31,4 +31,8 @@ internal interface CellAttachmentsRepository {
     suspend fun saveLocalPath(assetId: String, path: String?): Either<StorageFailure, Unit>
     suspend fun saveContentUrlAndHash(assetId: String, contentUrl: String?, hash: String?): Either<StorageFailure, Unit>
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
+    suspend fun getAttachments(): Either<StorageFailure, List<MessageAttachment>>
+    suspend fun saveStandaloneAssetPath(assetId: String, path: String, size: Long): Either<StorageFailure, Unit>
+    suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<Pair<String, String>>>
+    suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
 }

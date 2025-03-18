@@ -20,6 +20,7 @@ package com.wire.kalium.cells
 import com.wire.kalium.cells.data.CellAttachmentsDataSource
 import com.wire.kalium.cells.data.CellConversationDataSource
 import com.wire.kalium.cells.data.CellUploadManagerImpl
+import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
 import com.wire.kalium.cells.data.CellsAwsClient
 import com.wire.kalium.cells.data.CellsDataSource
@@ -28,6 +29,7 @@ import com.wire.kalium.cells.data.cellsAwsClient
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadManager
+import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -35,13 +37,17 @@ import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
+import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCase
-import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
+import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RefreshCellAssetStateUseCase
@@ -51,7 +57,13 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
+import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
@@ -64,11 +76,17 @@ import kotlin.coroutines.CoroutineContext
 
 public class CellsScope(
     private val cellsClient: HttpClient,
-    private val attachmentDraftDao: MessageAttachmentDraftDao,
-    private val conversationsDao: ConversationDAO,
-    private val attachmentsDao: MessageAttachmentsDao,
     private val userId: String,
+    private val dao: CellScopeDao,
 ) : CoroutineScope {
+
+    public data class CellScopeDao(
+        val attachmentDraftDao: MessageAttachmentDraftDao,
+        val conversationsDao: ConversationDAO,
+        val attachmentsDao: MessageAttachmentsDao,
+        val assetsDao: AssetDAO,
+        val userDao: UserDAO,
+    )
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -100,13 +118,16 @@ public class CellsScope(
         )
 
     private val cellsConversationRepository: CellConversationRepository
-        get() = CellConversationDataSource(conversationsDao)
+        get() = CellConversationDataSource(dao.conversationsDao)
 
     private val cellAttachmentsRepository: CellAttachmentsRepository
-        get() = CellAttachmentsDataSource(attachmentsDao)
+        get() = CellAttachmentsDataSource(dao.attachmentsDao, dao.assetsDao)
 
     public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository
-        get() = MessageAttachmentDraftDataSource(attachmentDraftDao)
+        get() = MessageAttachmentDraftDataSource(dao.attachmentDraftDao)
+
+    private val usersRepository: CellUsersRepository
+        get() = CellUsersDataSource(dao.userDao)
 
     public val uploadManager: CellUploadManager by lazy {
         CellUploadManagerImpl(
@@ -130,8 +151,8 @@ public class CellsScope(
     public val publishAttachments: PublishAttachmentsUseCase
         get() = PublishAttachmentsUseCaseImpl(cellsRepository)
 
-    public val observeFiles: ObserveCellFilesUseCase
-        get() = ObserveCellFilesUseCaseImpl(conversationsDao, cellsRepository)
+    public val observeFiles: GetCellFilesUseCase
+        get() = GetCellFilesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
 
     public val enableWireCell: SetWireCellForConversationUseCase
         get() = SetWireCellForConversationUseCase(cellsConversationRepository)
@@ -144,4 +165,16 @@ public class CellsScope(
 
     public val deleteAttachmentsUseCase: DeleteMessageAttachmentsUseCase
         get() = DeleteMessageAttachmentsUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+
+    public val deleteCellAssetUseCase: DeleteCellAssetUseCase
+        get() = DeleteCellAssetUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+
+    public val createPublicLinkUseCase: CreatePublicLinkUseCase
+        get() = CreatePublicLinkUseCaseImpl(cellClientCredentials, cellsRepository)
+
+    public val getPublicLinkUseCase: GetPublicLinkUseCase
+        get() = GetPublicLinkUseCaseImpl(cellClientCredentials, cellsRepository)
+
+    public val deletePublicLinkUseCase: DeletePublicLinkUseCase
+        get() = DeletePublicLinkUseCaseImpl(cellsRepository)
 }

@@ -21,6 +21,7 @@ import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.PreCheckResult
+import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import okio.Path
@@ -29,11 +30,14 @@ internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
-    suspend fun getFiles(cellName: String): Either<NetworkFailure, List<CellNode>>
-    suspend fun deleteFile(node: CellNode): Either<NetworkFailure, Unit>
+    suspend fun getFiles(query: String, limit: Int, offset: Int): Either<NetworkFailure, List<CellNode>>
+    suspend fun deleteFile(nodeUuid: String): Either<NetworkFailure, Unit>
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit>
     suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit>
     suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>>
     suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode>
     suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit>
+    suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink>
+    suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, String>
+    suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit>
 }

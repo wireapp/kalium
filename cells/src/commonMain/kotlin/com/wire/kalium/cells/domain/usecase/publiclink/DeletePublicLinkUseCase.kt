@@ -15,15 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
+package com.wire.kalium.cells.domain.usecase.publiclink
 
-import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-internal interface CellConversationRepository {
-    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
+/**
+ * Delete public link with given UUID from Wire Cells server.
+ */
+public interface DeletePublicLinkUseCase {
+    public suspend operator fun invoke(linkUuid: String): Either<CoreFailure, Unit>
+}
+
+internal class DeletePublicLinkUseCaseImpl(
+    private val cellsRepository: CellsRepository,
+) : DeletePublicLinkUseCase {
+    override suspend fun invoke(linkUuid: String): Either<CoreFailure, Unit> {
+        return cellsRepository.deletePublicLink(linkUuid)
+    }
 }

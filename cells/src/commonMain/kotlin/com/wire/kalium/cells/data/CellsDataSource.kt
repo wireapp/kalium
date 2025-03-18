@@ -78,17 +78,17 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getFiles(cellName: String) = withContext(dispatchers.io) {
+    override suspend fun getFiles(query: String, limit: Int, offset: Int) = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getFiles(cellName)
+            cellsApi.getFiles(query, limit, offset)
         }.map { response ->
             response.nodes.map { it.toModel() }
         }
     }
 
-    override suspend fun deleteFile(node: CellNode) = withContext(dispatchers.io) {
+    override suspend fun deleteFile(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.delete(node.toDto())
+            cellsApi.delete(nodeUuid)
         }
     }
 
@@ -143,6 +143,24 @@ internal class CellsDataSource internal constructor(
     override suspend fun getNode(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.getNode(nodeUuid).mapSuccess { it.toModel() }
+        }
+    }
+
+    override suspend fun createPublicLink(nodeUuid: String, fileName: String) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.createPublicLink(nodeUuid, fileName)
+        }
+    }
+
+    override suspend fun getPublicLink(linkUuid: String) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.getPublicLink(linkUuid)
+        }
+    }
+
+    override suspend fun deletePublicLink(linkUuid: String) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.deletePublicLink(linkUuid)
         }
     }
 }

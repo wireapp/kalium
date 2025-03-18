@@ -35,6 +35,9 @@ internal data class CellNodeDTO(
     val contentHash: String?,
     val mimeType: String?,
     val previews: List<PreviewDto> = emptyList(),
+    val ownerUserId: String?,
+    val conversationId: String?,
+    val publicLinkId: String?,
 )
 
 internal fun CellNodeDTO.toModel() = CellNode(
@@ -51,6 +54,9 @@ internal fun CellNodeDTO.toModel() = CellNode(
     contentHash = contentHash,
     mimeType = mimeType,
     previews = previews.map { it.toModel() },
+    ownerUserId = ownerUserId,
+    conversationId = conversationId,
+    publicLinkId = publicLinkId,
 )
 
 internal fun CellNode.toDto() = CellNodeDTO(
@@ -66,6 +72,9 @@ internal fun CellNode.toDto() = CellNodeDTO(
     contentUrl = contentUrl,
     contentHash = contentHash,
     mimeType = mimeType,
+    ownerUserId = ownerUserId,
+    conversationId = conversationId,
+    publicLinkId = publicLinkId,
 )
 
 internal fun RestNode.toDto() = CellNodeDTO(
@@ -89,6 +98,11 @@ internal fun RestNode.toDto() = CellNodeDTO(
             )
         }
     } ?: emptyList(),
+    ownerUserId = userMetadata
+        ?.firstOrNull { it.namespace == "usermeta-owner-uuid" }
+        ?.jsonValue?.removeSurrounding("\""),
+    conversationId = contextWorkspace?.uuid,
+    publicLinkId = shares?.firstOrNull()?.uuid,
 )
 
 private fun RestNode.isDraft(): Boolean {

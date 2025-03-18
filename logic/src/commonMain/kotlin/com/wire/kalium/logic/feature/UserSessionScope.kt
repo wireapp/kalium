@@ -2230,10 +2230,16 @@ class UserSessionScope internal constructor(
     val cells: CellsScope by lazy {
         CellsScope(
             cellsClient = globalScope.unboundNetworkContainer.cellsClient,
-            attachmentDraftDao = userStorage.database.messageAttachmentDraftDao,
-            conversationsDao = userStorage.database.conversationDAO,
-            attachmentsDao = userStorage.database.messageAttachments,
             userId = userId.toString(),
+            dao = with(userStorage.database) {
+                CellsScope.CellScopeDao(
+                    attachmentDraftDao = messageAttachmentDraftDao,
+                    conversationsDao = conversationDAO,
+                    attachmentsDao = messageAttachments,
+                    assetsDao = assetDAO,
+                    userDao = userDAO,
+                )
+            },
         )
     }
 
