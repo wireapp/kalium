@@ -93,6 +93,15 @@ data class ConversationResponse(
     @SerialName("public_keys")
     val publicKeys: MLSPublicKeysDTO? = null,
 
+    /**
+     * Only groups are expected to have a non-null value.
+     * Since API V8
+     * @see GroupType
+     */
+    @SerialName("group_conv_type")
+    val conversationGroupType: GroupType? = null,
+
+
     @SerialName("group_conv_type")
     val groupConversationType: GroupConversationTypeDTO? = null
 ) {
@@ -109,6 +118,14 @@ data class ConversationResponse(
         companion object {
             fun fromId(id: Int): Type = values().first { type -> type.id == id }
         }
+    }
+
+    enum class GroupType {
+        @SerialName("group_conversation")
+        REGULAR_GROUP,
+
+        @SerialName("channel")
+        CHANNEL,
     }
 
     fun toV6(): ConversationResponseV6 =
