@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDT
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.GroupConversationTypeDTO
 import com.wire.kalium.network.api.model.SubconversationId
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.model.UserId
@@ -90,7 +91,10 @@ data class ConversationResponse(
     val receiptMode: ReceiptMode,
 
     @SerialName("public_keys")
-    val publicKeys: MLSPublicKeysDTO? = null
+    val publicKeys: MLSPublicKeysDTO? = null,
+
+    @SerialName("group_conv_type")
+    val groupConversationType: GroupConversationTypeDTO? = null
 ) {
 
     @Suppress("MagicNumber")
@@ -168,6 +172,14 @@ data class ConversationResponseV6(
     val conversation: ConversationResponse,
     @SerialName("public_keys")
     val publicKeys: MLSPublicKeysDTO
+)
+
+@Serializable
+data class ConversationResponseV8(
+    @SerialName("conversation")
+    val conversation: ConversationResponse,
+    @SerialName("group_conv_type")
+    val groupConversationType: GroupConversationTypeDTO
 )
 
 @Serializable
