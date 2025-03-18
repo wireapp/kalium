@@ -42,7 +42,15 @@ jobs:
           git clone https://github.com/wireapp/core-crypto.git
           cd core-crypto/crypto-ffi
           cargo make jvm-linux
-          cp target/x86_64-unknown-linux-gnu/release/libcryptobox.so /usr/lib/
+
+      - name: Debug Core-Crypto Build Output
+        run: |
+          find core-crypto/target -name "libcryptobox.so" 2>/dev/null || echo "libcryptobox.so not found"
+
+      - name: Copy Cryptobox Library
+        run: |
+          mkdir -p /usr/lib/
+          cp core-crypto/target/release/libcryptobox.so /usr/lib/ || cp core-crypto/target/x86_64-unknown-linux-gnu/release/libcryptobox.so /usr/lib/
           
       - name: Configure Java Library Path
         run: echo "LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
