@@ -45,7 +45,8 @@ jobs:
 
       - name: Debug Core-Crypto Build Output
         run: |
-          find core-crypto/target -name "libcryptobox.so" 2>/dev/null || echo "libcryptobox.so not found"
+          echo "Checking core-crypto build output..."
+          find core-crypto/target -type f 2>/dev/null || echo "No build artifacts found"
 
       - name: Copy Cryptobox Library
         run: |
