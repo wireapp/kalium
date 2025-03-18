@@ -20,7 +20,7 @@ jobs:
       uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
     needs: [detekt]
-    runs-on: ubuntu-23.10
+    runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: wirebot/cryptobox:1.4.0
     steps:
