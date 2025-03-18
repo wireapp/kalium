@@ -6,23 +6,23 @@ on:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
   push:
     branches: # Runs on develop to have the coverage diff on every PR
-        - 'develop'
+      - 'develop'
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  cancel-in-progress: true
 
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
   detekt:
-      uses: ./.github/workflows/codestyle.yml
+    uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
-    needs: [detekt]
+    needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
-#    container: wirebot/cryptobox:1.4.0
+    #    container: wirebot/cryptobox:1.4.0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,38 +31,49 @@ jobs:
 
       - name: Install Required Libraries
         run: |
-            sudo apt-get update
-            sudo apt-get install -y libsodium-dev
-            echo "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV     
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev curl build-essential cmake
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source $HOME/.cargo/env
+
+      - name: Build Cryptobox from Core-Crypto
+        run: |
+          git clone https://github.com/wireapp/core-crypto.git
+          cd core-crypto/crypto-ffi
+          cargo make jvm-linux
+          cp target/x86_64-unknown-linux-gnu/release/libcryptobox.so /usr/lib/
+          
+      - name: Configure Java Library Path
+        run: echo "LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
       - name: Build the CLI App
         env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./gradlew :cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
 
       - name: Build the samples
         env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            ./gradlew :samples:compileKotlinJvm
+          ./gradlew :samples:compileKotlinJvm
 
       - name: Build the testservice
         env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
-            ./gradlew :testservice:test
+          ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew :testservice:test
 
-#      - name: Verify DB Migrations
-#        run: |
-#            make db/verify-all-migrations
+      #      - name: Verify DB Migrations
+      #        run: |
+      #            make db/verify-all-migrations
       #KBX temporary logs stacktrace info
       - name: Test with Gradle
         run: |
@@ -74,15 +85,15 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-            name: test-reports
-            path: ./**/build/reports/tests/**
+          name: test-reports
+          path: ./**/build/reports/tests/**
 
       - name: Archive Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-            name: test-results
-            path: ./**/build/test-results/**/*.xml
+          name: test-results
+          path: ./**/build/test-results/**/*.xml
 
       - name: Install Pip for test result publishing
         run: |
@@ -99,14 +110,14 @@ jobs:
       - name: Upload test report to codecov
         uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574
         with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: "build/reports/kover/report.xml"
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "build/reports/kover/report.xml"
 
       - name: Archive Kover report
         uses: actions/upload-artifact@v4
         with:
-            name: kover-report
-            path: build/reports/kover/report.xml
+          name: kover-report
+          path: build/reports/kover/report.xml
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
