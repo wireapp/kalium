@@ -39,7 +39,7 @@ import kotlin.test.Test
 class CellsApiTest {
 
     @Test
-    fun `given new file pre-check then success is returned`() = runTest {
+    fun given_new_file_pre_check_then_success_is_returned() = runTest {
 
         val (_, cellApi) = Arrangement()
             .withHttpClient(
@@ -58,12 +58,12 @@ class CellsApiTest {
     }
 
     @Test
-    fun `given existing file pre-check then existing file is returned`() = runTest {
+    fun given_existing_file_pre_check_then_existing_file_is_returned() = runTest {
 
     }
 
     @Test
-    fun `given pre-check failure then failure is returned`() = runTest {
+    fun given_pre_check_failure_then_failure_is_returned() = runTest {
 
     }
 

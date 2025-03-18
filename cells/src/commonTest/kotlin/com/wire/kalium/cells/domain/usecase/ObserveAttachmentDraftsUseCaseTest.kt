@@ -37,7 +37,7 @@ import kotlin.test.Test
 class ObserveAttachmentDraftsUseCaseTest {
 
     @Test
-    fun `test stale uploads are removed`() = runTest {
+    fun test_stale_uploads_are_removed() = runTest {
 
         val (arrangement, useCase) = Arrangement()
             .withUploadManager()

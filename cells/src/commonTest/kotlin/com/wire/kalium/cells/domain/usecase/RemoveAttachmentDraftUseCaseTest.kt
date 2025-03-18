@@ -39,7 +39,7 @@ import kotlin.test.assertEquals
 class RemoveAttachmentDraftUseCaseTest {
 
     @Test
-    fun `given attachment with UPLOADING status when removing then upload is cancelled`() = runTest {
+    fun given_attachment_with_UPLOADING_status_when_removing_then_upload_is_cancelled() = runTest {
         val uuid = uuid4().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
@@ -56,7 +56,7 @@ class RemoveAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given attachment with UPLOADING status when removing then attachment is removed`() = runTest {
+    fun given_attachment_with_UPLOADING_status_when_removing_then_attachment_is_removed() = runTest {
         val uuid = uuid4().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
@@ -73,7 +73,7 @@ class RemoveAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given attachment with UPLOADED status when removing then attachment draft is cancelled`() = runTest {
+    fun given_attachment_with_UPLOADED_status_when_removing_then_attachment_draft_is_cancelled() = runTest {
         val uuid = uuid4().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
@@ -90,7 +90,7 @@ class RemoveAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given attachment with UPLOADED status when removing then attachment is removed`() = runTest {
+    fun given_attachment_with_UPLOADED_status_when_removing_then_attachment_is_removed() = runTest {
         val uuid = uuid4().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
@@ -107,7 +107,7 @@ class RemoveAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given attachment with FAILED status when removing then attachment is removed`() = runTest {
+    fun given_attachment_with_FAILED_status_when_removing_then_attachment_is_removed() = runTest {
         val uuid = uuid4().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
@@ -124,7 +124,7 @@ class RemoveAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given attachment not found when removing then error is returned`() = runTest {
+    fun given_attachment_not_found_when_removing_then_error_is_returned() = runTest {
         val uuid = uuid4().toString()
         val (_, removeAttachment) = Arrangement()
             .withRepository()

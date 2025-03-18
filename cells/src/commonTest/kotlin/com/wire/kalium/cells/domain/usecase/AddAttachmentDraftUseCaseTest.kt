@@ -58,7 +58,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given valid request upload manager is called`() = runTest {
+    fun given_valid_request_upload_manager_is_called() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -76,7 +76,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given success pre-check attachment is persisted`() = runTest {
+    fun given_success_pre_check_attachment_is_persisted() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -97,7 +97,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given success attachment persist upload events observer is started`() = runTest {
+    fun given_success_attachment_persist_upload_events_observer_is_started() = runTest {
         val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -114,7 +114,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given upload complete event upload status is updated`() = runTest {
+    fun given_upload_complete_event_upload_status_is_updated() = runTest {
         val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -132,7 +132,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun `given upload error event upload status is updated`() = runTest {
+    fun given_upload_error_event_upload_status_is_updated() = runTest {
         val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()

@@ -62,7 +62,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given new file pre-check new node returned` () = runTest {
+    fun given_new_file_pre_check_new_node_returned() = runTest {
 
         val (_, uploadManager) = Arrangement()
             .withPreCheckSuccess()
@@ -75,7 +75,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given existing file pre-check new node with suggested name returned` () = runTest {
+    fun given_existing_file_pre_check_new_node_with_suggested_name_returned() = runTest {
 
         val (_, uploadManager) = Arrangement()
             .withPreCheckFileExists(suggestedDestNodePath)
@@ -88,7 +88,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given pre-check failure error is returned` () = runTest {
+    fun given_pre_check_failure_error_is_returned() = runTest {
 
         val (_, uploadManager) = Arrangement()
             .withPreCheckFailed()
@@ -101,7 +101,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given success pre-check file upload is started` () = runTest {
+    fun given_success_pre_check_file_upload_is_started() = runTest {
         val (arrangement, uploadManager) = Arrangement()
             .withPreCheckSuccess()
             .withUploadSuccess()
@@ -117,7 +117,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given success upload upload complete event is emitted` () = runTest {
+    fun given_success_upload_upload_complete_event_is_emitted() = runTest {
         val (_, uploadManager) = Arrangement()
             .withPreCheckSuccess()
             .withUploadSuccess()
@@ -132,7 +132,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given success upload upload job is removed from upload manager` () = runTest {
+    fun given_success_upload_upload_job_is_removed_from_upload_manager() = runTest {
         val (_, uploadManager) = Arrangement()
             .withPreCheckSuccess()
             .withUploadSuccess()
@@ -146,7 +146,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given failed upload upload error event is emitted` () = runTest {
+    fun given_failed_upload_upload_error_event_is_emitted() = runTest {
         val (_, uploadManager) = Arrangement()
             .withPreCheckSuccess()
             .withUploadFailed()
@@ -161,7 +161,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given failed upload upload job error flag is set` () = runTest {
+    fun given_failed_upload_upload_job_error_flag_is_set() = runTest {
         val (_, uploadManager) = Arrangement()
             .withPreCheckSuccess()
             .withUploadFailed()
@@ -175,7 +175,7 @@ class CellUploadManagerTest {
     }
 
     @Test
-    fun `given upload progress is updated then progress event is emitted` () = runTest {
+    fun given_upload_progress_is_updated_then_progress_event_is_emitted() = runTest {
         val (_, uploadManager) = Arrangement()
             .withPreCheckSuccess()
             .withUploadSuccess()
