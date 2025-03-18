@@ -45,7 +45,7 @@ CREATE TABLE Conversation (
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
     legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
-    is_channel INTEGER AS Boolean NOT NULL DEFAULT 0
+    is_channel INTEGER AS Boolean NOT NULL DEFAULT 0,
     wire_cell TEXT
 );
 

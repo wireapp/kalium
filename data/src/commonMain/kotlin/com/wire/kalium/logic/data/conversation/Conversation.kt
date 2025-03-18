@@ -328,6 +328,7 @@ sealed interface ConversationDetails {
         val selfRole: Conversation.Member.Role?
         val isFavorite: Boolean
         val folder: ConversationFolder?
+        val wireCell: String?
 //         val isTeamAdmin: Boolean, TODO kubaz
 
         data class Regular(
@@ -337,7 +338,7 @@ sealed interface ConversationDetails {
             override val selfRole: Conversation.Member.Role?,
             override val isFavorite: Boolean = false,
             override val folder: ConversationFolder? = null,
-            val wireCell: String? = null,
+            override val wireCell: String? = null,
 //         val isTeamAdmin: Boolean, TODO kubaz
         ) : Group
 
@@ -348,6 +349,7 @@ sealed interface ConversationDetails {
             override val selfRole: Conversation.Member.Role?,
             override val isFavorite: Boolean = false,
             override val folder: ConversationFolder? = null,
+            override val wireCell: String? = null,
             // TODO: Add channel-specific fields
 //         val isTeamAdmin: Boolean, TODO kubaz
         ) : Group

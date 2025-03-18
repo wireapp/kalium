@@ -132,7 +132,7 @@ data object ConversationMapper {
         isFavorite = isFavorite,
         folderId = folderId,
         folderName = folderName,
-        isChannel = isChannel
+        isChannel = isChannel,
         wireCell = wireCell,
     )
 
