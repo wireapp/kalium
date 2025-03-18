@@ -87,7 +87,6 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                 if (ccGroupStatus == VerificationStatus.VERIFIED) {
                     verifyUsersStatus(groupId)
                 } else {
-                    kaliumLogger.d("cccc: getConversationDetailsByMLSGroupId: groupId: $groupId")
                     conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
                         VerificationStatusData(
                             conversationId = it.id,
