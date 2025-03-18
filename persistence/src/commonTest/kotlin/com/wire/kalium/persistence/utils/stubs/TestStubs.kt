@@ -57,6 +57,7 @@ internal object TestStubs {
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        isChannel = false,
         wireCell = null,
     )
     val conversationEntity2 = ConversationEntity(
@@ -86,6 +87,7 @@ internal object TestStubs {
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        isChannel = false,
         wireCell = null,
     )
 
@@ -118,6 +120,7 @@ internal object TestStubs {
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        isChannel = false,
         wireCell = null,
     )
 
@@ -150,6 +153,7 @@ internal object TestStubs {
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        isChannel = false,
         wireCell = null,
     )
 
@@ -182,6 +186,7 @@ internal object TestStubs {
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        isChannel = false,
         wireCell = null,
     )
 

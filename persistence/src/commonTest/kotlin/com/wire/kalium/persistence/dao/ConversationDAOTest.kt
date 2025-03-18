@@ -2305,6 +2305,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenChannelInserted_whenGettingConversationById_thenItShouldBeChannel() = runTest(dispatcher) {
+        val conversation = conversationEntity1.copy(type = ConversationEntity.Type.GROUP, isChannel = true)
+        conversationDAO.insertConversation(conversation)
+        val result = conversationDAO.observeConversationById(conversation.id).first()!!
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertTrue(result.isChannel)
+    }
+
+    @Test
+    fun givenChannelInserted_whenGettingConversationDetailsById_thenItShouldBeChannel() = runTest(dispatcher) {
+        val conversation = conversationEntity1.copy(type = ConversationEntity.Type.GROUP, isChannel = true)
+        conversationDAO.insertConversation(conversation)
+        val result = conversationDAO.getConversationDetailsById(conversation.id)!!
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertTrue(result.isChannel)
+    }
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?
@@ -2372,6 +2390,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isFavorite = false,
             folderName = null,
             folderId = null,
+            isChannel = false,
             wireCell = null,
         )
     }
@@ -2435,6 +2454,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
             wireCell = null,
         )
         val conversationEntity2 = ConversationEntity(
@@ -2458,6 +2478,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
             wireCell = null,
         )
 
@@ -2484,6 +2505,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
             wireCell = null,
         )
 
@@ -2516,6 +2538,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
             wireCell = null,
         )
         val conversationEntity5 = ConversationEntity(
@@ -2539,6 +2562,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
             wireCell = null,
         )
         val conversationEntity6 = ConversationEntity(
@@ -2570,6 +2594,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
             wireCell = null,
         )
 

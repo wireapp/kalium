@@ -72,8 +72,12 @@ internal class MemberLeaveEventHandlerImpl(
             userRepository.markAsDeleted(event.removedList)
         }
         return deleteMembers(event.removedList, event.conversationId)
-            .onSuccess { updateConversationClientsForCurrentCall.value(event.conversationId) }
-            .onSuccess { deleteConversationIfNeeded(event) }
+            .onSuccess {
+                updateConversationClientsForCurrentCall.value(event.conversationId)
+            }
+            .onSuccess {
+                deleteConversationIfNeeded(event)
+            }
             .onSuccess {
                 // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
                 // and keep them to properly show this member-leave message
@@ -146,28 +150,30 @@ internal class MemberLeaveEventHandlerImpl(
         userIDList: List<UserId>,
         conversationID: ConversationId
     ): Either<CoreFailure, Long> =
-        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationID.toDao()) }
-            .onSuccess { protocol ->
-                when (protocol) {
-                    is ConversationEntity.ProtocolInfo.MLSCapable -> {
-                        if (userIDList.contains(selfUserId)) {
-                            mlsClientProvider.getMLSClient().map { mlsClient ->
-                                wrapMLSRequest {
-                                    mlsClient.wipeConversation(protocol.groupId)
+        wrapStorageRequest {
+            memberDAO.deleteMembersByQualifiedID(
+                userIDList.map { it.toDao() },
+                conversationID.toDao()
+            )
+        }.onSuccess {
+            wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationID.toDao()) }
+                .onSuccess { protocol ->
+                    when (protocol) {
+                        is ConversationEntity.ProtocolInfo.MLSCapable -> {
+                            if (userIDList.contains(selfUserId)) {
+                                mlsClientProvider.getMLSClient().map { mlsClient ->
+                                    wrapMLSRequest {
+                                        mlsClient.wipeConversation(protocol.groupId)
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    ConversationEntity.ProtocolInfo.Proteus -> {}
+                        ConversationEntity.ProtocolInfo.Proteus -> {}
+                    }
                 }
-            }
-            .flatMap {
-                wrapStorageRequest {
-                    memberDAO.deleteMembersByQualifiedID(
-                        userIDList.map { it.toDao() },
-                        conversationID.toDao()
-                    )
+                .onFailure {
+                    kaliumLogger.e("Failed to get protocol info for conversation ${conversationID.toLogString()}, error: $it")
                 }
-            }
+        }
 }

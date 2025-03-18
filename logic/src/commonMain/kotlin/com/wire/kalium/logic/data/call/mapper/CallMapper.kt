@@ -138,14 +138,14 @@ class CallMapperImpl(
         conversationProtocol: Conversation.ProtocolInfo
     ): ConversationTypeForCall =
         when (conversationType) {
-            Conversation.Type.GROUP -> {
+            is Conversation.Type.Group -> {
                 when (conversationProtocol) {
                     is Conversation.ProtocolInfo.MLS -> ConversationTypeForCall.ConferenceMls
                     is Conversation.ProtocolInfo.Proteus,
                     is Conversation.ProtocolInfo.Mixed -> ConversationTypeForCall.Conference
                 }
             }
-            Conversation.Type.ONE_ON_ONE -> ConversationTypeForCall.OneOnOne
+            Conversation.Type.OneOnOne -> ConversationTypeForCall.OneOnOne
             else -> ConversationTypeForCall.Unknown
         }
 
@@ -191,7 +191,8 @@ class CallMapperImpl(
     )
 
     private fun toConversationEntityType(conversationType: Conversation.Type): ConversationEntity.Type = when (conversationType) {
-        Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
+        Conversation.Type.Group.Regular -> ConversationEntity.Type.GROUP
+        Conversation.Type.Group.Channel -> TODO("Channels are not stored in DB yet")
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
@@ -203,8 +204,8 @@ class CallMapperImpl(
     }
 
     override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
-        ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
-        else -> Conversation.Type.ONE_ON_ONE
+        ConversationEntity.Type.GROUP -> Conversation.Type.Group.Regular
+        else -> Conversation.Type.OneOnOne
     }
 
     override fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status = when (callStatus) {

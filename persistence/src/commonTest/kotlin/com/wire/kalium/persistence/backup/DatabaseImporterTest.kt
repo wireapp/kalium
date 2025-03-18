@@ -587,6 +587,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                isChannel = false,
                 wireCell = null,
             )
 

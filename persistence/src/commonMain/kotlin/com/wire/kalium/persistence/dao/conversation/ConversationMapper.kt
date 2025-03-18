@@ -73,6 +73,7 @@ data object ConversationMapper {
         mlsVerificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        isChannel: Boolean,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
@@ -131,6 +132,7 @@ data object ConversationMapper {
         isFavorite = isFavorite,
         folderId = folderId,
         folderName = folderName,
+        isChannel = isChannel
         wireCell = wireCell,
     )
 
@@ -168,6 +170,7 @@ data object ConversationMapper {
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         degradedConversationNotified: Boolean,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        isChannel: Boolean,
         wireCell: String?,
     ) = ConversationEntity(
         id = qualifiedId,
@@ -198,6 +201,7 @@ data object ConversationMapper {
         mlsVerificationStatus = verificationStatus,
         proteusVerificationStatus = proteusVerificationStatus,
         legalHoldStatus = legalHoldStatus,
+        isChannel = isChannel,
         wireCell = wireCell,
     )
 

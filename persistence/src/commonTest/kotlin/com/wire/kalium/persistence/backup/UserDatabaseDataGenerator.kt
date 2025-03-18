@@ -278,6 +278,7 @@ class UserDatabaseDataGenerator(
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                    isChannel = false,
                     wireCell = null,
                 )
             )
@@ -326,6 +327,7 @@ class UserDatabaseDataGenerator(
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
             wireCell = null,
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
@@ -398,6 +400,7 @@ class UserDatabaseDataGenerator(
                 mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                isChannel = false,
                 wireCell = null,
             )
 
@@ -469,6 +472,7 @@ class UserDatabaseDataGenerator(
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                    isChannel = false,
                     wireCell = null,
                 )
             )
@@ -518,6 +522,7 @@ class UserDatabaseDataGenerator(
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                    isChannel = false,
                     wireCell = null,
                 )
             )
@@ -633,6 +638,7 @@ class UserDatabaseDataGenerator(
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                    isChannel = false,
                     wireCell = null,
                 )
             )

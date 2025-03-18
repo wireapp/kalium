@@ -142,6 +142,10 @@ interface ConversationRepository {
         conversationFilter: ConversationFilter = ConversationFilter.All
     ): Flow<List<ConversationDetailsWithEvents>>
 
+    /**
+     * Gets conversations based on [type] and [protocol].
+     * [Conversation.Type.Group.Channel] and [Conversation.Type.Group.Regular] are treated the same, as both are Groups
+     */
     suspend fun getConversationIds(
         type: Conversation.Type,
         protocol: Conversation.Protocol,

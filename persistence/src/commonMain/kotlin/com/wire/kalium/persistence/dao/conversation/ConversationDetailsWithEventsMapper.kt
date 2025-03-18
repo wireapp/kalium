@@ -77,6 +77,7 @@ data object ConversationDetailsWithEventsMapper {
         mlsVerificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        isChannel: Boolean,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
@@ -159,6 +160,7 @@ data object ConversationDetailsWithEventsMapper {
             isFavorite = isFavorite,
             folderId = folderId,
             folderName = folderName,
+            isChannel = isChannel,
             wireCell = wireCell,
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(

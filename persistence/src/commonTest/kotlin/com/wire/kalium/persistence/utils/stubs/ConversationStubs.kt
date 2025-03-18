@@ -43,6 +43,7 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+    isChannel = false,
     wireCell = null,
 )
 
@@ -70,5 +71,6 @@ fun newConversationEntity(
     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+    isChannel = false,
     wireCell = null,
 )

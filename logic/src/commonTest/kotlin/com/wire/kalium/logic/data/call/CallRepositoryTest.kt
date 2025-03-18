@@ -142,7 +142,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -172,7 +172,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             false,
                             isSelfUserMember = true,
@@ -210,7 +210,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -263,7 +263,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -305,7 +305,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -361,7 +361,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -902,7 +902,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -942,7 +942,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -987,7 +987,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1041,7 +1041,7 @@ class CallRepositoryTest {
         val metadata = createCallMetadata().copy(
             isMuted = false,
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername",
             callerTeamName = "team_1"
         )
@@ -1104,7 +1104,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1161,6 +1161,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenJoinMlsConference_thenJoinSubconversation() = runTest {
+        var hasJoined = false
         val (arrangement, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
             .givenJoinSubconversationSuccessful()
@@ -1172,11 +1173,14 @@ class CallRepositoryTest {
             .givenDeriveSecretSuccessful()
             .arrange()
 
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        callRepository.joinMlsConference(Arrangement.conversationId, {
+            hasJoined = true
+        }) { _, _ -> }
 
         coVerify {
             arrangement.joinSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
         }.wasInvoked(exactly = once)
+        assertTrue { hasJoined }
     }
 
     @Test
@@ -1195,7 +1199,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1225,7 +1229,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1259,7 +1263,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1292,7 +1296,7 @@ class CallRepositoryTest {
             .givenLeaveSubconversationSuccessful()
             .arrange()
 
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ -> }
         yield()
         advanceUntilIdle()
 
@@ -1342,7 +1346,7 @@ class CallRepositoryTest {
         callRepository.updateCallParticipants(
             Arrangement.conversationId,
             listOf(
-                Arrangement.participant.copy(
+                participant.copy(
                     hasEstablishedAudio = false
                 )
             )
@@ -1673,7 +1677,7 @@ class CallRepositoryTest {
         isCbrEnabled = false,
         maxParticipants = 0,
         conversationName = "ONE_ON_ONE Name",
-        conversationType = Conversation.Type.ONE_ON_ONE,
+        conversationType = Conversation.Type.OneOnOne,
         callerName = "otherUsername",
         callerTeamName = "team_1"
     )
@@ -1696,7 +1700,7 @@ class CallRepositoryTest {
         isCameraOn = false,
         isCbrEnabled = false,
         conversationName = null,
-        conversationType = Conversation.Type.GROUP,
+        conversationType = Conversation.Type.Group.Regular,
         callerName = null,
         callerTeamName = null,
         callStatus = CallStatus.ESTABLISHED,
