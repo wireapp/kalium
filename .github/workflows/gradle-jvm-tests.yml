@@ -20,7 +20,7 @@ jobs:
       uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
     needs: [detekt]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
 #    container: wirebot/cryptobox:1.4.0
     steps:
@@ -29,10 +29,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Update GLIBC
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libc6    
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
 
       - name: Build the CLI App
         env:
