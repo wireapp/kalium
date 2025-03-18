@@ -35,6 +35,7 @@ jobs:
           sudo apt-get install -y libsodium-dev curl build-essential cmake
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           source $HOME/.cargo/env
+          cargo install cargo-make
 
       - name: Build Cryptobox from Core-Crypto
         run: |
