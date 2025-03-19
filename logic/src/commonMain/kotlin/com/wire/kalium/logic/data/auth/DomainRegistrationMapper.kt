@@ -29,17 +29,13 @@ internal object DomainRegistrationMapperImpl : DomainRegistrationMapper {
         return when (domainRegistrationDTO.domainRedirect) {
             DomainRedirect.PRE_AUTHORIZED -> LoginDomainPath.Default
             DomainRedirect.LOCKED -> LoginDomainPath.Default
-            DomainRedirect.NONE -> {
-                if (domainRegistrationDTO.dueToExistingAccount == true) {
-                    LoginDomainPath.ExistingAccountWithClaimedDomain(extractDomain(email))
-                } else {
-                    LoginDomainPath.Default
-                }
-            }
-
+            DomainRedirect.NONE -> LoginDomainPath.Default
             DomainRedirect.SSO -> LoginDomainPath.SSO(domainRegistrationDTO.ssoCode!!)
             DomainRedirect.BACKEND -> LoginDomainPath.CustomBackend(domainRegistrationDTO.backendUrl!!)
-            DomainRedirect.NO_REGISTRATION -> LoginDomainPath.NoRegistration
+            DomainRedirect.NO_REGISTRATION -> when (domainRegistrationDTO.dueToExistingAccount) {
+                    true -> LoginDomainPath.ExistingAccountWithClaimedDomain(extractDomain(email))
+                    else -> LoginDomainPath.NoRegistration
+                }
         }
     }
 

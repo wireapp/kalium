@@ -17,10 +17,8 @@
  */
 package com.wire.kalium.logic.data.auth.login
 
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.LoginRedirectPath
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import kotlinx.coroutines.test.runTest
@@ -64,18 +62,16 @@ class DomainRegistrationMapperTest {
     }
 
     @Test
-    fun givenADomainRedirectValueDTONoneAndAccountExists_whenMappingToDomain_thenMapCorrectly() = runTest {
+    fun givenADomainRedirectValueDTONoRegistrationAndAccountExists_whenMappingToDomain_thenMapCorrectly() = runTest {
         val domainRegistrationMapper = MapperProvider.domainRegistrationMapper()
 
         val result = domainRegistrationMapper.fromApiModel(
-            Arrangement.provideDomainRegistrationDTO(DomainRedirect.NONE, dueToExistingAccount = true), Arrangement.EMAIL
+            Arrangement.provideDomainRegistrationDTO(DomainRedirect.NO_REGISTRATION, dueToExistingAccount = true), Arrangement.EMAIL
         )
         assertEquals(LoginDomainPath.ExistingAccountWithClaimedDomain::class, result::class)
         assertEquals("wire.com", (result as LoginDomainPath.ExistingAccountWithClaimedDomain).domain)
         assertEquals(false, result.isCloudAccountCreationPossible)
     }
-
-
 
     private object Arrangement {
 
