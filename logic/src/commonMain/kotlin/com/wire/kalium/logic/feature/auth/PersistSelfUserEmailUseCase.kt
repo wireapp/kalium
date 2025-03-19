@@ -27,6 +27,10 @@ sealed class PersistSelfUserEmailResult {
 }
 
 interface PersistSelfUserEmailUseCase {
+    /**
+     * Persists the email of the self user before full data is fetched so that it can be used to complete the client registration with 2fa.
+     * @param email The email address of the self user
+     */
     suspend operator fun invoke(email: String): PersistSelfUserEmailResult
 }
 
