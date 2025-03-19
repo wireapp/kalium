@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS MessageAttachmentDraft (
     PRIMARY KEY (attachment_id)
 );
 
+CREATE INDEX attachment_draft_conversation_id_index ON MessageAttachmentDraft(conversation_id);
+
 CREATE TABLE IF NOT EXISTS MessageAttachments (
       asset_id TEXT NOT NULL,
       asset_version_id TEXT NOT NULL,

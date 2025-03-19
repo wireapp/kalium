@@ -21,24 +21,18 @@ CREATE TABLE MessageAttachments (
 
       content_hash TEXT,
 
---       -- remote data fields
---       asset_otr_key BLOB,
---       asset_sha256 BLOB,
---       asset_token TEXT,
---       asset_domain TEXT,
---       asset_encryption_algorithm TEXT,
---
       -- metadata fields
       asset_width INTEGER AS Int,
       asset_height INTEGER AS Int,
       asset_duration_ms INTEGER,
---       asset_normalized_loudness BLOB,
 
       asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (asset_id, message_id, conversation_id)
 );
+
+CREATE INDEX attachment_draft_conversation_id_index ON MessageAttachmentDraft(conversation_id);
 
 insertCellAttachment:
 INSERT INTO MessageAttachments (
