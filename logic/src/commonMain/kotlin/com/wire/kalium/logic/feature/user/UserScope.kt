@@ -46,6 +46,8 @@ import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
+import com.wire.kalium.logic.feature.auth.PersistSelfUserEmailUseCase
+import com.wire.kalium.logic.feature.auth.PersistSelfUserEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
@@ -127,6 +129,7 @@ class UserScope internal constructor(
     val getSelfUserWithTeam: ObserveSelfUserWithTeamUseCase get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
+    val persistSelfUserEmail: PersistSelfUserEmailUseCase get() = PersistSelfUserEmailUseCaseImpl(userRepository)
 
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
