@@ -169,7 +169,8 @@ internal class ConversationDAOImpl internal constructor(
                 hasIncompleteMetadata,
                 archived,
                 archivedInstant,
-                isChannel
+                isChannel,
+                wireCell,
             )
         }
     }
