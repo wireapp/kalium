@@ -27,14 +27,9 @@ public class SetWireCellForConversationUseCase internal constructor(
     private val repository: CellConversationRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
-    private companion object {
-        // Temporary hardcoded root cell
-        const val ROOT_CELL = "wire-cells-android"
-    }
-
     public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
         withContext(dispatchers.io) {
-            val cellName = if (enabled) "$ROOT_CELL/$conversationId" else null
+            val cellName = if (enabled) "$conversationId" else null
             repository.setWireCell(conversationId, cellName)
         }
     }

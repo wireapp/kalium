@@ -65,6 +65,7 @@ public class CellsScope(
     private val attachmentDraftDao: MessageAttachmentDraftDao,
     private val conversationsDao: ConversationDAO,
     private val attachmentsDao: MessageAttachmentsDao,
+    private val userId: String,
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -73,7 +74,7 @@ public class CellsScope(
     private val cellClientCredentials: CellsCredentials
         get() = CellsCredentials(
             serverUrl = "https://service.zeta.pydiocells.com",
-            accessToken = "mBzSPjZ1qH7weLqHlNK9_W5HNUN0zdESyvhL4KqlhhM.0TUuMHKucKMCfC337jaUof-gdjODmCj2gGML5INWc8w",
+            accessToken = "fybwjf05cs4bex54ufvmnktttttov1pw:$userId",
             gatewaySecret = "gatewaysecret",
         )
 

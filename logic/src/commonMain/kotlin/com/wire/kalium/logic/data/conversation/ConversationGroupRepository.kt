@@ -141,18 +141,25 @@ internal class ConversationGroupRepositoryImpl(
                     lastUsersAttempt = lastUsersAttempt
                 )
 
-                is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
+                is Either.Right -> handleGroupConversationCreated(
+                    conversationResponse = apiResult.value,
+                    selfTeamId = selfTeamId,
+                    wireCellEnabled = options.wireCellEnabled,
+                    usersList = usersList,
+                    lastUsersAttempt = lastUsersAttempt
+                )
             }
         }
 
     private suspend fun handleGroupConversationCreated(
         conversationResponse: ConversationResponse,
         selfTeamId: TeamId?,
+        wireCellEnabled: Boolean,
         usersList: List<UserId>,
         lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> {
         val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
+            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId, wireCellEnabled
         )
         val mlsPublicKeys = conversationMapper.fromApiModel(conversationResponse.publicKeys)
         val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
