@@ -172,6 +172,7 @@ data class Conversation(
         sealed class Group : Type {
             data object Regular : Group()
             data object Channel : Group()
+            companion object : Group()
         }
     }
 

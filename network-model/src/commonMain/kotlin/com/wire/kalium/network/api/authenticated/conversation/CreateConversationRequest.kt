@@ -35,7 +35,7 @@ data class CreateConversationRequest(
     val access: List<ConversationAccessDTO>?,
     @SerialName("access_role_v2")
     val accessRole: List<ConversationAccessRoleDTO>?,
-    @SerialName("group_conv_type_v8")
+    @SerialName("group_conv_type")
     val groupConversationType: GroupConversationType?,
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,
@@ -66,7 +66,7 @@ data class CreateConversationRequestV3(
     val access: List<ConversationAccessDTO>?,
     @SerialName("access_role")
     val accessRole: List<ConversationAccessRoleDTO>?,
-    @SerialName("group_conv_type_v8")
+    @SerialName("group_conv_type")
     val groupConversationType: GroupConversationType?,
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,

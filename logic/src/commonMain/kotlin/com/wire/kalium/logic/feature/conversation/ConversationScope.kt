@@ -52,6 +52,8 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateChannelUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
@@ -192,6 +194,9 @@ class ConversationScope internal constructor(
             newGroupConversationSystemMessagesCreator,
             refreshUsersWithoutMetadata
         )
+
+    val createChannel: CreateChannelUseCase
+        get() = CreateChannelUseCase(createGroupConversation)
 
     internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
         get() = NewGroupConversationSystemMessagesCreatorImpl(

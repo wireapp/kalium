@@ -42,6 +42,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
@@ -147,11 +148,10 @@ internal class ConversationMapperImpl(
     private fun fromConversationViewToEntity(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
         else lastReadDate
-
         Conversation(
             id = id.toModel(),
             name = name,
-            type = type.fromDaoModelToType(),
+            type = type.fromDaoModelToType(isChannel),
             teamId = teamId?.let { TeamId(it) },
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
@@ -186,7 +186,7 @@ internal class ConversationMapperImpl(
         Conversation(
             id = id.toModel(),
             name = name,
-            type = type.fromDaoModelToType(),
+            type = type.fromDaoModelToType(isChannel),
             teamId = teamId?.let { TeamId(it) },
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
@@ -214,7 +214,7 @@ internal class ConversationMapperImpl(
         Conversation(
             id = id.toModel(),
             name = name,
-            type = type.fromDaoModelToType(),
+            type = type.fromDaoModelToType(isChannel),
             teamId = teamId?.let { TeamId(it) },
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
@@ -410,8 +410,14 @@ internal class ConversationMapperImpl(
         receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
         conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
         protocol = toApiModel(options.protocol),
-        creatorClient = options.creatorClientId?.value
+        creatorClient = options.creatorClientId?.value,
+        groupConversationType = options.groupType.toApiModel()
     )
+
+    private fun ConversationOptions.GroupType.toApiModel(): GroupConversationType = when (this) {
+        ConversationOptions.GroupType.REGULAR_GROUP -> GroupConversationType.REGULAR_GROUP
+        ConversationOptions.GroupType.CHANNEL -> GroupConversationType.CHANNEL
+    }
 
     override fun toApiModel(access: Conversation.Access): ConversationAccessDTO = when (access) {
         Conversation.Access.PRIVATE -> ConversationAccessDTO.PRIVATE
@@ -536,7 +542,7 @@ internal class ConversationMapperImpl(
         }
 
     override fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type {
-        return type.fromDaoModelToType()
+        return type.fromDaoModelToType(null)
     }
 
     override fun fromModelToDAOAccess(accessList: Set<Conversation.Access>): List<ConversationEntity.Access> =
@@ -573,10 +579,17 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
-private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
+private fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean?): Conversation.Type = when (this) {
     ConversationEntity.Type.SELF -> Conversation.Type.Self
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.OneOnOne
-    ConversationEntity.Type.GROUP -> Conversation.Type.Group.Regular
+    ConversationEntity.Type.GROUP -> {
+        when (isChannel) {
+            true -> Conversation.Type.Group.Channel
+            false -> Conversation.Type.Group.Regular
+            null -> Conversation.Type.Group
+        }
+    }
+
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending
 }
 

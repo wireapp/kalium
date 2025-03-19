@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.conversation
+package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -36,7 +36,8 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.DateTimeUtil
 
 /**
- * Creates a group conversation.
+ * Creates a conversation.
+ * Can be used to create a group conversation or a channel.
  * Will wait for sync to finish or fail if it is pending,
  * and return one [Result].
  */

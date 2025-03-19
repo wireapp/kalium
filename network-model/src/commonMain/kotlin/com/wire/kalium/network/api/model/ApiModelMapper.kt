@@ -116,7 +116,7 @@ class ApiModelMapperImpl : ApiModelMapper {
             accessRole = response.conversation.accessRole,
             receiptMode = response.conversation.receiptMode,
             publicKeys = response.publicKeys,
-            groupConversationType = response.conversation.groupConversationType
+            conversationGroupType = response.conversation.conversationGroupType
         )
 
     override fun fromApiV8(response: ConversationResponseV8): ConversationResponse =
@@ -137,6 +137,6 @@ class ApiModelMapperImpl : ApiModelMapper {
             accessRole = response.conversation.accessRole,
             receiptMode = response.conversation.receiptMode,
             publicKeys = response.conversation.publicKeys,
-            groupConversationType = response.conversation.groupConversationType
+            conversationGroupType = response.groupType
         )
 }

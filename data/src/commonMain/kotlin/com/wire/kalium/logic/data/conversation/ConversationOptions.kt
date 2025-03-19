@@ -27,7 +27,7 @@ data class ConversationOptions(
     val readReceiptsEnabled: Boolean = false,
     val protocol: Protocol = Protocol.PROTEUS,
     val creatorClientId: ClientId? = null,
-    val type: GroupConversationType = GroupConversationType.REGULAR_GROUP,
+    val groupType: GroupType = GroupType.REGULAR_GROUP,
 ) {
     enum class Protocol {
         PROTEUS, MLS;
@@ -41,7 +41,7 @@ data class ConversationOptions(
         }
     }
 
-    enum class GroupConversationType(val value: String) {
+    enum class GroupType(val value: String) {
         REGULAR_GROUP("group_conversation"),
         CHANNEL("channel")
     }

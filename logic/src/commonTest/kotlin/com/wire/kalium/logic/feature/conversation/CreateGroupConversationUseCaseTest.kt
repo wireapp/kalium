@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import io.mockative.Mock

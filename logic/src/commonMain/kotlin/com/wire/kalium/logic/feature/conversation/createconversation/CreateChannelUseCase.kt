@@ -15,13 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.api.model
+package com.wire.kalium.logic.feature.conversation.createconversation
 
-import kotlinx.serialization.SerialName
+import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateGroupConversationUseCase.Result
+import com.wire.kalium.logic.data.user.UserId
 
-enum class GroupConversationTypeDTO {
-    @SerialName("group_conv_type")
-    REGULAR_GROUP,
-    @SerialName("channel")
-    CHANNEL,
+class CreateChannelUseCase internal constructor(
+    private val createGroupConversation: CreateGroupConversationUseCase
+) {
+    suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): Result =
+        createGroupConversation.invoke(name, userIdList, options.copy(groupType = ConversationOptions.GroupType.CHANNEL))
 }
