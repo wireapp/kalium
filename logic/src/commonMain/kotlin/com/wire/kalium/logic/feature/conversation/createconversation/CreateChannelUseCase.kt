@@ -21,6 +21,9 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateGroupConversationUseCase.Result
 import com.wire.kalium.logic.data.user.UserId
 
+/**
+ * Use case to create a channel.
+ */
 class CreateChannelUseCase internal constructor(
     private val createGroupConversation: CreateGroupConversationUseCase
 ) {

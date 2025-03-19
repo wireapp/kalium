@@ -18,7 +18,7 @@
 
 package com.wire.kalium.network.api.v8.authenticated
 
-import  com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV8
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
