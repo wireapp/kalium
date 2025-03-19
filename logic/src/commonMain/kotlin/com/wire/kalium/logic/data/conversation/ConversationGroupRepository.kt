@@ -151,6 +151,7 @@ internal class ConversationGroupRepositoryImpl(
             }
         }
 
+    @Suppress("LongMethod")
     private suspend fun handleGroupConversationCreated(
         conversationResponse: ConversationResponse,
         selfTeamId: TeamId?,
@@ -159,7 +160,10 @@ internal class ConversationGroupRepositoryImpl(
         lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> {
         val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId, wireCellEnabled
+            apiModel = conversationResponse,
+            mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION,
+            selfUserTeamId = selfTeamId,
+            wireCellEnabled = wireCellEnabled
         )
         val mlsPublicKeys = conversationMapper.fromApiModel(conversationResponse.publicKeys)
         val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
