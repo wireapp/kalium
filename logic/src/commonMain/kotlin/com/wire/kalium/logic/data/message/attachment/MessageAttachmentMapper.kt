@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.message.attachment
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.AttachmentType
 import com.wire.kalium.logic.data.asset.toModel
-import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageAttachment
@@ -29,36 +28,15 @@ import com.wire.kalium.logic.data.message.height
 import com.wire.kalium.logic.data.message.width
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.protobuf.messages.Attachment
-import com.wire.kalium.protobuf.messages.CellAsset
 
 interface MessageAttachmentMapper {
-    fun fromDaoToModel(attachment: MessageAttachmentEntity): MessageAttachment
-    fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity
+    fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity?
     fun fromProtoToModel(attachment: Attachment): MessageAttachment?
-    fun fromModelToProto(attachment: MessageAttachment): Attachment
 }
 
 class MessageAttachmentMapperImpl : MessageAttachmentMapper {
-    override fun fromDaoToModel(attachment: MessageAttachmentEntity): MessageAttachment =
-        if (attachment.cellAsset) {
-            CellAssetContent(
-                id = attachment.assetId,
-                versionId = attachment.assetVersionId,
-                mimeType = attachment.mimeType,
-                assetPath = attachment.assetPath,
-                assetSize = attachment.assetSize,
-                previewUrl = attachment.previewUrl?.takeIf { it.isNotEmpty() },
-                localPath = attachment.localPath?.takeIf { it.isNotEmpty() },
-                metadata = attachment.metadata(),
-                transferStatus = AssetTransferStatus.valueOf(attachment.assetTransferStatus),
-                contentHash = attachment.contentHash?.takeIf { it.isNotEmpty() },
-                contentUrl = attachment.contentUrl?.takeIf { it.isNotEmpty() },
-            )
-        } else {
-            TODO()
-        }
 
-    override fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity {
+    override fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity? {
         return when (attachment) {
             is CellAssetContent -> MessageAttachmentEntity(
                 assetId = attachment.id,
@@ -75,7 +53,10 @@ class MessageAttachmentMapperImpl : MessageAttachmentMapper {
                 assetTransferStatus = attachment.transferStatus.name,
             )
 
-            is AssetContent -> TODO()
+            is AssetContent -> {
+                // TODO: implement support for regular assets WPB-16590
+                null
+            }
         }
     }
 
@@ -95,22 +76,6 @@ class MessageAttachmentMapperImpl : MessageAttachmentMapper {
 
         return cellAsset
     }
-
-    override fun fromModelToProto(attachment: MessageAttachment): Attachment {
-        return when (attachment) {
-            is CellAssetContent -> Attachment(
-                content = Attachment.Content.CellAsset(
-                    CellAsset(
-                        uuid = attachment.id,
-                        contentType = attachment.mimeType,
-                        initialMetaData = attachment.metadata?.toProto(),
-                    )
-                )
-            )
-
-            is AssetContent -> TODO()
-        }
-    }
 }
 
 fun MessageAttachmentEntity.toModel() =
@@ -129,7 +94,8 @@ fun MessageAttachmentEntity.toModel() =
             contentUrl = contentUrl?.takeIf { it.isNotEmpty() },
         )
     } else {
-        TODO()
+        // TODO: implement support for regular assets WPB-16590
+        null
     }
 
 @Suppress("CyclomaticComplexMethod")

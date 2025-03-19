@@ -477,7 +477,10 @@ class ProtoContentMapperImpl(
         quotedMessageDetails = null,
         attachments = protoContent.attachments.mapNotNull { attachment ->
             when (val content = attachment.content) {
-                is Attachment.Content.Asset -> TODO()
+                is Attachment.Content.Asset -> {
+                    // TODO: implement support for regular assets WPB-16590
+                    return MessageContent.Ignored
+                }
                 is Attachment.Content.CellAsset -> CellAssetContent(
                     id = content.value.uuid,
                     versionId = "",

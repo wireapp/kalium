@@ -417,15 +417,15 @@ class MessageMapperImpl(
         )
 
         is MessageContent.Multipart -> MessageEntityContent.Multipart(
-                messageBody = regularMessage.value,
-                linkPreview = regularMessage.linkPreviews.map(linkPreviewMapper::fromModelToDao),
-                mentions = regularMessage.mentions.map(messageMentionMapper::fromModelToDao),
-                attachments = regularMessage.attachments.map {
-                    attachmentsMapper.fromModelToDao(it)
-                                                             },
-                quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
-                isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
-            )
+            messageBody = regularMessage.value,
+            linkPreview = regularMessage.linkPreviews.map(linkPreviewMapper::fromModelToDao),
+            mentions = regularMessage.mentions.map(messageMentionMapper::fromModelToDao),
+            attachments = regularMessage.attachments.mapNotNull {
+                attachmentsMapper.fromModelToDao(it)
+            },
+            quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
+            isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
+        )
     }
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
@@ -683,7 +683,7 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 )
             },
             quotedMessageDetails = quotedMessageDetails,
-            attachments = attachments.map { it.toModel() }
+            attachments = attachments.mapNotNull { it.toModel() }
         )
     }
 }

@@ -73,7 +73,7 @@ internal class CellAttachmentsDataSource(
 }
 
 // TODO: Where to host the mapper (currently part of logic module)?
-private fun MessageAttachmentEntity.toModel(): MessageAttachment =
+private fun MessageAttachmentEntity.toModel(): MessageAttachment? =
     if (cellAsset) {
         CellAssetContent(
             id = assetId,
@@ -88,5 +88,6 @@ private fun MessageAttachmentEntity.toModel(): MessageAttachment =
             contentHash = contentHash,
         )
     } else {
-        TODO()
+        // TODO: implement support for regular assets WPB-16590
+        null
     }
