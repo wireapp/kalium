@@ -19,15 +19,25 @@ package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
+import com.wire.kalium.logic.data.message.localPath
+import kotlinx.coroutines.CancellationException
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 
+/**
+ * Use case to delete attachments of a message.
+ *
+ * - Removes files from Wire Cell storage.
+ * - Removes local files from the device.
+ */
 public interface DeleteMessageAttachmentsUseCase {
-    public suspend operator fun invoke(messageId: String, conversationId: ConversationId)
+    public suspend operator fun invoke(messageId: String, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 internal class DeleteMessageAttachmentsUseCaseImpl(
@@ -36,21 +46,26 @@ internal class DeleteMessageAttachmentsUseCaseImpl(
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
 ) : DeleteMessageAttachmentsUseCase {
 
-    override suspend fun invoke(messageId: String, conversationId: ConversationId) {
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun invoke(messageId: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        try {
+            attachmentsRepository.getAttachments(messageId, conversationId).map { attachments ->
 
-        attachmentsRepository.getAttachments(messageId, conversationId).map { attachments ->
+                val paths = attachments.filterIsInstance<CellAssetContent>().mapNotNull { it.assetPath }
 
-            val paths = attachments.filterIsInstance<CellAssetContent>().mapNotNull { it.assetPath }
+                if (paths.isNotEmpty()) {
+                    cellsRepository.deleteFiles(paths)
+                }
 
-            if (paths.isNotEmpty()) {
-                cellsRepository.deleteFiles(paths)
+                val localPaths = attachments.mapNotNull { it.localPath() }
+
+                localPaths.forEach {
+                    fileSystem.delete(it.toPath())
+                }
             }
-
-            val localPaths = attachments.filterIsInstance<CellAssetContent>().mapNotNull { it.localPath }
-
-            localPaths.forEach {
-                fileSystem.delete(it.toPath())
-            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Either.Left(CoreFailure.Unknown(e))
         }
-    }
 }

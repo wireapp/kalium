@@ -82,7 +82,7 @@ internal class CellAttachmentsDataSource(
             messageAttachments.getAttachments(
                 messageId = messageId,
                 conversationId = QualifiedIDEntity(conversationId.value, conversationId.domain)
-            ).map { it.toModel() }
+            ).mapNotNull { it.toModel() }
         }
     }
 
@@ -116,7 +116,7 @@ internal class CellAttachmentsDataSource(
 
     override suspend fun getAttachments() = withContext(dispatchers.io) {
         wrapStorageRequest {
-            messageAttachments.getAttachments().map { it.toModel() }
+            messageAttachments.getAttachments().mapNotNull { it.toModel() }
         }
     }
 }

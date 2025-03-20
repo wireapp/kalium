@@ -59,7 +59,6 @@ internal class GetCellFilesUseCaseImpl(
             .flatMap { nodes ->
                 nodes.asSequence()
                     .filterNot { it.isDraft }
-                    .filterNot { it.path.contains("recycle_bin") } // TODO: remove once recycle bin is disabled on server
                     .map { node ->
                         val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
                         CellFile(

@@ -74,7 +74,6 @@ class DeleteMessageUseCase internal constructor(
         conversationId: ConversationId,
         messageId: String,
         deleteForEveryone: Boolean,
-        deleteAttachments: Boolean = false,
     ): Either<CoreFailure, Unit> =
         withContext(dispatcher.io) {
             slowSyncRepository.slowSyncStatus.first {
@@ -109,7 +108,7 @@ class DeleteMessageUseCase internal constructor(
                                 }
                             }
                         }.onSuccess {
-                            deleteMessageAsset(message, deleteAttachments)
+                            deleteMessageAsset(message, deleteForEveryone)
                         }.flatMap {
                             // in case of ephemeral message, we want to delete it completely from the device, not just mark it as deleted
                             // as this can only happen when the user decides to delete the message, before the self-deletion timer expired
@@ -130,7 +129,7 @@ class DeleteMessageUseCase internal constructor(
             }
         }
 
-    private suspend fun deleteMessageAsset(message: Message, deleteAttachments: Boolean) {
+    private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
 
             assetRepository.deleteAsset(
@@ -144,7 +143,7 @@ class DeleteMessageUseCase internal constructor(
         }
 
         // Delete attachments for multipart message
-        if (deleteAttachments) {
+        if (deleteForEveryone && message.content is MessageContent.Multipart) {
             deleteAttachments(message.id, message.conversationId)
         }
     }
