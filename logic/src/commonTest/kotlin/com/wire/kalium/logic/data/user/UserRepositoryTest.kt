@@ -678,6 +678,34 @@ class UserRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSelfUserEmail_whenCallingInsertOrIgnoreIncompleteUserWithOnlyEmail_thenShouldCallDAOWithCorrectArguments() = runTest {
+        val email = "user@email.com"
+        val (arrangement, userRepository) = Arrangement()
+            .withInsertOrIgnoreIncompleteUserWithOnlyEmailSuccess()
+            .arrange()
+
+        userRepository.insertSelfIncompleteUserWithOnlyEmail(email).shouldSucceed()
+
+        coVerify {
+            arrangement.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(eq(arrangement.selfUserId.toDao()), eq(email))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenDAOFails_whenCallingInsertOrIgnoreIncompleteUserWithOnlyEmail_thenShouldPropagateException() = runTest {
+        val email = "user@email.com"
+        val exception = IllegalStateException("Oopsie Doopsie!")
+        val (_, connectionRepository) = Arrangement()
+            .withInsertOrIgnoreIncompleteUserWithOnlyEmailFailing(exception)
+            .arrange()
+
+        connectionRepository.insertSelfIncompleteUserWithOnlyEmail(email).shouldFail {
+            assertIs<StorageFailure.Generic>(it)
+            assertEquals(exception, it.rootCause)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = mock(UserDAO::class)
@@ -898,6 +926,18 @@ class UserRepositoryTest {
             coEvery {
                 upgradePersonalToTeamApi.migrateToTeam(any())
             }.returns(NetworkResponse.Error(generic))
+        }
+
+        suspend fun withInsertOrIgnoreIncompleteUserWithOnlyEmailSuccess() = apply {
+            coEvery {
+                userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(any(), any())
+            }.returns(Unit)
+        }
+
+        suspend fun withInsertOrIgnoreIncompleteUserWithOnlyEmailFailing(exception: Throwable) = apply {
+            coEvery {
+                userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(any(), any())
+            }.throws(exception)
         }
 
         suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
