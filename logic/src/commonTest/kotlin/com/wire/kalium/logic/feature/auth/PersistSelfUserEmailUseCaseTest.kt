@@ -67,22 +67,22 @@ class PersistSelfUserEmailUseCaseTest {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
 
-        val useCase by lazy {
+        internal val useCase by lazy {
             PersistSelfUserEmailUseCaseImpl(userRepository = userRepository)
         }
 
-        suspend fun withSuccess() = apply {
+        internal suspend fun withSuccess() = apply {
             coEvery {
                 userRepository.insertSelfIncompleteUserWithOnlyEmail(any())
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withFailure() = apply {
+        internal suspend fun withFailure() = apply {
             coEvery {
                 userRepository.insertSelfIncompleteUserWithOnlyEmail(any())
             }.returns(Either.Left(StorageFailure.Generic(RuntimeException("DB failed"))))
         }
 
-        fun arrange() = this to useCase
+        internal fun arrange() = this to useCase
     }
 }
