@@ -53,7 +53,8 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateChannelUseCase
-import com.wire.kalium.logic.feature.conversation.createconversation.CreateGroupConversationUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
@@ -185,8 +186,8 @@ class ConversationScope internal constructor(
     val deleteTeamConversation: DeleteTeamConversationUseCase
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
 
-    val createGroupConversation: CreateGroupConversationUseCase
-        get() = CreateGroupConversationUseCase(
+    internal val createGroupConversation: GroupConversationCreator
+        get() = GroupConversationCreator(
             conversationRepository,
             conversationGroupRepository,
             syncManager,
@@ -194,6 +195,9 @@ class ConversationScope internal constructor(
             newGroupConversationSystemMessagesCreator,
             refreshUsersWithoutMetadata
         )
+
+    val createRegularGroup: CreateRegularGroupUseCase
+        get() = CreateRegularGroupUseCase(createGroupConversation)
 
     val createChannel: CreateChannelUseCase
         get() = CreateChannelUseCase(createGroupConversation)

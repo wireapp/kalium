@@ -27,7 +27,7 @@ import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.conversation.createconversation.CreateGroupConversationUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -55,13 +55,13 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val userIndices = userIndicesRaw?.split("\\s".toRegex())?.filter { it.isNotEmpty() }?.map(String::toInt) ?: emptyList()
         val userToAddList = userIndices.map { users[it].id }
 
-        val result = userSession.conversations.createGroupConversation(
+        val result = userSession.conversations.createRegularGroup(
             name,
             userToAddList,
             ConversationOptions(protocol = protocol)
         )
         when (result) {
-            is CreateGroupConversationUseCase.Result.Success -> echo("group created successfully")
+            is ConversationCreationResult.Success -> echo("group created successfully")
             else -> throw PrintMessage("group creation failed: $result")
         }
     }

@@ -20,12 +20,9 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.user.UserId
 
-/**
- * Use case to create a channel.
- */
-class CreateChannelUseCase internal constructor(
+class CreateRegularGroupUseCase(
     private val createGroupConversation: GroupConversationCreator
 ) {
     suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): ConversationCreationResult =
-        createGroupConversation.invoke(name, userIdList, options.copy(groupType = ConversationOptions.GroupType.CHANNEL))
+        createGroupConversation(name, userIdList, options.copy(groupType = ConversationOptions.GroupType.REGULAR_GROUP))
 }

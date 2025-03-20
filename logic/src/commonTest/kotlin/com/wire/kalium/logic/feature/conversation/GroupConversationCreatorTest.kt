@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -28,18 +29,18 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
+import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.feature.conversation.createconversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -48,7 +49,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class CreateGroupConversationUseCaseTest {
+class GroupConversationCreatorTest {
 
     @Test
     fun givenSyncFails_whenCreatingGroupConversation_thenShouldReturnSyncFailure() = runTest {
@@ -66,7 +67,7 @@ class CreateGroupConversationUseCaseTest {
 
         val result = createGroupConversation(name, members, conversationOptions)
 
-        assertIs<CreateGroupConversationUseCase.Result.SyncFailure>(result)
+        assertIs<ConversationCreationResult.SyncFailure>(result)
     }
 
     @Test
@@ -87,7 +88,7 @@ class CreateGroupConversationUseCaseTest {
 
         val result = createGroupConversation(name, members, conversationOptions)
 
-        assertIs<CreateGroupConversationUseCase.Result.Success>(result)
+        assertIs<ConversationCreationResult.Success>(result)
         assertEquals(createdConversation, result.conversation)
     }
 
@@ -134,7 +135,7 @@ class CreateGroupConversationUseCaseTest {
 
         val result = createGroupConversation(name, members, conversationOptions)
 
-        assertIs<CreateGroupConversationUseCase.Result.UnknownFailure>(result)
+        assertIs<ConversationCreationResult.UnknownFailure>(result)
         assertEquals(rootCause, result.cause)
     }
 
@@ -209,7 +210,7 @@ class CreateGroupConversationUseCaseTest {
         @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
-        private val createGroupConversation = CreateGroupConversationUseCase(
+        private val createGroupConversation = GroupConversationCreator(
             conversationRepository,
             conversationGroupRepository,
             syncManager,
