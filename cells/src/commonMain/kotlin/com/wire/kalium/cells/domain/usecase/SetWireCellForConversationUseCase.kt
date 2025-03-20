@@ -23,16 +23,24 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-public class SetWireCellForConversationUseCase internal constructor(
+/**
+ * This UseCase is a temporary solution to set the wire cell for a conversation.
+ * To be removed once the wire cell feature is fully integrated on BE.
+ */
+public interface SetWireCellForConversationUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean)
+}
+
+internal class SetWireCellForConversationUseCaseImpl internal constructor(
     private val repository: CellConversationRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-) {
+): SetWireCellForConversationUseCase {
     private companion object {
         // Temporary hardcoded root cell
         const val ROOT_CELL = "wire-cells-android"
     }
 
-    public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
+    public override suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
         withContext(dispatchers.io) {
             val cellName = if (enabled) "$ROOT_CELL/$conversationId" else null
             repository.setWireCell(conversationId, cellName)

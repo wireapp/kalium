@@ -36,6 +36,7 @@ import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveCellFilesUseCase
@@ -49,6 +50,7 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCase
+import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
@@ -131,10 +133,10 @@ public class CellsScope(
         get() = ObserveCellFilesUseCaseImpl(conversationsDao, cellsRepository)
 
     public val enableWireCell: SetWireCellForConversationUseCase
-        get() = SetWireCellForConversationUseCase(cellsConversationRepository)
+        get() = SetWireCellForConversationUseCaseImpl(cellsConversationRepository)
 
     public val downloadFile: DownloadCellFileUseCase
-        get() = DownloadCellFileUseCase(cellsRepository, cellAttachmentsRepository)
+        get() = DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
 
     public val refreshAsset: RefreshCellAssetStateUseCase
         get() = RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
