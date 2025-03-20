@@ -290,7 +290,7 @@ internal class ConversationDAOImpl internal constructor(
         }
 
     override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? {
-        return conversationQueries.selectConversationDetailsByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
+        return conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
             .executeAsOneOrNull()
     }
 
