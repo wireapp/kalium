@@ -2232,6 +2232,7 @@ class UserSessionScope internal constructor(
             attachmentDraftDao = userStorage.database.messageAttachmentDraftDao,
             conversationsDao = userStorage.database.conversationDAO,
             attachmentsDao = userStorage.database.messageAttachments,
+            userId = userId.toString(),
         )
     }
 
