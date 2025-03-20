@@ -50,6 +50,7 @@ internal interface LoginRepository {
     ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>>
 
     suspend fun getDomainRegistration(email: String): Either<NetworkFailure, LoginDomainPath>
+    suspend fun fetchDomainRedirectCustomBackendConfig(backendUrl: String): Either<NetworkFailure, DomainLookupResult>
 }
 
 internal class LoginRepositoryImpl internal constructor(
@@ -88,6 +89,13 @@ internal class LoginRepositoryImpl internal constructor(
     }.map {
         domainRegistrationMapper.fromApiModel(it, email)
     }
+
+    override suspend fun fetchDomainRedirectCustomBackendConfig(backendUrl: String): Either<NetworkFailure, DomainLookupResult> =
+        wrapApiRequest {
+            getDomainRegistrationApi.customBackendConfig(backendUrl)
+        }.map {
+            DomainLookupResult(it.configJsonUrl, it.webappWelcomeUrl)
+        }
 
     private suspend fun login(
         loginParam: LoginParam,

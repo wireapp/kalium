@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.v0.unauthenticated
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
 import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi.Companion.MIN_API_VERSION
+import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
@@ -34,6 +35,14 @@ internal open class GetDomainRegistrationApiV0 internal constructor(
         return NetworkResponse.Error(
             APINotSupported(
                 errorBody = "${this::class.simpleName}: ${::getDomainRegistration.name} api is only available on API V${MIN_API_VERSION}"
+            )
+        )
+    }
+
+    override suspend fun customBackendConfig(backendUrl: String): NetworkResponse<DomainLookupResponse> {
+        return NetworkResponse.Error(
+            APINotSupported(
+                errorBody = "${this::class.simpleName}: ${::customBackendConfig.name} api is only available on API V${MIN_API_VERSION}"
             )
         )
     }
