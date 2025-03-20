@@ -32,8 +32,6 @@ CREATE TABLE MessageAttachments (
       PRIMARY KEY (asset_id, message_id, conversation_id)
 );
 
-CREATE INDEX attachment_draft_conversation_id_index ON MessageAttachmentDraft(conversation_id);
-
 insertCellAttachment:
 INSERT INTO MessageAttachments (
     asset_id,
