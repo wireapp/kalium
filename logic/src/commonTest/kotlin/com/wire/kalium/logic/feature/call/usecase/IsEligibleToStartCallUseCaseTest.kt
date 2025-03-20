@@ -68,7 +68,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then
@@ -90,7 +90,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.ONE_ON_ONE
+                Conversation.Type.OneOnOne
             )
 
             // then
@@ -112,7 +112,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then
@@ -134,7 +134,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then
@@ -156,7 +156,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then

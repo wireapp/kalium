@@ -62,7 +62,7 @@ class UpdateVideoStateUseCaseTest {
             isCbrEnabled = false,
             callerId = TestCall.CALLER_ID,
             conversationName = "",
-            Conversation.Type.ONE_ON_ONE,
+            Conversation.Type.OneOnOne,
             null,
             null
         )

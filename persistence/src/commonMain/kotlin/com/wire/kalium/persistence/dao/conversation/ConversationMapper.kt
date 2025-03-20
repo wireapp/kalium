@@ -73,6 +73,7 @@ data object ConversationMapper {
         mlsVerificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        isChannel: Boolean,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
@@ -129,7 +130,8 @@ data object ConversationMapper {
         accentId = accentId,
         isFavorite = isFavorite,
         folderId = folderId,
-        folderName = folderName
+        folderName = folderName,
+        isChannel = isChannel
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -165,7 +167,8 @@ data object ConversationMapper {
         verificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         degradedConversationNotified: Boolean,
-        legalHoldStatus: ConversationEntity.LegalHoldStatus
+        legalHoldStatus: ConversationEntity.LegalHoldStatus,
+        isChannel: Boolean,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -194,7 +197,8 @@ data object ConversationMapper {
         archivedInstant = archivedDateTime,
         mlsVerificationStatus = verificationStatus,
         proteusVerificationStatus = proteusVerificationStatus,
-        legalHoldStatus = legalHoldStatus
+        legalHoldStatus = legalHoldStatus,
+        isChannel = isChannel
     )
 
     @Suppress("LongParameterList")
