@@ -34,7 +34,7 @@ interface PersistSelfUserEmailUseCase {
     suspend operator fun invoke(email: String): PersistSelfUserEmailResult
 }
 
-class PersistSelfUserEmailUseCaseImpl(
+internal class PersistSelfUserEmailUseCaseImpl(
     private val userRepository: UserRepository,
 ) : PersistSelfUserEmailUseCase {
     override suspend fun invoke(email: String): PersistSelfUserEmailResult =
