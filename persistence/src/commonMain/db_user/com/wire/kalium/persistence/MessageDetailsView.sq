@@ -60,6 +60,7 @@ AssetContent.asset_width AS assetWidth,
 AssetContent.asset_height AS assetHeight,
 AssetContent.asset_duration_ms AS assetDuration,
 AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+AssetData.data_path AS assetDataPath,
 MissedCallContent.caller_id AS callerId,
 MemberChangeContent.member_change_list AS memberChangeList,
 MemberChangeContent.member_change_type AS memberChangeType,
@@ -104,6 +105,27 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('{
+        "id":"' || asset_id || '",
+        "mime_type":"' || asset_mime_type || '",
+        "cell_asset":"' || cell_asset || '",
+        "asset_path":"' || IFNULL(asset_path,'') || '",
+        "asset_size":' || IFNULL(asset_size,0) || ',
+        "local_path":"' || IFNULL(local_path,'') || '",
+        "asset_width":"' || IFNULL(asset_width,0) || '",
+        "asset_height":"' || IFNULL(asset_height,0) || '",
+        "asset_transfer_status":"' || asset_transfer_status || '",
+        "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
+        "content_hash":"' || IFNULL(content_hash,'') || '",
+        "content_url":"' || IFNULL(content_url,'') || '",
+        "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
+    FROM MessageAttachments
+    WHERE MessageAttachments.message_id = Message.id
+        AND MessageAttachments.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS attachments,
 TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,
@@ -148,6 +170,7 @@ FROM Message
 JOIN UserDetails ON Message.sender_user_id = UserDetails.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN Asset AS AssetData ON AssetContent.asset_id = AssetData.key
 LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
 LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id

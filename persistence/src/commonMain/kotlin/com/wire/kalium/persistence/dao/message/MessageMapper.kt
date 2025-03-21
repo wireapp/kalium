@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
@@ -228,6 +229,27 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.MULTIPART -> when {
+                isSelfMessage -> MessagePreviewEntityContent.Text(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
+
+                (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+                    senderName = senderName,
+                    // requireField here is safe since if a message have a quote, it must have a text
+                    messageBody = text.requireField("text")
+                )
+
+                (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
+                    senderName = senderName, messageBody = text.requireField("text")
+                )
+
+                else -> MessagePreviewEntityContent.Text(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
+            }
         }
     }
 
@@ -477,6 +499,7 @@ object MessageMapper {
         assetHeight: Int?,
         assetDuration: Long?,
         assetNormalizedLoudness: ByteArray?,
+        assetDataPath: String?,
         callerId: QualifiedIDEntity?,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
@@ -492,6 +515,7 @@ object MessageMapper {
         allReactionsJson: String,
         selfReactionsJson: String,
         mentions: String,
+        attachments: String?,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
@@ -560,7 +584,8 @@ object MessageMapper {
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
-                assetNormalizedLoudness = assetNormalizedLoudness
+                assetNormalizedLoudness = assetNormalizedLoudness,
+                assetDataPath = assetDataPath,
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
@@ -668,6 +693,30 @@ object MessageMapper {
                 memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
                 type = legalHoldType.requireField("legalHoldType")
             )
+
+            MessageEntity.ContentType.MULTIPART -> MessageEntityContent.Multipart(
+                messageBody = text,
+                mentions = messageMentionsFromJsonString(mentions),
+                quotedMessageId = quotedMessageId,
+                quotedMessage = quotedMessageContentType?.let {
+                    MessageEntityContent.Text.QuotedMessage(
+                        id = quotedMessageId.requireField("quotedMessageId"),
+                        senderId = quotedSenderId.requireField("quotedSenderId"),
+                        isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
+                        isVerified = isQuoteVerified ?: false,
+                        senderName = quotedSenderName,
+                        dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime").toIsoDateTimeString(),
+                        editTimestamp = quotedMessageEditTimestamp?.toIsoDateTimeString(),
+                        visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
+                        contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
+                        textBody = quotedTextBody,
+                        assetMimeType = quotedAssetMimeType,
+                        assetName = quotedAssetName,
+                        locationName = quotedLocationName
+                    )
+                },
+                attachments = messageAttachmentsFromJsonString(attachments),
+            )
         }
 
         val sender = UserDetailsEntity(
@@ -740,6 +789,11 @@ object MessageMapper {
 
     private fun messageMentionsFromJsonString(messageMentions: String?): List<MessageEntity.Mention> =
         messageMentions?.let {
+            serializer.decodeFromString(it)
+        } ?: emptyList()
+
+    private fun messageAttachmentsFromJsonString(messageAttachments: String?): List<MessageAttachmentEntity> =
+        messageAttachments?.let {
             serializer.decodeFromString(it)
         } ?: emptyList()
 }

@@ -79,6 +79,7 @@ data object ConversationMapper {
         isFavorite: Boolean,
         folderId: String?,
         folderName: String?,
+        wireCell: String?,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
@@ -131,7 +132,8 @@ data object ConversationMapper {
         isFavorite = isFavorite,
         folderId = folderId,
         folderName = folderName,
-        isChannel = isChannel
+        isChannel = isChannel,
+        wireCell = wireCell,
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -169,6 +171,7 @@ data object ConversationMapper {
         degradedConversationNotified: Boolean,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
+        wireCell: String?,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -198,7 +201,8 @@ data object ConversationMapper {
         mlsVerificationStatus = verificationStatus,
         proteusVerificationStatus = proteusVerificationStatus,
         legalHoldStatus = legalHoldStatus,
-        isChannel = isChannel
+        isChannel = isChannel,
+        wireCell = wireCell,
     )
 
     @Suppress("LongParameterList")

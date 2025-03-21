@@ -141,7 +141,8 @@ internal class ConversationMapperImpl(
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL
+            isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL,
+            wireCell = null,
         )
     }
 
@@ -290,6 +291,7 @@ internal class ConversationMapperImpl(
                             selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                             isFavorite = isFavorite,
                             folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
+                            wireCell = wireCell,
                         )
                     }
                 }
@@ -464,7 +466,8 @@ internal class ConversationMapperImpl(
             mlsVerificationStatus = verificationStatusToEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus),
             legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus),
-            isChannel = false // There were no channels in old Android clients. So no migration from channels is necessary
+            isChannel = false, // There were no channels in old Android clients. So no migration from channels is necessary
+            wireCell = null,
         )
     }
 
@@ -497,6 +500,7 @@ internal class ConversationMapperImpl(
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false, // We can assume the conversations aren't channels while they're failed
+        wireCell = null,
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {

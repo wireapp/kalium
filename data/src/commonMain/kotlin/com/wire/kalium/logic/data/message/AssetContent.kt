@@ -18,13 +18,19 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
+
+sealed interface MessageAttachment
+
 data class AssetContent(
     val sizeInBytes: Long,
     val name: String? = null,
     val mimeType: String,
     val metadata: AssetMetadata? = null,
-    val remoteData: RemoteData
-) {
+    val remoteData: RemoteData,
+    val localData: LocalData? = null,
+) : MessageAttachment {
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
 
@@ -63,6 +69,10 @@ data class AssetContent(
         }
     }
 
+    data class LocalData(
+        val assetDataPath: String,
+    )
+
     data class RemoteData(
         val otrKey: ByteArray,
         val sha256: ByteArray,
@@ -100,6 +110,43 @@ data class AssetContent(
     }
 }
 
+data class CellAssetContent(
+    val id: String,
+    val versionId: String,
+    val mimeType: String,
+    val assetPath: String?,
+    val assetSize: Long?,
+    val contentHash: String? = null,
+    val localPath: String? = null,
+    val contentUrl: String? = null,
+    val previewUrl: String? = null,
+    val metadata: AssetMetadata?,
+    val transferStatus: AssetTransferStatus,
+) : MessageAttachment
+
 fun AssetContent.hasValidRemoteData() = remoteData.hasValidData()
 
 fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()
+
+fun AssetMetadata.width() = when (this) {
+    is AssetMetadata.Image -> width
+    is AssetMetadata.Video -> width
+    else -> null
+}
+
+fun AssetMetadata.height() = when (this) {
+    is AssetMetadata.Image -> height
+    is AssetMetadata.Video -> height
+    else -> null
+}
+
+fun AssetMetadata.durationMs() = when (this) {
+    is AssetMetadata.Video -> durationMs
+    is AssetMetadata.Audio -> durationMs
+    else -> null
+}
+
+fun MessageAttachment.localPath() = when (this) {
+    is CellAssetContent -> localPath
+    is AssetContent -> localData?.assetDataPath
+}
