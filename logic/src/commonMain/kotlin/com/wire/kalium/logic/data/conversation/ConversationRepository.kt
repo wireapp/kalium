@@ -268,7 +268,7 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation>
+    suspend fun getConversationByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation>
 
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 
@@ -1034,7 +1034,7 @@ internal class ConversationDataSource internal constructor(
             )
         }
 
-    override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation> =
+    override suspend fun getConversationByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation> =
         wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
             .map { conversationMapper.fromDaoModel(it) }
 

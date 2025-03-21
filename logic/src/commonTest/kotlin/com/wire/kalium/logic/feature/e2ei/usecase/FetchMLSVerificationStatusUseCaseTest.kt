@@ -65,7 +65,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         val conversationDetails = TestConversation.MLS_CONVERSATION
         val (arrangement, handler) = arrange {
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
-            withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))
+            withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
         handler(TestConversation.GROUP_ID)
@@ -91,7 +91,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         )
         val (arrangement, handler) = arrange {
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
-            withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))
+            withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
         handler(TestConversation.GROUP_ID)
@@ -121,7 +121,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         val (arrangement, handler) = arrange {
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
-            withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))
+            withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
         handler(TestConversation.GROUP_ID)
