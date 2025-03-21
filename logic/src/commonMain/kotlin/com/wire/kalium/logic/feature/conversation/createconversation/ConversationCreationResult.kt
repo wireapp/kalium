@@ -50,4 +50,3 @@ sealed interface ConversationCreationResult {
         val domains: List<String>
     ) : ConversationCreationResult
 }
-

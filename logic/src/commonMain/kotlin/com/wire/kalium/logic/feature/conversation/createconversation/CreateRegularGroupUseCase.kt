@@ -20,6 +20,11 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.user.UserId
 
+/**
+ * Use case to create a regular group conversation.
+ * This is a wrapper around [GroupConversationCreator] that sets the group type to [ConversationOptions.GroupType.REGULAR_GROUP].
+ * @param createGroupConversation the use case to create a group conversation
+ */
 class CreateRegularGroupUseCase(
     private val createGroupConversation: GroupConversationCreator
 ) {
