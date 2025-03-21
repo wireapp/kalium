@@ -34,31 +34,37 @@ import kotlinx.coroutines.flow.map
  * This use case combines channel feature configuration with user permissions to determine
  * whether channels are enabled and what operations the current user can perform.
  */
-class ObserveChannelsConfigurationStatusUseCase internal constructor(
+class ObserveChannelsCreationPermissionUseCase internal constructor(
     private val channelsConfigStorage: ChannelsConfigurationStorage,
     private val selfUserObservationProvider: SelfUserObservationProvider
 ) {
     /**
      * Retrieves the current channels configuration status.
      *
-     * @return Either a [CoreFailure] if the operation fails, or a [ChannelsFeatureStatus]
+     * @return Either a [CoreFailure] if the operation fails, or a [ChannelCreationPermission]
      * indicating whether channels are enabled and what operations the current user can perform
      */
-    suspend operator fun invoke(): Flow<ChannelsFeatureStatus> = channelsConfigStorage.observePersistedChannelsConfiguration()
+    suspend operator fun invoke(): Flow<ChannelCreationPermission> = channelsConfigStorage.observePersistedChannelsConfiguration()
         .combine(selfUserObservationProvider.observeSelfUser())
         .map { (channelFeatureConfig, selfUser) ->
             when (channelFeatureConfig) {
-                null, ChannelFeatureConfiguration.Disabled -> ChannelsFeatureStatus.Disabled
-                is ChannelFeatureConfiguration.Enabled -> ChannelsFeatureStatus.Enabled(
-                    canSelfUserCreateChannels = isUserAllowed(
+                null, ChannelFeatureConfiguration.Disabled -> ChannelCreationPermission.Forbidden
+                is ChannelFeatureConfiguration.Enabled -> {
+                    val canUserCreateChannels = isUserAllowed(
                         selfUser.userType,
                         channelFeatureConfig.createChannelsRequirement
-                    ),
-                    canSelfUserCreatePublicChannels = isUserAllowed(
-                        selfUser.userType,
-                        channelFeatureConfig.createPublicChannelsRequirement
                     )
-                )
+                    if (!canUserCreateChannels) {
+                        ChannelCreationPermission.Forbidden
+                    } else {
+                        ChannelCreationPermission.Allowed(
+                            isUserAllowed(
+                                selfUser.userType,
+                                channelFeatureConfig.createPublicChannelsRequirement
+                            )
+                        )
+                    }
+                }
             }
         }.distinctUntilChanged()
 

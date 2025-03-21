@@ -31,6 +31,6 @@ class ChannelsScope(
     internal val channelsFeatureConfigHandler: ChannelsFeatureConfigurationHandler
         get() = ChannelsFeatureConfigurationHandler(channelsConfigStorage)
 
-    val observeChannelsConfigurationStatusUseCase: ObserveChannelsConfigurationStatusUseCase
-        get() = ObserveChannelsConfigurationStatusUseCase(channelsConfigStorage, selfUserObservationProvider())
+    val observeChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
+        get() = ObserveChannelsCreationPermissionUseCase(channelsConfigStorage, selfUserObservationProvider())
 }

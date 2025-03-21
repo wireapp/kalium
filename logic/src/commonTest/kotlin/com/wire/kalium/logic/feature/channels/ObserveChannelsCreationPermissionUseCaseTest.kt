@@ -38,7 +38,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-class ObserveChannelsConfigurationStatusUseCaseTest {
+class ObserveChannelsCreationPermissionUseCaseTest {
 
     private val dispatcher = StandardTestDispatcher()
     private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
@@ -52,14 +52,14 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
     private fun runTest(testBody: suspend TestScope.() -> Unit) = runTest(dispatcher, testBody = testBody)
 
     private fun testSubject(selfUserFlow: Flow<SelfUser>) =
-        ObserveChannelsConfigurationStatusUseCase(configurationStorage, { selfUserFlow })
+        ObserveChannelsCreationPermissionUseCase(configurationStorage, { selfUserFlow })
 
     @Test
     fun givenNoFeatureConfigurationStored_thenShouldReturnDisabledStatus() = runTest {
         val result = testSubject(flowOf(TestUser.SELF)).invoke()
 
         result.test {
-            assertEquals(ChannelsFeatureStatus.Disabled, awaitItem())
+            assertEquals(ChannelCreationPermission.Forbidden, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -71,7 +71,7 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
         val result = testSubject(flowOf(TestUser.SELF)).invoke()
 
         result.test {
-            assertEquals(ChannelsFeatureStatus.Disabled, awaitItem())
+            assertEquals(ChannelCreationPermission.Forbidden, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -79,7 +79,7 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
     private suspend fun singleTest(
         userType: UserType,
         persistedConfiguration: ChannelFeatureConfiguration,
-        assertion: (ChannelsFeatureStatus) -> Unit
+        assertion: (ChannelCreationPermission) -> Unit
     ) {
         configurationStorage.persistChannelsConfiguration(persistedConfiguration)
 
@@ -95,12 +95,13 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
     @Test
     fun givenCreationOfPublicChannelsRequiresAdminType_whenUserIsRegularMember_thenShouldReturnFalse() = runTest {
         singleTest(
-            UserType.INTERNAL, ChannelFeatureConfiguration.Enabled(
+            UserType.INTERNAL,
+            ChannelFeatureConfiguration.Enabled(
                 createChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM,
                 createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY,
             )
         ) { status ->
-            assertIs<ChannelsFeatureStatus.Enabled>(status)
+            assertIs<ChannelCreationPermission.Allowed>(status)
             assertFalse { status.canSelfUserCreatePublicChannels }
         }
     }
@@ -114,21 +115,8 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
                 createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY,
             )
         ) { status ->
-            assertIs<ChannelsFeatureStatus.Enabled>(status)
+            assertIs<ChannelCreationPermission.Allowed>(status)
             assertTrue { status.canSelfUserCreatePublicChannels }
-        }
-    }
-
-    @Test
-    fun givenCreationOfRegularChannelsRequiresRegularMember_whenUserIsRegularMember_thenShouldReturnTrue() = runTest {
-        singleTest(
-            UserType.INTERNAL, ChannelFeatureConfiguration.Enabled(
-                createChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM,
-                createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY,
-            )
-        ) { status ->
-            assertIs<ChannelsFeatureStatus.Enabled>(status)
-            assertTrue { status.canSelfUserCreateChannels }
         }
     }
 
@@ -140,8 +128,7 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
                 createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY,
             )
         ) { status ->
-            assertIs<ChannelsFeatureStatus.Enabled>(status)
-            assertFalse { status.canSelfUserCreateChannels }
+            assertIs<ChannelCreationPermission.Forbidden>(status)
         }
     }
 
@@ -153,7 +140,7 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
 
         result.test {
             val status = awaitItem()
-            assertIs<ChannelsFeatureStatus.Disabled>(status)
+            assertIs<ChannelCreationPermission.Forbidden>(status)
             configurationStorage.persistChannelsConfiguration(
                 ChannelFeatureConfiguration.Enabled(
                     ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS,
@@ -162,8 +149,7 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
             )
             advanceUntilIdle()
             val newStatus = awaitItem()
-            assertIs<ChannelsFeatureStatus.Enabled>(newStatus)
-            assertTrue { newStatus.canSelfUserCreateChannels }
+            assertIs<ChannelCreationPermission.Allowed>(newStatus)
             assertTrue { newStatus.canSelfUserCreatePublicChannels }
             cancelAndIgnoreRemainingEvents()
         }
@@ -183,14 +169,11 @@ class ObserveChannelsConfigurationStatusUseCaseTest {
 
         result.test {
             val status = awaitItem()
-            assertIs<ChannelsFeatureStatus.Enabled>(status)
-            assertFalse { status.canSelfUserCreateChannels }
-            assertFalse { status.canSelfUserCreatePublicChannels }
+            assertIs<ChannelCreationPermission.Forbidden>(status)
             selfUserFlow.value = TestUser.SELF.copy(userType = UserType.ADMIN)
             advanceUntilIdle()
             val newStatus = awaitItem()
-            assertIs<ChannelsFeatureStatus.Enabled>(newStatus)
-            assertTrue { newStatus.canSelfUserCreateChannels }
+            assertIs<ChannelCreationPermission.Allowed>(newStatus)
             assertTrue { newStatus.canSelfUserCreatePublicChannels }
             cancelAndIgnoreRemainingEvents()
         }
