@@ -430,6 +430,11 @@ class UserDAOImpl internal constructor(
             }
         }
 
+    override suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String) =
+        withContext(queriesContext) {
+            userQueries.insertOrIgnoreUserIdWithEmail(userId, email)
+        }
+
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
         withContext(queriesContext) {
             userQueries.selectAllUsersWithConnectionStatus(connectionState)
