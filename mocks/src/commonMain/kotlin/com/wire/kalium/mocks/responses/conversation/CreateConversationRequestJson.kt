@@ -59,6 +59,7 @@ object CreateConversationRequestJson {
         |   "message_timer": ${it.messageTimer},
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
+        |   "group_conv_type": "group_conversation",
         |   "qualified_users": [
         |       {
         |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",
@@ -91,6 +92,7 @@ object CreateConversationRequestJson {
         |   "message_timer": ${it.messageTimer},
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
+        |   "group_conv_type": "group_conversation",
         |   "qualified_users": [
         |       {
         |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",
