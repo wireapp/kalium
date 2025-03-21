@@ -81,7 +81,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
-interface UserRepository {
+interface UserRepository : SelfUserObservationProvider {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
@@ -91,7 +91,6 @@ interface UserRepository {
     suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
-    suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Either<StorageFailure, SelfUser>

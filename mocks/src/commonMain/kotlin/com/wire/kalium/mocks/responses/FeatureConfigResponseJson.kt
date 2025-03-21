@@ -76,7 +76,8 @@ object FeatureConfigResponseJson {
                 Instant.DISTANT_FUTURE
             ),
             FeatureFlagStatusDTO.ENABLED
-        )
+        ),
+        FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
     )
     val valid = KtxSerializer.json.encodeToString(featureConfigResponse)
 

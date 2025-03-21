@@ -56,7 +56,9 @@ data class FeatureConfigResponse(
     @SerialName("mlsE2EId")
     val mlsE2EI: FeatureConfigData.E2EI?,
     @SerialName("mlsMigration")
-    val mlsMigration: FeatureConfigData.MLSMigration?
+    val mlsMigration: FeatureConfigData.MLSMigration?,
+    @SerialName("channels")
+    val channels: FeatureConfigData.Channels?
 )
 
 @Serializable
@@ -109,6 +111,26 @@ data class MLSMigrationConfigDTO(
     @SerialName("finaliseRegardlessAfter")
     val finaliseRegardlessAfter: Instant?
 )
+
+@Serializable
+data class ChannelsConfigDTO(
+    @SerialName("allowed_to_create_channels")
+    val allowedToCreateChannels: TeamUserType,
+    @SerialName("allowed_to_open_channels")
+    val allowedToOpenChannels: TeamUserType,
+) {
+    @Serializable
+    enum class TeamUserType {
+        @SerialName("admins")
+        ADMINS,
+
+        @SerialName("team-members")
+        TEAM_MEMBERS,
+
+        @SerialName("everyone")
+        EVERYONE,
+    }
+}
 
 @Serializable
 data class SelfDeletingMessagesConfigDTO(
@@ -254,6 +276,15 @@ sealed class FeatureConfigData {
     data class MLSMigration(
         @SerialName("config")
         val config: MLSMigrationConfigDTO,
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("channels")
+    @Serializable
+    data class Channels(
+        @SerialName("config")
+        val config: ChannelsConfigDTO?,
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()

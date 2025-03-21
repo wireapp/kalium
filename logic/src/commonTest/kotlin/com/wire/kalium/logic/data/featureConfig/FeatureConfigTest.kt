@@ -54,7 +54,8 @@ object FeatureConfigTest {
             Instant.DISTANT_FUTURE,
             Instant.DISTANT_FUTURE,
             Status.ENABLED
-        )
+        ),
+        channelFeatureConfiguration: ChannelFeatureConfiguration = ChannelFeatureConfiguration.Disabled,
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -71,6 +72,7 @@ object FeatureConfigTest {
         validateSAMLEmailsModel,
         mlsModel,
         e2EIModel,
-        mlsMigrationModel
+        mlsMigrationModel,
+        channelFeatureConfiguration
     )
 }
