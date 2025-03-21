@@ -22,16 +22,22 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageAttachment
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 internal class CellAttachmentsDataSource(
     private val messageAttachments: MessageAttachmentsDao,
+    private val assetsDao: AssetDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellAttachmentsRepository {
 
@@ -41,18 +47,19 @@ internal class CellAttachmentsDataSource(
         }
     }
 
-    override suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?> = withContext(dispatchers.io) {
+    override suspend fun getAssetPath(assetId: String) = withContext(dispatchers.io) {
         wrapStorageRequest {
             messageAttachments.getAssetPath(assetId)
         }
     }
 
-    override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit> =
+    override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus) = withContext(dispatchers.io) {
         wrapStorageRequest {
             messageAttachments.setTransferStatus(assetId, status.name)
         }
+    }
 
-    override suspend fun saveLocalPath(assetId: String, path: String?): Either<StorageFailure, Unit> = withContext(dispatchers.io) {
+    override suspend fun saveLocalPath(assetId: String, path: String?) = withContext(dispatchers.io) {
         wrapStorageRequest {
             messageAttachments.setLocalPath(assetId, path)
         }
@@ -64,12 +71,54 @@ internal class CellAttachmentsDataSource(
         }
     }
 
-    override suspend fun getAttachment(assetId: String): Either<StorageFailure, MessageAttachment> =
-        withContext(dispatchers.io) {
-            wrapStorageRequest {
-                messageAttachments.getAttachment(assetId).toModel()
+    override suspend fun getAttachment(assetId: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachments.getAttachment(assetId).toModel()
+        }
+    }
+
+    override suspend fun getAttachments(messageId: String, conversationId: ConversationId) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachments.getAttachments(
+                messageId = messageId,
+                conversationId = QualifiedIDEntity(conversationId.value, conversationId.domain)
+            ).mapNotNull { it.toModel() }
+        }
+    }
+
+    override suspend fun saveStandaloneAssetPath(assetId: String, path: String, size: Long) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            assetsDao.insertAsset(
+                AssetEntity(
+                    key = assetId,
+                    domain = "wire.cell",
+                    dataPath = path,
+                    dataSize = size,
+                    downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds(),
+                )
+            )
+        }
+    }
+
+    override suspend fun deleteStandaloneAsset(assetId: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            assetsDao.deleteAsset(assetId)
+        }
+    }
+
+    override suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<Pair<String, String>>> = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            assetsDao.getAssets().map {
+                it.key to it.data_path
             }
         }
+    }
+
+    override suspend fun getAttachments() = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachments.getAttachments().mapNotNull { it.toModel() }
+        }
+    }
 }
 
 // TODO: Where to host the mapper (currently part of logic module)?

@@ -17,21 +17,25 @@
  */
 package com.wire.kalium.cells.domain.model
 
-public data class CellNode(
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
+
+/**
+ * Represents file uploaded to wire cell.
+ * Contains information from Cell server + local data (local path, owner name, conversation name)
+  */
+public data class CellFile(
     val uuid: String,
     val versionId: String,
-    val path: String,
-    val modified: Long? = null,
-    val size: Long? = null,
-    val eTag: String? = null,
-    val type: String? = null,
-    val isRecycled: Boolean = false,
-    val isDraft: Boolean = false,
-    val contentUrl: String? = null,
+    val fileName: String,
+    val mimeType: String,
+    val remotePath: String?,
+    val localPath: String? = null,
+    val assetSize: Long?,
     val contentHash: String? = null,
-    val mimeType: String? = null,
-    val previews: List<NodePreview> = emptyList(),
-    val ownerUserId: String? = null,
-    val conversationId: String? = null,
+    val contentUrl: String? = null,
+    val previewUrl: String? = null,
+    val metadata: AssetMetadata? = null,
+    val userName: String? = null,
+    val conversationName: String? = null,
     val publicLinkId: String? = null,
 )

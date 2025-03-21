@@ -32,8 +32,6 @@ CREATE TABLE MessageAttachments (
       PRIMARY KEY (asset_id, message_id, conversation_id)
 );
 
-CREATE INDEX attachment_draft_conversation_id_index ON MessageAttachmentDraft(conversation_id);
-
 insertCellAttachment:
 INSERT INTO MessageAttachments (
     asset_id,
@@ -72,3 +70,8 @@ UPDATE MessageAttachments SET content_hash = ? WHERE asset_id = ?;
 setContentUrlAndHash:
 UPDATE MessageAttachments SET content_url = ?, content_hash = ? WHERE asset_id = ?;
 
+getAttachments:
+SELECT * FROM MessageAttachments WHERE message_id = ? AND conversation_id = ?;
+
+getAllAttachments:
+SELECT * FROM MessageAttachments;
