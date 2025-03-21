@@ -527,6 +527,7 @@ com.wire.kalium.logic.feature.call.usecase.video
 com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
+com.wire.kalium.logic.feature.conversation.createconversation
 com.wire.kalium.logic.feature.conversation.folder
 com.wire.kalium.logic.feature.conversation.guestroomlink
 com.wire.kalium.logic.feature.conversation.keyingmaterials
