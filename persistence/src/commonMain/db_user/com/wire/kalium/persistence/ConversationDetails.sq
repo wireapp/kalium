@@ -156,9 +156,6 @@ ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 selectConversationDetailsByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
-selectConversationDetailsByGroupId:
-SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
-
 selectActiveOneOnOneConversationDetails:
 SELECT * FROM ConversationDetails
 WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);
