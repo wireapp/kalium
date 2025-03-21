@@ -85,10 +85,10 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                 if (ccGroupStatus == VerificationStatus.VERIFIED) {
                     verifyUsersStatus(groupId)
                 } else {
-                    conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
+                    conversationRepository.getConversationByMLSGroupId(groupId).map {
                         VerificationStatusData(
-                            conversationId = it.conversation.id,
-                            currentPersistedStatus = it.conversation.mlsVerificationStatus,
+                            conversationId = it.id,
+                            currentPersistedStatus = it.mlsVerificationStatus,
                             newStatus =
                             ccGroupStatus
                         )
