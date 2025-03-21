@@ -136,7 +136,7 @@ enum class ConvProtocol {
 
 @Serializable
 enum class GroupConversationType {
-    @SerialName("group_conv_type")
+    @SerialName("group_conversation")
     REGULAR_GROUP,
 
     @SerialName("channel")
