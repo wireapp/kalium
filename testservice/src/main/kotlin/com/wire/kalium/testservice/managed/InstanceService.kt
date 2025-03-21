@@ -198,6 +198,12 @@ class InstanceService(
             AuthenticationResult.Failure.SocketError ->
                 throw WebApplicationException("Instance $instanceId: Login failed, socket error!")
 
+            AuthenticationResult.Failure.AccountSuspended ->
+                throw WebApplicationException("Instance $instanceId: Login failed, account suspended!")
+
+            AuthenticationResult.Failure.AccountPendingActivation ->
+                throw WebApplicationException("Instance $instanceId: Login failed, account pending activation!")
+
             is AuthenticationResult.Success -> {
                 log.info("Instance $instanceId: Login successful")
             }

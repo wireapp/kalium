@@ -486,6 +486,70 @@ class LoginUseCaseTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenAccountSuspended_whenLoggingIn_thenReturnAccountSuspendedFailure() = runTest {
+        val invalidAuthCodeFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.accountSuspended)
+
+        val (arrangement, loginUseCase) = Arrangement()
+            .withLoginUsingEmailResulting(Either.Left(invalidAuthCodeFailure))
+            .withLoginUsingHandleResulting(Either.Left(invalidAuthCodeFailure))
+            .arrange()
+
+        // email
+        val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountSuspended, loginEmailResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
+        }.wasNotInvoked()
+
+        // user handle
+        val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountSuspended, loginHandleResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenAccountPendingActivation_whenLoggingIn_thenReturnAccountPendingActivationFailure() = runTest {
+        val invalidAuthCodeFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.accountPendingActivation)
+
+        val (arrangement, loginUseCase) = Arrangement()
+            .withLoginUsingEmailResulting(Either.Left(invalidAuthCodeFailure))
+            .withLoginUsingHandleResulting(Either.Left(invalidAuthCodeFailure))
+            .arrange()
+
+        // email
+        val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountPendingActivation, loginEmailResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
+        }.wasNotInvoked()
+
+        // user handle
+        val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountPendingActivation, loginHandleResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
