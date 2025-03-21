@@ -176,7 +176,7 @@ class OnCloseCallTest {
         testScope.runTest {
             val incomingCall = callMetadata.copy(
                 callStatus = CallStatus.INCOMING,
-                conversationType = Conversation.Type.GROUP
+                conversationType = Conversation.Type.Group.Regular
             )
 
             every {
@@ -213,7 +213,7 @@ class OnCloseCallTest {
         testScope.runTest {
             val closedInternallyCall = callMetadata.copy(
                 callStatus = CallStatus.CLOSED_INTERNALLY,
-                conversationType = Conversation.Type.GROUP
+                conversationType = Conversation.Type.Group.Regular
             )
 
             every {
@@ -251,7 +251,7 @@ class OnCloseCallTest {
             val establishedCall = callMetadata.copy(
                 callStatus = CallStatus.ESTABLISHED,
                 establishedTime = "time",
-                conversationType = Conversation.Type.GROUP
+                conversationType = Conversation.Type.Group.Regular
             )
 
             every {
@@ -375,7 +375,7 @@ class OnCloseCallTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = null,
             callerTeamName = null,
             establishedTime = null,

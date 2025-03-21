@@ -18,10 +18,22 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -44,19 +56,7 @@ import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.mapRight
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
@@ -83,6 +83,7 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
+    suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
     /**
      * Fetches user information for all of users id stored in the DB
@@ -202,6 +203,10 @@ internal class UserDataSource internal constructor(
                     }
             }
         }
+
+    override suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(selfUserId.toDao(), email)
+    }
 
     private suspend fun updateSelfUserProviderAccountInfo(userDTO: SelfUserDTO): Either<StorageFailure, Unit> =
         sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
@@ -368,7 +373,7 @@ internal class UserDataSource internal constructor(
     }
 
     override suspend fun observeSelfUser(): Flow<SelfUser> = userDAO.observeUserDetailsByQualifiedID(selfUserId.toDao()).filterNotNull()
-            .map(userMapper::fromUserDetailsEntityToSelfUser)
+        .map(userMapper::fromUserDetailsEntityToSelfUser)
 
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
         return userDAO.getUserDetailsWithTeamByQualifiedID(selfUserId.toDao()).filterNotNull()

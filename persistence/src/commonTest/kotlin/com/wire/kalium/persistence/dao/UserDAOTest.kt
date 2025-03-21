@@ -59,7 +59,7 @@ class UserDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenUser_whenUpdatingProfileAvatar_thenChangesAreEmittedCorrectly() = runTest(dispatcher) {
-        //given
+        // given
         val updatedUser = PartialUserEntity(
             id = user1.id,
             name = "newName",
@@ -67,11 +67,11 @@ class UserDAOTest : BaseDatabaseTest() {
             email = user1.email,
             accentId = user1.accentId,
             previewAssetId = UserAssetIdEntity(
-                value ="newAvatar",
+                value = "newAvatar",
                 domain = "newAvatarDomain"
             ),
             completeAssetId = UserAssetIdEntity(
-                value ="newAvatar",
+                value = "newAvatar",
                 domain = "newAvatarDomain"
             ),
             supportedProtocols = user1.supportedProtocols
@@ -1056,6 +1056,114 @@ class UserDAOTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
         assertEquals(updatedUserDetails, result)
     }
+
+    @Test
+    fun givenUsersInTheSameTeamAsSelf_whenCountTeamMembers_thenAmountCountedCorrectly() = runTest {
+        // given
+        val selfUser = newUserEntity(selfUserId)
+        val users = listOf(
+            newUserEntity(selfUser.id.copy(value = "other1")),
+            newUserEntity(selfUser.id.copy(value = "other2")),
+            newUserEntity(selfUser.id.copy(value = "other3")),
+            newUserEntity(selfUser.id.copy(value = "other4")),
+            newUserEntity(selfUser.id.copy(value = "other5")).copy(team = "other_then_${selfUser.team}"),
+            newUserEntity(selfUser.id.copy(value = "other6")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.PENDING
+            )
+        )
+
+        db.userDAO.upsertUsers(users.plus(selfUser))
+
+        // when
+        val result = db.userDAO.countTeamMembersAmount(teamId = selfUser.team!!, selfUserId = selfUserId)
+
+        // then
+        assertEquals(4, result)
+    }
+
+    @Test
+    fun givenUsersWithDiffConnectionStatuses_whenCountContactsAmount_thenAmountCountedCorrectly() = runTest {
+        // given
+        val selfUser = newUserEntity(selfUserId)
+        val users = listOf(
+            newUserEntity(selfUser.id.copy(value = "other1")),
+            newUserEntity(selfUser.id.copy(value = "other2")),
+            newUserEntity(selfUser.id.copy(value = "other3")).copy(
+                team = "other_then_${selfUser.team}",
+            ),
+            newUserEntity(selfUser.id.copy(value = "other4")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.NOT_CONNECTED
+            ),
+            newUserEntity(selfUser.id.copy(value = "other5")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.SENT
+            ),
+            newUserEntity(selfUser.id.copy(value = "other6")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.PENDING
+            ),
+            newUserEntity(selfUser.id.copy(value = "other7")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.BLOCKED
+            ),
+            newUserEntity(selfUser.id.copy(value = "other8")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.IGNORED
+            ),
+            newUserEntity(selfUser.id.copy(value = "other9")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.CANCELLED
+            ),
+            newUserEntity(selfUser.id.copy(value = "other10")).copy(
+                team = "other_then_${selfUser.team}",
+                connectionStatus = ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT
+            )
+        )
+
+        db.userDAO.upsertUsers(users.plus(selfUser))
+
+        // when
+        val result = db.userDAO.countContactsAmount(selfUserId)
+
+        // then
+        assertEquals(3, result)
+    }
+
+    @Test
+    fun givenUserNotYetStored_whenInsertingOrIgnoringUserIdWithEmail_thenItShouldBeSavedWithIncompleteData() = runTest(dispatcher) {
+        // Given
+        val email = "user@email.com"
+        val userId = UserIDEntity("user", "domain")
+
+        // When
+        db.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(userId, email)
+
+        // Then
+        val result = db.userDAO.observeUserDetailsByQualifiedID(userId).first()
+        assertNotNull(result)
+        assertEquals(true, result.hasIncompleteMetadata)
+        assertEquals(email, result.email)
+    }
+
+    @Test
+    fun givenUserWithCompleteDataAlreadyStored_whenInsertingOrIgnoringUserIdWithEmail_thenJustIgnore() = runTest(dispatcher) {
+        // Given
+        val email = "user@email.com"
+        val userId = UserIDEntity("user", "domain")
+        val user = USER_ENTITY_1.copy(id = userId, email = email, hasIncompleteMetadata = false)
+        db.userDAO.upsertUser(user)
+
+        // When
+        db.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(userId, email)
+
+        // Then
+        val result = db.userDAO.observeUserDetailsByQualifiedID(userId).first()
+        assertNotNull(result)
+        assertEquals(false, result.hasIncompleteMetadata)
+    }
+
 
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))

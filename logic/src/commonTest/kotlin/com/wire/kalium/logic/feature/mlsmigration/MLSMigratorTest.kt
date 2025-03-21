@@ -61,7 +61,7 @@ class MLSMigratorTest {
     @Test
     fun givenTeamConversation_whenMigrating_thenProtocolIsUpdatedToMixedAndGroupIsEstablished() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -103,7 +103,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnOngoingCall_whenMigrating_thenInsertSystemMessages() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -153,7 +153,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnError_whenMigrating_thenStillConsiderItASuccess() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -175,7 +175,7 @@ class MLSMigratorTest {
     @Test
     fun givenTeamConversation_whenFinalising_thenKnownUsersAreFetchedAndProtocolIsUpdatedToMls() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -201,7 +201,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnError_whenFinalising_thenStillConsiderItASuccess() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -244,7 +244,7 @@ class MLSMigratorTest {
         suspend fun withGetProteusTeamConversationsReturning(conversationsIds: List<ConversationId>) = apply {
             coEvery {
                 conversationRepository.getConversationIds(
-                    Conversation.Type.GROUP,
+                    Conversation.Type.Group.Regular,
                     Conversation.Protocol.PROTEUS,
                     TeamId(value = "Some-team")
                 )

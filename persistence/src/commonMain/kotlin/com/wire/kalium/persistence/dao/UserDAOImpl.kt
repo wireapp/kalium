@@ -250,13 +250,13 @@ class UserDAOImpl internal constructor(
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             val anyInsertedOrModified = users.map { user ->
-                    if (user.deleted) {
-                        // mark as deleted and remove from groups
-                        safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
-                    } else {
-                        insertUser(user)
-                    }
-                }.any { it }
+                if (user.deleted) {
+                    // mark as deleted and remove from groups
+                    safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
+                } else {
+                    insertUser(user)
+                }
+            }.any { it }
             if (!anyInsertedOrModified) {
                 // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
                 this.rollback()
@@ -430,6 +430,11 @@ class UserDAOImpl internal constructor(
             }
         }
 
+    override suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String) =
+        withContext(queriesContext) {
+            userQueries.insertOrIgnoreUserIdWithEmail(userId, email)
+        }
+
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
         withContext(queriesContext) {
             userQueries.selectAllUsersWithConnectionStatus(connectionState)
@@ -505,4 +510,13 @@ class UserDAOImpl internal constructor(
     override suspend fun updateTeamId(userId: UserIDEntity, teamId: String) {
         userQueries.updateTeamId(teamId, userId)
     }
+
+    override suspend fun countContactsAmount(selfUserId: QualifiedIDEntity): Int = withContext(queriesContext) {
+        userQueries.countContacts(selfUserId).executeAsOneOrNull()?.toInt() ?: 0
+    }
+
+    override suspend fun countTeamMembersAmount(teamId: String, selfUserId: QualifiedIDEntity): Int = withContext(queriesContext) {
+        userQueries.countTeamMembersFromTeam(teamId, selfUserId).executeAsOneOrNull()?.toInt() ?: 0
+    }
+
 }
