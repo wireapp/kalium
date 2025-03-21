@@ -23,6 +23,7 @@ import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.PreCheckResult
+import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
@@ -233,10 +234,10 @@ private class TestRepository : CellsRepository {
         return Unit.right()
     }
 
+    override suspend fun getFiles(query: String, limit: Int, offset: Int) = emptyList<CellNode>().right()
+    override suspend fun deleteFile(nodeUuid: String) = Unit.right()
     override suspend fun preCheck(nodePath: String) = PreCheckResult.Success.right()
     override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) = Unit.right()
-    override suspend fun getFiles(cellName: String) = emptyList<CellNode>().right()
-    override suspend fun deleteFile(node: CellNode) = Unit.right()
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String) = Unit.right()
     override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = Unit.right()
     override suspend fun getPreviews(nodeUuid: String) = emptyList<NodePreview>().right()
@@ -246,5 +247,21 @@ private class TestRepository : CellsRepository {
         path = "path",
         size = 1000,
     ).right()
+
+    override suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, String> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
 
 }
