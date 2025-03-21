@@ -22,15 +22,15 @@ import kotlin.time.Duration
 interface CoreCryptoCentral {
     suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite
     ): MLSClient
 
     suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): MLSClient
 
     suspend fun proteusClient(): ProteusClient
@@ -47,7 +47,7 @@ interface CoreCryptoCentral {
         handle: String,
         teamId: String?,
         expiry: Duration,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): E2EIClient
 
     /**
@@ -72,5 +72,6 @@ interface CoreCryptoCentral {
 
 expect suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    databaseKey: String,
+    mlsTransporter: MLSTransporter?
 ): CoreCryptoCentral

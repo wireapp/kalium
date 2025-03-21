@@ -202,6 +202,16 @@ sealed interface MLSFailure : CoreFailure {
     data object Disabled : MLSFailure
     data object Other : MLSFailure
     data object CommitForMissingProposal : MLSFailure
+    data object BufferedCommit : MLSFailure
+    sealed class MessageRejected : MLSFailure {
+        data object MlsClientMismatch : MessageRejected()
+        data object MlsCommitMissingReferences : MessageRejected()
+        data object MlsStaleMessage : MessageRejected()
+        data class Other(val reason: String) : MessageRejected()
+    }
+
+    data object OrphanWelcome : MLSFailure
+
     data class Generic(val rootCause: Throwable) : MLSFailure
 }
 

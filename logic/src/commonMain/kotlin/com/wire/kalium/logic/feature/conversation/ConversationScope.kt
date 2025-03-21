@@ -81,10 +81,10 @@ import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTime
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
