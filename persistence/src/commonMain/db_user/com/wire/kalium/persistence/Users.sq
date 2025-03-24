@@ -305,4 +305,4 @@ countContacts:
 SELECT COUNT() FROM User WHERE User.connection_status = 'ACCEPTED' AND User.qualified_id != :self_user_id;
 
 countTeamMembersFromTeam:
-SELECT COUNT() FROM User WHERE User.team = :team_id AND User.qualified_id != :self_user_id;
+SELECT COUNT() FROM User WHERE User.team = :team_id;
