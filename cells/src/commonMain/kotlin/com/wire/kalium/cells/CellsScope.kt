@@ -44,6 +44,7 @@ import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
@@ -61,6 +62,7 @@ import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -78,6 +80,7 @@ public class CellsScope(
     private val cellsClient: HttpClient,
     private val userId: String,
     private val dao: CellScopeDao,
+    private val userId: String,
 ) : CoroutineScope {
 
     public data class CellScopeDao(
@@ -155,10 +158,10 @@ public class CellsScope(
         get() = GetCellFilesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
 
     public val enableWireCell: SetWireCellForConversationUseCase
-        get() = SetWireCellForConversationUseCase(cellsConversationRepository)
+        get() = SetWireCellForConversationUseCaseImpl(cellsConversationRepository)
 
     public val downloadFile: DownloadCellFileUseCase
-        get() = DownloadCellFileUseCase(cellsRepository, cellAttachmentsRepository)
+        get() = DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
 
     public val refreshAsset: RefreshCellAssetStateUseCase
         get() = RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)

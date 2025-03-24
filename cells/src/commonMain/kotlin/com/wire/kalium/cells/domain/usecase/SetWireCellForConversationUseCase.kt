@@ -24,12 +24,17 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 /**
- * Temporary use case for enabling cell support for conversation by setting wire cell name.
+ * This UseCase is a temporary solution to set the wire cell for a conversation.
+ * To be removed once the wire cell feature is fully integrated on BE.
  */
-public class SetWireCellForConversationUseCase internal constructor(
+public interface SetWireCellForConversationUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean)
+}
+
+internal class SetWireCellForConversationUseCaseImpl internal constructor(
     private val repository: CellConversationRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-) {
+): SetWireCellForConversationUseCase {
     public suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
         withContext(dispatchers.io) {
             val cellName = if (enabled) "$conversationId" else null

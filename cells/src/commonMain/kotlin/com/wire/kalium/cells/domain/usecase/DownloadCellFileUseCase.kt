@@ -31,14 +31,18 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import okio.Path
 
+public interface DownloadCellFileUseCase {
+    public suspend operator fun invoke(assetId: String, outFilePath: Path, onProgressUpdate: (Long) -> Unit): Either<CoreFailure, Unit>
+}
+
 /**
  * Download an asset file from the wire cell server.
  */
-public class DownloadCellFileUseCase internal constructor(
+internal class DownloadCellFileUseCaseImpl internal constructor(
     private val cellsRepository: CellsRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-) {
+) : DownloadCellFileUseCase {
     /**
      * Download an asset file from the wire cell server.
      * The asset transfer status is updated in the database.
@@ -49,7 +53,7 @@ public class DownloadCellFileUseCase internal constructor(
      * @param onProgressUpdate Callback to receive download progress updates.
      * @return download operation result
      */
-    public suspend operator fun invoke(
+    public override suspend operator fun invoke(
         assetId: String,
         outFilePath: Path,
         assetSize: Long,

@@ -22,6 +22,8 @@ CREATE TABLE MessageAttachmentDraft (
     PRIMARY KEY (attachment_id)
 );
 
+CREATE INDEX attachment_draft_conversation_id_index ON MessageAttachmentDraft(conversation_id);
+
 getDraft:
 SELECT * FROM MessageAttachmentDraft WHERE attachment_id = ?;
 

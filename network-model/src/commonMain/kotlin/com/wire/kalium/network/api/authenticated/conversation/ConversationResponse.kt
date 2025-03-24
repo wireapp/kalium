@@ -187,6 +187,14 @@ data class ConversationResponseV6(
 )
 
 @Serializable
+data class ConversationResponseV8(
+    @SerialName("conversation")
+    val conversation: ConversationResponse,
+    @SerialName("group_conv_type")
+    val groupType: ConversationResponse.GroupType
+)
+
+@Serializable
 data class ConversationMembersResponse(
     @SerialName("self")
     val self: ConversationMemberDTO.Self,
