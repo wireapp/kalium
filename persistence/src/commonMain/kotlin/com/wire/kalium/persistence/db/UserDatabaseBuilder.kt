@@ -171,6 +171,7 @@ class UserDatabaseBuilder internal constructor(
     init {
         database.databasePropertiesQueries.insertSelfUserId(userId)
         database.databasePropertiesQueries.enableForeignKeyContraints()
+        database.debugQueries.optimize()
     }
 
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
