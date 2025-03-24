@@ -371,7 +371,8 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
         wrapStorageRequest {
             conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
-                conversationMapper.fromConversationEntityType(it)
+                val isChannel = conversationDAO.isAChannel(conversationId.toDao())
+                conversationMapper.fromConversationEntityType(it, isChannel)
             }
         }
 

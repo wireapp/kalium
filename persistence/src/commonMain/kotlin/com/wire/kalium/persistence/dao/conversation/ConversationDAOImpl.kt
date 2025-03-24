@@ -531,4 +531,8 @@ internal class ConversationDAOImpl internal constructor(
                 }
         }
     }
+
+    override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(coroutineContext) {
+        conversationQueries.selectIsChannel(conversationId).executeAsOneOrNull() ?: false
+    }
 }
