@@ -65,7 +65,12 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 interface ConversationMapper {
-    fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
+    fun fromApiModelToDaoModel(
+        apiModel: ConversationResponse,
+        mlsGroupState: GroupState?,
+        selfUserTeamId: TeamId?,
+        wireCellEnabled: Boolean = false,
+    ): ConversationEntity
     fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
@@ -113,11 +118,13 @@ internal class ConversationMapperImpl(
     override fun fromApiModelToDaoModel(
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
-        selfUserTeamId: TeamId?
+        selfUserTeamId: TeamId?,
+        wireCellEnabled: Boolean,
     ): ConversationEntity {
+        val conversationId = idMapper.fromApiToDao(apiModel.id)
         val type = apiModel.toConversationType(selfUserTeamId)
         return ConversationEntity(
-            id = idMapper.fromApiToDao(apiModel.id),
+            id = conversationId,
             name = apiModel.name,
             type = type,
             teamId = apiModel.teamId,
@@ -142,7 +149,7 @@ internal class ConversationMapperImpl(
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL,
-            wireCell = null,
+            wireCell = conversationId.toString().takeIf { wireCellEnabled },
         )
     }
 
