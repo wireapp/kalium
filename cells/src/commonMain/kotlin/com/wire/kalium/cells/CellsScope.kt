@@ -80,7 +80,6 @@ public class CellsScope(
     private val cellsClient: HttpClient,
     private val userId: String,
     private val dao: CellScopeDao,
-    private val userId: String,
 ) : CoroutineScope {
 
     public data class CellScopeDao(

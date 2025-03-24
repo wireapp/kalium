@@ -32,7 +32,13 @@ import kotlinx.coroutines.withContext
 import okio.Path
 
 public interface DownloadCellFileUseCase {
-    public suspend operator fun invoke(assetId: String, outFilePath: Path, onProgressUpdate: (Long) -> Unit): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(
+        assetId: String,
+        outFilePath: Path,
+        assetSize: Long,
+        remoteFilePath: String? = null,
+        onProgressUpdate: (Long) -> Unit
+    ): Either<CoreFailure, Unit>
 }
 
 /**
@@ -53,11 +59,11 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
      * @param onProgressUpdate Callback to receive download progress updates.
      * @return download operation result
      */
-    public override suspend operator fun invoke(
+    override suspend operator fun invoke(
         assetId: String,
         outFilePath: Path,
         assetSize: Long,
-        remoteFilePath: String? = null,
+        remoteFilePath: String?,
         onProgressUpdate: (Long) -> Unit,
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         attachmentsRepository.getAssetPath(assetId).fold(
