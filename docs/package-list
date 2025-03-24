@@ -524,6 +524,7 @@ com.wire.kalium.logic.feature.call
 com.wire.kalium.logic.feature.call.scenario
 com.wire.kalium.logic.feature.call.usecase
 com.wire.kalium.logic.feature.call.usecase.video
+com.wire.kalium.logic.feature.channels
 com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
