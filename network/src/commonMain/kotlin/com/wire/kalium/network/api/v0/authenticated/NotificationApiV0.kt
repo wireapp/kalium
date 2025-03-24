@@ -114,6 +114,7 @@ internal open class NotificationApiV0 internal constructor(
         }
     }
 
+    @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
     override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>> =
         mostRecentNotification(clientId).mapSuccess {
             flow {
