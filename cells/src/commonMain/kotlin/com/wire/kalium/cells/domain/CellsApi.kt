@@ -30,6 +30,7 @@ internal interface CellsApi {
     suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit>
     suspend fun delete(nodeUuid: String): NetworkResponse<Unit>
     suspend fun getFiles(query: String, limit: Int, offset: Int): NetworkResponse<GetFilesResponseDTO>
+    suspend fun getFilesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetFilesResponseDTO>
     suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink>
     suspend fun delete(paths: List<String>): NetworkResponse<Unit>
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
