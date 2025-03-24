@@ -34,6 +34,6 @@ internal open class NotificationApiV8 internal constructor(
 ) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks) {
 
     override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> {
-        return super.consumeLiveEvents(clientId)
+        TODO("Not yet implemented")
     }
 }
