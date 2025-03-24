@@ -18,8 +18,10 @@
 
 package com.wire.kalium.network.api.base.authenticated.notification
 
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.flow.Flow
 
@@ -46,7 +48,7 @@ sealed class WebSocketEvent<BinaryPayloadType> {
     data class Close<BinaryPayloadType>(val cause: Throwable?) : WebSocketEvent<BinaryPayloadType>()
 }
 
-interface NotificationApi {
+interface NotificationApi : BaseApi {
     suspend fun mostRecentNotification(queryClient: String): NetworkResponse<EventResponse>
 
     suspend fun notificationsByBatch(querySize: Int, queryClient: String, querySince: String): NetworkResponse<NotificationResponse>
@@ -60,5 +62,6 @@ interface NotificationApi {
 
     suspend fun getServerTime(querySize: Int): NetworkResponse<String>
     suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>>
+    suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
 
 }
