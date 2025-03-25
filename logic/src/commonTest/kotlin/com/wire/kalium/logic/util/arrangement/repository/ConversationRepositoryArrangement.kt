@@ -60,7 +60,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement
     suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangement
     suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangement
-    suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangement
+    suspend fun withConversationByMLSGroupId(result: Either<StorageFailure, Conversation>): ConversationRepositoryArrangement
     suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
     suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
     suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
@@ -183,9 +183,9 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>) = apply {
+    override suspend fun withConversationByMLSGroupId(result: Either<StorageFailure, Conversation>) = apply {
         coEvery {
-            conversationRepository.getConversationDetailsByMLSGroupId(any())
+            conversationRepository.getConversationByMLSGroupId(any())
         }.returns(result)
     }
 
