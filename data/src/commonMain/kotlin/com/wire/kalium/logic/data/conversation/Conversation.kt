@@ -347,9 +347,24 @@ sealed interface ConversationDetails {
             override val selfRole: Conversation.Member.Role?,
             override val isFavorite: Boolean = false,
             override val folder: ConversationFolder? = null,
-            // TODO: Add channel-specific fields
 //         val isTeamAdmin: Boolean, TODO kubaz
-        ) : Group
+            val access: ChannelAccess,
+            val permission: ChannelPermission
+        ) : Group {
+            /**
+             * An enum class that defines the permissions for adding participants to a channel,
+             * specifying who is authorized to do so.
+             */
+            enum class ChannelAccess {
+                PUBLIC,
+                PRIVATE
+            }
+
+            enum class ChannelPermission {
+                ADMINS,
+                ADMINS_AND_MEMBERS
+            }
+        }
     }
 
     data class Connection(

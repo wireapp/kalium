@@ -1,3 +1,8 @@
+DROP VIEW IF EXISTS ConversationDetails;
+
+ALTER TABLE Conversation ADD COLUMN channel_access TEXT DEFAULT NULL;
+ALTER TABLE Conversation ADD COLUMN channel_permission TEXT DEFAULT NULL;
+
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
 Conversation.qualified_id AS qualifiedId,
@@ -130,38 +135,3 @@ LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 
 LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
 LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
 LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE';
-
-selectAllConversationDetails:
-SELECT * FROM ConversationDetails
-WHERE
-    type IS NOT 'SELF'
-    AND (
-    type IS 'GROUP'
-    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-    OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
-    )
-    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
-    AND archived = :fromArchive
-    AND isActive
-    AND CASE
-            -- When filter is ALL, do not apply additional filters on conversation type
-            WHEN :conversationFilter = 'ALL' THEN 1 = 1
-            -- When filter is GROUPS, filter only group conversations
-            WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
-            -- When filter is ONE_ON_ONE, filter only one-on-one conversations
-            WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-            -- When filter is FAVORITES (future implementation)
-            ELSE 1 = 0
-        END
-ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
-
-selectConversationDetailsByQualifiedId:
-SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
-
-selectConversationDetailsByGroupId:
-SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
-
-selectActiveOneOnOneConversationDetails:
-SELECT * FROM ConversationDetails
-WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);

@@ -112,7 +112,9 @@ internal object TableMapper {
         archived_date_timeAdapter = InstantTypeAdapter,
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
-        legal_hold_statusAdapter = EnumColumnAdapter()
+        legal_hold_statusAdapter = EnumColumnAdapter(),
+        channel_accessAdapter = EnumColumnAdapter(),
+        channel_permissionAdapter = EnumColumnAdapter()
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,

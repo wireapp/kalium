@@ -48,6 +48,8 @@ data class ConversationEntity(
     val proteusVerificationStatus: VerificationStatus,
     val legalHoldStatus: LegalHoldStatus,
     val isChannel: Boolean,
+    val channelAccess: ChannelAccess?,
+    val channelPermission: ChannelPermission?,
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -61,6 +63,8 @@ data class ConversationEntity(
     enum class ReceiptMode { DISABLED, ENABLED }
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
     enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED }
+    enum class ChannelAccess { PUBLIC, PRIVATE }
+    enum class ChannelPermission { ADMINS, ADMINS_AND_MEMBERS }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {
@@ -91,6 +95,7 @@ data class ConversationEntity(
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: ConversationEntity.CipherSuite
         ) : MLSCapable
+
         data class Mixed(
             override val groupId: String,
             override val groupState: ConversationEntity.GroupState,
