@@ -18,6 +18,8 @@
 
 package com.wire.kalium.network.api.model
 
+import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
@@ -39,6 +41,11 @@ interface ApiModelMapper {
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
+
+    /**
+     * Forcing to clients using v8+ to have ConsumableNotifications capability.
+     */
+    fun toApiV8(request: RegisterClientRequest): RegisterClientRequest
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
@@ -71,6 +78,21 @@ class ApiModelMapperImpl : ApiModelMapper {
             request.conversationRole,
             request.protocol,
             request.creatorClient
+        )
+
+    override fun toApiV8(request: RegisterClientRequest): RegisterClientRequest =
+        RegisterClientRequest(
+            password = request.password,
+            preKeys = request.preKeys,
+            lastKey = request.lastKey,
+            deviceType = request.deviceType,
+            type = request.type,
+            label = request.label,
+            capabilities = request.capabilities?.also { it.toMutableSet().add(ClientCapabilityDTO.ConsumableNotifications) }?.toList()
+                ?: listOf(ClientCapabilityDTO.ConsumableNotifications),
+            model = request.model,
+            cookieLabel = request.cookieLabel,
+            secondFactorVerificationCode = request.secondFactorVerificationCode
         )
 
     override fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3 =
