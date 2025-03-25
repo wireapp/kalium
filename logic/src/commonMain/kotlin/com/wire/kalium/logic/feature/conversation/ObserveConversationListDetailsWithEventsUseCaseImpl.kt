@@ -62,6 +62,7 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
             }
 
             ConversationFilter.All,
+            ConversationFilter.Channels,
             ConversationFilter.Groups,
             ConversationFilter.OneOnOne ->
                 conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter)

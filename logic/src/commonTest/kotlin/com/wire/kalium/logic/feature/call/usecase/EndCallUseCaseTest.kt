@@ -80,7 +80,7 @@ class EndCallUseCaseTest {
     fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STILL_ONGOING,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -113,7 +113,7 @@ class EndCallUseCaseTest {
     fun givenStartedOutgoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STARTED,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -146,7 +146,7 @@ class EndCallUseCaseTest {
     fun givenIncomingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.INCOMING,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -252,7 +252,7 @@ class EndCallUseCaseTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = null,
             callerTeamName = null,
             establishedTime = null

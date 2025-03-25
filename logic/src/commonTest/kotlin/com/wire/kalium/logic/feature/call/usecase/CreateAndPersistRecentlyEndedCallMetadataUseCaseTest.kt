@@ -261,7 +261,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                         hasEstablishedAudio = true
                     )
                 ),
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 callerName = "User Name",
                 callerTeamName = null,
                 callStatus = CallStatus.ESTABLISHED,
@@ -288,7 +288,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                 callVideoEnabled = false
             ),
             conversationDetails = RecentlyEndedCallMetadata.ConversationDetails(
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 conversationSize = 2,
                 conversationGuests = 0,
                 conversationGuestsPro = 0

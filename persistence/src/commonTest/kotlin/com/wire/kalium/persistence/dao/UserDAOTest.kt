@@ -1131,6 +1131,40 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(3, result)
     }
 
+    @Test
+    fun givenUserNotYetStored_whenInsertingOrIgnoringUserIdWithEmail_thenItShouldBeSavedWithIncompleteData() = runTest(dispatcher) {
+        // Given
+        val email = "user@email.com"
+        val userId = UserIDEntity("user", "domain")
+
+        // When
+        db.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(userId, email)
+
+        // Then
+        val result = db.userDAO.observeUserDetailsByQualifiedID(userId).first()
+        assertNotNull(result)
+        assertEquals(true, result.hasIncompleteMetadata)
+        assertEquals(email, result.email)
+    }
+
+    @Test
+    fun givenUserWithCompleteDataAlreadyStored_whenInsertingOrIgnoringUserIdWithEmail_thenJustIgnore() = runTest(dispatcher) {
+        // Given
+        val email = "user@email.com"
+        val userId = UserIDEntity("user", "domain")
+        val user = USER_ENTITY_1.copy(id = userId, email = email, hasIncompleteMetadata = false)
+        db.userDAO.upsertUser(user)
+
+        // When
+        db.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(userId, email)
+
+        // Then
+        val result = db.userDAO.observeUserDetailsByQualifiedID(userId).first()
+        assertNotNull(result)
+        assertEquals(false, result.hasIncompleteMetadata)
+    }
+
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))

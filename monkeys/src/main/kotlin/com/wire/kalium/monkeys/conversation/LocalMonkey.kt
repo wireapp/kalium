@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.monkeys.conversation
 
-import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ConversationOptions
@@ -35,9 +36,8 @@ import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScop
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.conversation.CreateConversationResult
-import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.Backend
 import com.wire.kalium.monkeys.model.ConversationDef
@@ -198,13 +198,13 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     ): MonkeyConversation {
         val self = this
         return this.monkeyState.readyThen {
-            val result = conversations.createGroupConversation(
+            val result = conversations.createRegularGroup(
                 name, monkeyList.map { it.monkeyType.userId() }, ConversationOptions(protocol = protocol)
             )
-            if (result is CreateGroupConversationUseCase.Result.Success) {
+            if (result is ConversationCreationResult.Success) {
                 MonkeyConversation(self, result.conversation.id, isDestroyable, monkeyList)
             } else {
-                if (result is CreateGroupConversationUseCase.Result.UnknownFailure) {
+                if (result is ConversationCreationResult.UnknownFailure) {
                     val cause = result.cause
                     if (cause is MLSFailure.Generic) {
                         error("${self.monkeyType.userId()} could not create group $name: ${cause.rootCause}")

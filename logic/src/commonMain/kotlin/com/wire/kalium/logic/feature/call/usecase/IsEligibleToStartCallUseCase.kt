@@ -44,8 +44,8 @@ internal class IsEligibleToStartCallUseCaseImpl(
         withContext(dispatcher.io) {
             val establishedCallConversationId = callRepository.establishedCallConversationId()
 
-            val canStartCall = (conversationType == Conversation.Type.ONE_ON_ONE ||
-                    (conversationType == Conversation.Type.GROUP && isConferenceCallingEnabled()))
+            val canStartCall = (conversationType == Conversation.Type.OneOnOne ||
+                    (conversationType is Conversation.Type.Group && isConferenceCallingEnabled()))
 
             establishedCallConversationId?.let {
                 callIsEstablished(it, conversationId, canStartCall)

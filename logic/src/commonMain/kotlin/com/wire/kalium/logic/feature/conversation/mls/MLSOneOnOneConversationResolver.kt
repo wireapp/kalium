@@ -55,7 +55,7 @@ internal class MLSOneOnOneConversationResolverImpl(
         conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
             // Look for an existing MLS-capable conversation one-on-one
             val initializedMLSOneOnOne = conversations.firstOrNull {
-                val isOneOnOne = it.type == Conversation.Type.ONE_ON_ONE
+                val isOneOnOne = it.type == Conversation.Type.OneOnOne
                 val protocol = it.protocol
                 val isMLSInitialized = protocol is Conversation.ProtocolInfo.MLSCapable &&
                         protocol.groupState == GroupState.ESTABLISHED

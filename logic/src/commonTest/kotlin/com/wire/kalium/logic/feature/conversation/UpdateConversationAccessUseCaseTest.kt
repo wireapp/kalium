@@ -386,7 +386,7 @@ class UpdateConversationAccessUseCaseTest {
         val conversationStub = Conversation(
             ConversationId(value = "someId", domain = "someDomain"),
             "GROUP Conversation",
-            Conversation.Type.GROUP,
+            Conversation.Type.Group.Regular,
             TeamId("someTeam"),
             ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,

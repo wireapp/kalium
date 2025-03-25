@@ -209,9 +209,9 @@ private fun fromScalaReceiptMode(receiptMode: Int?): Conversation.ReceiptMode = 
 } ?: Conversation.ReceiptMode.DISABLED
 
 private fun mapConversationType(type: Int): Conversation.Type? = when (type) {
-    0 -> Conversation.Type.GROUP
-    1 -> Conversation.Type.SELF
-    2 -> Conversation.Type.ONE_ON_ONE
-    3, 4 -> Conversation.Type.CONNECTION_PENDING
+    0 -> Conversation.Type.Group.Regular // Channels were not supported when "web backup" was implemented on Android
+    1 -> Conversation.Type.Self
+    2 -> Conversation.Type.OneOnOne
+    3, 4 -> Conversation.Type.ConnectionPending
     else -> null
 }

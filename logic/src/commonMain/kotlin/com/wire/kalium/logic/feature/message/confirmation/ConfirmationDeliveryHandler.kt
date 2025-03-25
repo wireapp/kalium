@@ -82,7 +82,7 @@ internal class ConfirmationDeliveryHandlerImpl(
             val messagesToSend = pendingConfirmationMessages.block { it.toMap() }
             messagesToSend.forEach { (conversationId, messages) ->
                 conversationRepository.observeConversationById(conversationId).first().flatMap { conversation ->
-                    if (conversation.type == Conversation.Type.ONE_ON_ONE) {
+                    if (conversation.type == Conversation.Type.OneOnOne) {
                         sendDeliverSignalUseCase(
                             conversation = conversation,
                             messages = messages.toList()

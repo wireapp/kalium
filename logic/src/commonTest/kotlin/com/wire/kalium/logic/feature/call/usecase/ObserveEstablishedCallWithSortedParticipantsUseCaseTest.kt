@@ -82,7 +82,7 @@ class ObserveEstablishedCallWithSortedParticipantsUseCaseTest {
             isCbrEnabled = false,
             callerId = UserId("called-id", "domain"),
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername2",
             callerTeamName = "team2"
         )

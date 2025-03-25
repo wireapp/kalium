@@ -99,7 +99,7 @@ class OnCloseCall(
         if (callStatus == CallStatus.MISSED)
             return true
         return callRepository.getCallMetadataProfile().data[conversationId]?.let {
-            val isGroupCall = it.conversationType == Conversation.Type.GROUP
+            val isGroupCall = it.conversationType is Conversation.Type.Group
             (callStatus == CallStatus.CLOSED &&
                     isGroupCall &&
                     it.establishedTime.isNullOrEmpty() &&

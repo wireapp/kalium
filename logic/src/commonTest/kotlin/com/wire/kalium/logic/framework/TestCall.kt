@@ -73,7 +73,7 @@ object TestCall {
         isCameraOn = false,
         isCbrEnabled = false,
         conversationName = CONVERSATION_NAME,
-        conversationType = Conversation.Type.ONE_ON_ONE,
+        conversationType = Conversation.Type.OneOnOne,
         callerName = CALLER_NAME,
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
@@ -111,7 +111,7 @@ object TestCall {
         isCbrEnabled = false,
         callerId = CALLER_ID,
         conversationName = CONVERSATION_NAME,
-        conversationType = Conversation.Type.ONE_ON_ONE,
+        conversationType = Conversation.Type.OneOnOne,
         callerName = CALLER_NAME,
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
@@ -142,7 +142,7 @@ object TestCall {
             false,
             UserId("client1", "domain"),
             "ONE_ON_ONE Name ${convId.value}",
-            Conversation.Type.ONE_ON_ONE,
+            Conversation.Type.OneOnOne,
             null,
             null,
         )
@@ -156,7 +156,7 @@ object TestCall {
             false,
             UserId("client1", "domain"),
             "ONE_ON_ONE Name ${convId.value}",
-            Conversation.Type.GROUP,
+            Conversation.Type.Group.Regular,
             null,
             null
         )

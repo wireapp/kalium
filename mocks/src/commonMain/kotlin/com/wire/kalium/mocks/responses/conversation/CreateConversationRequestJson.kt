@@ -23,6 +23,7 @@ import com.wire.kalium.mocks.responses.samples.QualifiedIDSamples
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -39,7 +40,8 @@ object CreateConversationRequestJson {
         receiptMode = ReceiptMode.DISABLED,
         conversationRole = "WIRE_MEMBER",
         protocol = ConvProtocol.PROTEUS,
-        creatorClient = null
+        creatorClient = null,
+        groupConversationType = GroupConversationType.REGULAR_GROUP
     )
 
     val v0 = ValidJsonProvider(
@@ -57,6 +59,7 @@ object CreateConversationRequestJson {
         |   "message_timer": ${it.messageTimer},
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
+        |   "group_conv_type": "group_conversation",
         |   "qualified_users": [
         |       {
         |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",
@@ -89,6 +92,7 @@ object CreateConversationRequestJson {
         |   "message_timer": ${it.messageTimer},
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
+        |   "group_conv_type": "group_conversation",
         |   "qualified_users": [
         |       {
         |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",

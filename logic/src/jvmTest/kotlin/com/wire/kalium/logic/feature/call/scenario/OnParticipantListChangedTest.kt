@@ -237,7 +237,7 @@ class OnParticipantListChangedTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = null,
             callerTeamName = null,
             establishedTime = null

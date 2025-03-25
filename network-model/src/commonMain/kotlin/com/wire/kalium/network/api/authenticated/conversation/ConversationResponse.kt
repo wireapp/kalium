@@ -90,7 +90,15 @@ data class ConversationResponse(
     val receiptMode: ReceiptMode,
 
     @SerialName("public_keys")
-    val publicKeys: MLSPublicKeysDTO? = null
+    val publicKeys: MLSPublicKeysDTO? = null,
+
+    /**
+     * Only groups are expected to have a non-null value.
+     * Since API V8
+     * @see GroupType
+     */
+    @SerialName("group_conv_type")
+    val conversationGroupType: GroupType? = null,
 ) {
 
     @Suppress("MagicNumber")
@@ -105,6 +113,14 @@ data class ConversationResponse(
         companion object {
             fun fromId(id: Int): Type = values().first { type -> type.id == id }
         }
+    }
+
+    enum class GroupType {
+        @SerialName("group_conversation")
+        REGULAR_GROUP,
+
+        @SerialName("channel")
+        CHANNEL,
     }
 
     fun toV6(): ConversationResponseV6 =

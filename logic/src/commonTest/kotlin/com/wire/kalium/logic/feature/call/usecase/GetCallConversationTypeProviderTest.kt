@@ -49,7 +49,7 @@ class GetCallConversationTypeProviderTest {
             val groupId = GroupID("groupid")
 
             val (arrangement, getCallConversationType) = Arrangement()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.ONE_ON_ONE)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.OneOnOne)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.MLS(
@@ -76,7 +76,7 @@ class GetCallConversationTypeProviderTest {
             val conversationId = TestConversation.ID
 
             val (_, getCallConversationType) = Arrangement()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.GROUP)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.Group.Regular)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.Proteus
@@ -98,7 +98,7 @@ class GetCallConversationTypeProviderTest {
 
             val (_, getCallConversationType) = Arrangement()
                 .withShouldNotUseSFTForOneOnOneCalls()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.ONE_ON_ONE)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.OneOnOne)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.Proteus
@@ -118,7 +118,7 @@ class GetCallConversationTypeProviderTest {
 
             val (_, getCallConversationType) = Arrangement()
                 .withShouldUseSFTForOneOnOneCallsFailure()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.GROUP)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.Group.Regular)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.Proteus

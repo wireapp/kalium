@@ -62,7 +62,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val fetchArchivedConversations = false
         val groupConversationDetails =
-            ConversationDetails.Group(
+            ConversationDetails.Group.Regular(
                 groupConversation,
                 isSelfUserMember = true,
                 selfRole = Conversation.Member.Role.Member
@@ -96,13 +96,13 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val fetchArchivedConversations = false
         val groupConversationDetails1 =
-            ConversationDetails.Group(
+            ConversationDetails.Group.Regular(
                 groupConversation1,
                 isSelfUserMember = true,
                 selfRole = Conversation.Member.Role.Member
             )
         val groupConversationDetails2 =
-            ConversationDetails.Group(
+            ConversationDetails.Group.Regular(
                 groupConversation2,
                 isSelfUserMember = true,
                 selfRole = Conversation.Member.Role.Member
@@ -135,7 +135,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val fetchArchivedConversations = false
 
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
-        val groupConversationDetails = ConversationDetails.Group(
+        val groupConversationDetails = ConversationDetails.Group.Regular(
             conversation = groupConversation,
             isSelfUserMember = true,
             selfRole = Conversation.Member.Role.Member
@@ -168,7 +168,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val fetchArchivedConversations = false
 
         val groupConversationUpdates = listOf(
-            ConversationDetails.Group(
+            ConversationDetails.Group.Regular(
                 groupConversation,
                 isSelfUserMember = true,
                 selfRole = Conversation.Member.Role.Member
@@ -215,7 +215,7 @@ class ObserveConversationListDetailsUseCaseTest {
         // Given
         val groupConversation = TestConversation.GROUP()
         val fetchArchivedConversations = false
-        val groupConversationDetails = ConversationDetails.Group(
+        val groupConversationDetails = ConversationDetails.Group.Regular(
             groupConversation,
             isSelfUserMember = true,
             selfRole = Conversation.Member.Role.Member
@@ -249,7 +249,7 @@ class ObserveConversationListDetailsUseCaseTest {
         // Given
         val groupConversation = TestConversation.GROUP()
         val fetchArchivedConversations = false
-        val groupConversationDetails = ConversationDetails.Group(
+        val groupConversationDetails = ConversationDetails.Group.Regular(
             groupConversation,
             isSelfUserMember = true,
             selfRole = Conversation.Member.Role.Member
@@ -277,7 +277,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversation = TestConversation.GROUP()
         val fetchArchivedConversations = false
 
-        val groupConversationDetails = ConversationDetails.Group(
+        val groupConversationDetails = ConversationDetails.Group.Regular(
             groupConversation,
             isSelfUserMember = true,
             selfRole = Conversation.Member.Role.Member

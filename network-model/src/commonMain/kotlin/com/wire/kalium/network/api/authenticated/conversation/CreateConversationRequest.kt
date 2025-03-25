@@ -35,6 +35,8 @@ data class CreateConversationRequest(
     val access: List<ConversationAccessDTO>?,
     @SerialName("access_role_v2")
     val accessRole: List<ConversationAccessRoleDTO>?,
+    @SerialName("group_conv_type")
+    val groupConversationType: GroupConversationType?,
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,
     @SerialName("message_timer")
@@ -64,6 +66,8 @@ data class CreateConversationRequestV3(
     val access: List<ConversationAccessDTO>?,
     @SerialName("access_role")
     val accessRole: List<ConversationAccessRoleDTO>?,
+    @SerialName("group_conv_type")
+    val groupConversationType: GroupConversationType?,
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,
     @SerialName("message_timer")
@@ -97,6 +101,15 @@ enum class ConvProtocol {
     override fun toString(): String {
         return this.name.lowercase()
     }
+}
+
+@Serializable
+enum class GroupConversationType {
+    @SerialName("group_conversation")
+    REGULAR_GROUP,
+
+    @SerialName("channel")
+    CHANNEL,
 }
 
 @Serializable

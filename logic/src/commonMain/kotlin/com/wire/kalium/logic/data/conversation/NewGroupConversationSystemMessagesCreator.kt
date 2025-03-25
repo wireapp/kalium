@@ -109,7 +109,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     )
 
     override suspend fun conversationReadReceiptStatus(conversation: Conversation) = run {
-        if (conversation.type != Conversation.Type.GROUP || !isSelfATeamMember()) {
+        if (conversation.type !is Conversation.Type.Group || !isSelfATeamMember()) {
             return Either.Right(Unit)
         }
 

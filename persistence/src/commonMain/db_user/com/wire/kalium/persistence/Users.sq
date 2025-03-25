@@ -137,9 +137,9 @@ insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id, incomplete_metadata)
 VALUES(?, 1);
 
-insertOrIgnoreUserIdWithConnectionStatus:
-INSERT OR IGNORE INTO User(qualified_id, connection_status)
-VALUES(?, ?);
+insertOrIgnoreUserIdWithEmail:
+INSERT OR IGNORE INTO User(qualified_id, email, incomplete_metadata)
+VALUES(?, ?, 1);
 
 upsertUserConnectionStatus:
 INSERT INTO User(qualified_id, connection_status)

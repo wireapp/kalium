@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toModel
+import com.wire.kalium.network.api.authenticated.featureConfigs.ChannelsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
@@ -44,6 +45,7 @@ interface FeatureConfigMapper {
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
 }
 
+@Suppress("TooManyFunctions")
 class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel =
         with(featureConfigResponse) {
@@ -65,9 +67,27 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 validateSAMLEmailsModel = ConfigsStatusModel(fromDTO(validateSAMLEmails.status)),
                 mlsModel = fromDTO(mls),
                 e2EIModel = fromDTO(mlsE2EI),
-                mlsMigrationModel = mlsMigration?.let { fromDTO(it) }
+                mlsMigrationModel = mlsMigration?.let { fromDTO(it) },
+                channelsModel = fromDTO(channels)
             )
         }
+
+    private fun fromDTO(channels: FeatureConfigData.Channels?): ChannelFeatureConfiguration {
+        fun fromDTO(teamUserType: ChannelsConfigDTO.TeamUserType) = when (teamUserType) {
+            ChannelsConfigDTO.TeamUserType.ADMINS -> ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY
+            ChannelsConfigDTO.TeamUserType.TEAM_MEMBERS -> ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS
+            ChannelsConfigDTO.TeamUserType.EVERYONE -> ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM
+        }
+
+        val config = channels?.config ?: return ChannelFeatureConfiguration.Disabled
+        return when (channels.status) {
+            FeatureFlagStatusDTO.DISABLED -> ChannelFeatureConfiguration.Disabled
+            FeatureFlagStatusDTO.ENABLED -> ChannelFeatureConfiguration.Enabled(
+                createChannelsRequirement = fromDTO(config.allowedToCreateChannels),
+                createPublicChannelsRequirement = fromDTO(config.allowedToOpenChannels)
+            )
+        }
+    }
 
     override fun fromDTO(status: FeatureFlagStatusDTO): Status =
         when (status) {

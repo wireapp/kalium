@@ -173,7 +173,7 @@ class MLSOneOnOneConversationResolverTest {
 
         private val CONVERSATION_GROUP_MLS_INITIALIZED = CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.copy(
             id = ConversationId("group-mls-initialized", "test"),
-            type = Conversation.Type.GROUP
+            type = Conversation.Type.Group.Regular
         )
 
         private val ALL_CONVERSATIONS = listOf(
