@@ -387,9 +387,6 @@ internal abstract class ApiTest {
     fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
     fun HttpRequestData.assertJsonBodyContains(value: String) {
         assertIs<TextContent>(body)
-        // convert both body and the content to JsonObject, so we are not comparing strings
-        // since json strings can have different values order
-
         val actual = json.decodeFromString<JsonElement>((body as TextContent).text)
         assertTrue(actual.toString().contains(value))
     }
