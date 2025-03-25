@@ -22,21 +22,31 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
-class UpdateChannelPermissionUseCase(
-    val conversationRepository: ConversationRepository
-) {
+/**
+ * Use case to update the channel permission.
+ */
+interface UpdateChannelPermissionUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         channelPermission: ChannelPermission
-    ): UpdateChannelPermissionUseCaseResult =
-        conversationRepository.updateChannelPermission(conversationId, channelPermission)
-            .fold(
-                { UpdateChannelPermissionUseCaseResult.Failure },
-                { UpdateChannelPermissionUseCaseResult.Success }
-            )
+    ): UpdateChannelPermissionUseCaseResult
+
+    sealed class UpdateChannelPermissionUseCaseResult {
+        data object Success : UpdateChannelPermissionUseCaseResult()
+        data object Failure : UpdateChannelPermissionUseCaseResult()
+    }
 }
 
-sealed class UpdateChannelPermissionUseCaseResult {
-    data object Success : UpdateChannelPermissionUseCaseResult()
-    data object Failure : UpdateChannelPermissionUseCaseResult()
+internal class UpdateChannelPermissionUseCaseImpl(
+    val conversationRepository: ConversationRepository
+) : UpdateChannelPermissionUseCase {
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        channelPermission: ChannelPermission
+    ): UpdateChannelPermissionUseCase.UpdateChannelPermissionUseCaseResult =
+        conversationRepository.updateChannelPermission(conversationId, channelPermission)
+            .fold(
+                { UpdateChannelPermissionUseCase.UpdateChannelPermissionUseCaseResult.Failure },
+                { UpdateChannelPermissionUseCase.UpdateChannelPermissionUseCaseResult.Success }
+            )
 }
