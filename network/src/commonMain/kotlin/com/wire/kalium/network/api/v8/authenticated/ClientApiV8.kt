@@ -37,7 +37,8 @@ internal open class ClientApiV8 internal constructor(
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
         wrapKaliumResponse {
             httpClient.post(PATH_CLIENTS) {
-                setBody(apiModelMapper.toApiV8(registerClientRequest))
+                val mapped = apiModelMapper.toApiV8(registerClientRequest)
+                setBody(mapped)
             }
         }
 }

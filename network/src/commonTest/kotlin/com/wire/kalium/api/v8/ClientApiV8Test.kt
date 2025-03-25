@@ -55,7 +55,6 @@ internal class ClientApiV8Test : ApiTest() {
     @Test
     fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpoint_theRequestShouldBeConfiguredCorrectlyWithConsumableCapability() =
         runTest {
-            val clientCapability = "consumable-notifications"
             val networkClient = mockAuthenticatedNetworkClient(
                 VALID_REGISTER_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
@@ -64,7 +63,7 @@ internal class ClientApiV8Test : ApiTest() {
                     assertJson()
                     assertNoQueryParams()
                     assertPathEqual(PATH_CLIENTS)
-                    assertJsonBodyContains(clientCapability)
+                    assertJsonBodyContent(REGISTER_CLIENT_REQUEST_V8)
                 }
             )
             val clientApi: ClientApi = ClientApiV8(networkClient)
@@ -77,6 +76,7 @@ internal class ClientApiV8Test : ApiTest() {
     private companion object {
         const val PATH_CLIENTS = "/clients"
         val REGISTER_CLIENT_REQUEST = RegisterClientRequestJson.valid
+        val REGISTER_CLIENT_REQUEST_V8 = RegisterClientRequestJson.validV8
         val VALID_REGISTER_CLIENT_RESPONSE = ClientResponseJson.valid
     }
 }

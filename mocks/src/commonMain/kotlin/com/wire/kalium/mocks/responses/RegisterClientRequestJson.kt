@@ -83,4 +83,33 @@ object RegisterClientRequestJson {
         ),
         jsonProvider
     )
+
+    val validV8 = """
+        {
+           "password":"password",
+           "prekeys":[
+              {
+                 "id":1,
+                 "key":"preykey_1"
+              },
+              {
+                 "id":2,
+                 "key":"prekey_2"
+              }
+           ],
+           "lastkey":{
+              "id":999,
+              "key":"last_prekey"
+           },
+           "class":"desktop",
+           "type":"permanent",
+           "label":"label",
+           "capabilities":[
+              "legalhold-implicit-consent", "consumable-notifications"
+           ],
+           "model":"model",
+           "cookie":"cookie label",
+           "verification_code":"123456"
+        }
+        """.trimIndent()
 }
