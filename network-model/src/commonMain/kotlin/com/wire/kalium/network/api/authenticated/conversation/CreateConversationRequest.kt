@@ -88,37 +88,6 @@ data class CreateConversationRequestV3(
 )
 
 @Serializable
-data class CreateConversationRequestV8(
-    @SerialName("qualified_users")
-    val qualifiedUsers: List<UserId>?,
-    @SerialName("name")
-    val name: String?,
-    @SerialName("access")
-    val access: List<ConversationAccessDTO>?,
-    @SerialName("access_role")
-    val accessRole: List<ConversationAccessRoleDTO>?,
-    @SerialName("group_conv_type")
-    val groupConversationType: GroupConversationType?,
-    @SerialName("team")
-    val convTeamInfo: ConvTeamInfo?,
-    @SerialName("message_timer")
-    val messageTimer: Long?, // Per-conversation message time
-    // Receipt mode, controls if read receipts are enabled for the conversation.
-    // Any positive value is interpreted as enabled.
-    @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode,
-    // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles
-    // designed by Wire (i.e., no custom roles can have the same prefix)
-    @SerialName("conversation_role")
-    val conversationRole: String?,
-    @SerialName("protocol")
-    val protocol: ConvProtocol?,
-    // Only needed for MLS conversations
-    @SerialName("creator_client")
-    val creatorClient: String?
-)
-
-@Serializable
 enum class ConvProtocol {
     @SerialName("proteus")
     PROTEUS,
