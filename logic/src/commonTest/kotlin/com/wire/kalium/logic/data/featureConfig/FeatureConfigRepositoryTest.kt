@@ -88,7 +88,8 @@ class FeatureConfigRepositoryTest {
                 Instant.DISTANT_FUTURE,
                 Instant.DISTANT_FUTURE,
                 Status.ENABLED
-            )
+            ),
+            ChannelFeatureConfiguration.Disabled
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -171,7 +172,8 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.MLSMigration(
                 MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
-            )
+            ),
+            FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED)
         )
 
         @Mock
