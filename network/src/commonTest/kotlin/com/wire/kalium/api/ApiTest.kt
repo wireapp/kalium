@@ -20,7 +20,6 @@ package com.wire.kalium.api
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
@@ -248,7 +247,7 @@ internal abstract class ApiTest {
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
-        ): AuthenticatedNetworkClient {
+    ): AuthenticatedNetworkClient {
         val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
             statusCode,
@@ -386,4 +385,12 @@ internal abstract class ApiTest {
     // host
     fun HttpRequestData.assertHostEqual(expectedHost: String) = assertEquals(expected = expectedHost, actual = this.url.host)
     fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
+    fun HttpRequestData.assertJsonBodyContains(value: String) {
+        assertIs<TextContent>(body)
+        // convert both body and the content to JsonObject, so we are not comparing strings
+        // since json strings can have different values order
+
+        val actual = json.decodeFromString<JsonElement>((body as TextContent).text)
+        assertTrue(actual.toString().contains(value))
+    }
 }

@@ -88,7 +88,7 @@ class ApiModelMapperImpl : ApiModelMapper {
             deviceType = request.deviceType,
             type = request.type,
             label = request.label,
-            capabilities = request.capabilities?.also { it.toMutableSet().add(ClientCapabilityDTO.ConsumableNotifications) }?.toList()
+            capabilities = request.capabilities?.toMutableSet()?.apply { add(ClientCapabilityDTO.ConsumableNotifications) }?.toList()
                 ?: listOf(ClientCapabilityDTO.ConsumableNotifications),
             model = request.model,
             cookieLabel = request.cookieLabel,
