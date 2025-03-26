@@ -109,6 +109,9 @@ object FeatureConfigJson {
             |       "allowedCipherSuites": [1],
             |       "defaultCipherSuite": 1
             |    }
+            |  },
+            |  "channels": {
+            |    "status": "disabled"
             |  }
             |}
         """.trimMargin()
@@ -138,7 +141,8 @@ object FeatureConfigJson {
             FeatureConfigData.MLSMigration(
                 MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
-            )
+            ),
+            FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
         ),
         featureConfigResponseSerializer
     )
