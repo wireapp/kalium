@@ -122,7 +122,7 @@ class SendMultipartMessageUseCase internal constructor(
                     id = it.uuid,
                     versionId = it.versionId,
                     mimeType = it.mimeType,
-                    assetPath = it.remoteFilePath,
+                    assetPath = it.remoteFilePath.substringAfterLast("/"),
                     assetSize = it.fileSize,
                     localPath = it.localFilePath,
                     previewUrl = null,

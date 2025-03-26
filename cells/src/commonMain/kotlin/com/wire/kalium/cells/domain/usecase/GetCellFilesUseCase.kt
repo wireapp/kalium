@@ -79,7 +79,9 @@ internal class GetCellFilesUseCaseImpl(
                             conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
                         )
                     }
-                    .toList().right()
+                    .toList()
+                    .reversed()
+                    .right()
             }
     }
 }

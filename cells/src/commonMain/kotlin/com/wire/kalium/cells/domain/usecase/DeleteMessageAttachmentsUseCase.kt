@@ -51,7 +51,9 @@ internal class DeleteMessageAttachmentsUseCaseImpl(
         try {
             attachmentsRepository.getAttachments(messageId, conversationId).map { attachments ->
 
-                val paths = attachments.filterIsInstance<CellAssetContent>().mapNotNull { it.assetPath }
+                val paths = attachments.filterIsInstance<CellAssetContent>().mapNotNull {
+                    it.assetPath?.let { path -> "$conversationId/$path" }
+                }
 
                 if (paths.isNotEmpty()) {
                     cellsRepository.deleteFiles(paths)

@@ -150,3 +150,8 @@ fun MessageAttachment.localPath() = when (this) {
     is CellAssetContent -> localPath
     is AssetContent -> localData?.assetDataPath
 }
+
+fun MessageAttachment.remotePath() = when (this) {
+    is CellAssetContent -> assetPath
+    is AssetContent -> name
+}

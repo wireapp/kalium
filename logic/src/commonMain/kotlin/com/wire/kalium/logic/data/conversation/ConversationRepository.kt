@@ -459,6 +459,8 @@ internal class ConversationDataSource internal constructor(
                     conversation,
                     mlsGroupState = mlsGroupState,
                     selfTeamIdProvider().getOrNull(),
+                    // TODO: WORKAROUND. Remove once BE supports cells for conversations
+                    wireCellEnabled = existingConversation?.wireCell != null,
                 )
             )
             memberDAO.insertMembersWithQualifiedId(
@@ -483,6 +485,8 @@ internal class ConversationDataSource internal constructor(
                     conversationResponse,
                     mlsGroupState = mlsGroupState,
                     selfTeamIdProvider().getOrNull(),
+                    // TODO: WORKAROUND. Remove once BE supports cells for conversations
+                    wireCellEnabled = conversationDAO.getConversationById(conversationResponse.id.toDao())?.wireCell != null
                 )
             }
         conversationDAO.insertConversations(conversationEntities)

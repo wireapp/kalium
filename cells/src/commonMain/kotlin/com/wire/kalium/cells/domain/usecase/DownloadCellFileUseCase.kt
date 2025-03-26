@@ -75,9 +75,9 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
                 } ?: Either.Left(StorageFailure.DataNotFound)
             },
             { path ->
-                path?.let {
+                (remoteFilePath ?: path)?.let {
                     attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
-                    cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
+                    cellsRepository.downloadFile(outFilePath, it, onProgressUpdate)
                         .onSuccess {
                             attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
                             attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())

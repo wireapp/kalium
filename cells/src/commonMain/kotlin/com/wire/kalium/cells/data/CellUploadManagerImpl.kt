@@ -91,8 +91,15 @@ internal class CellUploadManagerImpl internal constructor(
         uploads[node.uuid] = UploadInfo(
             node = node,
             job = uploadJob,
+            assetPath = assetPath,
             events = uploadEventsFlow,
         )
+    }
+
+    override fun retryUpload(nodeUuid: String) {
+        uploads[nodeUuid]?.let { uploadInfo ->
+            startUpload(uploadInfo.assetPath, uploadInfo.node)
+        }
     }
 
     private fun updateUploadProgress(nodeUuid: String, uploaded: Long) {
@@ -137,6 +144,7 @@ internal class CellUploadManagerImpl internal constructor(
 
 private data class UploadInfo(
     val node: CellNode,
+    val assetPath: Path,
     val job: Job,
     val events: MutableSharedFlow<CellUploadEvent>,
     val progress: Float = 0f,

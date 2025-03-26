@@ -122,15 +122,28 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         attachmentsRepository.getAttachment(node.uuid).map { attachment ->
             if (attachment is CellAssetContent) {
 
+                var localPath = attachment.localPath
+
+                // Check if asset was updated
                 if (attachment.contentHash != node.contentHash) {
-                    attachment.localPath?.let { fileSystem.delete(it.toPath()) }
+                    localPath?.let { fileSystem.delete(it.toPath()) }
                     attachmentsRepository.saveLocalPath(attachment.id, null)
+                    localPath = null
+                }
+
+                // Check if local file is still available
+                localPath?.toPath()?.let {
+                    if (!fileSystem.exists(it)) {
+                        attachmentsRepository.saveLocalPath(attachment.id, null)
+                        localPath = null
+                    }
                 }
 
                 attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
 
+                // Update transfer status
                 if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
-                    if (attachment.localPath == null) {
+                    if (localPath == null) {
                         attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
                     } else {
                         attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
@@ -142,7 +155,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
 }
 
 @Suppress("ReturnCount")
-private fun NetworkFailure.isAssetNotFound(): Boolean {
+internal fun NetworkFailure.isAssetNotFound(): Boolean {
     val error = (this as? ServerMiscommunication)?.kaliumException ?: return false
     val response = (error as? KaliumException.ServerError)?.errorResponse ?: return false
     return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
