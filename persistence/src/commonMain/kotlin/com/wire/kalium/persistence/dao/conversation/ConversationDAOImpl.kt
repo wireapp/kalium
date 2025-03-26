@@ -171,7 +171,7 @@ internal class ConversationDAOImpl internal constructor(
                 archivedInstant,
                 isChannel,
                 channelAccess,
-                channelPermission
+                channelAddPermission
             )
         }
     }
@@ -531,10 +531,10 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectIsChannel(conversationId).executeAsOneOrNull() ?: false
     }
 
-    override suspend fun updateChannelPermission(
+    override suspend fun updateChannelAddPermission(
         conversationId: QualifiedIDEntity,
-        channelPermission: ConversationEntity.ChannelPermission
+        channelAddPermission: ConversationEntity.ChannelAddPermission
     ) = withContext(coroutineContext) {
-        conversationQueries.updateChannelPermission(channelPermission, conversationId)
+        conversationQueries.updateChannelAddPermission(channelAddPermission, conversationId)
     }
 }

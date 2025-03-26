@@ -18,35 +18,35 @@
 package com.wire.kalium.logic.feature.conversation.channel
 
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelPermission
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
 /**
  * Use case to update the channel permission.
  */
-interface UpdateChannelPermissionUseCase {
+interface UpdateChannelAddPermissionUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
-        channelPermission: ChannelPermission
-    ): UpdateChannelPermissionUseCaseResult
+        channelAddPermission: ChannelAddPermission
+    ): UpdateChannelAddPermissionUseCaseResult
 
-    sealed class UpdateChannelPermissionUseCaseResult {
-        data object Success : UpdateChannelPermissionUseCaseResult()
-        data object Failure : UpdateChannelPermissionUseCaseResult()
+    sealed class UpdateChannelAddPermissionUseCaseResult {
+        data object Success : UpdateChannelAddPermissionUseCaseResult()
+        data object Failure : UpdateChannelAddPermissionUseCaseResult()
     }
 }
 
-internal class UpdateChannelPermissionUseCaseImpl(
+internal class UpdateChannelAddPermissionUseCaseImpl(
     val conversationRepository: ConversationRepository
-) : UpdateChannelPermissionUseCase {
+) : UpdateChannelAddPermissionUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,
-        channelPermission: ChannelPermission
-    ): UpdateChannelPermissionUseCase.UpdateChannelPermissionUseCaseResult =
-        conversationRepository.updateChannelPermission(conversationId, channelPermission)
+        channelAddPermission: ChannelAddPermission
+    ): UpdateChannelAddPermissionUseCase.UpdateChannelAddPermissionUseCaseResult =
+        conversationRepository.updateChannelAddPermission(conversationId, channelAddPermission)
             .fold(
-                { UpdateChannelPermissionUseCase.UpdateChannelPermissionUseCaseResult.Failure },
-                { UpdateChannelPermissionUseCase.UpdateChannelPermissionUseCaseResult.Success }
+                { UpdateChannelAddPermissionUseCase.UpdateChannelAddPermissionUseCaseResult.Failure },
+                { UpdateChannelAddPermissionUseCase.UpdateChannelAddPermissionUseCaseResult.Success }
             )
 }

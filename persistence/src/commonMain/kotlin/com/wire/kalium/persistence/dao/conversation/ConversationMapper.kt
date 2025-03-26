@@ -75,7 +75,7 @@ data object ConversationMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
-        channelPermission: ConversationEntity.ChannelPermission?,
+        channelAddPermission: ConversationEntity.ChannelAddPermission?,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
@@ -135,7 +135,7 @@ data object ConversationMapper {
         folderName = folderName,
         isChannel = isChannel,
         channelAccess = channelAccess,
-        channelPermission = channelPermission
+        channelAddPermission = channelAddPermission
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -174,7 +174,7 @@ data object ConversationMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
-        channelPermission: ConversationEntity.ChannelPermission?
+        channelAddPermission: ConversationEntity.ChannelAddPermission?
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -206,7 +206,7 @@ data object ConversationMapper {
         legalHoldStatus = legalHoldStatus,
         isChannel = isChannel,
         channelAccess = channelAccess,
-        channelPermission = channelPermission
+        channelAddPermission = channelAddPermission
     )
 
     @Suppress("LongParameterList")

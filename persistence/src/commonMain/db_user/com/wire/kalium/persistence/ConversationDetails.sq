@@ -90,7 +90,7 @@ Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
 Conversation.is_channel,
 Conversation.channel_access,
-Conversation.channel_permission,
+Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
     WHEN Conversation.type = 'GROUP' THEN

@@ -22,7 +22,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAccess
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelPermission
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
@@ -145,7 +145,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL,
             channelAccess = null, // TODO: implement when api is ready
-            channelPermission = null // TODO: implement when api is ready
+            channelAddPermission = null // TODO: implement when api is ready
         )
     }
 
@@ -286,8 +286,8 @@ internal class ConversationMapperImpl(
                             isFavorite = isFavorite,
                             folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                             access = channelAccess?.toModelChannelAccess() ?: ChannelAccess.PRIVATE,
-                            permission = channelPermission?.toModelChannelPermission()
-                                ?: ConversationDetails.Group.Channel.ChannelPermission.ADMINS
+                            permission = channelAddPermission?.toModelChannelPermission()
+                                ?: ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
                         )
                     } else {
                         ConversationDetails.Group.Regular(
@@ -473,7 +473,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus),
             isChannel = false, // There were no channels in old Android clients. So no migration from channels is necessary,
             channelAccess = null,
-            channelPermission = null
+            channelAddPermission = null
         )
     }
 
@@ -507,7 +507,7 @@ internal class ConversationMapperImpl(
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false, // We can assume the conversations aren't channels while they're failed,
         channelAccess = null,
-        channelPermission = null
+        channelAddPermission = null
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -590,14 +590,14 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
-fun ChannelPermission.toDaoChannelPermission(): ConversationEntity.ChannelPermission = when (this) {
-    ChannelPermission.ADMINS -> ConversationEntity.ChannelPermission.ADMINS
-    ChannelPermission.ADMINS_AND_MEMBERS -> ConversationEntity.ChannelPermission.ADMINS_AND_MEMBERS
+fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
+    ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
+    ChannelAddPermission.ADMINS_AND_MEMBERS -> ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS
 }
 
-fun ConversationEntity.ChannelPermission.toModelChannelPermission(): ChannelPermission = when (this) {
-    ConversationEntity.ChannelPermission.ADMINS -> ChannelPermission.ADMINS
-    ConversationEntity.ChannelPermission.ADMINS_AND_MEMBERS -> ChannelPermission.ADMINS_AND_MEMBERS
+fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
+    ConversationEntity.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
+    ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS -> ChannelAddPermission.ADMINS_AND_MEMBERS
 }
 
 fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {

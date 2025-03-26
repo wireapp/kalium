@@ -270,7 +270,7 @@ internal class ConnectionDataSource(
                         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                         isChannel = false,
                         channelAccess = null,
-                        channelPermission = null
+                        channelAddPermission = null
                     )
                 )
             }

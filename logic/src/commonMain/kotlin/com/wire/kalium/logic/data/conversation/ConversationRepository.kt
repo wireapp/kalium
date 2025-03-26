@@ -40,7 +40,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelPermission
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
@@ -230,9 +230,9 @@ interface ConversationRepository {
         role: Conversation.Member.Role
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateChannelPermission(
+    suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
-        channelPermission: ChannelPermission
+        channelAddPermission: ChannelAddPermission
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -1197,11 +1197,11 @@ internal class ConversationDataSource internal constructor(
         metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
             ?.map { it.toModel() } ?: listOf()
 
-    override suspend fun updateChannelPermission(
+    override suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
-        channelPermission: ChannelPermission
+        channelAddPermission: ChannelAddPermission
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateChannelPermission(conversationId.toDao(), channelPermission.toDaoChannelPermission())
+        conversationDAO.updateChannelAddPermission(conversationId.toDao(), channelAddPermission.toDaoChannelPermission())
     }
 
     companion object {

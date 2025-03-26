@@ -49,7 +49,7 @@ data class ConversationEntity(
     val legalHoldStatus: LegalHoldStatus,
     val isChannel: Boolean,
     val channelAccess: ChannelAccess?,
-    val channelPermission: ChannelPermission?,
+    val channelAddPermission: ChannelAddPermission?,
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -64,7 +64,7 @@ data class ConversationEntity(
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
     enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED }
     enum class ChannelAccess { PUBLIC, PRIVATE }
-    enum class ChannelPermission { ADMINS, ADMINS_AND_MEMBERS }
+    enum class ChannelAddPermission { ADMINS, ADMINS_AND_MEMBERS }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {

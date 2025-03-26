@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAccess
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelPermission
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAddPermission
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
 
@@ -80,7 +80,7 @@ data class ConversationViewEntity(
     val folderName: String?,
     val isChannel: Boolean,
     val channelAccess: ChannelAccess?,
-    val channelPermission: ChannelPermission?,
+    val channelAddPermission: ChannelAddPermission?,
 ) {
     val isMember: Boolean get() = selfRole != null
 }
