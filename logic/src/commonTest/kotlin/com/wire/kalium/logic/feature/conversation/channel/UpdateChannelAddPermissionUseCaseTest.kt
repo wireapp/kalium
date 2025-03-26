@@ -35,7 +35,7 @@ import kotlin.test.assertTrue
 class UpdateChannelAddPermissionUseCaseTest {
 
     @Test
-    fun `given updateChannelAddPermission succeeds when invoke use case then return Success`() = runTest {
+    fun givenUpdateChannelAddPermissionSucceeds_whenInvokeUseCase_thenReturnSuccess() = runTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, usecase) = Arrangement()
             .withUpdateReturning(Either.Right(Unit))
@@ -48,7 +48,7 @@ class UpdateChannelAddPermissionUseCaseTest {
     }
 
     @Test
-    fun `given updateChannelAddPermission fails when invoke use case then return Failure`() = runTest {
+    fun givenUpdateChannelAddPermissionFailsWhenInvokeUseCase_thenReturnFailure() = runTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, usecase) = Arrangement()
             .withUpdateReturning(Either.Left(CoreFailure.MissingClientRegistration))
