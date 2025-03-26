@@ -58,6 +58,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS,
     )
     val conversationEntity2 = ConversationEntity(
         QualifiedIDEntity("2", "wire.com"),
@@ -87,6 +89,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS,
     )
 
     val conversationEntity3 = ConversationEntity(
@@ -119,6 +123,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS
     )
 
     val conversationEntity4 = ConversationEntity(
@@ -151,6 +157,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS,
     )
 
     val conversationEntity5 = ConversationEntity(
@@ -183,6 +191,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS,
     )
 
     val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

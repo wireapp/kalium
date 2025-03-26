@@ -530,6 +530,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS,
         )
     }
 }
