@@ -19,11 +19,7 @@ package com.wire.kalium.cells.domain
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-internal interface CellConversationRepository {
-    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
+internal interface CellUsersRepository {
+    suspend fun getUserNames(): Either<StorageFailure, List<Pair<String, String>>>
 }

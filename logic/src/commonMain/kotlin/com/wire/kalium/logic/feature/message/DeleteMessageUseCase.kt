@@ -19,9 +19,17 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -32,13 +40,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -57,6 +58,7 @@ class DeleteMessageUseCase internal constructor(
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val deleteAttachments: DeleteMessageAttachmentsUseCase,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -68,7 +70,11 @@ class DeleteMessageUseCase internal constructor(
      * @param deleteForEveryone either delete the message for everyone or just for the current user
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> =
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        messageId: String,
+        deleteForEveryone: Boolean,
+    ): Either<CoreFailure, Unit> =
         withContext(dispatcher.io) {
             slowSyncRepository.slowSyncStatus.first {
                 it is SlowSyncStatus.Complete
@@ -102,7 +108,7 @@ class DeleteMessageUseCase internal constructor(
                                 }
                             }
                         }.onSuccess {
-                            deleteMessageAsset(message)
+                            deleteMessageAsset(message, deleteForEveryone)
                         }.flatMap {
                             // in case of ephemeral message, we want to delete it completely from the device, not just mark it as deleted
                             // as this can only happen when the user decides to delete the message, before the self-deletion timer expired
@@ -123,7 +129,7 @@ class DeleteMessageUseCase internal constructor(
             }
         }
 
-    private suspend fun deleteMessageAsset(message: Message) {
+    private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
 
             assetRepository.deleteAsset(
@@ -134,6 +140,11 @@ class DeleteMessageUseCase internal constructor(
                 .onFailure {
                     kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
                 }
+        }
+
+        // Delete attachments for multipart message
+        if (deleteForEveryone && message.content is MessageContent.Multipart) {
+            deleteAttachments(message.id, message.conversationId)
         }
     }
 }

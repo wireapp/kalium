@@ -21,3 +21,6 @@ WHERE key = ?;
 
 selectByKey:
 SELECT * FROM Asset WHERE key = ?;
+
+getAssets:
+SELECT * FROM Asset;

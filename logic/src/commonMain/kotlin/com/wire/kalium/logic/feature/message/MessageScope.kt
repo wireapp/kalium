@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.logger.KaliumLogger
@@ -132,6 +133,7 @@ class MessageScope internal constructor(
     private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
     private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
     private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
+    private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -345,7 +347,8 @@ class MessageScope internal constructor(
             messageSender,
             selfUserId,
             currentClientIdProvider,
-            selfConversationIdProvider
+            selfConversationIdProvider,
+            deleteMessageAttachmentsUseCase,
         )
 
     val toggleReaction: ToggleReactionUseCase
