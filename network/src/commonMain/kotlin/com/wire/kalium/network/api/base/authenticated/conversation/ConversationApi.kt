@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.base.authenticated.conversation
 
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermission
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
@@ -32,6 +33,7 @@ import com.wire.kalium.network.api.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
@@ -173,10 +175,16 @@ interface ConversationApi : BaseApi {
         conversationId: ConversationId,
         typingIndicatorMode: TypingIndicatorStatusDTO
     ): NetworkResponse<Unit>
+
     suspend fun updateProtocol(
         conversationId: ConversationId,
         protocol: ConvProtocol
     ): NetworkResponse<UpdateConversationProtocolResponse>
+
+    suspend fun updateChannelPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): NetworkResponse<UpdateChannelAddPermissionResponse>
 
     suspend fun guestLinkInfo(
         conversationId: ConversationId

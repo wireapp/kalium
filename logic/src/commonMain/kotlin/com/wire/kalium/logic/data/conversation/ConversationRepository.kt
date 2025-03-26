@@ -18,10 +18,26 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.mapToRightOr
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
@@ -40,25 +56,10 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.isLeft
-import com.wire.kalium.common.functional.isRight
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.mapRight
-import com.wire.kalium.common.functional.mapToRightOr
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapMLSRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
@@ -230,6 +231,16 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: Conversation.ChannelAddPermission
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: Conversation.ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse>
 
     /**
      * Deletes all conversation messages
@@ -996,6 +1007,23 @@ internal class ConversationDataSource internal constructor(
                 persistConversations(it.conversationsFound, null)
             }
         }
+    }
+
+    override suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: Conversation.ChannelAddPermission
+    ): Either<CoreFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: Conversation.ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
+        conversationApi.updateChannelPermission(
+            conversationId = conversationId.toApi(),
+            channelAddPermission = channelAddPermission.toApi()
+        )
     }
 
     override suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean> =

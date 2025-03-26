@@ -197,6 +197,11 @@ data class Conversation(
         MLS
     }
 
+    enum class ChannelAddPermission {
+        ADMINS,
+        EVERYONE
+    }
+
     enum class ReceiptMode { DISABLED, ENABLED }
     enum class TypingIndicatorMode { STARTED, STOPPED }
 

@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermission
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -588,6 +589,7 @@ private fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conv
             false -> Conversation.Type.Group.Regular
         }
     }
+
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending
 }
 
@@ -685,6 +687,16 @@ internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
     ConvProtocol.PROTEUS -> Conversation.Protocol.PROTEUS
     ConvProtocol.MIXED -> Conversation.Protocol.MIXED
     ConvProtocol.MLS -> Conversation.Protocol.MLS
+}
+
+internal fun ChannelAddPermission.toModel(): Conversation.ChannelAddPermission = when (this) {
+    ChannelAddPermission.ADMINS -> Conversation.ChannelAddPermission.ADMINS
+    ChannelAddPermission.EVERYONE -> Conversation.ChannelAddPermission.EVERYONE
+}
+
+internal fun Conversation.ChannelAddPermission.toApi(): ChannelAddPermission = when (this) {
+    Conversation.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
+    Conversation.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
 }
 
 internal fun Protocol.toModel(): Conversation.Protocol = when (this) {

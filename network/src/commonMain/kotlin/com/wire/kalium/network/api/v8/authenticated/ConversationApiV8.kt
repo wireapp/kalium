@@ -19,8 +19,11 @@
 package com.wire.kalium.network.api.v8.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermission
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v7.authenticated.ConversationApiV7
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -39,5 +42,12 @@ internal open class ConversationApiV8 internal constructor(
         httpClient.post(PATH_CONVERSATIONS) {
             setBody(createConversationRequest)
         }
+    }
+
+    override suspend fun updateChannelPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): NetworkResponse<UpdateChannelAddPermissionResponse> {
+        TODO("Not yet implemented")
     }
 }
