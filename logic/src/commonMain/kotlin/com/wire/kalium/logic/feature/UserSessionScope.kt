@@ -195,6 +195,7 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
+import com.wire.kalium.logic.feature.channels.ChannelsScope
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
@@ -1853,6 +1854,13 @@ class UserSessionScope internal constructor(
         )
     }
 
+    val channels: ChannelsScope by lazy {
+        ChannelsScope(
+            { userStorage.database.metadataDAO },
+            { userRepository }
+        )
+    }
+
     val migration by lazy { MigrationScope(userId, userStorage.database) }
     val debug: DebugScope by lazy {
         DebugScope(
@@ -2081,7 +2089,8 @@ class UserSessionScope internal constructor(
             secondFactorPasswordChallengeConfigHandler,
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
-            appLockConfigHandler
+            appLockConfigHandler,
+            channels.channelsFeatureConfigHandler
         )
 
     val team: TeamScope
@@ -2220,12 +2229,13 @@ class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
         )
 
-    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase get() = GetAnalyticsContactsDataUseCase(
-        selfTeamIdProvider = selfTeamId,
-        analyticsRepository = analyticsRepository,
-        userConfigRepository = userConfigRepository,
-        coroutineScope = this,
-    )
+    val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase
+        get() = GetAnalyticsContactsDataUseCase(
+            selfTeamIdProvider = selfTeamId,
+            analyticsRepository = analyticsRepository,
+            userConfigRepository = userConfigRepository,
+            coroutineScope = this,
+        )
 
     val cells: CellsScope by lazy {
         CellsScope(
