@@ -52,5 +52,8 @@ internal fun CellNode.toFileModel() = CellFile(
     previewUrl = previews.maxByOrNull { it.dimension }?.url,
     assetSize = size,
     publicLinkId = publicLinkId,
-    lastModified = modified?.let { it * 1000 },
+    lastModified = modified?.toMillis(),
 )
+
+@Suppress("MagicNumber")
+private fun Long.toMillis() = this * 1000

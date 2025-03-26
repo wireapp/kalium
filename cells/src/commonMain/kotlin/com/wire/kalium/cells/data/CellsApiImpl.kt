@@ -83,9 +83,11 @@ internal class CellsApiImpl(
                     limit = limit.toString(),
                     offset = offset.toString(),
                     locators = RestNodeLocators(
-                        listOf(RestNodeLocator(
-                            path = "$path/*"
-                        ))
+                        listOf(
+                            RestNodeLocator(
+                                path = "$path/*"
+                            )
+                        )
                     ),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)

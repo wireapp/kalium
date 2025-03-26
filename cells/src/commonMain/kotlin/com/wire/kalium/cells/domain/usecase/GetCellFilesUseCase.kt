@@ -38,7 +38,12 @@ public interface GetCellFilesUseCase {
      *
      * @return [List] of [CellFile]
      */
-    public suspend operator fun invoke(conversationId: String?, query: String, limit: Int = 100, offset: Int = 0): Either<CoreFailure, List<CellFile>>
+    public suspend operator fun invoke(
+        conversationId: String?,
+        query: String,
+        limit: Int = 100,
+        offset: Int = 0
+    ): Either<CoreFailure, List<CellFile>>
 }
 
 internal class GetCellFilesUseCaseImpl(
@@ -48,7 +53,12 @@ internal class GetCellFilesUseCaseImpl(
     private val usersRepository: CellUsersRepository,
 ) : GetCellFilesUseCase {
 
-    override suspend operator fun invoke(conversationId: String?, query: String, limit: Int, offset: Int): Either<CoreFailure, List<CellFile>> {
+    override suspend operator fun invoke(
+        conversationId: String?,
+        query: String,
+        limit: Int,
+        offset: Int
+    ): Either<CoreFailure, List<CellFile>> {
 
         // Collect all data required to show the file
         val userNames = usersRepository.getUserNames().getOrElse(emptyList())
