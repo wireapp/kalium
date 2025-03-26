@@ -34,7 +34,7 @@ public interface SetWireCellForConversationUseCase {
 internal class SetWireCellForConversationUseCaseImpl internal constructor(
     private val repository: CellConversationRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-): SetWireCellForConversationUseCase {
+) : SetWireCellForConversationUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, enabled: Boolean) {
         withContext(dispatchers.io) {
             val cellName = if (enabled) "$conversationId" else null
