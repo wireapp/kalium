@@ -178,7 +178,6 @@ UPDATE Conversation
 SET channel_add_permission = ?
 WHERE qualified_id = :qualified_id;
 
-
 selectAllConversations:
 SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
 
