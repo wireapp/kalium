@@ -589,7 +589,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                 isChannel = false,
                 channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
-                channelAddPermission = ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS,
+                channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             )
 
             conversationAdded.add(overlappingConversation)
