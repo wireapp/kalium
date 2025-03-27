@@ -76,9 +76,9 @@ class IsSelfEligibleToAddParticipantsToChannelUseCaseTest {
     }
 
     @Test
-    fun givenUserIsMemberAndPermissionIsADMINS_AND_MEMBERS_whenCheckingEligibility_thenResultShouldBeTrue() = runTest {
+    fun givenUserIsMemberAndPermissionIsEVERYONE_whenCheckingEligibility_thenResultShouldBeTrue() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.ADMINS_AND_MEMBERS))
+            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.EVERYONE))
             .withGetUserTypeReturning(UserType.INTERNAL)
             .arrange()
 
@@ -89,9 +89,9 @@ class IsSelfEligibleToAddParticipantsToChannelUseCaseTest {
     }
 
     @Test
-    fun givenUserIsOwnerAndPermissionIsADMINS_AND_MEMBERS_whenCheckingEligibility_thenResultShouldBeTrue() = runTest {
+    fun givenUserIsOwnerAndPermissionIsEVERYONE_whenCheckingEligibility_thenResultShouldBeTrue() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.ADMINS_AND_MEMBERS))
+            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.EVERYONE))
             .withGetUserTypeReturning(UserType.OWNER)
             .arrange()
 

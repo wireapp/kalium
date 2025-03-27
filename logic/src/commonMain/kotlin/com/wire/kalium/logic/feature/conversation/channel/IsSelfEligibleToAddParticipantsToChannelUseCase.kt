@@ -41,7 +41,7 @@ internal class IsSelfEligibleToAddParticipantsToChannelUseCaseImpl(
             {
                 val eligibleUserTypes: Set<UserType> = when (it) {
                     ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS -> setOf(UserType.ADMIN, UserType.OWNER)
-                    ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS_AND_MEMBERS -> setOf(
+                    ConversationDetails.Group.Channel.ChannelAddPermission.EVERYONE -> setOf(
                         UserType.ADMIN,
                         UserType.OWNER,
                         UserType.INTERNAL

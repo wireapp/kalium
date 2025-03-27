@@ -592,12 +592,12 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
 
 fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
     ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
-    ChannelAddPermission.ADMINS_AND_MEMBERS -> ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS
+    ChannelAddPermission.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
 }
 
 fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
     ConversationEntity.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
-    ConversationEntity.ChannelAddPermission.ADMINS_AND_MEMBERS -> ChannelAddPermission.ADMINS_AND_MEMBERS
+    ConversationEntity.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
 }
 
 fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {

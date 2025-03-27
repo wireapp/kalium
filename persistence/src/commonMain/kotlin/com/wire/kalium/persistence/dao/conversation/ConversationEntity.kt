@@ -64,7 +64,7 @@ data class ConversationEntity(
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
     enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED }
     enum class ChannelAccess { PUBLIC, PRIVATE }
-    enum class ChannelAddPermission { ADMINS, ADMINS_AND_MEMBERS }
+    enum class ChannelAddPermission { ADMINS, EVERYONE }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {

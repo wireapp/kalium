@@ -362,7 +362,7 @@ sealed interface ConversationDetails {
 
             enum class ChannelAddPermission {
                 ADMINS,
-                ADMINS_AND_MEMBERS
+                EVERYONE
             }
         }
     }
