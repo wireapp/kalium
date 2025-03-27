@@ -346,6 +346,9 @@ WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
 selectIsChannel:
 SELECT is_channel FROM Conversation WHERE qualified_id = ?;
 
+selectChannelAddPermission:
+SELECT channel_add_permission FROM Conversation WHERE qualified_id = ?;
+
 updateMlsVerificationStatus:
 UPDATE Conversation
 SET verification_status = :status
