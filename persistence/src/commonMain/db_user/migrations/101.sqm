@@ -1,7 +1,9 @@
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+
 DROP VIEW IF EXISTS ConversationDetails;
 
-ALTER TABLE Conversation ADD COLUMN channel_access TEXT DEFAULT NULL;
-ALTER TABLE Conversation ADD COLUMN channel_add_permission TEXT DEFAULT NULL;
+ALTER TABLE Conversation ADD COLUMN channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL;
+ALTER TABLE Conversation ADD COLUMN channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
