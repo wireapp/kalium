@@ -169,7 +169,8 @@ internal class ConversationDAOImpl internal constructor(
                 hasIncompleteMetadata,
                 archived,
                 archivedInstant,
-                isChannel
+                isChannel,
+                wireCell,
             )
         }
     }
@@ -239,6 +240,13 @@ internal class ConversationDAOImpl internal constructor(
             .mapToList()
             .flowOn(coroutineContext)
     }
+
+    override suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?) {
+        conversationQueries.updateWireCell(wireCell, conversationId)
+    }
+
+    override suspend fun getCellName(conversationId: QualifiedIDEntity): String? =
+        conversationQueries.getCellName(conversationId).executeAsOneOrNull()?.wire_cell
 
     override suspend fun getConversationIds(
         type: ConversationEntity.Type,

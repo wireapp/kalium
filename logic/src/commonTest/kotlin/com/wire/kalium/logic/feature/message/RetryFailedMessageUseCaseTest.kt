@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -39,6 +41,7 @@ import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
@@ -374,6 +377,12 @@ class RetryFailedMessageUseCaseTest {
         val assetRepository = mock(AssetRepository::class)
 
         @Mock
+        val attachmentsRepository = mock(MessageAttachmentDraftRepository::class)
+
+        @Mock
+        val conversationRepository = mock(ConversationRepository::class)
+
+        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
@@ -387,6 +396,9 @@ class RetryFailedMessageUseCaseTest {
 
         @Mock
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
+
+        @Mock
+        val publishAttachments = mock(PublishAttachmentsUseCase::class)
 
         private val testScope = TestScope(testDispatcher.default)
 
@@ -448,7 +460,10 @@ class RetryFailedMessageUseCaseTest {
         fun arrange() = this to RetryFailedMessageUseCase(
             messageRepository,
             assetRepository,
+            conversationRepository,
+            attachmentsRepository,
             persistMessage,
+            publishAttachments,
             testScope,
             testDispatcher,
             messageSender,

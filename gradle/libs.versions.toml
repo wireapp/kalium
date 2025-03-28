@@ -69,6 +69,7 @@ jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.48.0.0"
 kotlinx-io = "0.5.3"
+cells-sdk = "0.1.1-alpha07"
 
 [plugins]
 # Home-made convention plugins
@@ -228,3 +229,6 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
 slf4js = { module = "org.slf4j:slf4j-simple", version.ref = "slf4js" }
+
+# cells
+wire-cells-sdk = { module = "com.wire:cells-sdk-kmp", version.ref = "cells-sdk" }

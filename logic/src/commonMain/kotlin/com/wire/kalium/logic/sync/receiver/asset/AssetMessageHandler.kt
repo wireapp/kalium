@@ -155,6 +155,7 @@ internal class AssetMessageHandlerImpl(
             is MessageContent.Location,
             is MessageContent.Composite,
             is MessageContent.Text,
+            is MessageContent.Multipart,
             is MessageContent.Unknown -> error("Invalid asset message content type ${persistedMessage.content.getType()}")
         }
         // The message was previously received with just metadata info, so let's update it with the raw data info

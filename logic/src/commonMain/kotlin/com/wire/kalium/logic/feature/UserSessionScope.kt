@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.GlobalKaliumScope
@@ -1899,6 +1900,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             messageRepository,
             conversationRepository,
+            cells.messageAttachmentsDraftRepository,
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
@@ -1920,6 +1922,8 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
+            cells.publishAttachments,
+            cells.removeAttachments,
             this,
             userScopedLogger,
         )
@@ -2231,6 +2235,16 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository,
             coroutineScope = this,
         )
+
+    val cells: CellsScope by lazy {
+        CellsScope(
+            cellsClient = globalScope.unboundNetworkContainer.cellsClient,
+            attachmentDraftDao = userStorage.database.messageAttachmentDraftDao,
+            conversationsDao = userStorage.database.conversationDAO,
+            attachmentsDao = userStorage.database.messageAttachments,
+            userId = userId.toString(),
+        )
+    }
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

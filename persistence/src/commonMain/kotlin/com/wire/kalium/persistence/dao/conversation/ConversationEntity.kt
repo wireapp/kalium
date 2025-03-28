@@ -48,6 +48,7 @@ data class ConversationEntity(
     val proteusVerificationStatus: VerificationStatus,
     val legalHoldStatus: LegalHoldStatus,
     val isChannel: Boolean,
+    val wireCell: String?,
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 

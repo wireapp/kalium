@@ -77,6 +77,7 @@ data class ConversationViewEntity(
     val folderId: String?,
     val folderName: String?,
     val isChannel: Boolean,
+    val wireCell: String?,
 ) {
     val isMember: Boolean get() = selfRole != null
 }

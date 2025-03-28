@@ -279,6 +279,7 @@ class UserDatabaseDataGenerator(
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                     isChannel = false,
+                    wireCell = null,
                 )
             )
 
@@ -327,6 +328,7 @@ class UserDatabaseDataGenerator(
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = false,
+            wireCell = null,
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -399,6 +401,7 @@ class UserDatabaseDataGenerator(
                 proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                 isChannel = false,
+                wireCell = null,
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -470,6 +473,7 @@ class UserDatabaseDataGenerator(
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                     isChannel = false,
+                    wireCell = null,
                 )
             )
 
@@ -519,6 +523,7 @@ class UserDatabaseDataGenerator(
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                     isChannel = false,
+                    wireCell = null,
                 )
             )
 
@@ -634,6 +639,7 @@ class UserDatabaseDataGenerator(
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                     isChannel = false,
+                    wireCell = null,
                 )
             )
 

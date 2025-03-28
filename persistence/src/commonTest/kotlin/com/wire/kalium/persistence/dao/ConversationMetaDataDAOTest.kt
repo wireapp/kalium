@@ -89,6 +89,7 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = false,
+            wireCell = null,
         )
     }
 }
