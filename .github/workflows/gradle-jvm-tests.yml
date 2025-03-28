@@ -65,8 +65,8 @@ jobs:
 #      - name: Configure Java Library Path
 #        run: echo "LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
-#      - name: Setup Java and Gradle
-#        uses: ./.github/actions/setup-java-gradle
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
 
 #      - name: Build the CLI App
 #        env:
