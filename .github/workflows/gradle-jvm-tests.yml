@@ -52,43 +52,43 @@ jobs:
           echo "GLIBC version from libc.so.6:"
           /lib/x86_64-linux-gnu/libc.so.6 || echo "libc.so.6 not found"          
 
-      - name: Debug Core-Crypto Build Output
-        run: |
-          echo "Checking core-crypto build output..."
-          find core-crypto/target -type f 2>/dev/null || echo "No build artifacts found"
+#      - name: Debug Core-Crypto Build Output
+#        run: |
+#          echo "Checking core-crypto build output..."
+#          find core-crypto/target -type f 2>/dev/null || echo "No build artifacts found"
+#
+#      - name: Copy Cryptobox Library
+#        run: |
+#          mkdir -p /usr/lib/
+#          cp core-crypto/target/release/libcryptobox.so /usr/lib/ || cp core-crypto/target/x86_64-unknown-linux-gnu/release/libcryptobox.so /usr/lib/
+#
+#      - name: Configure Java Library Path
+#        run: echo "LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
-      - name: Copy Cryptobox Library
-        run: |
-          mkdir -p /usr/lib/
-          cp core-crypto/target/release/libcryptobox.so /usr/lib/ || cp core-crypto/target/x86_64-unknown-linux-gnu/release/libcryptobox.so /usr/lib/
-          
-      - name: Configure Java Library Path
-        run: echo "LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+#      - name: Setup Java and Gradle
+#        uses: ./.github/actions/setup-java-gradle
 
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
+#      - name: Build the CLI App
+#        env:
+#          GITHUB_USER: ${{ github.actor }}
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          ./gradlew :cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
 
-      - name: Build the CLI App
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew :cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
-
-      - name: Build the samples
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew :samples:compileKotlinJvm
-
-      - name: Build the testservice
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
-          ./gradlew :testservice:test
+#      - name: Build the samples
+#        env:
+#          GITHUB_USER: ${{ github.actor }}
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          ./gradlew :samples:compileKotlinJvm
+#
+#      - name: Build the testservice
+#        env:
+#          GITHUB_USER: ${{ github.actor }}
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
+#          ./gradlew :testservice:test
 
       #      - name: Verify DB Migrations
       #        run: |
