@@ -22,7 +22,7 @@ jobs:
 #    needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
-    container: wirebot/cryptobox:1.4.0
+    container: kubazwire/cryptobox:1.0.0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
