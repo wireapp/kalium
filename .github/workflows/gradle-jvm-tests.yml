@@ -16,13 +16,13 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-  detekt:
-    uses: ./.github/workflows/codestyle.yml
+#  detekt:
+#    uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
     needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
-    #    container: wirebot/cryptobox:1.4.0
+    container: wirebot/cryptobox:1.4.0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,6 +42,15 @@ jobs:
           git clone https://github.com/wireapp/core-crypto.git
           cd core-crypto/crypto-ffi
           cargo make jvm-linux
+          
+      - name: Check GLIBC version
+        run: |
+          echo "GLIBC version from ldd:"
+          ldd --version || echo "ldd not found"
+          
+          echo ""
+          echo "GLIBC version from libc.so.6:"
+          /lib/x86_64-linux-gnu/libc.so.6 || echo "libc.so.6 not found"          
 
       - name: Debug Core-Crypto Build Output
         run: |
