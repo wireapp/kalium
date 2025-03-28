@@ -83,7 +83,7 @@ internal class AnalyticsDataSource(
     }
 
     override suspend fun countTeamMembersAmount(teamId: TeamId): Either<CoreFailure, Int> =
-        wrapStorageRequest { userDAO.countTeamMembersAmount(teamId.value, selfUserId.toDao()) }
+        wrapStorageRequest { userDAO.countTeamMembersAmount(teamId.value) }
 
     companion object {
         internal const val CONTACTS_AMOUNT_KEY = "all_contacts_amount"

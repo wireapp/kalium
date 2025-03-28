@@ -40,7 +40,6 @@ import kotlin.test.assertEquals
 
 class AnalyticsRepositoryTest {
 
-
     @Test
     fun givenCachedContactsAmountAbsent_whenGettingContactsAmountCached_thenShouldPropagateError() =
         runTest {
@@ -130,7 +129,7 @@ class AnalyticsRepositoryTest {
         // then
         result.shouldSucceed { assertEquals(12, it) }
         coVerify {
-            arrangement.userDAO.countTeamMembersAmount(any(), any())
+            arrangement.userDAO.countTeamMembersAmount(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -161,7 +160,7 @@ class AnalyticsRepositoryTest {
         }
 
         suspend fun withCountTeamMembersAmount(result: Int) = apply {
-            coEvery { userDAO.countTeamMembersAmount(any(), any()) }.returns(result)
+            coEvery { userDAO.countTeamMembersAmount(any()) }.returns(result)
         }
 
         suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, AnalyticsRepository> {
@@ -176,6 +175,5 @@ class AnalyticsRepositoryTest {
             apply(block)
             return this to analyticsRepository
         }
-
     }
 }
