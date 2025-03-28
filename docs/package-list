@@ -610,6 +610,7 @@ com.wire.kalium.network.api.base.authenticated.serverpublickey
 com.wire.kalium.network.api.base.authenticated.userDetails
 com.wire.kalium.network.api.base.unauthenticated.appVersioning
 com.wire.kalium.network.api.base.unauthenticated.domainLookup
+com.wire.kalium.network.api.base.unauthenticated.domainregistration
 com.wire.kalium.network.api.base.unauthenticated.login
 com.wire.kalium.network.api.base.unauthenticated.register
 com.wire.kalium.network.api.base.unauthenticated.sso
