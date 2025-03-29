@@ -116,8 +116,8 @@ jobs:
 
       - name: Install Pip for test result publishing
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
+          apt-get update
+          apt-get install -y -qq --no-install-recommends python3-pip
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v2.17.1
