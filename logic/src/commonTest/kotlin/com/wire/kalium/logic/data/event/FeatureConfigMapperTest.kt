@@ -170,7 +170,8 @@ class FeatureConfigMapperTest {
                     Instant.DISTANT_FUTURE
                 ),
                 FeatureFlagStatusDTO.ENABLED
-            )
+            ),
+            FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
         )
 
         val mapper: FeatureConfigMapper = FeatureConfigMapperImpl()

@@ -19,8 +19,25 @@
 package com.wire.kalium.network.api.v8.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.v7.authenticated.ConversationApiV7
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class ConversationApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
-) : ConversationApiV7(authenticatedNetworkClient)
+) : ConversationApiV7(authenticatedNetworkClient) {
+    /**
+     * returns 201 when a new conversation is created or 200 if the conversation already existed
+     */
+    override suspend fun createNewConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponse> {
+        httpClient.post(PATH_CONVERSATIONS) {
+            setBody(createConversationRequest)
+        }
+    }
+}

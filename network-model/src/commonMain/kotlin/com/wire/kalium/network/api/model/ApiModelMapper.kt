@@ -45,6 +45,7 @@ class ApiModelMapperImpl : ApiModelMapper {
             request.name,
             request.access,
             request.accessRole,
+            request.groupConversationType,
             request.convTeamInfo,
             request.messageTimer,
             request.receiptMode,
@@ -95,6 +96,7 @@ class ApiModelMapperImpl : ApiModelMapper {
             access = response.conversation.access,
             accessRole = response.conversation.accessRole,
             receiptMode = response.conversation.receiptMode,
-            publicKeys = response.publicKeys
+            publicKeys = response.publicKeys,
+            conversationGroupType = response.conversation.conversationGroupType
         )
 }

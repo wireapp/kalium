@@ -43,6 +43,8 @@ internal object NetworkErrorLabel {
     const val WRONG_CONVERSATION_PASSWORD = "invalid-conversation-password"
     const val NOT_FOUND = "not-found"
     const val MISSING_LEGALHOLD_CONSENT = "missing-legalhold-consent"
+    const val ACCOUNT_SUSPENDED = "suspended"
+    const val ACCOUNT_PENDING_ACTIVATION = "pending-activation"
 
     // MLS
     const val MLS_STALE_MESSAGE = "mls-stale-message"

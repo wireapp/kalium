@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.util.time.Second
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
 data class FeatureConfigModel(
     val appLockModel: AppLockModel,
@@ -39,7 +40,8 @@ data class FeatureConfigModel(
     val validateSAMLEmailsModel: ConfigsStatusModel,
     val mlsModel: MLSModel,
     val e2EIModel: E2EIModel,
-    val mlsMigrationModel: MLSMigrationModel?
+    val mlsMigrationModel: MLSMigrationModel?,
+    val channelsModel: ChannelFeatureConfiguration
 )
 
 enum class Status {
@@ -105,3 +107,38 @@ data class E2EIConfigModel(
     val shouldUseProxy: Boolean,
     val crlProxy: String?,
 )
+
+@Serializable
+sealed interface ChannelFeatureConfiguration {
+
+    @Serializable
+    data object Disabled : ChannelFeatureConfiguration
+
+    @Serializable
+    data class Enabled(
+        /**
+         * Says what user types the team allows to create any kind of channels.
+         */
+        val createChannelsRequirement: TeamUserType,
+
+        /**
+         * Says what user types the team allows to create public channels.
+         */
+        val createPublicChannelsRequirement: TeamUserType,
+    ) : ChannelFeatureConfiguration
+
+    @Serializable
+    enum class TeamUserType {
+        ADMINS_ONLY,
+
+        /**
+         * Team Admins and regular team members (non guests and non externals)
+         */
+        ADMINS_AND_REGULAR_MEMBERS,
+
+        /**
+         * Team Admins, regular team members, and externals
+         */
+        EVERYONE_IN_THE_TEAM
+    }
+}
