@@ -16,10 +16,11 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-#  detekt:
-#    uses: ./.github/workflows/codestyle.yml
+  detekt:
+    uses: ./.github/workflows/codestyle.yml
+
   gradle-run-tests:
-#    needs: [ detekt ]
+    needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: kubazwire/cryptobox:1.0.0
@@ -54,9 +55,9 @@ jobs:
           ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew :testservice:test
 
-      #      - name: Verify DB Migrations
-      #        run: |
-      #            make db/verify-all-migrations
+      - name: Verify DB Migrations
+        run: |
+          make db/verify-all-migrations
 
       - name: Test with Gradle
         run: |
