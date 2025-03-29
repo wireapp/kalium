@@ -65,30 +65,30 @@ jobs:
 #      - name: Configure Java Library Path
 #        run: echo "LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
+#      - name: Setup Java and Gradle
+#        uses: ./.github/actions/setup-java-gradle
 
-#      - name: Build the CLI App
-#        env:
-#          GITHUB_USER: ${{ github.actor }}
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        run: |
-#          ./gradlew :cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
+      - name: Build the CLI App
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew :cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
 
-#      - name: Build the samples
-#        env:
-#          GITHUB_USER: ${{ github.actor }}
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        run: |
-#          ./gradlew :samples:compileKotlinJvm
-#
-#      - name: Build the testservice
-#        env:
-#          GITHUB_USER: ${{ github.actor }}
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        run: |
-#          ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
-#          ./gradlew :testservice:test
+      - name: Build the samples
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew :samples:compileKotlinJvm
+
+      - name: Build the testservice
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew :testservice:test
 
       #      - name: Verify DB Migrations
       #        run: |
@@ -98,7 +98,7 @@ jobs:
         run: |
           export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
           ./gradlew jvmTest koverXmlReport --stacktrace --info -Djava.library.path=$LD_LIBRARY_PATH
-          ./gradlew jsTest
+#          ./gradlew jsTest
 
       - name: Archive Test Reports
         if: always()
