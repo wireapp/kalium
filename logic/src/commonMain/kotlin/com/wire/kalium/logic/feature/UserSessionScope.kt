@@ -59,6 +59,8 @@ import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
+import com.wire.kalium.logic.data.client.MLSTransportProvider
+import com.wire.kalium.logic.data.client.MLSTransportProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
 import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
@@ -67,7 +69,6 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.CommitBundleEventReceiverImpl
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
@@ -385,6 +386,9 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
+import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
+import com.wire.kalium.logic.sync.local.LocalEventRepository
+import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -659,6 +663,16 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val localEventRepository: LocalEventRepository = LocalEventRepositoryImpl()
+
+    private val mlsTransportProvider: MLSTransportProvider by lazy {
+        MLSTransportProviderImpl(
+           selfUserId = userId,
+            mlsMessageApi = authenticatedNetworkContainer.mlsMessageApi,
+            localEventRepository = localEventRepository
+        )
+    }
+
     private val mlsClientProvider: MLSClientProvider by lazy {
         MLSClientProviderImpl(
             rootKeyStorePath = rootPathsProvider.rootMLSPath(userId),
@@ -666,14 +680,10 @@ class UserSessionScope internal constructor(
             currentClientIdProvider = clientIdProvider,
             passphraseStorage = globalPreferences.passphraseStorage,
             userConfigRepository = userConfigRepository,
-            featureConfigRepository = featureConfigRepository
+            featureConfigRepository = featureConfigRepository,
+            mlsTransportProvider = mlsTransportProvider,
         )
     }
-
-    private val commitBundleEventReceiver: CommitBundleEventReceiverImpl
-        get() = CommitBundleEventReceiverImpl(
-            memberJoinHandler, memberLeaveHandler
-        )
 
     private val checkRevocationList: RevocationListChecker
         get() = RevocationListCheckerImpl(
@@ -691,12 +701,9 @@ class UserSessionScope internal constructor(
             userId,
             keyPackageRepository,
             mlsClientProvider,
-            authenticatedNetworkContainer.mlsMessageApi,
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.clientApi,
-            syncManager,
             mlsPublicKeysRepository,
-            commitBundleEventReceiver,
             epochsFlow,
             proposalTimersFlow,
             keyPackageLimitsProvider,
@@ -1191,6 +1198,13 @@ class UserSessionScope internal constructor(
             incrementalSyncRecoveryHandler,
             networkStateObserver,
             userScopedLogger,
+        )
+    }
+
+    private val localEventManager by lazy {
+        LocalEventManagerImpl(
+            localEventRepository,
+            eventProcessor
         )
     }
 
@@ -2290,6 +2304,9 @@ class UserSessionScope internal constructor(
         }
 
         syncExecutor.startAndStopSyncAsNeeded()
+        launch {
+            localEventManager.startProcessing()
+        }
     }
 }
 

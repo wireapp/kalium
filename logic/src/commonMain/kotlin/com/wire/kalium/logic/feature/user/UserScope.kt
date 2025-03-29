@@ -132,7 +132,7 @@ class UserScope internal constructor(
     val persistSelfUserEmail: PersistSelfUserEmailUseCase get() = PersistSelfUserEmailUseCaseImpl(userRepository)
 
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository, conversationRepository)
     val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 
     val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment

@@ -24,17 +24,19 @@ actual open class BaseMLSClientTest {
 
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter?
     ): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
+        return createCoreCrypto(clientId, mlsTransporter).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
     }
 
     actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
+        clientId: CryptoQualifiedClientId,
+        mlsTransporter: MLSTransporter?
     ): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test")
+        return coreCryptoCentral(keyStore.absolutePath, "test", mlsTransporter)
     }
 }

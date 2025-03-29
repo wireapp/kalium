@@ -23,7 +23,6 @@ import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CustomConfiguration
 import com.wire.crypto.DecryptedMessage
-import com.wire.crypto.Invitee
 import com.wire.crypto.MlsPublicGroupStateEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
@@ -39,12 +38,12 @@ import kotlin.time.toDuration
 @OptIn(ExperimentalUnsignedTypes::class)
 class MLSClientImpl(
     private val coreCrypto: CoreCrypto,
-    private val defaultCipherSuite: UShort
+    private val defaultCipherSuite: MLSCiphersuite
 ) : MLSClient {
 
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
-    override fun getDefaultCipherSuite(): UShort {
+    override fun getDefaultCipherSuite(): MLSCiphersuite {
         return defaultCipherSuite
     }
 
@@ -52,8 +51,8 @@ class MLSClientImpl(
     override suspend fun close() {
     }
 
-    override suspend fun getPublicKey(): Pair<ByteArray, UShort> {
-        return coreCrypto.clientPublicKey().toUByteArray().asByteArray() to defaultCipherSuite
+    override suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite> {
+        TODO("Not yet implemented")
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
@@ -64,8 +63,8 @@ class MLSClientImpl(
         return coreCrypto.clientValidKeypackagesCount()
     }
 
-    override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
-        return toCommitBundle(coreCrypto.updateKeyingMaterial(toUByteList(groupId.decodeBase64Bytes())))
+    override suspend fun updateKeyingMaterial(groupId: MLSGroupId) {
+        TODO("Not yet implemented")
     }
 
     override suspend fun conversationExists(groupId: MLSGroupId): Boolean {
@@ -76,26 +75,8 @@ class MLSClientImpl(
         return coreCrypto.conversationEpoch(toUByteList(groupId.decodeBase64Bytes()))
     }
 
-    override suspend fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
-        return toByteArray(
-            coreCrypto.newExternalAddProposal(
-                conversationId = toUByteList(groupId.decodeBase64Bytes()),
-                epoch = epoch
-            )
-        )
-    }
-
-    override suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
-        return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState), defaultGroupConfiguration))
-    }
-
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
-        val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
-        coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes)
-    }
-
-    override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
-        coreCrypto.clearPendingGroupFromExternalCommit(toUByteList(groupId.decodeBase64Bytes()))
+    override suspend fun joinByExternalCommit(publicGroupState: ByteArray): WelcomeBundle {
+        TODO("Not yet implemented")
     }
 
     override suspend fun createConversation(
@@ -141,42 +122,22 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun commitAccepted(groupId: MLSGroupId) {
-        coreCrypto.commitAccepted(toUByteList(groupId.decodeBase64Bytes()))
-    }
-
-    override suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
-        return coreCrypto.commitPendingProposals(toUByteList(groupId.decodeBase64Bytes()))?.let { toCommitBundle(it) }
-    }
-
-    override suspend fun clearPendingCommit(groupId: MLSGroupId) {
-        coreCrypto.clearPendingCommit(toUByteList(groupId.decodeBase64Bytes()))
+    override suspend fun commitPendingProposals(groupId: MLSGroupId) {
+        TODO("Not yet implemented")
     }
 
     override suspend fun addMember(
         groupId: MLSGroupId,
         membersKeyPackages: List<MLSKeyPackage>
-    ): CommitBundle? {
-        if (membersKeyPackages.isEmpty()) {
-            return null
-        }
-        // todo: fix later when the code is fixed for jvm
-        val invitees = membersKeyPackages.map {
-            Invitee(toUByteList("it.first.toString()"), toUByteList(it))
-        }
-
-        return toCommitBundle(coreCrypto.addClientsToConversation(toUByteList(groupId.decodeBase64Bytes()), invitees))
+    ): List<String>? {
+        TODO("Not yet implemented")
     }
 
     override suspend fun removeMember(
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
-    ): CommitBundle {
-        val clientIds = members.map {
-            toUByteList(it.toString())
-        }
-
-        return toCommitBundle(coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds))
+    ) {
+        TODO("Not yet implemented")
     }
 
     override suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
@@ -209,18 +170,6 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getMLSCredentials(): CredentialType {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun e2eiRotateAll(
-        enrollment: E2EIClient,
-        certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
-    ): RotateBundle {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState {
         TODO("Not supported on apple devices")
     }
@@ -230,6 +179,18 @@ class MLSClientImpl(
     }
 
     override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun removeStaleKeyPackages() {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun saveX509Credential(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun e2eiRotateGroups(groupList: List<MLSGroupId>) {
         TODO("Not yet implemented")
     }
 
