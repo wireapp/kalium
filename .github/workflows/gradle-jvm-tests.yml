@@ -126,6 +126,9 @@ jobs:
           files: |
             **/build/test-results/**/*.xml
 
+      - name: Install Git
+        run: apt-get update && apt-get install -y -qq git
+
       - name: Upload test report to codecov
         uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574
         with:
