@@ -16,10 +16,10 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-#  detekt:
-#    uses: ./.github/workflows/codestyle.yml
+  detekt:
+    uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
-#    needs: [ detekt ]
+    needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: kubazwire/cryptobox:1.0.0
@@ -28,42 +28,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-#      - name: Install Required Libraries
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y libsodium-dev curl build-essential cmake
-#          curl https://sh.rustup.rs -sSf | sh -s -- -y
-#          source $HOME/.cargo/env
-#          cargo install cargo-make
-#
-#      - name: Build Cryptobox from Core-Crypto
-#        run: |
-#          git clone https://github.com/wireapp/core-crypto.git
-#          cd core-crypto/crypto-ffi
-#          cargo make jvm-linux
-          
-      - name: Check GLIBC version
-        run: |
-          echo "GLIBC version from ldd:"
-          ldd --version || echo "ldd not found"
-          
-          echo ""
-          echo "GLIBC version from libc.so.6:"
-          /lib/x86_64-linux-gnu/libc.so.6 || echo "libc.so.6 not found"          
-
-#      - name: Debug Core-Crypto Build Output
-#        run: |
-#          echo "Checking core-crypto build output..."
-#          find core-crypto/target -type f 2>/dev/null || echo "No build artifacts found"
-#
-#      - name: Copy Cryptobox Library
-#        run: |
-#          mkdir -p /usr/lib/
-#          cp core-crypto/target/release/libcryptobox.so /usr/lib/ || cp core-crypto/target/x86_64-unknown-linux-gnu/release/libcryptobox.so /usr/lib/
-#
-#      - name: Configure Java Library Path
-#        run: echo "LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -93,12 +57,12 @@ jobs:
       #      - name: Verify DB Migrations
       #        run: |
       #            make db/verify-all-migrations
-      #KBX temporary logs stacktrace info
+
       - name: Test with Gradle
         run: |
           export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
-          ./gradlew jvmTest koverXmlReport --stacktrace --info -Djava.library.path=$LD_LIBRARY_PATH
-#          ./gradlew jsTest
+#          ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew jsTest
 
       - name: Archive Test Reports
         if: always()
