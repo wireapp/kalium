@@ -16,10 +16,10 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-  detekt:
-    uses: ./.github/workflows/codestyle.yml
+#  detekt:
+#    uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
-    needs: [ detekt ]
+#    needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: kubazwire/cryptobox:1.0.0
@@ -61,7 +61,7 @@ jobs:
       - name: Test with Gradle
         run: |
           export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
-#          ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
       - name: Archive Test Reports

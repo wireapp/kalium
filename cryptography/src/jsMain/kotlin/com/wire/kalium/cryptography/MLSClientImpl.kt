@@ -128,18 +128,6 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getMLSCredentials(): CredentialType {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun e2eiRotateAll(
-        enrollment: E2EIClient,
-        certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
-    ): RotateBundle {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState {
         TODO("Not supported on js")
     }
