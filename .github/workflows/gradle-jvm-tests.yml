@@ -30,13 +30,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Downgrade SQLite to 3.37.2
+      - name: Install make
+        run: apt-get update && apt-get install -y make
+
+      - name: Install SQLite 3.37.2 locally
         run: |
-          apt-get update
-          apt-get remove -y sqlite3
-          wget http://archive.ubuntu.com/ubuntu/pool/main/s/sqlite3/sqlite3_3.37.2-2_amd64.deb
-          dpkg -i sqlite3_3.37.2-2_amd64.deb
-          sqlite3 --version      
+          wget https://www.sqlite.org/2022/sqlite-autoconf-3370200.tar.gz
+          tar xzf sqlite-autoconf-3370200.tar.gz
+          cd sqlite-autoconf-3370200
+          ./configure --prefix=$HOME/sqlite-3.37.2
+          make -j$(nproc)
+          make install
+
+      - name: Add local SQLite to PATH
+        run: echo "$HOME/sqlite-3.37.2/bin" >> $GITHUB_PATH
+
+      - name: Export sqlite env
+        run: |
+          echo "LD_LIBRARY_PATH=$HOME/sqlite-3.37.2/lib" >> $GITHUB_ENV
+
+      - name: Verify SQLite version
+        run: sqlite3 --version
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -62,9 +76,6 @@ jobs:
         run: |
           ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew :testservice:test
-
-      - name: Install make
-        run: apt-get update && apt-get install -y make
 
       - name: Verify DB Migrations
         run: |
