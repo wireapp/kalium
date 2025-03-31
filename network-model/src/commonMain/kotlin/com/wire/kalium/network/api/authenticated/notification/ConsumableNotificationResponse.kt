@@ -36,7 +36,6 @@ data class EventDataDTO(
     val event: ConsumableEventDTO
 )
 
-
 @Serializable
 enum class EventType {
     @SerialName("event")
