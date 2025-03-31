@@ -1201,6 +1201,7 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        // TODO: Make API request to update the value with the backend
         conversationDAO.updateChannelAddPermission(conversationId.toDao(), channelAddPermission.toDaoChannelPermission())
     }
 
