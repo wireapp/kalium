@@ -212,12 +212,12 @@ internal suspend fun handleUnsuccessfulResponse(
 
     val errorResponse = try {
         KtxSerializer.json.decodeFromString<ErrorResponse>(bodyText)
-    } catch (_: NoTransformationFoundException) {
+    } catch (_: IllegalArgumentException) {
         // When the backend returns something that is not a JSON for whatever reason.
-        ErrorResponse(code = status.value, label = status.description, message = result.bodyAsText())
+        ErrorResponse(code = status.value, label = status.description, message = bodyText)
     } catch (_: SerializationException) {
         // When the backend returns a JSON that cannot be parsed.
-        ErrorResponse(code = status.value, label = status.description, message = result.bodyAsText())
+        ErrorResponse(code = status.value, label = status.description, message = bodyText)
     }
 
     val federationException = errorResponse.isFederationError().let {
