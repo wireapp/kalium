@@ -36,21 +36,21 @@ jobs:
       - name: Verify Java version
         run: java -version
 
-#      - name: Install SQLite 3.37.2 locally
-#        run: |
-#          wget https://www.sqlite.org/2022/sqlite-autoconf-3370200.tar.gz
-#          tar xzf sqlite-autoconf-3370200.tar.gz
-#          cd sqlite-autoconf-3370200
-#          ./configure --prefix=$HOME/sqlite-3.37.2
-#          make -j$(nproc)
-#          make install
-#
-#      - name: Add local SQLite to PATH
-#        run: echo "$HOME/sqlite-3.37.2/bin" >> $GITHUB_PATH
-#
-#      - name: Export sqlite env
-#        run: |
-#          echo "LD_LIBRARY_PATH=$HOME/sqlite-3.37.2/lib" >> $GITHUB_ENV
+      - name: Install SQLite 3.37.2 locally
+        run: |
+          wget https://www.sqlite.org/2022/sqlite-autoconf-3370200.tar.gz
+          tar xzf sqlite-autoconf-3370200.tar.gz
+          cd sqlite-autoconf-3370200
+          ./configure --prefix=$HOME/sqlite-3.37.2
+          make -j$(nproc)
+          make install
+
+      - name: Add local SQLite to PATH
+        run: echo "$HOME/sqlite-3.37.2/bin" >> $GITHUB_PATH
+
+      - name: Export sqlite env
+        run: |
+          echo "LD_LIBRARY_PATH=$HOME/sqlite-3.37.2/lib" >> $GITHUB_ENV
 
       - name: Verify SQLite version
         run: sqlite3 --version
