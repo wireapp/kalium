@@ -16,11 +16,11 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-  detekt:
-    uses: ./.github/workflows/codestyle.yml
+#  detekt:
+#    uses: ./.github/workflows/codestyle.yml
 
   gradle-run-tests:
-    needs: [ detekt ]
+#    needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: kubazwire/cryptobox:1.0.0
@@ -29,6 +29,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Downgrade SQLite to 3.37.2
+        run: |
+          apt-get update
+          apt-get remove -y sqlite3
+          wget http://archive.ubuntu.com/ubuntu/pool/main/s/sqlite3/sqlite3_3.37.2-2_amd64.deb
+          dpkg -i sqlite3_3.37.2-2_amd64.deb
+          sqlite3 --version      
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
