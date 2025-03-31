@@ -629,7 +629,7 @@
     <ID>NoUnusedImports:FeatureConfigMapperTest.kt$com.wire.kalium.logic.data.event.FeatureConfigMapperTest.kt</ID>
     <ID>NoUnusedImports:FederatedSearchParserTest.kt$com.wire.kalium.logic.feature.search.FederatedSearchParserTest.kt</ID>
     <ID>NoUnusedImports:FetchConversationMLSVerificationStatusUseCaseTest.kt$com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:FetchMLSVerificationStatusUseCaseTest.kt$com.wire.kalium.logic.feature.conversation.FetchMLSVerificationStatusUseCaseTest.kt</ID>
+    <ID>NoUnusedImports:FetchMLSVerificationStatusUseCaseTest.kt$com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseTest.kt</ID>
     <ID>NoUnusedImports:IsOneToOneConversationCreatedUseCaseTest.kt$com.wire.kalium.logic.feature.conversation.IsOneToOneConversationCreatedUseCaseTest.kt</ID>
     <ID>NoUnusedImports:LogoutUseCaseTest.kt$com.wire.kalium.logic.feature.auth.LogoutUseCaseTest.kt</ID>
     <ID>NoUnusedImports:MemberDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement.kt</ID>

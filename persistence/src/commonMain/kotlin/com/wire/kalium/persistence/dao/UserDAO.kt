@@ -279,6 +279,7 @@ interface UserDAO {
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
+    suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String)
     suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,
@@ -318,5 +319,5 @@ interface UserDAO {
     suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
     suspend fun updateTeamId(userId: UserIDEntity, teamId: String)
     suspend fun countContactsAmount(selfUserId: QualifiedIDEntity): Int
-    suspend fun countTeamMembersAmount(teamId: String, selfUserId: QualifiedIDEntity): Int
+    suspend fun countTeamMembersAmount(teamId: String): Int
 }

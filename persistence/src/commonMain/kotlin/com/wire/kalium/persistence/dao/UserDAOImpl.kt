@@ -430,6 +430,11 @@ class UserDAOImpl internal constructor(
             }
         }
 
+    override suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String) =
+        withContext(queriesContext) {
+            userQueries.insertOrIgnoreUserIdWithEmail(userId, email)
+        }
+
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
         withContext(queriesContext) {
             userQueries.selectAllUsersWithConnectionStatus(connectionState)
@@ -510,8 +515,8 @@ class UserDAOImpl internal constructor(
         userQueries.countContacts(selfUserId).executeAsOneOrNull()?.toInt() ?: 0
     }
 
-    override suspend fun countTeamMembersAmount(teamId: String, selfUserId: QualifiedIDEntity): Int = withContext(queriesContext) {
-        userQueries.countTeamMembersFromTeam(teamId, selfUserId).executeAsOneOrNull()?.toInt() ?: 0
+    override suspend fun countTeamMembersAmount(teamId: String): Int = withContext(queriesContext) {
+        userQueries.countTeamMembersFromTeam(teamId).executeAsOneOrNull()?.toInt() ?: 0
     }
 
 }

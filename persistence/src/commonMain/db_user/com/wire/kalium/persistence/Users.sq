@@ -137,9 +137,9 @@ insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id, incomplete_metadata)
 VALUES(?, 1);
 
-insertOrIgnoreUserIdWithConnectionStatus:
-INSERT OR IGNORE INTO User(qualified_id, connection_status)
-VALUES(?, ?);
+insertOrIgnoreUserIdWithEmail:
+INSERT OR IGNORE INTO User(qualified_id, email, incomplete_metadata)
+VALUES(?, ?, 1);
 
 upsertUserConnectionStatus:
 INSERT INTO User(qualified_id, connection_status)
@@ -305,4 +305,4 @@ countContacts:
 SELECT COUNT() FROM User WHERE User.connection_status = 'ACCEPTED' AND User.qualified_id != :self_user_id;
 
 countTeamMembersFromTeam:
-SELECT COUNT() FROM User WHERE User.team = :team_id AND User.qualified_id != :self_user_id;
+SELECT COUNT() FROM User WHERE User.team = :team_id;

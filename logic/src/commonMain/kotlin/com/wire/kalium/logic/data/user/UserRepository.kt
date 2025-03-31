@@ -83,6 +83,7 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
+    suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
     /**
      * Fetches user information for all of users id stored in the DB
@@ -202,6 +203,10 @@ internal class UserDataSource internal constructor(
                     }
             }
         }
+
+    override suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(selfUserId.toDao(), email)
+    }
 
     private suspend fun updateSelfUserProviderAccountInfo(userDTO: SelfUserDTO): Either<StorageFailure, Unit> =
         sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
