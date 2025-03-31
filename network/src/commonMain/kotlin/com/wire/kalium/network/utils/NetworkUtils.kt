@@ -204,7 +204,10 @@ internal suspend fun handleUnsuccessfulResponse(
         result.body()
     } catch (_: NoTransformationFoundException) {
         // When the backend returns something that is not a JSON for whatever reason.
-        ErrorResponse(status.value, status.description, "")
+        ErrorResponse(code = status.value, label = status.description, message = result.bodyAsText())
+    } catch (_: SerializationException) {
+        // When the backend returns a JSON that cannot be parsed.
+        ErrorResponse(code = status.value, label = status.description, message = result.bodyAsText())
     }
 
     val federationException = errorResponse.isFederationError().let {
