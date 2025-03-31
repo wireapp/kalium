@@ -20,6 +20,7 @@ package com.wire.kalium.api.v8
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
+import com.wire.kalium.mocks.responses.ErrorResponseJson
 import com.wire.kalium.mocks.responses.NotificationEventsResponseJson
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -52,17 +53,17 @@ internal class NotificationApiV8Test : ApiTest() {
         assertIs<NetworkResponse.Success<Flow<WebSocketEvent<ConsumableNotificationResponse>>>>(result)
     }
 
-//     @Test
-//     fun givenFailureLastNotificationResponse_whenListeningToLiveEvents_thenTheResponseIsParsedCorrectly() = runTest {
-//         val networkClient = mockAuthenticatedNetworkClient(
-//             ErrorResponseJson.valid.rawJson,
-//             statusCode = HttpStatusCode.BadRequest,
-//         )
-//         val notificationsApi = NotificationApiV8(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
-//         val result = notificationsApi.listenToLiveEvents("")
-//
-//         assertIs<NetworkResponse.Error>(result)
-//     }
+    @Test
+    fun givenFailureLastNotificationResponse_whenListeningToLiveEvents_thenTheResponseIsParsedCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            ErrorResponseJson.valid.rawJson,
+            statusCode = HttpStatusCode.BadRequest,
+        )
+        val notificationsApi = NotificationApiV8(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val result = notificationsApi.consumeLiveEvents("")
+
+        assertIs<NetworkResponse.Error>(result)
+    }
 
     private companion object {
         const val PATH_NOTIFICATIONS = "/events"
