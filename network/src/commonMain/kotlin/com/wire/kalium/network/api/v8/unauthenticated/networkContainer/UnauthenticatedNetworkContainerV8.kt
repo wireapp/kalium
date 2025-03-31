@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v8.unauthenticated.networkContainer
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
@@ -32,6 +33,7 @@ import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v8.unauthenticated.DomainLookupApiV8
+import com.wire.kalium.network.api.v8.unauthenticated.GetDomainRegistrationApiV8
 import com.wire.kalium.network.api.v8.unauthenticated.LoginApiV8
 import com.wire.kalium.network.api.v8.unauthenticated.RegisterApiV8
 import com.wire.kalium.network.api.v8.unauthenticated.SSOLoginApiV8
@@ -82,4 +84,6 @@ class UnauthenticatedNetworkContainerV8 internal constructor(
         get() = AppVersioningApiImpl(
             unauthenticatedNetworkClient
         )
+    override val getDomainRegistrationApi: GetDomainRegistrationApi
+        get() = GetDomainRegistrationApiV8(unauthenticatedNetworkClient)
 }

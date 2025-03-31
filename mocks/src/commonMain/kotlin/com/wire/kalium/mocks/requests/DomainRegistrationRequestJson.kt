@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.mocks.requests
 
-package com.wire.kalium.logic.feature.session
+import com.wire.kalium.mocks.responses.ValidJsonProvider
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationRequest
 
-import com.wire.kalium.logic.data.session.SessionRepository
+object DomainRegistrationRequestJson {
 
-class SessionScope(
-    private val sessionRepository: SessionRepository
-) {
-    val allSessions get() = GetSessionsUseCase(sessionRepository)
-    val allSessionsFlow get() = ObserveSessionsUseCase(sessionRepository)
-    val currentSession get() = CurrentSessionUseCase(sessionRepository)
-    val currentSessionFlow get() = CurrentSessionFlowUseCase(sessionRepository)
-    val updateCurrentSession get() = UpdateCurrentSessionUseCase(sessionRepository)
+    val jsonProvider = { serializable: DomainRegistrationRequest ->
+        """
+            {
+                "email": "${serializable.email}"
+            }
+            """.trimIndent()
+    }
+
+    fun createValid(email: String) = ValidJsonProvider(DomainRegistrationRequest(email), jsonProvider)
+
 }

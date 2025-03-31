@@ -134,6 +134,14 @@ object TestNetworkException {
     val federationNotEnabled = KaliumException.FederationError(
         ErrorResponse(400, "no federator configured", "federation-not-enabled")
     )
+
+    val accountSuspended = KaliumException.InvalidRequestError(
+        ErrorResponse(403, message = "account suspended", label = "suspended")
+    )
+
+    val accountPendingActivation = KaliumException.InvalidRequestError(
+        ErrorResponse(403, message = "account pending activation", label = "pending-activation")
+    )
 }
 
 object TestNetworkResponseError {
