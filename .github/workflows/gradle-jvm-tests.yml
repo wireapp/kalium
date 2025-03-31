@@ -55,6 +55,9 @@ jobs:
           ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew :testservice:test
 
+      - name: Install make
+        run: apt-get update && apt-get install -y make
+
       - name: Verify DB Migrations
         run: |
           make db/verify-all-migrations
