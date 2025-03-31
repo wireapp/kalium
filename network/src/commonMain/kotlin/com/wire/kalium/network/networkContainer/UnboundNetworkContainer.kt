@@ -23,6 +23,8 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.clearTextTrafficEngine
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
@@ -30,6 +32,7 @@ import io.ktor.client.engine.HttpClientEngine
 
 interface UnboundNetworkContainer {
     val serverConfigApi: ServerConfigApi
+    val versionApi: VersionApi
     val acmeApi: ACMEApi
 }
 
@@ -73,7 +76,8 @@ class UnboundNetworkContainerCommon(
     userAgent: String,
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
-    mockEngine: HttpClientEngine?
+    mockEngine: HttpClientEngine?,
+    val developmentApiEnabled: Boolean
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
         userAgent,
@@ -89,6 +93,8 @@ class UnboundNetworkContainerCommon(
         engine = mockEngine ?: clearTextTrafficEngine()
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
+
+    override val versionApi: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
 
     override val acmeApi: ACMEApi
         get() = ACMEApiImpl(
