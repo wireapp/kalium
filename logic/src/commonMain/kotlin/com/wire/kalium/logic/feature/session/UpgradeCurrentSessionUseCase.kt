@@ -44,7 +44,7 @@ internal class UpgradeCurrentSessionUseCaseImpl(
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit> =
         wrapStorageRequest { sessionManager.session()?.refreshToken }
             .flatMap { currentRefreshToken ->
-                accessTokenRefresher.refreshTokenAndPersistSession(currentRefreshToken, clientId.value)
+                accessTokenRefresher.refreshTokenAndPersistSession(currentRefreshToken, clientId)
             }.map {
                 authenticatedNetworkContainer.clearCachedToken()
             }
