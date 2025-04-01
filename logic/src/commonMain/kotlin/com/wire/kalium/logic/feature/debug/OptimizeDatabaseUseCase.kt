@@ -15,11 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
+
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.db.DatabaseOptimizer
+import com.wire.kalium.util.DelicateKaliumApi
 
 /**
  * Use case responsible for optimizing the local SQLCipher database by invoking `PRAGMA optimize`.
@@ -37,11 +41,17 @@ sealed class OptimizeDatabaseResult {
     data class Failure(val coreFailure: CoreFailure) : OptimizeDatabaseResult()
 }
 
-internal class OptimizeDatabaseUseCaseImpl(
+@DelicateKaliumApi(
+    message = "This use case is intended for debugging purposes only and should not be used in production code."
+)
+internal class OptimizeDatabaseUseCaseImpl constructor(
     private val optimizer: DatabaseOptimizer
 ) : OptimizeDatabaseUseCase {
 
     @Suppress("TooGenericExceptionCaught")
+    @DelicateKaliumApi(
+        message = "This use case is intended for debugging purposes only and should not be used in production code."
+    )
     override suspend fun invoke(): OptimizeDatabaseResult {
         return try {
             optimizer.optimize()
