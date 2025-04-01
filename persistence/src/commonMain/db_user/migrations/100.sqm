@@ -1,1 +1,2 @@
+DROP INDEX IF EXISTS message_mentioned_user_id_index;
 CREATE INDEX IF NOT EXISTS  message_mentioned_user_id_and_message_index ON MessageMention(user_id, message_id);
