@@ -67,8 +67,7 @@ CREATE TABLE MessageMention (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, start) -- there should not be any overlapping mentions
 );
-CREATE INDEX message_mentioned_user_id_index ON MessageMention(user_id);
-CREATE INDEX message_mentioned_message_and_user_id_index ON MessageMention(message_id, user_id);
+CREATE INDEX message_mentioned_user_id_and_message_index ON MessageMention(user_id, message_id);
 
 CREATE TABLE MessageTextContent (
       message_id TEXT NOT NULL,
