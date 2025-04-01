@@ -286,9 +286,12 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("conversation.add-permission-update")
         data class ChannelAddPermissionUpdate(
+            @SerialName("conversation") val conversation: String,
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("data") val data: ChannelAddPermissionDTO,
+            @SerialName("from") val from: String,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant
         ) : Conversation()
     }
 

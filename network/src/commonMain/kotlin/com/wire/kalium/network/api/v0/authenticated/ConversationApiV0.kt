@@ -35,10 +35,12 @@ import com.wire.kalium.network.api.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
@@ -394,6 +396,11 @@ internal open class ConversationApiV0 internal constructor(
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
         }
+
+    override suspend fun updateChannelPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermissionDTO
+    ): NetworkResponse<UpdateChannelAddPermissionResponse> = getApiNotSupportedError(::updateChannelPermission.name, 8)
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"

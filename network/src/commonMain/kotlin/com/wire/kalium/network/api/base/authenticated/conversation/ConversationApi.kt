@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateConversation
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -183,7 +184,7 @@ interface ConversationApi : BaseApi {
 
     suspend fun updateChannelPermission(
         conversationId: ConversationId,
-        channelAddPermission: ChannelAddPermission
+        channelAddPermission: ChannelAddPermissionDTO
     ): NetworkResponse<UpdateChannelAddPermissionResponse>
 
     suspend fun guestLinkInfo(

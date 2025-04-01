@@ -45,6 +45,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -694,9 +695,9 @@ internal fun ChannelAddPermission.toModel(): Conversation.ChannelAddPermission =
     ChannelAddPermission.EVERYONE -> Conversation.ChannelAddPermission.EVERYONE
 }
 
-internal fun Conversation.ChannelAddPermission.toApi(): ChannelAddPermission = when (this) {
-    Conversation.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
-    Conversation.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
+internal fun Conversation.ChannelAddPermission.toApi(): ChannelAddPermissionDTO = when (this) {
+    Conversation.ChannelAddPermission.ADMINS -> ChannelAddPermissionDTO(ChannelAddPermission.ADMINS)
+    Conversation.ChannelAddPermission.EVERYONE -> ChannelAddPermissionDTO(ChannelAddPermission.EVERYONE)
 }
 
 internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
