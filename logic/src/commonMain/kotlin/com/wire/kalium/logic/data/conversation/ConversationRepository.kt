@@ -40,6 +40,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
@@ -228,6 +229,11 @@ interface ConversationRepository {
         conversationId: ConversationId,
         userId: UserId,
         role: Conversation.Member.Role
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -1218,6 +1224,14 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationsDeleteQueue(): List<ConversationId> =
         metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
             ?.map { it.toModel() } ?: listOf()
+
+    override suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        // TODO: Make API request to update the value with the backend
+        conversationDAO.updateChannelAddPermission(conversationId.toDao(), channelAddPermission.toDaoChannelPermission())
+    }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
