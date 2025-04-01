@@ -319,5 +319,5 @@ interface UserDAO {
     suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
     suspend fun updateTeamId(userId: UserIDEntity, teamId: String)
     suspend fun countContactsAmount(selfUserId: QualifiedIDEntity): Int
-    suspend fun countTeamMembersAmount(teamId: String, selfUserId: QualifiedIDEntity): Int
+    suspend fun countTeamMembersAmount(teamId: String): Int
 }
