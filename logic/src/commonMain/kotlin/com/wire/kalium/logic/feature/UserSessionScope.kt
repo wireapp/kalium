@@ -600,6 +600,7 @@ class UserSessionScope internal constructor(
         sessionRepository = globalScope.sessionRepository,
         accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
+        currentClientIdProvider = clientIdProvider,
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
