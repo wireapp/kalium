@@ -122,6 +122,10 @@ interface ConversationDAO {
         link: String,
         isPasswordProtected: Boolean
     )
+    suspend fun updateChannelAddPermission(
+        conversationId: QualifiedIDEntity,
+        channelAddPermission: ConversationEntity.ChannelAddPermission
+    )
 
     suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity)
 

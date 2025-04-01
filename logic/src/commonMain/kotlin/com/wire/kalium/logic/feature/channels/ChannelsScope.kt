@@ -18,10 +18,14 @@
 package com.wire.kalium.logic.feature.channels
 
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.SelfUserObservationProvider
+import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCase
+import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCaseImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 
 class ChannelsScope(
+    val conversationRepository: () -> ConversationRepository,
     val metadataDaoProvider: () -> MetadataDAO,
     val selfUserObservationProvider: () -> SelfUserObservationProvider
 ) {
@@ -33,4 +37,7 @@ class ChannelsScope(
 
     val observeChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
         get() = ObserveChannelsCreationPermissionUseCase(channelsConfigStorage, selfUserObservationProvider())
+
+    val updateChannelAddPermission: UpdateChannelAddPermissionUseCase
+        get() = UpdateChannelAddPermissionUseCaseImpl(conversationRepository())
 }
