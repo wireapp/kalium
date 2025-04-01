@@ -192,7 +192,7 @@ class EventMapper(
     ): Event = Event.Conversation.ConversationChannelAddPermission(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        channelAddPermission = eventContentDTO.data.channelAddPermission.toModel(),
+        channelAddPermission = eventContentDTO.data.channelAddPermissionTypeDTO.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
 

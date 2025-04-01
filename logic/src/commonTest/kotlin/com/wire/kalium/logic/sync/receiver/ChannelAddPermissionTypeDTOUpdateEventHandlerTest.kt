@@ -29,7 +29,7 @@ import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class ChannelAddPermissionUpdateEventHandlerTest {
+class ChannelAddPermissionTypeDTOUpdateEventHandlerTest {
 
     @Test
     fun givenEvent_whenHandle_thenUpdateChannelAddPermission() = runTest {

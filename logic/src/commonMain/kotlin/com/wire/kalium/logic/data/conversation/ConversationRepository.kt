@@ -245,7 +245,7 @@ interface ConversationRepository {
 
     suspend fun updateChannelAddPermissionRemotely(
         conversationId: ConversationId,
-        channelAddPermission: Conversation.ChannelAddPermission
+        channelAddPermission: ChannelAddPermission
     ): Either<NetworkFailure, UpdateChannelAddPermissionResponse>
 
     /**
@@ -1024,7 +1024,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateChannelAddPermissionRemotely(
         conversationId: ConversationId,
-        channelAddPermission: Conversation.ChannelAddPermission
+        channelAddPermission: ChannelAddPermission
     ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
         conversationApi.updateChannelPermission(
             conversationId = conversationId.toApi(),
@@ -1228,10 +1228,23 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        // TODO: Make API request to update the value with the backend
-        conversationDAO.updateChannelAddPermission(conversationId.toDao(), channelAddPermission.toDaoChannelPermission())
-    }
+    ): Either<CoreFailure, Unit> = updateChannelAddPermissionRemotely(conversationId, channelAddPermission)
+        .flatMap {
+            when (it) {
+                is UpdateChannelAddPermissionResponse.PermissionUnchanged -> {
+                    Either.Right(Unit)
+                }
+
+                is UpdateChannelAddPermissionResponse.PermissionUpdated -> {
+                    wrapStorageRequest {
+                        conversationDAO.updateChannelAddPermission(
+                            conversationId.toDao(),
+                            channelAddPermission.toDaoChannelPermission()
+                        )
+                    }
+                }
+            }
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

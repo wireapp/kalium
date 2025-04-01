@@ -40,7 +40,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermission
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -716,14 +716,14 @@ internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
     ConvProtocol.MLS -> Conversation.Protocol.MLS
 }
 
-internal fun ChannelAddPermission.toModel(): Conversation.ChannelAddPermission = when (this) {
-    ChannelAddPermission.ADMINS -> Conversation.ChannelAddPermission.ADMINS
-    ChannelAddPermission.EVERYONE -> Conversation.ChannelAddPermission.EVERYONE
+internal fun ChannelAddPermissionTypeDTO.toModel(): Conversation.ChannelAddPermission = when (this) {
+    ChannelAddPermissionTypeDTO.ADMINS -> Conversation.ChannelAddPermission.ADMINS
+    ChannelAddPermissionTypeDTO.EVERYONE -> Conversation.ChannelAddPermission.EVERYONE
 }
 
-internal fun Conversation.ChannelAddPermission.toApi(): ChannelAddPermissionDTO = when (this) {
-    Conversation.ChannelAddPermission.ADMINS -> ChannelAddPermissionDTO(ChannelAddPermission.ADMINS)
-    Conversation.ChannelAddPermission.EVERYONE -> ChannelAddPermissionDTO(ChannelAddPermission.EVERYONE)
+internal fun ChannelAddPermission.toApi(): ChannelAddPermissionDTO = when (this) {
+    ChannelAddPermission.ADMINS -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.ADMINS)
+    ChannelAddPermission.EVERYONE -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.EVERYONE)
 }
 
 internal fun Protocol.toModel(): Conversation.Protocol = when (this) {

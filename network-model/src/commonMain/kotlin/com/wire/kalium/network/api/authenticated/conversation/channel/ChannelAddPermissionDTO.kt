@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.network.api.authenticated.conversation.channel
 
-import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermission
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChannelAddPermissionDTO(
     @SerialName("add_permission")
-    val channelAddPermission: ChannelAddPermission
+    val channelAddPermissionTypeDTO: ChannelAddPermissionTypeDTO
 )

@@ -32,7 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class UpdateChannelAddPermissionUseCaseTest {
+class UpdateChannelAddPermissionTypeDTOUseCaseTest {
 
     @Test
     fun givenUpdateChannelAddPermissionSucceeds_whenInvokeUseCase_thenReturnSuccess() = runTest {
