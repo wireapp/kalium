@@ -21,16 +21,16 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
@@ -98,7 +98,44 @@ class EventDataSource(
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>> =
-        currentClientId().flatMap { clientId -> liveEventsFlow(clientId) }
+        currentClientId().flatMap { clientId ->
+            // todo(ym) check if it has consumable notifications is available for the client
+            // todo(ym) also cache this capabilities value?
+            val hasConsumableNotifications = false // check
+            if (hasConsumableNotifications) {
+                liveEventsFlow(clientId)
+            } else {
+                consumeLiveEventsFlow(clientId)
+            }
+        }
+
+    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
+        wrapApiRequest { notificationApi.consumeLiveEvents(clientId.value) }.map { webSocketEventFlow ->
+            flow {
+                webSocketEventFlow.collect { webSocketEvent ->
+                    when (webSocketEvent) {
+                        is WebSocketEvent.Open -> {
+                            emit(WebSocketEvent.Open())
+                        }
+
+                        is WebSocketEvent.NonBinaryPayloadReceived -> {
+                            emit(WebSocketEvent.NonBinaryPayloadReceived(webSocketEvent.payload))
+                        }
+
+                        is WebSocketEvent.Close -> {
+                            emit(WebSocketEvent.Close(webSocketEvent.cause))
+                        }
+
+                        is WebSocketEvent.BinaryPayloadReceived -> {
+                            val events = eventMapper.fromDTO(webSocketEvent.payload, true)
+                            events.forEach { eventEnvelope ->
+                                emit(WebSocketEvent.BinaryPayloadReceived(eventEnvelope))
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map { webSocketEventFlow ->

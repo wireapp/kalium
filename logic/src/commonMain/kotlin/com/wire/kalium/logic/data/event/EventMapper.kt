@@ -43,6 +43,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
@@ -75,6 +76,15 @@ class EventMapper(
         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
         return eventResponse.payload?.map { eventContentDTO ->
             EventEnvelope(fromEventContentDTO(id, eventContentDTO), EventDeliveryInfo(eventResponse.transient, source))
+        } ?: listOf()
+    }
+
+    // todo (ym) dubious, map correctly, delivery tags, maybe EventEnvelope needs extension.
+    fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse, isLive: Boolean): List<EventEnvelope> {
+        val id = consumableNotificationResponse.data?.deliveryTag.toString()
+        val source = if (isLive) EventSource.LIVE else EventSource.PENDING
+        return consumableNotificationResponse.data?.event?.payload?.map { eventContentDTO ->
+            EventEnvelope(fromEventContentDTO(id, eventContentDTO), EventDeliveryInfo(false, source))
         } ?: listOf()
     }
 
