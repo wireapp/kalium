@@ -18,20 +18,22 @@
 
 package com.wire.kalium.network.api.v5.unauthenticated.networkContainer
 
-import com.wire.kalium.network.api.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
-import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
-import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
-import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
+import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
+import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v5.unauthenticated.DomainLookupApiV5
+import com.wire.kalium.network.api.v5.unauthenticated.GetDomainRegistrationApiV5
 import com.wire.kalium.network.api.v5.unauthenticated.LoginApiV5
 import com.wire.kalium.network.api.v5.unauthenticated.RegisterApiV5
 import com.wire.kalium.network.api.v5.unauthenticated.SSOLoginApiV5
@@ -69,4 +71,6 @@ class UnauthenticatedNetworkContainerV5 internal constructor(
     override val registerApi: RegisterApi get() = RegisterApiV5(unauthenticatedNetworkClient)
     override val sso: SSOLoginApi get() = SSOLoginApiV5(unauthenticatedNetworkClient)
     override val appVersioningApi: AppVersioningApi get() = AppVersioningApiImpl(unauthenticatedNetworkClient)
+    override val getDomainRegistrationApi: GetDomainRegistrationApi
+        get() = GetDomainRegistrationApiV5(unauthenticatedNetworkClient)
 }
