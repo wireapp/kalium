@@ -528,6 +528,7 @@ com.wire.kalium.logic.feature.channels
 com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
+com.wire.kalium.logic.feature.conversation.channel
 com.wire.kalium.logic.feature.conversation.createconversation
 com.wire.kalium.logic.feature.conversation.folder
 com.wire.kalium.logic.feature.conversation.guestroomlink
