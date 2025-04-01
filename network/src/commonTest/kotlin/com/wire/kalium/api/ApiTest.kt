@@ -72,7 +72,6 @@ internal abstract class ApiTest {
         get() = {
             val newSession = TEST_SESSION_MANAGER.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldAccessToken = oldTokens!!.accessToken,
                 oldRefreshToken = oldTokens!!.refreshToken
             )
             newSession.let {
