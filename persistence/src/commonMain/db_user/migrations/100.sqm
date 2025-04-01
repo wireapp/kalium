@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS message_mentioned_message_and_user_id_index ON MessageMention(message_id, user_id);
