@@ -42,11 +42,11 @@ kotlin {
     // Useful for a library that will be called by other clients
     // This way we need to think before putting "public" in things, and we can be reminded by the compiler to use "internal" more often
     explicitApi()
-    val xcf = XCFramework()
+    val xcf = XCFramework("WireBackup")
     val appleTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64(), macosArm64(), macosX64())
     appleTargets.forEach {
         it.binaries.framework {
-            baseName = "backup"
+            baseName = "WireBackup"
             xcf.add(this)
         }
     }
