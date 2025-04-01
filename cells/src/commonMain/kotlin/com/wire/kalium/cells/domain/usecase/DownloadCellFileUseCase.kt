@@ -22,7 +22,7 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
@@ -32,7 +32,13 @@ import kotlinx.coroutines.withContext
 import okio.Path
 
 public interface DownloadCellFileUseCase {
-    public suspend operator fun invoke(assetId: String, outFilePath: Path, onProgressUpdate: (Long) -> Unit): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(
+        assetId: String,
+        outFilePath: Path,
+        assetSize: Long,
+        remoteFilePath: String? = null,
+        onProgressUpdate: (Long) -> Unit
+    ): Either<CoreFailure, Unit>
 }
 
 /**
@@ -53,23 +59,44 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
      * @param onProgressUpdate Callback to receive download progress updates.
      * @return download operation result
      */
-    public override suspend operator fun invoke(
+    override suspend operator fun invoke(
         assetId: String,
         outFilePath: Path,
+        assetSize: Long,
+        remoteFilePath: String?,
         onProgressUpdate: (Long) -> Unit,
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
-        attachmentsRepository.getAssetPath(assetId).flatMap { path ->
-            path?.let {
-                attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
-                cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
-                    .onSuccess {
-                        attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
-                        attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())
-                    }
-                    .onFailure {
-                        attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
-                    }
-            } ?: Either.Left(StorageFailure.DataNotFound)
-        }
+        attachmentsRepository.getAssetPath(assetId).fold(
+            {
+                // Attachment asset not found
+                // Try to download standalone file (not received as attachment in conversation).
+                remoteFilePath?.let {
+                    downloadFromRemotePath(assetId, outFilePath, assetSize, it, onProgressUpdate)
+                } ?: Either.Left(StorageFailure.DataNotFound)
+            },
+            { path ->
+                path?.let {
+                    attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
+                    cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
+                        .onSuccess {
+                            attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+                            attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())
+                        }
+                        .onFailure {
+                            attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
+                        }
+                } ?: Either.Left(StorageFailure.DataNotFound)
+            }
+        )
     }
+
+    private suspend fun downloadFromRemotePath(
+        assetId: String,
+        outFilePath: Path,
+        assetSize: Long,
+        path: String,
+        onProgressUpdate: (Long) -> Unit,
+    ) = cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
+            .onSuccess { attachmentsRepository.saveStandaloneAssetPath(assetId, outFilePath.toString(), assetSize) }
+
 }

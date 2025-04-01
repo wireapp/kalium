@@ -17,8 +17,12 @@
  */
 package com.wire.kalium.persistence.dao.message.attachment
 
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MessageAttachmentsQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper.toDao
+import com.wire.kalium.persistence.util.mapToList
+import kotlinx.coroutines.flow.Flow
 
 interface MessageAttachmentsDao {
     suspend fun getAssetPath(assetId: String): String?
@@ -27,11 +31,23 @@ interface MessageAttachmentsDao {
     suspend fun setTransferStatus(assetId: String, status: String)
     suspend fun getAttachment(assetId: String): MessageAttachmentEntity
     suspend fun setContentUrlAndHash(assetId: String, url: String?, hash: String?)
+    suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
+    suspend fun getAttachments(): List<MessageAttachmentEntity>
+    suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
 }
 
 internal class MessageAttachmentsDaoImpl(
     private val queries: MessageAttachmentsQueries,
 ) : MessageAttachmentsDao {
+
+    override suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity> =
+        queries.getAttachments(messageId, conversationId, ::toDao).executeAsList()
+
+    override suspend fun getAttachments(): List<MessageAttachmentEntity> =
+        queries.getAllAttachments(::toDao).executeAsList()
+
+    override suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>> =
+        queries.getAllAttachments(::toDao).asFlow().mapToList()
 
     override suspend fun getAttachment(assetId: String): MessageAttachmentEntity =
         queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()

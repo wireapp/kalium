@@ -20,6 +20,7 @@ package com.wire.kalium.cells.domain
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageAttachment
 
 internal interface CellAttachmentsRepository {
@@ -29,4 +30,9 @@ internal interface CellAttachmentsRepository {
     suspend fun savePreviewUrl(assetId: String, url: String?): Either<StorageFailure, Unit>
     suspend fun saveLocalPath(assetId: String, path: String?): Either<StorageFailure, Unit>
     suspend fun saveContentUrlAndHash(assetId: String, contentUrl: String?, hash: String?): Either<StorageFailure, Unit>
+    suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
+    suspend fun getAttachments(): Either<StorageFailure, List<MessageAttachment>>
+    suspend fun saveStandaloneAssetPath(assetId: String, path: String, size: Long): Either<StorageFailure, Unit>
+    suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<Pair<String, String>>>
+    suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
 }
