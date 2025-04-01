@@ -46,8 +46,8 @@ CREATE TABLE Conversation (
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
     legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
     is_channel INTEGER AS Boolean NOT NULL DEFAULT 0,
-    channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT(NULL),
-    channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT(NULL)
+    channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
+    channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
