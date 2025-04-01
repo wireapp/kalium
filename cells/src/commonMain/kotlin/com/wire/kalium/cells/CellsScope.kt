@@ -95,8 +95,8 @@ public class CellsScope(
     // Temporary hardcoded credentials and server URL
     private val cellClientCredentials: CellsCredentials
         get() = CellsCredentials(
-            serverUrl = "https://service.zeta.pydiocells.com",
-            accessToken = "fybwjf05cs4bex54ufvmnktttttov1pw:$userId",
+            serverUrl = "https://shares.fulu.wire.link",
+            accessToken = "rnFZ9M3L27j2rxR3h8mvNs3X4ZKk2427ZH5gBnTt:$userId",
             gatewaySecret = "gatewaysecret",
         )
 
