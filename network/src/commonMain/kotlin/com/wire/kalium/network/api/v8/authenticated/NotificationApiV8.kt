@@ -18,13 +18,85 @@
 
 package com.wire.kalium.network.api.v8.authenticated
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_EVENTS
 import com.wire.kalium.network.api.v7.authenticated.NotificationApiV7
+import com.wire.kalium.network.kaliumLogger
+import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
+import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.setWSSUrl
+import io.ktor.client.request.parameter
+import io.ktor.http.Url
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
 
 internal open class NotificationApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    authenticatedWebSocketClient: AuthenticatedWebSocketClient,
-    serverLinks: ServerConfigDTO.Links
-) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks)
+    private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
+    val serverLinks: ServerConfigDTO.Links
+) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks) {
+
+    override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
+        mostRecentNotification(clientId).mapSuccess {
+            flow {
+                // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
+                //       WebSocket requests are not intercept-able, and they throw
+                //       exceptions when the backend returns 401 instead of triggering a token refresh.
+                //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
+                //       before attempting to open the websocket
+                val webSocketSession = authenticatedWebSocketClient.createWebSocketSession(clientId) {
+                    setWSSUrl(Url(serverLinks.webSocket), PATH_EVENTS)
+                    parameter(CLIENT_QUERY_KEY, clientId)
+                }
+                emitWebSocketEvents(webSocketSession)
+            }
+        }
+
+    private suspend fun FlowCollector<WebSocketEvent<ConsumableNotificationResponse>>.emitWebSocketEvents(
+        defaultClientWebSocketSession: WebSocketSession
+    ) {
+        val logger = kaliumLogger.withFeatureId(EVENT_RECEIVER)
+        logger.i("Websocket open")
+        emit(WebSocketEvent.Open())
+
+        defaultClientWebSocketSession.incoming
+            .consumeAsFlow()
+            .onCompletion {
+                defaultClientWebSocketSession.close()
+                logger.w("Websocket Closed", it)
+                emit(WebSocketEvent.Close(it))
+            }
+            .collect { frame ->
+                logger.v("Websocket Received Frame: $frame")
+                when (frame) {
+                    is Frame.Binary -> {
+                        // assuming here the byteArray is an ASCII character set
+                        val jsonString = io.ktor.utils.io.core.String(frame.data)
+
+                        logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
+                        val event = KtxSerializer.json.decodeFromString<ConsumableNotificationResponse>(jsonString)
+                        emit(WebSocketEvent.BinaryPayloadReceived(event))
+                    }
+
+                    else -> {
+                        logger.v("Websocket frame not handled: $frame")
+                        emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))
+                    }
+                }
+            }
+    }
+}
