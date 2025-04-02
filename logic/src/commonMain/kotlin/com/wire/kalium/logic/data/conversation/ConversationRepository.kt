@@ -99,6 +99,7 @@ interface ConversationRepository {
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type>
+
     // TODO: rename it to getChannelAddUserPermission
     suspend fun getChannelAddPermission(conversationId: ConversationId): Either<StorageFailure, ChannelAddPermission>
     // endregion
