@@ -523,6 +523,8 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AppLock)
         )
 
+        // These features are NOT received through events. As FeatureConfig Events are deprecated
+        is FeatureConfigData.Channels,
         is FeatureConfigData.DigitalSignatures,
         is FeatureConfigData.Legalhold,
         is FeatureConfigData.SSO,
