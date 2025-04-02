@@ -64,6 +64,7 @@ import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -80,6 +81,7 @@ public class CellsScope(
     private val cellsClient: HttpClient,
     private val userId: String,
     private val dao: CellScopeDao,
+    private val serverConfig: ServerConfigDTO,
 ) : CoroutineScope {
 
     public data class CellScopeDao(
@@ -92,13 +94,8 @@ public class CellsScope(
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    // Temporary hardcoded credentials and server URL
     private val cellClientCredentials: CellsCredentials
-        get() = CellsCredentials(
-            serverUrl = "https://shares.fulu.wire.link",
-            accessToken = "rnFZ9M3L27j2rxR3h8mvNs3X4ZKk2427ZH5gBnTt:$userId",
-            gatewaySecret = "gatewaysecret",
-        )
+        get() = CellsCredentialsProvider.getCredentials(userId, serverConfig)
 
     private val cellAwsClient: CellsAwsClient
         get() = cellsAwsClient(cellClientCredentials)

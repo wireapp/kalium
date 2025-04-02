@@ -2253,6 +2253,8 @@ class UserSessionScope internal constructor(
                     userDao = userDAO,
                 )
             },
+            // Temporary workaround for switching between fulu / imai environments
+            serverConfig = sessionManager.serverConfig(),
         )
     }
 
