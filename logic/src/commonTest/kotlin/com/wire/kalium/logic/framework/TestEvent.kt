@@ -36,8 +36,6 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
-import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
@@ -271,9 +269,9 @@ object TestEvent {
         isTransient: Boolean = false,
         source: EventSource = EventSource.LIVE
     ): EventEnvelope {
-        return EventEnvelope(this, EventDeliveryInfo(isTransient, source))
+        return EventEnvelope(this, EventDeliveryInfo.LegacyEventDeliveryInfo(isTransient, source))
     }
 
-    val liveDeliveryInfo = EventDeliveryInfo(false, EventSource.LIVE)
-    val nonLiveDeliveryInfo = EventDeliveryInfo(false, EventSource.PENDING)
+    val liveDeliveryInfo = EventDeliveryInfo.LegacyEventDeliveryInfo(false, EventSource.LIVE)
+    val nonLiveDeliveryInfo = EventDeliveryInfo.LegacyEventDeliveryInfo(false, EventSource.PENDING)
 }

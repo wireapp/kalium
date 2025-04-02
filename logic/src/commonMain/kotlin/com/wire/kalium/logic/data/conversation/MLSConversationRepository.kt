@@ -18,17 +18,32 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.flatten
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.E2EIFailure
-import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -51,23 +66,8 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.getRemovalKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.flatten
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapMLSRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -403,7 +403,9 @@ internal class MLSConversationDataSource(
                     eventContentDTO
                 )
             if (event is Event.Conversation) {
-                commitBundleEventReceiver.onEvent(event, EventDeliveryInfo(isTransient = true, source = EventSource.LIVE))
+                commitBundleEventReceiver.onEvent(event,
+                    EventDeliveryInfo.LegacyEventDeliveryInfo(isTransient = true, source = EventSource.LIVE)
+                )
             }
         }
     }

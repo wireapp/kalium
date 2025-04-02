@@ -72,24 +72,39 @@ data class EventEnvelope(
     )
 }
 
-/**
- * Data class representing information about the delivery of an event.
- *
- * @property isTransient Specifies whether the event is transient.
- * Transient events are events that only matter if the user is online/active. For example "user is typing",
- * and call signaling (mute/unmute), which are irrelevant after a few minutes. These are likely to not even
- * be stored in the backend.
- * @property source The source of the event.
- * @see EventSource
- */
-data class EventDeliveryInfo(
-    val isTransient: Boolean,
-    val source: EventSource,
-) {
-    fun toLogMap(): Map<String, Any?> = mapOf(
-        "isTransient" to isTransient,
-        "source" to source.name
-    )
+sealed interface EventDeliveryInfo {
+    val source: EventSource
+
+    fun toLogMap(): Map<String, Any?>
+
+    data class AsyncEventDeliveryInfo(
+        val deliveryTag: ULong,
+        override val source: EventSource
+    ) : EventDeliveryInfo {
+        override fun toLogMap(): Map<String, Any?> = mapOf(
+            "source" to source.name
+        )
+    }
+
+    /**
+     * Data class representing information about the delivery of an event.
+     *
+     * @property isTransient Specifies whether the event is transient.
+     * Transient events are events that only matter if the user is online/active. For example "user is typing",
+     * and call signaling (mute/unmute), which are irrelevant after a few minutes. These are likely to not even
+     * be stored in the backend.
+     * @property source The source of the event.
+     * @see EventSource
+     */
+    data class LegacyEventDeliveryInfo(
+        val isTransient: Boolean,
+        override val source: EventSource,
+    ) : EventDeliveryInfo {
+        override fun toLogMap(): Map<String, Any?> = mapOf(
+            "isTransient" to isTransient,
+            "source" to source.name
+        )
+    }
 }
 
 /**

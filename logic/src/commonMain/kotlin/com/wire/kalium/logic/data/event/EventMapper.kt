@@ -75,16 +75,20 @@ class EventMapper(
         val id = eventResponse.id
         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
         return eventResponse.payload?.map { eventContentDTO ->
-            EventEnvelope(fromEventContentDTO(id, eventContentDTO), EventDeliveryInfo(eventResponse.transient, source))
+            EventEnvelope(
+                fromEventContentDTO(id, eventContentDTO),
+                EventDeliveryInfo.LegacyEventDeliveryInfo(eventResponse.transient, source)
+            )
         } ?: listOf()
     }
 
     // todo (ym) dubious, map correctly, delivery tags, maybe EventEnvelope needs extension.
     fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse, isLive: Boolean): List<EventEnvelope> {
-        val id = consumableNotificationResponse.data?.deliveryTag.toString()
+        val deliveryTag = consumableNotificationResponse.data?.deliveryTag ?: ULong.MIN_VALUE
         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
-        return consumableNotificationResponse.data?.event?.payload?.map { eventContentDTO ->
-            EventEnvelope(fromEventContentDTO(id, eventContentDTO), EventDeliveryInfo(false, source))
+        val event = consumableNotificationResponse.data?.event
+        return event?.payload?.map { eventContentDTO ->
+            EventEnvelope(fromEventContentDTO(event.id, eventContentDTO), EventDeliveryInfo.AsyncEventDeliveryInfo(deliveryTag, source))
         } ?: listOf()
     }
 
