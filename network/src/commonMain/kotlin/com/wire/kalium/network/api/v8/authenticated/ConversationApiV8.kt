@@ -50,7 +50,7 @@ internal open class ConversationApiV8 internal constructor(
         }
     }
 
-    override suspend fun updateChannelPermission(
+    override suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermissionDTO
     ): NetworkResponse<UpdateChannelAddPermissionResponse> = try {

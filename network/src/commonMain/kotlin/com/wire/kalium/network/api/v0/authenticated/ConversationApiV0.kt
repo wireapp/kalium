@@ -397,10 +397,12 @@ internal open class ConversationApiV0 internal constructor(
             httpClient.get("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
         }
 
-    override suspend fun updateChannelPermission(
+    override suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermissionDTO
-    ): NetworkResponse<UpdateChannelAddPermissionResponse> = getApiNotSupportedError(::updateChannelPermission.name, 8)
+    ): NetworkResponse<UpdateChannelAddPermissionResponse> = NetworkResponse.Error(
+        APINotSupported("updateChannelPermission api is only available on API V8")
+    )
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"

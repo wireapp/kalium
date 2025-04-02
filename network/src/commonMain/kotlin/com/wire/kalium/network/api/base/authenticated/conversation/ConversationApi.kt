@@ -20,7 +20,6 @@ package com.wire.kalium.network.api.base.authenticated.conversation
 
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
-import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermission
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
@@ -182,7 +181,7 @@ interface ConversationApi : BaseApi {
         protocol: ConvProtocol
     ): NetworkResponse<UpdateConversationProtocolResponse>
 
-    suspend fun updateChannelPermission(
+    suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermissionDTO
     ): NetworkResponse<UpdateChannelAddPermissionResponse>

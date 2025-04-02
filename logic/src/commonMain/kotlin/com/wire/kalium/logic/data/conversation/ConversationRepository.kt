@@ -1026,7 +1026,7 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
     ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
-        conversationApi.updateChannelPermission(
+        conversationApi.updateChannelAddPermission(
             conversationId = conversationId.toApi(),
             channelAddPermission = channelAddPermission.toApi()
         )
