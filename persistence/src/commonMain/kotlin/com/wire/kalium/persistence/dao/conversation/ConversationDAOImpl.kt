@@ -19,9 +19,9 @@
 package com.wire.kalium.persistence.dao.conversation
 
 import app.cash.sqldelight.coroutines.asFlow
-import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.ConversationDetailsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.cache.FlowCache
@@ -522,6 +522,13 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(coroutineContext) {
         conversationQueries.selectIsChannel(conversationId).executeAsOneOrNull() ?: false
+    }
+
+    override suspend fun getChannelAddPermission(conversationId: QualifiedIDEntity): ConversationEntity.ChannelAddPermission {
+        return withContext(coroutineContext) {
+            conversationQueries.selectChannelAddPermission(conversationId).executeAsOneOrNull()?.channel_add_permission
+                ?: ConversationEntity.ChannelAddPermission.ADMINS
+        }
     }
 
     override suspend fun updateChannelAddPermission(
