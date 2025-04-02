@@ -243,6 +243,9 @@ data object ConversationMapper {
         proteus_verification_status: ConversationEntity.VerificationStatus,
         degraded_conversation_notified: Boolean,
         legal_hold_status: ConversationEntity.LegalHoldStatus,
+        is_channel: Boolean,
+        channel_access: ConversationEntity.ChannelAccess?,
+        channel_add_permission: ConversationEntity.ChannelAddPermission?,
     ) = ConversationEntity(
         id = qualified_id,
         name = name,
@@ -271,7 +274,10 @@ data object ConversationMapper {
         archivedInstant = archived_date_time,
         mlsVerificationStatus = verification_status,
         proteusVerificationStatus = proteus_verification_status,
-        legalHoldStatus = legal_hold_status
+        legalHoldStatus = legal_hold_status,
+        isChannel = is_channel,
+        channelAccess = channel_access,
+        channelAddPermission = channel_add_permission,
     )
 
     @Suppress("LongParameterList")
