@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import kotlin.Boolean;
 
 DROP VIEW IF EXISTS ConversationDetails;
@@ -134,3 +135,7 @@ LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 
 LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
 LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
 LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE';
+=======
+DROP INDEX IF EXISTS message_mentioned_user_id_index;
+CREATE INDEX IF NOT EXISTS  message_mentioned_user_id_and_message_index ON MessageMention(user_id, message_id);
+>>>>>>> aa3efde959 (fix: mention index, database pragma optimize [WPB-16842] (#3361))
