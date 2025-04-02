@@ -44,6 +44,8 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
     isChannel = false,
+    channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
     wireCell = null,
 )
 
@@ -72,5 +74,7 @@ fun newConversationEntity(
     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
     isChannel = false,
+    channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
     wireCell = null,
 )

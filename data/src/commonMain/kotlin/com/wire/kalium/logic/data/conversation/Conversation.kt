@@ -352,7 +352,23 @@ sealed interface ConversationDetails {
             override val wireCell: String? = null,
             // TODO: Add channel-specific fields
 //         val isTeamAdmin: Boolean, TODO kubaz
-        ) : Group
+            val access: ChannelAccess,
+            val permission: ChannelAddPermission
+        ) : Group {
+            /**
+             * An enum class that defines the permissions for adding participants to a channel,
+             * specifying who is authorized to do so.
+             */
+            enum class ChannelAccess {
+                PUBLIC,
+                PRIVATE
+            }
+
+            enum class ChannelAddPermission {
+                ADMINS,
+                EVERYONE
+            }
+        }
     }
 
     data class Connection(

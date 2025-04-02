@@ -78,6 +78,8 @@ data object ConversationDetailsWithEventsMapper {
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
+        channelAccess: ConversationEntity.ChannelAccess?,
+        channelAddPermission: ConversationEntity.ChannelAddPermission?,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
@@ -161,6 +163,8 @@ data object ConversationDetailsWithEventsMapper {
             folderId = folderId,
             folderName = folderName,
             isChannel = isChannel,
+            channelAccess = channelAccess,
+            channelAddPermission = channelAddPermission,
             wireCell = wireCell,
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(

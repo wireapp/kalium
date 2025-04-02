@@ -180,6 +180,8 @@ object TestConversation {
         folderId = null,
         folderName = null,
         isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
         wireCell = null,
     )
 
@@ -299,6 +301,8 @@ object TestConversation {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
         wireCell = null,
     )
     val ENTITY_GROUP = ENTITY.copy(
@@ -352,6 +356,8 @@ object TestConversation {
         folderId = null,
         folderName = null,
         isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
         wireCell = null,
     )
 

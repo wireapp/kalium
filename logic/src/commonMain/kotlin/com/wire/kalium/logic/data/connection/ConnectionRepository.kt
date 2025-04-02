@@ -269,6 +269,8 @@ internal class ConnectionDataSource(
                         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                         isChannel = false,
+                        channelAccess = null,
+                        channelAddPermission = null,
                         wireCell = null,
                     )
                 )

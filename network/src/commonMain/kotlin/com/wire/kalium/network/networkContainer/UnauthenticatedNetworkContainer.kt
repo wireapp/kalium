@@ -21,6 +21,7 @@ package com.wire.kalium.network.networkContainer
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
@@ -49,6 +50,7 @@ interface UnauthenticatedNetworkContainer {
     val domainLookupApi: DomainLookupApi
     val remoteVersion: VersionApi
     val serverConfigApi: ServerConfigApi
+    val getDomainRegistrationApi: GetDomainRegistrationApi
 
     @Suppress("LongMethod")
     companion object {

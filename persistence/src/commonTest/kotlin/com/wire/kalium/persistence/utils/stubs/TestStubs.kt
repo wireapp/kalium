@@ -58,6 +58,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
     )
     val conversationEntity2 = ConversationEntity(
@@ -88,6 +90,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
     )
 
@@ -121,6 +125,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE
         wireCell = null,
     )
 
@@ -154,6 +160,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
     )
 
@@ -187,6 +195,8 @@ internal object TestStubs {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+        channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
     )
 

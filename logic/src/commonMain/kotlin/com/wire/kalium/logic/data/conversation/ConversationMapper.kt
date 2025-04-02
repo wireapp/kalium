@@ -21,6 +21,8 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAccess
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
@@ -149,6 +151,8 @@ internal class ConversationMapperImpl(
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL,
+            channelAccess = null, // TODO: implement when api is ready
+            channelAddPermission = null, // TODO: implement when api is ready
             wireCell = conversationId.toString().takeIf { wireCellEnabled },
         )
     }
@@ -289,6 +293,9 @@ internal class ConversationMapperImpl(
                             selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                             isFavorite = isFavorite,
                             folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
+                            access = channelAccess?.toModelChannelAccess() ?: ChannelAccess.PRIVATE,
+                            permission = channelAddPermission?.toModelChannelPermission()
+                                ?: ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
                         )
                     } else {
                         ConversationDetails.Group.Regular(
@@ -473,7 +480,9 @@ internal class ConversationMapperImpl(
             mlsVerificationStatus = verificationStatusToEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus),
             legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus),
-            isChannel = false, // There were no channels in old Android clients. So no migration from channels is necessary
+            isChannel = false, // There were no channels in old Android clients. So no migration from channels is necessary,
+            channelAccess = null,
+            channelAddPermission = null,
             wireCell = null,
         )
     }
@@ -506,7 +515,9 @@ internal class ConversationMapperImpl(
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-        isChannel = false, // We can assume the conversations aren't channels while they're failed
+        isChannel = false, // We can assume the conversations aren't channels while they're failed,
+        channelAccess = null,
+        channelAddPermission = null,
         wireCell = null,
     )
 
@@ -590,6 +601,21 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
+fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
+    ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
+    ChannelAddPermission.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
+}
+
+fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
+    ConversationEntity.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
+    ConversationEntity.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
+}
+
+fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {
+    ConversationEntity.ChannelAccess.PRIVATE -> ChannelAccess.PRIVATE
+    ConversationEntity.ChannelAccess.PUBLIC -> ChannelAccess.PUBLIC
+}
+
 private fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation.Type = when (this) {
     ConversationEntity.Type.SELF -> Conversation.Type.Self
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.OneOnOne
@@ -599,6 +625,7 @@ private fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conv
             false -> Conversation.Type.Group.Regular
         }
     }
+
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending
 }
 
