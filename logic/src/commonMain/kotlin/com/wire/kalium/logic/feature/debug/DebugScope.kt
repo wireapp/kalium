@@ -231,4 +231,6 @@ class DebugScope internal constructor(
     val changeProfiling: ChangeProfilingUseCase get() = ChangeProfilingUseCase(userStorage)
 
     val observeDatabaseLoggerState get() = ObserveDatabaseLoggerStateUseCase(userStorage)
+
+    val optimizeDatabase get(): OptimizeDatabaseUseCase = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
 }
