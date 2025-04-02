@@ -72,7 +72,6 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldAccessToken = oldTokens!!.accessToken,
                 oldRefreshToken = oldTokens!!.refreshToken
             )
             newSession.let {
@@ -119,7 +118,6 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldAccessToken = oldTokens!!.accessToken,
                 oldRefreshToken = oldTokens!!.refreshToken
             )
             newSession.let {
@@ -158,7 +156,6 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 AccessTokenApiV0(client),
-                oldTokens!!.accessToken,
                 oldTokens!!.refreshToken
             )
             newSession.let {
@@ -252,7 +249,6 @@ class SessionManagerIntegrationTest {
         override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
         override suspend fun updateToken(
             accessTokenApi: AccessTokenApi,
-            oldAccessToken: String,
             oldRefreshToken: String
         ): SessionDTO = testCredentials.copy(accessToken = UPDATED_ACCESS_TOKEN)
 
