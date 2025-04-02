@@ -1856,6 +1856,7 @@ class UserSessionScope internal constructor(
 
     val channels: ChannelsScope by lazy {
         ChannelsScope(
+            { users.getSelfUser },
             { conversationRepository },
             { userStorage.database.metadataDAO },
             { userRepository }

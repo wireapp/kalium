@@ -100,6 +100,8 @@ interface ConversationRepository {
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type>
 
+    // TODO: rename it to getChannelAddUserPermission
+    suspend fun getChannelAddPermission(conversationId: ConversationId): Either<StorageFailure, ChannelAddPermission>
     // endregion
 
     @DelicateKaliumApi("This function does not get values from cache")
@@ -1210,6 +1212,11 @@ internal class ConversationDataSource internal constructor(
         // TODO: Make API request to update the value with the backend
         conversationDAO.updateChannelAddPermission(conversationId.toDao(), channelAddPermission.toDaoChannelPermission())
     }
+
+    override suspend fun getChannelAddPermission(conversationId: ConversationId): Either<StorageFailure, ChannelAddPermission> =
+        wrapStorageRequest {
+            conversationDAO.getChannelAddPermission(conversationId.toDao()).toModelChannelPermission()
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
