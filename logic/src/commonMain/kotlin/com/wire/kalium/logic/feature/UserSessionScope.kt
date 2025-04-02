@@ -602,6 +602,7 @@ class UserSessionScope internal constructor(
         sessionRepository = globalScope.sessionRepository,
         accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
+        currentClientIdProvider = clientIdProvider,
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
@@ -2208,9 +2209,9 @@ class UserSessionScope internal constructor(
 
     private val observeE2EIConversationsVerificationStatuses: ObserveE2EIConversationsVerificationStatusesUseCase by lazy {
         ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
-            fetchMLSVerificationStatusUseCase,
-            epochChangesObserver,
-            userScopedLogger,
+            fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
+            epochChangesObserver = epochChangesObserver,
+            kaliumLogger = userScopedLogger,
         )
     }
 

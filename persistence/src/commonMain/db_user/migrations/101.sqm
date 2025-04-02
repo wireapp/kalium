@@ -1,9 +1,8 @@
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+import kotlin.Boolean;
 
 DROP VIEW IF EXISTS ConversationDetails;
 
-ALTER TABLE Conversation ADD COLUMN channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL;
-ALTER TABLE Conversation ADD COLUMN channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL;
+ALTER TABLE Conversation ADD COLUMN is_channel INTEGER AS Boolean NOT NULL DEFAULT 0;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
@@ -96,8 +95,6 @@ Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
 Conversation.is_channel,
-Conversation.channel_access,
-Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
     WHEN Conversation.type = 'GROUP' THEN
