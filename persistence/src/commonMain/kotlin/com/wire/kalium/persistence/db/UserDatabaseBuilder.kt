@@ -255,6 +255,9 @@ class UserDatabaseBuilder internal constructor(
     val obfuscatedCopyExporter: ObfuscatedCopyExporter
         get() = ObfuscatedCopyExporter(userId, platformDatabaseData, this)
 
+    val databaseOptimizer: DatabaseOptimizer
+        get() = DatabaseOptimizer(this)
+
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
 
