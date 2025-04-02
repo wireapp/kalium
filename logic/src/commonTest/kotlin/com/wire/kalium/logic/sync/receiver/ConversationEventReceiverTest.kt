@@ -19,11 +19,12 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -412,6 +413,9 @@ class ConversationEventReceiverTest {
         val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
 
         @Mock
+        val channelAddPermissionUpdateEventHandler = mock(ChannelAddPermissionUpdateEventHandler::class)
+
+        @Mock
         val accessUpdateEventHandler = mock(AccessUpdateEventHandler::class)
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
@@ -429,6 +433,7 @@ class ConversationEventReceiverTest {
             codeDeletedHandler = codeDeletedHandler,
             typingIndicatorHandler = typingIndicatorHandler,
             protocolUpdateEventHandler = protocolUpdateEventHandler,
+            channelAddPermissionUpdateEventHandler = channelAddPermissionUpdateEventHandler,
             accessUpdateEventHandler = accessUpdateEventHandler
         )
 

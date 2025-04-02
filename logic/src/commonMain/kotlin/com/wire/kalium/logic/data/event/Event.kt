@@ -52,7 +52,7 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
-import com.wire.kalium.logic.data.conversation.Conversation.ChannelAddPermission
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 
 /**
  * A wrapper that joins [Event] with its [EventDeliveryInfo].

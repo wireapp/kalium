@@ -716,9 +716,9 @@ internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
     ConvProtocol.MLS -> Conversation.Protocol.MLS
 }
 
-internal fun ChannelAddPermissionTypeDTO.toModel(): Conversation.ChannelAddPermission = when (this) {
-    ChannelAddPermissionTypeDTO.ADMINS -> Conversation.ChannelAddPermission.ADMINS
-    ChannelAddPermissionTypeDTO.EVERYONE -> Conversation.ChannelAddPermission.EVERYONE
+internal fun ChannelAddPermissionTypeDTO.toModel(): ChannelAddPermission = when (this) {
+    ChannelAddPermissionTypeDTO.ADMINS -> ChannelAddPermission.ADMINS
+    ChannelAddPermissionTypeDTO.EVERYONE -> ChannelAddPermission.EVERYONE
 }
 
 internal fun ChannelAddPermission.toApi(): ChannelAddPermissionDTO = when (this) {

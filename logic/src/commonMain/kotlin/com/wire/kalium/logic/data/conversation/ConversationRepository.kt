@@ -242,7 +242,7 @@ interface ConversationRepository {
 
     suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
-        channelAddPermission: Conversation.ChannelAddPermission
+        channelAddPermission: ChannelAddPermission
     ): Either<CoreFailure, Unit>
 
     suspend fun updateChannelAddPermissionRemotely(
@@ -1019,9 +1019,12 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
-        channelAddPermission: Conversation.ChannelAddPermission
-    ): Either<CoreFailure, Unit> {
-        TODO("Not yet implemented")
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.updateChannelAddPermission(
+            conversationId.toDao(),
+            channelAddPermission.toDaoChannelPermission()
+        )
     }
 
     override suspend fun updateChannelAddPermissionRemotely(
@@ -1230,23 +1233,17 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
-    ): Either<CoreFailure, Unit> = updateChannelAddPermissionRemotely(conversationId, channelAddPermission)
-        .flatMap {
-            when (it) {
-                is UpdateChannelAddPermissionResponse.PermissionUnchanged -> {
-                    Either.Right(Unit)
-                }
+    ): Either<CoreFailure, Unit> = updateChannelAddPermissionRemotely(conversationId, channelAddPermission).flatMap {
+        when (it) {
+            is UpdateChannelAddPermissionResponse.PermissionUnchanged -> {
+                Either.Right(Unit)
+            }
 
-                is UpdateChannelAddPermissionResponse.PermissionUpdated -> {
-                    wrapStorageRequest {
-                        conversationDAO.updateChannelAddPermission(
-                            conversationId.toDao(),
-                            channelAddPermission.toDaoChannelPermission()
-                        )
-                    }
-                }
+            is UpdateChannelAddPermissionResponse.PermissionUpdated -> {
+                updateChannelAddPermissionLocally(conversationId, channelAddPermission)
             }
         }
+    }
 
     override suspend fun getChannelAddPermission(conversationId: ConversationId): Either<StorageFailure, ChannelAddPermission> =
         wrapStorageRequest {
