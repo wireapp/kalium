@@ -250,6 +250,7 @@ data object ConversationMapper {
         is_channel: Boolean,
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
+        wireCell: String?,
     ) = ConversationEntity(
         id = qualified_id,
         name = name,
@@ -282,6 +283,7 @@ data object ConversationMapper {
         isChannel = is_channel,
         channelAccess = channel_access,
         channelAddPermission = channel_add_permission,
+        wireCell = wireCell,
     )
 
     @Suppress("LongParameterList")

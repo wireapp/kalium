@@ -126,7 +126,7 @@ internal object TestStubs {
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
         channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
-        channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE
+        channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
     )
 

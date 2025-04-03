@@ -40,6 +40,6 @@ internal object CellsCredentialsProvider {
                 gatewaySecret = "gatewaysecret",
             )
 
-            else -> CellsCredentials("","","")
+            else -> CellsCredentials("", "", "")
         }
 }
