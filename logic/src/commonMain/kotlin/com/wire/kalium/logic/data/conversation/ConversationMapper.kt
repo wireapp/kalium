@@ -752,11 +752,3 @@ internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) 
     ConversationFilter.Channels -> ConversationFilterEntity.CHANNELS
     is ConversationFilter.Folder -> ConversationFilterEntity.ALL // TODO think how to secure that
 }
-
-internal fun ConversationFilterEntity.toModel(): ConversationFilter = when (this) {
-    ConversationFilterEntity.ALL -> ConversationFilter.All
-    ConversationFilterEntity.FAVORITES -> ConversationFilter.Favorites
-    ConversationFilterEntity.GROUPS -> ConversationFilter.Groups
-    ConversationFilterEntity.ONE_ON_ONE -> ConversationFilter.OneOnOne
-    ConversationFilterEntity.CHANNELS -> ConversationFilter.Channels
-}
