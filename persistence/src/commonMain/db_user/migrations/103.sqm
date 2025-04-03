@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS MessageAttachments (
       asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (asset_id, message_id, conversation_id)
+      PRIMARY KEY (conversation_id, message_id, asset_id)
 );
 
 DROP VIEW IF EXISTS MessageDetailsView;
