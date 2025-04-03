@@ -126,10 +126,5 @@ internal class EventProcessorImpl(
         }
     }
 
-    private fun EventDeliveryInfo.shouldUpdateLastProcessedEventId(): Boolean {
-        return when (this) {
-            is EventDeliveryInfo.AsyncEventDeliveryInfo -> true
-            is EventDeliveryInfo.LegacyEventDeliveryInfo -> !isTransient
-        }
-    }
+    private fun EventDeliveryInfo.shouldUpdateLastProcessedEventId(): Boolean = !isTransient
 }

@@ -72,39 +72,38 @@ data class EventEnvelope(
     )
 }
 
-sealed interface EventDeliveryInfo {
-    val source: EventSource
+/**
+ * Data class representing information about the delivery of an event.
+ *
+ * @property isTransient Specifies whether the event is transient.
+ * Transient events are events that only matter if the user is online/active. For example "user is typing",
+ * and call signaling (mute/unmute), which are irrelevant after a few minutes. These are likely to not even
+ * be stored in the backend.
+ * @property source The source of the event.
+ * @see EventSource
+ */
+sealed class EventDeliveryInfo(
+    open val isTransient: Boolean,
+    open val source: EventSource
+) {
 
-    fun toLogMap(): Map<String, Any?>
+    fun toLogMap(): Map<String, Any?> = mapOf(
+        "isTransient" to isTransient,
+        "source" to source.name
+    )
 
     data class AsyncEventDeliveryInfo(
         val deliveryTag: ULong,
         override val source: EventSource
-    ) : EventDeliveryInfo {
-        override fun toLogMap(): Map<String, Any?> = mapOf(
-            "source" to source.name
-        )
-    }
+    ) : EventDeliveryInfo(
+        isTransient = false, // in async events, everything needs to be ACK'ed so they are not transient
+        source = source
+    )
 
-    /**
-     * Data class representing information about the delivery of an event.
-     *
-     * @property isTransient Specifies whether the event is transient.
-     * Transient events are events that only matter if the user is online/active. For example "user is typing",
-     * and call signaling (mute/unmute), which are irrelevant after a few minutes. These are likely to not even
-     * be stored in the backend.
-     * @property source The source of the event.
-     * @see EventSource
-     */
     data class LegacyEventDeliveryInfo(
-        val isTransient: Boolean,
+        override val isTransient: Boolean,
         override val source: EventSource,
-    ) : EventDeliveryInfo {
-        override fun toLogMap(): Map<String, Any?> = mapOf(
-            "isTransient" to isTransient,
-            "source" to source.name
-        )
-    }
+    ) : EventDeliveryInfo(isTransient, source)
 }
 
 /**
