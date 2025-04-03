@@ -300,15 +300,8 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
-    override suspend fun observeConversationDetailsByGroupID(groupID: String): Flow<ConversationViewEntity?> {
-        return conversationDetailsQueries.selectConversationDetailsByGroupId(groupID, conversationMapper::fromViewToModel)
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToOneOrNull()
-    }
-
-    override suspend fun getConversationDetailsByGroupID(groupID: String): ConversationViewEntity? {
-        return conversationDetailsQueries.selectConversationDetailsByGroupId(groupID, conversationMapper::fromViewToModel)
+    override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? {
+        return conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
             .executeAsOneOrNull()
     }
 
