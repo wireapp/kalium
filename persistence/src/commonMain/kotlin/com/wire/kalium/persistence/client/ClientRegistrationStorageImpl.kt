@@ -38,7 +38,10 @@ interface ClientRegistrationStorage {
     suspend fun setClientRegistrationBlockedByE2EI()
     suspend fun clearClientRegistrationBlockedByE2EI()
     suspend fun clearHasRegisteredMLSClient()
+    suspend fun clearClientHasConsumableNotifications()
     suspend fun isBlockedByE2EI(): Boolean
+    suspend fun setHasConsumableNotifications(hasConsumableNotifications: Boolean)
+    suspend fun observeHasConsumableNotifications(): Flow<Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -64,6 +67,14 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
         }
 
     override suspend fun isBlockedByE2EI(): Boolean = metadataDAO.valueByKey(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).toBoolean()
+    override suspend fun setHasConsumableNotifications(hasConsumableNotifications: Boolean) {
+        metadataDAO.insertValue(hasConsumableNotifications.toString(), CLIENT_HAS_CONSUMABLE_NOTIFICATIONS)
+    }
+
+    override suspend fun observeHasConsumableNotifications(): Flow<Boolean> =
+        metadataDAO.valueByKeyFlow(CLIENT_HAS_CONSUMABLE_NOTIFICATIONS).map {
+            it.toBoolean() && !it.isNullOrEmpty()
+        }
 
     override suspend fun setClientRegistrationBlockedByE2EI() =
         metadataDAO.insertValue(true.toString(), CLIENT_REGISTRATION_BLOCKED_BY_E2EI)
@@ -71,11 +82,15 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
     override suspend fun clearClientRegistrationBlockedByE2EI() = metadataDAO.deleteValue(CLIENT_REGISTRATION_BLOCKED_BY_E2EI)
 
     override suspend fun clearHasRegisteredMLSClient() = metadataDAO.deleteValue(HAS_REGISTERED_MLS_CLIENT_KEY)
+    override suspend fun clearClientHasConsumableNotifications() {
+        metadataDAO.deleteValue(CLIENT_HAS_CONSUMABLE_NOTIFICATIONS)
+    }
 
     companion object {
         private const val REGISTERED_CLIENT_ID_KEY = "registered_client_id"
         const val RETAINED_CLIENT_ID_KEY = "retained_client_id"
         private const val HAS_REGISTERED_MLS_CLIENT_KEY = "has_registered_mls_client"
         private const val CLIENT_REGISTRATION_BLOCKED_BY_E2EI = "client_registration_blocked_by_e2ei"
+        private const val CLIENT_HAS_CONSUMABLE_NOTIFICATIONS = "client_has_consumable_notifications"
     }
 }

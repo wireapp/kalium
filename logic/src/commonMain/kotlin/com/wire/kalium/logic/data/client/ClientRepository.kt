@@ -61,6 +61,7 @@ interface ClientRepository {
 
     suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
+    suspend fun persistClientHasConsumableNotifications(hasConsumableNotifications: Boolean): Either<CoreFailure, Unit>
 
     @DelicateKaliumApi("This function is not cached use CurrentClientIdProvider instead")
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
@@ -68,6 +69,7 @@ interface ClientRepository {
     suspend fun persistRetainedClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
+    suspend fun clearClientHasConsumableNotifications(): Either<CoreFailure, Unit>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun setClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit>
@@ -140,6 +142,11 @@ class ClientDataSource(
 
     override suspend fun clearRetainedClientId(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearRetainedClientId() }
+
+    override suspend fun clearClientHasConsumableNotifications(): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.clearClientHasConsumableNotifications()
+        }
 
     override suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearHasRegisteredMLSClient() }
@@ -335,4 +342,10 @@ class ClientDataSource(
         newClientDAO.observeNewClients()
             .map { it.map { clientMapper.fromNewClientEntity(it) } }
             .wrapStorageRequest()
+
+    override suspend fun persistClientHasConsumableNotifications(hasConsumableNotifications: Boolean): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            clientRegistrationStorage.setHasConsumableNotifications(hasConsumableNotifications)
+        }
+    }
 }

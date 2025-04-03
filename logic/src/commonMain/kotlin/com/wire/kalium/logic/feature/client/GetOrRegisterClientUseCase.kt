@@ -104,6 +104,7 @@ internal class GetOrRegisterClientUseCaseImpl(
             kaliumLogger.i("Persist client ${clientId.value.obfuscateId()}")
             // todo (ym) also persist the capability in metadata [isConsumableNotificationsAble]...
             clientRepository.persistClientId(clientId)
+            clientRepository.persistClientHasConsumableNotifications(isConsumableNotificationsCapable)
         }
     }
 
@@ -112,6 +113,7 @@ internal class GetOrRegisterClientUseCaseImpl(
         clearClientData()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearRetainedClientId()
+        clientRepository.clearClientHasConsumableNotifications()
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 }
