@@ -1042,7 +1042,7 @@ class EnrollE2EICertificateUseCaseTest {
     }
 
     @Test
-    fun givenCertEnrollForNewClient_whenEnrolling_thenUpdateSelfUserInf() = coroutineScope.runTest {
+    fun givenCertEnrollForNewClient_whenEnrolling_thenUpdateSelfUserInfo() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
             // given
             withInitializingE2EIClientSucceed()
