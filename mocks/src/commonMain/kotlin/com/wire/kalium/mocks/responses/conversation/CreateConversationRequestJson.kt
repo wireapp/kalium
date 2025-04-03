@@ -41,7 +41,8 @@ object CreateConversationRequestJson {
         conversationRole = "WIRE_MEMBER",
         protocol = ConvProtocol.PROTEUS,
         creatorClient = null,
-        groupConversationType = GroupConversationType.REGULAR_GROUP
+        groupConversationType = GroupConversationType.REGULAR_GROUP,
+        cellEnabled = null,
     )
 
     val v0 = ValidJsonProvider(
