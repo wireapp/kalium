@@ -60,6 +60,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
@@ -238,6 +239,16 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse>
 
     /**
      * Deletes all conversation messages
@@ -1006,6 +1017,26 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+    override suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.updateChannelAddPermission(
+            conversationId.toDao(),
+            channelAddPermission.toDaoChannelPermission()
+        )
+    }
+
+    override suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
+        conversationApi.updateChannelAddPermission(
+            conversationId = conversationId.toApi(),
+            channelAddPermission = channelAddPermission.toApi()
+        )
+    }
+
     override suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean> =
         wrapStorageRequest {
             conversationMetaDataDAO.isInformedAboutDegradedMLSVerification(conversationId.toDao())
@@ -1202,9 +1233,16 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        // TODO: Make API request to update the value with the backend
-        conversationDAO.updateChannelAddPermission(conversationId.toDao(), channelAddPermission.toDaoChannelPermission())
+    ): Either<CoreFailure, Unit> = updateChannelAddPermissionRemotely(conversationId, channelAddPermission).flatMap {
+        when (it) {
+            is UpdateChannelAddPermissionResponse.PermissionUnchanged -> {
+                Either.Right(Unit)
+            }
+
+            is UpdateChannelAddPermissionResponse.PermissionUpdated -> {
+                updateChannelAddPermissionLocally(conversationId, channelAddPermission)
+            }
+        }
     }
 
     override suspend fun getChannelAddPermission(conversationId: ConversationId): Either<StorageFailure, ChannelAddPermission> =

@@ -400,6 +400,8 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -1540,6 +1542,11 @@ class UserSessionScope internal constructor(
             callRepository = callRepository
         )
 
+    private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
+        get() = ChannelAddPermissionUpdateEventHandlerImpl(
+            conversationRepository = conversationRepository
+        )
+
     private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
         get() = AccessUpdateEventHandler(
             conversationDAO = userStorage.database.conversationDAO,
@@ -1562,7 +1569,8 @@ class UserSessionScope internal constructor(
             conversationCodeDeletedHandler,
             typingIndicatorHandler,
             protocolUpdateEventHandler,
-            conversationAccessUpdateEventHandler
+            channelAddPermissionUpdateEventHandler,
+            conversationAccessUpdateEventHandler,
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
