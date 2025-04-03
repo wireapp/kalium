@@ -151,6 +151,8 @@ WHERE
             WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
             -- When filter is ONE_ON_ONE, filter only one-on-one conversations
             WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+            -- When filter is CHANNELS (future implementation)
+            WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
             -- When filter is FAVORITES (future implementation)
             ELSE 1 = 0
         END
