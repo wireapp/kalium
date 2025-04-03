@@ -40,12 +40,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -725,6 +727,16 @@ internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
     ConvProtocol.MLS -> Conversation.Protocol.MLS
 }
 
+internal fun ChannelAddPermissionTypeDTO.toModel(): ChannelAddPermission = when (this) {
+    ChannelAddPermissionTypeDTO.ADMINS -> ChannelAddPermission.ADMINS
+    ChannelAddPermissionTypeDTO.EVERYONE -> ChannelAddPermission.EVERYONE
+}
+
+internal fun ChannelAddPermission.toApi(): ChannelAddPermissionDTO = when (this) {
+    ChannelAddPermission.ADMINS -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.ADMINS)
+    ChannelAddPermission.EVERYONE -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.EVERYONE)
+}
+
 internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
     Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
     Protocol.MIXED -> Conversation.Protocol.MIXED
@@ -750,12 +762,4 @@ internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) 
     ConversationFilter.OneOnOne -> ConversationFilterEntity.ONE_ON_ONE
     ConversationFilter.Channels -> ConversationFilterEntity.CHANNELS
     is ConversationFilter.Folder -> ConversationFilterEntity.ALL // TODO think how to secure that
-}
-
-internal fun ConversationFilterEntity.toModel(): ConversationFilter = when (this) {
-    ConversationFilterEntity.ALL -> ConversationFilter.All
-    ConversationFilterEntity.FAVORITES -> ConversationFilter.Favorites
-    ConversationFilterEntity.GROUPS -> ConversationFilter.Groups
-    ConversationFilterEntity.ONE_ON_ONE -> ConversationFilter.OneOnOne
-    ConversationFilterEntity.CHANNELS -> ConversationFilter.Channels
 }

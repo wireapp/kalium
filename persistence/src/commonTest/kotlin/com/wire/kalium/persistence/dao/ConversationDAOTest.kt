@@ -2323,6 +2323,47 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertTrue(result.isChannel)
     }
 
+    @Test
+    fun givenChannelInserted_whenGettingAllFilteringByChannels_thenItShouldReturnChannel() = runTest(dispatcher) {
+        val conversation = conversationEntity1.copy(type = ConversationEntity.Type.GROUP, isChannel = true)
+        conversationDAO.insertConversation(conversation)
+
+        val result = conversationDAO.getAllConversationDetails(false, ConversationFilterEntity.CHANNELS).first()
+        val ids = result.map { it.id }
+
+        assertContentEquals(listOf(conversation.id), ids)
+    }
+
+    @Test
+    fun givenMultipleConversationsInserted_whenGettingAllFilteringByChannels_thenItShouldReturnChannels() = runTest(dispatcher) {
+        val channel = conversationEntity1.copy(
+            id = QualifiedIDEntity("CHANNEL", "test"),
+            type = ConversationEntity.Type.GROUP,
+            isChannel = true
+        )
+        val request = conversationEntity1.copy(
+            id = QualifiedIDEntity("CONNECTION_PENDING", "test"),
+            type = ConversationEntity.Type.CONNECTION_PENDING,
+            isChannel = false
+        )
+        val group = conversationEntity1.copy(
+            id = QualifiedIDEntity("GROUP", "test"),
+            type = ConversationEntity.Type.GROUP,
+            isChannel = false
+        )
+        val oneOnOne = conversationEntity1.copy(
+            id = QualifiedIDEntity("ONE_ON_ONE", "test"),
+            type = ConversationEntity.Type.ONE_ON_ONE,
+            isChannel = false
+        )
+        conversationDAO.insertConversations(listOf(channel, request, group, oneOnOne))
+
+        val result = conversationDAO.getAllConversationDetails(false, ConversationFilterEntity.CHANNELS).first()
+        val ids = result.map { it.id }
+
+        assertContentEquals(listOf(channel.id), ids)
+    }
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?

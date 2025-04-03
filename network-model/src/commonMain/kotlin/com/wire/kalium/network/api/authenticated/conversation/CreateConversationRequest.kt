@@ -104,6 +104,15 @@ enum class ConvProtocol {
 }
 
 @Serializable
+enum class ChannelAddPermissionTypeDTO {
+    @SerialName("admins")
+    ADMINS,
+
+    @SerialName("everyone")
+    EVERYONE
+}
+
+@Serializable
 enum class GroupConversationType {
     @SerialName("group_conversation")
     REGULAR_GROUP,
