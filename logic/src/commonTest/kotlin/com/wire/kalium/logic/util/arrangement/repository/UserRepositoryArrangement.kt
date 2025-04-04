@@ -102,12 +102,20 @@ internal interface UserRepositoryArrangement {
         userId: Matcher<UserId> = AnyMatcher(valueOf()),
         clientId: Matcher<ClientId> = AnyMatcher(valueOf())
     )
+
+    suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>)
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
     @Mock
     override val userRepository: UserRepository = mock(UserRepository::class)
+
+    override suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            userRepository.fetchSelfUser()
+        }.returns(result)
+    }
 
     override suspend fun withDefederateUser(
         result: Either<CoreFailure, Unit>,

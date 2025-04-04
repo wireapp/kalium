@@ -1972,7 +1972,8 @@ class UserSessionScope internal constructor(
             checkRevocationList,
             syncFeatureConfigsUseCase,
             userScopedLogger,
-            getTeamUrlUseCase
+            getTeamUrlUseCase,
+            this,
         )
     }
 

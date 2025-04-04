@@ -89,6 +89,7 @@ import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicator
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.MetadataDAO
+import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
 class UserScope internal constructor(
@@ -121,7 +122,8 @@ class UserScope internal constructor(
     private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger,
-    private val teamUrlUseCase: GetTeamUrlUseCase
+    private val teamUrlUseCase: GetTeamUrlUseCase,
+    private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -132,7 +134,12 @@ class UserScope internal constructor(
     val persistSelfUserEmail: PersistSelfUserEmailUseCase get() = PersistSelfUserEmailUseCaseImpl(userRepository)
 
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
+    val enrollE2EI: EnrollE2EIUseCase
+        get() = EnrollE2EIUseCaseImpl(
+            e2EIRepository = e2EIRepository,
+            userRepository = userRepository,
+            coroutineScope = userCoroutineScope,
+        )
     val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 
     val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
