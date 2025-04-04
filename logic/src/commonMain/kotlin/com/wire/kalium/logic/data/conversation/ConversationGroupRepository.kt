@@ -144,7 +144,6 @@ internal class ConversationGroupRepositoryImpl(
                 is Either.Right -> handleGroupConversationCreated(
                     conversationResponse = apiResult.value,
                     selfTeamId = selfTeamId,
-                    wireCellEnabled = options.wireCellEnabled,
                     usersList = usersList,
                     lastUsersAttempt = lastUsersAttempt
                 )
@@ -155,7 +154,6 @@ internal class ConversationGroupRepositoryImpl(
     private suspend fun handleGroupConversationCreated(
         conversationResponse: ConversationResponse,
         selfTeamId: TeamId?,
-        wireCellEnabled: Boolean,
         usersList: List<UserId>,
         lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> {
@@ -163,7 +161,6 @@ internal class ConversationGroupRepositoryImpl(
             apiModel = conversationResponse,
             mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION,
             selfUserTeamId = selfTeamId,
-            wireCellEnabled = wireCellEnabled
         )
         val mlsPublicKeys = conversationMapper.fromApiModel(conversationResponse.publicKeys)
         val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
