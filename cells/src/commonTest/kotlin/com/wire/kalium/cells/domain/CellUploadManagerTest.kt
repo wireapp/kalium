@@ -234,7 +234,7 @@ private class TestRepository : CellsRepository {
         return Unit.right()
     }
 
-    override suspend fun getFiles(query: String, limit: Int, offset: Int) = emptyList<CellNode>().right()
+    override suspend fun getFiles(path: String?, query: String, limit: Int, offset: Int) = emptyList<CellNode>().right()
     override suspend fun deleteFile(nodeUuid: String) = Unit.right()
     override suspend fun preCheck(nodePath: String) = PreCheckResult.Success.right()
     override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) = Unit.right()
