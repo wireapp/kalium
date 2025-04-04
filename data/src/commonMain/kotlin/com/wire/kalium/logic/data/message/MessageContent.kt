@@ -399,6 +399,21 @@ sealed interface MessageContent {
     data class InCallEmoji(
         val emojis: Map<String, Int>
     ) : Signaling
+
+    data class Multipart(
+        val value: String?,
+        val linkPreviews: List<MessageLinkPreview> = emptyList(),
+        val mentions: List<MessageMention> = emptyList(),
+        val attachments: List<MessageAttachment> = emptyList(),
+        val quotedMessageReference: QuoteReference? = null,
+        val quotedMessageDetails: QuotedMessageDetails? = null
+    ) : Regular() {
+        data class Button(
+            val text: String,
+            val id: String,
+            val isSelected: Boolean
+        )
+    }
 }
 
 /**
@@ -460,6 +475,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
     is MessageContent.DataTransfer -> "DataTransfer"
     is MessageContent.InCallEmoji -> "InCallEmoji"
+    is MessageContent.Multipart -> "Multipart"
     null -> "null"
 }
 

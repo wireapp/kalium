@@ -76,7 +76,7 @@ internal interface SlowSyncManager {
 
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
-        val MIN_TIME_BETWEEN_SLOW_SYNCS = 7.days
+        val MIN_TIME_BETWEEN_SLOW_SYNCS = 31.days
     }
 }
 

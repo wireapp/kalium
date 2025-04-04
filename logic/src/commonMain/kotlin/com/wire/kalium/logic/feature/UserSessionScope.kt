@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.GlobalKaliumScope
@@ -400,6 +401,8 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -600,6 +603,7 @@ class UserSessionScope internal constructor(
         sessionRepository = globalScope.sessionRepository,
         accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
+        currentClientIdProvider = clientIdProvider,
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
@@ -1539,6 +1543,11 @@ class UserSessionScope internal constructor(
             callRepository = callRepository
         )
 
+    private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
+        get() = ChannelAddPermissionUpdateEventHandlerImpl(
+            conversationRepository = conversationRepository
+        )
+
     private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
         get() = AccessUpdateEventHandler(
             conversationDAO = userStorage.database.conversationDAO,
@@ -1561,7 +1570,8 @@ class UserSessionScope internal constructor(
             conversationCodeDeletedHandler,
             typingIndicatorHandler,
             protocolUpdateEventHandler,
-            conversationAccessUpdateEventHandler
+            channelAddPermissionUpdateEventHandler,
+            conversationAccessUpdateEventHandler,
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -1855,6 +1865,8 @@ class UserSessionScope internal constructor(
 
     val channels: ChannelsScope by lazy {
         ChannelsScope(
+            { users.getSelfUser },
+            { conversationRepository },
             { userStorage.database.metadataDAO },
             { userRepository }
         )
@@ -1899,6 +1911,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             messageRepository,
             conversationRepository,
+            cells.messageAttachmentsDraftRepository,
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
@@ -1920,6 +1933,9 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
+            cells.publishAttachments,
+            cells.removeAttachments,
+            cells.deleteAttachmentsUseCase,
             this,
             userScopedLogger,
         )
@@ -2198,9 +2214,9 @@ class UserSessionScope internal constructor(
 
     private val observeE2EIConversationsVerificationStatuses: ObserveE2EIConversationsVerificationStatusesUseCase by lazy {
         ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
-            fetchMLSVerificationStatusUseCase,
-            epochChangesObserver,
-            userScopedLogger,
+            fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
+            epochChangesObserver = epochChangesObserver,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -2231,6 +2247,24 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository,
             coroutineScope = this,
         )
+
+    val cells: CellsScope by lazy {
+        CellsScope(
+            cellsClient = globalScope.unboundNetworkContainer.cellsClient,
+            userId = userId.toString(),
+            dao = with(userStorage.database) {
+                CellsScope.CellScopeDao(
+                    attachmentDraftDao = messageAttachmentDraftDao,
+                    conversationsDao = conversationDAO,
+                    attachmentsDao = messageAttachments,
+                    assetsDao = assetDAO,
+                    userDao = userDAO,
+                )
+            },
+            // Temporary workaround for switching between fulu / imai environments
+            serverConfig = sessionManager.serverConfig(),
+        )
+    }
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

@@ -180,6 +180,9 @@ object TestConversation {
         folderId = null,
         folderName = null,
         isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
+        wireCell = null,
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -298,6 +301,9 @@ object TestConversation {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
+        wireCell = null,
     )
     val ENTITY_GROUP = ENTITY.copy(
         type = ConversationEntity.Type.GROUP
@@ -350,6 +356,9 @@ object TestConversation {
         folderId = null,
         folderName = null,
         isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
+        wireCell = null,
     )
 
     val VIEW_ONE_ON_ONE = VIEW_ENTITY.copy(
