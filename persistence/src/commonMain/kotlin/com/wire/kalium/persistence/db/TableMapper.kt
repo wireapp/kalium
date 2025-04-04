@@ -33,6 +33,8 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageAssetTransferStatus
+import com.wire.kalium.persistence.MessageAttachmentDraft
+import com.wire.kalium.persistence.MessageAttachments
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
@@ -112,7 +114,9 @@ internal object TableMapper {
         archived_date_timeAdapter = InstantTypeAdapter,
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
-        legal_hold_statusAdapter = EnumColumnAdapter()
+        legal_hold_statusAdapter = EnumColumnAdapter(),
+        channel_accessAdapter = EnumColumnAdapter(),
+        channel_add_permissionAdapter = EnumColumnAdapter()
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,
@@ -280,5 +284,17 @@ internal object TableMapper {
 
     val conversationFolderAdapter = ConversationFolder.Adapter(
         folder_typeAdapter = EnumColumnAdapter()
+    )
+
+    val messageAttachmentDraftAdapter = MessageAttachmentDraft.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        asset_widthAdapter = IntColumnAdapter,
+        asset_heightAdapter = IntColumnAdapter,
+    )
+
+    val messageAttachmentsAdapter = MessageAttachments.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        asset_widthAdapter = IntColumnAdapter,
+        asset_heightAdapter = IntColumnAdapter,
     )
 }

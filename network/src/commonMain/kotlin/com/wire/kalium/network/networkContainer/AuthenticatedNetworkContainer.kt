@@ -253,7 +253,6 @@ internal class AuthenticatedHttpClientProviderImpl(
         }
         val newSession = sessionManager.updateToken(
             accessTokenApi = accessTokenApi(client),
-            oldAccessToken = oldTokens!!.accessToken,
             oldRefreshToken = oldTokens!!.refreshToken
         )
         BearerTokens(

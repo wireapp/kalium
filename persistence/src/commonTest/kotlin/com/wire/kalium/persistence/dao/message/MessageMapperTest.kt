@@ -151,6 +151,7 @@ class MessageMapperTest {
             assetHeight: Int? = null,
             assetDuration: Long? = null,
             assetNormalizedLoudness: ByteArray? = null,
+            assetDataPath: String? = null,
             callerId: QualifiedIDEntity? = null,
             memberChangeList: List<QualifiedIDEntity>? = null,
             memberChangeType: MessageEntity.MemberChangeType? = null,
@@ -193,6 +194,7 @@ class MessageMapperTest {
             locationZoom: Int? = null,
             legalHoldMemberList: List<QualifiedIDEntity>? = null,
             legalHoldType: MessageEntity.LegalHoldType? = null,
+            attachments: String? = null,
         ): MessageEntity {
             return MessageMapper.toEntityMessageFromView(
                 id,
@@ -243,6 +245,7 @@ class MessageMapperTest {
                 assetHeight,
                 assetDuration,
                 assetNormalizedLoudness,
+                assetDataPath,
                 callerId,
                 memberChangeList,
                 memberChangeType,
@@ -258,6 +261,7 @@ class MessageMapperTest {
                 allReactionsJson,
                 selfReactionsJson,
                 mentions,
+                attachments,
                 quotedMessageId,
                 quotedSenderId,
                 isQuoteVerified,

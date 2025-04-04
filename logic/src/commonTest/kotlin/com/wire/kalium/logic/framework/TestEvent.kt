@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -250,6 +251,13 @@ object TestEvent {
         id = "eventId",
         conversationId = TestConversation.ID,
         protocol = Conversation.Protocol.MIXED,
+        senderUserId = TestUser.OTHER_USER_ID
+    )
+
+    fun newConversationChannelAddPermissionEvent() = Event.Conversation.ConversationChannelAddPermission(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        channelAddPermission = ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS,
         senderUserId = TestUser.OTHER_USER_ID
     )
 

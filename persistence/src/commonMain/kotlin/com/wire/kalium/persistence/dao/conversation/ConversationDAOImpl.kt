@@ -19,9 +19,9 @@
 package com.wire.kalium.persistence.dao.conversation
 
 import app.cash.sqldelight.coroutines.asFlow
-import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.ConversationDetailsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.cache.FlowCache
@@ -169,7 +169,10 @@ internal class ConversationDAOImpl internal constructor(
                 hasIncompleteMetadata,
                 archived,
                 archivedInstant,
-                isChannel
+                isChannel,
+                channelAccess,
+                channelAddPermission,
+                wireCell,
             )
         }
     }
@@ -240,6 +243,13 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
+    override suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?) {
+        conversationQueries.updateWireCell(wireCell, conversationId)
+    }
+
+    override suspend fun getCellName(conversationId: QualifiedIDEntity): String? =
+        conversationQueries.getCellName(conversationId).executeAsOneOrNull()?.wire_cell
+
     override suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,
@@ -290,15 +300,8 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
-    override suspend fun observeConversationDetailsByGroupID(groupID: String): Flow<ConversationViewEntity?> {
-        return conversationDetailsQueries.selectConversationDetailsByGroupId(groupID, conversationMapper::fromViewToModel)
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToOneOrNull()
-    }
-
-    override suspend fun getConversationDetailsByGroupID(groupID: String): ConversationViewEntity? {
-        return conversationDetailsQueries.selectConversationDetailsByGroupId(groupID, conversationMapper::fromViewToModel)
+    override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? {
+        return conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
             .executeAsOneOrNull()
     }
 
@@ -527,5 +530,19 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(coroutineContext) {
         conversationQueries.selectIsChannel(conversationId).executeAsOneOrNull() ?: false
+    }
+
+    override suspend fun getChannelAddPermission(conversationId: QualifiedIDEntity): ConversationEntity.ChannelAddPermission {
+        return withContext(coroutineContext) {
+            conversationQueries.selectChannelAddPermission(conversationId).executeAsOneOrNull()?.channel_add_permission
+                ?: ConversationEntity.ChannelAddPermission.ADMINS
+        }
+    }
+
+    override suspend fun updateChannelAddPermission(
+        conversationId: QualifiedIDEntity,
+        channelAddPermission: ConversationEntity.ChannelAddPermission
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateChannelAddPermission(channelAddPermission, conversationId)
     }
 }

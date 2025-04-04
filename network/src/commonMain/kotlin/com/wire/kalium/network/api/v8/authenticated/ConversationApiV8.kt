@@ -20,31 +20,60 @@ package com.wire.kalium.network.api.v8.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV8
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.model.ApiModelMapper
-import com.wire.kalium.network.api.model.ApiModelMapperImpl
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v7.authenticated.ConversationApiV7
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
+import okio.IOException
 
 internal open class ConversationApiV8 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
+    authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ConversationApiV7(authenticatedNetworkClient) {
     /**
      * returns 201 when a new conversation is created or 200 if the conversation already existed
      */
     override suspend fun createNewConversation(
         createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV8> {
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponse> {
         httpClient.post(PATH_CONVERSATIONS) {
-            setBody(apiModelMapper.toApiV8(createConversationRequest))
+            setBody(createConversationRequest)
         }
-    }.mapSuccess {
-        apiModelMapper.fromApiV8(it)
+    }
+
+    override suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermissionDTO
+    ): NetworkResponse<UpdateChannelAddPermissionResponse> = try {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ADD_PERMISSION") {
+            setBody(channelAddPermission)
+        }.let { httpResponse ->
+            when (httpResponse.status) {
+                HttpStatusCode.NoContent -> NetworkResponse.Success(
+                    UpdateChannelAddPermissionResponse.PermissionUnchanged,
+                    httpResponse
+                )
+
+                else -> wrapKaliumResponse<EventContentDTO.Conversation.ChannelAddPermissionUpdate> { httpResponse }
+                    .mapSuccess {
+                        UpdateChannelAddPermissionResponse.PermissionUpdated(it)
+                    }
+            }
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
+    companion object {
+        const val PATH_ADD_PERMISSION = "add-permission"
     }
 }

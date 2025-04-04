@@ -18,9 +18,16 @@
 
 package com.wire.kalium.logic.network
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -29,12 +36,6 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.nullableFold
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.model.SessionDTO
@@ -50,13 +51,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-// TODO: Move this class to logic module
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LongParameterList")
 class SessionManagerImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val accessTokenRefresherFactory: AccessTokenRefresherFactory,
     private val userId: QualifiedID,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val tokenStorage: AuthTokenStorage,
     private val logout: suspend (LogoutReason) -> Unit,
     private val coroutineContext: CoroutineContext = KaliumDispatcherImpl.default.limitedParallelism(1),
@@ -89,12 +90,12 @@ class SessionManagerImpl internal constructor(
 
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
-        oldAccessToken: String,
         oldRefreshToken: String
     ): SessionDTO {
         val refresher = accessTokenRefresherFactory.create(accessTokenApi)
         return withContext(coroutineContext) {
-            refresher.refreshTokenAndPersistSession(oldRefreshToken)
+            val currentClientId = currentClientIdProvider().nullableFold({ null }, { it })
+            refresher.refreshTokenAndPersistSession(oldRefreshToken, currentClientId)
                 .map { refreshResult ->
                     SessionDTO(
                         userId = userId.toApi(),
