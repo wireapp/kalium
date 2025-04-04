@@ -32,12 +32,12 @@ import com.wire.kalium.network.api.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
-import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddUserPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
-import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddUserPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -181,10 +181,10 @@ interface ConversationApi : BaseApi {
         protocol: ConvProtocol
     ): NetworkResponse<UpdateConversationProtocolResponse>
 
-    suspend fun updateChannelAddPermission(
+    suspend fun updateChannelAddUserPermission(
         conversationId: ConversationId,
-        channelAddPermission: ChannelAddPermissionDTO
-    ): NetworkResponse<UpdateChannelAddPermissionResponse>
+        channelAddUserPermission: ChannelAddUserPermissionDTO
+    ): NetworkResponse<UpdateChannelAddUserPermissionResponse>
 
     suspend fun guestLinkInfo(
         conversationId: ConversationId

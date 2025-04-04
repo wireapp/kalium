@@ -21,10 +21,10 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.isRight
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.channel.ChannelRepository
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddUserPermissionUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddUserPermissionUpdateEventHandlerImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -36,34 +36,34 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class ChannelAddPermissionTypeDTOUpdateEventHandlerTest {
+class ChannelAddUserPermissionTypeDTOUpdateEventHandlerTest {
 
     @Test
     fun givenRepositorySuccess_whenHandlingEvent_thenReturnUnit() = runTest {
-        val event = TestEvent.newConversationChannelAddPermissionEvent()
+        val event = TestEvent.newConversationChannelAddUserPermissionEvent()
         val (arrangement, eventHandler) = Arrangement()
-            .withConversationRepositoryReturning(Either.Right(Unit))
+            .withChannelRepositoryReturning(Either.Right(Unit))
             .arrange()
 
         val result = eventHandler.handle(event)
 
         coVerify {
-            arrangement.conversationRepository.updateChannelAddPermissionLocally(eq(event.conversationId), eq(event.channelAddPermission))
+            arrangement.channelRepository.updateAddUserPermissionLocally(eq(event.conversationId), eq(event.channelAddUserPermission))
         }.wasInvoked(exactly = once)
         assertTrue { result.isRight() }
     }
 
     @Test
     fun givenRepositoryFailure_whenHandlingEvent_thenReturnFailure() = runTest {
-        val event = TestEvent.newConversationChannelAddPermissionEvent()
+        val event = TestEvent.newConversationChannelAddUserPermissionEvent()
         val (arrangement, eventHandler) = Arrangement()
-            .withConversationRepositoryReturning(Either.Left(CoreFailure.InvalidEventSenderID))
+            .withChannelRepositoryReturning(Either.Left(CoreFailure.InvalidEventSenderID))
             .arrange()
 
         val result = eventHandler.handle(event)
 
         coVerify {
-            arrangement.conversationRepository.updateChannelAddPermissionLocally(eq(event.conversationId), eq(event.channelAddPermission))
+            arrangement.channelRepository.updateAddUserPermissionLocally(eq(event.conversationId), eq(event.channelAddUserPermission))
         }.wasInvoked(exactly = once)
         assertTrue { result.isLeft() }
     }
@@ -71,18 +71,18 @@ class ChannelAddPermissionTypeDTOUpdateEventHandlerTest {
     private class Arrangement {
 
         @Mock
-        val conversationRepository = mock(ConversationRepository::class)
+        val channelRepository = mock(ChannelRepository::class)
 
-        private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler by lazy {
-            ChannelAddPermissionUpdateEventHandlerImpl(conversationRepository)
+        private val channelAddUserPermissionUpdateEventHandler: ChannelAddUserPermissionUpdateEventHandler by lazy {
+            ChannelAddUserPermissionUpdateEventHandlerImpl(channelRepository)
         }
 
-        suspend fun withConversationRepositoryReturning(result: Either<CoreFailure, Unit>) = apply {
+        suspend fun withChannelRepositoryReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                conversationRepository.updateChannelAddPermissionLocally(any(), any())
+                channelRepository.updateAddUserPermissionLocally(any(), any())
             }.returns(result)
         }
 
-        fun arrange() = this to channelAddPermissionUpdateEventHandler
+        fun arrange() = this to channelAddUserPermissionUpdateEventHandler
     }
 }

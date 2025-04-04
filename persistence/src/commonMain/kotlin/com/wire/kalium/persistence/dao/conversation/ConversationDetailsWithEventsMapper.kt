@@ -79,7 +79,7 @@ data object ConversationDetailsWithEventsMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
-        channelAddPermission: ConversationEntity.ChannelAddPermission?,
+        channelAddUserPermission: ConversationEntity.ChannelAddUserPermission?,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
@@ -163,7 +163,7 @@ data object ConversationDetailsWithEventsMapper {
             folderName = folderName,
             isChannel = isChannel,
             channelAccess = channelAccess,
-            channelAddPermission = channelAddPermission,
+            channelAddUserPermission = channelAddUserPermission,
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(
             conversationId = qualifiedId,

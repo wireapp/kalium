@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddUserPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -413,7 +413,7 @@ class ConversationEventReceiverTest {
         val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
 
         @Mock
-        val channelAddPermissionUpdateEventHandler = mock(ChannelAddPermissionUpdateEventHandler::class)
+        val channelAddUserPermissionUpdateEventHandler = mock(ChannelAddUserPermissionUpdateEventHandler::class)
 
         @Mock
         val accessUpdateEventHandler = mock(AccessUpdateEventHandler::class)
@@ -433,7 +433,7 @@ class ConversationEventReceiverTest {
             codeDeletedHandler = codeDeletedHandler,
             typingIndicatorHandler = typingIndicatorHandler,
             protocolUpdateEventHandler = protocolUpdateEventHandler,
-            channelAddPermissionUpdateEventHandler = channelAddPermissionUpdateEventHandler,
+            channelAddUserPermissionUpdateEventHandler = channelAddUserPermissionUpdateEventHandler,
             accessUpdateEventHandler = accessUpdateEventHandler
         )
 

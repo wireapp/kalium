@@ -39,7 +39,7 @@ interface ConversationDAO {
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
-    suspend fun getChannelAddPermission(conversationId: QualifiedIDEntity): ConversationEntity.ChannelAddPermission
+    suspend fun getChannelAddUserPermission(conversationId: QualifiedIDEntity): ConversationEntity.ChannelAddUserPermission
     //endregion
 
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
@@ -123,9 +123,9 @@ interface ConversationDAO {
         link: String,
         isPasswordProtected: Boolean
     )
-    suspend fun updateChannelAddPermission(
+    suspend fun updateChannelAddUserPermission(
         conversationId: QualifiedIDEntity,
-        channelAddPermission: ConversationEntity.ChannelAddPermission
+        channelAddUserPermission: ConversationEntity.ChannelAddUserPermission
     )
 
     suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity)

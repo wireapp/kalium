@@ -77,6 +77,6 @@ object DBTestSetup {
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false,
         channelAccess = null,
-        channelAddPermission = null
+        channelAddUserPermission = null
     )
 }

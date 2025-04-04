@@ -19,8 +19,8 @@ package com.wire.kalium.logic.feature.conversation.channel
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddUserPermission
+import com.wire.kalium.logic.data.conversation.channel.ChannelRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.Mock
 import io.mockative.any
@@ -32,46 +32,46 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class UpdateChannelAddPermissionTypeDTOUseCaseTest {
+class UpdateChannelAddUserPermissionTypeDTOUseCaseTest {
 
     @Test
-    fun givenUpdateChannelAddPermissionSucceeds_whenInvokeUseCase_thenReturnSuccess() = runTest {
+    fun givenUpdateChannelAddUserPermissionSucceeds_whenInvokeUseCase_thenReturnSuccess() = runTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, usecase) = Arrangement()
             .withUpdateReturning(Either.Right(Unit))
             .arrange()
 
-        val result = usecase(conversationId, ChannelAddPermission.ADMINS)
+        val result = usecase(conversationId, ChannelAddUserPermission.ADMINS)
 
-        assertTrue(result is UpdateChannelAddPermissionUseCase.UpdateChannelAddPermissionUseCaseResult.Success)
-        coVerify { arrangement.conversationRepository.updateChannelAddPermission(any(), any()) }.wasInvoked(exactly = once)
+        assertTrue(result is UpdateChannelAddUserPermissionUseCase.UpdateChannelAddUserPermissionUseCaseResult.Success)
+        coVerify { arrangement.channelRepository.updateAddUserPermission(any(), any()) }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenUpdateChannelAddPermissionFailsWhenInvokeUseCase_thenReturnFailure() = runTest {
+    fun givenUpdateChannelAddUserPermissionFailsWhenInvokeUseCase_thenReturnFailure() = runTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, usecase) = Arrangement()
             .withUpdateReturning(Either.Left(CoreFailure.MissingClientRegistration))
             .arrange()
 
-        val result = usecase(conversationId, ChannelAddPermission.ADMINS)
+        val result = usecase(conversationId, ChannelAddUserPermission.ADMINS)
 
-        assertTrue(result is UpdateChannelAddPermissionUseCase.UpdateChannelAddPermissionUseCaseResult.Failure)
-        coVerify { arrangement.conversationRepository.updateChannelAddPermission(any(), any()) }.wasInvoked(exactly = once)
+        assertTrue(result is UpdateChannelAddUserPermissionUseCase.UpdateChannelAddUserPermissionUseCaseResult.Failure)
+        coVerify { arrangement.channelRepository.updateAddUserPermission(any(), any()) }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(ConversationRepository::class)
+        val channelRepository = mock(ChannelRepository::class)
 
-        private val updateChannelAddPermission = UpdateChannelAddPermissionUseCaseImpl(conversationRepository)
+        private val updateChannelAddUserPermission = UpdateChannelAddUserPermissionUseCaseImpl(channelRepository)
 
         suspend fun withUpdateReturning(either: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                conversationRepository.updateChannelAddPermission(any(), any())
+                channelRepository.updateAddUserPermission(any(), any())
             }.returns(either)
         }
 
-        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to updateChannelAddPermission }
+        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to updateChannelAddUserPermission }
     }
 }

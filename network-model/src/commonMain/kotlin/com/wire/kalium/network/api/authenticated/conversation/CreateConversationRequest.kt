@@ -104,7 +104,7 @@ enum class ConvProtocol {
 }
 
 @Serializable
-enum class ChannelAddPermissionTypeDTO {
+enum class ChannelAddUserPermissionTypeDTO {
     @SerialName("admins")
     ADMINS,
 

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddUserPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -59,7 +59,7 @@ internal class ConversationEventReceiverImpl(
     private val codeDeletedHandler: CodeDeletedHandler,
     private val typingIndicatorHandler: TypingIndicatorHandler,
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler,
-    private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
+    private val channelAddUserPermissionUpdateEventHandler: ChannelAddUserPermissionUpdateEventHandler,
     private val accessUpdateEventHandler: AccessUpdateEventHandler
 ) : ConversationEventReceiver {
     override suspend fun onEvent(event: Event.Conversation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
@@ -120,8 +120,8 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.ConversationProtocol -> {
                 protocolUpdateEventHandler.handle(event)
             }
-            is Event.Conversation.ConversationChannelAddPermission -> {
-                channelAddPermissionUpdateEventHandler.handle(event)
+            is Event.Conversation.ConversationChannelAddUserPermission -> {
+                channelAddUserPermissionUpdateEventHandler.handle(event)
             }
         }
     }

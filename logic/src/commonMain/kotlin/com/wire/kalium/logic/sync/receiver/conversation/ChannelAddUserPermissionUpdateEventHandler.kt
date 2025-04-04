@@ -23,25 +23,25 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.channel.ChannelRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.util.createEventProcessingLogger
 
 /**
- * Handles the [Event.Conversation.ConversationChannelAddPermission] event.
+ * Handles the [Event.Conversation.ConversationChannelAddUserPermission] event.
  */
-interface ChannelAddPermissionUpdateEventHandler {
-    suspend fun handle(event: Event.Conversation.ConversationChannelAddPermission): Either<CoreFailure, Unit>
+interface ChannelAddUserPermissionUpdateEventHandler {
+    suspend fun handle(event: Event.Conversation.ConversationChannelAddUserPermission): Either<CoreFailure, Unit>
 }
 
-internal class ChannelAddPermissionUpdateEventHandlerImpl(
-    private val conversationRepository: ConversationRepository
-) : ChannelAddPermissionUpdateEventHandler {
+internal class ChannelAddUserPermissionUpdateEventHandlerImpl(
+    private val channelRepository: ChannelRepository
+) : ChannelAddUserPermissionUpdateEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(event: Event.Conversation.ConversationChannelAddPermission): Either<CoreFailure, Unit> {
+    override suspend fun handle(event: Event.Conversation.ConversationChannelAddUserPermission): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
-        return conversationRepository.updateChannelAddPermissionLocally(event.conversationId, event.channelAddPermission)
+        return channelRepository.updateAddUserPermissionLocally(event.conversationId, event.channelAddUserPermission)
             .onSuccess {
                 eventLogger.logSuccess()
             }

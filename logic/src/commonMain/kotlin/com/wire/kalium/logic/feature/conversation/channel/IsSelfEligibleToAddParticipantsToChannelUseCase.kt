@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation.channel
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.channel.ChannelRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
@@ -33,15 +33,15 @@ interface IsSelfEligibleToAddParticipantsToChannelUseCase {
 
 internal class IsSelfEligibleToAddParticipantsToChannelUseCaseImpl(
     val selfUser: GetSelfUserUseCase,
-    val conversationRepository: ConversationRepository
+    private val channelRepository: ChannelRepository
 ) : IsSelfEligibleToAddParticipantsToChannelUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): Boolean =
-        conversationRepository.getChannelAddPermission(conversationId).fold(
+        channelRepository.getAddUserPermission(conversationId).fold(
             { false },
             {
                 val eligibleUserTypes: Set<UserType> = when (it) {
-                    ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS -> setOf(UserType.ADMIN, UserType.OWNER)
-                    ConversationDetails.Group.Channel.ChannelAddPermission.EVERYONE -> setOf(
+                    ConversationDetails.Group.Channel.ChannelAddUserPermission.ADMINS -> setOf(UserType.ADMIN, UserType.OWNER)
+                    ConversationDetails.Group.Channel.ChannelAddUserPermission.EVERYONE -> setOf(
                         UserType.ADMIN,
                         UserType.OWNER,
                         UserType.INTERNAL

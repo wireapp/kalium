@@ -89,6 +89,8 @@ import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
+import com.wire.kalium.logic.data.conversation.channel.ChannelDataSource
+import com.wire.kalium.logic.data.conversation.channel.ChannelRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderDataSource
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -400,8 +402,8 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddUserPermissionUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddUserPermissionUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -746,6 +748,12 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
             userStorage.database.metadataDAO,
+        )
+
+    private val channelRepository: ChannelRepository
+        get() = ChannelDataSource(
+            userStorage.database.conversationDAO,
+            authenticatedNetworkContainer.conversationApi,
         )
 
     private val conversationFolderRepository: ConversationFolderRepository
@@ -1542,9 +1550,9 @@ class UserSessionScope internal constructor(
             callRepository = callRepository
         )
 
-    private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
-        get() = ChannelAddPermissionUpdateEventHandlerImpl(
-            conversationRepository = conversationRepository
+    private val channelAddUserPermissionUpdateEventHandler: ChannelAddUserPermissionUpdateEventHandler
+        get() = ChannelAddUserPermissionUpdateEventHandlerImpl(
+            channelRepository = channelRepository
         )
 
     private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
@@ -1569,7 +1577,7 @@ class UserSessionScope internal constructor(
             conversationCodeDeletedHandler,
             typingIndicatorHandler,
             protocolUpdateEventHandler,
-            channelAddPermissionUpdateEventHandler,
+            channelAddUserPermissionUpdateEventHandler,
             conversationAccessUpdateEventHandler,
         )
     }
@@ -1865,7 +1873,7 @@ class UserSessionScope internal constructor(
     val channels: ChannelsScope by lazy {
         ChannelsScope(
             { users.getSelfUser },
-            { conversationRepository },
+            { channelRepository },
             { userStorage.database.metadataDAO },
             { userRepository }
         )

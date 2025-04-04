@@ -75,7 +75,7 @@ data object ConversationMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
-        channelAddPermission: ConversationEntity.ChannelAddPermission?,
+        channelAddUserPermission: ConversationEntity.ChannelAddUserPermission?,
         selfUserId: QualifiedIDEntity?,
         interactionEnabled: Long,
         isFavorite: Boolean,
@@ -135,7 +135,7 @@ data object ConversationMapper {
         folderName = folderName,
         isChannel = isChannel,
         channelAccess = channelAccess,
-        channelAddPermission = channelAddPermission
+        channelAddUserPermission = channelAddUserPermission
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -174,7 +174,7 @@ data object ConversationMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
-        channelAddPermission: ConversationEntity.ChannelAddPermission?
+        channelAddUserPermission: ConversationEntity.ChannelAddUserPermission?
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -206,7 +206,7 @@ data object ConversationMapper {
         legalHoldStatus = legalHoldStatus,
         isChannel = isChannel,
         channelAccess = channelAccess,
-        channelAddPermission = channelAddPermission
+        channelAddUserPermission = channelAddUserPermission
     )
 
     @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
@@ -245,7 +245,7 @@ data object ConversationMapper {
         legal_hold_status: ConversationEntity.LegalHoldStatus,
         is_channel: Boolean,
         channel_access: ConversationEntity.ChannelAccess?,
-        channel_add_permission: ConversationEntity.ChannelAddPermission?,
+        channel_add_user_permission: ConversationEntity.ChannelAddUserPermission?,
     ) = ConversationEntity(
         id = qualified_id,
         name = name,
@@ -277,7 +277,7 @@ data object ConversationMapper {
         legalHoldStatus = legal_hold_status,
         isChannel = is_channel,
         channelAccess = channel_access,
-        channelAddPermission = channel_add_permission,
+        channelAddUserPermission = channel_add_user_permission,
     )
 
     @Suppress("LongParameterList")

@@ -47,7 +47,7 @@ CREATE TABLE Conversation (
     legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
     is_channel INTEGER AS Boolean NOT NULL DEFAULT 0,
     channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
-    channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL
+    channel_add_user_permission TEXT AS ConversationEntity.ChannelAddUserPermission DEFAULT NULL
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
@@ -76,7 +76,7 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, is_channel, channel_access, channel_add_permission)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, is_channel, channel_access, channel_add_user_permission)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
@@ -104,7 +104,7 @@ archived = excluded.archived,
 archived_date_time = excluded.archived_date_time,
 is_channel = excluded.is_channel,
 channel_access = excluded.channel_access,
-channel_add_permission = excluded.channel_add_permission;
+channel_add_user_permission = excluded.channel_add_user_permission;
 
 updateConversation:
 UPDATE Conversation
@@ -173,9 +173,9 @@ UPDATE Conversation
 SET degraded_conversation_notified = ?
 WHERE qualified_id = :qualified_id;
 
-updateChannelAddPermission:
+updateChannelAddUserPermission:
 UPDATE Conversation
-SET channel_add_permission = ?
+SET channel_add_user_permission = ?
 WHERE qualified_id = :qualified_id;
 
 selectAllConversations:
@@ -345,8 +345,8 @@ WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
 selectIsChannel:
 SELECT is_channel FROM Conversation WHERE qualified_id = ?;
 
-selectChannelAddPermission:
-SELECT channel_add_permission FROM Conversation WHERE qualified_id = ?;
+selectChannelAddUserPermission:
+SELECT channel_add_user_permission FROM Conversation WHERE qualified_id = ?;
 
 updateMlsVerificationStatus:
 UPDATE Conversation

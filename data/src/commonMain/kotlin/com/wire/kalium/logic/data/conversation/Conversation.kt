@@ -349,7 +349,7 @@ sealed interface ConversationDetails {
             override val folder: ConversationFolder? = null,
 //         val isTeamAdmin: Boolean, TODO kubaz
             val access: ChannelAccess,
-            val permission: ChannelAddPermission
+            val addUserPermission: ChannelAddUserPermission
         ) : Group {
             /**
              * An enum class that defines the permissions for adding participants to a channel,
@@ -360,7 +360,7 @@ sealed interface ConversationDetails {
                 PRIVATE
             }
 
-            enum class ChannelAddPermission {
+            enum class ChannelAddUserPermission {
                 ADMINS,
                 EVERYONE
             }

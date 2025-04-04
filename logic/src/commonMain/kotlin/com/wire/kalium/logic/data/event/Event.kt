@@ -52,7 +52,7 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddUserPermission
 
 /**
  * A wrapper that joins [Event] with its [EventDeliveryInfo].
@@ -435,17 +435,17 @@ sealed class Event(open val id: String) {
             )
         }
 
-        data class ConversationChannelAddPermission(
+        data class ConversationChannelAddUserPermission(
             override val id: String,
             override val conversationId: ConversationId,
-            val channelAddPermission: ChannelAddPermission,
+            val channelAddUserPermission: ChannelAddUserPermission,
             val senderUserId: UserId
         ) : Conversation(id, conversationId) {
             override fun toLogMap() = mapOf(
-                typeKey to "Conversation.ChannelAddPermission",
+                typeKey to "Conversation.ChannelAddUserPermission",
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
-                "channelAddPermission" to channelAddPermission.name,
+                "channelAddUserPermission" to channelAddUserPermission.name,
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }

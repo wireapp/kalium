@@ -254,10 +254,10 @@ object TestEvent {
         senderUserId = TestUser.OTHER_USER_ID
     )
 
-    fun newConversationChannelAddPermissionEvent() = Event.Conversation.ConversationChannelAddPermission(
+    fun newConversationChannelAddUserPermissionEvent() = Event.Conversation.ConversationChannelAddUserPermission(
         id = "eventId",
         conversationId = TestConversation.ID,
-        channelAddPermission = ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS,
+        channelAddUserPermission = ConversationDetails.Group.Channel.ChannelAddUserPermission.ADMINS,
         senderUserId = TestUser.OTHER_USER_ID
     )
 

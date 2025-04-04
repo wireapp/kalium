@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.api.authenticated.conversation
+package com.wire.kalium.network.api.authenticated.conversation.channel
 
-import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddUserPermissionTypeDTO
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-sealed class UpdateChannelAddPermissionResponse {
-    data object PermissionUnchanged : UpdateChannelAddPermissionResponse()
-    data class PermissionUpdated(val event: EventContentDTO.Conversation.ChannelAddPermissionUpdate) : UpdateChannelAddPermissionResponse()
-}
+@Serializable
+data class ChannelAddUserPermissionDTO(
+    @SerialName("add_permission")
+    val channelAddUserPermissionTypeDTO: ChannelAddUserPermissionTypeDTO
+)

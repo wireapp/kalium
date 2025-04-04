@@ -3,7 +3,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 DROP VIEW IF EXISTS ConversationDetails;
 
 ALTER TABLE Conversation ADD COLUMN channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL;
-ALTER TABLE Conversation ADD COLUMN channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL;
+ALTER TABLE Conversation ADD COLUMN channel_add_user_permission TEXT AS ConversationEntity.ChannelAddUserPermission DEFAULT NULL;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
@@ -97,7 +97,7 @@ Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
 Conversation.is_channel,
 Conversation.channel_access,
-Conversation.channel_add_permission,
+Conversation.channel_add_user_permission,
 SelfUser.id AS selfUserId,
 CASE
     WHEN Conversation.type = 'GROUP' THEN

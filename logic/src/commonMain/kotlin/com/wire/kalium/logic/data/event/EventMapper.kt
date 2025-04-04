@@ -111,7 +111,7 @@ class EventMapper(
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
-            is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.ChannelAddUserPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
         }
 
     private fun conversationTyping(
@@ -188,11 +188,11 @@ class EventMapper(
     )
     private fun conversationChannelPermissionUpdate(
         id: String,
-        eventContentDTO: EventContentDTO.Conversation.ChannelAddPermissionUpdate,
-    ): Event = Event.Conversation.ConversationChannelAddPermission(
+        eventContentDTO: EventContentDTO.Conversation.ChannelAddUserPermissionUpdate,
+    ): Event = Event.Conversation.ConversationChannelAddUserPermission(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        channelAddPermission = eventContentDTO.data.channelAddPermissionTypeDTO.toModel(),
+        channelAddUserPermission = eventContentDTO.data.channelAddUserPermissionTypeDTO.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
 

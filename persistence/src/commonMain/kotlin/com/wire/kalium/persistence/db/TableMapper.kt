@@ -114,7 +114,7 @@ internal object TableMapper {
         proteus_verification_statusAdapter = EnumColumnAdapter(),
         legal_hold_statusAdapter = EnumColumnAdapter(),
         channel_accessAdapter = EnumColumnAdapter(),
-        channel_add_permissionAdapter = EnumColumnAdapter()
+        channel_add_user_permissionAdapter = EnumColumnAdapter()
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,

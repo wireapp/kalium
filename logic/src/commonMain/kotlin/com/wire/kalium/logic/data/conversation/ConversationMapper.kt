@@ -22,7 +22,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAccess
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddUserPermission
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
@@ -40,14 +40,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddUserPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddUserPermissionDTO
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -147,7 +147,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL,
             channelAccess = null, // TODO: implement when api is ready
-            channelAddPermission = null // TODO: implement when api is ready
+            channelAddUserPermission = null // TODO: implement when api is ready
         )
     }
 
@@ -288,8 +288,8 @@ internal class ConversationMapperImpl(
                             isFavorite = isFavorite,
                             folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                             access = channelAccess?.toModelChannelAccess() ?: ChannelAccess.PRIVATE,
-                            permission = channelAddPermission?.toModelChannelPermission()
-                                ?: ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
+                            addUserPermission = channelAddUserPermission?.toModelChannelPermission()
+                                ?: ChannelAddUserPermission.ADMINS
                         )
                     } else {
                         ConversationDetails.Group.Regular(
@@ -475,7 +475,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus),
             isChannel = false, // There were no channels in old Android clients. So no migration from channels is necessary,
             channelAccess = null,
-            channelAddPermission = null
+            channelAddUserPermission = null
         )
     }
 
@@ -509,7 +509,7 @@ internal class ConversationMapperImpl(
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
         isChannel = false, // We can assume the conversations aren't channels while they're failed,
         channelAccess = null,
-        channelAddPermission = null
+        channelAddUserPermission = null
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -592,14 +592,14 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
-fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
-    ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
-    ChannelAddPermission.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
+fun ChannelAddUserPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddUserPermission = when (this) {
+    ChannelAddUserPermission.ADMINS -> ConversationEntity.ChannelAddUserPermission.ADMINS
+    ChannelAddUserPermission.EVERYONE -> ConversationEntity.ChannelAddUserPermission.EVERYONE
 }
 
-fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
-    ConversationEntity.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
-    ConversationEntity.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
+fun ConversationEntity.ChannelAddUserPermission.toModelChannelPermission(): ChannelAddUserPermission = when (this) {
+    ConversationEntity.ChannelAddUserPermission.ADMINS -> ChannelAddUserPermission.ADMINS
+    ConversationEntity.ChannelAddUserPermission.EVERYONE -> ChannelAddUserPermission.EVERYONE
 }
 
 fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {
@@ -716,14 +716,14 @@ internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
     ConvProtocol.MLS -> Conversation.Protocol.MLS
 }
 
-internal fun ChannelAddPermissionTypeDTO.toModel(): ChannelAddPermission = when (this) {
-    ChannelAddPermissionTypeDTO.ADMINS -> ChannelAddPermission.ADMINS
-    ChannelAddPermissionTypeDTO.EVERYONE -> ChannelAddPermission.EVERYONE
+internal fun ChannelAddUserPermissionTypeDTO.toModel(): ChannelAddUserPermission = when (this) {
+    ChannelAddUserPermissionTypeDTO.ADMINS -> ChannelAddUserPermission.ADMINS
+    ChannelAddUserPermissionTypeDTO.EVERYONE -> ChannelAddUserPermission.EVERYONE
 }
 
-internal fun ChannelAddPermission.toApi(): ChannelAddPermissionDTO = when (this) {
-    ChannelAddPermission.ADMINS -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.ADMINS)
-    ChannelAddPermission.EVERYONE -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.EVERYONE)
+internal fun ChannelAddUserPermission.toApi(): ChannelAddUserPermissionDTO = when (this) {
+    ChannelAddUserPermission.ADMINS -> ChannelAddUserPermissionDTO(ChannelAddUserPermissionTypeDTO.ADMINS)
+    ChannelAddUserPermission.EVERYONE -> ChannelAddUserPermissionDTO(ChannelAddUserPermissionTypeDTO.EVERYONE)
 }
 
 internal fun Protocol.toModel(): Conversation.Protocol = when (this) {

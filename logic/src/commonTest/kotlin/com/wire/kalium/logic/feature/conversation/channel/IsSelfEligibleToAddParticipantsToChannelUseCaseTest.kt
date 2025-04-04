@@ -19,8 +19,8 @@ package com.wire.kalium.logic.feature.conversation.channel
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddUserPermission
+import com.wire.kalium.logic.data.conversation.channel.ChannelRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
@@ -40,78 +40,78 @@ class IsSelfEligibleToAddParticipantsToChannelUseCaseTest {
     @Test
     fun givenErrorOccurs_whenRetrievingPermission_thenResultShouldBeFalse() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Left(StorageFailure.DataNotFound))
+            .withGetChannelAddUserPermissionReturning(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
         val result = useCase(conversationId)
 
         assertEquals(false, result)
-        coVerify { arrangement.conversationRepository.getChannelAddPermission(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.channelRepository.getAddUserPermission(any()) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserIsAdminAndPermissionIsADMINS_whenCheckingEligibility_thenResultShouldBeTrue() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.ADMINS))
+            .withGetChannelAddUserPermissionReturning(Either.Right(ChannelAddUserPermission.ADMINS))
             .withGetUserTypeReturning(UserType.ADMIN)
             .arrange()
 
         val result = useCase(conversationId)
 
         assertEquals(true, result)
-        coVerify { arrangement.conversationRepository.getChannelAddPermission(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.channelRepository.getAddUserPermission(any()) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserIsMemberAndPermissionIsADMINS_whenCheckingEligibility_thenResultShouldBeFalse() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.ADMINS))
+            .withGetChannelAddUserPermissionReturning(Either.Right(ChannelAddUserPermission.ADMINS))
             .withGetUserTypeReturning(UserType.INTERNAL)
             .arrange()
 
         val result = useCase(conversationId)
 
         assertEquals(false, result)
-        coVerify { arrangement.conversationRepository.getChannelAddPermission(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.channelRepository.getAddUserPermission(any()) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserIsMemberAndPermissionIsEVERYONE_whenCheckingEligibility_thenResultShouldBeTrue() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.EVERYONE))
+            .withGetChannelAddUserPermissionReturning(Either.Right(ChannelAddUserPermission.EVERYONE))
             .withGetUserTypeReturning(UserType.INTERNAL)
             .arrange()
 
         val result = useCase(conversationId)
 
         assertEquals(true, result)
-        coVerify { arrangement.conversationRepository.getChannelAddPermission(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.channelRepository.getAddUserPermission(any()) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserIsOwnerAndPermissionIsEVERYONE_whenCheckingEligibility_thenResultShouldBeTrue() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.EVERYONE))
+            .withGetChannelAddUserPermissionReturning(Either.Right(ChannelAddUserPermission.EVERYONE))
             .withGetUserTypeReturning(UserType.OWNER)
             .arrange()
 
         val result = useCase(conversationId)
 
         assertEquals(true, result)
-        coVerify { arrangement.conversationRepository.getChannelAddPermission(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.channelRepository.getAddUserPermission(any()) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserIsInternalAndPermissionIsADMINS_whenCheckingEligibility_thenResultShouldBeFalse() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withGetChannelAddPermissionReturning(Either.Right(ChannelAddPermission.ADMINS))
+            .withGetChannelAddUserPermissionReturning(Either.Right(ChannelAddUserPermission.ADMINS))
             .withGetUserTypeReturning(UserType.INTERNAL)
             .arrange()
 
         val result = useCase(conversationId)
 
         assertEquals(false, result)
-        coVerify { arrangement.conversationRepository.getChannelAddPermission(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.channelRepository.getAddUserPermission(any()) }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -119,14 +119,14 @@ class IsSelfEligibleToAddParticipantsToChannelUseCaseTest {
         val getSelfUser = mock(GetSelfUserUseCase::class)
 
         @Mock
-        val conversationRepository = mock(ConversationRepository::class)
+        val channelRepository = mock(ChannelRepository::class)
 
         private val isSelfEligibleToAddParticipantsToChannel =
-            IsSelfEligibleToAddParticipantsToChannelUseCaseImpl(getSelfUser, conversationRepository)
+            IsSelfEligibleToAddParticipantsToChannelUseCaseImpl(getSelfUser, channelRepository)
 
-        suspend fun withGetChannelAddPermissionReturning(result: Either<StorageFailure, ChannelAddPermission>) = apply {
+        suspend fun withGetChannelAddUserPermissionReturning(result: Either<StorageFailure, ChannelAddUserPermission>) = apply {
             coEvery {
-                conversationRepository.getChannelAddPermission(any())
+                channelRepository.getAddUserPermission(any())
             }.returns(result)
         }
 

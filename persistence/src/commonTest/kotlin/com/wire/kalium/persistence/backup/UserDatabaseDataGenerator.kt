@@ -280,7 +280,7 @@ class UserDatabaseDataGenerator(
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                     isChannel = false,
                     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
-                    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                    channelAddUserPermission = ConversationEntity.ChannelAddUserPermission.EVERYONE,
                 )
             )
 
@@ -330,7 +330,7 @@ class UserDatabaseDataGenerator(
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
-            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            channelAddUserPermission = ConversationEntity.ChannelAddUserPermission.EVERYONE,
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -404,7 +404,7 @@ class UserDatabaseDataGenerator(
                 legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                 isChannel = false,
                 channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
-                channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                channelAddUserPermission = ConversationEntity.ChannelAddUserPermission.EVERYONE,
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -477,7 +477,7 @@ class UserDatabaseDataGenerator(
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                     isChannel = false,
                     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
-                    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                    channelAddUserPermission = ConversationEntity.ChannelAddUserPermission.EVERYONE,
                 )
             )
 
@@ -528,7 +528,7 @@ class UserDatabaseDataGenerator(
                     legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
                     isChannel = false,
                     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
-                    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                    channelAddUserPermission = ConversationEntity.ChannelAddUserPermission.EVERYONE,
                 )
             )
 

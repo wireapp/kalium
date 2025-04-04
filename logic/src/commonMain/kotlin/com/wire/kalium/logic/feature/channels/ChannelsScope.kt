@@ -18,18 +18,18 @@
 package com.wire.kalium.logic.feature.channels
 
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.channel.ChannelRepository
 import com.wire.kalium.logic.data.user.SelfUserObservationProvider
 import com.wire.kalium.logic.feature.conversation.channel.IsSelfEligibleToAddParticipantsToChannelUseCase
 import com.wire.kalium.logic.feature.conversation.channel.IsSelfEligibleToAddParticipantsToChannelUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCase
-import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddUserPermissionUseCase
+import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddUserPermissionUseCaseImpl
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.persistence.dao.MetadataDAO
 
 class ChannelsScope(
     val selfUser: () -> GetSelfUserUseCase,
-    val conversationRepository: () -> ConversationRepository,
+    val channelRepository: () -> ChannelRepository,
     val metadataDaoProvider: () -> MetadataDAO,
     val selfUserObservationProvider: () -> SelfUserObservationProvider
 ) {
@@ -42,9 +42,9 @@ class ChannelsScope(
     val observeChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
         get() = ObserveChannelsCreationPermissionUseCase(channelsConfigStorage, selfUserObservationProvider())
 
-    val updateChannelAddPermission: UpdateChannelAddPermissionUseCase
-        get() = UpdateChannelAddPermissionUseCaseImpl(conversationRepository())
+    val updateChannelAddUserPermission: UpdateChannelAddUserPermissionUseCase
+        get() = UpdateChannelAddUserPermissionUseCaseImpl(channelRepository())
 
     val isSelfEligibleToAddParticipantsToChannel: IsSelfEligibleToAddParticipantsToChannelUseCase
-        get() = IsSelfEligibleToAddParticipantsToChannelUseCaseImpl(selfUser(), conversationRepository())
+        get() = IsSelfEligibleToAddParticipantsToChannelUseCaseImpl(selfUser(), channelRepository())
 }

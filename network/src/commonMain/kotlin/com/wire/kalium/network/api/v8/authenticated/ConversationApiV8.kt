@@ -21,8 +21,8 @@ package com.wire.kalium.network.api.v8.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
-import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddUserPermissionResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddUserPermissionDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v7.authenticated.ConversationApiV7
@@ -50,22 +50,22 @@ internal open class ConversationApiV8 internal constructor(
         }
     }
 
-    override suspend fun updateChannelAddPermission(
+    override suspend fun updateChannelAddUserPermission(
         conversationId: ConversationId,
-        channelAddPermission: ChannelAddPermissionDTO
-    ): NetworkResponse<UpdateChannelAddPermissionResponse> = try {
+        channelAddUserPermission: ChannelAddUserPermissionDTO
+    ): NetworkResponse<UpdateChannelAddUserPermissionResponse> = try {
         httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ADD_PERMISSION") {
-            setBody(channelAddPermission)
+            setBody(channelAddUserPermission)
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(
-                    UpdateChannelAddPermissionResponse.PermissionUnchanged,
+                    UpdateChannelAddUserPermissionResponse.AddUserPermissionUnchanged,
                     httpResponse
                 )
 
-                else -> wrapKaliumResponse<EventContentDTO.Conversation.ChannelAddPermissionUpdate> { httpResponse }
+                else -> wrapKaliumResponse<EventContentDTO.Conversation.ChannelAddUserPermissionUpdate> { httpResponse }
                     .mapSuccess {
-                        UpdateChannelAddPermissionResponse.PermissionUpdated(it)
+                        UpdateChannelAddUserPermissionResponse.AddUserPermissionUpdated(it)
                     }
             }
         }
