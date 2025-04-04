@@ -2434,6 +2434,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
     }
 
@@ -2499,6 +2500,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -2524,6 +2526,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -2552,6 +2555,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -2586,6 +2590,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
         val conversationEntity5 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
@@ -2611,6 +2616,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
         val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("6", "wire.com"),
@@ -2644,6 +2650,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

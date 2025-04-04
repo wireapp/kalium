@@ -22,6 +22,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
@@ -53,6 +54,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class MessageDAOImpl internal constructor(
     private val queries: MessagesQueries,
+    private val attachmentsQueries: MessageAttachmentsQueries,
     private val assetViewQueries: MessageAssetViewQueries,
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -67,6 +69,7 @@ internal class MessageDAOImpl internal constructor(
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
+        attachmentsQueries,
         unreadEventsQueries,
         conversationsQueries,
         buttonContentQueries,

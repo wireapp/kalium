@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository

@@ -110,7 +110,8 @@ CASE
 END AS interactionEnabled,
 LabeledConversation.folder_id IS NOT NULL AS isFavorite,
 CurrentFolder.id AS folderId,
-CurrentFolder.name AS folderName
+CurrentFolder.name AS folderName,
+Conversation.wire_cell AS wireCell
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation

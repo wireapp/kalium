@@ -532,6 +532,7 @@ class ClientDAOTest : BaseDatabaseTest() {
             isChannel = false,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
     }
 }

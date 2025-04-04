@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.asset
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.Asset
 import com.wire.kalium.persistence.AssetsQueries
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -94,5 +95,9 @@ class AssetDAOImpl internal constructor(
 
     override suspend fun deleteAsset(key: String) = withContext(queriesContext) {
         queries.deleteAsset(key)
+    }
+
+    override suspend fun getAssets(): List<Asset> = withContext(queriesContext) {
+        queries.getAssets().executeAsList()
     }
 }

@@ -81,6 +81,7 @@ data object ConversationMapper {
         isFavorite: Boolean,
         folderId: String?,
         folderName: String?,
+        wireCell: String?,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
@@ -135,7 +136,8 @@ data object ConversationMapper {
         folderName = folderName,
         isChannel = isChannel,
         channelAccess = channelAccess,
-        channelAddPermission = channelAddPermission
+        channelAddPermission = channelAddPermission,
+        wireCell = wireCell,
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -174,7 +176,8 @@ data object ConversationMapper {
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
         isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
-        channelAddPermission: ConversationEntity.ChannelAddPermission?
+        channelAddPermission: ConversationEntity.ChannelAddPermission?,
+        wireCell: String?,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -206,7 +209,8 @@ data object ConversationMapper {
         legalHoldStatus = legalHoldStatus,
         isChannel = isChannel,
         channelAccess = channelAccess,
-        channelAddPermission = channelAddPermission
+        channelAddPermission = channelAddPermission,
+        wireCell = wireCell,
     )
 
     @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
@@ -246,6 +250,7 @@ data object ConversationMapper {
         is_channel: Boolean,
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
+        wireCell: String?,
     ) = ConversationEntity(
         id = qualified_id,
         name = name,
@@ -278,6 +283,7 @@ data object ConversationMapper {
         isChannel = is_channel,
         channelAccess = channel_access,
         channelAddPermission = channel_add_permission,
+        wireCell = wireCell,
     )
 
     @Suppress("LongParameterList")

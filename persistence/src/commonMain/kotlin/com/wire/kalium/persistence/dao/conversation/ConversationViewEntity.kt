@@ -81,6 +81,7 @@ data class ConversationViewEntity(
     val isChannel: Boolean,
     val channelAccess: ChannelAccess?,
     val channelAddPermission: ChannelAddPermission?,
+    val wireCell: String?,
 ) {
     val isMember: Boolean get() = selfRole != null
 }
