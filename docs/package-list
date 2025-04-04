@@ -488,6 +488,7 @@ com.wire.kalium.logic.data.id
 com.wire.kalium.logic.data.keypackage
 com.wire.kalium.logic.data.logout
 com.wire.kalium.logic.data.message
+com.wire.kalium.logic.data.message.attachment
 com.wire.kalium.logic.data.message.draft
 com.wire.kalium.logic.data.message.linkpreview
 com.wire.kalium.logic.data.message.mention
@@ -672,7 +673,9 @@ com.wire.kalium.persistence.dao.conversation
 com.wire.kalium.persistence.dao.conversation.folder
 com.wire.kalium.persistence.dao.member
 com.wire.kalium.persistence.dao.message
+com.wire.kalium.persistence.dao.message.attachment
 com.wire.kalium.persistence.dao.message.draft
+com.wire.kalium.persistence.dao.messageattachment
 com.wire.kalium.persistence.dao.newclient
 com.wire.kalium.persistence.dao.reaction
 com.wire.kalium.persistence.dao.receipt
