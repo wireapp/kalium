@@ -743,6 +743,29 @@ class ConversationRepositoryTest {
         }
     }
 
+
+    @Test
+    fun givenMlsConversationAndCCFailure_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withGetConversationProtocolInfoReturns(MLS_PROTOCOL_INFO)
+            .withSuccessfulConversationDeletion()
+            .withWithMLSClientWipeFailure()
+            .arrange()
+        val conversationId = ConversationId("conv_id", "conv_domain")
+
+        conversationRepository.deleteConversation(conversationId)
+
+        with(arrangement) {
+            coVerify {
+                mlsClient.wipeConversation(any())
+            }.wasInvoked(once)
+
+            coVerify {
+                conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
+            }.wasInvoked(once)
+        }
+    }
+
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCountAndLastMessage() = runTest {
         // given
@@ -1707,6 +1730,11 @@ class ConversationRepositoryTest {
             coEvery {
                 conversationDAO.deleteConversationByQualifiedID(any())
             }.returns(Unit)
+        }
+        suspend fun withWithMLSClientWipeFailure() = apply {
+            coEvery {
+                mlsClient.wipeConversation(any())
+            }.throws(Exception("An error occurred"))
         }
 
         suspend fun withExpectedIsUserMemberFlow(expectedIsUserMember: Flow<Boolean>) = apply {
