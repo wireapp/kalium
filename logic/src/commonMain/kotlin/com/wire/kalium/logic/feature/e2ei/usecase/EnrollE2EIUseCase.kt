@@ -28,6 +28,10 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.user.UserRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -45,7 +49,9 @@ interface EnrollE2EIUseCase {
 
 @Suppress("ReturnCount")
 class EnrollE2EIUseCaseImpl internal constructor(
-    private val e2EIRepository: E2EIRepository
+    private val e2EIRepository: E2EIRepository,
+    private val userRepository: UserRepository,
+    private val coroutineScope: CoroutineScope,
 ) : EnrollE2EIUseCase {
     /**
      * Operation to initial E2EI certificate enrollment
@@ -53,6 +59,14 @@ class EnrollE2EIUseCaseImpl internal constructor(
      * @return [Either] [E2EIFailure] or [E2EIEnrollmentResult]
      */
     override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<E2EIFailure, E2EIEnrollmentResult.Initialized> {
+
+        val updateUserInfoJob: Job? = if (isNewClientRegistration) {
+            coroutineScope.launch { userRepository.fetchSelfUser() }
+        } else {
+            /* no-op */
+            null
+        }
+
         kaliumLogger.i("start E2EI Enrollment Initialization")
 
         e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
@@ -63,19 +77,24 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return it.left()
         }
 
+        updateUserInfoJob?.join()
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
+            kaliumLogger.d("Failure loading ACMEDirectories during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
         var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
+            kaliumLogger.d("Failure getting ACMENonce during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
         prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
+            kaliumLogger.d("Failure creating new account during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
         val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
+            kaliumLogger.d("Failure creating new order during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
@@ -83,6 +102,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         val authorizations =
             e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations).getOrFail {
+                kaliumLogger.d("Failure getting authorizations during E2EI Enrolling!. Failure:$it")
                 return it.left()
             }
 
