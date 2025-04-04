@@ -918,7 +918,7 @@ internal class ConversationDataSource internal constructor(
                         wrapMLSRequest {
                             mlsClient.wipeConversation(it.groupId.toCrypto())
                         }
-                    }.flatMap {
+                    }.run {
                         wrapStorageRequest {
                             conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
                         }
