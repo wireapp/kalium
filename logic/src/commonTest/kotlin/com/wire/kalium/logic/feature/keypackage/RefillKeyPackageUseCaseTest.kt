@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import io.mockative.Mock
 import io.mockative.any
@@ -128,7 +129,7 @@ class RefillKeyPackageUseCaseTest {
         fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
             every {
                 mlsClient.getDefaultCipherSuite()
-            }.returns(cipherSuite.tag.toUShort())
+            }.returns(cipherSuite.toCrypto())
         }
 
         suspend fun withExistingSelfClientId() = apply {

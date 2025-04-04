@@ -37,10 +37,10 @@ internal open class MLSMessageApiV5 internal constructor(
 ) : MLSMessageApiV4() {
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun sendMessage(message: MLSMessageApi.Message): NetworkResponse<SendMLSMessageResponse> =
+    override suspend fun sendMessage(message: ByteArray): NetworkResponse<SendMLSMessageResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_MESSAGE) {
-                setBody(message.value)
+                setBody(message)
                 contentType(ContentType.Message.Mls)
             }
         }
