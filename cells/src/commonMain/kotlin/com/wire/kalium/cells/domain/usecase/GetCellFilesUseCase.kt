@@ -22,6 +22,7 @@ import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellFile
+import com.wire.kalium.cells.domain.model.toFileModel
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -37,7 +38,12 @@ public interface GetCellFilesUseCase {
      *
      * @return [List] of [CellFile]
      */
-    public suspend operator fun invoke(query: String, limit: Int = 100, offset: Int = 0): Either<CoreFailure, List<CellFile>>
+    public suspend operator fun invoke(
+        conversationId: String?,
+        query: String,
+        limit: Int = 100,
+        offset: Int = 0
+    ): Either<CoreFailure, List<CellFile>>
 }
 
 internal class GetCellFilesUseCaseImpl(
@@ -47,7 +53,12 @@ internal class GetCellFilesUseCaseImpl(
     private val usersRepository: CellUsersRepository,
 ) : GetCellFilesUseCase {
 
-    override suspend operator fun invoke(query: String, limit: Int, offset: Int): Either<CoreFailure, List<CellFile>> {
+    override suspend operator fun invoke(
+        conversationId: String?,
+        query: String,
+        limit: Int,
+        offset: Int
+    ): Either<CoreFailure, List<CellFile>> {
 
         // Collect all data required to show the file
         val userNames = usersRepository.getUserNames().getOrElse(emptyList())
@@ -55,30 +66,19 @@ internal class GetCellFilesUseCaseImpl(
         val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
-        return cellsRepository.getFiles(query, limit, offset)
+        return cellsRepository.getFiles(conversationId, query, limit, offset)
             .flatMap { nodes ->
                 nodes.asSequence()
                     .filterNot { it.isDraft }
                     .map { node ->
                         val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
-                        CellFile(
-                            uuid = node.uuid,
-                            versionId = node.versionId,
-                            fileName = node.path.substringAfterLast("/"),
-                            mimeType = node.mimeType ?: "",
-                            remotePath = node.path,
-                            contentHash = node.contentHash,
-                            contentUrl = node.contentUrl,
+                        node.toFileModel().copy(
                             localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
-                            previewUrl = node.previews.maxByOrNull { it.dimension }?.url,
-                            assetSize = node.size,
                             metadata = attachment?.metadata,
                             userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
                             conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                            publicLinkId = node.publicLinkId,
                         )
-                    }
-                    .toList().right()
+                    }.toList().right()
             }
     }
 }
