@@ -127,7 +127,7 @@ class EventDataSource(
                         }
 
                         is WebSocketEvent.BinaryPayloadReceived -> {
-                            val events = eventMapper.fromDTO(webSocketEvent.payload, true)
+                            val events = eventMapper.fromDTO(webSocketEvent.payload)
                             events.forEach { eventEnvelope ->
                                 emit(WebSocketEvent.BinaryPayloadReceived(eventEnvelope))
                             }
