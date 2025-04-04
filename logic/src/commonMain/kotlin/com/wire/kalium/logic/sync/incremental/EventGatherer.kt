@@ -154,7 +154,7 @@ internal class EventGathererImpl(
         logger.i("Websocket Open")
         handleTimeDrift()
         eventRepository
-            .pendingEvents()
+            .pendingEvents() // todo (ym) workaround this, since we probably won't have this pending events endpoint anymore.
             .onEach { result ->
                 result.onFailure(::throwPendingEventException)
             }

@@ -82,13 +82,15 @@ class EventMapper(
         } ?: listOf()
     }
 
-    // todo (ym) dubious, map correctly, delivery tags, maybe EventEnvelope needs extension.
-    fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse, isLive: Boolean): List<EventEnvelope> {
+    // todo (ym) check if this is the final correctly mapping in the final version.
+    fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse): List<EventEnvelope> {
         val deliveryTag = consumableNotificationResponse.data?.deliveryTag ?: ULong.MIN_VALUE
-        val source = if (isLive) EventSource.LIVE else EventSource.PENDING
         val event = consumableNotificationResponse.data?.event
         return event?.payload?.map { eventContentDTO ->
-            EventEnvelope(fromEventContentDTO(event.id, eventContentDTO), EventDeliveryInfo.AsyncEventDeliveryInfo(deliveryTag, source))
+            EventEnvelope(
+                event = fromEventContentDTO(id = event.id, eventContentDTO = eventContentDTO),
+                deliveryInfo = EventDeliveryInfo.AsyncEventDeliveryInfo(deliveryTag = deliveryTag, source = EventSource.LIVE)
+            )
         } ?: listOf()
     }
 
@@ -200,6 +202,7 @@ class EventMapper(
         protocol = eventContentDTO.data.protocol.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
+
     private fun conversationChannelPermissionUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ChannelAddPermissionUpdate,
