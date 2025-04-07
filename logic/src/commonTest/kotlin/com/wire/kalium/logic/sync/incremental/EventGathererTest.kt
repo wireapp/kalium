@@ -90,9 +90,9 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpens_whenGathering_thenShouldSkipFetchPendingEventsIfNewSystemIsUsed() = runTest {
+    fun givenWebSocketOpens_whenGatheringFromNewAsyncNotifications_thenShouldSkipFetchPendingEvents() = runTest {
+        // given
         val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
-
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning("lastEventId".right())
             .withPendingEventsReturning(emptyFlow())
@@ -105,7 +105,7 @@ class EventGathererTest {
                 arrangement.eventRepository.pendingEvents()
             }.wasNotInvoked()
 
-            // Open Websocket should trigger fetching pending events
+            // when
             liveEventsChannel.send(WebSocketEvent.Open(shouldProcessPendingEvents = false))
 
             advanceUntilIdle()
