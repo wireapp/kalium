@@ -209,7 +209,6 @@ detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = 
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 
 # misc
-pbandk-runtime-iosX64 = { module = "pro.streem.pbandk:pbandk-runtime-iosx64", version.ref = "pbandk" }
 pbandk-runtime-iosArm64 = { module = "pro.streem.pbandk:pbandk-runtime-iosarm64", version.ref = "pbandk" }
 pbandk-runtime-iosSimulatorArm64 = { module = "pro.streem.pbandk:pbandk-runtime-iossimulatorarm64", version.ref = "pbandk" }
 pbandk-runtime-macX64 = { module = "pro.streem.pbandk:pbandk-runtime-macosx64", version.ref = "pbandk" }

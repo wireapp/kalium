@@ -35,7 +35,7 @@ jobs:
             GITHUB_USER: ${{ github.actor }}
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            ./gradlew :samples:compileKotlinIosX64
+            ./gradlew :samples:compileKotlinIosArm64
 
       - name: iOS Tests
         run: ./gradlew iOSOnlyAffectedTest
