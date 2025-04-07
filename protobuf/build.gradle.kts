@@ -54,11 +54,11 @@ kotlin {
                 implementation(libs.androidtest.rules)
             }
         }
-        val iosX64Main by getting {
-            dependencies {
-                api(libs.pbandk.runtime.iosX64)
-            }
-        }
+//         val iosX64Main by getting {
+//             dependencies {
+//                 api(libs.pbandk.runtime.iosX64)
+//             }
+//         }
         val iosArm64Main by getting {
             dependencies {
                 api(libs.pbandk.runtime.iosArm64)

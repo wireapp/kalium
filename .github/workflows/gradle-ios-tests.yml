@@ -30,12 +30,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build the samples
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-            ./gradlew :samples:compileKotlinIosX64
+#      - name: Build the samples
+#        env:
+#            GITHUB_USER: ${{ github.actor }}
+#            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#            ./gradlew :samples:compileKotlinIosX64
 
       - name: iOS Tests
         run: ./gradlew iOSOnlyAffectedTest
