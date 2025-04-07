@@ -36,8 +36,10 @@ import com.wire.kalium.network.api.base.authenticated.notification.NotificationA
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
@@ -90,7 +92,8 @@ class EventDataSource(
     private val metadataDAO: MetadataDAO,
     private val currentClientId: CurrentClientIdProvider,
     private val selfUserId: UserId,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId)
+    private val clientRegistrationStorage: ClientRegistrationStorage,
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
@@ -99,13 +102,11 @@ class EventDataSource(
 
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>> =
         currentClientId().flatMap { clientId ->
-            // todo(ym) check if it has consumable notifications is available for the client
-            // todo(ym) also cache this capabilities value?
-            val hasConsumableNotifications = false // check
-            if (hasConsumableNotifications) {
-                liveEventsFlow(clientId)
-            } else {
+            val hasConsumableNotifications = clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull()
+            if (hasConsumableNotifications == true) {
                 consumeLiveEventsFlow(clientId)
+            } else {
+                liveEventsFlow(clientId)
             }
         }
 

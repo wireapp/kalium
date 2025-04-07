@@ -20,22 +20,25 @@ package com.wire.kalium.logic.data.event
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
+import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
@@ -46,6 +49,8 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -56,6 +61,52 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class EventRepositoryTest {
+
+    @Test
+    fun givenLiveEvents_whenGettingLiveEvents_thenReturnFromListenLiveEvents() = runTest {
+        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
+            qualifiedConversation = TestConversation.NETWORK_ID,
+            qualifiedFrom = UserId("value", "domain"),
+            time = Instant.UNIX_FIRST_DATE,
+            data = MessageEventData("text", "senderId", "recipient")
+        )
+        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
+
+        val (arrangement, eventRepository) = Arrangement()
+            .withClientHasConsumableNotifications(hasConsumableNotifications = false)
+            .withLastStoredEventId("someNotificationId")
+            .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
+            .withListenLiveEventsReturning(NetworkResponse.Success(flowOf(), mapOf(), 200))
+            .arrange()
+
+        eventRepository.liveEvents()
+        coVerify { arrangement.notificationApi.listenToLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenLiveEvents_whenGettingLiveEventsWithConsumableNotifications_thenReturnFromNewApiConsumeLiveEvents() = runTest {
+        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
+            qualifiedConversation = TestConversation.NETWORK_ID,
+            qualifiedFrom = UserId("value", "domain"),
+            time = Instant.UNIX_FIRST_DATE,
+            data = MessageEventData("text", "senderId", "recipient")
+        )
+        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
+
+        val (arrangement, eventRepository) = Arrangement()
+            .withClientHasConsumableNotifications(hasConsumableNotifications = true)
+            .withLastStoredEventId("someNotificationId")
+            .withConsumeLiveEventsReturning(NetworkResponse.Success(flowOf(), mapOf(), 200))
+            .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
+            .arrange()
+
+        eventRepository.liveEvents()
+        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+            .wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
@@ -178,14 +229,30 @@ class EventRepositoryTest {
         val metaDAO = mock(MetadataDAO::class)
 
         @Mock
+        val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
+
+        @Mock
         val clientIdProvider = mock(CurrentClientIdProvider::class)
 
-        private val eventRepository: EventRepository = EventDataSource(notificationApi, metaDAO, clientIdProvider, TestUser.SELF.id)
+        private val eventRepository: EventRepository = EventDataSource(
+            notificationApi,
+            metaDAO,
+            clientIdProvider,
+            TestUser.SELF.id,
+            clientRegistrationStorage
+        )
 
         init {
             runBlocking {
                 withCurrentClientIdReturning(TestClient.CLIENT_ID)
+                withClientHasConsumableNotifications()
             }
+        }
+
+        suspend fun withClientHasConsumableNotifications(hasConsumableNotifications: Boolean = false) = apply {
+            coEvery {
+                clientRegistrationStorage.observeHasConsumableNotifications()
+            }.returns(flowOf(hasConsumableNotifications))
         }
 
         suspend fun withLastStoredEventId(value: String?) = apply {
@@ -216,6 +283,18 @@ class EventRepositoryTest {
             coEvery {
                 clientIdProvider.invoke()
             }.returns(Either.Right(clientId))
+        }
+
+        suspend fun withConsumeLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>) = apply {
+            coEvery {
+                notificationApi.consumeLiveEvents(any())
+            }.returns(result)
+        }
+
+        suspend fun withListenLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<EventResponse>>>) = apply {
+            coEvery {
+                notificationApi.listenToLiveEvents(any())
+            }.returns(result)
         }
 
         inline fun arrange(): Pair<Arrangement, EventRepository> {
