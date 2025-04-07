@@ -65,9 +65,14 @@ internal class CellAttachmentsDataSource(
         }
     }
 
-    override suspend fun saveContentUrlAndHash(assetId: String, contentUrl: String?, hash: String?) = withContext(dispatchers.io) {
+    override suspend fun updateAttachment(
+        assetId: String,
+        contentUrl: String?,
+        hash: String?,
+        remotePath: String,
+    ) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            messageAttachments.setContentUrlAndHash(assetId, contentUrl, hash)
+            messageAttachments.updateAttachment(assetId, contentUrl, hash, remotePath)
         }
     }
 
