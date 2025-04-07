@@ -403,8 +403,9 @@ internal class MLSConversationDataSource(
                     eventContentDTO
                 )
             if (event is Event.Conversation) {
-                commitBundleEventReceiver.onEvent(event,
-                    EventDeliveryInfo.LegacyEventDeliveryInfo(isTransient = true, source = EventSource.LIVE)
+                commitBundleEventReceiver.onEvent(
+                    event = event,
+                    deliveryInfo = EventDeliveryInfo.LegacyEventDeliveryInfo(isTransient = true, source = EventSource.LIVE)
                 )
             }
         }

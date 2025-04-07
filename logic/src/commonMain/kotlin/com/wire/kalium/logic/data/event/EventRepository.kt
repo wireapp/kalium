@@ -115,7 +115,7 @@ class EventDataSource(
                 webSocketEventFlow.collect { webSocketEvent ->
                     when (webSocketEvent) {
                         is WebSocketEvent.Open -> {
-                            emit(WebSocketEvent.Open())
+                            emit(WebSocketEvent.Open(shouldProcessPendingEvents = false))
                         }
 
                         is WebSocketEvent.NonBinaryPayloadReceived -> {

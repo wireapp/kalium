@@ -79,6 +79,7 @@ internal class EventGathererImpl(
 ) : EventGatherer {
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
+
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
@@ -111,7 +112,7 @@ internal class EventGathererImpl(
     private suspend fun FlowCollector<EventEnvelope>.handleWebsocketEvent(
         webSocketEvent: WebSocketEvent<EventEnvelope>
     ) = when (webSocketEvent) {
-        is WebSocketEvent.Open -> onWebSocketOpen()
+        is WebSocketEvent.Open -> onWebSocketOpen(webSocketEvent.shouldProcessPendingEvents)
         is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
         is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
@@ -150,22 +151,26 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen() {
+    private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen(shouldProcessPendingEvents: Boolean) {
         logger.i("Websocket Open")
         handleTimeDrift()
-        eventRepository
-            .pendingEvents() // todo (ym) workaround this, since we probably won't have this pending events endpoint anymore.
-            .onEach { result ->
-                result.onFailure(::throwPendingEventException)
-            }
-            .filterIsInstance<Either.Right<EventEnvelope>>()
-            .map { offlineEvent -> offlineEvent.value }
-            .collect {
-                logger.i("Collecting offline event: ${it.event.id.obfuscateId()}")
-                offlineEventBuffer.add(it.event)
-                emit(it)
-            }
-        logger.i("Offline events collection finished. Collecting Live events.")
+        if (shouldProcessPendingEvents) {
+            eventRepository
+                .pendingEvents()
+                .onEach { result ->
+                    result.onFailure(::throwPendingEventException)
+                }
+                .filterIsInstance<Either.Right<EventEnvelope>>()
+                .map { offlineEvent -> offlineEvent.value }
+                .collect {
+                    logger.i("Collecting offline event: ${it.event.id.obfuscateId()}")
+                    offlineEventBuffer.add(it.event)
+                    emit(it)
+                }
+            logger.i("Offline events collection finished. Collecting Live events.")
+        } else {
+            logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
+        }
         _currentSource.value = EventSource.LIVE
     }
 
