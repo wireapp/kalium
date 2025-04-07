@@ -158,21 +158,21 @@ internal class ConversationDAOImpl internal constructor(
                 lastNotificationDate,
                 access,
                 accessRole,
-                lastReadDate,
+                last_read_date = lastReadDate,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.keyingMaterialLastUpdate
                 else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.cipherSuite
+                mls_cipher_suite = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
-                receiptMode,
-                messageTimer,
-                userMessageTimer,
-                hasIncompleteMetadata,
-                archived,
-                archivedInstant,
-                isChannel,
-                channelAccess,
-                channelAddPermission,
-                wireCell,
+                receipt_mode = receiptMode,
+                message_timer = messageTimer,
+                user_message_timer = userMessageTimer,
+                incomplete_metadata = hasIncompleteMetadata,
+                archived = archived,
+                archived_date_time = archivedInstant,
+                is_channel = isChannel,
+                channel_access = channelAccess,
+                channel_add_permission = channelAddPermission,
+                wire_cell = wireCell,
             )
         }
     }
