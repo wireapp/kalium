@@ -64,6 +64,7 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPe
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -1040,7 +1041,7 @@ internal class ConversationDataSource internal constructor(
     ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
         conversationApi.updateChannelAddPermission(
             conversationId = conversationId.toApi(),
-            channelAddPermission = channelAddPermission.toApi()
+            channelAddPermission = ChannelAddPermissionDTO(channelAddPermission.toApi())
         )
     }
 

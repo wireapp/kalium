@@ -47,7 +47,6 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -75,6 +74,7 @@ interface ConversationMapper {
         selfUserTeamId: TeamId?,
         wireCellEnabled: Boolean = false,
     ): ConversationEntity
+
     fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
@@ -154,7 +154,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL,
             channelAccess = null, // TODO: implement when api is ready
-            channelAddPermission = null, // TODO: implement when api is ready
+            channelAddPermission = apiModel.channelAddUserPermissionTypeDTO?.toDAO(),
             wireCell = conversationId.toString().takeIf { wireCellEnabled },
         )
     }
@@ -429,7 +429,8 @@ internal class ConversationMapperImpl(
         conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
         protocol = toApiModel(options.protocol),
         creatorClient = options.creatorClientId?.value,
-        groupConversationType = options.groupType.toApiModel()
+        groupConversationType = options.groupType.toApiModel(),
+        channelAddPermissionTypeDTO = options.channelAddPermission.toApi()
     )
 
     private fun ConversationOptions.GroupType.toApiModel(): GroupConversationType = when (this) {
@@ -732,9 +733,14 @@ internal fun ChannelAddPermissionTypeDTO.toModel(): ChannelAddPermission = when 
     ChannelAddPermissionTypeDTO.EVERYONE -> ChannelAddPermission.EVERYONE
 }
 
-internal fun ChannelAddPermission.toApi(): ChannelAddPermissionDTO = when (this) {
-    ChannelAddPermission.ADMINS -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.ADMINS)
-    ChannelAddPermission.EVERYONE -> ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.EVERYONE)
+internal fun ChannelAddPermission.toApi(): ChannelAddPermissionTypeDTO = when (this) {
+    ChannelAddPermission.ADMINS -> ChannelAddPermissionTypeDTO.ADMINS
+    ChannelAddPermission.EVERYONE -> ChannelAddPermissionTypeDTO.EVERYONE
+}
+
+private fun ChannelAddPermissionTypeDTO.toDAO(): ConversationEntity.ChannelAddPermission = when (this) {
+    ChannelAddPermissionTypeDTO.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
+    ChannelAddPermissionTypeDTO.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
 }
 
 internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
