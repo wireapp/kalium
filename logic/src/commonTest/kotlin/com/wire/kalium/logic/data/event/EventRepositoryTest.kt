@@ -64,19 +64,9 @@ class EventRepositoryTest {
 
     @Test
     fun givenLiveEvents_whenGettingLiveEvents_thenReturnFromListenLiveEvents() = runTest {
-        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = UserId("value", "domain"),
-            time = Instant.UNIX_FIRST_DATE,
-            data = MessageEventData("text", "senderId", "recipient")
-        )
-        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
-        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
-
         val (arrangement, eventRepository) = Arrangement()
             .withClientHasConsumableNotifications(hasConsumableNotifications = false)
             .withLastStoredEventId("someNotificationId")
-            .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
             .withListenLiveEventsReturning(NetworkResponse.Success(flowOf(), mapOf(), 200))
             .arrange()
 
@@ -87,20 +77,10 @@ class EventRepositoryTest {
 
     @Test
     fun givenLiveEvents_whenGettingLiveEventsWithConsumableNotifications_thenReturnFromNewApiConsumeLiveEvents() = runTest {
-        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = UserId("value", "domain"),
-            time = Instant.UNIX_FIRST_DATE,
-            data = MessageEventData("text", "senderId", "recipient")
-        )
-        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
-        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
-
         val (arrangement, eventRepository) = Arrangement()
             .withClientHasConsumableNotifications(hasConsumableNotifications = true)
             .withLastStoredEventId("someNotificationId")
             .withConsumeLiveEventsReturning(NetworkResponse.Success(flowOf(), mapOf(), 200))
-            .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
             .arrange()
 
         eventRepository.liveEvents()
