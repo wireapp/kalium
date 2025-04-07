@@ -121,38 +121,38 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
 
     private suspend fun refreshLocalData(node: CellNode) {
 
-        val attachment = attachmentsRepository.getAttachment(node.uuid).getOrNull() as? CellAssetContent
+        val attachment = attachmentsRepository
+            .getAttachment(node.uuid).getOrNull() as? CellAssetContent
+            ?: return
 
-        attachment?.let {
-            var localPath = attachment.localPath
+        var localPath = attachment.localPath
 
-            // Check if asset was updated
-            if (attachment.contentHash != node.contentHash) {
-                localPath?.let { fileSystem.delete(it.toPath()) }
+        // Check if asset was updated
+        if (attachment.contentHash != node.contentHash) {
+            localPath?.let { fileSystem.delete(it.toPath()) }
+            attachmentsRepository.saveLocalPath(attachment.id, null)
+            localPath = null
+        }
+
+        // Check if local file is still available
+        localPath?.toPath()?.let {
+            if (!fileSystem.exists(it)) {
                 attachmentsRepository.saveLocalPath(attachment.id, null)
                 localPath = null
             }
+        }
 
-            // Check if local file is still available
-            localPath?.toPath()?.let {
-                if (!fileSystem.exists(it)) {
-                    attachmentsRepository.saveLocalPath(attachment.id, null)
-                    localPath = null
-                }
-            }
+        attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
 
-            attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
+        // TODO: WPB-16946 Update remote file path
 
-            // TODO: WPB-16946 Update remote file path
-
-            // Update transfer status for attachments previously marked as NOT_FOUND
-            // This happens after we regain access to the file
-            if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
-                if (localPath == null) {
-                    attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
-                } else {
-                    attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
-                }
+        // Update transfer status for attachments previously marked as NOT_FOUND
+        // This happens after we regain access to the file
+        if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
+            if (localPath == null) {
+                attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
+            } else {
+                attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
             }
         }
     }
