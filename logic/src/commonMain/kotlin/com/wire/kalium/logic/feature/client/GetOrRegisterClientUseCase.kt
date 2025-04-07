@@ -102,7 +102,6 @@ internal class GetOrRegisterClientUseCaseImpl(
         kaliumLogger.i("Upgrade current session for client ${clientId.value.obfuscateId()}")
         upgradeCurrentSessionUseCase(clientId).flatMap {
             kaliumLogger.i("Persist client ${clientId.value.obfuscateId()}")
-            // todo (ym) also persist the capability in metadata [isConsumableNotificationsAble]...
             clientRepository.persistClientId(clientId)
             clientRepository.persistClientHasConsumableNotifications(isConsumableNotificationsCapable)
         }

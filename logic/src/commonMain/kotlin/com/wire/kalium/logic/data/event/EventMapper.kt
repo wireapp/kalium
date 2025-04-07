@@ -82,7 +82,6 @@ class EventMapper(
         } ?: listOf()
     }
 
-    // todo (ym) check if this is the final correctly mapping in the final version.
     fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse): List<EventEnvelope> {
         val deliveryTag = consumableNotificationResponse.data?.deliveryTag ?: ULong.MIN_VALUE
         val event = consumableNotificationResponse.data?.event
