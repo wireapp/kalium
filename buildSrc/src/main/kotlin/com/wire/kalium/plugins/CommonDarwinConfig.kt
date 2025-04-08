@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 fun Project.appleTargets(): List<String> =
     listOf(
-//         "iosX64", // revert me:
+        "iosX64",
         "iosArm64",
         "iosSimulatorArm64",
         "macosX64",
@@ -31,7 +31,7 @@ fun Project.appleTargets(): List<String> =
     )
 
 fun KotlinMultiplatformExtension.commonAppleMultiplatformConfig() {
-//     iosX64()
+    iosX64()
     iosArm64()
     iosSimulatorArm64()
     macosX64()

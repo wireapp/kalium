@@ -43,13 +43,7 @@ kotlin {
     // This way we need to think before putting "public" in things, and we can be reminded by the compiler to use "internal" more often
     explicitApi()
     val xcf = XCFramework()
-    val appleTargets = listOf(
-//         iosX64(),
-        iosArm64(),
-        iosSimulatorArm64(),
-        macosArm64(),
-        macosX64()
-    )
+    val appleTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64(), macosArm64(), macosX64())
     appleTargets.forEach {
         it.binaries.framework {
             baseName = "backup"
@@ -121,11 +115,11 @@ kotlin {
         val appleTest by getting {
             dependsOn(nonJsTest)
         }
-//         val iosX64Main by getting {
-//             dependencies {
-//                 implementation(libs.pbandk.runtime.iosX64)
-//             }
-//         }
+        val iosX64Main by getting {
+            dependencies {
+                implementation(libs.pbandk.runtime.iosX64)
+            }
+        }
         val iosArm64Main by getting {
             dependencies {
                 implementation(libs.pbandk.runtime.iosArm64)
