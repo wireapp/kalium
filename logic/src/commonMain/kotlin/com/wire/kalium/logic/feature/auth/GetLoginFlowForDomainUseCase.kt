@@ -19,14 +19,20 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isEnterpriseServiceNotEnabled
 
 /**
  * Use case to get the login flow for the client app/user to follow.
@@ -46,22 +52,24 @@ internal fun GetLoginFlowForDomainUseCase(
 ) = object : GetLoginFlowForDomainUseCase {
     override suspend fun invoke(email: String): EnterpriseLoginResult {
         logger.d("Get domain registration")
-        return loginRepository.getDomainRegistration(email).fold({
-            val failure = it.mapFailure()
-            logger.logStructuredJson(
-                level = KaliumLogLevel.ERROR,
-                leadingMessage = "Get domain registration",
-                jsonStringKeyValues = mapOf("error" to failure.toLogString())
-            )
-            failure
-        }, {
-            logger.logStructuredJson(
-                level = KaliumLogLevel.DEBUG,
-                leadingMessage = "Get domain registration",
-                jsonStringKeyValues = mapOf("path" to it.toLogString())
-            )
-            it.mapLoginPathToResult()
-        })
+        return loginRepository.getDomainRegistration(email)
+            .handleEnterpriseServiceNotEnabled()
+            .fold({
+                val failure = it.mapFailure()
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "Get domain registration",
+                    jsonStringKeyValues = mapOf("error" to failure.toLogString())
+                )
+                failure
+            }, {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.DEBUG,
+                    leadingMessage = "Get domain registration",
+                    jsonStringKeyValues = mapOf("path" to it.toLogString())
+                )
+                it.mapLoginPathToResult()
+            })
     }
 
     private suspend fun LoginDomainPath.mapLoginPathToResult(): EnterpriseLoginResult {
@@ -76,11 +84,35 @@ internal fun GetLoginFlowForDomainUseCase(
                     .flatMap {
                         customServerConfigRepository.fetchRemoteConfig(it.configJsonUrl)
                     }.fold({
-                        it.mapFailure()
+                        it.mapFailure().also {
+                            logger.logStructuredJson(
+                                level = KaliumLogLevel.ERROR,
+                                leadingMessage = "Fetch domain redirect custom backend config",
+                                jsonStringKeyValues = mapOf("error" to it.toLogString())
+                            )
+                        }
                     }, {
                         EnterpriseLoginResult.Success(mapper.fromModelToCustomBackendResult(this, it))
                     })
             }
+        }
+    }
+
+    private fun Either<NetworkFailure, LoginDomainPath>.handleEnterpriseServiceNotEnabled() = this.flatMapLeft {
+        if (it is NetworkFailure.ServerMiscommunication
+            && it.kaliumException is KaliumException.ServerError
+            && (it.kaliumException as KaliumException.ServerError).isEnterpriseServiceNotEnabled()
+        ) {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.DEBUG,
+                leadingMessage = "Get domain registration",
+                jsonStringKeyValues = mapOf("error" to "EnterpriseServiceNotEnabled")
+            )
+            // if enterprise service is not enabled, the app should treat it as "no-registration" and continue
+            LoginDomainPath.NoRegistration.right()
+
+        } else {
+            it.left()
         }
     }
 
