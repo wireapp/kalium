@@ -68,7 +68,7 @@ benchmark = "0.4.10"
 jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.48.0.0"
-kotlinx-io = "0.5.3"
+kotlinx-io = "0.7.0"
 cells-sdk = "0.1.1-alpha07"
 
 [plugins]
