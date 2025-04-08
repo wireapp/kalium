@@ -26,6 +26,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -93,6 +95,19 @@ class GetLoginFlowForDomainUseCaseTest {
             result,
             EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY))
         )
+    }
+
+    @Test
+    fun givenEmail_whenInvokedAndErrorBecauseOfEnterpriseServiceNotEnabled_thenReturnSuccessNoRegistration() = runTest {
+        val enterpriseServiceNotEnabledError = KaliumException.ServerError(ErrorResponse(503, "", "enterprise-service-not-enabled"))
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(NetworkFailure.ServerMiscommunication(enterpriseServiceNotEnabledError).left())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(result, EnterpriseLoginResult.Success(LoginRedirectPath.NoRegistration))
     }
 
     private class Arrangement {
