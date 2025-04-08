@@ -912,18 +912,19 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun deleteConversation(conversationId: ConversationId) =
-        getConversationProtocolInfo(conversationId).flatMap {
-            when (it) {
-                is Conversation.ProtocolInfo.MLSCapable ->
-                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapMLSRequest {
-                            mlsClient.wipeConversation(it.groupId.toCrypto())
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+        getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
+            when (protocolInfo) {
+                is Conversation.ProtocolInfo.MLSCapable -> {
+                    wrapStorageRequest {
+                        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+                    }.onSuccess {
+                        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                            wrapMLSRequest {
+                                mlsClient.wipeConversation(protocolInfo.groupId.toCrypto())
+                            }
                         }
                     }
+                }
 
                 is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
                     conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
