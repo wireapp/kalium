@@ -18,8 +18,8 @@
 package com.wire.kalium.cryptography
 
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -35,7 +35,14 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
-        return createMLSClient(user.qualifiedClientId, ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITE, mlsTransporter)
+        return createMLSClient(
+            user.qualifiedClientId,
+            ALLOWED_CIPHER_SUITES,
+            DEFAULT_CIPHER_SUITE,
+            mlsTransporter,
+            epochObserver,
+            TestScope()
+        )
             .e2eiNewActivationEnrollment(user.name, user.handle, user.teamId, 90.days)
     }
 
@@ -111,7 +118,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId, mlsTransporter)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -129,7 +136,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId, mlsTransporter)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -148,7 +155,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId, mlsTransporter)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -354,6 +361,12 @@ class E2EIClientTest : BaseMLSClientTest() {
 
         override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
             return MlsTransportResponse.Success
+        }
+    }
+
+    private val epochObserver = object : MLSEpochObserver {
+        override suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong) {
+
         }
     }
 }

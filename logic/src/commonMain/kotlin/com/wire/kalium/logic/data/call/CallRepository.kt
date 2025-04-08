@@ -680,10 +680,13 @@ internal class CallDataSource(
             }
     }
 
-    private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =
+    private suspend fun createEpochInfo(
+        parentGroupID: GroupID,
+        epoch: ULong,
+        subconversationGroupID: GroupID
+    ): Either<CoreFailure, EpochInfo> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
-                val epoch = mlsClient.conversationEpoch(subconversationGroupID.toCrypto())
                 val secret = mlsClient.deriveSecret(subconversationGroupID.toCrypto(), 32u)
                 val conversationMembers = mlsClient.members(parentGroupID.toCrypto())
                 val subconversationMembers = mlsClient.members(subconversationGroupID.toCrypto())
@@ -721,12 +724,12 @@ internal class CallDataSource(
                     conversationId,
                     CALL_SUBCONVERSATION_ID
                 )?.let { subconversationGroupId ->
-                    createEpochInfo(protocolInfo.groupId, subconversationGroupId).map { initialEpochInfo ->
+                    createEpochInfo(protocolInfo.groupId, protocolInfo.epoch, subconversationGroupId).map { initialEpochInfo ->
                         flowOf(
                             flowOf(initialEpochInfo),
                             epochChangesObserver.observe()
-                                .filter { it == protocolInfo.groupId || it == subconversationGroupId }
-                                .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
+                                .filter { it.groupId == protocolInfo.groupId || it.groupId == subconversationGroupId }
+                                .mapNotNull { createEpochInfo(protocolInfo.groupId, it.epoch, subconversationGroupId).getOrNull() }
                         ).flattenConcat()
                     }
                 } ?: Either.Left(CoreFailure.NotSupportedByProteus)

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,24 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.cryptography
 
-import platform.Foundation.NSTemporaryDirectory
-import platform.Foundation.NSURL
+interface MLSEpochObserver {
 
-actual open class BaseProteusClientTest actual constructor() {
-
-    actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
-        val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "proteus/${userId.value}", isDirectory = true)
-        return ProteusStoreRef(rootDir.path!!)
-    }
-
-    actual suspend fun createProteusClient(
-        proteusStore: ProteusStoreRef,
-        databaseKey: ProteusDBSecret?
-    ): ProteusClient {
-        return coreCryptoCentral(proteusStore.value, "secret").proteusClient()
-    }
-
+    suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong)
 }

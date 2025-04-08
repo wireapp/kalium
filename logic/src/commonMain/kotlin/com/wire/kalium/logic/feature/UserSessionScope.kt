@@ -73,6 +73,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
@@ -104,7 +105,6 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
@@ -557,8 +557,6 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val epochsFlow = MutableSharedFlow<GroupID>()
-
     private val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
 
     // TODO(refactor): Extract to Provider class and make atomic
@@ -581,6 +579,8 @@ class UserSessionScope internal constructor(
     }
 
     private val selfTeamId = SelfTeamIdProvider { teamId() }
+
+    private val epochChangesObserver: EpochChangesObserver = EpochChangesObserverImpl()
 
     private val accessTokenRepository: AccessTokenRepository
         get() = AccessTokenRepositoryImpl(
@@ -667,7 +667,7 @@ class UserSessionScope internal constructor(
 
     private val mlsTransportProvider: MLSTransportProvider by lazy {
         MLSTransportProviderImpl(
-           selfUserId = userId,
+            selfUserId = userId,
             mlsMessageApi = authenticatedNetworkContainer.mlsMessageApi,
             localEventRepository = localEventRepository
         )
@@ -682,6 +682,7 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository,
             featureConfigRepository = featureConfigRepository,
             mlsTransportProvider = mlsTransportProvider,
+            epochObserver = epochChangesObserver
         )
     }
 
@@ -704,7 +705,6 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.clientApi,
             mlsPublicKeysRepository,
-            epochsFlow,
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
@@ -2195,8 +2195,6 @@ class UserSessionScope internal constructor(
     private fun createPushTokenUpdater() = PushTokenUpdater(
         clientRepository, notificationTokenRepository, pushTokenRepository
     )
-
-    private val epochChangesObserver by lazy { EpochChangesObserverImpl(epochsFlow) }
 
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
         FetchMLSVerificationStatusUseCaseImpl(
