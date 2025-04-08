@@ -40,21 +40,37 @@ import com.wire.kalium.util.DateTimeUtil
  * and return one [ConversationCreationResult].
  */
 @Suppress("LongParameterList")
-class GroupConversationCreator internal constructor(
-    private val conversationRepository: ConversationRepository,
-    private val conversationGroupRepository: ConversationGroupRepository,
-    private val syncManager: SyncManager,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
-    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-) {
+interface GroupConversationCreator {
 
     /**
      * @param name the name of the conversation
      * @param userIdList list of members
      * @param options settings that customise the conversation
      */
-    suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): ConversationCreationResult =
+    suspend operator fun invoke(
+        name: String,
+        userIdList: List<UserId>,
+        options: ConversationOptions
+    ): ConversationCreationResult
+}
+
+/**
+ * Implementation of [GroupConversationCreator].
+ */
+internal class GroupConversationCreatorImpl(
+    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
+    private val syncManager: SyncManager,
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+) : GroupConversationCreator {
+
+    override suspend fun invoke(
+        name: String,
+        userIdList: List<UserId>,
+        options: ConversationOptions
+    ): ConversationCreationResult =
         syncManager.waitUntilLiveOrFailure().flatMap {
             currentClientIdProvider()
         }.flatMap { clientId ->

@@ -101,6 +101,9 @@ data class ConversationResponse(
     @SerialName("group_conv_type")
     val conversationGroupType: GroupType? = null,
 
+    @SerialName("add_permission")
+    val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null,
+
     /**
      * Status of the wire cell for conversation: disabled, pending, ready
      * Since API V8
