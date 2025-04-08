@@ -127,7 +127,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     enum class TestTaskConfiguration(val taskName: String, val testTarget: String) {
         ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest"),
         ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testDebugUnitTest"),
-//         IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test")
+        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test")
     }
 
 }
