@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 /*
@@ -48,6 +49,11 @@ kotlin {
         it.binaries.framework {
             baseName = "WireBackup"
             xcf.add(this)
+        }
+    }
+    targets.withType<KotlinNativeTarget> {
+        compilations.all {
+            kotlinOptions.freeCompilerArgs += "-Xexport-kdoc"
         }
     }
     js {
