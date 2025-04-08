@@ -192,7 +192,7 @@ class CallMapperImpl(
 
     private fun toConversationEntityType(conversationType: Conversation.Type): ConversationEntity.Type = when (conversationType) {
         Conversation.Type.Group.Regular -> ConversationEntity.Type.GROUP
-        Conversation.Type.Group.Channel -> TODO("Channels are not stored in DB yet")
+        Conversation.Type.Group.Channel -> ConversationEntity.Type.GROUP
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
