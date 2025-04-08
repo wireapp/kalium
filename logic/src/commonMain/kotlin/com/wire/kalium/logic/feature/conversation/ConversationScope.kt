@@ -53,8 +53,10 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateChannelUseCase
-import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
+import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
@@ -84,10 +86,10 @@ import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTime
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
@@ -187,7 +189,7 @@ class ConversationScope internal constructor(
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
 
     internal val createGroupConversation: GroupConversationCreator
-        get() = GroupConversationCreator(
+        get() = GroupConversationCreatorImpl(
             conversationRepository,
             conversationGroupRepository,
             syncManager,
@@ -197,7 +199,7 @@ class ConversationScope internal constructor(
         )
 
     val createRegularGroup: CreateRegularGroupUseCase
-        get() = CreateRegularGroupUseCase(createGroupConversation)
+        get() = CreateRegularGroupUseCaseImpl(createGroupConversation)
 
     val createChannel: CreateChannelUseCase
         get() = CreateChannelUseCase(createGroupConversation)
