@@ -99,6 +99,9 @@ data class ConversationResponse(
      */
     @SerialName("group_conv_type")
     val conversationGroupType: GroupType? = null,
+
+    @SerialName("add_permission")
+    val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null,
 ) {
 
     @Suppress("MagicNumber")
