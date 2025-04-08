@@ -20,7 +20,7 @@ CREATE TABLE Client (
     last_active INTEGER AS Instant DEFAULT NULL,
     mls_public_keys TEXT AS Map<String, String> DEFAULT NULL,
     is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
-    is_async_notifications_capable INTEGER AS Boolean NOT NULL DEFAULT 0, -- todo (ym) add migration file
+    is_async_notifications_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
