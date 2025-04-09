@@ -48,6 +48,7 @@ import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
 
+    suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit>
     suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>
     suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
@@ -95,6 +96,11 @@ class EventDataSource(
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
 ) : EventRepository {
+
+    override suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> {
+        // todo (ym) notificationApi.acknowledgeEvents() here just do when, in case of async and skip on legacy.
+        TODO("Not yet implemented")
+    }
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>> =

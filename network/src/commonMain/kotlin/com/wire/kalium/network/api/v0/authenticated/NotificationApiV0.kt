@@ -134,6 +134,10 @@ internal open class NotificationApiV0 internal constructor(
     override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
         getApiNotSupportedError(::consumeLiveEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
 
+    override suspend fun acknowledgeEvents(clientId: String, deliveryTag: ULong) {
+        getApiNotSupportedError(::acknowledgeEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
+    }
+
     private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
         defaultClientWebSocketSession: WebSocketSession
     ) {

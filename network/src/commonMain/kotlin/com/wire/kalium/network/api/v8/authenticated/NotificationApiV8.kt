@@ -50,6 +50,17 @@ internal open class NotificationApiV8 internal constructor(
     val serverLinks: ServerConfigDTO.Links
 ) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks) {
 
+    object Notifications {
+        // todo (ym). can it be stored here a ref to the websocket session?
+    }
+
+    private var session: WebSocketSession? = null
+
+    // todo (ym): check how to keep the session alive or renew it
+    override suspend fun acknowledgeEvents(clientId: String, deliveryTag: ULong) {
+        session?.outgoing?.send(Frame.Text("ACK $deliveryTag"))
+    }
+
     override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
         mostRecentNotification(clientId).mapSuccess {
             flow {
@@ -58,11 +69,11 @@ internal open class NotificationApiV8 internal constructor(
                 //       exceptions when the backend returns 401 instead of triggering a token refresh.
                 //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
                 //       before attempting to open the websocket
-                val webSocketSession = authenticatedWebSocketClient.createWebSocketSession(clientId) {
+                session = authenticatedWebSocketClient.createWebSocketSession(clientId) {
                     setWSSUrl(Url(serverLinks.webSocket), PATH_EVENTS)
                     parameter(CLIENT_QUERY_KEY, clientId)
                 }
-                emitWebSocketEvents(webSocketSession)
+                emitWebSocketEvents(session!!)
             }
         }
 
