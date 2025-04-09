@@ -43,6 +43,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
@@ -74,7 +75,21 @@ class EventMapper(
         val id = eventResponse.id
         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
         return eventResponse.payload?.map { eventContentDTO ->
-            EventEnvelope(fromEventContentDTO(id, eventContentDTO), EventDeliveryInfo(eventResponse.transient, source))
+            EventEnvelope(
+                fromEventContentDTO(id, eventContentDTO),
+                EventDeliveryInfo.Legacy(eventResponse.transient, source)
+            )
+        } ?: listOf()
+    }
+
+    fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse): List<EventEnvelope> {
+        val deliveryTag = consumableNotificationResponse.data?.deliveryTag ?: ULong.MIN_VALUE
+        val event = consumableNotificationResponse.data?.event
+        return event?.payload?.map { eventContentDTO ->
+            EventEnvelope(
+                event = fromEventContentDTO(id = event.id, eventContentDTO = eventContentDTO),
+                deliveryInfo = EventDeliveryInfo.Async(deliveryTag = deliveryTag, source = EventSource.LIVE)
+            )
         } ?: listOf()
     }
 
@@ -186,6 +201,7 @@ class EventMapper(
         protocol = eventContentDTO.data.protocol.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
+
     private fun conversationChannelPermissionUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ChannelAddPermissionUpdate,

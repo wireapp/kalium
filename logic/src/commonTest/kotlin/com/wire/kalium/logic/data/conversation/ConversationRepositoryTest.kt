@@ -1112,6 +1112,7 @@ class ConversationRepositoryTest {
                 null,
                 null,
                 null,
+                false,
                 false
             )
         )

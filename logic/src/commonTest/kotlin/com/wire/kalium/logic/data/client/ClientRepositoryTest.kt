@@ -290,7 +290,8 @@ class ClientRepositoryTest {
                 isVerified = false,
                 isValid = true,
                 mlsPublicKeys = null,
-                isMLSCapable = false
+                isMLSCapable = false,
+                isAsyncNotificationsCapable = false
             ),
             Client(
                 id = PlainId(value = "client_id_2"),
@@ -303,7 +304,8 @@ class ClientRepositoryTest {
                 isVerified = false,
                 isValid = true,
                 mlsPublicKeys = null,
-                isMLSCapable = false
+                isMLSCapable = false,
+                isAsyncNotificationsCapable = false
             ),
         )
 
@@ -367,7 +369,8 @@ class ClientRepositoryTest {
                 isValid = true,
                 userId = userId,
                 mlsPublicKeys = null,
-                isMLSCapable = false
+                isMLSCapable = false,
+                isAsyncNotificationsCapable = false
             )
         )
 
@@ -383,7 +386,8 @@ class ClientRepositoryTest {
                 isVerified = false,
                 isValid = true,
                 mlsPublicKeys = null,
-                isMLSCapable = false
+                isMLSCapable = false,
+                isAsyncNotificationsCapable = false
             )
         )
 
@@ -445,7 +449,8 @@ class ClientRepositoryTest {
                 isValid = true,
                 userId = userId1,
                 mlsPublicKeys = null,
-                isMLSCapable = false
+                isMLSCapable = false,
+                isAsyncNotificationsCapable = false
             )
         )
         val (arrangement, clientRepository) = Arrangement()

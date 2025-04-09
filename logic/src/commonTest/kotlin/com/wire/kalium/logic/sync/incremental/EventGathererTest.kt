@@ -22,12 +22,13 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
@@ -80,6 +81,38 @@ class EventGathererTest {
                 arrangement.eventRepository.pendingEvents()
             }.wasInvoked(exactly = once)
 
+            coVerify {
+                arrangement.serverTimeHandler.computeTimeOffset(any())
+            }.wasInvoked(exactly = once)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenWebSocketOpens_whenGatheringFromNewAsyncNotifications_thenShouldSkipFetchPendingEvents() = runTest {
+        // given
+        val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
+        val (arrangement, eventGatherer) = Arrangement()
+            .withLastEventIdReturning("lastEventId".right())
+            .withPendingEventsReturning(emptyFlow())
+            .withLiveEventsReturning(liveEventsChannel.consumeAsFlow().right())
+            .withFetchServerTimeReturning("2022-03-30T15:36:00.000Z")
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
+
+            // when
+            liveEventsChannel.send(WebSocketEvent.Open(shouldProcessPendingEvents = false))
+
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
             coVerify {
                 arrangement.serverTimeHandler.computeTimeOffset(any())
             }.wasInvoked(exactly = once)

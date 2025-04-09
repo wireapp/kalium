@@ -277,9 +277,9 @@ object TestEvent {
         isTransient: Boolean = false,
         source: EventSource = EventSource.LIVE
     ): EventEnvelope {
-        return EventEnvelope(this, EventDeliveryInfo(isTransient, source))
+        return EventEnvelope(this, EventDeliveryInfo.Legacy(isTransient, source))
     }
 
-    val liveDeliveryInfo = EventDeliveryInfo(false, EventSource.LIVE)
-    val nonLiveDeliveryInfo = EventDeliveryInfo(false, EventSource.PENDING)
+    val liveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.LIVE)
+    val nonLiveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.PENDING)
 }

@@ -26,7 +26,11 @@ import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.flow.Flow
 
 sealed class WebSocketEvent<BinaryPayloadType> {
-    class Open<BinaryPayloadType> : WebSocketEvent<BinaryPayloadType>()
+    /**
+     * @property shouldProcessPendingEvents if false, the client should skip pending events, due to new async notifications.
+     * @since API v8
+     */
+    data class Open<BinaryPayloadType>(val shouldProcessPendingEvents: Boolean = true) : WebSocketEvent<BinaryPayloadType>()
 
     data class BinaryPayloadReceived<BinaryPayloadType>(val payload: BinaryPayloadType) : WebSocketEvent<BinaryPayloadType>()
 

@@ -83,14 +83,28 @@ data class EventEnvelope(
  * @property source The source of the event.
  * @see EventSource
  */
-data class EventDeliveryInfo(
-    val isTransient: Boolean,
-    val source: EventSource,
+sealed class EventDeliveryInfo(
+    open val isTransient: Boolean,
+    open val source: EventSource
 ) {
+
     fun toLogMap(): Map<String, Any?> = mapOf(
         "isTransient" to isTransient,
         "source" to source.name
     )
+
+    data class Async(
+        val deliveryTag: ULong,
+        override val source: EventSource
+    ) : EventDeliveryInfo(
+        isTransient = false, // in async events, everything needs to be ACK'ed so they are not transient
+        source = source
+    )
+
+    data class Legacy(
+        override val isTransient: Boolean,
+        override val source: EventSource,
+    ) : EventDeliveryInfo(isTransient, source)
 }
 
 /**
