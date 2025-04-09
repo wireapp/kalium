@@ -31,6 +31,7 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -42,9 +43,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -190,10 +193,50 @@ class CellUploadManagerTest {
         }
     }
 
+    @Test
+    fun given_FailedUpload_when_RetryInvoked_and_FileExists_then_UploadStarts() = runTest {
+        val (arrangement, uploadManager) = Arrangement()
+            .withPreCheckSuccess()
+            .withUploadFailed()
+            .withFileExists(assetPath)
+            .arrange()
+
+        val node = uploadManager.upload(assetPath, assetSize, destNodePath).getOrFail { error("") }
+
+        advanceTimeBy(1)
+
+        uploadManager.retryUpload(node.uuid)
+
+        advanceTimeBy(1)
+
+        coVerify {
+            arrangement.repository.uploadFile(any(), any(), any())
+        }.wasInvoked(2)
+    }
+
+    @Test
+    fun given_FailedUpload_when_RetryInvoked_and_FileMissing_then_UploadFails() = runTest {
+        val (arrangement, uploadManager) = Arrangement()
+            .withPreCheckSuccess()
+            .withUploadFailed()
+            .withFileMissing(assetPath)
+            .arrange()
+
+        val node = uploadManager.upload(assetPath, assetSize, destNodePath).getOrFail { error("") }
+
+        uploadManager.observeUpload(node.uuid)?.test {
+            skipItems(1)
+            uploadManager.retryUpload(node.uuid)
+            assertTrue { awaitItem() is CellUploadEvent.UploadError }
+        }
+    }
+
     private class Arrangement(val uploadScope: CoroutineScope) {
 
         @Mock
         val repository = mock(CellsRepository::class)
+
+        val fileSystem = FakeFileSystem()
 
         suspend fun withPreCheckFileExists(suggestedName: String) = apply {
             coEvery { repository.preCheck(any()) }.returns(PreCheckResult.FileExists(suggestedName).right())
@@ -217,9 +260,18 @@ class CellUploadManagerTest {
             )
         }
 
+        fun withFileExists(path: Path) = apply {
+            fileSystem.write(path) { "".toByteArray() }
+        }
+
+        fun withFileMissing(path: Path) = apply {
+            fileSystem.delete(path)
+        }
+
         fun arrange(cellRepo: CellsRepository = repository) = this to CellUploadManagerImpl(
             repository = cellRepo,
-            uploadScope = uploadScope
+            uploadScope = uploadScope,
+            fileSystem = fileSystem,
         )
     }
 
@@ -248,20 +300,11 @@ private class TestRepository : CellsRepository {
         size = 1000,
     ).right()
 
-    override suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit> = Unit.right()
 
-    override suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun createPublicLink(nodeUuid: String, fileName: String) = PublicLink("", "").right()
 
-    override suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, String> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getPublicLink(linkUuid: String) = "".right()
 
-    override suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit> {
-        TODO("Not yet implemented")
-    }
-
+    override suspend fun deletePublicLink(linkUuid: String) = Unit.right()
 }

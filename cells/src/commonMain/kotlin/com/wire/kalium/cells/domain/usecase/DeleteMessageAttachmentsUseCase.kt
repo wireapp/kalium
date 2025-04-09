@@ -32,6 +32,7 @@ import okio.SYSTEM
 
 /**
  * Use case to delete attachments of a message.
+ * Used when a message is deleted from conversation.
  *
  * - Removes files from Wire Cell storage.
  * - Removes local files from the device.
