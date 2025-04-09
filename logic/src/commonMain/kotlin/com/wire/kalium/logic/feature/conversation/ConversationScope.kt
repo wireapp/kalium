@@ -132,6 +132,7 @@ class ConversationScope internal constructor(
     private val serverConfigLinks: ServerConfig.Links,
     internal val messageRepository: MessageRepository,
     internal val assetRepository: AssetRepository,
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -203,14 +204,6 @@ class ConversationScope internal constructor(
 
     val createChannel: CreateChannelUseCase
         get() = CreateChannelUseCase(createGroupConversation)
-
-    internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
-        get() = NewGroupConversationSystemMessagesCreatorImpl(
-            persistMessage,
-            selfTeamIdProvider,
-            qualifiedIdMapper,
-            selfUserId
-        )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository, refreshUsersWithoutMetadata)

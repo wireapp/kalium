@@ -86,6 +86,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
@@ -767,7 +769,7 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
             userRepository,
-            lazy { conversations.newGroupConversationSystemMessagesCreator },
+            lazy { newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId,
             legalHoldHandler,
@@ -776,7 +778,7 @@ class UserSessionScope internal constructor(
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
             userStorage.database.memberDAO,
-            lazy { conversations.newGroupConversationSystemMessagesCreator }
+            lazy { newGroupConversationSystemMessagesCreator }
         )
 
     private val messageRepository: MessageRepository
@@ -1457,12 +1459,20 @@ class UserSessionScope internal constructor(
             staleEpochVerifier
         )
 
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+        get() = NewGroupConversationSystemMessagesCreatorImpl(
+            persistMessage = persistMessage,
+            selfTeamIdProvider = selfTeamId,
+            qualifiedIdMapper = qualifiedIdMapper,
+            selfUserId = userId
+        )
+
     private val newConversationHandler: NewConversationEventHandler
         get() = NewConversationEventHandlerImpl(
             conversationRepository,
             userRepository,
             selfTeamId,
-            conversations.newGroupConversationSystemMessagesCreator,
+            newGroupConversationSystemMessagesCreator,
             oneOnOneResolver,
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
@@ -1477,7 +1487,7 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             persistMessage = persistMessage,
             legalHoldHandler = legalHoldHandler,
-            newGroupConversationSystemMessagesCreator = conversations.newGroupConversationSystemMessagesCreator,
+            newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
@@ -1663,7 +1673,7 @@ class UserSessionScope internal constructor(
             oneOnOneResolver,
             userId,
             clientIdProvider,
-            lazy { conversations.newGroupConversationSystemMessagesCreator },
+            lazy { newGroupConversationSystemMessagesCreator },
             legalHoldRequestHandler,
             legalHoldHandler
         )
@@ -1860,7 +1870,8 @@ class UserSessionScope internal constructor(
             refreshUsersWithoutMetadata,
             sessionManager.getServerConfig().links,
             messages.messageRepository,
-            assetRepository
+            assetRepository,
+            newGroupConversationSystemMessagesCreator,
         )
     }
 
@@ -2145,7 +2156,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             oneOnOneResolver,
-            conversations.newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
