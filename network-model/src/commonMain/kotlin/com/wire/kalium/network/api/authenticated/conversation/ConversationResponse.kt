@@ -240,7 +240,10 @@ data class ConversationResponseV8(
     val conversationGroupType: GroupType? = null,
 
     @SerialName("add_permission")
-    val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null
+    val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null,
+
+    @SerialName("cells_state")
+    val cellsState: String? = null,
 )
 
 @Serializable
@@ -249,46 +252,6 @@ data class ConversationResponseV6(
     val conversation: ConversationResponse,
     @SerialName("public_keys")
     val publicKeys: MLSPublicKeysDTO
-)
-
-@Serializable
-data class ConversationResponseV8(
-    @SerialName("creator")
-    val creator: String?,
-    @SerialName("members")
-    val members: ConversationMembersResponse,
-    @SerialName("name")
-    val name: String?,
-    @SerialName("qualified_id")
-    val id: ConversationId,
-    @SerialName("group_id")
-    val groupId: String?,
-    @SerialName("epoch")
-    val epoch: ULong?,
-    @Serializable(with = ConversationTypeSerializer::class)
-    val type: ConversationResponse.Type,
-    @SerialName("message_timer")
-    val messageTimer: Long?,
-    @SerialName("team")
-    val teamId: TeamId?,
-    @SerialName("protocol")
-    val protocol: ConvProtocol,
-    @SerialName("last_event_time")
-    val lastEventTime: String,
-    @SerialName("cipher_suite")
-    val mlsCipherSuiteTag: Int?,
-    @SerialName("access")
-    val access: Set<ConversationAccessDTO>,
-    @SerialName("access_role")
-    val accessRole: Set<ConversationAccessRoleDTO>?,
-    @SerialName("access_role_v2")
-    val accessRoleV2: Set<ConversationAccessRoleDTO>?,
-    @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode,
-    @SerialName("group_conv_type")
-    val conversationGroupType: GroupType? = null,
-    @SerialName("cells_state")
-    val cellsState: String? = null,
 )
 
 @Serializable
