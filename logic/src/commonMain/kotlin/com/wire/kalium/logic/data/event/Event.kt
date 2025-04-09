@@ -93,7 +93,7 @@ sealed class EventDeliveryInfo(
         "source" to source.name
     )
 
-    data class AsyncEventDeliveryInfo(
+    data class Async(
         val deliveryTag: ULong,
         override val source: EventSource
     ) : EventDeliveryInfo(
@@ -101,7 +101,7 @@ sealed class EventDeliveryInfo(
         source = source
     )
 
-    data class LegacyEventDeliveryInfo(
+    data class Legacy(
         override val isTransient: Boolean,
         override val source: EventSource,
     ) : EventDeliveryInfo(isTransient, source)

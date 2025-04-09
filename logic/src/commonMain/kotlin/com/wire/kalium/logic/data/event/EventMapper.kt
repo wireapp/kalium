@@ -77,7 +77,7 @@ class EventMapper(
         return eventResponse.payload?.map { eventContentDTO ->
             EventEnvelope(
                 fromEventContentDTO(id, eventContentDTO),
-                EventDeliveryInfo.LegacyEventDeliveryInfo(eventResponse.transient, source)
+                EventDeliveryInfo.Legacy(eventResponse.transient, source)
             )
         } ?: listOf()
     }
@@ -88,7 +88,7 @@ class EventMapper(
         return event?.payload?.map { eventContentDTO ->
             EventEnvelope(
                 event = fromEventContentDTO(id = event.id, eventContentDTO = eventContentDTO),
-                deliveryInfo = EventDeliveryInfo.AsyncEventDeliveryInfo(deliveryTag = deliveryTag, source = EventSource.LIVE)
+                deliveryInfo = EventDeliveryInfo.Async(deliveryTag = deliveryTag, source = EventSource.LIVE)
             )
         } ?: listOf()
     }
