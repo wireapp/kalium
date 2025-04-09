@@ -168,6 +168,8 @@ internal class ConversationGroupRepositoryImpl(
         return wrapStorageRequest {
             conversationDAO.insertConversation(conversationEntity)
         }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(conversationEntity.id.toModel())
+        }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
         }.flatMap {
             when (protocol) {
@@ -200,12 +202,6 @@ internal class ConversationGroupRepositoryImpl(
                             conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
                         )
                 }
-            }
-        }.flatMap {
-            wrapStorageRequest {
-                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                    conversationEntity.id.toModel()
-                )
             }
         }.onSuccess {
             legalHoldHandler.handleConversationMembersChanged(conversationEntity.id.toModel())
