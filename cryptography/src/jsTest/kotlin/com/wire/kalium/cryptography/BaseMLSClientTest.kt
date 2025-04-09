@@ -18,19 +18,22 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.CoroutineScope
+
 actual open class BaseMLSClientTest actual constructor() {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
         allowedCipherSuites: List<MLSCiphersuite>,
         defaultCipherSuite: MLSCiphersuite,
-        mlsTransporter: MLSTransporter?
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
         TODO("Not yet implemented")
     }
 
     actual suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId,
-        mlsTransporter: MLSTransporter?
     ): CoreCryptoCentral {
         TODO("Not yet implemented")
     }
