@@ -41,7 +41,8 @@ object CreateConversationRequestJson {
         conversationRole = "WIRE_MEMBER",
         protocol = ConvProtocol.PROTEUS,
         creatorClient = null,
-        groupConversationType = GroupConversationType.REGULAR_GROUP
+        groupConversationType = GroupConversationType.REGULAR_GROUP,
+        cellEnabled = null,
     )
 
     val v0 = ValidJsonProvider(
@@ -60,6 +61,7 @@ object CreateConversationRequestJson {
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
         |   "group_conv_type": "group_conversation",
+        |   "add_permission": "admins",
         |   "qualified_users": [
         |       {
         |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",

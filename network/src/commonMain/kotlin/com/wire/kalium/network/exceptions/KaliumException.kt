@@ -33,6 +33,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_CONNECTION_UPDAT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.ENTERPRISE_SERVICE_NOT_ENABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_NOT_ENABLED
@@ -251,3 +252,6 @@ fun KaliumException.FederationError.isFederationNotEnabled() = errorResponse.lab
 fun KaliumException.InvalidRequestError.isMissingLegalHoldConsent(): Boolean = errorResponse.label == MISSING_LEGALHOLD_CONSENT
 fun KaliumException.InvalidRequestError.isAccountSuspended(): Boolean = errorResponse.label == ACCOUNT_SUSPENDED
 fun KaliumException.InvalidRequestError.isAccountPendingActivation(): Boolean = errorResponse.label == ACCOUNT_PENDING_ACTIVATION
+
+fun KaliumException.ServerError.isEnterpriseServiceNotEnabled(): Boolean =
+    errorResponse.code == HttpStatusCode.ServiceUnavailable.value && errorResponse.label == ENTERPRISE_SERVICE_NOT_ENABLED

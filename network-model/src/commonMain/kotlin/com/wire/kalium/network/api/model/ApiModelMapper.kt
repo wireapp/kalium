@@ -23,8 +23,10 @@ import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV8
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV3
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV8
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequestV3
 
@@ -37,6 +39,8 @@ interface ApiModelMapper {
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
+    fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
+    fun fromApiV8(response: ConversationResponseV8): ConversationResponse
 
     /**
      * Forcing to clients using v8+ to have ConsumableNotifications capability.
@@ -121,5 +125,42 @@ class ApiModelMapperImpl : ApiModelMapper {
             receiptMode = response.conversation.receiptMode,
             publicKeys = response.publicKeys,
             conversationGroupType = response.conversation.conversationGroupType
+        )
+
+    override fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8 =
+        CreateConversationRequestV8(
+            request.qualifiedUsers,
+            request.name,
+            request.access,
+            request.accessRole,
+            request.groupConversationType,
+            request.convTeamInfo,
+            request.messageTimer,
+            request.receiptMode,
+            request.conversationRole,
+            request.protocol,
+            request.creatorClient,
+            request.cellEnabled,
+        )
+
+    override fun fromApiV8(response: ConversationResponseV8): ConversationResponse =
+        ConversationResponse(
+            creator = response.creator,
+            members = response.members,
+            name = response.name,
+            id = response.id,
+            groupId = response.groupId,
+            epoch = response.epoch,
+            type = response.type,
+            messageTimer = response.messageTimer,
+            teamId = response.teamId,
+            protocol = response.protocol,
+            lastEventTime = response.lastEventTime,
+            mlsCipherSuiteTag = response.mlsCipherSuiteTag,
+            access = response.access,
+            accessRole = response.accessRole,
+            receiptMode = response.receiptMode,
+            conversationGroupType = response.conversationGroupType,
+            cellsState = response.cellsState,
         )
 }

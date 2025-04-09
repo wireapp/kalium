@@ -78,9 +78,13 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getFiles(query: String, limit: Int, offset: Int) = withContext(dispatchers.io) {
+    override suspend fun getFiles(path: String?, query: String, limit: Int, offset: Int) = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getFiles(query, limit, offset)
+            if (path == null) {
+                cellsApi.getFiles(query, limit, offset)
+            } else {
+                cellsApi.getFilesForPath(path, limit, offset)
+            }
         }.map { response ->
             response.nodes.map { it.toModel() }
         }
