@@ -18,10 +18,13 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.kalium.cryptography.MLSClientTest.Arrangement.Companion.create
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,7 +41,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenMlsClient_whenCallingGetDefaultCipherSuite_ReturnExpectedValue() = runTest {
-        val arrangement = Arrangement.create(
+        val arrangement = create(
             ALICE1,
             ::createMLSClient,
         )
@@ -47,7 +50,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
-        val arrangement = Arrangement.create(
+        val arrangement = create(
             ALICE1,
             ::createMLSClient,
         )
@@ -56,7 +59,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingGenerateKeyPackages_ReturnListOfExpectedSize() = runTest {
-        val arrangement = Arrangement.create(
+        val arrangement = create(
             ALICE1,
             ::createMLSClient,
         )
@@ -65,7 +68,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() = runTest {
-        val arrangement = Arrangement.create(
+        val arrangement = create(
             ALICE1,
             ::createMLSClient,
         )
@@ -78,12 +81,12 @@ class MLSClientTest : BaseMLSClientTest() {
     @IgnoreIOS
     @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() = runTest {
-        val aliceArrangement = Arrangement.create(
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
@@ -110,12 +113,12 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenTwoClients_whenCallingCreateConversation_weCanProcessTheWelcomeMessage() = runTest {
-        val aliceArrangement = Arrangement.create(
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
@@ -135,12 +138,12 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenTwoClients_whenCallingEncryptMessage_weCanDecryptTheMessage() = runTest {
-        val aliceArrangement = Arrangement.create(
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
@@ -163,12 +166,12 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenTwoClients_whenCallingAddMember_weCanProcessTheWelcomeMessage() = runTest {
-        val aliceArrangement = Arrangement.create(
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
@@ -188,17 +191,17 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() = runTest {
-        val aliceArrangement = Arrangement.create(
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
 
-        val carolArrangement = Arrangement.create(
+        val carolArrangement = create(
             CAROL1,
             ::createMLSClient,
         )
@@ -226,17 +229,18 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenThreeClients_whenCallingRemoveMember_weCanProcessTheHandshakeMessage() = runTest {
-        val aliceArrangement = Arrangement.create(
+
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
 
-        val carolArrangement = Arrangement.create(
+        val carolArrangement = create(
             CAROL1,
             ::createMLSClient,
         )
@@ -263,17 +267,17 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenThreeClients_whenProcessingCommitOutOfOrder_shouldCatchBufferedFutureMessageAndBuffer() = runTest {
-        val aliceArrangement = Arrangement.create(
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
 
-        val carolArrangement = Arrangement.create(
+        val carolArrangement = create(
             CAROL1,
             ::createMLSClient,
         )
@@ -327,17 +331,17 @@ class MLSClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenOutOfOrderCommits_whenProcessingMissingCommitLater_shouldAlsoProcessBufferedOne() = runTest {
-        val aliceArrangement = Arrangement.create(
+        val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
         )
 
-        val bobArrangement = Arrangement.create(
+        val bobArrangement = create(
             BOB1,
             ::createMLSClient,
         )
 
-        val carolArrangement = Arrangement.create(
+        val carolArrangement = create(
             CAROL1,
             ::createMLSClient,
         )
@@ -377,11 +381,18 @@ class MLSClientTest : BaseMLSClientTest() {
         // By processing the addCarol commit, MLS should also flush any previously buffered commits (the removeCarol).
         val addResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitAddCarol)
 
+        val epoch = aliceArrangement.epochChangeFlow.first()
+
         // We expect 2 total commits to be processed now: (1) addCarol, (2) removeCarol.
         assertEquals(
             2,
             addResult.size,
             "Processing the older 'addCarol' commit should also flush the buffered 'removeCarol' commit, resulting in 2 items."
+        )
+        assertEquals(
+            2UL,
+            epoch.second,
+            "Epoch should be incremented after processing the 'addCarol' and 'removeCarol' commit."
         )
     }
 
@@ -414,25 +425,31 @@ class MLSClientTest : BaseMLSClientTest() {
         val mlsClient: MLSClient,
         val sendMessageFlow: MutableSharedFlow<Pair<ByteArray, MlsTransportResponse>>,
         val sendCommitBundleFlow: MutableSharedFlow<Pair<CommitBundle, MlsTransportResponse>>,
+        val epochChangeFlow: MutableSharedFlow<Pair<MLSGroupId, ULong>>,
         private val sendMessageResponses: MutableList<MlsTransportResponse>,
         private val sendCommitResponses: MutableList<MlsTransportResponse>,
         private val mutex: Mutex,
+
     ) {
 
         companion object {
-            suspend fun create(
+            suspend fun CoroutineScope.create(
                 user: SampleUser,
                 createMLSClient: suspend (
                     clientId: CryptoQualifiedClientId,
                     allowedCipherSuites: List<MLSCiphersuite>,
                     defaultCipherSuite: MLSCiphersuite,
-                    mlsTransporter: MLSTransporter?
+                    mlsTransporter: MLSTransporter,
+                    epochObserver: MLSEpochObserver,
+                    coroutineScope: CoroutineScope
                 ) -> MLSClient,
                 initialSendMessageResponses: List<MlsTransportResponse> = listOf(MlsTransportResponse.Success),
                 initialSendCommitResponses: List<MlsTransportResponse> = listOf(MlsTransportResponse.Success)
             ): Arrangement {
                 val sendMessageFlow = MutableSharedFlow<Pair<ByteArray, MlsTransportResponse>>(replay = 1)
                 val sendCommitBundleFlow = MutableSharedFlow<Pair<CommitBundle, MlsTransportResponse>>(replay = 1)
+                val epochChangeFlow = MutableSharedFlow<Pair<MLSGroupId, ULong>>(replay = 1)
+
                 val sendMessageResponses = initialSendMessageResponses.toMutableList()
                 val sendCommitResponses = initialSendCommitResponses.toMutableList()
                 val mutex = Mutex()
@@ -455,14 +472,22 @@ class MLSClientTest : BaseMLSClientTest() {
                     }
                 }
 
+                val epochObserver = object : MLSEpochObserver {
+                    override suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong) {
+                        epochChangeFlow.emit(groupId to epoch)
+                    }
+                }
+
                 val mlsClient = createMLSClient(
                     user.qualifiedClientId,
                     ALLOWED_CIPHER_SUITES,
                     DEFAULT_CIPHER_SUITES,
-                    mlsTransporter
+                    mlsTransporter,
+                    epochObserver,
+                    this,
                 )
 
-                return Arrangement(user, mlsClient, sendMessageFlow, sendCommitBundleFlow, sendMessageResponses, sendCommitResponses, mutex)
+                return Arrangement(user, mlsClient, sendMessageFlow, sendCommitBundleFlow, epochChangeFlow, sendMessageResponses, sendCommitResponses, mutex)
             }
         }
 

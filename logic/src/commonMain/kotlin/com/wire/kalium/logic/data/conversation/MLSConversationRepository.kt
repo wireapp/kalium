@@ -39,7 +39,6 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.toDao
 import com.wire.kalium.logic.data.client.toModel
@@ -220,7 +219,6 @@ internal class MLSConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
-    private val epochsFlow: MutableSharedFlow<GroupID>,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val revocationListChecker: RevocationListChecker,
@@ -255,10 +253,6 @@ internal class MLSConversationDataSource(
                     idMapper.toCryptoModel(groupID),
                     message
                 ).let { messages ->
-                    if (messages.any { it.hasEpochChanged }) {
-                        kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
-                        epochsFlow.emit(groupID)
-                    }
                     messages.map {
                         it.crlNewDistributionPoints?.let { newDistributionPoints ->
                             checkRevocationList(newDistributionPoints)
@@ -700,8 +694,6 @@ internal class MLSConversationDataSource(
                 retryOnClientMismatch = retryOnClientMismatch,
                 retryOnStaleMessage = retryOnStaleMessage,
             ) { mlsClient.operation() }
-        }.onSuccess {
-            epochsFlow.emit(groupID)
         }
     }
 

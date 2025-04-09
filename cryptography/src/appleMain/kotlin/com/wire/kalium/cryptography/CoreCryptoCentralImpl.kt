@@ -21,13 +21,13 @@ import com.wire.crypto.ClientId
 import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
+import kotlinx.coroutines.CoroutineScope
 import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String,
-    mlsTransporter: MLSTransporter?
+    databaseKey: String
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
@@ -66,7 +66,10 @@ class CoreCryptoCentralImpl(
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
         allowedCipherSuites: List<MLSCiphersuite>,
-        defaultCipherSuite: MLSCiphersuite
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
         TODO("Not yet implemented")
     }
@@ -75,7 +78,10 @@ class CoreCryptoCentralImpl(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
-        defaultCipherSuite: MLSCiphersuite
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
         TODO("Not yet implemented")
     }

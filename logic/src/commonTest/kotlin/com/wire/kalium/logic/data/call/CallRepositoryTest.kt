@@ -54,6 +54,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -1215,7 +1216,7 @@ class CallRepositoryTest {
     @Test
     fun givenEpochChange_whenJoinMlsConference_thenInvokeOnEpochChange() = runTest(TestKaliumDispatcher.default) {
 
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (_, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1235,11 +1236,11 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.groupId)
+        epochFlow.emit(Arrangement.groupWithEpoch)
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.subconversationGroupId)
+        epochFlow.emit(Arrangement.subconversationGroupWithEpoch)
         yield()
         advanceUntilIdle()
 
@@ -1248,7 +1249,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenLeaveMlsConference_thenEpochObservingStops() = runTest(TestKaliumDispatcher.default) {
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (_, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1273,7 +1274,7 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.subconversationGroupId)
+        epochFlow.emit(Arrangement.subconversationGroupWithEpoch)
         yield()
         advanceUntilIdle()
 
@@ -1282,7 +1283,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenLeaveMlsConference_thenLeaveSubconversation() = runTest(TestKaliumDispatcher.default) {
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (arrangement, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1897,7 +1898,7 @@ class CallRepositoryTest {
             }.returns(Either.Right(Unit))
         }
 
-        fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
+        fun givenObserveEpochChangesReturns(flow: Flow<GroupWithEpoch>) = apply {
             every {
                 epochChangesObserver.observe()
             }.returns(flow)
@@ -1950,7 +1951,9 @@ class CallRepositoryTest {
             val randomConversationId = ConversationId("value", "domain")
 
             val groupId = GroupID("groupid")
+            val groupWithEpoch = GroupWithEpoch(groupId, 1UL)
             val subconversationGroupId = GroupID("subconversation_groupid")
+            val subconversationGroupWithEpoch = GroupWithEpoch(subconversationGroupId, 1UL)
             val conversationId = ConversationId(value = "convId", domain = "domainId")
             val groupConversation = TestConversation.GROUP().copy(id = conversationId)
             val oneOnOneConversation = TestConversation.one_on_one(conversationId)

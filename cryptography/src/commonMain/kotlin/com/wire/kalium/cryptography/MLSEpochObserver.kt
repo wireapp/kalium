@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,26 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.cryptography
 
-import kotlinx.coroutines.CoroutineScope
+interface MLSEpochObserver {
 
-actual open class BaseMLSClientTest actual constructor() {
-    actual suspend fun createMLSClient(
-        clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<MLSCiphersuite>,
-        defaultCipherSuite: MLSCiphersuite,
-        mlsTransporter: MLSTransporter,
-        epochObserver: MLSEpochObserver,
-        coroutineScope: CoroutineScope
-    ): MLSClient {
-        TODO("Not yet implemented")
-    }
-
-    actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId,
-    ): CoreCryptoCentral {
-        TODO("Not yet implemented")
-    }
+    suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong)
 }

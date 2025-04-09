@@ -25,6 +25,7 @@ import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
+import com.wire.crypto.EpochObserver
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.setLogger
@@ -32,12 +33,13 @@ import com.wire.crypto.setMaxLogLevel
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
+import kotlinx.coroutines.CoroutineScope
 import java.io.File
+import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String,
-    mlsTransporter: MLSTransporter?
+    databaseKey: String
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
@@ -48,18 +50,6 @@ actual suspend fun coreCryptoCentral(
 
     setLogger(CoreCryptoLoggerImpl)
     setMaxLogLevel(CoreCryptoLogLevel.WARN)
-
-    mlsTransporter?.let { transporter ->
-        coreCrypto.provideTransport(object : MlsTransport {
-            override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
-                return transporter.sendCommitBundle(commitBundle.toCryptography()).toCrypto()
-            }
-
-            override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
-                return transporter.sendMessage(mlsMessage).toCrypto()
-            }
-        })
-    }
 
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
@@ -94,15 +84,39 @@ class CoreCryptoCentralImpl(
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
         allowedCipherSuites: List<MLSCiphersuite>,
-        defaultCipherSuite: MLSCiphersuite
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
         try {
+
+            cc.provideTransport(object : MlsTransport {
+                override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
+                    return mlsTransporter.sendCommitBundle(commitBundle.toCryptography()).toCrypto()
+                }
+
+                override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
+                    return mlsTransporter.sendMessage(mlsMessage).toCrypto()
+                }
+            })
+
             cc.transaction { context ->
                 context.mlsInit(
                     ClientId(clientId.toString()),
                     Ciphersuites(allowedCipherSuites.map { it.toCrypto() }.toSet()),
                 )
             }
+
+            cc.registerEpochObserver(
+                coroutineScope,
+                epochObserver = object : EpochObserver {
+                    override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
+                        epochObserver.onEpochChange(conversationId.decodeToString(), epoch)
+                    }
+                }
+            )
+
         } catch (e: CoreCryptoException) {
             kaliumLogger.e("MLSClient initialization exception: $e")
         }
@@ -114,9 +128,22 @@ class CoreCryptoCentralImpl(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
-        defaultCipherSuite: MLSCiphersuite
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
         // todo: use DPs list from here, and return alongside with the mls client
+
+        cc.provideTransport(object : MlsTransport {
+            override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
+                return mlsTransporter.sendCommitBundle(commitBundle.toCryptography()).toCrypto()
+            }
+
+            override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
+                return mlsTransporter.sendMessage(mlsMessage).toCrypto()
+            }
+        })
 
         cc.transaction {
             it.e2eiMlsInitOnly(
@@ -125,6 +152,16 @@ class CoreCryptoCentralImpl(
                 newMLSKeyPackageCount
             )
         }
+
+        cc.registerEpochObserver(
+            coroutineScope,
+            epochObserver = object : EpochObserver {
+                override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
+                    epochObserver.onEpochChange(conversationId.decodeToString(), epoch)
+                }
+            }
+        )
+
         return MLSClientImpl(cc, defaultCipherSuite.toCrypto())
     }
 
@@ -137,7 +174,7 @@ class CoreCryptoCentralImpl(
         displayName: String,
         handle: String,
         teamId: String?,
-        expiry: kotlin.time.Duration,
+        expiry: Duration,
         defaultCipherSuite: MLSCiphersuite
     ): E2EIClient {
         return cc.transaction {
