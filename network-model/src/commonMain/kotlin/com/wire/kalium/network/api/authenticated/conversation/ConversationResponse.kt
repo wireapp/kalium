@@ -243,7 +243,6 @@ data class ConversationResponseV8(
     val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null
 )
 
-
 @Serializable
 data class ConversationResponseV6(
     @SerialName("conversation")

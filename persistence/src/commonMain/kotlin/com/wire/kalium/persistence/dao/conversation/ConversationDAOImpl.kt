@@ -159,7 +159,8 @@ internal class ConversationDAOImpl internal constructor(
                 access_list = access,
                 access_role_list = accessRole,
                 last_read_date = lastReadDate,
-                mls_last_keying_material_update_date = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.keyingMaterialLastUpdate
+                mls_last_keying_material_update_date = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable)
+                    protocolInfo.keyingMaterialLastUpdate
                 else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
                 mls_cipher_suite = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
