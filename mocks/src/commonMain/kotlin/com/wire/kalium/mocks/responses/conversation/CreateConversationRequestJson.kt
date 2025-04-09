@@ -41,7 +41,7 @@ object CreateConversationRequestJson {
         conversationRole = "WIRE_MEMBER",
         protocol = ConvProtocol.PROTEUS,
         creatorClient = null,
-        groupConversationType = GroupConversationType.REGULAR_GROUP
+        groupConversationType = GroupConversationType.CHANNEL,
     )
 
     val v0 = ValidJsonProvider(
@@ -74,7 +74,7 @@ object CreateConversationRequestJson {
         |   }
         |}
         """.trimMargin()
-        }
+    }
 
     fun v3(accessRole: List<ConversationAccessRoleDTO>? = null) = ValidJsonProvider(
         createConversationRequest.copy(
@@ -109,4 +109,33 @@ object CreateConversationRequestJson {
         """.trimMargin()
     }
 
+    fun v8() = ValidJsonProvider(createConversationRequest) {
+        """
+        |{
+        |   "qualified_users": [
+        |       {
+        |           "id": "${it.qualifiedUsers?.get(0)?.value}",
+        |           "domain": "${it.qualifiedUsers?.get(0)?.domain}"
+        |       }
+        |   ],
+        |   "name": "${it.name}",
+        |   "access": [
+        |       "${it.access?.get(0)}"
+        |   ],
+        |   "access_role": [
+        |       "${it.accessRole?.get(0)}"
+        |   ],
+        |   "group_conv_type": "${it.groupConversationType?.name?.lowercase()}",
+        |   "team": {
+        |       "managed": false,
+        |       "teamid": "${it.convTeamInfo?.teamId}"
+        |   },
+        |   "message_timer": ${it.messageTimer},
+        |   "protocol": "${it.protocol}",
+        |   "add_permission": "${it.channelAddPermissionTypeDTO.name.lowercase()}",
+        |   "receipt_mode": ${it.receiptMode.value},
+        |   "conversation_role": "${it.conversationRole}"
+        |}
+        """.trimMargin()
+    }
 }

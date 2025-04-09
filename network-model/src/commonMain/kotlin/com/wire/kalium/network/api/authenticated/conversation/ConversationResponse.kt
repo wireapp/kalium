@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.authenticated.conversation
 
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse.GroupType
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -125,9 +126,6 @@ data class ConversationResponse(
         @SerialName("channel")
         CHANNEL,
     }
-
-    fun toV6(): ConversationResponseV6 =
-        ConversationResponseV6(this, publicKeys ?: MLSPublicKeysDTO(null))
 }
 
 @Serializable
@@ -180,6 +178,64 @@ data class ConversationResponseV3(
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode,
 )
+
+@Serializable
+data class ConversationResponseV8(
+    @SerialName("creator")
+    val creator: String?,
+
+    @SerialName("members")
+    val members: ConversationMembersResponse,
+
+    @SerialName("name")
+    val name: String?,
+
+    @SerialName("qualified_id")
+    val id: ConversationId,
+
+    @SerialName("group_id")
+    val groupId: String?,
+
+    @SerialName("epoch")
+    val epoch: ULong?,
+
+    @Serializable(with = ConversationTypeSerializer::class)
+    val type: ConversationResponse.Type,
+
+    @SerialName("message_timer")
+    val messageTimer: Long?,
+
+    @SerialName("team")
+    val teamId: TeamId?,
+
+    @SerialName("protocol")
+    val protocol: ConvProtocol,
+
+    @SerialName("last_event_time")
+    val lastEventTime: String,
+
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int?,
+
+    @SerialName("access")
+    val access: Set<ConversationAccessDTO>,
+
+    @SerialName("access_role")
+    val accessRole: Set<ConversationAccessRoleDTO>?,
+
+    @SerialName("receipt_mode")
+    val receiptMode: ReceiptMode,
+
+    @SerialName("public_keys")
+    val publicKeys: MLSPublicKeysDTO? = null,
+
+    @SerialName("group_conv_type")
+    val conversationGroupType: GroupType? = null,
+
+    @SerialName("add_permission")
+    val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null
+)
+
 
 @Serializable
 data class ConversationResponseV6(
