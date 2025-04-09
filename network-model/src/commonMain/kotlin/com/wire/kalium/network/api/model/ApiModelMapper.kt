@@ -38,7 +38,6 @@ interface ApiModelMapper {
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
-    fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
 }
 
@@ -72,7 +71,8 @@ class ApiModelMapperImpl : ApiModelMapper {
             receiptMode = request.receiptMode,
             conversationRole = request.conversationRole,
             protocol = request.protocol,
-            creatorClient = request.creatorClient
+            creatorClient = request.creatorClient,
+            cellEnabled = request.cellEnabled
         )
 
     override fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3 =
@@ -119,22 +119,6 @@ class ApiModelMapperImpl : ApiModelMapper {
             receiptMode = response.conversation.receiptMode,
             publicKeys = response.publicKeys,
             conversationGroupType = response.conversation.conversationGroupType
-        )
-
-    override fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8 =
-        CreateConversationRequestV8(
-            request.qualifiedUsers,
-            request.name,
-            request.access,
-            request.accessRole,
-            request.groupConversationType,
-            request.convTeamInfo,
-            request.messageTimer,
-            request.receiptMode,
-            request.conversationRole,
-            request.protocol,
-            request.creatorClient,
-            request.cellEnabled,
         )
 
     override fun fromApiV8(response: ConversationResponseV8): ConversationResponse =
