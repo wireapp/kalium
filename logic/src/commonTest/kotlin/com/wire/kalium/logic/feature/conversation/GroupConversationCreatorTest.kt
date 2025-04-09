@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
-import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
+import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -210,7 +210,7 @@ class GroupConversationCreatorTest {
         @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
-        private val createGroupConversation = GroupConversationCreator(
+        private val createGroupConversation = GroupConversationCreatorImpl(
             conversationRepository,
             conversationGroupRepository,
             syncManager,

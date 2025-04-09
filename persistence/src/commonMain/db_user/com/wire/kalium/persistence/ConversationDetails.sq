@@ -149,7 +149,7 @@ WHERE
             -- When filter is ALL, do not apply additional filters on conversation type
             WHEN :conversationFilter = 'ALL' THEN 1 = 1
             -- When filter is GROUPS, filter only group conversations
-            WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+            WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP' AND is_channel = 0
             -- When filter is ONE_ON_ONE, filter only one-on-one conversations
             WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
             -- When filter is CHANNELS (future implementation)
