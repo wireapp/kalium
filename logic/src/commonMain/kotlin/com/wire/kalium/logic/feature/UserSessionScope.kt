@@ -19,6 +19,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.Either
@@ -26,7 +27,6 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.GlobalKaliumScope
@@ -1859,7 +1859,6 @@ class UserSessionScope internal constructor(
             selfTeamId,
             messages.sendConfirmation,
             renamedConversationHandler,
-            qualifiedIdMapper,
             authenticationScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,

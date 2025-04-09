@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
@@ -37,7 +36,6 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -120,7 +118,6 @@ class ConversationScope internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
-    private val qualifiedIdMapper: QualifiedIdMapper,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
     userPropertyRepository: UserPropertyRepository,
