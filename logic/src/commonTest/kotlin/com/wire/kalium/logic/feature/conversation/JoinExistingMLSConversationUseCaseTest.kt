@@ -159,7 +159,7 @@ class JoinExistingMLSConversationUseCaseTest {
         coVerify {
             arrangement.mlsConversationRepository.establishMLSGroup(
                 groupID = Arrangement.GROUP_ID_SELF,
-                members = listOf(TestUser.USER_ID),
+                members = listOf(arrangement.selfUserId),
                 publicKeys = null,
                 allowSkippingUsersWithoutKeyPackages = false
             )
