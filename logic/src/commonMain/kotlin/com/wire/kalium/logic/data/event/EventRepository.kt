@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
@@ -98,8 +99,19 @@ class EventDataSource(
 ) : EventRepository {
 
     override suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> {
-        // todo (ym) notificationApi.acknowledgeEvents() here just do when, in case of async and skip on legacy.
-        TODO("Not yet implemented")
+        return when (val deliveryInfo = eventEnvelope.deliveryInfo) {
+            is EventDeliveryInfo.Async -> {
+                notificationApi.acknowledgeEvents(
+                    clientRegistrationStorage.getRetainedClientId()!!,
+                    eventMapper.toAcknowledgeRequest(deliveryInfo)
+                )
+                Unit.right()
+                // todo(ym) handle error case
+            }
+
+            // todo(ym) logs to skip
+            is EventDeliveryInfo.Legacy -> Unit.right()
+        }
     }
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)

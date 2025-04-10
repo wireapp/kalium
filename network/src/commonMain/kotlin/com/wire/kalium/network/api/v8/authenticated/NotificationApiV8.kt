@@ -22,6 +22,7 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEI
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
@@ -43,6 +44,8 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.isActive
+import kotlinx.serialization.json.encodeToJsonElement
 
 internal open class NotificationApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -57,15 +60,21 @@ internal open class NotificationApiV8 internal constructor(
      * @param clientId the clientId of the user to connect to the websocket
      */
     protected suspend fun getOrCreateAsyncEventsWebSocketSession(clientId: String): WebSocketSession {
-        return session ?: authenticatedWebSocketClient.createWebSocketSession(clientId) {
-            setWSSUrl(Url(serverLinks.webSocket), PATH_EVENTS)
-            parameter(CLIENT_QUERY_KEY, clientId)
-        }.also { session = it }
+        if (session == null || session?.isActive == false) {
+            session = authenticatedWebSocketClient.createWebSocketSession(clientId) {
+                setWSSUrl(Url(serverLinks.webSocket), PATH_EVENTS)
+                parameter(CLIENT_QUERY_KEY, clientId)
+            }
+        }
+        return session!!
     }
 
-    override suspend fun acknowledgeEvents(clientId: String, deliveryTag: ULong) {
+    override suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
         val session = getOrCreateAsyncEventsWebSocketSession(clientId)
-        session.outgoing.send(Frame.Text("ACK $deliveryTag"))
+        // todo: this can/should be mapped previously and add the support for multiple, at least on the model side.
+        KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
+            session.outgoing.send(Frame.Binary(true, json.toString().encodeToByteArray()))
+        }
     }
 
     override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
