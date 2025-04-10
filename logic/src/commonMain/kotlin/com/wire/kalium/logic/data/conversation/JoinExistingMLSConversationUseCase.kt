@@ -192,6 +192,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 mlsConversationRepository.establishMLSGroup(
                     protocol.groupId,
                     listOf(selfUserId)
+<<<<<<< HEAD
                 )
                     .onSuccess {
                         kaliumLogger.logStructuredJson(
@@ -203,6 +204,17 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 "protocol" to ConversationOptions.Protocol.MLS.name,
                                 "protocolInfo" to conversation.protocol.toLogMap(),
                             )
+=======
+                ).onSuccess {
+                    kaliumLogger.logStructuredJson(
+                        level = KaliumLogLevel.INFO,
+                        leadingMessage = "Establish Group",
+                        jsonStringKeyValues = mapOf(
+                            "conversationId" to conversation.id.toLogString(),
+                            "conversationType" to type.name,
+                            "protocol" to ConversationOptions.Protocol.MLS.name,
+                            "protocolInfo" to conversation.protocol.toLogMap(),
+>>>>>>> 6b7440f204 (fix: mls self conversation join [WPB-17115] (#3395))
                         )
                     }.map { Unit }
             }
