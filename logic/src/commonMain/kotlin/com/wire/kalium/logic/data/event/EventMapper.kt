@@ -96,6 +96,9 @@ class EventMapper(
         } ?: listOf()
     }
 
+    /**
+     * todo(ym) handle case of multiple events mapping, perhaps another function and handled outised should be the way to go.
+     */
     fun toAcknowledgeRequest(
         eventDeliveryInfo: EventDeliveryInfo.Async,
         multiple: Boolean = false
