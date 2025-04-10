@@ -50,15 +50,22 @@ internal open class NotificationApiV8 internal constructor(
     val serverLinks: ServerConfigDTO.Links
 ) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks) {
 
-    object Notifications {
-        // todo (ym). can it be stored here a ref to the websocket session?
-    }
-
     private var session: WebSocketSession? = null
 
-    // todo (ym): check how to keep the session alive or renew it
+    /**
+     * Creates a new WebSocket session or returns an existing one.
+     * @param clientId the clientId of the user to connect to the websocket
+     */
+    protected suspend fun getOrCreateAsyncEventsWebSocketSession(clientId: String): WebSocketSession {
+        return session ?: authenticatedWebSocketClient.createWebSocketSession(clientId) {
+            setWSSUrl(Url(serverLinks.webSocket), PATH_EVENTS)
+            parameter(CLIENT_QUERY_KEY, clientId)
+        }.also { session = it }
+    }
+
     override suspend fun acknowledgeEvents(clientId: String, deliveryTag: ULong) {
-        session?.outgoing?.send(Frame.Text("ACK $deliveryTag"))
+        val session = getOrCreateAsyncEventsWebSocketSession(clientId)
+        session.outgoing.send(Frame.Text("ACK $deliveryTag"))
     }
 
     override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
@@ -69,11 +76,8 @@ internal open class NotificationApiV8 internal constructor(
                 //       exceptions when the backend returns 401 instead of triggering a token refresh.
                 //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
                 //       before attempting to open the websocket
-                session = authenticatedWebSocketClient.createWebSocketSession(clientId) {
-                    setWSSUrl(Url(serverLinks.webSocket), PATH_EVENTS)
-                    parameter(CLIENT_QUERY_KEY, clientId)
-                }
-                emitWebSocketEvents(session!!)
+                val session = getOrCreateAsyncEventsWebSocketSession(clientId)
+                emitWebSocketEvents(session)
             }
         }
 
