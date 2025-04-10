@@ -60,7 +60,7 @@ object CreateConversationRequestJson {
         |   "message_timer": ${it.messageTimer},
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
-        |   "group_conv_type": "group_conversation",
+        |   "group_conv_type": "channel",
         |   "add_permission": "admins",
         |   "qualified_users": [
         |       {
