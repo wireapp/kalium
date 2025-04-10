@@ -27,6 +27,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 
 public interface RemoveAttachmentDraftUseCase {
@@ -63,7 +64,14 @@ internal class RemoveAttachmentDraftUseCaseImpl internal constructor(
     }
 
     private suspend fun removeAttachmentDraft(attachment: AttachmentDraft) =
-        cellsRepository.cancelDraft(attachment.uuid, attachment.versionId).onSuccess {
-            attachmentsRepository.remove(attachment.uuid)
-        }
+        cellsRepository.cancelDraft(attachment.uuid, attachment.versionId)
+            .onSuccess {
+                attachmentsRepository.remove(attachment.uuid)
+            }
+            .onFailure { error ->
+                if (error.isAssetNotFound()) {
+                    // Remove if not found on server
+                    attachmentsRepository.remove(attachment.uuid)
+                }
+            }
 }

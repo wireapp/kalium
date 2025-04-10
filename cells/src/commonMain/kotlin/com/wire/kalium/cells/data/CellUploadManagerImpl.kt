@@ -36,11 +36,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import okio.FileSystem
 import okio.Path
+import okio.SYSTEM
 
 internal class CellUploadManagerImpl internal constructor(
     private val repository: CellsRepository,
     private val uploadScope: CoroutineScope,
+    private val fileSystem: FileSystem = FileSystem.SYSTEM,
 ) : CellUploadManager {
 
     private val uploads = mutableMapOf<String, UploadInfo>()
@@ -91,8 +94,21 @@ internal class CellUploadManagerImpl internal constructor(
         uploads[node.uuid] = UploadInfo(
             node = node,
             job = uploadJob,
+            assetPath = assetPath,
             events = uploadEventsFlow,
         )
+    }
+
+    override fun retryUpload(nodeUuid: String) {
+        uploads[nodeUuid]?.let { uploadInfo ->
+            if (fileSystem.exists(uploadInfo.assetPath)) {
+                startUpload(uploadInfo.assetPath, uploadInfo.node)
+            } else {
+                // Original file is not available
+                updateJobInfo(nodeUuid) { copy(uploadFiled = true) }
+                uploadInfo.events.tryEmit(CellUploadEvent.UploadError)
+            }
+        }
     }
 
     private fun updateUploadProgress(nodeUuid: String, uploaded: Long) {
@@ -137,6 +153,7 @@ internal class CellUploadManagerImpl internal constructor(
 
 private data class UploadInfo(
     val node: CellNode,
+    val assetPath: Path,
     val job: Job,
     val events: MutableSharedFlow<CellUploadEvent>,
     val progress: Float = 0f,
