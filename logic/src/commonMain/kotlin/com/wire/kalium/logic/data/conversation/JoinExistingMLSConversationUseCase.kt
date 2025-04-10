@@ -189,20 +189,10 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 
             type == Conversation.Type.Self -> {
                 kaliumLogger.d("$TAG: Establish Self MLS Conversation ${conversation.id.toLogString()}")
-                clientRepository.getClientsByConversationId(conversation.id)
-                    .flatMap { clients ->
-                        if ((clients[selfUserId]?.size ?: 0) > 1) {
-                            mlsConversationRepository.establishMLSGroup(
-                                protocol.groupId,
-                                listOf(selfUserId)
-                            )
-                        } else {
-                            mlsConversationRepository.establishMLSGroup(
-                                protocol.groupId,
-                                listOf()
-                            )
-                        }
-                    }
+                mlsConversationRepository.establishMLSGroup(
+                    protocol.groupId,
+                    listOf(selfUserId)
+                )
                     .onSuccess {
                         kaliumLogger.logStructuredJson(
                             level = KaliumLogLevel.INFO,
