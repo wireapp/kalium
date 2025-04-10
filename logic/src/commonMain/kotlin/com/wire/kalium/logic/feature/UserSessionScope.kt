@@ -1036,7 +1036,8 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             clientRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            userId
         )
 
     private val registerMLSClientUseCase: RegisterMLSClientUseCase
