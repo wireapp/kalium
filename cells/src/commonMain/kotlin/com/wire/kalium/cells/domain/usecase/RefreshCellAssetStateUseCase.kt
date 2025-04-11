@@ -27,6 +27,7 @@ import com.wire.kalium.common.error.NetworkFailure.ServerMiscommunication
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
@@ -119,23 +120,39 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
     }
 
     private suspend fun refreshLocalData(node: CellNode) {
-        attachmentsRepository.getAttachment(node.uuid).map { attachment ->
-            if (attachment is CellAssetContent) {
 
-                if (attachment.contentHash != node.contentHash) {
-                    attachment.localPath?.let { fileSystem.delete(it.toPath()) }
-                    attachmentsRepository.saveLocalPath(attachment.id, null)
-                }
+        val attachment = attachmentsRepository
+            .getAttachment(node.uuid).getOrNull() as? CellAssetContent
+            ?: return
 
-                attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
+        var localPath = attachment.localPath
 
-                if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
-                    if (attachment.localPath == null) {
-                        attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
-                    } else {
-                        attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
-                    }
-                }
+        // Check if asset was updated
+        if (attachment.contentHash != node.contentHash) {
+            localPath?.let { fileSystem.delete(it.toPath()) }
+            attachmentsRepository.saveLocalPath(attachment.id, null)
+            localPath = null
+        }
+
+        // Check if local file is still available
+        localPath?.toPath()?.let {
+            if (!fileSystem.exists(it)) {
+                attachmentsRepository.saveLocalPath(attachment.id, null)
+                localPath = null
+            }
+        }
+
+        attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
+
+        // TODO: WPB-16946 Update remote file path
+
+        // Update transfer status for attachments previously marked as NOT_FOUND
+        // This happens after we regain access to the file
+        if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
+            if (localPath == null) {
+                attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
+            } else {
+                attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
             }
         }
     }
@@ -148,6 +165,7 @@ internal fun NetworkFailure.isAssetNotFound(): Boolean {
     return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
 }
 
+// TODO: Will be later replaced with a flag from Cell Server
 private fun CellNode.isPreviewSupported(): Boolean = when {
     mimeType == null -> false
     mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType == "application/pdf" -> true
