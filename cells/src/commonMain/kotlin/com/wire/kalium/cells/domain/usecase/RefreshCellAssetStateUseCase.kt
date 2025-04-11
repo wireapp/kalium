@@ -142,9 +142,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
             }
         }
 
-        attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
-
-        // TODO: WPB-16946 Update remote file path
+        attachmentsRepository.updateAttachment(attachment.id, node.contentUrl, node.contentHash, node.path)
 
         // Update transfer status for attachments previously marked as NOT_FOUND
         // This happens after we regain access to the file
