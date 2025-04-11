@@ -24,6 +24,8 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
+import com.wire.kalium.cells.domain.model.PaginatedList
+import com.wire.kalium.cells.domain.model.Pagination
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
@@ -86,7 +88,14 @@ internal class CellsDataSource internal constructor(
                 cellsApi.getFilesForPath(path, limit, offset)
             }
         }.map { response ->
-            response.nodes.map { it.toModel() }
+            PaginatedList(
+                data = response.nodes.map { it.toModel() },
+                pagination = response.pagination?.let {
+                    Pagination(
+                        nextOffset = it.nextOffset,
+                    )
+                },
+            )
         }
     }
 
