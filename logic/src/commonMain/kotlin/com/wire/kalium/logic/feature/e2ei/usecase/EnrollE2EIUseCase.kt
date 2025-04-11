@@ -57,6 +57,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
      *
      * @return [Either] [E2EIFailure] or [E2EIEnrollmentResult]
      */
+    @Suppress("LongMethod")
     override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<E2EIFailure, E2EIEnrollmentResult.Initialized> {
 
         if (isNewClientRegistration) {
