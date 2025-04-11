@@ -62,7 +62,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
@@ -101,7 +103,10 @@ import io.mockative.once
 import io.mockative.twice
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -422,7 +427,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.syncManager.waitUntilLiveOrFailure()
+            arrangement.syncStateObserver.waitUntilLiveOrFailure()
         }.wasInvoked(once)
 
         coVerify {
@@ -587,7 +592,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.syncManager.waitUntilLiveOrFailure()
+            arrangement.syncStateObserver.waitUntilLiveOrFailure()
         }.wasInvoked(once)
 
         coVerify {
@@ -611,7 +616,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.syncManager.waitUntilLiveOrFailure()
+            arrangement.syncStateObserver.waitUntilLiveOrFailure()
         }.wasInvoked(once)
 
         coVerify {
@@ -968,7 +973,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.syncManager.waitUntilLiveOrFailure()
+            arrangement.syncStateObserver.waitUntilLiveOrFailure()
         }.wasInvoked(once)
 
         coVerify {
@@ -993,7 +998,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.syncManager.waitUntilLiveOrFailure()
+            arrangement.syncStateObserver.waitUntilLiveOrFailure()
         }.wasInvoked(once)
 
         coVerify {
@@ -1105,7 +1110,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.syncManager.waitUntilLiveOrFailure()
+            arrangement.syncStateObserver.waitUntilLiveOrFailure()
         }.wasInvoked(once)
 
         coVerify {
@@ -1703,7 +1708,7 @@ class MLSConversationRepositoryTest {
         val e2eiClient = mock(E2EIClient::class)
 
         @Mock
-        val syncManager = mock(SyncManager::class)
+        val syncStateObserver = mock(SyncStateObserver::class)
 
         @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
@@ -1713,6 +1718,10 @@ class MLSConversationRepositoryTest {
 
         @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
+
+        init {
+            every { syncStateObserver.syncState }.returns(MutableStateFlow<SyncState>(SyncState.Live))
+        }
 
         val epochsFlow = MutableSharedFlow<GroupID>()
 
@@ -1725,7 +1734,7 @@ class MLSConversationRepositoryTest {
             mlsMessageApi,
             conversationDAO,
             clientApi,
-            syncManager,
+            syncStateObserver,
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
             epochsFlow,
@@ -1920,7 +1929,7 @@ class MLSConversationRepositoryTest {
 
         suspend fun withWaitUntilLiveSuccessful() = apply {
             coEvery {
-                syncManager.waitUntilLiveOrFailure()
+                syncStateObserver.waitUntilLiveOrFailure()
             }.returns(Either.Right(Unit))
         }
 

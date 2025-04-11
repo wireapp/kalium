@@ -103,6 +103,8 @@ data class CreateConversationRequestV8(
     val accessRole: List<ConversationAccessRoleDTO>?,
     @SerialName("group_conv_type")
     val groupConversationType: GroupConversationType?,
+    @SerialName("add_permission")
+    val channelAddPermissionTypeDTO: ChannelAddPermissionTypeDTO = ChannelAddPermissionTypeDTO.ADMINS,
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,
     @SerialName("message_timer")
