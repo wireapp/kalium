@@ -63,11 +63,11 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -82,13 +82,11 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.log
 import kotlin.time.Duration
 
 data class ApplicationMessage(
@@ -227,7 +225,7 @@ internal class MLSConversationDataSource(
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
-    private val syncManager: SyncManager,
+    private val syncStateObserver: SyncStateObserver,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val epochsFlow: MutableSharedFlow<GroupID>,
@@ -911,11 +909,11 @@ internal class MLSConversationDataSource(
         }
 
     private suspend fun keepCommitAndRetry(groupID: GroupID): Either<CoreFailure, Unit> {
-        logger.w("Migrating failed commit to new epoch and re-trying sync state: ${syncManager.syncState.value}")
+        logger.w("Migrating failed commit to new epoch and re-trying sync state: ${syncStateObserver.syncState.value}")
         // FIXME: Sync Cyclic Dependency.
         //        This function can be called DURING sync. And at the same time, it waits for Sync.
         //        Perhaps it should be scheduled for a retry in the future, after Sync is done.
-        return syncManager.waitUntilLiveOrFailure().flatMap {
+        return syncStateObserver.waitUntilLiveOrFailure().flatMap {
             commitPendingProposalsWithoutRetry(groupID)
         }
     }
@@ -926,11 +924,11 @@ internal class MLSConversationDataSource(
         wrapMLSRequest {
             mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
         }.flatMap {
-            logger.d("Discarding pending commit for group ${groupID.toLogString()} sync state ${syncManager.syncState.value}")
+            logger.d("Discarding pending commit for group ${groupID.toLogString()} sync state ${syncStateObserver.syncState.value}")
             // FIXME: Sync Cyclic Dependency.
             //        This function can be called DURING sync. And at the same time, it waits for Sync.
             //        Perhaps it should be scheduled for a retry in the future, after Sync is done.
-            syncManager.waitUntilLiveOrFailure()
+            syncStateObserver.waitUntilLiveOrFailure()
         }
     }
 
