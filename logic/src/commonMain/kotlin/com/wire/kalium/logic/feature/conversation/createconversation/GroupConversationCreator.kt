@@ -31,6 +31,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isOperationDenied
 import com.wire.kalium.util.DateTimeUtil
 
 /**
@@ -89,6 +91,16 @@ internal class GroupConversationCreatorImpl(
 
                 is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
                     ConversationCreationResult.BackendConflictFailure(it.domains)
+                }
+
+                is NetworkFailure.ServerMiscommunication -> {
+                    val exception = it.kaliumException
+                    if (exception is KaliumException.InvalidRequestError && exception.isOperationDenied()
+                    ) {
+                        ConversationCreationResult.Forbidden
+                    } else {
+                        ConversationCreationResult.UnknownFailure(it)
+                    }
                 }
 
                 else -> {
