@@ -30,7 +30,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -60,24 +59,29 @@ class EnrollE2EIUseCaseImpl internal constructor(
      */
     override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<E2EIFailure, E2EIEnrollmentResult.Initialized> {
 
-        val updateUserInfoJob: Job? = if (isNewClientRegistration) {
-            coroutineScope.launch { userRepository.fetchSelfUser() }
-        } else {
-            /* no-op */
-            null
+        if (isNewClientRegistration) {
+            coroutineScope.launch {
+                userRepository.fetchSelfUser()
+            }.join()
         }
 
-        kaliumLogger.i("start E2EI Enrollment Initialization")
+        kaliumLogger.i("start E2EI Enrollment Initialization (new client registration: $isNewClientRegistration)")
 
-        e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
+        e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration).getOrFail {
+            kaliumLogger.e("Failure initializing fresh E2EI client during E2EI Enrolling!. Failure:$it")
+            return it.left()
+        }
 
-        e2EIRepository.fetchAndSetTrustAnchors()
+        e2EIRepository.fetchAndSetTrustAnchors().getOrFail {
+            kaliumLogger.e("Failure fetching and setting trust anchors during E2EI Enrolling!. Failure:$it")
+            return it.left()
+        }
+
         e2EIRepository.fetchFederationCertificates().getOrFail {
             kaliumLogger.e("Failure fetching federation certificates during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
-        updateUserInfoJob?.join()
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             kaliumLogger.d("Failure loading ACMEDirectories during E2EI Enrolling!. Failure:$it")
             return it.left()
