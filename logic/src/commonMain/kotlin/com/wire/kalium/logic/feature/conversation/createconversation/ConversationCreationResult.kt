@@ -35,6 +35,7 @@ sealed interface ConversationCreationResult {
      * There was a failure trying to Sync with the server
      */
     data object SyncFailure : ConversationCreationResult
+    data object Forbidden : ConversationCreationResult
 
     /**
      * Other, unknown failure.
