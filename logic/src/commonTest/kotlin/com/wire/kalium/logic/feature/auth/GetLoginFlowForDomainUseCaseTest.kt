@@ -26,6 +26,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -47,7 +49,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result, EnterpriseLoginResult.Success(LoginRedirectPath.Default))
+        assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
     }
 
     @Test
@@ -59,7 +61,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result::class, EnterpriseLoginResult.Failure.Generic::class)
+        assertEquals(EnterpriseLoginResult.Failure.Generic::class, result::class)
     }
 
     @Test
@@ -71,7 +73,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result, EnterpriseLoginResult.Failure.NotSupported)
+        assertEquals(EnterpriseLoginResult.Failure.NotSupported, result)
     }
 
     @Test
@@ -90,9 +92,22 @@ class GetLoginFlowForDomainUseCaseTest {
         coVerify { arrangement.loginRepository.fetchDomainRedirectCustomBackendConfig(backendConfigUrl) }
         coVerify { arrangement.customServerConfigRepository.fetchRemoteConfig(configJsonUrl) }
         assertEquals(
+            EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY)),
             result,
-            EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY))
         )
+    }
+
+    @Test
+    fun givenEmail_whenInvokedAndErrorBecauseOfEnterpriseServiceNotEnabled_thenReturnSuccessNoRegistration() = runTest {
+        val enterpriseServiceNotEnabledError = KaliumException.ServerError(ErrorResponse(503, "", "enterprise-service-not-enabled"))
+        val (arrangement, useCase) = Arrangement()
+            .withDomainRegistrationResult(NetworkFailure.ServerMiscommunication(enterpriseServiceNotEnabledError).left())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
     }
 
     private class Arrangement {
