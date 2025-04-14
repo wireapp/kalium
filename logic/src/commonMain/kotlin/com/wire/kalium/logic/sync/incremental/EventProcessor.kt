@@ -117,6 +117,7 @@ internal class EventProcessorImpl(
             is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
         }.onSuccess {
+            // todo (ym) check cor errors and decide if lastProcessedEventId should be updated so we can re-ack
             eventRepository.acknowledgeEvent(eventEnvelope)
             if (deliveryInfo.shouldUpdateLastProcessedEventId()) {
                 eventRepository.updateLastProcessedEventId(event.id)
