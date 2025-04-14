@@ -144,27 +144,32 @@ class MLSClientImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
         var decryptedMessage: DecryptedMessage? = null
+        var capturedError: Throwable? = null
 
         coreCrypto.transaction(object : CoreCryptoCommand {
             override suspend fun execute(context: CoreCryptoContext) {
                 try {
-                    val result = context.decryptMessage(
+                    decryptedMessage = context.decryptMessage(
                         groupId.decodeBase64Bytes(),
                         message
                     )
-                    decryptedMessage = result
-
                 } catch (throwable: Throwable) {
-                    val isBufferedFutureError = (
-                            throwable is CoreCryptoException.Mls && throwable.v1 is MlsException.BufferedFutureMessage
-                            ) || throwable.message
-                        ?.contains("Incoming message is a commit for which we have not yet received all the proposals") == true
-                    if (!isBufferedFutureError) {
-                        throw throwable
-                    }
+                    capturedError = throwable
+                    throw throwable
                 }
             }
         })
+
+        capturedError?.let { error ->
+            val isBufferedFutureError = (
+                    error is CoreCryptoException.Mls && error.v1 is MlsException.BufferedFutureMessage
+                    ) || error.message
+                ?.contains("Incoming message is a commit for which we have not yet received all the proposals") == true
+
+            if (!isBufferedFutureError) {
+                throw error
+            }
+        }
 
         if (decryptedMessage == null) {
             return emptyList()
