@@ -64,6 +64,7 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPe
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -101,8 +102,6 @@ interface ConversationRepository {
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type>
 
-    // TODO: rename it to getChannelAddUserPermission
-    suspend fun getChannelAddPermission(conversationId: ConversationId): Either<StorageFailure, ChannelAddPermission>
     // endregion
 
     @DelicateKaliumApi("This function does not get values from cache")
@@ -911,18 +910,19 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun deleteConversation(conversationId: ConversationId) =
-        getConversationProtocolInfo(conversationId).flatMap {
-            when (it) {
-                is Conversation.ProtocolInfo.MLSCapable ->
-                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapMLSRequest {
-                            mlsClient.wipeConversation(it.groupId.toCrypto())
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+        getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
+            when (protocolInfo) {
+                is Conversation.ProtocolInfo.MLSCapable -> {
+                    wrapStorageRequest {
+                        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+                    }.onSuccess {
+                        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                            wrapMLSRequest {
+                                mlsClient.wipeConversation(protocolInfo.groupId.toCrypto())
+                            }
                         }
                     }
+                }
 
                 is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
                     conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
@@ -1039,7 +1039,7 @@ internal class ConversationDataSource internal constructor(
     ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
         conversationApi.updateChannelAddPermission(
             conversationId = conversationId.toApi(),
-            channelAddPermission = channelAddPermission.toApi()
+            channelAddPermission = ChannelAddPermissionDTO(channelAddPermission.toApi())
         )
     }
 
@@ -1250,11 +1250,6 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
-
-    override suspend fun getChannelAddPermission(conversationId: ConversationId): Either<StorageFailure, ChannelAddPermission> =
-        wrapStorageRequest {
-            conversationDAO.getChannelAddPermission(conversationId.toDao()).toModelChannelPermission()
-        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
