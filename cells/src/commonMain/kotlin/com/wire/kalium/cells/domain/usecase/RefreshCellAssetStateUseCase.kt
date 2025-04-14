@@ -142,7 +142,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
 }
 
 @Suppress("ReturnCount")
-private fun NetworkFailure.isAssetNotFound(): Boolean {
+internal fun NetworkFailure.isAssetNotFound(): Boolean {
     val error = (this as? ServerMiscommunication)?.kaliumException ?: return false
     val response = (error as? KaliumException.ServerError)?.errorResponse ?: return false
     return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
