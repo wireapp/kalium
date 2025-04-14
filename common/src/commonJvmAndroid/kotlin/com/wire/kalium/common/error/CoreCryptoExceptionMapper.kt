@@ -43,7 +43,7 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
                 }
             }
 
-            is MlsException.OrphanWelcome -> MLSFailure.Generic(exception)
+            is MlsException.OrphanWelcome -> MLSFailure.OrphanWelcome
         }
     } else {
         MLSFailure.Generic(exception)
