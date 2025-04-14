@@ -71,7 +71,6 @@ internal open class NotificationApiV8 internal constructor(
 
     override suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
         val session = getOrCreateAsyncEventsWebSocketSession(clientId)
-        // todo: this can/should be mapped previously and add the support for multiple, at least on the model side.
         KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
             session.outgoing.send(Frame.Binary(true, json.toString().encodeToByteArray()))
         }
