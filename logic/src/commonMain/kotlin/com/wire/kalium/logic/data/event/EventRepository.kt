@@ -26,6 +26,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -101,12 +102,14 @@ class EventDataSource(
     override suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> {
         return when (val deliveryInfo = eventEnvelope.deliveryInfo) {
             is EventDeliveryInfo.Async -> {
-                notificationApi.acknowledgeEvents(
-                    clientRegistrationStorage.getRetainedClientId()!!,
-                    eventMapper.toAcknowledgeRequest(deliveryInfo)
+                currentClientId().fold(
+                    { it.left() },
+                    {
+                        // todo(ym) check for errors.
+                        notificationApi.acknowledgeEvents(it.value, eventMapper.toAcknowledgeRequest(deliveryInfo))
+                        Unit.right()
+                    }
                 )
-                Unit.right()
-                // todo(ym) handle error case
             }
 
             // todo(ym) logs to skip
