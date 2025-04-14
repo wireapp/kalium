@@ -36,10 +36,10 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateConversation
 interface ApiModelMapper {
 
     fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3
+    fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
-    fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
 
     /**
@@ -65,20 +65,21 @@ class ApiModelMapperImpl : ApiModelMapper {
             request.creatorClient
         )
 
-    override fun toApiV8(request: RegisterClientRequest): RegisterClientRequest =
-        RegisterClientRequest(
-            password = request.password,
-            preKeys = request.preKeys,
-            lastKey = request.lastKey,
-            deviceType = request.deviceType,
-            type = request.type,
-            label = request.label,
-            capabilities = request.capabilities?.toMutableSet()?.apply {
-                add(ClientCapabilityDTO.ConsumableNotifications)
-            }?.toList() ?: listOf(ClientCapabilityDTO.ConsumableNotifications),
-            model = request.model,
-            cookieLabel = request.cookieLabel,
-            secondFactorVerificationCode = request.secondFactorVerificationCode
+    override fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8 =
+        CreateConversationRequestV8(
+            qualifiedUsers = request.qualifiedUsers,
+            name = request.name,
+            access = request.access,
+            accessRole = request.accessRole,
+            groupConversationType = request.groupConversationType,
+            channelAddPermissionTypeDTO = request.channelAddPermissionTypeDTO,
+            convTeamInfo = request.convTeamInfo,
+            messageTimer = request.messageTimer,
+            receiptMode = request.receiptMode,
+            conversationRole = request.conversationRole,
+            protocol = request.protocol,
+            creatorClient = request.creatorClient,
+            cellEnabled = request.cellEnabled
         )
 
     override fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3 =
@@ -127,22 +128,6 @@ class ApiModelMapperImpl : ApiModelMapper {
             conversationGroupType = response.conversation.conversationGroupType
         )
 
-    override fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8 =
-        CreateConversationRequestV8(
-            request.qualifiedUsers,
-            request.name,
-            request.access,
-            request.accessRole,
-            request.groupConversationType,
-            request.convTeamInfo,
-            request.messageTimer,
-            request.receiptMode,
-            request.conversationRole,
-            request.protocol,
-            request.creatorClient,
-            request.cellEnabled,
-        )
-
     override fun fromApiV8(response: ConversationResponseV8): ConversationResponse =
         ConversationResponse(
             creator = response.creator,
@@ -160,7 +145,25 @@ class ApiModelMapperImpl : ApiModelMapper {
             access = response.access,
             accessRole = response.accessRole,
             receiptMode = response.receiptMode,
+            publicKeys = response.publicKeys,
             conversationGroupType = response.conversationGroupType,
-            cellsState = response.cellsState,
+            channelAddUserPermissionTypeDTO = response.channelAddUserPermissionTypeDTO,
+            cellsState = response.cellsState
+        )
+
+    override fun toApiV8(request: RegisterClientRequest): RegisterClientRequest =
+        RegisterClientRequest(
+            password = request.password,
+            preKeys = request.preKeys,
+            lastKey = request.lastKey,
+            deviceType = request.deviceType,
+            type = request.type,
+            label = request.label,
+            capabilities = request.capabilities?.toMutableSet()?.apply {
+                add(ClientCapabilityDTO.ConsumableNotifications)
+            }?.toList() ?: listOf(ClientCapabilityDTO.ConsumableNotifications),
+            model = request.model,
+            cookieLabel = request.cookieLabel,
+            secondFactorVerificationCode = request.secondFactorVerificationCode
         )
 }
