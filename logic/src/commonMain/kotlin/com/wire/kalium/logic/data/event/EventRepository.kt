@@ -50,6 +50,9 @@ import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
 
+    /**
+     * Performs an acknowledgment of the event. In case a legacy event is received, it will be ignored.
+     */
     suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit>
     suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>
