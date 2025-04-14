@@ -50,7 +50,11 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.InternalErrors,
             is MLSFailure.Disabled,
             MLSFailure.CommitForMissingProposal,
+<<<<<<< HEAD
             MLSFailure.ConversationNotFound,
+=======
+            MLSFailure.OrphanWelcome,
+>>>>>>> 17ae806199 (fix: OrphanWelcome error handling on process welcome message (#3403))
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,
@@ -74,7 +78,6 @@ internal object MLSMessageFailureHandler {
             StorageFailure.DataNotFound,
             is StorageFailure.Generic,
             is CoreFailure.Unknown -> MLSMessageFailureResolution.InformUser
-
         }
     }
 }
