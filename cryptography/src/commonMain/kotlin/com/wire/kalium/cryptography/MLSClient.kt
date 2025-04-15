@@ -188,7 +188,6 @@ interface MLSClient {
      *
      * @return nothing, because commit is handled by [MLSTransporter]
      */
-    // TODO update documentation
     suspend fun updateKeyingMaterial(groupId: MLSGroupId)
 
     /**
