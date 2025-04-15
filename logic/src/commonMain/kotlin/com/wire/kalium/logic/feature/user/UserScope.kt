@@ -70,6 +70,7 @@ import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorker
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCase
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
@@ -123,6 +124,7 @@ class UserScope internal constructor(
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger,
     private val teamUrlUseCase: GetTeamUrlUseCase,
+    val mlsPublicKeysSyncWorker: MLSPublicKeysSyncWorker,
     private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
