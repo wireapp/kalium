@@ -87,7 +87,7 @@ internal class MLSTransportProviderImpl(
             }
         }
     }
-// TODO check if its needed
+// TODO remember to handle recipients delivery failure when sendMessage will be used
 //     private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
 //         if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
 //         else {

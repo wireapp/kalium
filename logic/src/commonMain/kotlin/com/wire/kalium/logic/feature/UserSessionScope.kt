@@ -1211,7 +1211,8 @@ class UserSessionScope internal constructor(
     private val localEventManager by lazy {
         LocalEventManagerImpl(
             localEventRepository,
-            eventProcessor
+            eventProcessor,
+            this
         )
     }
 

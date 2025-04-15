@@ -21,12 +21,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.sync.incremental.EventProcessor
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
 /**
  * LocalEventManager listens for local events from LocalEventRepository and processes them using EventProcessor.
@@ -40,10 +39,12 @@ internal interface LocalEventManager {
 
 internal class LocalEventManagerImpl(
     private val localEventRepository: LocalEventRepository,
-    private val eventProcessor: EventProcessor
+    private val eventProcessor: EventProcessor,
+    scope: CoroutineScope,
+    dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : LocalEventManager, CoroutineScope {
 
-    override val coroutineContext: CoroutineContext = SupervisorJob() + Dispatchers.IO
+    override val coroutineContext = scope.coroutineContext + dispatchers.io
 
     override fun startProcessing() {
         launch {
