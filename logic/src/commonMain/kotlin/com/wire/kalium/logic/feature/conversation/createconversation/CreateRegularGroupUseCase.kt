@@ -23,11 +23,22 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * Use case to create a regular group conversation.
  * This is a wrapper around [GroupConversationCreator] that sets the group type to [ConversationOptions.GroupType.REGULAR_GROUP].
+ */
+interface CreateRegularGroupUseCase {
+    suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): ConversationCreationResult
+}
+
+/**
+ * Implementation of [CreateRegularGroupUseCase].
  * @param createGroupConversation the use case to create a group conversation
  */
-class CreateRegularGroupUseCase(
+internal class CreateRegularGroupUseCaseImpl(
     private val createGroupConversation: GroupConversationCreator
-) {
-    suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): ConversationCreationResult =
+) : CreateRegularGroupUseCase {
+    override suspend fun invoke(
+        name: String,
+        userIdList: List<UserId>,
+        options: ConversationOptions
+    ): ConversationCreationResult =
         createGroupConversation(name, userIdList, options.copy(groupType = ConversationOptions.GroupType.REGULAR_GROUP))
 }

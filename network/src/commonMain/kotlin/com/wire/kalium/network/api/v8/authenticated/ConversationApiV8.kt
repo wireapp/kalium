@@ -36,6 +36,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -46,6 +47,18 @@ internal open class ConversationApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
     private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl(),
 ) : ConversationApiV7(authenticatedNetworkClient) {
+
+    override suspend fun fetchConversationDetails(
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationResponse> =
+        wrapKaliumResponse<ConversationResponseV8> {
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
+            )
+        }.mapSuccess { conversationResponseV8 ->
+            apiModelMapper.fromApiV8(conversationResponseV8)
+        }
+
     override suspend fun fetchConversationsListDetails(
         conversationsIds: List<ConversationId>
     ): NetworkResponse<ConversationResponseDTO> =
@@ -72,8 +85,8 @@ internal open class ConversationApiV8 internal constructor(
         httpClient.post(PATH_CONVERSATIONS) {
             setBody(apiModelMapper.toApiV8(createConversationRequest))
         }
-    }.mapSuccess {
-        apiModelMapper.fromApiV8(it)
+    }.mapSuccess { conversationResponseV8 ->
+        apiModelMapper.fromApiV8(conversationResponseV8)
     }
 
     override suspend fun updateChannelAddPermission(
