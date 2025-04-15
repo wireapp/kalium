@@ -66,18 +66,16 @@ internal class MLSClientManagerImpl(
         job = scope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live &&
-                    isAllowedToRegisterMLSClient()
-                ) {
-                    registerMLSClientIfNeeded()
+                if (syncState is IncrementalSyncStatus.Live) {
+                    registerMLSClientIfPossibleAndNeeded()
                 }
             }
         }
     }
 
-    private suspend fun registerMLSClientIfNeeded() {
-        clientRepository.value.hasRegisteredMLSClient().flatMap {
-            if (!it) {
+    private suspend fun registerMLSClientIfPossibleAndNeeded() {
+        clientRepository.value.hasRegisteredMLSClient().flatMap { isMLSClientRegistered ->
+            if (!isMLSClientRegistered && isAllowedToRegisterMLSClient()) {
                 currentClientIdProvider().flatMap { clientId ->
                     kaliumLogger.i("No existing MLS Client, registering..")
                     registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->

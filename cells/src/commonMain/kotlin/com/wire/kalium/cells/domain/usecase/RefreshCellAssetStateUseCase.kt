@@ -20,7 +20,6 @@ package com.wire.kalium.cells.domain.usecase
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.NetworkFailure.ServerMiscommunication
@@ -51,7 +50,7 @@ import okio.SYSTEM
  * - Fetch preview URL with retries.
  */
 public interface RefreshCellAssetStateUseCase {
-    public suspend operator fun invoke(assetId: String, fetchPreview: Boolean): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(assetId: String): Either<CoreFailure, Unit>
 }
 
 internal class RefreshCellAssetStateUseCaseImpl internal constructor(
@@ -65,7 +64,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         private const val DELAY = 500L
     }
 
-    override suspend fun invoke(assetId: String, fetchPreview: Boolean): Either<CoreFailure, Unit> {
+    override suspend fun invoke(assetId: String): Either<CoreFailure, Unit> {
         return cellsRepository.getNode(assetId)
             .onSuccess { node ->
                 if (node.isRecycled) {
@@ -90,25 +89,25 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
             }
     }
 
-    private suspend fun getNodePreviews(node: CellNode): Either<CoreFailure, List<NodePreview>> {
-
-        if (node.previews.isNotEmpty()) return node.previews.right()
-
-        return retry(MAX_PREVIEW_FETCH_RETRIES, DELAY) {
-            cellsRepository.getPreviews(node.uuid)
-                .onFailure { error ->
-                    if (error.isAssetNotFound()) {
-                        return@retry error.left()
+    private suspend fun getNodePreviews(node: CellNode) =
+        if (node.previews.isNotEmpty()) {
+            node.previews.right()
+        } else {
+            retry(MAX_PREVIEW_FETCH_RETRIES, DELAY) {
+                cellsRepository.getPreviews(node.uuid)
+                    .onFailure { error ->
+                        if (error.isAssetNotFound()) {
+                            return error.left()
+                        }
                     }
-                }
-                .flatMap { response ->
-                    when {
-                        response.isEmpty() -> StorageFailure.DataNotFound.left()
-                        else -> response.right()
+                    .flatMap { response ->
+                        when {
+                            response.isEmpty() -> StorageFailure.DataNotFound.left()
+                            else -> response.right()
+                        }
                     }
-                }
+            }
         }
-    }
 
     private suspend fun removeLocalAssetData(assetId: String) {
         attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
