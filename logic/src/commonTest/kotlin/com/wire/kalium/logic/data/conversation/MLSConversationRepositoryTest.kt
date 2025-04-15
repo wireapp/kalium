@@ -106,24 +106,6 @@ import kotlin.test.assertIs
 
 class MLSConversationRepositoryTest {
 
-    @BeforeTest
-
-    @Test
-    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withDecryptMLSMessageSuccessful(Arrangement.DECRYPTED_MESSAGE_BUNDLE)
-            .arrange()
-
-        val epochChange = async() {
-            arrangement.epochsFlow.first()
-        }
-        yield()
-
-        mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
-        assertEquals(Arrangement.GROUP_ID, epochChange.await())
-    }
-
     @Test
     fun givenCommitMessageWithNewDistributionPoints_whenDecryptingMessage_thenCheckRevocationList() =
         runTest(TestKaliumDispatcher.default) {
@@ -136,11 +118,6 @@ class MLSConversationRepositoryTest {
                 .withCheckRevocationListResult()
                 .arrange()
 
-            val epochChange = async(TestKaliumDispatcher.default) {
-                arrangement.epochsFlow.first()
-            }
-            yield()
-
             mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
 
             coVerify {
@@ -150,8 +127,6 @@ class MLSConversationRepositoryTest {
             coVerify {
                 arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
             }.wasInvoked(once)
-
-            assertEquals(Arrangement.GROUP_ID, epochChange.await())
         }
 
     @Test
@@ -1392,7 +1367,6 @@ class MLSConversationRepositoryTest {
             conversationDAO,
             clientApi,
             mlsPublicKeysRepository,
-            epochsFlow,
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
