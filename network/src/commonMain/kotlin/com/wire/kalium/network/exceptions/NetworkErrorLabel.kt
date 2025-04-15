@@ -53,6 +53,7 @@ internal object NetworkErrorLabel {
     const val MISSING_LEGALHOLD_CONSENT = "missing-legalhold-consent"
     const val ACCOUNT_SUSPENDED = "suspended"
     const val ACCOUNT_PENDING_ACTIVATION = "pending-activation"
+    const val ENTERPRISE_SERVICE_NOT_ENABLED = "enterprise-service-not-enabled"
 
     // Federation
     const val FEDERATION_FAILURE = "federation-remote-error"

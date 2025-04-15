@@ -19,6 +19,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.Either
@@ -26,7 +27,6 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.GlobalKaliumScope
@@ -86,6 +86,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
@@ -767,7 +769,7 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
             userRepository,
-            lazy { conversations.newGroupConversationSystemMessagesCreator },
+            lazy { newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId,
             legalHoldHandler,
@@ -776,7 +778,7 @@ class UserSessionScope internal constructor(
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
             userStorage.database.memberDAO,
-            lazy { conversations.newGroupConversationSystemMessagesCreator }
+            lazy { newGroupConversationSystemMessagesCreator }
         )
 
     private val messageRepository: MessageRepository
@@ -1036,7 +1038,8 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             clientRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            userId
         )
 
     private val registerMLSClientUseCase: RegisterMLSClientUseCase
@@ -1457,12 +1460,20 @@ class UserSessionScope internal constructor(
             staleEpochVerifier
         )
 
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+        get() = NewGroupConversationSystemMessagesCreatorImpl(
+            persistMessage = persistMessage,
+            selfTeamIdProvider = selfTeamId,
+            qualifiedIdMapper = qualifiedIdMapper,
+            selfUserId = userId
+        )
+
     private val newConversationHandler: NewConversationEventHandler
         get() = NewConversationEventHandlerImpl(
             conversationRepository,
             userRepository,
             selfTeamId,
-            conversations.newGroupConversationSystemMessagesCreator,
+            newGroupConversationSystemMessagesCreator,
             oneOnOneResolver,
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
@@ -1476,7 +1487,8 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             persistMessage = persistMessage,
-            legalHoldHandler = legalHoldHandler
+            legalHoldHandler = legalHoldHandler,
+            newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
@@ -1662,7 +1674,7 @@ class UserSessionScope internal constructor(
             oneOnOneResolver,
             userId,
             clientIdProvider,
-            lazy { conversations.newGroupConversationSystemMessagesCreator },
+            lazy { newGroupConversationSystemMessagesCreator },
             legalHoldRequestHandler,
             legalHoldHandler
         )
@@ -1848,7 +1860,6 @@ class UserSessionScope internal constructor(
             selfTeamId,
             messages.sendConfirmation,
             renamedConversationHandler,
-            qualifiedIdMapper,
             authenticationScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,
@@ -1859,7 +1870,8 @@ class UserSessionScope internal constructor(
             refreshUsersWithoutMetadata,
             sessionManager.getServerConfig().links,
             messages.messageRepository,
-            assetRepository
+            assetRepository,
+            newGroupConversationSystemMessagesCreator,
         )
     }
 
@@ -1972,7 +1984,8 @@ class UserSessionScope internal constructor(
             checkRevocationList,
             syncFeatureConfigsUseCase,
             userScopedLogger,
-            getTeamUrlUseCase
+            getTeamUrlUseCase,
+            this,
         )
     }
 
@@ -2144,7 +2157,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             oneOnOneResolver,
-            conversations.newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
