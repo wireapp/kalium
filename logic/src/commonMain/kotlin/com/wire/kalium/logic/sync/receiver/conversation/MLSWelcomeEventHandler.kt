@@ -42,6 +42,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.first
 
@@ -49,12 +50,14 @@ interface MLSWelcomeEventHandler {
     suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList", "LongMethod")
 internal class MLSWelcomeEventHandlerImpl(
     val mlsClientProvider: MLSClientProvider,
     val conversationRepository: ConversationRepository,
     val oneOnOneResolver: OneOnOneResolver,
     val refillKeyPackages: RefillKeyPackagesUseCase,
     val revocationListChecker: RevocationListChecker,
+    val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> {
@@ -68,7 +71,8 @@ internal class MLSWelcomeEventHandlerImpl(
                 wrapMLSRequest {
                     client.processWelcomeMessage(event.message.decodeBase64Bytes())
                 }
-            }.flatMap { welcomeBundle ->
+            }
+            .flatMap { welcomeBundle ->
                 welcomeBundle.crlNewDistributionPoints?.let {
                     kaliumLogger.d("$TAG: checking revocation list")
                     checkRevocationList(it)
@@ -80,11 +84,24 @@ internal class MLSWelcomeEventHandlerImpl(
                 resolveConversationIfOneOnOne(event.conversationId)
             }
             .flatMapLeft {
-                if (it is MLSFailure.ConversationAlreadyExists) {
-                    kaliumLogger.w("$TAG: Discarding welcome since the conversation already exists")
-                    Either.Right(Unit)
-                } else {
-                    Either.Left(it)
+                when (it) {
+                    is MLSFailure.ConversationAlreadyExists -> {
+                        kaliumLogger.w("$TAG: Discarding welcome since the conversation already exists")
+                        Either.Right(Unit)
+                    }
+
+                    is MLSFailure.OrphanWelcome -> {
+                        kaliumLogger.w("$TAG: Discarding welcome and joining existing conversation by external commit")
+                        joinExistingMLSConversation(
+                            conversationId = event.conversationId,
+                        ).map {
+                            kaliumLogger.d("$TAG: Successfully joined existing MLS conversation")
+                        }
+                    }
+
+                    else -> {
+                        Either.Left(it)
+                    }
                 }
             }
             .onSuccess {
