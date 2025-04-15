@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
+import io.ktor.client.call.DoubleReceiveException
 import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
@@ -120,7 +121,7 @@ internal fun String.splitSetCookieHeader(): List<String> {
  * @return A new [NetworkResponse.Success] with the mapped result,
  * or [NetworkResponse.Error] if it was never a success to begin with
  */
-internal inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
+inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
     if (isSuccessful()) {
         NetworkResponse.Success(mapping(this.value), this.headers, this.httpCode)
     } else {
@@ -199,12 +200,24 @@ internal suspend fun handleUnsuccessfulResponse(
     result: HttpResponse
 ): NetworkResponse.Error {
     val status = result.status
-
-    val errorResponse = try {
-        result.body()
+    val bodyText = try {
+        result.bodyAsText()
     } catch (_: NoTransformationFoundException) {
         // When the backend returns something that is not a JSON for whatever reason.
-        ErrorResponse(status.value, status.description, "")
+        "NoTransformationFoundException"
+    } catch (_: DoubleReceiveException) {
+        // When the backend returns a JSON that cannot be parsed.
+        "DoubleReceiveException"
+    }
+
+    val errorResponse = try {
+        KtxSerializer.json.decodeFromString<ErrorResponse>(bodyText)
+    } catch (_: IllegalArgumentException) {
+        // When the backend returns something that is not a JSON for whatever reason.
+        ErrorResponse(code = status.value, label = status.description, message = bodyText)
+    } catch (_: SerializationException) {
+        // When the backend returns a JSON that cannot be parsed.
+        ErrorResponse(code = status.value, label = status.description, message = bodyText)
     }
 
     val federationException = errorResponse.isFederationError().let {

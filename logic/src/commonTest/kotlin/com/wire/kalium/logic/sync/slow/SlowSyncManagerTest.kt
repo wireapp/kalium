@@ -341,7 +341,7 @@ class SlowSyncManagerTest {
             val (arrangement, slowSyncManager) = Arrangement().arrange {
                 withSatisfiedCriteria()
                 withSlowSyncWorkerReturning(stepChannel.consumeAsFlow())
-                withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant() - 30.days))
+                withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant() - 32.days))
             }
 
             slowSyncManager.performSyncFlow().test {

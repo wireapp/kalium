@@ -35,11 +35,11 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
             is MlsException.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
 
             is MlsException.Other -> {
-                if ((exception.exception as MlsException.Other).message
-                        .startsWith(COMMIT_FOR_MISSING_PROPOSAL)
-                ) {
-                    // TODO now probably it's the same as BufferedCommit?
+                val otherError = (exception.exception as MlsException.Other).message
+                if (otherError.startsWith(COMMIT_FOR_MISSING_PROPOSAL)) {
                     MLSFailure.CommitForMissingProposal
+                } else if (otherError.startsWith(CONVERSATION_NOT_FOUND)) {
+                    MLSFailure.ConversationNotFound
                 } else {
                     MLSFailure.Other
                 }
@@ -74,3 +74,4 @@ private fun containsMessageRejected(message: String): Boolean =
             || message.contains("mls-commit-missing-references")
 
 private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"
+private const val CONVERSATION_NOT_FOUND = "Couldn't find conversation"

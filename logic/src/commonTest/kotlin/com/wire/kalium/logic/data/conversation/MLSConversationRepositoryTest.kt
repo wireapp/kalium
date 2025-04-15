@@ -94,12 +94,10 @@ import io.mockative.once
 import io.mockative.twice
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -806,7 +804,6 @@ class MLSConversationRepositoryTest {
         coVerify {
             arrangement.mlsClient.updateKeyingMaterial(any())
         }.wasInvoked(once)
-
     }
 
     @Test

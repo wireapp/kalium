@@ -141,10 +141,16 @@ internal class ConversationGroupRepositoryImpl(
                     lastUsersAttempt = lastUsersAttempt
                 )
 
-                is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
+                is Either.Right -> handleGroupConversationCreated(
+                    conversationResponse = apiResult.value,
+                    selfTeamId = selfTeamId,
+                    usersList = usersList,
+                    lastUsersAttempt = lastUsersAttempt
+                )
             }
         }
 
+    @Suppress("LongMethod")
     private suspend fun handleGroupConversationCreated(
         conversationResponse: ConversationResponse,
         selfTeamId: TeamId?,
@@ -152,13 +158,17 @@ internal class ConversationGroupRepositoryImpl(
         lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> {
         val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
+            apiModel = conversationResponse,
+            mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION,
+            selfUserTeamId = selfTeamId,
         )
         val mlsPublicKeys = conversationMapper.fromApiModel(conversationResponse.publicKeys)
         val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
 
         return wrapStorageRequest {
             conversationDAO.insertConversation(conversationEntity)
+        }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(conversationEntity.id.toModel())
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
         }.flatMap {
@@ -192,12 +202,6 @@ internal class ConversationGroupRepositoryImpl(
                             conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
                         )
                 }
-            }
-        }.flatMap {
-            wrapStorageRequest {
-                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                    conversationEntity.id.toModel()
-                )
             }
         }.onSuccess {
             legalHoldHandler.handleConversationMembersChanged(conversationEntity.id.toModel())

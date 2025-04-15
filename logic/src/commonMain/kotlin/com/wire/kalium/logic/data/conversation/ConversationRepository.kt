@@ -18,12 +18,29 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.mapToRightOr
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
@@ -40,28 +57,14 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.isLeft
-import com.wire.kalium.common.functional.isRight
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.mapRight
-import com.wire.kalium.common.functional.mapToRightOr
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapMLSRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -229,7 +232,22 @@ interface ConversationRepository {
         role: Conversation.Member.Role
     ): Either<CoreFailure, Unit>
 
+    suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit>
+
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse>
 
     /**
      * Deletes all conversation messages
@@ -272,7 +290,7 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
+    suspend fun getConversationByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation>
 
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 
@@ -326,6 +344,8 @@ interface ConversationRepository {
     suspend fun observeOneToOneConversationDetailsWithOtherUser(
         otherUserId: UserId
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
+
+    suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -809,6 +829,10 @@ internal class ConversationDataSource internal constructor(
             .wrapStorageRequest()
     }
 
+    override suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        conversationDAO.getCellName(conversationId.toDao()) != null
+    }
+
     override suspend fun getOneOnOneConversationsWithOtherUser(
         otherUserId: UserId,
         protocol: Conversation.Protocol
@@ -886,18 +910,19 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun deleteConversation(conversationId: ConversationId) =
-        getConversationProtocolInfo(conversationId).flatMap {
-            when (it) {
-                is Conversation.ProtocolInfo.MLSCapable ->
-                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapMLSRequest {
-                            mlsClient.wipeConversation(it.groupId.toCrypto())
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+        getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
+            when (protocolInfo) {
+                is Conversation.ProtocolInfo.MLSCapable -> {
+                    wrapStorageRequest {
+                        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+                    }.onSuccess {
+                        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                            wrapMLSRequest {
+                                mlsClient.wipeConversation(protocolInfo.groupId.toCrypto())
+                            }
                         }
                     }
+                }
 
                 is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
                     conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
@@ -998,6 +1023,26 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+    override suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.updateChannelAddPermission(
+            conversationId.toDao(),
+            channelAddPermission.toDaoChannelPermission()
+        )
+    }
+
+    override suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
+        conversationApi.updateChannelAddPermission(
+            conversationId = conversationId.toApi(),
+            channelAddPermission = ChannelAddPermissionDTO(channelAddPermission.toApi())
+        )
+    }
+
     override suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean> =
         wrapStorageRequest {
             conversationMetaDataDAO.isInformedAboutDegradedMLSVerification(conversationId.toDao())
@@ -1039,9 +1084,9 @@ internal class ConversationDataSource internal constructor(
             )
         }
 
-    override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
-        wrapStorageRequest { conversationDAO.getConversationDetailsByGroupID(mlsGroupId.value) }
-            .map { conversationMapper.fromDaoModelToDetails(it) }
+    override suspend fun getConversationByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation> =
+        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
+            .map { conversationMapper.fromDaoModel(it) }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         conversationDAO.observeUnreadArchivedConversationsCount()
@@ -1190,6 +1235,21 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationsDeleteQueue(): List<ConversationId> =
         metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
             ?.map { it.toModel() } ?: listOf()
+
+    override suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit> = updateChannelAddPermissionRemotely(conversationId, channelAddPermission).flatMap {
+        when (it) {
+            is UpdateChannelAddPermissionResponse.PermissionUnchanged -> {
+                Either.Right(Unit)
+            }
+
+            is UpdateChannelAddPermissionResponse.PermissionUpdated -> {
+                updateChannelAddPermissionLocally(conversationId, channelAddPermission)
+            }
+        }
+    }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

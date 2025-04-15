@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.user.SupportedProtocol
 
 // TODO(qol): rename to CreateConversationParam
@@ -25,9 +26,11 @@ data class ConversationOptions(
     val access: Set<Conversation.Access>? = null,
     val accessRole: Set<Conversation.AccessRole>? = null,
     val readReceiptsEnabled: Boolean = false,
+    val wireCellEnabled: Boolean = false,
     val protocol: Protocol = Protocol.PROTEUS,
     val creatorClientId: ClientId? = null,
     val groupType: GroupType = GroupType.REGULAR_GROUP,
+    val channelAddPermission: ChannelAddPermission = ChannelAddPermission.ADMINS
 ) {
     enum class Protocol {
         PROTEUS, MLS;

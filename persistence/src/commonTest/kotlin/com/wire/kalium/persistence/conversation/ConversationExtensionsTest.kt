@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEvent
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensionsImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -82,7 +83,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPage_thenItShouldContainTheCorrectCountBeforeAndAfter() = runTest(dispatcher) {
-        populateData()
+        populateData(isChannel = false)
         val result = getPager().pagingSource.refresh()
         assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
         // Assuming the first page was fetched, itemsAfter should be the remaining ones
@@ -92,7 +93,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstSearchedPage_thenItShouldContainTheCorrectCountBeforeAndAfter() = runTest(dispatcher) {
-        populateData()
+        populateData(isChannel = false)
         val searchQuery = "conversation 1"
         val result = getPager(searchQuery = searchQuery).pagingSource.refresh()
         assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
@@ -103,7 +104,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest(dispatcher) {
-        populateData()
+        populateData(isChannel = false)
         val result = getPager().pagingSource.refresh()
         assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
         assertEquals(PAGE_SIZE, result.nextKey) // First page fetched, second page starts at the end of the first one
@@ -111,7 +112,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPage_thenItShouldContainTheFirstPageOfItems() = runTest(dispatcher) {
-        populateData()
+        populateData(isChannel = false)
         val result = getPager().pagingSource.refresh()
         assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
         result.data.forEachIndexed { index, conversation ->
@@ -122,7 +123,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingSecondPage_thenShouldContainTheCorrectItems() = runTest(dispatcher) {
-        populateData()
+        populateData(isChannel = false)
         val pagingSource = getPager().pagingSource
         val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
         assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(secondPageResult)
@@ -135,8 +136,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPageOfArchivedConversations_thenItShouldContainArchivedItems() = runTest(dispatcher) {
-        populateData(archived = false, count = CONVERSATION_COUNT, conversationIdPrefix = CONVERSATION_ID_PREFIX)
-        populateData(archived = true, count = CONVERSATION_COUNT, conversationIdPrefix = ARCHIVED_CONVERSATION_ID_PREFIX)
+        populateData(archived = false, count = CONVERSATION_COUNT, conversationIdPrefix = CONVERSATION_ID_PREFIX, isChannel = false)
+        populateData(archived = true, count = CONVERSATION_COUNT, conversationIdPrefix = ARCHIVED_CONVERSATION_ID_PREFIX, isChannel = false)
         val result = getPager(fromArchive = true).pagingSource.refresh()
         assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
         result.data.forEachIndexed { index, conversation ->
@@ -147,7 +148,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstSearchedPage_thenShouldContainTheCorrectItems() = runTest(dispatcher) {
-        populateData()
+        populateData(isChannel = false)
         val searchQuery = "conversation 1"
         val result = getPager(searchQuery = searchQuery).pagingSource.refresh()
         assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
@@ -158,10 +159,35 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         }
     }
 
-    private fun getPager(searchQuery: String = "", fromArchive: Boolean = false): KaliumPager<ConversationDetailsWithEventsEntity> =
+    @Test
+    fun givenFilterByGroup_whenReturningResults_thenDONotIncludeChannels() = runTest(dispatcher) {
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", isChannel = false)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", isChannel = true)
+        getPager(searchQuery = "", filter = ConversationFilterEntity.GROUPS).pagingSource.refresh().also { result ->
+            assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
+            assertEquals(10, result.data.size)
+            result.data.forEach {
+                assertFalse { it.conversationViewEntity.isChannel }
+            }
+        }
+    }
+
+    @Test
+    fun givenFilterByChannels_whenReturningResults_thenDONotIncludeGroups() = runTest(dispatcher) {
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", isChannel = false)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", isChannel = true)
+        getPager(searchQuery = "", filter = ConversationFilterEntity.CHANNELS).pagingSource.refresh().also { result ->
+            assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
+            assertEquals(9, result.data.size)
+            result.data.forEach {
+                assertTrue { it.conversationViewEntity.isChannel }
+            }
+        }
+    }
+    private fun getPager(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
         conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
             pagingConfig = PagingConfig(PAGE_SIZE),
-            queryConfig = ConversationExtensions.QueryConfig(searchQuery = searchQuery, fromArchive = fromArchive),
+            queryConfig = ConversationExtensions.QueryConfig(searchQuery = searchQuery, fromArchive = fromArchive, conversationFilter = filter),
         )
 
     private suspend fun PagingSource<Int, ConversationDetailsWithEventsEntity>.refresh() =
@@ -174,6 +200,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         archived: Boolean = false,
         count: Int = CONVERSATION_COUNT,
         conversationIdPrefix: String = CONVERSATION_ID_PREFIX,
+        isChannel: Boolean
     ) {
         userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
         repeat(count) {
@@ -186,6 +213,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
                 lastModifiedDate = lastModified,
                 lastReadDate = lastRead,
                 archived = archived,
+                isChannel = isChannel,
             )
             conversationDAO.insertConversation(conversation)
         }

@@ -1058,7 +1058,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUsersInTheSameTeamAsSelf_whenCountTeamMembers_thenAmountCountedCorrectly() = runTest {
+    fun givenUsersInTheSameTeamAsSelf_whenCountTeamMembers_thenSelfIsCounted() = runTest {
         // given
         val selfUser = newUserEntity(selfUserId)
         val users = listOf(
@@ -1076,10 +1076,10 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(users.plus(selfUser))
 
         // when
-        val result = db.userDAO.countTeamMembersAmount(teamId = selfUser.team!!, selfUserId = selfUserId)
+        val result = db.userDAO.countTeamMembersAmount(teamId = selfUser.team!!)
 
         // then
-        assertEquals(4, result)
+        assertEquals(5, result)
     }
 
     @Test

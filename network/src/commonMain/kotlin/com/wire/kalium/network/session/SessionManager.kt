@@ -48,12 +48,11 @@ interface SessionManager {
      * In case of failure to refresh the access token, an exception can be thrown.
      *
      * @param accessTokenApi The AccessTokenApi interface used to retrieve the new access token.
-     * @param oldAccessToken The old access token to be replaced.
      * @param oldRefreshToken The old refresh token to be replaced.
      * @return The updated SessionDTO object.
      * @see FailureToRefreshTokenException
      */
-    suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO
+    suspend fun updateToken(accessTokenApi: AccessTokenApi, oldRefreshToken: String): SessionDTO
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 

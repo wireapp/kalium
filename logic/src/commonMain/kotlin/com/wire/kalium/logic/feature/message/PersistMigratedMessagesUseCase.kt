@@ -216,5 +216,6 @@ internal class PersistMigratedMessagesUseCaseImpl(
         is MessageContent.Location -> MessageEntity.Visibility.VISIBLE
         is MessageContent.DataTransfer -> MessageEntity.Visibility.HIDDEN
         is MessageContent.InCallEmoji -> MessageEntity.Visibility.HIDDEN
+        is MessageContent.Multipart -> MessageEntity.Visibility.VISIBLE
     }
 }

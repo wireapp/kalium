@@ -50,9 +50,10 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.InternalErrors,
             is MLSFailure.Disabled,
             MLSFailure.CommitForMissingProposal,
-            MLSFailure.BufferedCommit, // TODO should be ignored?
+            MLSFailure.ConversationNotFound,
+            MLSFailure.BufferedCommit,
             is MLSFailure.MessageRejected, // TODO should be ignored?
-            MLSFailure.OrphanWelcome, // TODO should be ignored?
+            MLSFailure.OrphanWelcome,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,

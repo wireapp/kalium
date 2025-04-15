@@ -92,7 +92,7 @@ jobs:
           apt-get install -y -qq --no-install-recommends python3-pip python3-venv
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2.19.0
         if: always()
         with:
           files: |
@@ -127,7 +127,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v4.1.9
+        uses: actions/download-artifact@v4.2.1
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R
