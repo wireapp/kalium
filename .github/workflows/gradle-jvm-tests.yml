@@ -35,14 +35,8 @@ jobs:
           apt-get update
           apt-get install -y build-essential
 
-#      - name: Install make
-#        run: apt-get update && apt-get install -y make
-
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
-
-#      - name: Verify Java version after setup
-#        run: java -version
 
       - name: Build the CLI App
         env:

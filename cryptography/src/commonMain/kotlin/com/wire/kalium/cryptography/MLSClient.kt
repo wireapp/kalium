@@ -364,16 +364,6 @@ interface MLSClient {
     suspend fun isE2EIEnabled(): Boolean
 
     /**
-     * Generate new keypackages after E2EI certificate issued
-     */
-//     suspend fun e2eiRotateAll(
-//         enrollment: E2EIClient,
-//         certificateChain: CertificateChain,
-//         newMLSKeyPackageCount: UInt,
-//         groupList: List<MLSGroupId>
-//     ): RotateBundle
-
-    /**
      * Conversation E2EI Verification Status
      *
      * @return the conversation verification status

@@ -52,7 +52,7 @@ internal object MLSMessageFailureHandler {
             MLSFailure.CommitForMissingProposal,
             MLSFailure.ConversationNotFound,
             MLSFailure.BufferedCommit,
-            is MLSFailure.MessageRejected, // TODO should be ignored?
+            is MLSFailure.MessageRejected,
             MLSFailure.OrphanWelcome,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 

@@ -687,6 +687,7 @@ internal class CallDataSource(
     ): Either<CoreFailure, EpochInfo> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
+                // TODO revert passing epoch to have latest epoch after derive secret
                 val secret = mlsClient.deriveSecret(subconversationGroupID.toCrypto(), 32u)
                 val conversationMembers = mlsClient.members(parentGroupID.toCrypto())
                 val subconversationMembers = mlsClient.members(subconversationGroupID.toCrypto())

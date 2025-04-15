@@ -78,7 +78,7 @@ fun CommitBundle.toCryptography(): com.wire.kalium.cryptography.CommitBundle = c
     commit = commit.value,
     welcome = welcome?.value,
     groupInfoBundle = groupInfoBundle.toCrypto(),
-    crlNewDistributionPoints = crlNewDistributionPoints?.lower() // TODO: check if this is correct
+    crlNewDistributionPoints = crlNewDistributionPoints?.lower()
 )
 
 fun com.wire.crypto.GroupInfoBundle.toCrypto(): GroupInfoBundle = GroupInfoBundle(

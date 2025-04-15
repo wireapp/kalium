@@ -412,7 +412,7 @@ internal class MLSConversationDataSource(
                                 // so we create a commit by updating our key material.
                                 kaliumLogger.d("add members to MLS Group: updating keying material for self client")
                                 mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))
-                                null // TODO should we get CRL here? Probably not because keyPackageList is empty
+                                null
                             } else {
                                 kaliumLogger.d("add members to MLS Group: executing for groupID ${groupID.toLogString()}")
                                 mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
@@ -441,7 +441,6 @@ internal class MLSConversationDataSource(
         logger.d("Removing ${userIdList.count()} users from MLS group ${groupID.toLogString()}")
         return mutex.withLock {
             commitPendingProposals(groupID).flatMap {
-                // TOD do we need this?
                 produceAndSendCommitWithRetryAndResult(groupID) {
                     wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { it.toApi() }) }.map { userClientsList ->
                         val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->

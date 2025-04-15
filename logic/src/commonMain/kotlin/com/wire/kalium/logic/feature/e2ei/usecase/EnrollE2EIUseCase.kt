@@ -211,7 +211,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 return it.left()
             }
         } else {
-            // TODO secure
             val groupIdList = conversationRepository.observeConversationList().first().mapNotNull {
                 when (val protocol = it.protocol) {
                     is Conversation.ProtocolInfo.MLS -> protocol.groupId
