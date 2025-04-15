@@ -29,7 +29,7 @@ internal interface CellAttachmentsRepository {
     suspend fun getAttachment(assetId: String): Either<StorageFailure, MessageAttachment>
     suspend fun savePreviewUrl(assetId: String, url: String?): Either<StorageFailure, Unit>
     suspend fun saveLocalPath(assetId: String, path: String?): Either<StorageFailure, Unit>
-    suspend fun saveContentUrlAndHash(assetId: String, contentUrl: String?, hash: String?): Either<StorageFailure, Unit>
+    suspend fun updateAttachment(assetId: String, contentUrl: String?, hash: String?, remotePath: String): Either<StorageFailure, Unit>
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
     suspend fun getAttachments(): Either<StorageFailure, List<MessageAttachment>>
     suspend fun saveStandaloneAssetPath(assetId: String, path: String, size: Long): Either<StorageFailure, Unit>
