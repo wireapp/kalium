@@ -202,11 +202,8 @@ sealed interface MLSFailure : CoreFailure {
     data object Disabled : MLSFailure
     data object Other : MLSFailure
     data object CommitForMissingProposal : MLSFailure
-<<<<<<< HEAD
     data object ConversationNotFound : MLSFailure
-=======
     data object OrphanWelcome : MLSFailure
->>>>>>> 17ae806199 (fix: OrphanWelcome error handling on process welcome message (#3403))
     data class Generic(val rootCause: Throwable) : MLSFailure
 }
 
