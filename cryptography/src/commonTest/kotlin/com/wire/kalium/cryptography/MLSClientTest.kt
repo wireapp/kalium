@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -430,7 +429,7 @@ class MLSClientTest : BaseMLSClientTest() {
         private val sendCommitResponses: MutableList<MlsTransportResponse>,
         private val mutex: Mutex,
 
-    ) {
+        ) {
 
         companion object {
             suspend fun CoroutineScope.create(
@@ -487,7 +486,16 @@ class MLSClientTest : BaseMLSClientTest() {
                     this,
                 )
 
-                return Arrangement(user, mlsClient, sendMessageFlow, sendCommitBundleFlow, epochChangeFlow, sendMessageResponses, sendCommitResponses, mutex)
+                return Arrangement(
+                    user,
+                    mlsClient,
+                    sendMessageFlow,
+                    sendCommitBundleFlow,
+                    epochChangeFlow,
+                    sendMessageResponses,
+                    sendCommitResponses,
+                    mutex
+                )
             }
         }
 

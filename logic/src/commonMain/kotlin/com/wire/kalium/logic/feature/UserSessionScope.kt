@@ -715,7 +715,8 @@ class UserSessionScope internal constructor(
             keyPackageLimitsProvider,
             checkRevocationList,
             certificateRevocationListRepository,
-            mutex = mlsMutex
+            mutex = mlsMutex,
+            epochChangesObserver = epochChangesObserver
         )
 
     private val e2eiRepository: E2EIRepository

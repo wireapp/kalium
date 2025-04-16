@@ -25,12 +25,17 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 
 interface EpochChangesObserver : MLSEpochObserver {
     fun observe(): Flow<GroupWithEpoch>
+    suspend fun emit(groupId: MLSGroupId, epoch: ULong)
 }
 
 internal class EpochChangesObserverImpl : EpochChangesObserver {
     private val epochsFlow = MutableSharedFlow<GroupWithEpoch>()
 
     override fun observe(): Flow<GroupWithEpoch> = epochsFlow
+    override suspend fun emit(groupId: MLSGroupId, epoch: ULong) {
+        epochsFlow.emit(GroupWithEpoch(GroupID(groupId), epoch))
+    }
+
     override suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong) {
         epochsFlow.emit(GroupWithEpoch(GroupID(groupId), epoch))
     }

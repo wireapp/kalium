@@ -39,6 +39,7 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.toDao
 import com.wire.kalium.logic.data.client.toModel
@@ -226,6 +227,7 @@ internal class MLSConversationDataSource(
     private val mutex: Mutex,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
+    private val epochChangesObserver: EpochChangesObserver
 ) : MLSConversationRepository {
 
     /**
@@ -256,6 +258,11 @@ internal class MLSConversationDataSource(
                         idMapper.toCryptoModel(groupID),
                         message
                     ).let { messages ->
+                        if (messages.any {
+                            it.hasEpochChanged }) {
+                            kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
+                            epochChangesObserver.emit(groupID.toCrypto(), 0U)
+                        }
                         messages.map {
                             it.crlNewDistributionPoints?.let { newDistributionPoints ->
                                 checkRevocationList(newDistributionPoints)
