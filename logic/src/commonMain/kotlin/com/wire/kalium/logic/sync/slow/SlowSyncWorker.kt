@@ -127,7 +127,8 @@ internal class SlowSyncWorkerImpl(
         } else {
             logger.i("Last processed event ID does not exist, fetching most recent event ID from remote")
             eventRepository.fetchMostRecentEventId().onFailure {
-                throw KaliumSyncException("Failure during SlowSync. Unable to fetch most recent event ID", it)
+//                 throw KaliumSyncException("Failure during SlowSync. Unable to fetch most recent event ID", it)
+                // todo ym(check to ignore if we are doing new async) or implement api v8 specific behavior to ignore.
             }.nullableFold({ null }, { it })
         }
         return lastProcessedEventIdToSaveOnSuccess

@@ -22,8 +22,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ConsumableNotificationResponse(
-    @SerialName("event_type")
-    val eventType: EventType,
+    @SerialName("type")
+    val type: EventType,
     @SerialName("data")
     val data: EventDataDTO?
 )

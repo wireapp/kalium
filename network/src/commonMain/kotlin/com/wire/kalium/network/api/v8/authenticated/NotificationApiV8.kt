@@ -34,6 +34,8 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setWSSUrl
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.Url
 import io.ktor.websocket.Frame
@@ -48,7 +50,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.encodeToJsonElement
 
 internal open class NotificationApiV8 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
     private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
     val serverLinks: ServerConfigDTO.Links
 ) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks) {
@@ -77,17 +79,19 @@ internal open class NotificationApiV8 internal constructor(
     }
 
     override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
-        mostRecentNotification(clientId).mapSuccess {
+        cookies().mapSuccess {
             flow {
                 // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
                 //       WebSocket requests are not intercept-able, and they throw
                 //       exceptions when the backend returns 401 instead of triggering a token refresh.
                 //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
-                //       before attempting to open the websocket
+                //       before attempting to open th¬e websocket
                 val session = getOrCreateAsyncEventsWebSocketSession(clientId)
                 emitWebSocketEvents(session)
             }
         }
+
+    private suspend fun cookies(): NetworkResponse<Unit> = wrapKaliumResponse { authenticatedNetworkClient.httpClient.get("/cookies") }
 
     private suspend fun FlowCollector<WebSocketEvent<ConsumableNotificationResponse>>.emitWebSocketEvents(
         defaultClientWebSocketSession: WebSocketSession

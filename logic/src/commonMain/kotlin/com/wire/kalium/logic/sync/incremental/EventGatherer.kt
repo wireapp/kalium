@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -89,14 +88,13 @@ internal class EventGathererImpl(
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
-        eventRepository.lastProcessedEventId().flatMap {
-            eventRepository.liveEvents()
-        }.onSuccess { webSocketEventFlow ->
+        eventRepository.liveEvents().onSuccess { webSocketEventFlow ->
             emitEvents(webSocketEventFlow)
         }.onFailure {
             // throw so it is handled by coroutineExceptionHandler
-            throw KaliumSyncException("Failure when gathering events", it)
+            // throw KaliumSyncException("Failure when gathering events", it) todo (ym) change behavior to specific api v8 with new async
         }
+
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
     }
