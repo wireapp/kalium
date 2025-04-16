@@ -203,6 +203,7 @@ sealed interface MLSFailure : CoreFailure {
     data object Other : MLSFailure
     data object CommitForMissingProposal : MLSFailure
     data object ConversationNotFound : MLSFailure
+    data object OrphanWelcome : MLSFailure
     data class Generic(val rootCause: Throwable) : MLSFailure
 }
 
