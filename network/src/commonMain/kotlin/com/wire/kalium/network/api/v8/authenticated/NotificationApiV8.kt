@@ -37,7 +37,6 @@ import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.http.Url
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
@@ -64,7 +63,7 @@ internal open class NotificationApiV8 internal constructor(
     protected suspend fun getOrCreateAsyncEventsWebSocketSession(clientId: String): WebSocketSession {
         if (session == null || session?.isActive == false) {
             session = authenticatedWebSocketClient.createWebSocketSession(clientId) {
-                setWSSUrl(Url(serverLinks.webSocket), "v8", PATH_EVENTS) // todo (ym) v8 change to wss versioned like rest
+                setWSSUrl(authenticatedWebSocketClient.createWSSUrl(shouldAddApiVersion = true), PATH_EVENTS)
                 parameter(CLIENT_QUERY_KEY, clientId)
             }
         }
@@ -91,7 +90,7 @@ internal open class NotificationApiV8 internal constructor(
                 //       WebSocket requests are not intercept-able, and they throw
                 //       exceptions when the backend returns 401 instead of triggering a token refresh.
                 //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
-                //       before attempting to open th¬e websocket
+                //       before attempting to open the websocket
                 val session = getOrCreateAsyncEventsWebSocketSession(clientId)
                 emitWebSocketEvents(session)
             }
