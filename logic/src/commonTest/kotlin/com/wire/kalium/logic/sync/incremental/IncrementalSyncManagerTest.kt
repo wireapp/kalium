@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
@@ -57,7 +56,7 @@ import kotlin.time.Duration.Companion.seconds
 class IncrementalSyncManagerTest {
 
     @Test
-    fun givenDefaultState_whenStartingIncrementalManager_thenShouldStartWorker() = runTest(TestKaliumDispatcher.default) {
+    fun givenDefaultState_whenStartingIncrementalManager_thenShouldStartWorker() = runTest {
         val sharedFlow = MutableSharedFlow<EventSource>()
 
         val (arrangement, incrementalSyncManager) = Arrangement()
@@ -77,7 +76,7 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenDefaultState_whenStartingIncrementalSync_thenShouldResetRetryTimer() = runTest(TestKaliumDispatcher.default) {
+    fun givenDefaultState_whenStartingIncrementalSync_thenShouldResetRetryTimer() = runTest {
         val sharedFlow = MutableSharedFlow<EventSource>()
 
         val (arrangement, incrementalSyncManager) = Arrangement()
@@ -95,7 +94,7 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenNormalOperation_whenWorkerEmitsSources_thenShouldUpdateRepositoryWithState() = runTest(TestKaliumDispatcher.default) {
+    fun givenNormalOperation_whenWorkerEmitsSources_thenShouldUpdateRepositoryWithState() = runTest {
         val sourceFlow = Channel<EventSource>(Channel.UNLIMITED)
 
         val (arrangement, incrementalSyncManager) = Arrangement()
@@ -116,7 +115,7 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenWorkerThrows_whenPerformingSync_thenShouldUpdateRepositoryWithFailedState() = runTest(TestKaliumDispatcher.default) {
+    fun givenWorkerThrows_whenPerformingSync_thenShouldUpdateRepositoryWithFailedState() = runTest {
         val (arrangement, incrementalSyncManager) = Arrangement()
             .withWorkerReturning(flowThatFailsOnFirstTime())
             .arrange()
@@ -129,7 +128,7 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenWorkerThrowsNonCancellation_whenPerformingSync_thenShouldRetry() = runTest(TestKaliumDispatcher.default) {
+    fun givenWorkerThrowsNonCancellation_whenPerformingSync_thenShouldRetry() = runTest {
         val (arrangement, incrementalSyncManager) = Arrangement()
             .withWorkerReturning(flowThatFailsOnFirstTime())
             .withRecoveringFromFailure()
@@ -149,7 +148,7 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenWorkerThrowsCancellation_whenPerformingSync_thenShouldNotRetry() = runTest(TestKaliumDispatcher.default) {
+    fun givenWorkerThrowsCancellation_whenPerformingSync_thenShouldNotRetry() = runTest {
         val (arrangement, incrementalSyncManager) = Arrangement()
             .withWorkerReturning(flowThatFailsOnFirstTime(CancellationException("Cancelled")))
             .withRecoveringFromFailure()
@@ -171,7 +170,7 @@ class IncrementalSyncManagerTest {
 
     @Test
     fun givenDefaultState_whenCancellingSync_thenShouldUpdateIncrementalSyncStatusToPendingAgain() =
-        runTest(TestKaliumDispatcher.default) {
+        runTest {
 
             val (arrangement, incrementalSyncManager) = Arrangement()
                 .withWorkerReturning(emptyFlow())
@@ -186,7 +185,7 @@ class IncrementalSyncManagerTest {
         }
 
     @Test
-    fun givenSyncIsLive_whenWorkerEmitsSources_thenShouldResetExponentialDuration() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncIsLive_whenWorkerEmitsSources_thenShouldResetExponentialDuration() = runTest {
         val sourceFlow = Channel<EventSource>(Channel.UNLIMITED)
 
         val (arrangement, incrementalSyncManager) = Arrangement()
@@ -206,7 +205,7 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenWorkerFailure_whenPerformingSync_thenShouldCalculateNextExponentialDelay() = runTest(TestKaliumDispatcher.default) {
+    fun givenWorkerFailure_whenPerformingSync_thenShouldCalculateNextExponentialDelay() = runTest {
         val (arrangement, incrementalSyncManager) = Arrangement()
             .withWorkerReturning(flowThatFailsOnFirstTime())
             .withRecoveringFromFailure()
@@ -224,7 +223,7 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenDefaultState_whenStartingSync_thenShouldResetExponentialDuration() = runTest(TestKaliumDispatcher.default) {
+    fun givenDefaultState_whenStartingSync_thenShouldResetExponentialDuration() = runTest {
         val sourceFlow = Channel<EventSource>(Channel.UNLIMITED)
 
         val (arrangement, incrementalSyncManager) = Arrangement()
@@ -294,7 +293,6 @@ class IncrementalSyncManagerTest {
             incrementalSyncRepository = incrementalSyncRepository,
             incrementalSyncRecoveryHandler = incrementalSyncRecoveryHandler,
             networkStateObserver = networkStateObserver,
-            kaliumDispatcher = TestKaliumDispatcher,
             exponentialDurationHelper = exponentialDurationHelper,
             userScopedLogger = kaliumLogger
         )
