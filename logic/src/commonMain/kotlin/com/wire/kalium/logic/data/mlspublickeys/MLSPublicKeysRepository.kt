@@ -20,25 +20,36 @@ package com.wire.kalium.logic.data.mlspublickeys
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import io.ktor.util.decodeBase64Bytes
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-fun MLSPublicKeys.getRemovalKey(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
-    val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
-    val keySignature = mlsPublicKeysMapper.fromCipherSuite(cipherSuite)
-    val key = this.removal?.let { removalKeys ->
+fun MLSPublicKeys?.getRemovalKey(
+    cipherSuite: CipherSuite,
+    mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
+): Either<CoreFailure, ByteArray> {
+    val key = this?.removal?.let { removalKeys ->
+        val keySignature = mlsPublicKeysMapper.fromCipherSuite(cipherSuite)
         removalKeys[keySignature.value]
-    } ?: return Either.Left(MLSFailure.Generic(IllegalStateException("No key found for cipher suite $cipherSuite")))
+    } ?: return Either.Left(MLSFailure.Generic(NoKeyFoundException(cipherSuite.toString())))
     return key.decodeBase64Bytes().right()
 }
+
+class NoKeyFoundException(cipherSuite: String) : IllegalStateException("No key found for cipher suite $cipherSuite")
 
 interface MLSPublicKeysRepository {
     suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
@@ -48,25 +59,53 @@ interface MLSPublicKeysRepository {
 
 class MLSPublicKeysRepositoryImpl(
     private val mlsPublicKeyApi: MLSPublicKeyApi,
+    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
+    initialPublicKeys: MLSPublicKeys? = null, // for testing purposes
 ) : MLSPublicKeysRepository {
 
-    // TODO: make it thread safe
-    var publicKeys: MLSPublicKeys? = null
+    private val mutex = Mutex()
+    private var publicKeys: MLSPublicKeys? = initialPublicKeys
 
-    override suspend fun fetchKeys() =
-        wrapApiRequest {
-            mlsPublicKeyApi.getMLSPublicKeys()
-        }.map {
-            MLSPublicKeys(removal = it.removal)
-        }
-
-    override suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys> {
-        return publicKeys?.let { Either.Right(it) } ?: fetchKeys()
+    override suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys> = mutex.withLock {
+        executeLockedFetchKeysRequest()
     }
 
-    override suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
-        return getKeys().flatMap { serverPublicKeys ->
-            serverPublicKeys.getRemovalKey(cipherSuite)
-        }
+    private suspend fun executeLockedFetchKeysRequest() = wrapApiRequest {
+        mlsPublicKeyApi.getMLSPublicKeys()
+    }.map {
+        MLSPublicKeys(removal = it.removal)
+    }.onSuccess {
+        publicKeys = it
+    }
+
+    override suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys> = mutex.withLock {
+        publicKeys?.right() ?: executeLockedFetchKeysRequest()
+    }
+
+    override suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> = mutex.withLock {
+        publicKeys.getRemovalKey(cipherSuite, mlsPublicKeysMapper)
+            .flatMapLeft {
+                if (it is MLSFailure.Generic && it.rootCause is NoKeyFoundException) {
+                    kaliumLogger.i("$TAG: No key found for cipher suite $cipherSuite, trying to fetch keys again")
+                    executeLockedFetchKeysRequest()
+                        .flatMap { newKeys ->
+                            newKeys.getRemovalKey(cipherSuite, mlsPublicKeysMapper)
+                                .onFailure {
+                                    if (it is MLSFailure.Generic && it.rootCause is NoKeyFoundException) {
+                                        kaliumLogger.e("$TAG: No key found after fetching again for cipher suite $cipherSuite")
+                                    } else {
+                                        kaliumLogger.e("$TAG: Failed to get key after fetching again for cipher suite $cipherSuite")
+                                    }
+                                }
+                        }
+                } else {
+                    kaliumLogger.e("$TAG: Failed to get key for cipher suite $cipherSuite")
+                    it.left()
+                }
+            }
+    }
+
+    companion object {
+        private const val TAG = "MLSPublicKeysRepository"
     }
 }
