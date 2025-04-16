@@ -258,8 +258,7 @@ internal class MLSConversationDataSource(
                         idMapper.toCryptoModel(groupID),
                         message
                     ).let { messages ->
-                        if (messages.any {
-                            it.hasEpochChanged }) {
+                        if (messages.any { it.hasEpochChanged }) {
                             kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                             epochChangesObserver.emit(groupID.toCrypto(), 0U)
                         }
