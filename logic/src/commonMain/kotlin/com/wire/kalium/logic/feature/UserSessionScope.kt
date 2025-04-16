@@ -1529,7 +1529,8 @@ class UserSessionScope internal constructor(
             oneOnOneResolver = oneOnOneResolver,
             refillKeyPackages = client.refillKeyPackages,
             revocationListChecker = checkRevocationList,
-            certificateRevocationListRepository = certificateRevocationListRepository
+            certificateRevocationListRepository = certificateRevocationListRepository,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
         )
 
     private val renamedConversationHandler: RenamedConversationEventHandler

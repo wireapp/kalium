@@ -77,7 +77,6 @@ internal object MLSMessageFailureHandler {
             StorageFailure.DataNotFound,
             is StorageFailure.Generic,
             is CoreFailure.Unknown -> MLSMessageFailureResolution.InformUser
-
         }
     }
 }
