@@ -21,12 +21,14 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -72,6 +74,7 @@ internal interface EventGatherer {
 }
 
 internal class EventGathererImpl(
+    private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     logger: KaliumLogger = kaliumLogger,
@@ -88,13 +91,31 @@ internal class EventGathererImpl(
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
-        eventRepository.liveEvents().onSuccess { webSocketEventFlow ->
-            emitEvents(webSocketEventFlow)
-        }.onFailure {
-            // throw so it is handled by coroutineExceptionHandler
-            // throw KaliumSyncException("Failure when gathering events", it) todo (ym) change behavior to specific api v8 with new async
-        }
+        // todo (ym) improve readability and reusage of this code
+        isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
+            when {
+                isAsyncNotifications -> {
+                    eventRepository.liveEvents()
+                        .onSuccess { webSocketEventFlow ->
+                            emitEvents(webSocketEventFlow)
+                        }.onFailure {
+                            // throw so it is handled by coroutineExceptionHandler
+                            throw KaliumSyncException("Failure when gathering events", it)
+                        }
+                }
 
+                else -> {
+                    eventRepository.lastProcessedEventId().flatMap {
+                        eventRepository.liveEvents()
+                    }.onSuccess { webSocketEventFlow ->
+                        emitEvents(webSocketEventFlow)
+                    }.onFailure {
+                        // throw so it is handled by coroutineExceptionHandler
+                        throw KaliumSyncException("Failure when gathering events", it)
+                    }
+                }
+            }
+        }
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
     }

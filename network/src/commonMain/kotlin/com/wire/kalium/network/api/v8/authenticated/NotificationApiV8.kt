@@ -64,7 +64,7 @@ internal open class NotificationApiV8 internal constructor(
     protected suspend fun getOrCreateAsyncEventsWebSocketSession(clientId: String): WebSocketSession {
         if (session == null || session?.isActive == false) {
             session = authenticatedWebSocketClient.createWebSocketSession(clientId) {
-                setWSSUrl(Url(serverLinks.webSocket), PATH_EVENTS)
+                setWSSUrl(Url(serverLinks.webSocket), "v8", PATH_EVENTS) // todo (ym) v8 change to wss versioned like rest
                 parameter(CLIENT_QUERY_KEY, clientId)
             }
         }
@@ -74,7 +74,13 @@ internal open class NotificationApiV8 internal constructor(
     override suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
         val session = getOrCreateAsyncEventsWebSocketSession(clientId)
         KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
-            session.outgoing.send(Frame.Binary(true, json.toString().encodeToByteArray()))
+            kaliumLogger.i("Sending acknowledge event: $json")
+            val result = session.outgoing.trySend(Frame.Binary(true, json.toString().encodeToByteArray()))
+            if (result.isSuccess) {
+                kaliumLogger.i("Acknowledge event sent successfully")
+            } else {
+                kaliumLogger.e("Failed to send acknowledge event: ${result.exceptionOrNull()}")
+            }
         }
     }
 
