@@ -19,10 +19,10 @@
 package com.wire.kalium.logic.sync.incremental
 
 import app.cash.turbine.test
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
@@ -36,6 +36,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -46,7 +47,6 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -148,9 +148,38 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
-    fun givenWorkerThrowsCancellation_whenPerformingSync_thenShouldNotRetry() = runTest {
+    fun givenRetryIsWaitingForExponentialDelay_whenRestartingSync_thenShouldPerformOnlyTwice() = runTest {
+        val recoverJob = Job()
         val (arrangement, incrementalSyncManager) = Arrangement()
-            .withWorkerReturning(flowThatFailsOnFirstTime(CancellationException("Cancelled")))
+            .withWorkerReturning(flowThatFailsOnFirstTime())
+            .withRecoveringFromFailure { recoverJob.join(); it.retry() }
+            .arrange()
+
+        incrementalSyncManager.performSyncFlow().test {
+            advanceUntilIdle()
+            coVerify {
+                arrangement.incrementalSyncWorker.processEventsFlow()
+            }.wasInvoked(exactly = once)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        incrementalSyncManager.performSyncFlow().test {
+            // Now recover from the exponential backoff
+            recoverJob.complete()
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.incrementalSyncWorker.processEventsFlow()
+            }.wasInvoked(exactly = once)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenWorkerThrowsCancellation_whenPerformingSync_thenShouldNotRetry() = runTest {
+        val workerFlow = Channel<EventSource>(Channel.UNLIMITED)
+        val (arrangement, incrementalSyncManager) = Arrangement()
+            .withWorkerReturning(workerFlow.consumeAsFlow())
             .withRecoveringFromFailure()
             .arrange()
 
@@ -267,12 +296,12 @@ class IncrementalSyncManagerTest {
             }.returns(sourceFlow)
         }
 
-        suspend fun withRecoveringFromFailure() = apply {
+        suspend fun withRecoveringFromFailure(onRecover: suspend (OnIncrementalSyncRetryCallback) -> Unit = { it.retry() }) = apply {
             coEvery {
                 incrementalSyncRecoveryHandler.recover(any(), any())
             }.invokes { args ->
                 val onRetryCallback = args[1] as OnIncrementalSyncRetryCallback
-                onRetryCallback.retry()
+                onRecover(onRetryCallback)
             }
         }
 
