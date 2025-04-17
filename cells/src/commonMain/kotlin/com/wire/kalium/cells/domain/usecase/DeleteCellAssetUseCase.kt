@@ -33,6 +33,10 @@ import okio.SYSTEM
 
 /**
  * Delete asset with given asset id from server and local storage.
+ *
+ * This use case is used for deleting assets from global/conversation lists.
+ * Attachment data is not removed from the database to keep showing the attachment, but the
+ * transfer status is set to NOT_FOUND.
  */
 public interface DeleteCellAssetUseCase {
     public suspend operator fun invoke(assetId: String, localPath: String?): Either<CoreFailure, Unit>
@@ -48,9 +52,11 @@ internal class DeleteCellAssetUseCaseImpl(
     override suspend fun invoke(assetId: String, localPath: String?) =
         cellsRepository.deleteFile(assetId)
             .flatMap {
+                // Keep asset data but set transfer status to NOT_FOUND to show attachment as not available
                 cellAttachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
             }
             .flatMap {
+                // Delete asset from the database if it was not received as message attachment
                 cellAttachmentsRepository.deleteStandaloneAsset(assetId)
             }
             .onSuccess {

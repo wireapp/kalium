@@ -144,27 +144,33 @@ class MLSClientImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
         var decryptedMessage: DecryptedMessage? = null
+        var capturedError: Throwable? = null
 
-        coreCrypto.transaction(object : CoreCryptoCommand {
-            override suspend fun execute(context: CoreCryptoContext) {
-                try {
-                    val result = context.decryptMessage(
-                        groupId.decodeBase64Bytes(),
-                        message
-                    )
-                    decryptedMessage = result
+        try {
+            coreCrypto.transaction(object : CoreCryptoCommand {
+                override suspend fun execute(context: CoreCryptoContext) {
+                    try {
+                        decryptedMessage = context.decryptMessage(
+                            groupId.decodeBase64Bytes(),
+                            message
+                        )
+                    } catch (throwable: Throwable) {
+                        val isBufferedFutureError = (
+                                throwable is CoreCryptoException.Mls && throwable.v1 is MlsException.BufferedFutureMessage
+                                ) || throwable.message?.contains(
+                            "Incoming message is a commit for which we have not yet received all the proposals"
+                        ) == true
 
-                } catch (throwable: Throwable) {
-                    val isBufferedFutureError = (
-                            throwable is CoreCryptoException.Mls && throwable.v1 is MlsException.BufferedFutureMessage
-                            ) || throwable.message
-                        ?.contains("Incoming message is a commit for which we have not yet received all the proposals") == true
-                    if (!isBufferedFutureError) {
-                        throw throwable
+                        if (!isBufferedFutureError) {
+                            capturedError = throwable
+                            throw throwable
+                        }
                     }
                 }
-            }
-        })
+            })
+        } catch (e: Throwable) {
+            throw capturedError ?: e
+        }
 
         if (decryptedMessage == null) {
             return emptyList()
