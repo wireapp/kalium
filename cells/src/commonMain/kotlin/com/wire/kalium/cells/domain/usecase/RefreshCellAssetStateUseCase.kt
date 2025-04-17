@@ -20,13 +20,13 @@ package com.wire.kalium.cells.domain.usecase
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.NetworkFailure.ServerMiscommunication
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
@@ -50,7 +50,7 @@ import okio.SYSTEM
  * - Fetch preview URL with retries.
  */
 public interface RefreshCellAssetStateUseCase {
-    public suspend operator fun invoke(assetId: String, fetchPreview: Boolean): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(assetId: String): Either<CoreFailure, Unit>
 }
 
 internal class RefreshCellAssetStateUseCaseImpl internal constructor(
@@ -64,7 +64,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         private const val DELAY = 500L
     }
 
-    override suspend fun invoke(assetId: String, fetchPreview: Boolean): Either<CoreFailure, Unit> {
+    override suspend fun invoke(assetId: String): Either<CoreFailure, Unit> {
         return cellsRepository.getNode(assetId)
             .onSuccess { node ->
                 if (node.isRecycled) {
@@ -89,25 +89,25 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
             }
     }
 
-    private suspend fun getNodePreviews(node: CellNode): Either<CoreFailure, List<NodePreview>> {
-
-        if (node.previews.isNotEmpty()) return node.previews.right()
-
-        return retry(MAX_PREVIEW_FETCH_RETRIES, DELAY) {
-            cellsRepository.getPreviews(node.uuid)
-                .onFailure { error ->
-                    if (error.isAssetNotFound()) {
-                        return@retry error.left()
+    private suspend fun getNodePreviews(node: CellNode) =
+        if (node.previews.isNotEmpty()) {
+            node.previews.right()
+        } else {
+            retry(MAX_PREVIEW_FETCH_RETRIES, DELAY) {
+                cellsRepository.getPreviews(node.uuid)
+                    .onFailure { error ->
+                        if (error.isAssetNotFound()) {
+                            return error.left()
+                        }
                     }
-                }
-                .flatMap { response ->
-                    when {
-                        response.isEmpty() -> StorageFailure.DataNotFound.left()
-                        else -> response.right()
+                    .flatMap { response ->
+                        when {
+                            response.isEmpty() -> StorageFailure.DataNotFound.left()
+                            else -> response.right()
+                        }
                     }
-                }
+            }
         }
-    }
 
     private suspend fun removeLocalAssetData(assetId: String) {
         attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
@@ -119,23 +119,37 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
     }
 
     private suspend fun refreshLocalData(node: CellNode) {
-        attachmentsRepository.getAttachment(node.uuid).map { attachment ->
-            if (attachment is CellAssetContent) {
 
-                if (attachment.contentHash != node.contentHash) {
-                    attachment.localPath?.let { fileSystem.delete(it.toPath()) }
-                    attachmentsRepository.saveLocalPath(attachment.id, null)
-                }
+        val attachment = attachmentsRepository
+            .getAttachment(node.uuid).getOrNull() as? CellAssetContent
+            ?: return
 
-                attachmentsRepository.saveContentUrlAndHash(attachment.id, node.contentUrl, node.contentHash)
+        var localPath = attachment.localPath
 
-                if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
-                    if (attachment.localPath == null) {
-                        attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
-                    } else {
-                        attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
-                    }
-                }
+        // Check if asset was updated
+        if (attachment.contentHash != node.contentHash) {
+            localPath?.let { fileSystem.delete(it.toPath()) }
+            attachmentsRepository.saveLocalPath(attachment.id, null)
+            localPath = null
+        }
+
+        // Check if local file is still available
+        localPath?.toPath()?.let {
+            if (!fileSystem.exists(it)) {
+                attachmentsRepository.saveLocalPath(attachment.id, null)
+                localPath = null
+            }
+        }
+
+        attachmentsRepository.updateAttachment(attachment.id, node.contentUrl, node.contentHash, node.path)
+
+        // Update transfer status for attachments previously marked as NOT_FOUND
+        // This happens after we regain access to the file
+        if (attachment.transferStatus == AssetTransferStatus.NOT_FOUND) {
+            if (localPath == null) {
+                attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.NOT_DOWNLOADED)
+            } else {
+                attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
             }
         }
     }
@@ -148,6 +162,7 @@ internal fun NetworkFailure.isAssetNotFound(): Boolean {
     return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
 }
 
+// TODO: Will be later replaced with a flag from Cell Server
 private fun CellNode.isPreviewSupported(): Boolean = when {
     mimeType == null -> false
     mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType == "application/pdf" -> true

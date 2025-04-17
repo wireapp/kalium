@@ -35,11 +35,6 @@ import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
@@ -101,16 +96,12 @@ internal fun SlowSyncManager(
     networkStateObserver: NetworkStateObserver,
     syncMigrationStepsProvider: () -> SyncMigrationStepsProvider,
     userScopedLogger: KaliumLogger,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
         SlowSyncManager.MIN_RETRY_DELAY,
         SlowSyncManager.MAX_RETRY_DELAY
     )
 ): SlowSyncManager = object : SlowSyncManager {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val scope =
-        CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = userScopedLogger.withFeatureId(SYNC)
 
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
@@ -119,16 +110,14 @@ internal fun SlowSyncManager(
         },
         onFailure = { failure ->
             logger.i("SlowSync ExceptionHandler error $failure")
-            scope.launch {
-                val delay = exponentialDurationHelper.next()
-                slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
-                slowSyncRecoveryHandler.recover(failure) {
-                    logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
-                    networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-                    logger.i("SlowSync Delay and waiting for connection finished - retrying")
-                    logger.i("SlowSync Connected - retrying")
-                    onRetry()
-                }
+            val delay = exponentialDurationHelper.next()
+            slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
+            slowSyncRecoveryHandler.recover(failure) {
+                logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
+                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                logger.i("SlowSync Delay and waiting for connection finished - retrying")
+                logger.i("SlowSync Connected - retrying")
+                onRetry()
             }
         }
     )

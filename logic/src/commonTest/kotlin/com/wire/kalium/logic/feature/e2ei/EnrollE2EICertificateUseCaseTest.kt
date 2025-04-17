@@ -17,21 +17,21 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.AuthorizationResult
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -39,11 +39,12 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
+import io.mockative.AnySuspendResultBuilder
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.CoroutineScope
@@ -83,6 +84,7 @@ class EnrollE2EICertificateUseCaseTest {
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
             withLoadACMEDirectoriesResulting(E2EIFailure.AcmeDirectories(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -155,6 +157,7 @@ class EnrollE2EICertificateUseCaseTest {
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
             withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
             withGetACMENonceResulting(E2EIFailure.AcmeNonce(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -226,6 +229,7 @@ class EnrollE2EICertificateUseCaseTest {
             withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
             withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
             withCreateNewAccountResulting(E2EIFailure.AcmeNewAccount(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -302,6 +306,7 @@ class EnrollE2EICertificateUseCaseTest {
             withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
             withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
             withCreateNewOrderResulting(E2EIFailure.AcmeNewOrder(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -380,6 +385,7 @@ class EnrollE2EICertificateUseCaseTest {
             withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
             withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
             withGettingChallenges(E2EIFailure.AcmeAuthorizations.left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -460,6 +466,7 @@ class EnrollE2EICertificateUseCaseTest {
             withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
             withGettingRefreshTokenSucceeding()
             withGettingChallenges(Either.Right(AUTHORIZATIONS))
+            withSelfUserFetched(true)
         }
 
         val expected = INITIALIZATION_RESULT
@@ -540,6 +547,7 @@ class EnrollE2EICertificateUseCaseTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
             // given
             withGetWireNonceResulting(E2EIFailure.WireNonce(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -584,6 +592,7 @@ class EnrollE2EICertificateUseCaseTest {
             // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(E2EIFailure.DPoPToken(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -631,6 +640,7 @@ class EnrollE2EICertificateUseCaseTest {
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(E2EIFailure.DPoPChallenge(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -679,9 +689,8 @@ class EnrollE2EICertificateUseCaseTest {
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
             withValidateDPoPChallengeResulting(E2EIFailure.DPoPChallenge(TEST_CORE_FAILURE).left())
-
+            withSelfUserFetched(true)
         }
-
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -731,8 +740,8 @@ class EnrollE2EICertificateUseCaseTest {
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
             withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
             withValidateOIDCChallengeResulting(E2EIFailure.OIDCChallenge(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
-
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -783,6 +792,7 @@ class EnrollE2EICertificateUseCaseTest {
             withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
             withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
             withCheckOrderRequestResulting(E2EIFailure.CheckOrderRequest(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -836,6 +846,7 @@ class EnrollE2EICertificateUseCaseTest {
             withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
             withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
             withFinalizeResulting(E2EIFailure.FinalizeRequest(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -889,6 +900,7 @@ class EnrollE2EICertificateUseCaseTest {
             withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
             withRotateKeysAndMigrateConversations(Either.Right(Unit))
             withCertificateRequestResulting(E2EIFailure.Certificate(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -946,6 +958,7 @@ class EnrollE2EICertificateUseCaseTest {
             withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
             withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
             withRotateKeysAndMigrateConversations(E2EIFailure.RotationAndMigration(TEST_CORE_FAILURE).left())
+            withSelfUserFetched(true)
         }
 
         // when
@@ -996,6 +1009,7 @@ class EnrollE2EICertificateUseCaseTest {
             withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
             withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
             withRotateKeysAndMigrateConversations(Either.Right(Unit))
+            withSelfUserFetched(true)
         }
 
         // when
@@ -1054,6 +1068,7 @@ class EnrollE2EICertificateUseCaseTest {
             withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
             withGettingRefreshTokenSucceeding()
             withGettingChallenges(Either.Right(AUTHORIZATIONS))
+            withSelfUserFetched(false)
             withFetchSelfUser(Unit.right())
         }
 
@@ -1073,10 +1088,31 @@ class EnrollE2EICertificateUseCaseTest {
         @Mock
         val e2EIRepository = mock(E2EIRepository::class)
 
+        private var selfUserFetched: Boolean = false
+
+        // to ensure that at the moment of the given call, the user is already fetched
+        private fun <R> AnySuspendResultBuilder<R>.ensuresSelfUserFetchedAndReturns(value: R, methodName: String) = this.invokes {
+            require(selfUserFetched) { "Self user should be fetched before calling $methodName" }
+            value
+        }
+
+        fun withSelfUserFetched(isFetched: Boolean = true) {
+            selfUserFetched = isFetched
+        }
+
+        override suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>) {
+            coEvery {
+                userRepository.fetchSelfUser()
+            }.invokes { _ ->
+                selfUserFetched = true
+                result
+            }
+        }
+
         suspend fun withInitializingE2EIClientSucceed() = apply {
             coEvery {
                 e2EIRepository.initFreshE2EIClient(any(), any())
-            }.returns(Either.Right(Unit))
+            }.ensuresSelfUserFetchedAndReturns(Either.Right(Unit), e2EIRepository::initFreshE2EIClient.name)
         }
 
         suspend fun withLoadTrustAnchorsResulting(result: Either<E2EIFailure, Unit>) = apply {
@@ -1088,13 +1124,13 @@ class EnrollE2EICertificateUseCaseTest {
         suspend fun withFetchFederationCertificateChainResulting(result: Either<E2EIFailure, Unit>) = apply {
             coEvery {
                 e2EIRepository.fetchFederationCertificates()
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::fetchFederationCertificates.name)
         }
 
         suspend fun withLoadACMEDirectoriesResulting(result: Either<E2EIFailure, AcmeDirectory>) = apply {
             coEvery {
                 e2EIRepository.loadACMEDirectories()
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::loadACMEDirectories.name)
         }
 
         suspend fun withGetACMENonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
@@ -1106,13 +1142,13 @@ class EnrollE2EICertificateUseCaseTest {
         suspend fun withCreateNewAccountResulting(result: Either<E2EIFailure, Nonce>) = apply {
             coEvery {
                 e2EIRepository.createNewAccount(any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::createNewAccount.name)
         }
 
         suspend fun withCreateNewOrderResulting(result: Either<E2EIFailure, Triple<NewAcmeOrder, Nonce, String>>) = apply {
             coEvery {
                 e2EIRepository.createNewOrder(any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::createNewOrder.name)
         }
 
         suspend fun withGettingChallenges(result: Either<E2EIFailure, AuthorizationResult>) = apply {
@@ -1124,7 +1160,7 @@ class EnrollE2EICertificateUseCaseTest {
         suspend fun withGettingRefreshTokenSucceeding() = apply {
             coEvery {
                 e2EIRepository.getOAuthRefreshToken()
-            }.returns(Either.Right(REFRESH_TOKEN))
+            }.ensuresSelfUserFetchedAndReturns(Either.Right(REFRESH_TOKEN), e2EIRepository::getOAuthRefreshToken.name)
         }
 
         suspend fun withGetWireNonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
@@ -1136,7 +1172,7 @@ class EnrollE2EICertificateUseCaseTest {
         suspend fun withGetDPoPTokenResulting(result: Either<E2EIFailure, String>) = apply {
             coEvery {
                 e2EIRepository.getDPoPToken(any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::getDPoPToken.name)
         }
 
         suspend fun withGetWireAccessTokenResulting(result: Either<E2EIFailure, AccessTokenResponse>) = apply {
@@ -1148,37 +1184,37 @@ class EnrollE2EICertificateUseCaseTest {
         suspend fun withValidateDPoPChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
             coEvery {
                 e2EIRepository.validateDPoPChallenge(any(), any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::validateDPoPChallenge.name)
         }
 
         suspend fun withValidateOIDCChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
             coEvery {
                 e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::validateOIDCChallenge.name)
         }
 
         suspend fun withCheckOrderRequestResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
             coEvery {
                 e2EIRepository.checkOrderRequest(any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::checkOrderRequest.name)
         }
 
         suspend fun withFinalizeResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
             coEvery {
                 e2EIRepository.finalize(any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::finalize.name)
         }
 
         suspend fun withRotateKeysAndMigrateConversations(result: Either<E2EIFailure, Unit>) = apply {
             coEvery {
                 e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::rotateKeysAndMigrateConversations.name)
         }
 
         suspend fun withCertificateRequestResulting(result: Either<E2EIFailure, ACMEResponse>) = apply {
             coEvery {
                 e2EIRepository.certificateRequest(any(), any())
-            }.returns(result)
+            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::certificateRequest.name)
         }
 
         suspend fun arrange(coroutineScope: CoroutineScope, block: suspend Arrangement.() -> Unit): Pair<Arrangement, EnrollE2EIUseCase> =

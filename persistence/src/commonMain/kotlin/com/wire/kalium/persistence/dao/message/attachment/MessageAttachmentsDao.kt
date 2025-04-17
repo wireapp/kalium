@@ -30,7 +30,7 @@ interface MessageAttachmentsDao {
     suspend fun setPreviewUrl(assetId: String, previewUrl: String?)
     suspend fun setTransferStatus(assetId: String, status: String)
     suspend fun getAttachment(assetId: String): MessageAttachmentEntity
-    suspend fun setContentUrlAndHash(assetId: String, url: String?, hash: String?)
+    suspend fun updateAttachment(assetId: String, url: String?, hash: String?, remotePath: String)
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
     suspend fun getAttachments(): List<MessageAttachmentEntity>
     suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
@@ -52,8 +52,8 @@ internal class MessageAttachmentsDaoImpl(
     override suspend fun getAttachment(assetId: String): MessageAttachmentEntity =
         queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
 
-    override suspend fun setContentUrlAndHash(assetId: String, url: String?, hash: String?) {
-        queries.setContentUrlAndHash(url, hash, assetId)
+    override suspend fun updateAttachment(assetId: String, url: String?, hash: String?, remotePath: String) {
+        queries.updateAttachment(url, hash, remotePath, assetId)
     }
 
     override suspend fun getAssetPath(assetId: String): String? =

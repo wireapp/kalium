@@ -244,12 +244,13 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
-    override suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?) {
+    override suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?) = withContext(coroutineContext) {
         conversationQueries.updateWireCell(wireCell, conversationId)
     }
 
-    override suspend fun getCellName(conversationId: QualifiedIDEntity): String? =
+    override suspend fun getCellName(conversationId: QualifiedIDEntity): String? = withContext(coroutineContext) {
         conversationQueries.getCellName(conversationId).executeAsOneOrNull()?.wire_cell
+    }
 
     override suspend fun getConversationIds(
         type: ConversationEntity.Type,
@@ -301,8 +302,8 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
-    override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? {
-        return conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
+    override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? = withContext(coroutineContext) {
+        conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
             .executeAsOneOrNull()
     }
 
