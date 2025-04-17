@@ -50,6 +50,8 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.InternalErrors,
             is MLSFailure.Disabled,
             MLSFailure.CommitForMissingProposal,
+            MLSFailure.ConversationNotFound,
+            MLSFailure.OrphanWelcome,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,
@@ -73,7 +75,6 @@ internal object MLSMessageFailureHandler {
             StorageFailure.DataNotFound,
             is StorageFailure.Generic,
             is CoreFailure.Unknown -> MLSMessageFailureResolution.InformUser
-
         }
     }
 }

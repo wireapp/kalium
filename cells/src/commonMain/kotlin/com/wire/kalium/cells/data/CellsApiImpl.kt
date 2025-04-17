@@ -31,6 +31,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestIncomingNode
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
+import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocators
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
@@ -68,6 +69,25 @@ internal class CellsApiImpl(
                     query = TreeQuery(
                         fileName = query,
                         type = TreeNodeType.LEAF
+                    ),
+                    sortField = SORTED_BY,
+                    flags = listOf(RestFlag.WithPreSignedURLs)
+                )
+            )
+        }.mapSuccess { response -> response.toDto() }
+
+    override suspend fun getFilesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetFilesResponseDTO> =
+        wrapCellsResponse {
+            nodeServiceApi.lookup(
+                RestLookupRequest(
+                    limit = limit.toString(),
+                    offset = offset.toString(),
+                    locators = RestNodeLocators(
+                        listOf(
+                            RestNodeLocator(
+                                path = "$path/*"
+                            )
+                        )
                     ),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)

@@ -70,7 +70,7 @@ import kotlin.time.Duration.Companion.seconds
 class SlowSyncManagerTest {
 
     @Test
-    fun givenCriteriaAreMet_whenManagerIsCreated_thenShouldStartSlowSync() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenManagerIsCreated_thenShouldStartSlowSync() = runTest {
         var isCollected = false
         val stepFlow = flow<SlowSyncStep> { isCollected = true }
         val (arrangement, slowSyncManager) = Arrangement().arrange {
@@ -93,7 +93,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenCriteriaAreMet_whenWorkerThrowsNonCancellation_thenShouldRetry() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenWorkerThrowsNonCancellation_thenShouldRetry() = runTest {
         val (arrangement, slowSyncManager) = Arrangement().arrange {
             withSatisfiedCriteria()
             withSlowSyncWorkerReturning(flowThatFailsOnFirstTime())
@@ -111,7 +111,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenCriteriaAreMet_whenWorkerThrowsCancellation_thenShouldNotRetry() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenWorkerThrowsCancellation_thenShouldNotRetry() = runTest {
         val (arrangement, slowSyncManager) = Arrangement().arrange {
             withSatisfiedCriteria()
             withSlowSyncWorkerReturning(flowThatFailsOnFirstTime(CancellationException("Cancelled")))
@@ -128,7 +128,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldUpdateStateInRepository() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldUpdateStateInRepository() = runTest {
         val (arrangement, slowSyncManager) = Arrangement().arrange {
             withSatisfiedCriteria()
             withSlowSyncWorkerReturning(emptyFlow())
@@ -145,7 +145,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldUpdateLastCompletedDate() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldUpdateLastCompletedDate() = runTest {
         val initialTime = DateTimeUtil.currentInstant()
 
         val (arrangement, slowSyncManager) = Arrangement().arrange {
@@ -173,7 +173,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenItWasCompletedRecently_whenCriteriaAreMet_thenShouldNotUpdateLastCompletedDate() = runTest(TestKaliumDispatcher.default) {
+    fun givenItWasCompletedRecently_whenCriteriaAreMet_thenShouldNotUpdateLastCompletedDate() = runTest {
         val initialTime = DateTimeUtil.currentInstant()
 
         val (arrangement, slowSyncManager) = Arrangement().arrange {
@@ -190,7 +190,7 @@ class SlowSyncManagerTest {
 
     @Test
     fun givenItWasCompletedRecentlyAndVersionIsOutdated_whenCriteriaAreMet_thenShouldUpdateSlowSyncVersion() =
-        runTest(TestKaliumDispatcher.default) {
+        runTest {
             val (arrangement, slowSyncManager) = Arrangement().arrange {
                 withSatisfiedCriteria()
                 withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
@@ -211,7 +211,7 @@ class SlowSyncManagerTest {
 
     @Test
     fun givenItWasCompletedRecentlyAndVersionIsUpToDate_whenCriteriaAreMet_thenShouldNotUpdateSlowSyncVersion() =
-        runTest(TestKaliumDispatcher.default) {
+        runTest {
             val (arrangement, slowSyncManager) = Arrangement().arrange {
                 withSatisfiedCriteria()
                 withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
@@ -227,7 +227,7 @@ class SlowSyncManagerTest {
         }
 
     @Test
-    fun givenCriteriaAreMet_whenWorkerEmitsAStep_thenShouldUpdateStateInRepository() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenWorkerEmitsAStep_thenShouldUpdateStateInRepository() = runTest {
         val stepChannel = Channel<SlowSyncStep>(Channel.UNLIMITED)
         val (arrangement, slowSyncManager) = Arrangement().arrange {
             withSatisfiedCriteria()
@@ -250,7 +250,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenCriteriaAreMet_whenCriteriaAreBroken_thenShouldCancelCollection() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenCriteriaAreBroken_thenShouldCancelCollection() = runTest {
         val criteriaChannel = Channel<SyncCriteriaResolution>(Channel.UNLIMITED)
         val stepSharedFlow = MutableSharedFlow<SlowSyncStep>()
         val (_, slowSyncManager) = Arrangement().arrange {
@@ -274,7 +274,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenItWasPerformedRecently_whenCriteriaAreMet_thenShouldNotStartSlowSync() = runTest(TestKaliumDispatcher.default) {
+    fun givenItWasPerformedRecently_whenCriteriaAreMet_thenShouldNotStartSlowSync() = runTest {
         val criteriaChannel = Channel<SyncCriteriaResolution>(Channel.UNLIMITED)
         val stepSharedFlow = MutableSharedFlow<SlowSyncStep>(extraBufferCapacity = 1)
         stepSharedFlow.emit(SlowSyncStep.CONVERSATIONS)
@@ -297,7 +297,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenItWasPerformedRecently_whenLastPerformedIsCleared_thenShouldStartSlowSyncAgain() = runTest(TestKaliumDispatcher.default) {
+    fun givenItWasPerformedRecently_whenLastPerformedIsCleared_thenShouldStartSlowSyncAgain() = runTest {
         val criteriaChannel = Channel<SyncCriteriaResolution>(Channel.UNLIMITED)
         criteriaChannel.send(SyncCriteriaResolution.Ready)
 
@@ -336,7 +336,7 @@ class SlowSyncManagerTest {
 
     @Test
     fun givenItWasPerformedLongAgoAndCriteriaAreMet_whenWorkerEmitsAStep_thenShouldUpdateStateInRepository() =
-        runTest(TestKaliumDispatcher.default) {
+        runTest {
             val stepChannel = Channel<SlowSyncStep>(Channel.UNLIMITED)
             val (arrangement, slowSyncManager) = Arrangement().arrange {
                 withSatisfiedCriteria()
@@ -363,7 +363,7 @@ class SlowSyncManagerTest {
         }
 
     @Test
-    fun givenCriteriaAreNotMet_whenManagerIsCreated_thenShouldNotStartSlowSync() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreNotMet_whenManagerIsCreated_thenShouldNotStartSlowSync() = runTest {
         var isCollected = false
         val stepFlow = flow<SlowSyncStep> { isCollected = true }
         val (_, slowSyncManager) = Arrangement().arrange {
@@ -380,7 +380,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldResetExponentialDuration() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldResetExponentialDuration() = runTest {
         val (arrangement, slowSyncManager) = Arrangement().arrange {
             withSatisfiedCriteria()
             withSlowSyncWorkerReturning(emptyFlow())
@@ -397,7 +397,7 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenCriteriaAreMet_whenRecovers_thenShouldRetry() = runTest(TestKaliumDispatcher.default) {
+    fun givenCriteriaAreMet_whenRecovers_thenShouldRetry() = runTest {
         val (arrangement, slowSyncManager) = Arrangement().arrange {
             withSatisfiedCriteria()
             withSlowSyncWorkerReturning(flowThatFailsOnFirstTime())
@@ -500,7 +500,6 @@ class SlowSyncManagerTest {
             slowSyncWorker = slowSyncWorker,
             slowSyncRecoveryHandler = slowSyncRecoveryHandler,
             networkStateObserver = networkStateObserver,
-            kaliumDispatcher = TestKaliumDispatcher,
             exponentialDurationHelper = exponentialDurationHelper,
             syncMigrationStepsProvider = { syncMigrationStepsProvider },
             userScopedLogger = kaliumLogger

@@ -32,11 +32,6 @@ import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
@@ -98,7 +93,6 @@ internal fun IncrementalSyncManager(
     incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
     networkStateObserver: NetworkStateObserver,
     userScopedLogger: KaliumLogger,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
         IncrementalSyncManager.MIN_RETRY_DELAY,
         IncrementalSyncManager.MAX_RETRY_DELAY
@@ -107,41 +101,28 @@ internal fun IncrementalSyncManager(
 
     private val logger = userScopedLogger.withFeatureId(SYNC).withTextTag("IncrementalSyncManager")
 
-    /**
-     * A dispatcher with limited parallelism of 1.
-     * This means using this dispatcher only a single coroutine will be processed at a time.
-     */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val eventProcessingDispatcher = kaliumDispatcher.default.limitedParallelism(1)
-
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
             logger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
-            syncScope.launch {
-                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
-            }
+            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
         },
         onFailure = { failure ->
             logger.i("ExceptionHandler error $failure")
-            syncScope.launch {
-                val delay = exponentialDurationHelper.next()
-                incrementalSyncRepository.updateIncrementalSyncState(
-                    IncrementalSyncStatus.Failed(failure, delay)
-                )
+            val delay = exponentialDurationHelper.next()
+            incrementalSyncRepository.updateIncrementalSyncState(
+                IncrementalSyncStatus.Failed(failure, delay)
+            )
 
-                incrementalSyncRecoveryHandler.recover(failure = failure) {
-                    logger.i("Triggering delay($delay) and waiting for reconnection")
-                    networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-                    logger.i("Delay and waiting for connection finished - retrying")
-                    onRetry()
-                }
+            incrementalSyncRecoveryHandler.recover(failure = failure) {
+                logger.i("Triggering delay($delay) and waiting for reconnection")
+                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                logger.i("Delay and waiting for connection finished - retrying")
+                onRetry()
             }
         }
     )
 
     private val exceptionHandler = coroutineExceptionHandler { doIncrementalSync() }
-
-    private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
     override fun performSyncFlow(): Flow<IncrementalSyncStatus> = channelFlow {
         coroutineScope {

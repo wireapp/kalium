@@ -63,11 +63,11 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -225,7 +225,7 @@ internal class MLSConversationDataSource(
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
-    private val syncManager: SyncManager,
+    private val syncStateObserver: SyncStateObserver,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val epochsFlow: MutableSharedFlow<GroupID>,
@@ -253,26 +253,30 @@ internal class MLSConversationDataSource(
      * between step 1 and 2. We enforce this by dispatching all `decrypt` and `commit` operations
      * onto this serial dispatcher.
      */
+    private val logger = kaliumLogger.withTextTag("MLSConversationDataSource")
 
     override suspend fun decryptMessage(
         message: ByteArray,
         groupID: GroupID
-    ): Either<CoreFailure, List<DecryptedMessageBundle>> = mutex.withLock {
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.decryptMessage(
-                    idMapper.toCryptoModel(groupID),
-                    message
-                ).let { messages ->
-                    if (messages.any { it.hasEpochChanged }) {
-                        kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
-                        epochsFlow.emit(groupID)
-                    }
-                    messages.map {
-                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
-                            checkRevocationList(newDistributionPoints)
+    ): Either<CoreFailure, List<DecryptedMessageBundle>> {
+        logger.d("Decrypting message for group ${groupID.toLogString()}")
+        return mutex.withLock {
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.decryptMessage(
+                        idMapper.toCryptoModel(groupID),
+                        message
+                    ).let { messages ->
+                        if (messages.any { it.hasEpochChanged }) {
+                            kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
+                            epochsFlow.emit(groupID)
                         }
-                        it.toModel(groupID)
+                        messages.map {
+                            it.crlNewDistributionPoints?.let { newDistributionPoints ->
+                                checkRevocationList(newDistributionPoints)
+                            }
+                            it.toModel(groupID)
+                        }
                     }
                 }
             }
@@ -310,22 +314,25 @@ internal class MLSConversationDataSource(
     override suspend fun joinGroupByExternalCommit(
         groupID: GroupID,
         groupInfo: ByteArray
-    ): Either<CoreFailure, Unit> = mutex.withLock {
-        kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} via external commit")
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.joinByExternalCommit(groupInfo)
-            }.flatMap { commitBundle ->
-                commitBundle.crlNewDistributionPoints?.let {
-                    checkRevocationList(it)
-                }
-                sendCommitBundleForExternalCommit(groupID, commitBundle)
-            }.onSuccess {
-                wrapStorageRequest {
-                    conversationDAO.updateConversationGroupState(
-                        ConversationEntity.GroupState.ESTABLISHED,
-                        idMapper.toCryptoModel(groupID)
-                    )
+    ): Either<CoreFailure, Unit> {
+        logger.d("Joining group ${groupID.toLogString()} by external commit")
+        return mutex.withLock {
+            kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} via external commit")
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.joinByExternalCommit(groupInfo)
+                }.flatMap { commitBundle ->
+                    commitBundle.crlNewDistributionPoints?.let {
+                        checkRevocationList(it)
+                    }
+                    sendCommitBundleForExternalCommit(groupID, commitBundle)
+                }.onSuccess {
+                    wrapStorageRequest {
+                        conversationDAO.updateConversationGroupState(
+                            ConversationEntity.GroupState.ESTABLISHED,
+                            idMapper.toCryptoModel(groupID)
+                        )
+                    }
                 }
             }
         }
@@ -343,17 +350,20 @@ internal class MLSConversationDataSource(
             conversationDAO.getConversationsByKeyingMaterialUpdate(threshold).map(idMapper::fromGroupIDEntity)
         }
 
-    override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> = mutex.withLock {
-        produceAndSendCommitWithRetry(groupID) {
-            wrapMLSRequest {
-                updateKeyingMaterial(idMapper.toCryptoModel(groupID))
-            }
-        }.flatMap {
-            wrapStorageRequest {
-                conversationDAO.updateKeyingMaterial(
-                    idMapper.toCryptoModel(groupID),
-                    DateTimeUtil.currentInstant()
-                )
+    override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> {
+        logger.d("Updating keying material for group ${groupID.toLogString()}")
+        return mutex.withLock {
+            produceAndSendCommitWithRetry(groupID) {
+                wrapMLSRequest {
+                    updateKeyingMaterial(idMapper.toCryptoModel(groupID))
+                }
+            }.flatMap {
+                wrapStorageRequest {
+                    conversationDAO.updateKeyingMaterial(
+                        idMapper.toCryptoModel(groupID),
+                        DateTimeUtil.currentInstant()
+                    )
+                }
             }
         }
     }
@@ -410,8 +420,11 @@ internal class MLSConversationDataSource(
 
     override suspend fun commitPendingProposals(
         groupID: GroupID
-    ): Either<CoreFailure, Unit> = mutex.withLock {
-        internalCommitPendingProposals(groupID)
+    ): Either<CoreFailure, Unit> {
+        logger.d("Committing pending proposals for group ${groupID.toLogString()}")
+        return mutex.withLock {
+            internalCommitPendingProposals(groupID)
+        }
     }
 
     private suspend fun internalCommitPendingProposals(
@@ -535,20 +548,23 @@ internal class MLSConversationDataSource(
     override suspend fun removeMembersFromMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>
-    ): Either<CoreFailure, Unit> = mutex.withLock {
-        internalCommitPendingProposals(groupID).flatMap {
-            produceAndSendCommitWithRetry(groupID) {
-                wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { it.toApi() }) }.map { userClientsList ->
-                    val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
-                        userClients.value.map { userClient ->
-                            CryptoQualifiedClientId(
-                                userClient.id,
-                                idMapper.toCryptoQualifiedIDId(userClients.key.toModel())
-                            )
+    ): Either<CoreFailure, Unit> {
+        logger.d("Removing ${userIdList.count()} users from MLS group ${groupID.toLogString()}")
+        return mutex.withLock {
+            internalCommitPendingProposals(groupID).flatMap {
+                produceAndSendCommitWithRetry(groupID) {
+                    wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { it.toApi() }) }.map { userClientsList ->
+                        val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
+                            userClients.value.map { userClient ->
+                                CryptoQualifiedClientId(
+                                    userClient.id,
+                                    idMapper.toCryptoQualifiedIDId(userClients.key.toModel())
+                                )
+                            }
                         }
-                    }
-                    return@produceAndSendCommitWithRetry wrapMLSRequest {
-                        removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs)
+                        return@produceAndSendCommitWithRetry wrapMLSRequest {
+                            removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs)
+                        }
                     }
                 }
             }
@@ -558,17 +574,20 @@ internal class MLSConversationDataSource(
     override suspend fun removeClientsFromMLSGroup(
         groupID: GroupID,
         clientIdList: List<QualifiedClientID>
-    ): Either<CoreFailure, Unit> = mutex.withLock {
-        internalCommitPendingProposals(groupID).flatMap {
-            produceAndSendCommitWithRetry(groupID, retryOnClientMismatch = false) {
-                val qualifiedClientIDs = clientIdList.map { userClient ->
-                    CryptoQualifiedClientId(
-                        userClient.clientId.value,
-                        userClient.userId.toCrypto()
-                    )
-                }
-                return@produceAndSendCommitWithRetry wrapMLSRequest {
-                    removeMember(groupID.toCrypto(), qualifiedClientIDs)
+    ): Either<CoreFailure, Unit> {
+        logger.d("Removing ${clientIdList.count()} clients from MLS group ${groupID.toLogString()}")
+        return mutex.withLock {
+            internalCommitPendingProposals(groupID).flatMap {
+                produceAndSendCommitWithRetry(groupID, retryOnClientMismatch = false) {
+                    val qualifiedClientIDs = clientIdList.map { userClient ->
+                        CryptoQualifiedClientId(
+                            userClient.clientId.value,
+                            userClient.userId.toCrypto()
+                        )
+                    }
+                    return@produceAndSendCommitWithRetry wrapMLSRequest {
+                        removeMember(groupID.toCrypto(), qualifiedClientIDs)
+                    }
                 }
             }
         }
@@ -586,19 +605,22 @@ internal class MLSConversationDataSource(
         members: List<UserId>,
         publicKeys: MLSPublicKeys?,
         allowSkippingUsersWithoutKeyPackages: Boolean
-    ): Either<CoreFailure, MLSAdditionResult> = mutex.withLock {
-        mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> { mlsClient ->
-            val cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
-            val keys = publicKeys?.getRemovalKey(cipherSuite) ?: mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite)
+    ): Either<CoreFailure, MLSAdditionResult> {
+        logger.d("Establishing MLS group ${groupID.toLogString()}")
+        return mutex.withLock {
+            mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> { mlsClient ->
+                val cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
+                val keys = publicKeys?.getRemovalKey(cipherSuite) ?: mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite)
 
-            keys.flatMap { externalSenders ->
-                establishMLSGroup(
-                    mlsClient = mlsClient,
-                    groupID = groupID,
-                    members = members,
-                    externalSenders = externalSenders,
-                    allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
-                )
+                keys.flatMap { externalSenders ->
+                    establishMLSGroup(
+                        mlsClient = mlsClient,
+                        groupID = groupID,
+                        members = members,
+                        externalSenders = externalSenders,
+                        allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
+                    )
+                }
             }
         }
     }
@@ -606,18 +628,21 @@ internal class MLSConversationDataSource(
     override suspend fun establishMLSSubConversationGroup(
         groupID: GroupID,
         parentId: ConversationId
-    ): Either<CoreFailure, Unit> = mutex.withLock {
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
-                val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
-                establishMLSGroup(
-                    mlsClient = mlsClient,
-                    groupID = groupID,
-                    members = emptyList(),
-                    externalSenders = externalSenderKey.value,
-                    allowPartialMemberList = false
-                ).map { Unit }
-            } ?: Either.Left(StorageFailure.DataNotFound)
+    ): Either<CoreFailure, Unit> {
+        logger.d("Establishing MLS sub-conversation group ${groupID.toLogString()} with parent $parentId")
+        return mutex.withLock {
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
+                    val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
+                    establishMLSGroup(
+                        mlsClient = mlsClient,
+                        groupID = groupID,
+                        members = emptyList(),
+                        externalSenders = externalSenderKey.value,
+                        allowPartialMemberList = false
+                    ).map { Unit }
+                } ?: Either.Left(StorageFailure.DataNotFound)
+            }
         }
     }
 
@@ -884,11 +909,11 @@ internal class MLSConversationDataSource(
         }
 
     private suspend fun keepCommitAndRetry(groupID: GroupID): Either<CoreFailure, Unit> {
-        kaliumLogger.w("Migrating failed commit to new epoch and re-trying.")
+        logger.w("Migrating failed commit to new epoch and re-trying sync state: ${syncStateObserver.syncState.value}")
         // FIXME: Sync Cyclic Dependency.
         //        This function can be called DURING sync. And at the same time, it waits for Sync.
         //        Perhaps it should be scheduled for a retry in the future, after Sync is done.
-        return syncManager.waitUntilLiveOrFailure().flatMap {
+        return syncStateObserver.waitUntilLiveOrFailure().flatMap {
             commitPendingProposalsWithoutRetry(groupID)
         }
     }
@@ -899,10 +924,11 @@ internal class MLSConversationDataSource(
         wrapMLSRequest {
             mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
         }.flatMap {
+            logger.d("Discarding pending commit for group ${groupID.toLogString()} sync state ${syncStateObserver.syncState.value}")
             // FIXME: Sync Cyclic Dependency.
             //        This function can be called DURING sync. And at the same time, it waits for Sync.
             //        Perhaps it should be scheduled for a retry in the future, after Sync is done.
-            syncManager.waitUntilLiveOrFailure()
+            syncStateObserver.waitUntilLiveOrFailure()
         }
     }
 

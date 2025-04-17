@@ -47,6 +47,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.cellEnabled
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -72,9 +73,7 @@ interface ConversationMapper {
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
         selfUserTeamId: TeamId?,
-        wireCellEnabled: Boolean = false,
     ): ConversationEntity
-
     fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
@@ -123,7 +122,6 @@ internal class ConversationMapperImpl(
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
         selfUserTeamId: TeamId?,
-        wireCellEnabled: Boolean,
     ): ConversationEntity {
         val conversationId = idMapper.fromApiToDao(apiModel.id)
         val type = apiModel.toConversationType(selfUserTeamId)
@@ -155,7 +153,7 @@ internal class ConversationMapperImpl(
             isChannel = type == ConversationEntity.Type.GROUP && apiModel.conversationGroupType == ConversationResponse.GroupType.CHANNEL,
             channelAccess = null, // TODO: implement when api is ready
             channelAddPermission = apiModel.channelAddUserPermissionTypeDTO?.toDAO(),
-            wireCell = conversationId.toString().takeIf { wireCellEnabled },
+            wireCell = conversationId.toString().takeIf { apiModel.cellEnabled() }, // TODO refactor to boolean in WPB-16946
         )
     }
 
@@ -430,7 +428,8 @@ internal class ConversationMapperImpl(
         protocol = toApiModel(options.protocol),
         creatorClient = options.creatorClientId?.value,
         groupConversationType = options.groupType.toApiModel(),
-        channelAddPermissionTypeDTO = options.channelAddPermission.toApi()
+        channelAddPermissionTypeDTO = options.channelAddPermission.toApi(),
+        cellEnabled = options.wireCellEnabled,
     )
 
     private fun ConversationOptions.GroupType.toApiModel(): GroupConversationType = when (this) {

@@ -105,6 +105,10 @@ internal class NewConversationEventHandlerImpl(
         event: Event.Conversation.NewConversation
     ) {
         if (isNewUnhandledConversation) {
+            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                event.conversation.id.toModel(),
+                event.dateTime
+            )
             newGroupConversationSystemMessagesCreator.conversationStarted(
                 event.senderUserId,
                 event.conversation,
@@ -117,10 +121,6 @@ internal class NewConversationEventHandlerImpl(
             )
             newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
                 event.conversation,
-                event.dateTime
-            )
-            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                event.conversation.id.toModel(),
                 event.dateTime
             )
         }

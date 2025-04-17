@@ -24,12 +24,12 @@ import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.CancellationException
 
 internal class SyncExceptionHandler(
-    private val onCancellation: () -> Unit,
-    private val onFailure: (exception: CoreFailure) -> Unit
+    private val onCancellation: suspend () -> Unit,
+    private val onFailure: suspend (exception: CoreFailure) -> Unit
 ) {
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    fun handleException(exception: Throwable) {
+    suspend fun handleException(exception: Throwable) {
         when (exception) {
             is CancellationException -> {
                 logger.w("Sync job was cancelled", exception)

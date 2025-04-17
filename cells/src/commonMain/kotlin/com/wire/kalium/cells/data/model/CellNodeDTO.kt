@@ -86,7 +86,7 @@ internal fun RestNode.toDto() = CellNodeDTO(
     type = type?.name ?: "",
     eTag = storageETag,
     isRecycled = isRecycled ?: false,
-    isDraft = isDraft(),
+    isDraft = isDraft ?: false,
     contentUrl = preSignedGET?.url,
     contentHash = contentHash,
     mimeType = contentType,
@@ -104,10 +104,6 @@ internal fun RestNode.toDto() = CellNodeDTO(
     conversationId = contextWorkspace?.uuid,
     publicLinkId = shares?.firstOrNull()?.uuid,
 )
-
-private fun RestNode.isDraft(): Boolean {
-    return userMetadata?.firstOrNull { it.namespace == "usermeta-draft" }?.jsonValue == "true"
-}
 
 internal data class PreviewDto(
     val url: String,

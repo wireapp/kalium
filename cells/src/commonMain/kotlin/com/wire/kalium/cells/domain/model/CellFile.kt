@@ -38,4 +38,20 @@ public data class CellFile(
     val userName: String? = null,
     val conversationName: String? = null,
     val publicLinkId: String? = null,
+    val lastModified: Long? = null,
+)
+
+@Suppress("MagicNumber")
+internal fun CellNode.toFileModel() = CellFile(
+    uuid = uuid,
+    versionId = versionId,
+    fileName = path.substringAfterLast("/"),
+    mimeType = mimeType ?: "",
+    remotePath = path,
+    contentHash = contentHash,
+    contentUrl = contentUrl,
+    previewUrl = previews.maxByOrNull { it.dimension }?.url,
+    assetSize = size,
+    publicLinkId = publicLinkId,
+    lastModified = modified?.let { it * 1000 },
 )

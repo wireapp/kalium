@@ -56,7 +56,7 @@ jobs:
             ./**/build/test-results/**/*.xml
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.17.1
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2.19.0
         if: always()
         with:
           files: |

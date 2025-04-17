@@ -32,6 +32,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
@@ -44,7 +45,8 @@ internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val legalHoldHandler: LegalHoldHandler
+    private val legalHoldHandler: LegalHoldHandler,
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -81,7 +83,12 @@ internal class MemberJoinEventHandlerImpl(
                             }
                         }
 
-                        is Conversation.Type.Group -> addSystemMessage(event)
+                        is Conversation.Type.Group -> {
+                            newGroupConversationSystemMessagesCreator
+                                .conversationStartedUnverifiedWarning(event.conversationId, event.dateTime)
+                            addMemberAddedSystemMessage(event)
+                        }
+
                         Conversation.Type.Self,
                         Conversation.Type.ConnectionPending -> {
                             /* no-op */
@@ -96,7 +103,7 @@ internal class MemberJoinEventHandlerImpl(
             }
     }
 
-    private suspend fun addSystemMessage(event: Event.Conversation.MemberJoin) {
+    private suspend fun addMemberAddedSystemMessage(event: Event.Conversation.MemberJoin) {
         val message = Message.System(
             id = event.id.ifEmpty { uuid4().toString() },
             content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),

@@ -36,17 +36,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import okio.FileSystem
 import okio.Path
+import okio.SYSTEM
 
 internal class CellUploadManagerImpl internal constructor(
     private val repository: CellsRepository,
     private val uploadScope: CoroutineScope,
+    private val fileSystem: FileSystem = FileSystem.SYSTEM,
 ) : CellUploadManager {
 
     private val uploads = mutableMapOf<String, UploadInfo>()
 
     override suspend fun upload(
-        assetPath: Path,
+        localPath: Path,
         assetSize: Long,
         destNodePath: String,
     ): Either<NetworkFailure, CellNode> =
@@ -64,17 +67,17 @@ internal class CellUploadManagerImpl internal constructor(
                 size = assetSize,
                 isDraft = true,
             ).also {
-                startUpload(assetPath, it)
+                startUpload(localPath, it)
             }
         }
 
-    private fun startUpload(assetPath: Path, node: CellNode) {
+    private fun startUpload(localPath: Path, node: CellNode) {
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()
 
         val uploadJob = uploadScope.launch {
             repository.uploadFile(
-                path = assetPath,
+                path = localPath,
                 node = node,
                 onProgressUpdate = { updateUploadProgress(node.uuid, it) }
             )
@@ -83,7 +86,7 @@ internal class CellUploadManagerImpl internal constructor(
                     uploadEventsFlow.emit(CellUploadEvent.UploadCompleted)
                 }
                 .onFailure {
-                    updateJobInfo(node.uuid) { copy(uploadFiled = true) }
+                    updateJobInfo(node.uuid) { copy(uploadFailed = true) }
                     uploadEventsFlow.emit(CellUploadEvent.UploadError)
                 }
         }
@@ -91,8 +94,21 @@ internal class CellUploadManagerImpl internal constructor(
         uploads[node.uuid] = UploadInfo(
             node = node,
             job = uploadJob,
+            localPath = localPath,
             events = uploadEventsFlow,
         )
+    }
+
+    override fun retryUpload(nodeUuid: String) {
+        uploads[nodeUuid]?.let { uploadInfo ->
+            if (fileSystem.exists(uploadInfo.localPath)) {
+                startUpload(uploadInfo.localPath, uploadInfo.node)
+            } else {
+                // Original file is not available
+                updateJobInfo(nodeUuid) { copy(uploadFailed = true) }
+                uploadScope.launch { uploadInfo.events.emit(CellUploadEvent.UploadError) }
+            }
+        }
     }
 
     private fun updateUploadProgress(nodeUuid: String, uploaded: Long) {
@@ -121,7 +137,7 @@ internal class CellUploadManagerImpl internal constructor(
         return uploads[nodeUuid]?.run {
             CellUploadInfo(
                 progress = progress,
-                uploadFailed = uploadFiled,
+                uploadFailed = uploadFailed,
             )
         }
     }
@@ -137,8 +153,9 @@ internal class CellUploadManagerImpl internal constructor(
 
 private data class UploadInfo(
     val node: CellNode,
+    val localPath: Path,
     val job: Job,
     val events: MutableSharedFlow<CellUploadEvent>,
     val progress: Float = 0f,
-    val uploadFiled: Boolean = false,
+    val uploadFailed: Boolean = false,
 )

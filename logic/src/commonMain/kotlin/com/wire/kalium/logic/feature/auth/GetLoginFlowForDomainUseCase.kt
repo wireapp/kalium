@@ -108,8 +108,8 @@ internal fun GetLoginFlowForDomainUseCase(
                 leadingMessage = "Get domain registration",
                 jsonStringKeyValues = mapOf("error" to "EnterpriseServiceNotEnabled")
             )
-            // if enterprise service is not enabled, the app should treat it as "no-registration" and continue
-            LoginDomainPath.NoRegistration.right()
+            // if enterprise service is not enabled, the app should treat it as "Default" and continue
+            LoginDomainPath.Default.right()
 
         } else {
             it.left()

@@ -19,12 +19,12 @@ package com.wire.kalium.common.functional
 
 import kotlinx.coroutines.delay
 
-suspend fun <L, R> retry(
+suspend inline fun <L, R> retry(
     times: Int = Int.MAX_VALUE,
     delay: Long = 0,
     maxDelay: Long = 1000,
     factor: Double = 1.0,
-    action: suspend () -> Either<L, R>
+    action: () -> Either<L, R>
 ): Either<L, R> {
 
     var currentDelay = delay

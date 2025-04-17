@@ -42,6 +42,12 @@ public interface CellUploadManager {
     public fun observeUpload(nodeUuid: String): Flow<CellUploadEvent>?
 
     /**
+     * Retry failed upload for node with [nodeUuid].
+     * @param nodeUuid UUID of the node to upload
+     */
+    public fun retryUpload(nodeUuid: String)
+
+    /**
      * Cancel upload of the node with [nodeUuid].
      * @param nodeUuid UUID of the node to cancel
      */

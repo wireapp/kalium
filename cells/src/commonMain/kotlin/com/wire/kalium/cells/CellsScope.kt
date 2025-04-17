@@ -57,6 +57,8 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
+import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCaseImpl
@@ -176,4 +178,7 @@ public class CellsScope(
 
     public val deletePublicLinkUseCase: DeletePublicLinkUseCase
         get() = DeletePublicLinkUseCaseImpl(cellsRepository)
+
+    public val retryAttachmentUpload: RetryAttachmentUploadUseCase
+        get() = RetryAttachmentUploadUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this)
 }

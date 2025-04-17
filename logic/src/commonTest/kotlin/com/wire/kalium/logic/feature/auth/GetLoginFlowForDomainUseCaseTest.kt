@@ -49,7 +49,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result, EnterpriseLoginResult.Success(LoginRedirectPath.Default))
+        assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
     }
 
     @Test
@@ -61,7 +61,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result::class, EnterpriseLoginResult.Failure.Generic::class)
+        assertEquals(EnterpriseLoginResult.Failure.Generic::class, result::class)
     }
 
     @Test
@@ -73,7 +73,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result, EnterpriseLoginResult.Failure.NotSupported)
+        assertEquals(EnterpriseLoginResult.Failure.NotSupported, result)
     }
 
     @Test
@@ -92,8 +92,8 @@ class GetLoginFlowForDomainUseCaseTest {
         coVerify { arrangement.loginRepository.fetchDomainRedirectCustomBackendConfig(backendConfigUrl) }
         coVerify { arrangement.customServerConfigRepository.fetchRemoteConfig(configJsonUrl) }
         assertEquals(
+            EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY)),
             result,
-            EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY))
         )
     }
 
@@ -107,7 +107,7 @@ class GetLoginFlowForDomainUseCaseTest {
         val result = useCase(Arrangement.EMAIL)
 
         coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        assertEquals(result, EnterpriseLoginResult.Success(LoginRedirectPath.NoRegistration))
+        assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
     }
 
     private class Arrangement {

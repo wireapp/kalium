@@ -21,8 +21,10 @@ package com.wire.kalium.network.api.model
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV8
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV3
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV8
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequestV3
 
@@ -32,9 +34,11 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateConversation
 interface ApiModelMapper {
 
     fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3
+    fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
+    fun fromApiV8(response: ConversationResponseV8): ConversationResponse
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
@@ -52,6 +56,23 @@ class ApiModelMapperImpl : ApiModelMapper {
             request.conversationRole,
             request.protocol,
             request.creatorClient
+        )
+
+    override fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8 =
+        CreateConversationRequestV8(
+            qualifiedUsers = request.qualifiedUsers,
+            name = request.name,
+            access = request.access,
+            accessRole = request.accessRole,
+            groupConversationType = request.groupConversationType,
+            channelAddPermissionTypeDTO = request.channelAddPermissionTypeDTO,
+            convTeamInfo = request.convTeamInfo,
+            messageTimer = request.messageTimer,
+            receiptMode = request.receiptMode,
+            conversationRole = request.conversationRole,
+            protocol = request.protocol,
+            creatorClient = request.creatorClient,
+            cellEnabled = request.cellEnabled
         )
 
     override fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3 =
@@ -98,5 +119,28 @@ class ApiModelMapperImpl : ApiModelMapper {
             receiptMode = response.conversation.receiptMode,
             publicKeys = response.publicKeys,
             conversationGroupType = response.conversation.conversationGroupType
+        )
+
+    override fun fromApiV8(response: ConversationResponseV8): ConversationResponse =
+        ConversationResponse(
+            creator = response.creator,
+            members = response.members,
+            name = response.name,
+            id = response.id,
+            groupId = response.groupId,
+            epoch = response.epoch,
+            type = response.type,
+            messageTimer = response.messageTimer,
+            teamId = response.teamId,
+            protocol = response.protocol,
+            lastEventTime = response.lastEventTime,
+            mlsCipherSuiteTag = response.mlsCipherSuiteTag,
+            access = response.access,
+            accessRole = response.accessRole,
+            receiptMode = response.receiptMode,
+            publicKeys = response.publicKeys,
+            conversationGroupType = response.conversationGroupType,
+            channelAddUserPermissionTypeDTO = response.channelAddUserPermissionTypeDTO,
+            cellsState = response.cellsState
         )
 }

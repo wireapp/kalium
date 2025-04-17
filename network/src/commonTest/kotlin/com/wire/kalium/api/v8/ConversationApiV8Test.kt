@@ -21,13 +21,36 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.mocks.extensions.toJsonString
 import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.responses.conversation.ConversationDetailsResponse
+import com.wire.kalium.mocks.responses.conversation.ConversationResponseJson
+import com.wire.kalium.mocks.responses.conversation.CreateConversationRequestJson
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v8.authenticated.ConversationApiV8
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 internal class ConversationApiV8Test : ApiTest() {
+
+    @Test
+    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            CREATE_CONVERSATION_RESPONSE,
+            statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertJson()
+                assertPost()
+                assertPathEqual(PATH_CONVERSATIONS)
+                assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
+            }
+        )
+        val conversationApi: ConversationApi = ConversationApiV8(networkClient)
+        val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
+
+        assertTrue(result.isSuccessful())
+    }
 
     @Test
     fun givenFetchConversationsDetails_whenCallingFetchWithIdList_thenTheRequestShouldBeConfiguredOK() = runTest {
@@ -54,10 +77,13 @@ internal class ConversationApiV8Test : ApiTest() {
 
     private companion object {
         const val PATH_CONVERSATIONS_LIST = "/conversations/list"
+        const val PATH_CONVERSATIONS = "/conversations"
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationMocks.conversationsDetailsRequest
         val CONVERSATION_DETAILS_RESPONSE = ConversationDetailsResponse.validGetDetailsForIds.copy(
             jsonProvider = ConversationDetailsResponseV8.jsonProvider
         )
+        val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v8.rawJson
+        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v8()
     }
 }
 
@@ -175,5 +201,4 @@ object ConversationDetailsResponseV8 {
         |}
         """.trimIndent()
     }
-
 }

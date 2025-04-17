@@ -32,6 +32,8 @@ import io.mockative.eq
 import io.mockative.matches
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
 import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -103,13 +105,14 @@ class MemberJoinEventHandlerTest {
     }
 
     @Test
-    fun givenMemberJoinEvent_whenHandlingIt_thenShouldPersistSystemMessage() = runTest {
+    fun givenMemberJoinEventInGroupConversation_whenHandlingIt_thenShouldPersistSystemMessages() = runTest {
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
+        val conversation = TEST_GROUP_CONVERSATION
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
+            withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(event)
@@ -120,11 +123,12 @@ class MemberJoinEventHandlerTest {
                     it is Message.System && it.content is MessageContent.MemberChange
                 }
             )
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
         }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldNotPersistSystemMessage() = runTest {
+    fun givenMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldNotPersistSystemMessages() = runTest {
         val userId = TestUser.USER_ID
         val conversation = TEST_ONE_ON_ONE_CONVERSATION
         val newMembers = listOf(Member(userId, Member.Role.Admin))
@@ -138,7 +142,10 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        coVerify { arrangement.persistMessageUseCase(any()) }.wasNotInvoked()
+        coVerify {
+            arrangement.persistMessageUseCase(any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+        }.wasNotInvoked()
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversationIfNotSet(
                 userId = any(),
@@ -220,7 +227,8 @@ class MemberJoinEventHandlerTest {
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
-        LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl() {
+        LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl(),
+        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
 
         suspend fun withFetchConversationSucceeding() = apply {
             withFetchConversationIfUnknownSucceeding()
@@ -234,8 +242,15 @@ class MemberJoinEventHandlerTest {
             withFetchUsersIfUnknownByIdsReturning(Unit.right())
             withPersistMembers(Unit.right())
             withHandleConversationMembersChanged(Unit.right())
+            withPersistUnverifiedWarningMessageSuccess()
 
-            this to MemberJoinEventHandlerImpl(conversationRepository, userRepository, persistMessageUseCase, legalHoldHandler)
+            this to MemberJoinEventHandlerImpl(
+                conversationRepository = conversationRepository,
+                userRepository = userRepository,
+                persistMessage = persistMessageUseCase,
+                legalHoldHandler = legalHoldHandler,
+                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
+            )
         }
     }
 

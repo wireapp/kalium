@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.feature.proteus
 
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangement
@@ -29,6 +29,8 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
@@ -38,56 +40,96 @@ import kotlin.test.Test
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProteusSyncWorkerTest {
 
     @Test
     fun givenLastCheckWasRecentAndSyncIsLive_thenShouldNotAttemptToRefillPreKeys() = runTest {
-        val now = Clock.System.now() - 23.hours
+        val lastCheck = Clock.System.now() - 1.hours
         val (arrangement, proteusSyncWorker) = arrange {
             minIntervalBetweenRefills = 24.hours
-            withObserveLastPreKeyUploadInstantReturning(flowOf(now))
+            withObserveLastPreKeyUploadInstantReturning(flowOf(lastCheck))
             withIncrementalSyncState(flowOf(IncrementalSyncStatus.Live))
             withSetLastPreKeyUploadInstantReturning(Either.Right(Unit))
         }
 
-        launch {
+        val workerJob = launch {
             proteusSyncWorker.execute()
         }
+        advanceTimeBy(1.minutes)
 
         coVerify {
             arrangement.proteusPreKeyRefiller.refillIfNeeded()
         }.wasNotInvoked()
+
+        workerJob.cancel()
     }
 
     @Test
     fun givenLastCheckWasLongAgoAndSyncIsLive_thenShouldAttemptToRefillPreKeys() = runTest {
-        val now = Clock.System.now() - 24.hours
+        val lastCheck = Clock.System.now() - 25.hours
         val (arrangement, proteusSyncWorker) = arrange {
-            minIntervalBetweenRefills = 23.hours
-            withObserveLastPreKeyUploadInstantReturning(flowOf(now))
+            minIntervalBetweenRefills = 24.hours
+            withObserveLastPreKeyUploadInstantReturning(flowOf(lastCheck))
             withIncrementalSyncState(flowOf(IncrementalSyncStatus.Live))
             withSetLastPreKeyUploadInstantReturning(Either.Right(Unit))
         }
 
-        proteusSyncWorker.execute()
+        val workerJob = launch {
+            proteusSyncWorker.execute()
+        }
+        advanceTimeBy(1.minutes)
 
         coVerify {
             arrangement.proteusPreKeyRefiller.refillIfNeeded()
         }.wasInvoked(exactly = once)
+
+        workerJob.cancel()
+    }
+
+    @Test
+    fun givenLastCheckWasLongAgoAndSyncIsNotLive_thenShouldAttemptToRefillPreKeysAfterSyncBecomesLive() = runTest {
+        val lastCheck = Clock.System.now() - 25.hours
+        val incrementalSyncStateFlow = MutableStateFlow<IncrementalSyncStatus>(IncrementalSyncStatus.Pending)
+        val (arrangement, mlsPublicKeysSyncWorker) = arrange {
+            minIntervalBetweenRefills = 24.hours
+            withObserveLastPreKeyUploadInstantReturning(flowOf(lastCheck))
+            withIncrementalSyncState(incrementalSyncStateFlow)
+            withSetLastPreKeyUploadInstantReturning(Either.Right(Unit))
+        }
+
+        val workerJob = launch {
+            mlsPublicKeysSyncWorker.execute()
+        }
+        advanceTimeBy(1.minutes)
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasNotInvoked() // Sync is not live yet
+
+        incrementalSyncStateFlow.value = IncrementalSyncStatus.Live // Change sync state to live
+        advanceTimeBy(1.minutes)
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once) // Sync is now live
+
+        workerJob.cancel()
     }
 
     @Test
     fun givenLastCheckWasRecentAndSyncIsLive_whenTimeElapses_thenShouldAttemptToRefillPreKeys() = runTest {
-        val now = Clock.System.now() - 23.hours
+        val lastCheck = Clock.System.now() - 1.hours
         val (arrangement, proteusSyncWorker) = arrange {
             minIntervalBetweenRefills = 24.hours
-            withObserveLastPreKeyUploadInstantReturning(flowOf(now))
+            withObserveLastPreKeyUploadInstantReturning(flowOf(lastCheck))
             withIncrementalSyncState(flowOf(IncrementalSyncStatus.Live))
             withSetLastPreKeyUploadInstantReturning(Either.Right(Unit))
         }
 
-        launch {
+        val workerJob = launch {
             proteusSyncWorker.execute()
         }
 
@@ -96,11 +138,118 @@ class ProteusSyncWorkerTest {
         }.wasNotInvoked()
 
         // Advance time until it's time to refill
-        advanceTimeBy(2.hours)
+        advanceTimeBy(23.hours + 1.minutes)
 
         coVerify {
             arrangement.proteusPreKeyRefiller.refillIfNeeded()
         }.wasInvoked(exactly = once)
+
+        workerJob.cancel()
+    }
+
+    @Test
+    fun givenLastCheckWasLongAgoAndSyncIsLive_whenSyncChangesToLiveAgainBeforeNextIntervalPasses_thenShouldNotRefillPreKeys() = runTest {
+        val lastCheck = Clock.System.now() - 25.hours
+        val lastCheckStateFlow = MutableStateFlow(lastCheck)
+        val incrementalSyncStateFlow = MutableStateFlow<IncrementalSyncStatus>(IncrementalSyncStatus.Live)
+        val (arrangement, proteusSyncWorker) = arrange {
+            minIntervalBetweenRefills = 24.hours
+            withObserveLastPreKeyUploadInstantReturning(lastCheckStateFlow)
+            withIncrementalSyncState(incrementalSyncStateFlow)
+            withSetLastPreKeyUploadInstantReturning(Either.Right(Unit))
+        }
+
+        val workerJob = launch {
+            proteusSyncWorker.execute()
+        }
+        advanceTimeBy(1.minutes)
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once)
+        lastCheckStateFlow.value = Clock.System.now()
+
+        incrementalSyncStateFlow.value = IncrementalSyncStatus.Pending // Change sync state to not live
+        incrementalSyncStateFlow.value = IncrementalSyncStatus.Live // Change sync state back to live
+        advanceTimeBy(23.hours) // This should not trigger a refill since the interval hasn't elapsed
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasNotInvoked()
+
+        workerJob.cancel()
+    }
+
+    @Test
+    fun givenLastCheckWasLongAgoAndSyncIsLive_whenSyncChangesToLiveAgainAndNextIntervalPasses_thenShouldRefillPreKeysAgain() = runTest {
+        val lastCheck = Clock.System.now() - 25.hours
+        val lastCheckStateFlow = MutableStateFlow(lastCheck)
+        val incrementalSyncStateFlow = MutableStateFlow<IncrementalSyncStatus>(IncrementalSyncStatus.Live)
+        val (arrangement, proteusSyncWorker) = arrange {
+            minIntervalBetweenRefills = 24.hours
+            withObserveLastPreKeyUploadInstantReturning(lastCheckStateFlow)
+            withIncrementalSyncState(incrementalSyncStateFlow)
+            withSetLastPreKeyUploadInstantReturning(Either.Right(Unit))
+        }
+
+        val workerJob = launch {
+            proteusSyncWorker.execute()
+        }
+        advanceTimeBy(1.minutes)
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once)
+        lastCheckStateFlow.value = Clock.System.now()
+
+        incrementalSyncStateFlow.value = IncrementalSyncStatus.Pending // Change sync state to not live
+        incrementalSyncStateFlow.value = IncrementalSyncStatus.Live // Change sync state back to live
+        advanceTimeBy(24.hours + 1.minutes) // This should  trigger a refill since the interval elapsed
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once)
+
+        workerJob.cancel()
+    }
+
+    @Test
+    fun givenLastCheckWasLongAgoAndSyncIsLive_whenNextIntervalPasses_thenShouldRefillPreKeysAgainOnlyAfterSyncIsLiveAgain() = runTest {
+        val lastCheck = Clock.System.now() - 25.hours
+        val lastCheckStateFlow = MutableStateFlow(lastCheck)
+        val incrementalSyncStateFlow = MutableStateFlow<IncrementalSyncStatus>(IncrementalSyncStatus.Live)
+        val (arrangement, proteusSyncWorker) = arrange {
+            minIntervalBetweenRefills = 24.hours
+            withObserveLastPreKeyUploadInstantReturning(lastCheckStateFlow)
+            withIncrementalSyncState(incrementalSyncStateFlow)
+            withSetLastPreKeyUploadInstantReturning(Either.Right(Unit))
+        }
+
+        val workerJob = launch {
+            proteusSyncWorker.execute()
+        }
+        advanceTimeBy(1.minutes)
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once)
+        lastCheckStateFlow.value = Clock.System.now()
+
+        incrementalSyncStateFlow.value = IncrementalSyncStatus.Pending // Change sync state to not live
+        advanceTimeBy(24.hours + 1.minutes) // Next interval elapses, trigger refill when sync becomes live again
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasNotInvoked() // Should not refill yet since sync is not live
+
+        incrementalSyncStateFlow.value = IncrementalSyncStatus.Live // Change sync state back to live
+        advanceTimeBy(1.minutes)
+
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once) // Should refill now since sync is live again
+
+        workerJob.cancel()
     }
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
