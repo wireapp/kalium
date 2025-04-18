@@ -36,6 +36,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -68,6 +70,25 @@ class GroupConversationCreatorTest {
         val result = createGroupConversation(name, members, conversationOptions)
 
         assertIs<ConversationCreationResult.SyncFailure>(result)
+    }
+
+    @Test
+    fun givenInvalidPermission_whenCreatingGroupConversation_thenShouldReturnForbiddenFailure() = runTest {
+        val name = "Conv Name"
+        val creatorClientId = ClientId("ClientId")
+        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
+        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
+
+        val (_, createGroupConversation) = Arrangement()
+            .withForbiddenFailure()
+            .withUpdateConversationModifiedDateSucceeding()
+            .withCurrentClientIdReturning(creatorClientId)
+            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .arrange()
+
+        val result = createGroupConversation(name, members, conversationOptions)
+
+        assertIs<ConversationCreationResult.Forbidden>(result)
     }
 
     @Test
@@ -222,6 +243,19 @@ class GroupConversationCreatorTest {
         suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
 
         suspend fun withWaitingForSyncFailing() = withSyncReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        suspend fun withForbiddenFailure() = withSyncReturning(
+            Either.Left(
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(
+                            code = 403,
+                            label = "operation-denied",
+                            message = "Invalid-permission"
+                        )
+                    )
+                )
+            )
+        )
 
         private suspend fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
