@@ -18,15 +18,18 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.CoroutineScope
+
 expect open class BaseMLSClientTest() {
 
     suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient
 
-    suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
-    ): CoreCryptoCentral
+    suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral
 }

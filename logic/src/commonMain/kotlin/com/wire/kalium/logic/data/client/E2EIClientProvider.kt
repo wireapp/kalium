@@ -132,7 +132,7 @@ internal class EI2EIClientProviderImpl(
                 handle = selfUser.handle!!,
                 teamId = selfUser.teamId?.value,
                 expiry = defaultE2EIExpiry,
-                defaultCipherSuite = defaultCipherSuite.tag.toUShort()
+                defaultCipherSuite = defaultCipherSuite.toCrypto()
             )
             e2EIClient = newE2EIClient
             Either.Right(newE2EIClient)

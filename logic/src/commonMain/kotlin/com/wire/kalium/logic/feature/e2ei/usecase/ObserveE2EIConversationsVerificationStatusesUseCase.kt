@@ -39,9 +39,9 @@ internal class ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
     override suspend fun invoke() {
         logger.d("Starting to monitor")
         epochChangesObserver.observe()
-            .collect { groupId ->
-                logger.d("Epoch changed for group $groupId")
-                fetchMLSVerificationStatus(groupId)
+            .collect { groupWithEpoch ->
+                logger.d("Epoch changed for group ${groupWithEpoch.epoch}")
+                fetchMLSVerificationStatus(groupWithEpoch.groupId)
             }
     }
 }

@@ -25,7 +25,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 internal open class MLSMessageApiV0 internal constructor() : MLSMessageApi {
 
-    override suspend fun sendMessage(message: MLSMessageApi.Message): NetworkResponse<SendMLSMessageResponse> = NetworkResponse.Error(
+    override suspend fun sendMessage(message: ByteArray): NetworkResponse<SendMLSMessageResponse> = NetworkResponse.Error(
         APINotSupported("MLS: sendMessage api is only available on API V5")
     )
 

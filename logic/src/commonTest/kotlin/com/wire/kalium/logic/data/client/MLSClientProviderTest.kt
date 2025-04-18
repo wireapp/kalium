@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
@@ -159,14 +160,22 @@ class MLSClientProviderTest {
         @Mock
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
 
+        @Mock
+        val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
+
+        @Mock
+        val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+
         fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {
             this to MLSClientProviderImpl(
                 rootKeyStorePath = rootKeyStorePath,
+                userId = userId,
                 currentClientIdProvider = currentClientIdProvider,
                 passphraseStorage = passphraseStorage,
                 userConfigRepository = userConfigRepository,
                 featureConfigRepository = featureConfigRepository,
-                userId = userId
+                mlsTransportProvider = mlsTransportProvider,
+                epochObserver = epochChangesObserver,
             )
         }
     }

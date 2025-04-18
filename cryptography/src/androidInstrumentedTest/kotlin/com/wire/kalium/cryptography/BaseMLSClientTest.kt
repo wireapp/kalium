@@ -18,20 +18,29 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.CoroutineScope
 import java.nio.file.Files
 
 actual open class BaseMLSClientTest {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
+        return createCoreCrypto(clientId).mlsClient(
+            clientId,
+            allowedCipherSuites,
+            defaultCipherSuite,
+            mlsTransporter,
+            epochObserver,
+            coroutineScope
+        )
     }
 
-    actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
-    ): CoreCryptoCentral {
+    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
         return coreCryptoCentral(keyStore.absolutePath, "test")

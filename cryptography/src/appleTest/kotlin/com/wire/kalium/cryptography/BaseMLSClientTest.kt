@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.CoroutineScope
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
@@ -26,15 +27,23 @@ import platform.Foundation.URLByAppendingPathComponent
 actual open class BaseMLSClientTest actual constructor() {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
+        return createCoreCrypto(clientId).mlsClient(
+            clientId,
+            allowedCipherSuites,
+            defaultCipherSuite,
+            mlsTransporter,
+            epochObserver,
+            coroutineScope
+        )
     }
 
-    actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
-    ): CoreCryptoCentral {
+    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/mls", isDirectory = true)
         NSFileManager.defaultManager.createDirectoryAtURL(rootDir, true, null, null)
         val keyStore = rootDir.URLByAppendingPathComponent("keystore-$clientId")!!

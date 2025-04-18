@@ -17,16 +17,28 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.cryptography.MLSEpochObserver
+import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.id.GroupID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
-interface EpochChangesObserver {
-    fun observe(): Flow<GroupID>
+interface EpochChangesObserver : MLSEpochObserver {
+    fun observe(): Flow<GroupWithEpoch>
+    suspend fun emit(groupId: MLSGroupId, epoch: ULong)
 }
 
-internal class EpochChangesObserverImpl(
-    private val epochsFlow: MutableSharedFlow<GroupID>,
-) : EpochChangesObserver {
-    override fun observe(): Flow<GroupID> = epochsFlow
+internal class EpochChangesObserverImpl : EpochChangesObserver {
+    private val epochsFlow = MutableSharedFlow<GroupWithEpoch>()
+
+    override fun observe(): Flow<GroupWithEpoch> = epochsFlow
+    override suspend fun emit(groupId: MLSGroupId, epoch: ULong) {
+        epochsFlow.emit(GroupWithEpoch(GroupID(groupId), epoch))
+    }
+
+    override suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong) {
+        epochsFlow.emit(GroupWithEpoch(GroupID(groupId), epoch))
+    }
 }
+
+data class GroupWithEpoch(val groupId: GroupID, val epoch: ULong)

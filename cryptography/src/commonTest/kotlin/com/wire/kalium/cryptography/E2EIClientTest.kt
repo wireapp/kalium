@@ -18,8 +18,8 @@
 package com.wire.kalium.cryptography
 
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -35,9 +35,15 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
-        return createMLSClient(user.qualifiedClientId, ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITE).e2eiNewActivationEnrollment(
-            user.name, user.handle, user.teamId,90.days
+        return createMLSClient(
+            user.qualifiedClientId,
+            ALLOWED_CIPHER_SUITES,
+            DEFAULT_CIPHER_SUITE,
+            mlsTransporter,
+            epochObserver,
+            TestScope()
         )
+            .e2eiNewActivationEnrollment(user.name, user.handle, user.teamId, 90.days)
     }
 
     @Test
@@ -169,8 +175,8 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     companion object {
 
-        val DEFAULT_CIPHER_SUITE = 1.toUShort()
-        val ALLOWED_CIPHER_SUITES = listOf(1.toUShort())
+        val DEFAULT_CIPHER_SUITE = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        val ALLOWED_CIPHER_SUITES = listOf(MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
         val ALICE1 = SampleUser(
             CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "elna.wire.link"),
             CryptoClientId("fb4b58152e20"),
@@ -346,5 +352,21 @@ class E2EIClientTest : BaseMLSClientTest() {
               "finalize": "https://acme.elna.wire.link/acme/keycloakteams/order/goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi/finalize",
               "certificate": "https://acme.elna.wire.link/acme/keycloakteams/certificate/cMFLY1InYUGVfOdrlgx9zoAIvipW6ocf"
             }""".toByteArray()
+    }
+
+    private val mlsTransporter = object : MLSTransporter {
+        override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
+            return MlsTransportResponse.Success
+        }
+
+        override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
+            return MlsTransportResponse.Success
+        }
+    }
+
+    private val epochObserver = object : MLSEpochObserver {
+        override suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong) {
+
+        }
     }
 }
