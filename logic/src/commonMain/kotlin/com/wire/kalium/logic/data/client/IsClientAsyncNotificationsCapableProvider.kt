@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.cache.CachingProviderImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -32,11 +31,15 @@ import kotlinx.coroutines.flow.firstOrNull
  */
 internal class IsClientAsyncNotificationsCapableProviderImpl(
     private val clientRegistrationStorage: ClientRegistrationStorage
-) : IsClientAsyncNotificationsCapableProvider, CachingProviderImpl<CoreFailure, Boolean>({
-    wrapStorageRequest {
-        clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull() == true
+) : IsClientAsyncNotificationsCapableProvider {
+
+    override suspend fun invoke(): Either<CoreFailure, Boolean> {
+        return wrapStorageRequest {
+            clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull() == true
+        }
     }
-})
+
+}
 
 internal fun interface IsClientAsyncNotificationsCapableProvider {
     suspend operator fun invoke(): Either<CoreFailure, Boolean>
