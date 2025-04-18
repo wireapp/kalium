@@ -114,8 +114,7 @@ class EventDataSource(
                     }
                 )
             }
-
-            // todo(ym) logs to skip
+            // Legacy events are not acknowledged
             is EventDeliveryInfo.Legacy -> Unit.right()
         }
     }
