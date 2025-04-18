@@ -19,6 +19,8 @@ package com.wire.kalium.logic.data.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -27,12 +29,11 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -201,7 +202,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     ): Either<CoreFailure, Unit> =
         persistMessage(
             Message.System(
-                uuid4().toString(),
+                LocalId.generate(),
                 MessageContent.ConversationStartedUnverifiedWarning,
                 conversationId,
                 instant,

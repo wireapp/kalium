@@ -1489,6 +1489,7 @@ class UserSessionScope internal constructor(
             persistMessage = persistMessage,
             legalHoldHandler = legalHoldHandler,
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
+            selfUserId = userId,
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(

@@ -112,6 +112,7 @@ internal class OneOnOneMigratorImpl(
                         ).map {
                             mlsConversation
                         }.also {
+                            systemMessageInserter.insertConversationStartedUnverifiedWarning(mlsConversation)
                             systemMessageInserter.insertProtocolChangedSystemMessage(
                                 conversationId = mlsConversation,
                                 senderUserId = user.id,

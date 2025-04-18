@@ -105,7 +105,7 @@ class MemberJoinEventHandlerTest {
     }
 
     @Test
-    fun givenMemberJoinEventInGroupConversation_whenHandlingIt_thenShouldPersistSystemMessages() = runTest {
+    fun givenMemberJoinEventInGroupConversation_whenHandlingIt_thenShouldPersistMemberChangeSystemMessage() = runTest {
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
         val conversation = TEST_GROUP_CONVERSATION
         val event = TestEvent.memberJoin(members = newMembers)
@@ -128,7 +128,7 @@ class MemberJoinEventHandlerTest {
     }
 
     @Test
-    fun givenMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldNotPersistSystemMessages() = runTest {
+    fun givenMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldNotPersistMemberChangeSystemMessage() = runTest {
         val userId = TestUser.USER_ID
         val conversation = TEST_ONE_ON_ONE_CONVERSATION
         val newMembers = listOf(Member(userId, Member.Role.Admin))
@@ -152,6 +152,76 @@ class MemberJoinEventHandlerTest {
                 conversationId = any()
             )
         }.wasInvoked(exactly = 1)
+    }
+
+    @Test
+    fun givenSelfMemberJoinEventInGroupConversation_whenHandlingIt_thenShouldPersistUnverifiedWarningSystemMessage() = runTest {
+        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Admin))
+        val conversation = TEST_GROUP_CONVERSATION
+        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(event)
+
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenOtherMemberJoinEventInGroupConversation_whenHandlingIt_thenShouldNotPersistUnverifiedWarningSystemMessage() = runTest {
+        val newMembers = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Admin))
+        val conversation = TEST_GROUP_CONVERSATION
+        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(event)
+
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenSelfMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldPersistUnverifiedWarningSystemMessage() = runTest {
+        val conversation = TEST_ONE_ON_ONE_CONVERSATION
+        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Admin))
+        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(event)
+
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenOtherMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldNotPersistUnverifiedWarningSystemMessage() = runTest {
+        val conversation = TEST_ONE_ON_ONE_CONVERSATION
+        val newMembers = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Admin))
+        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(event)
+
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -249,7 +319,8 @@ class MemberJoinEventHandlerTest {
                 userRepository = userRepository,
                 persistMessage = persistMessageUseCase,
                 legalHoldHandler = legalHoldHandler,
-                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
+                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
+                selfUserId = TEST_SELF_USER_ID,
             )
         }
     }
@@ -259,6 +330,6 @@ class MemberJoinEventHandlerTest {
 
         val TEST_GROUP_CONVERSATION = TestConversation.GROUP()
         val TEST_ONE_ON_ONE_CONVERSATION = TestConversation.ONE_ON_ONE()
-
+        val TEST_SELF_USER_ID = TestUser.SELF.id
     }
 }

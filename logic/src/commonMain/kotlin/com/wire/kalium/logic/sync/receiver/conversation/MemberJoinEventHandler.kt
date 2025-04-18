@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
@@ -47,6 +48,7 @@ internal class MemberJoinEventHandlerImpl(
     private val persistMessage: PersistMessageUseCase,
     private val legalHoldHandler: LegalHoldHandler,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val selfUserId: UserId,
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -78,14 +80,14 @@ internal class MemberJoinEventHandlerImpl(
                 conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->
                     when (conversation.type) {
                         Conversation.Type.OneOnOne -> {
+                            addUnverifiedWarningSystemMessageIfNeeded(event)
                             if (event.members.size == 1) {
                                 userRepository.updateActiveOneOnOneConversationIfNotSet(event.members.first().id, event.conversationId)
                             }
                         }
 
                         is Conversation.Type.Group -> {
-                            newGroupConversationSystemMessagesCreator
-                                .conversationStartedUnverifiedWarning(event.conversationId, event.dateTime)
+                            addUnverifiedWarningSystemMessageIfNeeded(event)
                             addMemberAddedSystemMessage(event)
                         }
 
@@ -101,6 +103,13 @@ internal class MemberJoinEventHandlerImpl(
             }.onFailure {
                 eventLogger.logFailure(it)
             }
+    }
+
+    private suspend fun addUnverifiedWarningSystemMessageIfNeeded(event: Event.Conversation.MemberJoin) {
+        if (event.members.any { it.id == selfUserId }) { // if self user is being added to group
+            newGroupConversationSystemMessagesCreator
+                .conversationStartedUnverifiedWarning(event.conversationId, event.dateTime)
+        }
     }
 
     private suspend fun addMemberAddedSystemMessage(event: Event.Conversation.MemberJoin) {

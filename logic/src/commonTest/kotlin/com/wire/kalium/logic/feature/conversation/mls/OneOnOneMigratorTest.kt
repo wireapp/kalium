@@ -139,6 +139,10 @@ class OneOnOneMigratorTest {
         }.wasNotInvoked()
 
         coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
+        }.wasNotInvoked()
+
+        coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasNotInvoked()
     }
@@ -179,6 +183,10 @@ class OneOnOneMigratorTest {
 
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
         }.wasNotInvoked()
 
         coVerify {
@@ -231,6 +239,10 @@ class OneOnOneMigratorTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasInvoked(exactly = once)
     }
@@ -256,6 +268,10 @@ class OneOnOneMigratorTest {
 
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(eq(resolvedConversationId))
         }.wasInvoked(exactly = once)
 
         coVerify {
