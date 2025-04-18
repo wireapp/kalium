@@ -124,12 +124,13 @@ internal class AuthenticatedNetworkContainerV8 internal constructor(
 
     override val assetApi: AssetApi get() = AssetApiV8(networkClientWithoutCompression, selfUserId)
 
-    override val notificationApi: NotificationApi
-        get() = NotificationApiV8(
+    override val notificationApi: NotificationApi by lazy {
+        NotificationApiV8(
             networkClient,
             websocketClient,
             backendConfig
         )
+    }
 
     override val teamsApi: TeamsApi get() = TeamsApiV8(networkClient)
 

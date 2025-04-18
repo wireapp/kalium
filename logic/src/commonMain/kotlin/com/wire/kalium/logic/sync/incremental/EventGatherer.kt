@@ -172,8 +172,8 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen(shouldProcessPendingEvents: Boolean) {
         logger.i("Websocket Open")
-        handleTimeDrift()
         if (shouldProcessPendingEvents) {
+            handleTimeDrift()
             eventRepository
                 .pendingEvents()
                 .onEach { result ->
