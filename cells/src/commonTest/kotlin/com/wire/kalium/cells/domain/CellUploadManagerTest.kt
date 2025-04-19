@@ -22,6 +22,7 @@ import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
+import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
@@ -43,7 +44,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -286,7 +286,11 @@ private class TestRepository : CellsRepository {
         return Unit.right()
     }
 
-    override suspend fun getFiles(path: String?, query: String, limit: Int, offset: Int) = emptyList<CellNode>().right()
+    override suspend fun getFiles(path: String?, query: String, limit: Int, offset: Int) = PaginatedList<CellNode>(
+        data = emptyList(),
+        pagination = null
+    ).right()
+
     override suspend fun deleteFile(nodeUuid: String) = Unit.right()
     override suspend fun preCheck(nodePath: String) = PreCheckResult.Success.right()
     override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) = Unit.right()
