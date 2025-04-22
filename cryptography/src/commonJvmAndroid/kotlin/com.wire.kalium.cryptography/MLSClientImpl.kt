@@ -303,7 +303,12 @@ class MLSClientImpl(
 
     override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity> {
         return coreCrypto.transaction { context ->
-            context.getDeviceIdentities(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()), clients.map { ClientId(it.toString()) })
+            context.getDeviceIdentities(
+                com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
+                clients.map {
+                    ClientId(it.toString())
+                }
+            )
                 .mapNotNull {
                     it.toCryptography()
                 }
