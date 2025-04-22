@@ -1353,6 +1353,9 @@ class MLSConversationRepositoryTest {
         @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
+        @Mock
+        val epochChangesObserver = mock(EpochChangesObserver::class)
+
         val epochsFlow = MutableSharedFlow<GroupID>()
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
@@ -1368,7 +1371,8 @@ class MLSConversationRepositoryTest {
             keyPackageLimitsProvider,
             checkRevocationList,
             certificateRevocationListRepository,
-            mutex = Mutex()
+            mutex = Mutex(),
+            epochChangesObserver = epochChangesObserver
         )
 
         suspend fun withClearProposalTimerSuccessful() = apply {
