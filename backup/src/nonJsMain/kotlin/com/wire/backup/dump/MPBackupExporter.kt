@@ -22,6 +22,7 @@ import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
+import com.wire.backup.data.getBackupFileName
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
@@ -64,10 +65,15 @@ public actual class MPBackupExporter(
         )
     }
 
+    /**
+     * Persists all the data into a single backup file, returning a [BackupExportResult].
+     * This method should be called after all the data was added.
+     * @param password optional password for the encryption. Can be an empty string, to export an unencrypted backup.
+     */
     @NativeCoroutines
     @Suppress("TooGenericExceptionCaught")
-    public suspend fun finalize(password: String?): BackupExportResult = try {
-        val fileName = "export.wbu"
+    public suspend fun finalize(password: String): BackupExportResult = try {
+        val fileName = getBackupFileName()
         val path = outputDirectory.toPath() / fileName
         fileSystem.delete(path)
         fileSystem.createDirectories(path.parent!!)
