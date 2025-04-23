@@ -11,12 +11,13 @@ $dokka.location:com.wire.backup.dump/BackupExportResult.Failure.ZipError/message
 $dokka.location:com.wire.backup.dump/BackupExportResult.Failure///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/index.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Failure/message/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/message.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/index.html
-$dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#[Error type: Unresolved type for Uint8Array]/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/-success.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#[Error type: Unresolved type for Uint8Array]#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/-success.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/-success.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/bytes/#/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/bytes.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/fileName/#/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/file-name.html
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/pathToOutputFile/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/path-to-output-file.html
 $dokka.location:com.wire.backup.dump/BackupExportResult///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/index.html
-$dokka.location:com.wire.backup.dump/MPBackupExporter/finalize/#kotlin.String?/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]finalize.html
+$dokka.location:com.wire.backup.dump/MPBackupExporter/finalize/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]finalize.html
 $dokka.location:com.wire.backup.dump/MPBackupExporter/storage/#/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]storage.html
 $dokka.location:com.wire.backup.dump/MPBackupExporter/zipEntries/#kotlin.collections.List[com.wire.backup.filesystem.BackupPage]/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]zip-entries.html
 $dokka.location:com.wire.backup.ingest/MPBackupImporter/getUnencryptedArchiveSink/#/PointingToDeclaration/backup/com.wire.backup.ingest/-m-p-backup-importer/[non-js]get-unencrypted-archive-sink.html
@@ -435,7 +436,6 @@ $dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/storePath/
 $dokka.location:com.wire.kalium.persistence.db/StorageData.InMemory///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-in-memory/index.html
 $dokka.location:com.wire.kalium.persistence.db/StorageData///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/index.html
 module:backup
-com.wire.backup
 com.wire.backup.data
 com.wire.backup.dump
 com.wire.backup.encryption
