@@ -68,15 +68,12 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
-                    scope = RestLookupScope(
-                        nodes = listOf(RestNodeLocator(path = "/")),
-                        recursive = true
-                    ),
+                    scope = RestLookupScope(recursive = true),
                     filters = RestLookupFilter(
                         type = TreeNodeType.LEAF,
                         text = LookupFilterTextSearch(
                             searchIn = LookupFilterTextSearchIn.BaseName,
-                            term = "phrase"
+                            term = query
                         ),
                     ),
                     sortField = SORTED_BY,
@@ -91,7 +88,7 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
-                    scope = RestLookupScope(listOf(RestNodeLocator(path))),
+                    scope = RestLookupScope(listOf(RestNodeLocator(path = "$path/*"))),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
