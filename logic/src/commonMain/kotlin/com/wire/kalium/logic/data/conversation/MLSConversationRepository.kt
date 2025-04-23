@@ -470,21 +470,33 @@ internal class MLSConversationDataSource(
         groupID: GroupID,
         clientIdList: List<QualifiedClientID>
     ): Either<CoreFailure, Unit> {
-        logger.d("Removing ${clientIdList.count()} clients from MLS group ${groupID.toLogString()}")
+        logger.d("Attempt to remove ${clientIdList.count()} clients from MLS group ${groupID.toLogString()}")
         return mutex.withLock {
             commitPendingProposals(groupID).flatMap {
-                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                    produceAndSendCommitWithRetryAndResult(groupID, retryOnClientMismatch = false) {
-                        val qualifiedClientIDs = clientIdList.map { userClient ->
-                            CryptoQualifiedClientId(
-                                userClient.clientId.value,
-                                userClient.userId.toCrypto()
-                            )
-                        }
-                        wrapMLSRequest {
-                            mlsClient.removeMember(groupID.toCrypto(), qualifiedClientIDs)
-                        }
+                produceAndSendCommitWithRetryAndResult(groupID, retryOnClientMismatch = false) {
+                    val qualifiedClientIDs = clientIdList.map { userClient ->
+                        CryptoQualifiedClientId(
+                            userClient.clientId.value,
+                            userClient.userId.toCrypto()
+                        )
                     }
+                    wrapMLSRequest { members(groupID.toCrypto()) }
+                        .flatMap { memberList ->
+                            val clientsToRemove = qualifiedClientIDs.filter { client ->
+                                memberList.any {
+                                    it == client
+                                }
+                            }
+                            if (clientsToRemove.isEmpty()) {
+                                kaliumLogger.d("Clients were already removed from MLS group ${groupID.toLogString()}")
+                                Either.Right(Unit)
+                            } else {
+                                kaliumLogger.d("Removing ${clientsToRemove.count()} clients from MLS group ${groupID.toLogString()}")
+                                wrapMLSRequest {
+                                    removeMember(groupID.toCrypto(), clientsToRemove)
+                                }
+                            }
+                        }
                 }
             }
         }
