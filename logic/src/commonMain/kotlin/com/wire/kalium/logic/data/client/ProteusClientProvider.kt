@@ -103,7 +103,7 @@ class ProteusClientProviderImpl(
             val central = try {
                 coreCryptoCentral(
                     rootDir = rootProteusPath,
-                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
+                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value,
                 )
             } catch (e: Exception) {
                 val logMap = mapOf(

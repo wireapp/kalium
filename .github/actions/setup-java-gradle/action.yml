@@ -15,7 +15,7 @@ runs:
         distribution: 'temurin'
 
     - name: Gradle Cache
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v4
 
     - name: Validate Gradle wrapper
       uses: gradle/actions/wrapper-validation@v3

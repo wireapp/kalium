@@ -26,12 +26,15 @@ import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.e2ei.AuthorizationResult
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.framework.TestConversation.MLS_CONVERSATION
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -50,6 +53,7 @@ import io.mockative.once
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -141,10 +145,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -212,10 +213,10 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -288,10 +289,10 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -366,10 +367,10 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -446,10 +447,10 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -535,10 +536,10 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -582,7 +583,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -629,7 +630,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -677,7 +678,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -727,7 +728,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -778,7 +779,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -831,7 +832,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -883,7 +884,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -941,7 +942,7 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.certificateRequest(any<String>(), any<Nonce>())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -958,6 +959,7 @@ class EnrollE2EICertificateUseCaseTest {
             withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
             withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
             withRotateKeysAndMigrateConversations(E2EIFailure.RotationAndMigration(TEST_CORE_FAILURE).left())
+            withObserveConversationListResulting(listOf(MLS_CONVERSATION))
             withSelfUserFetched(true)
         }
 
@@ -992,7 +994,7 @@ class EnrollE2EICertificateUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any<String>(), any<Boolean>())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any<String>(), any(), any<Boolean>())
         }.wasInvoked(exactly = once)
     }
 
@@ -1009,6 +1011,7 @@ class EnrollE2EICertificateUseCaseTest {
             withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
             withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
             withRotateKeysAndMigrateConversations(Either.Right(Unit))
+            withObserveConversationListResulting(listOf(MLS_CONVERSATION))
             withSelfUserFetched(true)
         }
 
@@ -1051,7 +1054,7 @@ class EnrollE2EICertificateUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any<String>(), any<Boolean>())
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any<String>(), any(), any<Boolean>())
         }.wasInvoked(exactly = once)
     }
 
@@ -1083,10 +1086,13 @@ class EnrollE2EICertificateUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement: UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
         @Mock
         val e2EIRepository = mock(E2EIRepository::class)
+
+        @Mock
+        val conversationRepository = mock(ConversationRepository::class)
 
         private var selfUserFetched: Boolean = false
 
@@ -1207,7 +1213,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         suspend fun withRotateKeysAndMigrateConversations(result: Either<E2EIFailure, Unit>) = apply {
             coEvery {
-                e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+                e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any())
             }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::rotateKeysAndMigrateConversations.name)
         }
 
@@ -1217,11 +1223,22 @@ class EnrollE2EICertificateUseCaseTest {
             }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::certificateRequest.name)
         }
 
+        suspend fun withObserveConversationListResulting(result: List<Conversation>) = apply {
+            coEvery {
+                conversationRepository.observeConversationList()
+            }.returns(flowOf(result))
+        }
+
         suspend fun arrange(coroutineScope: CoroutineScope, block: suspend Arrangement.() -> Unit): Pair<Arrangement, EnrollE2EIUseCase> =
             apply {
                 block()
             }.let {
-                this to EnrollE2EIUseCaseImpl(e2EIRepository, userRepository = userRepository, coroutineScope = coroutineScope)
+                this to EnrollE2EIUseCaseImpl(
+                    e2EIRepository = e2EIRepository,
+                    userRepository = userRepository,
+                    coroutineScope = coroutineScope,
+                    conversationRepository = conversationRepository
+                )
             }
     }
 
