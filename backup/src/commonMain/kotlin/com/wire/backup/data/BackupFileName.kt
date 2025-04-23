@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup
+package com.wire.backup.data
 
-import kotlin.js.JsExport
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
-@JsExport
-public object MPBackup {
-    public const val ZIP_ENTRY_DATA: String = "data.wmbu"
+private const val FILENAME_SUFFIX = ".wbu"
+private const val FILENAME_PREFIX = "WireBackup"
+
+internal fun getBackupFileName(
+    time: Instant = Clock.System.now(),
+    timeZone: TimeZone = TimeZone.currentSystemDefault()
+): String {
+    val timestamp = time.toLocalDateTime(timeZone).toString()
+    return "$FILENAME_PREFIX-$timestamp$FILENAME_SUFFIX"
 }
