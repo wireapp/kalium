@@ -330,7 +330,7 @@ internal class MessageSenderImpl internal constructor(
     ): Either<CoreFailure, Instant> {
         return mlsConversationRepository.commitPendingProposals(protocolInfo.groupId).flatMap {
             mlsMessageCreator.createOutgoingMLSMessage(protocolInfo.groupId, message).flatMap { mlsMessage ->
-                messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
+                messageRepository.sendMLSMessage(mlsMessage).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         if ((it.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
                             logger.logStructuredJson(

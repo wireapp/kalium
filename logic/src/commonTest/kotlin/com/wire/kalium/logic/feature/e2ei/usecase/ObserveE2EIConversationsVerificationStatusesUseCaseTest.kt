@@ -37,7 +37,7 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
     @Test
     fun givenEpochChanged_thenFetchingMLSVerificationIsCalled() = runTest {
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_WITH_EPOCH))
         }
 
         handler()

@@ -437,7 +437,7 @@ class MessageRepositoryTest {
             .withFailedToSendMlsMapping(listOfUserIds)
             .arrange()
 
-        val result = messageRepository.sendMLSMessage(conversationID, MLSMessageApi.Message(ByteArray(0)))
+        val result = messageRepository.sendMLSMessage(MLSMessageApi.Message(ByteArray(0)))
         result.shouldSucceed()
 
         assertTrue {
@@ -447,7 +447,7 @@ class MessageRepositoryTest {
         coVerify {
             arrangement.mlsMessageApi.sendMessage(
                 matches {
-                    it.value.contentToString() == ByteArray(0).contentToString()
+                    it.contentToString() == ByteArray(0).contentToString()
                 },
             )
         }.wasInvoked(exactly = once)
