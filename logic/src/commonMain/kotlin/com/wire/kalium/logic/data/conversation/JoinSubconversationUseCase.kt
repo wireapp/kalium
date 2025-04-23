@@ -58,8 +58,8 @@ internal class JoinSubconversationUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> =
-        joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
+    ): Either<CoreFailure, Unit> = joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
+
     private suspend fun joinOrEstablishSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId

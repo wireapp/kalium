@@ -710,14 +710,21 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveClientsFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
+        val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
+
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withFetchClientsOfUsersSuccessful()
+            .withMembers(clients.map {
+                CryptoQualifiedClientId(
+                    it.clientId.value,
+                    it.userId.toCrypto()
+                )
+            })
             .arrange()
 
-        val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
         val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
         result.shouldSucceed()
 
@@ -727,15 +734,42 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenEmptyMemberList_whenCallingRemoveClientsFromGroup_thenRemoveClientsIsNotTriggered() = runTest {
+        val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
+
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withGetMLSClientSuccessful()
+            .withRemoveMemberSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withMembers(listOf())
+            .arrange()
+
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.mlsClient.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenSuccessfulResponses_whenCallingRemoveClientsFromGroup_thenPendingProposalsAreFirstCommitted() = runTest {
+        val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
+
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withFetchClientsOfUsersSuccessful()
+            .withMembers(clients.map {
+                CryptoQualifiedClientId(
+                    it.clientId.value,
+                    it.userId.toCrypto()
+                )
+            })
             .arrange()
 
-        val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
         val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
         result.shouldSucceed()
 
@@ -774,15 +808,22 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenStaleMessageError_whenCallingRemoveClientsFromGroup_thenWaitUntilLiveAndRetry() = runTest {
+        val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
+
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing(times = 1)
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withClearProposalTimerSuccessful()
+            .withMembers(clients.map {
+                CryptoQualifiedClientId(
+                    it.clientId.value,
+                    it.userId.toCrypto()
+                )
+            })
             .arrange()
 
-        val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
         val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
         result.shouldSucceed()
 
@@ -1649,6 +1690,12 @@ class MLSConversationRepositoryTest {
             every {
                 mlsClient.getDefaultCipherSuite()
             }.returns(cipherSuite.toCrypto())
+        }
+
+        suspend fun withMembers(members: List<CryptoQualifiedClientId>) = apply {
+            coEvery {
+                mlsClient.members(any())
+            }.returns(members)
         }
 
         companion object {
