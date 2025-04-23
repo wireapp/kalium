@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
@@ -32,10 +32,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -148,8 +150,9 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                     verificationCode,
                     modelPostfix,
                 )
-            }.fold({
-                RegisterClientResult.Failure.Generic(it)
+            }.fold({ error ->
+                kaliumLogger.withTextTag(TAG).e("There was an error while registering the client $error")
+                RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
                     // todo? separate this in mls client usesCase register! separate everything
@@ -175,7 +178,10 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     }
 
     private suspend fun currentlyStoredVerificationCode(): String? {
-        val userEmail = userRepository.getSelfUser()?.email
+        val userEmail = userRepository.getSelfUser()
+            .map {
+                it.email
+            }.getOrNull()
         return userEmail?.let { secondFactorVerificationRepository.getStoredVerificationCode(it) }
     }
 
@@ -184,7 +190,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     ): RegisterClientResult = if (failure is NetworkFailure.ServerMiscommunication &&
         failure.kaliumException is KaliumException.InvalidRequestError
     ) {
-        val kaliumException = failure.kaliumException
+        val kaliumException = failure.kaliumException as KaliumException.InvalidRequestError
         val authCodeFailure = kaliumException.authenticationCodeFailure
         when {
             kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
@@ -206,7 +212,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
             RegisterClientResult.Failure.InvalidCredentials.Missing2FA
 
         AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE -> {
-            userRepository.getSelfUser()?.email?.let {
+            userRepository.getSelfUser().getOrNull()?.email?.let {
                 secondFactorVerificationRepository.clearStoredVerificationCode(it)
             }
             RegisterClientResult.Failure.InvalidCredentials.Invalid2FA
@@ -242,5 +248,9 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                 )
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "RegisterClientUseCase"
     }
 }

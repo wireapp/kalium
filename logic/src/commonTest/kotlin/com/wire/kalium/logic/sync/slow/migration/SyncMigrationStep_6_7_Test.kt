@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.sync.slow.migration
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl

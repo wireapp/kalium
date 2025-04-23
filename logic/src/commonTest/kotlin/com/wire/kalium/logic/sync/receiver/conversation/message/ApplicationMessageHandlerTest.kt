@@ -18,10 +18,11 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
@@ -33,7 +34,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
@@ -171,6 +172,41 @@ class ApplicationMessageHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenInCallReactionReceived_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        // given
+        val messageId = "messageId"
+        val inCallReactionContent = MessageContent.InCallEmoji(
+            emojis = mapOf("1" to 1)
+        )
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            inCallReactionContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+
+        val (arrangement, messageHandler) = Arrangement()
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+
+        // when
+        messageHandler.handleContent(
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        // then
+        coVerify {
+            arrangement.inCallReactionsRepository.addInCallReaction(messageEvent.conversationId, messageEvent.senderUserId, setOf("1"))
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         val persistMessage = mock(PersistMessageUseCase::class)
@@ -187,6 +223,7 @@ class ApplicationMessageHandlerTest {
         val receiptMessageHandler = mock(ReceiptMessageHandler::class)
         val assetMessageHandler = mock(AssetMessageHandler::class)
         val buttonActionConfirmationHandler = mock(ButtonActionConfirmationHandler::class)
+        val inCallReactionsRepository = mock(InCallReactionsRepository::class)
         val dataTransferEventHandler = mock(DataTransferEventHandler::class)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
@@ -205,6 +242,7 @@ class ApplicationMessageHandlerTest {
             receiptMessageHandler,
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
+            inCallReactionsRepository,
             TestUser.SELF.id
         )
 

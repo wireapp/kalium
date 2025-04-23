@@ -19,11 +19,13 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
+import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
@@ -35,6 +37,7 @@ internal open class PropertiesApiV0 internal constructor(
 
     private companion object {
         const val PATH_PROPERTIES = "properties"
+        const val PATH_LABELS = "labels"
     }
 
     override suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit> =
@@ -46,4 +49,11 @@ internal open class PropertiesApiV0 internal constructor(
         httpClient.delete("$PATH_PROPERTIES/${propertyKey.key}")
     }
 
+    override suspend fun getLabels(): NetworkResponse<LabelListResponseDTO> = wrapKaliumResponse {
+        httpClient.get("$PATH_PROPERTIES/$PATH_LABELS")
+    }
+
+    override suspend fun updateLabels(labelList: LabelListResponseDTO): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put("$PATH_PROPERTIES/$PATH_LABELS") { setBody(labelList) }
+    }
 }

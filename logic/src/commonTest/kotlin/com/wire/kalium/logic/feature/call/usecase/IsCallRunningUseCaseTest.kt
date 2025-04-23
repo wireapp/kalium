@@ -87,7 +87,7 @@ class IsCallRunningUseCaseTest {
             isCbrEnabled = false,
             callerId = UserId("caller-id1", "domain"),
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername",
             callerTeamName = "team1"
         )
@@ -99,7 +99,7 @@ class IsCallRunningUseCaseTest {
             isCbrEnabled = false,
             callerId = UserId("caller-id2", "domain"),
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername",
             callerTeamName = "team1"
         )

@@ -18,14 +18,14 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -132,7 +132,8 @@ class MLSConversationsRecoveryManagerTests {
         }
 
     private class Arrangement {
-                val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
+
+        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
         val clientRepository = mock(ClientRepository::class)
         val featureSupport = mock(FeatureSupport::class)
         val recoverMLSConversationsUseCase = mock(RecoverMLSConversationsUseCase::class)

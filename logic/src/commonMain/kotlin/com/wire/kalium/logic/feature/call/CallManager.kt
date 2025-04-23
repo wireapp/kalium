@@ -44,7 +44,7 @@ interface CallManager {
         isAudioCbr: Boolean
     )
 
-    suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean)
+    suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean = false)
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
     suspend fun muteCall(shouldMute: Boolean)

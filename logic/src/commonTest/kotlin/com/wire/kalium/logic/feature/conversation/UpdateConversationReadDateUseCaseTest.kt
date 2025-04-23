@@ -26,7 +26,7 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement

@@ -18,27 +18,28 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
-import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsMissingGroupInfo
@@ -64,6 +65,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val selfUserId: UserId,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : JoinExistingMLSConversationUseCase {
     private val dispatcher = kaliumDispatcher.io
@@ -72,7 +74,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation, since MLS is not supported.")
+            kaliumLogger.d("$TAG: Skip re-join existing MLS conversation, since MLS is not supported.")
             Either.Right(Unit)
         } else {
             conversationRepository.getConversationById(conversationId).fold({
@@ -91,7 +93,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         joinOrEstablishMLSGroup(conversation, mlsPublicKeys)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-                    if (failure.kaliumException.isMlsStaleMessage()) {
+                    if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
                         kaliumLogger.logStructuredJson(
                             level = KaliumLogLevel.WARN,
                             leadingMessage = "Join-Establish MLS Group Stale",
@@ -103,7 +105,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             )
                         )
                         // Re-fetch current epoch and try again
-                        if (conversation.type == Conversation.Type.ONE_ON_ONE) {
+                        if (conversation.type == Conversation.Type.OneOnOne) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
                                 conversationRepository.fetchMlsOneToOneConversation(it.first()).map {
                                     it.mlsPublicKeys
@@ -116,8 +118,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 joinOrEstablishMLSGroup(conversation, null)
                             }
                         }
-                    } else if (failure.kaliumException.isMlsMissingGroupInfo()) {
-                        kaliumLogger.w("conversation has no group info, ignoring...")
+                    } else if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsMissingGroupInfo()) {
+                        kaliumLogger.w("$TAG: conversation has no group info, ignoring...")
                         Either.Right(Unit)
                     } else {
                         Either.Left(failure)
@@ -137,6 +139,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             protocol.epoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this
+                kaliumLogger.d("$TAG: Joining group by external commit ${conversation.id.toLogString()}")
                 wrapApiRequest {
                     conversationApi.fetchGroupInfo(conversation.id.toApi())
                 }.flatMap { groupInfo ->
@@ -150,7 +153,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 leadingMessage = "Join Group external commit Ignored",
                                 jsonStringKeyValues = mapOf(
                                     "conversationId" to conversation.id.toLogString(),
-                                    "conversationType" to type.name,
+                                    "conversationType" to type,
                                     "protocol" to ConversationOptions.Protocol.MLS.name,
                                     "protocolInfo" to conversation.protocol.toLogMap(),
                                     "errorInfo" to "$failure"
@@ -163,7 +166,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 leadingMessage = "Join Group external commit Failure",
                                 jsonStringKeyValues = mapOf(
                                     "conversationId" to conversation.id.toLogString(),
-                                    "conversationType" to type.name,
+                                    "conversationType" to type,
                                     "protocol" to ConversationOptions.Protocol.MLS.name,
                                     "protocolInfo" to conversation.protocol.toLogMap(),
                                     "errorInfo" to "$failure"
@@ -178,7 +181,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         leadingMessage = "Join Group external commit Success",
                         jsonStringKeyValues = mapOf(
                             "conversationId" to conversation.id.toLogString(),
-                            "conversationType" to type.name,
+                            "conversationType" to type,
                             "protocol" to ConversationOptions.Protocol.MLS.name,
                             "protocolInfo" to conversation.protocol.toLogMap(),
                         )
@@ -186,25 +189,28 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 }
             }
 
-            type == Conversation.Type.SELF -> {
+            type == Conversation.Type.Self -> {
+                kaliumLogger.d("$TAG: Establish Self MLS Conversation ${conversation.id.toLogString()}")
                 mlsConversationRepository.establishMLSGroup(
                     protocol.groupId,
-                    emptyList()
-                ).onSuccess {
-                    kaliumLogger.logStructuredJson(
-                        level = KaliumLogLevel.INFO,
-                        leadingMessage = "Establish Group",
-                        jsonStringKeyValues = mapOf(
-                            "conversationId" to conversation.id.toLogString(),
-                            "conversationType" to type.name,
-                            "protocol" to ConversationOptions.Protocol.MLS.name,
-                            "protocolInfo" to conversation.protocol.toLogMap(),
+                    listOf(selfUserId)
+                )
+                    .onSuccess {
+                        kaliumLogger.logStructuredJson(
+                            level = KaliumLogLevel.INFO,
+                            leadingMessage = "Establish Group",
+                            jsonStringKeyValues = mapOf(
+                                "conversationId" to conversation.id.toLogString(),
+                                "conversationType" to type,
+                                "protocol" to ConversationOptions.Protocol.MLS.name,
+                                "protocolInfo" to conversation.protocol.toLogMap(),
+                            )
                         )
-                    )
-                }.map { Unit }
+                    }.map { Unit }
             }
 
-            type == Conversation.Type.ONE_ON_ONE -> {
+            type == Conversation.Type.OneOnOne -> {
+                kaliumLogger.d("$TAG: Establish 1on1 MLS Conversation ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
@@ -217,7 +223,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         leadingMessage = "Establish Group",
                         jsonStringKeyValues = mapOf(
                             "conversationId" to conversation.id.toLogString(),
-                            "conversationType" to type.name,
+                            "conversationType" to type,
                             "protocol" to ConversationOptions.Protocol.MLS.name,
                             "protocolInfo" to conversation.protocol.toLogMap(),
                         )
@@ -227,5 +233,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 
             else -> Either.Right(Unit)
         }
+    }
+
+    companion object {
+        private const val TAG = "[JoinExistingMLSConversationUseCase]"
     }
 }

@@ -29,9 +29,10 @@ import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
@@ -56,7 +57,6 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.scenario.CallingMessageSender
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
@@ -74,10 +74,10 @@ import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.logic.util.toInt
@@ -103,7 +103,6 @@ import java.util.Collections
 class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
-    private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     selfConversationIdProvider: SelfConversationIdProvider,
     private val conversationRepository: ConversationRepository,
@@ -119,6 +118,8 @@ class CallManagerImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
+    private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
+    private val selfUserId: UserId,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
@@ -151,11 +152,6 @@ class CallManagerImpl internal constructor(
             it
         })
     }
-    private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
-        userRepository.observeSelfUser().first().id.also {
-            callingLogger.d("$TAG - userId ${it.toLogString()}")
-        }
-    }
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
@@ -184,7 +180,7 @@ class CallManagerImpl internal constructor(
             }
             joinAll(flowManagerStartJob, mediaManagerStartJob)
             callingLogger.i("$TAG: Creating Handle")
-            val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
+            val selfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
             val selfClientId = clientId.await().value
 
             val waitInitializationJob = Job()
@@ -219,7 +215,8 @@ class CallManagerImpl internal constructor(
                     callRepository = callRepository,
                     networkStateObserver = networkStateObserver,
                     scope = scope,
-                    qualifiedIdMapper = qualifiedIdMapper
+                    qualifiedIdMapper = qualifiedIdMapper,
+                    createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
                 ).keepingStrongReference(),
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
@@ -251,7 +248,7 @@ class CallManagerImpl internal constructor(
         val conversationMembers = conversationRepository.observeConversationMembers(message.conversationId).first()
         val shouldRemoteMute = shouldRemoteMuteChecker.check(
             senderUserId = message.senderUserId,
-            selfUserId = userId.await(),
+            selfUserId = selfUserId,
             selfClientId = clientId.await().value,
             targets = callingValue.targets,
             conversationMembers = conversationMembers
@@ -303,57 +300,87 @@ class CallManagerImpl internal constructor(
             isMuted = false,
             isCameraOn = isCameraOn,
             isCbrEnabled = isAudioCbr,
-            callerId = userId.await()
+            callerId = selfUserId
         )
 
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
-            // TODO: Handle response. Possible failure?
-            wcall_start(
-                deferredHandle.await(),
-                federatedIdMapper.parseToFederatedId(conversationId),
-                avsCallType.avsValue,
-                conversationTypeCalling.avsValue,
-                isAudioCbr.toInt()
-            )
 
-            callingLogger.d(
-                "$TAG - wcall_start() called -> Call for conversation = " +
-                        "${conversationId.toLogString()} started"
-            )
-        }
-
-        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
-                updateEpochInfo(conversationId, epochInfo)
+            if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+                callRepository.joinMlsConference(
+                    conversationId = conversationId,
+                    onJoined = {
+                        wcall_start(
+                            deferredHandle.await(),
+                            federatedIdMapper.parseToFederatedId(conversationId),
+                            avsCallType.avsValue,
+                            conversationTypeCalling.avsValue,
+                            isAudioCbr.toInt()
+                        )
+                    },
+                    onEpochChange = { conversationId, epochInfo ->
+                        updateEpochInfo(conversationId, epochInfo)
+                    }
+                )
+            } else {
+                // TODO: Handle response. Possible failure?
+                wcall_start(
+                    deferredHandle.await(),
+                    federatedIdMapper.parseToFederatedId(conversationId),
+                    avsCallType.avsValue,
+                    conversationTypeCalling.avsValue,
+                    isAudioCbr.toInt()
+                )
+                callingLogger.d(
+                    "$TAG - wcall_start() called -> Call for conversation = " +
+                            "${conversationId.toLogString()} started"
+                )
             }
         }
     }
 
     override suspend fun answerCall(
         conversationId: ConversationId,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isVideoCall: Boolean
     ) {
         withCalling {
             callingLogger.d(
                 "$TAG -> answering call for conversation = " +
                         "${conversationId.toLogString()}.."
             )
-            wcall_answer(
-                inst = deferredHandle.await(),
-                conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-                callType = CallTypeCalling.AUDIO.avsValue,
-                cbrEnabled = isAudioCbr
-            )
-            callingLogger.d(
-                "$TAG - wcall_answer() called -> Incoming call for conversation = " +
-                        "${conversationId.toLogString()} answered"
-            )
-        }
+            val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
 
-        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
-                updateEpochInfo(conversationId, epochInfo)
+            if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+                callRepository.joinMlsConference(
+                    conversationId = conversationId,
+                    onJoined = {
+                        wcall_answer(
+                            inst = deferredHandle.await(),
+                            conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                            callType = callType.avsValue,
+                            cbrEnabled = isAudioCbr
+                        )
+                        callingLogger.i(
+                            "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                                    "${conversationId.toLogString()} answered"
+                        )
+                    },
+                    onEpochChange = { conversationId, epochInfo ->
+                        updateEpochInfo(conversationId, epochInfo)
+                    }
+                )
+            } else {
+                wcall_answer(
+                    inst = deferredHandle.await(),
+                    conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                    callType = callType.avsValue,
+                    cbrEnabled = isAudioCbr
+                )
+                callingLogger.i(
+                    "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                            "${conversationId.toLogString()} answered"
+                )
             }
         }
     }
@@ -398,7 +425,7 @@ class CallManagerImpl internal constructor(
         }
         callingLogger.d("$TAG -> set test video to $logString")
 
-        val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
+        val selfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
         val selfClientId = clientId.await().value
         val handle = deferredHandle.await()
 
@@ -463,14 +490,19 @@ class CallManagerImpl internal constructor(
         callClients: CallClientList
     ) {
         withCalling {
-            // Needed to support calls between federated and non federated environments
+            // Mapping Needed to support calls between federated and non federated environments (domain separation)
             val clients = callClients.clients.map { callClient ->
                 CallClient(
-                    federatedIdMapper.parseToFederatedId(callClient.userId),
-                    callClient.clientId
+                    userId = federatedIdMapper.parseToFederatedId(callClient.userId),
+                    clientId = callClient.clientId,
+                    isMemberOfSubconversation = callClient.isMemberOfSubconversation,
+                    quality = callClient.quality
                 )
             }
             val clientsJson = CallClientList(clients).toJsonString()
+            callingLogger.d(
+                "$TAG - wcall_request_video_streams() called -> Requesting video streams for conversation = ${conversationId.toLogString()}"
+            )
             val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
             calling.wcall_request_video_streams(
                 inst = it,

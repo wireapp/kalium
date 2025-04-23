@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.asset
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
 import io.mockative.coEvery

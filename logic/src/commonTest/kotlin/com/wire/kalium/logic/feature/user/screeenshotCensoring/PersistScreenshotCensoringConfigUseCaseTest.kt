@@ -18,11 +18,11 @@
 
 package com.wire.kalium.logic.feature.user.screeenshotCensoring
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigResult
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCaseImpl
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -80,7 +80,8 @@ class PersistScreenshotCensoringConfigUseCaseTest {
     }
 
     private class Arrangement {
-                val userConfigRepository = mock(UserConfigRepository::class)
+
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         val persistScreenshotCensoringConfig = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository)
 

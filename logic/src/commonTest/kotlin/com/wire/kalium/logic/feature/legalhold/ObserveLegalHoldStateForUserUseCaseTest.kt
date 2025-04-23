@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -79,6 +79,7 @@ class ObserveLegalHoldStateForUserUseCaseTest {
     }
 
     private class Arrangement {
+
         val clientRepository: ClientRepository = mock(ClientRepository::class)
 
         val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase =

@@ -18,12 +18,29 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.mapToRightOr
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
@@ -37,36 +54,22 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.isLeft
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.mapToRightOr
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -87,6 +90,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
 @Mockable
@@ -133,8 +137,20 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
-    suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean = false): Flow<List<ConversationDetailsWithEvents>>
+    suspend fun observeConversationListDetails(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter = ConversationFilter.All
+    ): Flow<List<ConversationDetails>>
+
+    suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean = false,
+        conversationFilter: ConversationFilter = ConversationFilter.All
+    ): Flow<List<ConversationDetailsWithEvents>>
+
+    /**
+     * Gets conversations based on [type] and [protocol].
+     * [Conversation.Type.Group.Channel] and [Conversation.Type.Group.Regular] are treated the same, as both are Groups
+     */
     suspend fun getConversationIds(
         type: Conversation.Type,
         protocol: Conversation.Protocol,
@@ -218,7 +234,22 @@ interface ConversationRepository {
         role: Conversation.Member.Role
     ): Either<CoreFailure, Unit>
 
+    suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit>
+
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse>
 
     /**
      * Deletes all conversation messages
@@ -261,7 +292,7 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
+    suspend fun getConversationByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation>
 
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 
@@ -309,6 +340,14 @@ interface ConversationRepository {
 
     suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
     suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>>
+    suspend fun addConversationToDeleteQueue(conversationId: ConversationId)
+    suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId)
+    suspend fun getConversationsDeleteQueue(): List<ConversationId>
+    suspend fun observeOneToOneConversationDetailsWithOtherUser(
+        otherUserId: UserId
+    ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
+
+    suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -324,17 +363,17 @@ internal class ConversationDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
+    private val metadataDAO: MetadataDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationRepository {
     override val extensions: ConversationRepositoryExtensions =
-        ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper, messageMapper)
+        ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
 
     // region Get/Observe by id
 
@@ -352,9 +391,11 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
         wrapStorageRequest {
             conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
-                conversationMapper.fromConversationEntityType(it)
+                val isChannel = conversationDAO.isAChannel(conversationId.toDao())
+                conversationMapper.fromConversationEntityType(it, isChannel)
             }
         }
+
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeConversationDetailsById(conversationID.toDao())
             .wrapStorageRequest()
@@ -425,12 +466,18 @@ internal class ConversationDataSource internal constructor(
         selfUserTeamId: String?,
         originatedFromEvent: Boolean
     ): Either<CoreFailure, Boolean> = wrapStorageRequest {
-        val isNewConversation = conversationDAO.getConversationById(conversation.id.toDao()) == null
+        val existingConversation = conversationDAO.getConversationById(conversation.id.toDao())
+        val isNewConversation = existingConversation?.let { conversationEntity ->
+            (conversationEntity.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.groupState?.let {
+                it != ConversationEntity.GroupState.ESTABLISHED
+            } ?: false
+        } ?: true
         if (isNewConversation) {
+            val mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) }
             conversationDAO.insertConversation(
                 conversationMapper.fromApiModelToDaoModel(
                     conversation,
-                    mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },
+                    mlsGroupState = mlsGroupState,
                     selfTeamIdProvider().getOrNull(),
                 )
             )
@@ -449,14 +496,12 @@ internal class ConversationDataSource internal constructor(
     ) = wrapStorageRequest {
         val conversationEntities = conversations
             .map { conversationResponse ->
+                val mlsGroupState = conversationResponse.groupId?.let {
+                    mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent)
+                }
                 conversationMapper.fromApiModelToDaoModel(
                     conversationResponse,
-                    mlsGroupState = conversationResponse.groupId?.let {
-                        mlsGroupState(
-                            idMapper.fromGroupIDEntity(it),
-                            originatedFromEvent
-                        )
-                    },
+                    mlsGroupState = mlsGroupState,
                     selfTeamIdProvider().getOrNull(),
                 )
             }
@@ -478,9 +523,14 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    private suspend fun mlsGroupState(groupId: GroupID, originatedFromEvent: Boolean = false): ConversationEntity.GroupState =
-        hasEstablishedMLSGroup(groupId).fold({
-            throw IllegalStateException(it.toString()) // TODO find a more fitting exception?
+    private suspend fun mlsGroupState(
+        groupId: GroupID,
+        originatedFromEvent: Boolean = false
+    ): ConversationEntity.GroupState = hasEstablishedMLSGroup(groupId)
+        .fold({ failure ->
+            kaliumLogger.withFeatureId(CONVERSATIONS)
+                .w("Error checking MLS group state, setting to ${ConversationEntity.GroupState.PENDING_JOIN}")
+            ConversationEntity.GroupState.PENDING_JOIN
         }, { exists ->
             if (exists) {
                 ConversationEntity.GroupState.ESTABLISHED
@@ -519,14 +569,20 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails(fromArchive).map { conversationViewEntityList ->
+    override suspend fun observeConversationListDetails(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetails>> =
+        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).map { conversationViewEntityList ->
             conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
         }
 
-    override suspend fun observeConversationListDetailsWithEvents(fromArchive: Boolean): Flow<List<ConversationDetailsWithEvents>> =
+    override suspend fun observeConversationListDetailsWithEvents(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetailsWithEvents>> =
         combine(
-            conversationDAO.getAllConversationDetails(fromArchive),
+            conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()
@@ -767,6 +823,18 @@ internal class ConversationDataSource internal constructor(
             .mapRight { conversationMapper.fromDaoModel(it) }
     }
 
+    override suspend fun observeOneToOneConversationDetailsWithOtherUser(
+        otherUserId: UserId
+    ): Flow<Either<StorageFailure, ConversationDetails.OneOne>> {
+        return conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(otherUserId.toDao())
+            .map { it?.let { conversationMapper.fromDaoModelToDetails(it) as? ConversationDetails.OneOne } }
+            .wrapStorageRequest()
+    }
+
+    override suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        conversationDAO.getCellName(conversationId.toDao()) != null
+    }
+
     override suspend fun getOneOnOneConversationsWithOtherUser(
         otherUserId: UserId,
         protocol: Conversation.Protocol
@@ -844,18 +912,19 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun deleteConversation(conversationId: ConversationId) =
-        getConversationProtocolInfo(conversationId).flatMap {
-            when (it) {
-                is Conversation.ProtocolInfo.MLSCapable ->
-                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapMLSRequest {
-                            mlsClient.wipeConversation(it.groupId.toCrypto())
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+        getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
+            when (protocolInfo) {
+                is Conversation.ProtocolInfo.MLSCapable -> {
+                    wrapStorageRequest {
+                        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+                    }.onSuccess {
+                        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                            wrapMLSRequest {
+                                mlsClient.wipeConversation(protocolInfo.groupId.toCrypto())
+                            }
                         }
                     }
+                }
 
                 is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
                     conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
@@ -956,6 +1025,26 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+    override suspend fun updateChannelAddPermissionLocally(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.updateChannelAddPermission(
+            conversationId.toDao(),
+            channelAddPermission.toDaoChannelPermission()
+        )
+    }
+
+    override suspend fun updateChannelAddPermissionRemotely(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<NetworkFailure, UpdateChannelAddPermissionResponse> = wrapApiRequest {
+        conversationApi.updateChannelAddPermission(
+            conversationId = conversationId.toApi(),
+            channelAddPermission = ChannelAddPermissionDTO(channelAddPermission.toApi())
+        )
+    }
+
     override suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean> =
         wrapStorageRequest {
             conversationMetaDataDAO.isInformedAboutDegradedMLSVerification(conversationId.toDao())
@@ -997,9 +1086,9 @@ internal class ConversationDataSource internal constructor(
             )
         }
 
-    override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
-        wrapStorageRequest { conversationDAO.getConversationDetailsByGroupID(mlsGroupId.value) }
-            .map { conversationMapper.fromDaoModelToDetails(it) }
+    override suspend fun getConversationByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation> =
+        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
+            .map { conversationMapper.fromDaoModel(it) }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         conversationDAO.observeUnreadArchivedConversationsCount()
@@ -1119,7 +1208,53 @@ internal class ConversationDataSource internal constructor(
                 .mapKeys { it.key.toModel() }
         }
 
+    override suspend fun addConversationToDeleteQueue(conversationId: ConversationId) {
+        val queue = metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
+            ?.toMutableSet()
+            ?.plus(conversationId.toDao())
+            ?: setOf(conversationId.toDao())
+
+        metadataDAO.putSerializable(
+            CONVERSATIONS_TO_DELETE_KEY,
+            queue,
+            SetSerializer(QualifiedIDEntity.serializer())
+        )
+    }
+
+    override suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId) {
+        val queue = metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
+            ?.toMutableSet()
+            ?.minus(conversationId.toDao())
+            ?: return
+
+        metadataDAO.putSerializable(
+            CONVERSATIONS_TO_DELETE_KEY,
+            queue,
+            SetSerializer(QualifiedIDEntity.serializer())
+        )
+    }
+
+    override suspend fun getConversationsDeleteQueue(): List<ConversationId> =
+        metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
+            ?.map { it.toModel() } ?: listOf()
+
+    override suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermission
+    ): Either<CoreFailure, Unit> = updateChannelAddPermissionRemotely(conversationId, channelAddPermission).flatMap {
+        when (it) {
+            is UpdateChannelAddPermissionResponse.PermissionUnchanged -> {
+                Either.Right(Unit)
+            }
+
+            is UpdateChannelAddPermissionResponse.PermissionUpdated -> {
+                updateChannelAddPermissionLocally(conversationId, channelAddPermission)
+            }
+        }
+    }
+
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
+        private const val CONVERSATIONS_TO_DELETE_KEY = "conversations_to_delete"
     }
 }

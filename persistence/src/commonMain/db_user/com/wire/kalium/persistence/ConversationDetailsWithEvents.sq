@@ -2,22 +2,22 @@ CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
 SELECT
     ConversationDetails.*,
     -- unread events
-    SUM(CASE WHEN UnreadEvent.type = 'KNOCK' THEN 1 ELSE 0 END) AS unreadKnocksCount,
-    SUM(CASE WHEN UnreadEvent.type = 'MISSED_CALL' THEN 1 ELSE 0 END) AS unreadMissedCallsCount,
-    SUM(CASE WHEN UnreadEvent.type = 'MENTION' THEN 1 ELSE 0 END) AS unreadMentionsCount,
-    SUM(CASE WHEN UnreadEvent.type = 'REPLY' THEN 1 ELSE 0 END) AS unreadRepliesCount,
-    SUM(CASE WHEN UnreadEvent.type = 'MESSAGE' THEN 1 ELSE 0 END) AS unreadMessagesCount,
+    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
+    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
+    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
+    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
+    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
     CASE
         WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
-                WHEN COUNT(UnreadEvent.id) > 0 THEN 1 -- if any unread events, move it to the top
+                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
                 WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
                 ELSE 0
             END
         WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
             CASE
-                WHEN SUM(CASE WHEN UnreadEvent.type IN ('MENTION', 'REPLY') THEN 1 ELSE 0 END) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
+                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
                 WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
                 ELSE 0
             END
@@ -29,48 +29,44 @@ SELECT
     MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
     MessageDraft.mention_list AS messageDraftMentionList,
     -- last message
-    LastMessage.id AS lastMessageId,
-    LastMessage.content_type AS lastMessageContentType,
-    LastMessage.creation_date AS lastMessageDate,
-    LastMessage.visibility AS lastMessageVisibility,
-    LastMessage.sender_user_id AS lastMessageSenderUserId,
-    (LastMessage.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
+    Message.id AS lastMessageId,
+    Message.content_type AS lastMessageContentType,
+    Message.creation_date AS lastMessageDate,
+    Message.visibility AS lastMessageVisibility,
+    Message.sender_user_id AS lastMessageSenderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
     User.name AS lastMessageSenderName,
     User.connection_status AS lastMessageSenderConnectionStatus,
     User.deleted AS lastMessageSenderIsDeleted,
-    (LastMessage.sender_user_id IS NOT NULL AND LastMessage.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
+    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
     MemberChangeContent.member_change_list AS lastMessageMemberChangeList,
     MemberChangeContent.member_change_type AS lastMessageMemberChangeType,
     ConversationNameChangedContent.conversation_name AS lastMessageUpdateConversationName,
-    (Mention.user_id IS NOT NULL) AS lastMessageIsMentioningSelfUser,
+    COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
     TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
     TextContent.text_body AS lastMessageText,
     AssetContent.asset_mime_type AS lastMessageAssetMimeType
 FROM ConversationDetails
-LEFT JOIN UnreadEvent
-    ON UnreadEvent.conversation_id = ConversationDetails.qualifiedId
+LEFT JOIN UnreadEventCountsGrouped
+    ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
 LEFT JOIN MessageDraft
     ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
-LEFT JOIN Message AS LastMessage
-    ON LastMessage.id = (
-            SELECT Message.id
-            FROM Message
-            WHERE ConversationDetails.qualifiedId = Message.conversation_id
-            ORDER BY Message.creation_date DESC
-            LIMIT 1
-        ) AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
+LEFT JOIN LastMessage
+    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
+LEFT JOIN Message
+    ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
 LEFT JOIN User
-    ON LastMessage.sender_user_id = User.qualified_id
+    ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
-    ON LastMessage.id = MemberChangeContent.message_id AND LastMessage.conversation_id = MemberChangeContent.conversation_id
+    ON LastMessage.message_id = MemberChangeContent.message_id AND LastMessage.conversation_id = MemberChangeContent.conversation_id
 LEFT JOIN MessageMention AS Mention
-    ON LastMessage.id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
+    ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
-    ON LastMessage.id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
+    ON LastMessage.message_id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent
-    ON LastMessage.id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+    ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent
-    ON LastMessage.id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+    ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
@@ -101,10 +97,12 @@ WHERE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
         -- When filter is FAVORITES (future implementation)
+
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
@@ -124,9 +122,11 @@ WHERE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
+
         -- When filter is FAVORITES (future implementation)
         ELSE 1 = 0
     END
@@ -143,14 +143,25 @@ OFFSET :offset;
 countConversationDetailsWithEvents:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
-    archived = :fromArchive
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
+    AND ConversationDetails.isActive
+    AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
+
         -- When filter is FAVORITES (future implementation)
         ELSE 1 = 0
     END
@@ -159,14 +170,25 @@ WHERE
 countConversationDetailsWithEventsFromSearch:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
-    archived = :fromArchive
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
+    AND ConversationDetails.isActive
+    AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
+
         -- When filter is FAVORITES (future implementation)
         ELSE 1 = 0
     END

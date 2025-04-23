@@ -21,12 +21,18 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Used by the UI to notify Kalium that a conversation is open.
@@ -45,12 +51,26 @@ internal class NotifyConversationIsOpenUseCaseImpl(
     private val oneOnOneResolver: OneOnOneResolver,
     private val conversationRepository: ConversationRepository,
     private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
-    private val kaliumLogger: KaliumLogger
+    private val slowSyncRepository: SlowSyncRepository,
+    private val kaliumLogger: KaliumLogger,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : NotifyConversationIsOpenUseCase {
 
-    override suspend operator fun invoke(conversationId: ConversationId) {
+    override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatcher.io) {
+        val ephemeralCleanupJob = launch {
+            kaliumLogger.v("$TAG: Starting ephemeral messages deletion in background")
+            deleteEphemeralMessageEndDate()
+        }
+
+        val slowSyncStatus = slowSyncRepository.slowSyncStatus.first()
+
+        if (slowSyncStatus != SlowSyncStatus.Complete) {
+            kaliumLogger.v("$TAG: Slow sync is not completed yet, skipping further steps")
+            return@withContext
+        }
+
         kaliumLogger.v(
-            "Notifying that conversation with ID: ${conversationId.toLogString()} is open"
+            "$TAG: Notifying that conversation with ID: ${conversationId.toLogString()} is open"
         )
         val conversation = conversationRepository.observeConversationDetailsById(conversationId)
             .filterIsInstance<Either.Right<ConversationDetails>>()
@@ -59,7 +79,7 @@ internal class NotifyConversationIsOpenUseCaseImpl(
 
         if (conversation is ConversationDetails.OneOne) {
             kaliumLogger.v(
-                "Reevaluating protocol for 1:1 conversation with ID: ${conversationId.toLogString()}"
+                "$TAG: Reevaluating protocol for 1:1 conversation with ID: ${conversationId.toLogString()}"
             )
             oneOnOneResolver.resolveOneOnOneConversationWithUser(
                 user = conversation.otherUser,
@@ -67,7 +87,10 @@ internal class NotifyConversationIsOpenUseCaseImpl(
             )
         }
 
-        // Delete Ephemeral Messages that has passed the end date
-        deleteEphemeralMessageEndDate()
+        ephemeralCleanupJob.join()
+    }
+
+    companion object {
+        private const val TAG = "[NotifyConversationIsOpenUseCase]"
     }
 }

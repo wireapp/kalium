@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -41,10 +41,11 @@ import kotlin.test.Test
 class MLSClientManagerTest {
 
     @Test
-    fun givenMLSSupportIsDisabled_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
+    fun givenMLSClientIsNotRegisteredAndMLSSupportIsDisabled_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
                 .withIsAllowedToRegisterMLSClient(false)
+                .withHasRegisteredMLSClient(Either.Right(false))
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -56,7 +57,7 @@ class MLSClientManagerTest {
         }
 
     @Test
-    fun givenMLSClientIsNotRegistered_whenObservingSyncFinishes_thenMLSClientIsRegistered() =
+    fun givenMLSClientIsNotRegisteredAndMLSSupportIsEnabled_whenObservingSyncFinishes_thenMLSClientIsRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
                 .withIsAllowedToRegisterMLSClient(true)
@@ -90,6 +91,21 @@ class MLSClientManagerTest {
 
             coVerify {
                 arrangement.registerMLSClient.invoke(any())
+            }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenMLSClientIsRegistered_whenObservingSyncFinishes_thenDoNotEvenCheckIfIsAllowedToRegisterMLSClient() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withHasRegisteredMLSClient(Either.Right(true))
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            coVerify {
+                arrangement.isAllowedToRegisterMLSClient()
             }.wasNotInvoked()
         }
 

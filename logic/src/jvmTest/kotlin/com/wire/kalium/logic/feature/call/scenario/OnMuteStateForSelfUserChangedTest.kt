@@ -101,7 +101,7 @@ class OnMuteStateForSelfUserChangedTest {
                 isCameraOn = false,
                 isCbrEnabled = false,
                 conversationName = null,
-                conversationType = Conversation.Type.GROUP,
+                conversationType = Conversation.Type.Group.Regular,
                 callerName = null,
                 callerTeamName = null,
                 establishedTime = null

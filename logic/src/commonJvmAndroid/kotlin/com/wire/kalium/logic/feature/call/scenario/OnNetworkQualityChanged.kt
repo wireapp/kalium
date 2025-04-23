@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 
 class OnNetworkQualityChanged : NetworkQualityChangedHandler {
 

@@ -29,6 +29,8 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration
@@ -141,6 +143,10 @@ sealed interface Message {
                 is MessageContent.Location -> mutableMapOf(
                     typeKey to "location",
                 )
+
+                is MessageContent.Multipart -> mutableMapOf(
+                    typeKey to "multipart",
+                )
             }
 
             val standardProperties = mapOf(
@@ -245,6 +251,11 @@ sealed interface Message {
                 is MessageContent.DataTransfer -> mutableMapOf(
                     typeKey to "dataTransfer",
                     "content" to content.toLogMap(),
+                )
+
+                is MessageContent.InCallEmoji -> mutableMapOf(
+                    typeKey to "inCallEmoji",
+                    "content" to content.emojis
                 )
             }
 
@@ -473,15 +484,20 @@ sealed interface Message {
         }
     }
 
+    @Serializable
     data class ExpirationData(
-        val expireAfter: Duration,
-        val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted
+        @SerialName("expire_after") val expireAfter: Duration,
+        @SerialName("self_deletion_status") val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted
     ) {
 
+        @Serializable
         sealed class SelfDeletionStatus {
+
+            @Serializable
             data object NotStarted : SelfDeletionStatus()
 
-            data class Started(val selfDeletionEndDate: Instant) : SelfDeletionStatus()
+            @Serializable
+            data class Started(@SerialName("self_deletion_end_date") val selfDeletionEndDate: Instant) : SelfDeletionStatus()
 
             fun toLogMap(): Map<String, String> = when (this) {
                 is NotStarted -> mutableMapOf(

@@ -32,12 +32,15 @@ import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUse
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManager
+import com.wire.kalium.logic.feature.auth.ObserveLoginContextUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase
+import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCase
 import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
@@ -58,6 +61,7 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
+import com.wire.kalium.logic.feature.session.ObserveSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
@@ -100,7 +104,8 @@ class GlobalKaliumScope internal constructor(
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
-            kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
+            kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+            kaliumConfigs.developmentApiEnabled,
         )
     }
 
@@ -121,18 +126,22 @@ class GlobalKaliumScope internal constructor(
 
     private val customServerConfigRepository: CustomServerConfigRepository
         get() = CustomServerConfigDataSource(
+            unboundNetworkContainer.versionApi,
             unboundNetworkContainer.serverConfigApi,
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
             globalDatabase.serverConfigurationDAO
         )
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
+    val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
+    val observeLoginContext: ObserveLoginContextUseCase get() = ObserveLoginContextUseCase(customServerConfigRepository)
 
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    val observeSessions: ObserveSessionsUseCase get() = ObserveSessionsUseCase(sessionRepository)
     val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)

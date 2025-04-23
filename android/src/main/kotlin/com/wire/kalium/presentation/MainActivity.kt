@@ -83,9 +83,9 @@ class MainActivity : ComponentActivity() {
 
             session.users.uploadUserAvatar(tempAvatarPath, imageContent.size.toLong())
 
-            val selfUser = session.users.getSelfUser().first()
+            val selfUser = session.users.getSelfUser()
 
-            val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser.previewPicture!!)) {
+            val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser?.previewPicture!!)) {
                 is PublicAssetResult.Success -> {
                     // We read the avatar data stored in the assetPath
                     session.kaliumFileSystem.readByteArray(publicAsset.assetPath)
@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
             }
 
             setContent {
-                MainLayout(conversations, selfUser, avatarAsset)
+                MainLayout(conversations, selfUser!!, avatarAsset)
             }
         }
     }

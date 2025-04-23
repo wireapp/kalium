@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.LoginRepository
@@ -28,11 +28,13 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
+import com.wire.kalium.network.exceptions.isAccountPendingActivation
+import com.wire.kalium.network.exceptions.isAccountSuspended
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
@@ -67,6 +69,17 @@ sealed class AuthenticationResult {
          * The user has entered a text that isn't considered a valid email or handle
          */
         data object InvalidUserIdentifier : Failure()
+
+        /**
+         * The user's account has been suspended, for instance via backoffice
+         */
+        data object AccountSuspended : Failure()
+
+        /**
+         * The user has been invited to a team but hasn't accepted the invitation yet
+         */
+        data object AccountPendingActivation : Failure()
+
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
@@ -163,6 +176,8 @@ internal class LoginUseCaseImpl internal constructor(
             kaliumException.isInvalidCredentials() || kaliumException.isBadRequest() -> {
                 AuthenticationResult.Failure.InvalidCredentials.InvalidPasswordIdentityCombination
             }
+            kaliumException.isAccountSuspended() -> AuthenticationResult.Failure.AccountSuspended
+            kaliumException.isAccountPendingActivation() -> AuthenticationResult.Failure.AccountPendingActivation
 
             else -> when (kaliumException.authenticationCodeFailure) {
                 AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE ->

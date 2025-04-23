@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.calling.ConversationTypeCalling
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.ConversationTypeForCall
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -48,7 +48,7 @@ class GetCallConversationTypeProviderTest {
             val groupId = GroupID("groupid")
 
             val (arrangement, getCallConversationType) = Arrangement()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.ONE_ON_ONE)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.OneOnOne)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.MLS(
@@ -75,7 +75,7 @@ class GetCallConversationTypeProviderTest {
             val conversationId = TestConversation.ID
 
             val (_, getCallConversationType) = Arrangement()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.GROUP)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.Group.Regular)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.Proteus
@@ -97,7 +97,7 @@ class GetCallConversationTypeProviderTest {
 
             val (_, getCallConversationType) = Arrangement()
                 .withShouldNotUseSFTForOneOnOneCalls()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.ONE_ON_ONE)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.OneOnOne)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.Proteus
@@ -117,7 +117,7 @@ class GetCallConversationTypeProviderTest {
 
             val (_, getCallConversationType) = Arrangement()
                 .withShouldUseSFTForOneOnOneCallsFailure()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.GROUP)
+                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.Group.Regular)
                 .withGetConversationProtocolInfoSuccess(
                     conversationId,
                     Conversation.ProtocolInfo.Proteus

@@ -18,8 +18,9 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -33,7 +34,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
@@ -140,26 +140,30 @@ class JoinExistingMLSConversationUseCaseTest {
         }
 
     @Test
-    fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
-        runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(true)
-                .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION)
-                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
-                .arrange()
+    fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() = runTest {
+        // GIVEN
+        val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION)
+            .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
+            .arrange()
 
-            joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION.id).shouldSucceed()
+        // WHEN
+        val result = joinExistingMLSConversationUseCase(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION.id)
 
-            coVerify {
-                arrangement.mlsConversationRepository.establishMLSGroup(
-                    groupID = Arrangement.GROUP_ID_SELF,
-                    members = emptyList(),
-                    publicKeys = null,
-                    allowSkippingUsersWithoutKeyPackages = false
-                )
-            }.wasInvoked(once)
-        }
+        // THEN
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.mlsConversationRepository.establishMLSGroup(
+                groupID = Arrangement.GROUP_ID_SELF,
+                members = listOf(arrangement.selfUserId),
+                publicKeys = null,
+                allowSkippingUsersWithoutKeyPackages = false
+            )
+        }.wasInvoked(once)
+    }
 
     @Test
     fun givenOneOnOneConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
@@ -229,12 +233,15 @@ class JoinExistingMLSConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
+        val selfUserId = TestUser.USER_ID
+
         fun arrange() = this to JoinExistingMLSConversationUseCaseImpl(
             featureSupport,
             conversationApi,
             clientRepository,
             conversationRepository,
             mlsConversationRepository,
+            selfUserId,
             dispatcher
         )
 

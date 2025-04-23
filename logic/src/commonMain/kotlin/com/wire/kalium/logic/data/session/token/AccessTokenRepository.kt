@@ -17,18 +17,18 @@
  */
 package com.wire.kalium.logic.data.session.token
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import io.mockative.Mockable

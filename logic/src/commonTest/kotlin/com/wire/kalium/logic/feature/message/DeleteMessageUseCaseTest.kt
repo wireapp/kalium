@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -37,7 +38,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
@@ -247,6 +248,9 @@ class DeleteMessageUseCaseTest {
         val assetRepository: AssetRepository = mock(AssetRepository::class)
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
+        @Mock
+        val deleteCellAssets: DeleteMessageAttachmentsUseCase = mock(DeleteMessageAttachmentsUseCase::class)
+
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
         fun arrange() = this to DeleteMessageUseCase(
@@ -257,6 +261,7 @@ class DeleteMessageUseCaseTest {
             TestUser.SELF.id,
             currentClientIdProvider,
             selfConversationIdProvider,
+            deleteCellAssets,
             dispatcher
         )
 

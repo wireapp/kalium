@@ -20,11 +20,23 @@ package com.wire.kalium.logic.data.call
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.onlyRight
+import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -40,6 +52,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toCrypto
@@ -50,18 +63,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.logic.logStructuredJson
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -75,6 +76,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -82,7 +84,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -129,6 +130,7 @@ interface CallRepository {
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
         conversationId: ConversationId,
+        onJoined: suspend () -> Unit,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ): Either<CoreFailure, Unit>
 
@@ -136,7 +138,9 @@ interface CallRepository {
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
     suspend fun advanceEpoch(conversationId: ConversationId)
     fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
-    suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?>
+
+    suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
+    suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -165,25 +169,16 @@ internal class CallDataSource(
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
     private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
+    private val _recentlyEndedCallFlow = MutableSharedFlow<RecentlyEndedCallMetadata>(
+        extraBufferCapacity = 1
+    )
 
-    override suspend fun observeCurrentCall(conversationId: ConversationId): Flow<Call?> = _callMetadataProfile.map {
-        it[conversationId]?.let { currentCall ->
-            Call(
-                conversationId = conversationId,
-                status = currentCall.callStatus,
-                isMuted = currentCall.isMuted,
-                isCameraOn = currentCall.isCameraOn,
-                isCbrEnabled = currentCall.isCbrEnabled,
-                callerId = currentCall.callerId,
-                conversationName = currentCall.conversationName,
-                conversationType = currentCall.conversationType,
-                callerName = currentCall.callerName,
-                callerTeamName = currentCall.callerTeamName,
-                establishedTime = currentCall.establishedTime,
-                participants = currentCall.getFullParticipants(),
-                maxParticipants = currentCall.maxParticipants
-            )
-        }
+    override suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
+        _recentlyEndedCallFlow.emit(recentlyEndedCallMetadata)
+    }
+
+    override suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata> {
+        return _recentlyEndedCallFlow
     }
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
@@ -443,6 +438,8 @@ internal class CallDataSource(
 
                 val currentParticipantIds = call.participants.map { it.userId }.toSet()
                 val newParticipantIds = participants.map { it.userId }.toSet()
+                val sharingScreenParticipantIds = participants.filter { it.isSharingScreen }
+                    .map { participant -> participant.id }
 
                 val updatedUsers = call.users.toMutableList()
 
@@ -457,8 +454,12 @@ internal class CallDataSource(
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                     this[conversationId] = call.copy(
                         participants = participants,
-                        maxParticipants = max(call.maxParticipants, participants.size + 1),
-                        users = updatedUsers
+                        maxParticipants = max(call.maxParticipants, participants.size),
+                        users = updatedUsers,
+                        screenShareMetadata = updateScreenSharingMetadata(
+                            metadata = call.screenShareMetadata,
+                            usersCurrentlySharingScreen = sharingScreenParticipantIds
+                        )
                     )
                 }
 
@@ -469,7 +470,7 @@ internal class CallDataSource(
         }
 
         if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS &&
-            _callMetadataProfile.value[conversationId]?.conversationType == Conversation.Type.GROUP
+            _callMetadataProfile.value[conversationId]?.conversationType is Conversation.Type.Group
         ) {
             participants.forEach { participant ->
                 if (participant.hasEstablishedAudio) {
@@ -479,6 +480,43 @@ internal class CallDataSource(
                 }
             }
         }
+    }
+
+    /**
+     * Manages call sharing metadata for analytical purposes by tracking the following:
+     * - **Active Screen Shares**: Maintains a record of currently active screen shares with their start times (local to the device).
+     * - **Completed Screen Share Duration**: Accumulates the total duration of screen shares that have already ended.
+     * - **Unique Sharing Users**: Keeps a unique list of all users who have shared their screen during the call.
+     *
+     * To update the metadata, the following steps are performed:
+     * 1. **Calculate Ended Screen Share Time**: Determine the total time for users who stopped sharing since the last update.
+     * 2. **Update Active Shares**: Filter out inactive shares and add any new ones, associating them with the current start time.
+     * 3. **Track Unique Users**: Append ids to current set in order to keep track of unique users.
+     */
+    private fun updateScreenSharingMetadata(
+        metadata: CallScreenSharingMetadata,
+        usersCurrentlySharingScreen: List<QualifiedID>
+    ): CallScreenSharingMetadata {
+        val now = DateTimeUtil.currentInstant()
+
+        val alreadyEndedScreenSharesTimeInMillis = metadata.activeScreenShares
+            .filterKeys { id -> id !in usersCurrentlySharingScreen }
+            .values
+            .sumOf { startTime -> DateTimeUtil.calculateMillisDifference(startTime, now) }
+
+        val updatedShares = metadata.activeScreenShares
+            .filterKeys { id -> id in usersCurrentlySharingScreen }
+            .plus(
+                usersCurrentlySharingScreen
+                    .filterNot { id -> metadata.activeScreenShares.containsKey(id) }
+                    .associateWith { now }
+            )
+
+        return metadata.copy(
+            activeScreenShares = updatedShares,
+            completedScreenShareDurationInMillis = metadata.completedScreenShareDurationInMillis + alreadyEndedScreenSharesTimeInMillis,
+            uniqueSharingUsers = metadata.uniqueSharingUsers.plus(usersCurrentlySharingScreen.map { id -> id.toString() })
+        )
     }
 
     private fun clearStaleParticipantTimeout(participant: ParticipantMinimized) {
@@ -591,6 +629,7 @@ internal class CallDataSource(
 
     override suspend fun joinMlsConference(
         conversationId: ConversationId,
+        onJoined: suspend () -> Unit,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ): Either<CoreFailure, Unit> {
         callingLogger.i(
@@ -599,6 +638,7 @@ internal class CallDataSource(
         )
 
         return joinSubconversation(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
+            onJoined()
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->
@@ -627,8 +667,11 @@ internal class CallDataSource(
         callJobs.remove(conversationId)?.cancel()
 
         // Cancel all jobs for removing stale participants
-        staleParticipantJobs.values.forEach { it.cancel() }
-        staleParticipantJobs.clear()
+        staleParticipantJobs.block { map ->
+            val jobsSnapshot = map.values.toList()
+            jobsSnapshot.forEach { it.cancel() }
+            map.clear()
+        }
 
         leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
             .onSuccess {
@@ -684,7 +727,7 @@ internal class CallDataSource(
                         flowOf(
                             flowOf(initialEpochInfo),
                             epochChangesObserver.observe()
-                                .filter { it == protocolInfo.groupId || it == subconversationGroupId }
+                                .filter { it.groupId == protocolInfo.groupId || it.groupId == subconversationGroupId }
                                 .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
                         ).flattenConcat()
                     }

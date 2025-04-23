@@ -40,7 +40,7 @@ interface ConversationDAO {
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
-
+    suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
     //endregion
 
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
@@ -59,7 +59,7 @@ interface ConversationDAO {
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetails(fromArchive: Boolean, filter: ConversationFilterEntity): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,
@@ -80,7 +80,6 @@ interface ConversationDAO {
 
     suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
-    suspend fun observeConversationDetailsByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
@@ -125,6 +124,10 @@ interface ConversationDAO {
         link: String,
         isPasswordProtected: Boolean
     )
+    suspend fun updateChannelAddPermission(
+        conversationId: QualifiedIDEntity,
+        channelAddPermission: ConversationEntity.ChannelAddPermission
+    )
 
     suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity)
 
@@ -134,7 +137,7 @@ interface ConversationDAO {
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
     suspend fun updateMlsVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
-    suspend fun getConversationDetailsByGroupID(groupID: String): ConversationViewEntity?
+    suspend fun getConversationByGroupID(groupID: String): ConversationEntity?
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
     suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean)
@@ -147,6 +150,10 @@ interface ConversationDAO {
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
+    suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
+
+    suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?)
+    suspend fun getCellName(conversationId: QualifiedIDEntity): String?
 }
 
 data class NameAndHandleEntity(

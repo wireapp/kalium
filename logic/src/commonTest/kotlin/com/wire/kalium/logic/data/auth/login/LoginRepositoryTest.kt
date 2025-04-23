@@ -19,17 +19,21 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
+import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
+import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -40,11 +44,14 @@ class LoginRepositoryTest {
 
         val loginApi = mock(LoginApi::class)
 
+    @Mock
+    val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
+
     private lateinit var loginRepository: LoginRepository
 
     @BeforeTest
     fun setup() {
-        loginRepository = LoginRepositoryImpl(loginApi)
+        loginRepository = LoginRepositoryImpl(loginApi, getDomainRegistrationApi)
     }
 
     @Test
@@ -91,8 +98,30 @@ class LoginRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAnEmail_whenCallingGetDomainRegistration_ThenShouldCallTheApiWithTheCorrectParameters() = runTest {
+        val (arrangement, loginRepository) = Arrangement().withGetDomainRegistrationReturning(DOMAIN_REGISTRATION_DTO).arrange()
+        loginRepository.getDomainRegistration(
+            email = TEST_EMAIL
+        )
+        coVerify { arrangement.getDomainRegistrationApi.getDomainRegistration(eq(TEST_EMAIL)) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenBackendUrl_whenCallingFetchDomainRedirectCustomBackendConfig_ThenShouldCallTheApiWithTheCorrectParameters() = runTest {
+        val backendUrl = "https://backend.url"
+        val (arrangement, loginRepository) = Arrangement()
+            .withFetchDomainRedirectCustomBackendConfigReturning(DOMAIN_LOOKUP_RESPONSE)
+            .arrange()
+        loginRepository.fetchDomainRedirectCustomBackendConfig(backendUrl = backendUrl)
+        coVerify { arrangement.getDomainRegistrationApi.customBackendConfig(eq(backendUrl)) }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         val loginApi = mock(LoginApi::class)
+
+        @Mock
+        val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
 
         suspend fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {
             coEvery {
@@ -103,12 +132,38 @@ class LoginRepositoryTest {
             }.returns(response)
         }
 
-        suspend inline fun arrange(): Pair<Arrangement, LoginRepository> = this to LoginRepositoryImpl(loginApi).also {
-            withLoginReturning(
-                NetworkResponse.Success(value = SESSION_DTO to TestUser.SELF_USER_DTO, mapOf(), HttpStatusCode.OK.value)
+        suspend fun withGetDomainRegistrationReturning(response: DomainRegistrationDTO) = apply {
+            coEvery {
+                getDomainRegistrationApi.getDomainRegistration(
+                    any()
+                )
+            }.returns(
+                NetworkResponse.Success(
+                    value = response,
+                    mapOf(),
+                    HttpStatusCode.OK.value
+                )
             )
         }
 
+        suspend fun withFetchDomainRedirectCustomBackendConfigReturning(response: DomainLookupResponse) = apply {
+            coEvery {
+                getDomainRegistrationApi.customBackendConfig(any())
+            }.returns(
+                NetworkResponse.Success(
+                    value = response,
+                    headers = mapOf(),
+                    httpCode = HttpStatusCode.OK.value
+                )
+            )
+        }
+
+        suspend inline fun arrange(): Pair<Arrangement, LoginRepository> =
+            this to LoginRepositoryImpl(loginApi, getDomainRegistrationApi).also {
+                withLoginReturning(
+                    NetworkResponse.Success(value = SESSION_DTO to TestUser.SELF_USER_DTO, mapOf(), HttpStatusCode.OK.value)
+                )
+            }
     }
 
     private companion object {
@@ -125,6 +180,18 @@ class LoginRepositoryTest {
             accessToken = "access_token",
             refreshToken = "refresh_token",
             cookieLabel = "cookieLabel"
+        )
+
+        val DOMAIN_REGISTRATION_DTO = DomainRegistrationDTO(
+            backendUrl = null,
+            domainRedirect = DomainRedirect.NONE,
+            ssoCode = null,
+            dueToExistingAccount = null
+        )
+
+        val DOMAIN_LOOKUP_RESPONSE = DomainLookupResponse(
+            configJsonUrl = "configJsonUrl",
+            webappWelcomeUrl = "webappWelcomeUrl",
         )
     }
 }

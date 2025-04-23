@@ -34,8 +34,8 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -55,8 +55,10 @@ import kotlin.test.Test
 class CallManagerTest {
 
     private val calling = mock(Calling::class)
+
+    private val selfUserId = UserId(value = "selfUserId", domain = "selfDomain")
+
     private val callRepository = mock(CallRepository::class)
-    private val userRepository = mock(UserRepository::class)
     private val messageSender = mock(MessageSender::class)
     private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
     private val mediaManagerService = mock(MediaManagerService::class)
@@ -70,6 +72,7 @@ class CallManagerTest {
     private val videoStateChecker = mock(VideoStateChecker::class)
     private val networkStateObserver = mock(NetworkStateObserver::class)
     private val getCallConversationType = mock(GetCallConversationTypeProvider::class)
+    private val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
 
     private val dispatcher = TestKaliumDispatcher
 
@@ -84,7 +87,6 @@ class CallManagerTest {
         callManagerImpl = CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
-            userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             selfConversationIdProvider = selfConversationIdProvider,
             conversationRepository = conversationRepository,
@@ -100,7 +102,9 @@ class CallManagerTest {
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
             mediaManagerService = mediaManagerService,
-            flowManagerService = flowManagerService
+            flowManagerService = flowManagerService,
+            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
+            selfUserId = selfUserId
         )
     }
 

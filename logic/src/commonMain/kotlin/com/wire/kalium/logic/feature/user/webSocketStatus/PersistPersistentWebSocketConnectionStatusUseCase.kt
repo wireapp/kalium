@@ -21,8 +21,8 @@ package com.wire.kalium.logic.feature.user.webSocketStatus
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 
 /**
  * This use case is responsible for persisting the persistent web socket connection status of the current user.

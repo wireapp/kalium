@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,27 +28,44 @@ import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.isTeammate
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Instant
 import io.mockative.Mockable
 
 @Mockable
 interface OneOnOneMigrator {
+    /**
+     * Migrates the user's one-on-one Proteus. Without creating a new one since MLS is the default, marking it as active.
+     */
+    suspend fun migrateExistingProteus(user: OtherUser): Either<CoreFailure, ConversationId>
+
+    /**
+     * Get one-on-one conversation with the user, if not found, create a new one (Proteus still default) and mark it as active.
+     */
     suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId>
+
+    /**
+     * Perform migration of Proteus to MLS keeping history and marking the new conversation as active.
+     */
     suspend fun migrateToMLS(user: OtherUser): Either<CoreFailure, ConversationId>
 }
 
+@Suppress("LongParameterList")
 internal class OneOnOneMigratorImpl(
     private val getResolvedMLSOneOnOne: MLSOneOnOneConversationResolver,
     private val conversationGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
-    private val systemMessageInserter: SystemMessageInserter
+    private val systemMessageInserter: SystemMessageInserter,
+    private val currentInstant: CurrentInstantProvider = CurrentInstantProvider { DateTimeUtil.currentInstant() },
 ) : OneOnOneMigrator {
 
     override suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId> =
@@ -79,6 +96,11 @@ internal class OneOnOneMigratorImpl(
         return getResolvedMLSOneOnOne(user.id)
             .flatMap { mlsConversation ->
                 if (user.activeOneOnOneConversationId == mlsConversation) {
+                    kaliumLogger.d(
+                        "active one-on-one already resolved to MLS "
+                                + "${mlsConversation.toLogString()}, "
+                                + "user = ${user.id.toLogString()}"
+                    )
                     return@flatMap Either.Right(mlsConversation)
                 }
 
@@ -92,6 +114,7 @@ internal class OneOnOneMigratorImpl(
                         ).map {
                             mlsConversation
                         }.also {
+                            systemMessageInserter.insertConversationStartedUnverifiedWarning(mlsConversation)
                             systemMessageInserter.insertProtocolChangedSystemMessage(
                                 conversationId = mlsConversation,
                                 senderUserId = user.id,
@@ -102,19 +125,49 @@ internal class OneOnOneMigratorImpl(
             }
     }
 
-    private suspend fun migrateOneOnOneHistory(user: OtherUser, targetConversation: ConversationId): Either<CoreFailure, Unit> {
-            return conversationRepository.getOneOnOneConversationsWithOtherUser(
-                otherUserId = user.id,
-                protocol = Conversation.Protocol.PROTEUS
-            ).flatMap { proteusOneOnOneConversations ->
-                // We can theoretically have more than one proteus 1-1 conversation with
-                // team members since there was no backend safeguards against this
-                proteusOneOnOneConversations.foldToEitherWhileRight(Unit) { proteusOneOnOneConversation, _ ->
-                    messageRepository.moveMessagesToAnotherConversation(
-                        originalConversation = proteusOneOnOneConversation,
-                        targetConversation = targetConversation
-                    )
-                }
+    override suspend fun migrateExistingProteus(user: OtherUser): Either<CoreFailure, ConversationId> =
+        conversationRepository.getOneOnOneConversationsWithOtherUser(user.id, Conversation.Protocol.PROTEUS).flatMap { conversationIds ->
+            if (conversationIds.isNotEmpty()) {
+                val conversationId = conversationIds.first()
+                Either.Right(conversationId)
+            } else {
+                Either.Left(StorageFailure.DataNotFound)
             }
+        }.flatMap { conversationId ->
+            if (user.activeOneOnOneConversationId != conversationId) {
+                kaliumLogger.d("resolved existing one-on-one to proteus, user = ${user.id.toLogString()}")
+                userRepository.updateActiveOneOnOneConversation(user.id, conversationId)
+            }
+            Either.Right(conversationId)
+        }
+
+    private suspend fun migrateOneOnOneHistory(user: OtherUser, targetConversation: ConversationId): Either<CoreFailure, Unit> {
+        return conversationRepository.getOneOnOneConversationsWithOtherUser(
+            otherUserId = user.id,
+            protocol = Conversation.Protocol.PROTEUS
+        ).flatMap { proteusOneOnOneConversations ->
+            // We can theoretically have more than one proteus 1-1 conversation with
+            // team members since there was no backend safeguards against this
+            proteusOneOnOneConversations.foldToEitherWhileRight(null as Instant?) { proteusOneOnOneConversation, lastModifiedDate ->
+                messageRepository.moveMessagesToAnotherConversation(
+                    originalConversation = proteusOneOnOneConversation,
+                    targetConversation = targetConversation
+                ).map {
+                    // Emit most recent last modified date of the proteus conversations to pass it to the target conversation
+                    conversationRepository.getConversationById(proteusOneOnOneConversation).getOrNull()?.lastModifiedDate.let {
+                        listOfNotNull(lastModifiedDate, it).maxOrNull()
+                    }
+                }
+            }.map { lastModifiedDate ->
+                // Fallback to current time if not found as it means that it's completely new conversation without any history
+                lastModifiedDate ?: currentInstant()
+            }
+        }.flatMap { lastModifiedDate ->
+            conversationRepository.updateConversationModifiedDate(targetConversation, lastModifiedDate)
+        }
     }
+}
+
+fun interface CurrentInstantProvider {
+    operator fun invoke(): Instant
 }

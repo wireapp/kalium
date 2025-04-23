@@ -32,6 +32,7 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 class ProteusClientCryptoBoxImpl : ProteusClient {
@@ -39,7 +40,8 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
     private lateinit var box: Cryptobox
 
     @Suppress("EmptyFunctionBlock")
-    override suspend fun close() {}
+    override suspend fun close() {
+    }
 
     suspend fun openOrCreate() {
         val engine = MemoryEngine()
@@ -89,6 +91,8 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
         box.session_load(sessionId.value).await()
         true
         // TODO check the internals of cryptobox.js to see what happens if the session doesn't exist
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         false
     }

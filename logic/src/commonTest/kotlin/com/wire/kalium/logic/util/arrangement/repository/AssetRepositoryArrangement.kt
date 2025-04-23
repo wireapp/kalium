@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -37,6 +37,7 @@ internal interface AssetRepositoryArrangement {
 }
 
 internal open class AssetRepositoryArrangementImpl : AssetRepositoryArrangement {
+
     override val assetRepository: AssetRepository = mock(AssetRepository::class)
 
     override suspend fun withDeleteAssetLocally(

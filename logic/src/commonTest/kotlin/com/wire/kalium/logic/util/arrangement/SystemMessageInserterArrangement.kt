@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.util.arrangement
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -34,7 +34,7 @@ internal interface SystemMessageInserterArrangement {
 
 internal class SystemMessageInserterArrangementImpl: SystemMessageInserterArrangement {
 
-        override val systemMessageInserter = mock(SystemMessageInserter::class)
+    override val systemMessageInserter = mock(SystemMessageInserter::class)
 
     override suspend fun withInsertProtocolChangedSystemMessage() {
         coEvery {

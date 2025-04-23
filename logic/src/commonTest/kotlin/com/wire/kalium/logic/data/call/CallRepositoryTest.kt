@@ -21,8 +21,9 @@ package com.wire.kalium.logic.data.call
 import app.cash.turbine.test
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.callerId
+import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.participant
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -51,8 +52,9 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -83,6 +85,7 @@ import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -139,7 +142,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -169,11 +172,10 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             false,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -208,10 +210,9 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -262,10 +263,9 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -305,10 +305,9 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -362,10 +361,9 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true,
                             selfRole = Conversation.Member.Role.Member
                         )
                     )
@@ -904,7 +902,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -944,7 +942,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -989,7 +987,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1043,7 +1041,7 @@ class CallRepositoryTest {
         val metadata = createCallMetadata().copy(
             isMuted = false,
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername",
             callerTeamName = "team_1"
         )
@@ -1106,7 +1104,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1163,6 +1161,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenJoinMlsConference_thenJoinSubconversation() = runTest {
+        var hasJoined = false
         val (arrangement, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
             .givenJoinSubconversationSuccessful()
@@ -1174,11 +1173,14 @@ class CallRepositoryTest {
             .givenDeriveSecretSuccessful()
             .arrange()
 
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        callRepository.joinMlsConference(Arrangement.conversationId, {
+            hasJoined = true
+        }) { _, _ -> }
 
         coVerify {
             arrangement.joinSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
         }.wasInvoked(exactly = once)
+        assertTrue { hasJoined }
     }
 
     @Test
@@ -1197,7 +1199,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1213,7 +1215,7 @@ class CallRepositoryTest {
     @Test
     fun givenEpochChange_whenJoinMlsConference_thenInvokeOnEpochChange() = runTest(TestKaliumDispatcher.default) {
 
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (_, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1227,17 +1229,17 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.groupId)
+        epochFlow.emit(Arrangement.groupWithEpoch)
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.subconversationGroupId)
+        epochFlow.emit(Arrangement.subconversationGroupWithEpoch)
         yield()
         advanceUntilIdle()
 
@@ -1246,7 +1248,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenLeaveMlsConference_thenEpochObservingStops() = runTest(TestKaliumDispatcher.default) {
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (_, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1261,7 +1263,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1271,7 +1273,7 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.subconversationGroupId)
+        epochFlow.emit(Arrangement.subconversationGroupWithEpoch)
         yield()
         advanceUntilIdle()
 
@@ -1280,7 +1282,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenLeaveMlsConference_thenLeaveSubconversation() = runTest(TestKaliumDispatcher.default) {
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (arrangement, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1294,7 +1296,7 @@ class CallRepositoryTest {
             .givenLeaveSubconversationSuccessful()
             .arrange()
 
-        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        callRepository.joinMlsConference(Arrangement.conversationId, {}) { _, _ -> }
         yield()
         advanceUntilIdle()
 
@@ -1344,7 +1346,7 @@ class CallRepositoryTest {
         callRepository.updateCallParticipants(
             Arrangement.conversationId,
             listOf(
-                Arrangement.participant.copy(
+                participant.copy(
                     hasEstablishedAudio = false
                 )
             )
@@ -1513,6 +1515,158 @@ class CallRepositoryTest {
         )
     }
 
+    @Test
+    fun givenCallWithParticipantsNotSharingScreen_whenOneStartsToShare_thenSharingMetadataHasProperValues() = runTest {
+        // given
+        val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, otherParticipant)
+        val (_, callRepository) = Arrangement()
+            .givenGetKnownUserMinimizedSucceeds()
+            .arrange()
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, otherParticipant.copy(isSharingScreen = true))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertEquals(0L, callMetadata.screenShareMetadata.completedScreenShareDurationInMillis)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.containsKey(otherParticipant.id))
+    }
+
+    @Test
+    fun givenCallWithParticipantsNotSharingScreen_whenTwoStartsAndOneStops_thenSharingMetadataHasProperValues() = runTest {
+        // given
+        val (_, callRepository) = Arrangement()
+            .arrange()
+        val secondParticipant = participant.copy(id = QualifiedID("secondParticipantId", "participantDomain"))
+        val thirdParticipant = participant.copy(id = QualifiedID("thirdParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, secondParticipant, thirdParticipant)
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, secondParticipant.copy(isSharingScreen = true), thirdParticipant.copy(isSharingScreen = true))
+        )
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, secondParticipant, thirdParticipant.copy(isSharingScreen = true))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.size == 1)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.containsKey(thirdParticipant.id))
+    }
+
+    @Test
+    fun givenCallWithParticipantsSharingScreen_whenOneStopsToShare_thenSharingMetadataHasProperValues() = runTest {
+        // given
+        val (_, callRepository) = Arrangement()
+            .arrange()
+        val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, otherParticipant)
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, otherParticipant.copy(isSharingScreen = true))
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, otherParticipant.copy(isSharingScreen = false))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertTrue(callMetadata.screenShareMetadata.activeScreenShares.isEmpty())
+    }
+
+    @Test
+    fun givenCallWithParticipantsSharingScreen_whenTheSameParticipantIsSharingMultipleTime_thenSharingMetadataHasUserIdOnlyOnce() =
+        runTest {
+            // given
+            val (_, callRepository) = Arrangement()
+                .arrange()
+            val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+            val participantsList = listOf(participant, otherParticipant)
+            callRepository.updateCallMetadataProfileFlow(
+                callMetadataProfile = CallMetadataProfile(
+                    data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+                )
+            )
+
+            // when
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                listOf(participant, otherParticipant.copy(isSharingScreen = true))
+            )
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                listOf(participant, otherParticipant.copy(isSharingScreen = false))
+            )
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                listOf(participant, otherParticipant.copy(isSharingScreen = true))
+            )
+            val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+            // then
+            assertNotNull(callMetadata)
+            assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.size == 1)
+            assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.contains(otherParticipant.id.toString()))
+        }
+
+    @Test
+    fun givenCallWithParticipantsSharingScreen_whenTwoParticipantsAreSharing_thenSharingMetadataHasBothOfUsersIds() = runTest {
+        // given
+        val (_, callRepository) = Arrangement()
+            .arrange()
+        val secondParticipant = participant.copy(id = QualifiedID("secondParticipantId", "participantDomain"))
+        val thirdParticipant = participant.copy(id = QualifiedID("thirdParticipantId", "participantDomain"))
+        val participantsList = listOf(participant, secondParticipant, thirdParticipant)
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(Arrangement.conversationId to createCallMetadata().copy(participants = participantsList))
+            )
+        )
+
+        // when
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId,
+            listOf(participant, secondParticipant.copy(isSharingScreen = true), thirdParticipant.copy(isSharingScreen = true))
+        )
+        val callMetadata = callRepository.getCallMetadataProfile()[Arrangement.conversationId]
+
+        // then
+        assertNotNull(callMetadata)
+        assertTrue(callMetadata.screenShareMetadata.uniqueSharingUsers.size == 2)
+        assertEquals(
+            setOf(secondParticipant.id.toString(), thirdParticipant.id.toString()),
+            callMetadata.screenShareMetadata.uniqueSharingUsers
+        )
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1523,7 +1677,7 @@ class CallRepositoryTest {
         isCbrEnabled = false,
         maxParticipants = 0,
         conversationName = "ONE_ON_ONE Name",
-        conversationType = Conversation.Type.ONE_ON_ONE,
+        conversationType = Conversation.Type.OneOnOne,
         callerName = "otherUsername",
         callerTeamName = "team_1"
     )
@@ -1546,7 +1700,7 @@ class CallRepositoryTest {
         isCameraOn = false,
         isCbrEnabled = false,
         conversationName = null,
-        conversationType = Conversation.Type.GROUP,
+        conversationType = Conversation.Type.Group.Regular,
         callerName = null,
         callerTeamName = null,
         callStatus = CallStatus.ESTABLISHED,
@@ -1714,7 +1868,7 @@ class CallRepositoryTest {
             }.returns(Either.Right(Unit))
         }
 
-        fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
+        fun givenObserveEpochChangesReturns(flow: Flow<GroupWithEpoch>) = apply {
             every {
                 epochChangesObserver.observe()
             }.returns(flow)
@@ -1767,7 +1921,9 @@ class CallRepositoryTest {
             val randomConversationId = ConversationId("value", "domain")
 
             val groupId = GroupID("groupid")
+            val groupWithEpoch = GroupWithEpoch(groupId, 1UL)
             val subconversationGroupId = GroupID("subconversation_groupid")
+            val subconversationGroupWithEpoch = GroupWithEpoch(subconversationGroupId, 1UL)
             val conversationId = ConversationId(value = "convId", domain = "domainId")
             val groupConversation = TestConversation.GROUP().copy(id = conversationId)
             val oneOnOneConversation = TestConversation.one_on_one(conversationId)

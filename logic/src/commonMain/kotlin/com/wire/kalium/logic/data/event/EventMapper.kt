@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
+import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
@@ -110,6 +111,7 @@ class EventMapper(
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
         }
 
     private fun conversationTyping(
@@ -184,6 +186,15 @@ class EventMapper(
         protocol = eventContentDTO.data.protocol.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
+    private fun conversationChannelPermissionUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ChannelAddPermissionUpdate,
+    ): Event = Event.Conversation.ConversationChannelAddPermission(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        channelAddPermission = eventContentDTO.data.channelAddPermissionTypeDTO.toModel(),
+        senderUserId = eventContentDTO.qualifiedFrom.toModel()
+    )
 
     fun conversationMessageTimerUpdate(
         id: String,
@@ -223,8 +234,8 @@ class EventMapper(
     ): Event {
         val fieldKeyValue = eventContentDTO.value
         val key = eventContentDTO.key
-        return when {
-            fieldKeyValue is EventContentDTO.FieldKeyNumberValue -> {
+        return when (fieldKeyValue) {
+            is EventContentDTO.FieldKeyNumberValue -> {
                 when (key) {
                     WIRE_RECEIPT_MODE.key -> ReadReceiptModeSet(
                         id,
@@ -244,7 +255,12 @@ class EventMapper(
                 }
             }
 
-            else -> unknown(
+            is EventContentDTO.FieldLabelListValue -> Event.UserProperty.FoldersUpdate(
+                id = id,
+                folders = fieldKeyValue.value.labels.map { it.toFolder(selfUserId.domain) }
+            )
+
+            is EventContentDTO.FieldUnknownValue -> unknown(
                 id = id,
                 eventContentDTO = eventContentDTO,
                 cause = "Unknown value type for key: ${eventContentDTO.key} "
@@ -450,7 +466,7 @@ class EventMapper(
     }
 
     @Suppress("MagicNumber")
-    private fun mapConversationMutedStatus(status: Int?) = when (status) {
+    private fun mapConversationMutedStatus(status: Int?): MutedConversationStatus = when (status) {
         0 -> MutedConversationStatus.AllAllowed
         1 -> MutedConversationStatus.OnlyMentionsAndRepliesAllowed
         3 -> MutedConversationStatus.AllMuted
@@ -507,6 +523,8 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AppLock)
         )
 
+        // These features are NOT received through events. As FeatureConfig Events are deprecated
+        is FeatureConfigData.Channels,
         is FeatureConfigData.DigitalSignatures,
         is FeatureConfigData.Legalhold,
         is FeatureConfigData.SSO,

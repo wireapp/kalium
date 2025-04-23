@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 
 interface ImportClientUseCase {
 

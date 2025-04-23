@@ -58,11 +58,11 @@ class CallHelperImpl : CallHelper {
         previousCallParticipants: List<Participant>
     ): Boolean {
         return if (callProtocol is Conversation.ProtocolInfo.Proteus) {
-            conversationType == Conversation.Type.ONE_ON_ONE &&
+            conversationType == Conversation.Type.OneOnOne &&
                     newCallParticipants.size == ONE_PARTICIPANTS &&
                     previousCallParticipants.size == TWO_PARTICIPANTS
         } else {
-            conversationType == Conversation.Type.ONE_ON_ONE &&
+            conversationType == Conversation.Type.OneOnOne &&
                     newCallParticipants.size == TWO_PARTICIPANTS &&
                     previousCallParticipants.size == TWO_PARTICIPANTS &&
                     previousCallParticipants[1].hasEstablishedAudio && !newCallParticipants[1].hasEstablishedAudio

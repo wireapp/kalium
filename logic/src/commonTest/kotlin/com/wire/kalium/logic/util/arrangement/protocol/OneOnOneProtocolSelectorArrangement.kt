@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.util.arrangement.protocol
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -31,7 +31,8 @@ internal interface OneOnOneProtocolSelectorArrangement {
 }
 
 internal open class OneOnOneProtocolSelectorArrangementImpl : OneOnOneProtocolSelectorArrangement {
-        override val oneOnOneProtocolSelector: OneOnOneProtocolSelector = mock(OneOnOneProtocolSelector::class)
+
+    override val oneOnOneProtocolSelector: OneOnOneProtocolSelector = mock(OneOnOneProtocolSelector::class)
 
     override suspend fun withGetProtocolForUser(result: Either<CoreFailure, SupportedProtocol>) = apply {
         coEvery {

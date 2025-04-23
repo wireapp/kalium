@@ -18,10 +18,10 @@
 
 package com.wire.kalium.logic.feature.user.guestroomlink
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
@@ -34,7 +34,7 @@ import kotlin.test.assertNull
 
 class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
 
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+    val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
     lateinit var observeGuestRoomLinkFeatureFlag: ObserveGuestRoomLinkFeatureFlagUseCase
 

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.auth.AccountInfo
 
 sealed class GetAllSessionsResult {

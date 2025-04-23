@@ -453,10 +453,35 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.insertClients(listOf(insertClientWithNonNullValues))
 
-        // null values should not be overwritten with proper ones
+        // null values should be overwritten with proper ones
         clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
             assertEquals(listOf(clientWithNonNullValues), resultList)
         }
+    }
+
+    @Test
+    fun givenClientIsNotMlsCapable_whenCallingIsMlsCapable_thenReturnFalse() = runTest {
+        val user = user
+        val client: InsertClientParam = insertedClient.copy(isMLSCapable = false)
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(client)
+        assertFalse { clientDAO.isMLSCapable(userId, clientId = client.id)!! }
+    }
+
+    @Test
+    fun givenClientIsMlsCapable_whenCallingIsMlsCapable_thenReturnTrue() = runTest {
+        val user = user
+        val client: InsertClientParam = insertedClient.copy(isMLSCapable = true)
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(client)
+        assertTrue { clientDAO.isMLSCapable(userId, clientId = client.id)!! }
+    }
+
+    @Test
+    fun givenNotFound_whenCallingIsMlsCapableForUser_thenReturnNull() = runTest {
+        val user = user
+        userDAO.upsertUser(user)
+        assertNull(clientDAO.isMLSCapable(userId, clientId = client.id))
     }
 
     private companion object {
@@ -503,7 +528,11 @@ class ClientDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
     }
 }

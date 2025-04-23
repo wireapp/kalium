@@ -18,16 +18,22 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.cryptography.NewAcmeAuthz
-import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.getOrFail
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.user.UserRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -45,37 +51,59 @@ interface EnrollE2EIUseCase {
 
 @Suppress("ReturnCount")
 class EnrollE2EIUseCaseImpl internal constructor(
-    private val e2EIRepository: E2EIRepository
+    private val e2EIRepository: E2EIRepository,
+    private val userRepository: UserRepository,
+    private val coroutineScope: CoroutineScope,
+    private val conversationRepository: ConversationRepository,
 ) : EnrollE2EIUseCase {
     /**
      * Operation to initial E2EI certificate enrollment
      *
      * @return [Either] [E2EIFailure] or [E2EIEnrollmentResult]
      */
+    @Suppress("LongMethod")
     override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<E2EIFailure, E2EIEnrollmentResult.Initialized> {
-        kaliumLogger.i("start E2EI Enrollment Initialization")
 
-        e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
+        if (isNewClientRegistration) {
+            coroutineScope.launch {
+                userRepository.fetchSelfUser()
+            }.join()
+        }
 
-        e2EIRepository.fetchAndSetTrustAnchors()
+        kaliumLogger.i("start E2EI Enrollment Initialization (new client registration: $isNewClientRegistration)")
+
+        e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration).getOrFail {
+            kaliumLogger.e("Failure initializing fresh E2EI client during E2EI Enrolling!. Failure:$it")
+            return it.left()
+        }
+
+        e2EIRepository.fetchAndSetTrustAnchors().getOrFail {
+            kaliumLogger.e("Failure fetching and setting trust anchors during E2EI Enrolling!. Failure:$it")
+            return it.left()
+        }
+
         e2EIRepository.fetchFederationCertificates().getOrFail {
             kaliumLogger.e("Failure fetching federation certificates during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
+            kaliumLogger.d("Failure loading ACMEDirectories during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
         var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
+            kaliumLogger.d("Failure getting ACMENonce during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
         prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
+            kaliumLogger.d("Failure creating new account during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
         val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
+            kaliumLogger.d("Failure creating new order during E2EI Enrolling!. Failure:$it")
             return it.left()
         }
 
@@ -83,6 +111,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         val authorizations =
             e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations).getOrFail {
+                kaliumLogger.d("Failure getting authorizations during E2EI Enrolling!. Failure:$it")
                 return it.left()
             }
 
@@ -182,9 +211,18 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 return it.left()
             }
         } else {
+            val groupIdList = conversationRepository.observeConversationList().first().mapNotNull {
+                when (val protocol = it.protocol) {
+                    is Conversation.ProtocolInfo.MLS -> protocol.groupId
+                    is Conversation.ProtocolInfo.Mixed -> protocol.groupId
+                    Conversation.ProtocolInfo.Proteus -> null
+                }
+            }
+
             e2EIRepository.rotateKeysAndMigrateConversations(
                 certificateRequest.response.decodeToString(),
-                initializationResult.isNewClientRegistration
+                groupIdList,
+                initializationResult.isNewClientRegistration,
             ).onFailure { return it.left() }
         }
 

@@ -17,11 +17,12 @@
  */
 package com.wire.kalium.logic.feature.session.token
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.session.token.AccessTokenRepository
 import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.logic.data.conversation.ClientId
 import io.mockative.Mockable
 
 @Mockable
@@ -35,7 +36,7 @@ internal interface AccessTokenRefresher {
      */
     suspend fun refreshTokenAndPersistSession(
         currentRefreshToken: String,
-        clientId: String? = null,
+        clientId: ClientId? = null,
     ): Either<CoreFailure, AccountTokens>
 }
 
@@ -44,11 +45,11 @@ internal class AccessTokenRefresherImpl(
 ) : AccessTokenRefresher {
     override suspend fun refreshTokenAndPersistSession(
         currentRefreshToken: String,
-        clientId: String?
+        clientId: ClientId?
     ): Either<CoreFailure, AccountTokens> {
         return repository.getNewAccessToken(
             refreshToken = currentRefreshToken,
-            clientId = clientId
+            clientId = clientId?.value
         ).flatMap { result ->
             repository.persistTokens(result.accessToken, result.refreshToken)
         }

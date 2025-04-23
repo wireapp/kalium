@@ -21,8 +21,10 @@ package com.wire.kalium.logic.data.call.mapper
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallMetadata
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationTypeForCall
 import com.wire.kalium.logic.data.call.VideoState
@@ -31,10 +33,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.message.MessageTarget
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -140,14 +140,14 @@ class CallMapperImpl(
         conversationProtocol: Conversation.ProtocolInfo
     ): ConversationTypeForCall =
         when (conversationType) {
-            Conversation.Type.GROUP -> {
+            is Conversation.Type.Group -> {
                 when (conversationProtocol) {
                     is Conversation.ProtocolInfo.MLS -> ConversationTypeForCall.ConferenceMls
                     is Conversation.ProtocolInfo.Proteus,
                     is Conversation.ProtocolInfo.Mixed -> ConversationTypeForCall.Conference
                 }
             }
-            Conversation.Type.ONE_ON_ONE -> ConversationTypeForCall.OneOnOne
+            Conversation.Type.OneOnOne -> ConversationTypeForCall.OneOnOne
             else -> ConversationTypeForCall.Unknown
         }
 
@@ -193,7 +193,8 @@ class CallMapperImpl(
     )
 
     private fun toConversationEntityType(conversationType: Conversation.Type): ConversationEntity.Type = when (conversationType) {
-        Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
+        Conversation.Type.Group.Regular -> ConversationEntity.Type.GROUP
+        Conversation.Type.Group.Channel -> ConversationEntity.Type.GROUP
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
@@ -205,8 +206,8 @@ class CallMapperImpl(
     }
 
     override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
-        ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
-        else -> Conversation.Type.ONE_ON_ONE
+        ConversationEntity.Type.GROUP -> Conversation.Type.Group.Regular
+        else -> Conversation.Type.OneOnOne
     }
 
     override fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status = when (callStatus) {

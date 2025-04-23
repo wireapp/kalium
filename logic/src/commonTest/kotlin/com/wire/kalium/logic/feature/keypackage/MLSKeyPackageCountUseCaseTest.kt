@@ -18,18 +18,25 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.CLIENT_FETCH_ERROR
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT_DTO
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.NETWORK_FAILURE
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.toCrypto
+import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import io.mockative.any
 import io.mockative.coEvery
@@ -38,25 +45,30 @@ import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientIdIsNotRegistered_ThenReturnGenericError() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withClientId(Either.Left(CLIENT_FETCH_ERROR))
-            .arrange()
+            .withDefaultCipherSuite(expectedCipherSuite)
+            .arrange {
+                withGetMLSEnabledReturning(true.right())
+            }
 
         val actual = keyPackageCountUseCase()
 
         coVerify {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
         }.wasNotInvoked()
 
         assertIs<MLSKeyPackageCountResult.Failure.FetchClientIdFailure>(actual)
@@ -65,16 +77,21 @@ class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientId_whenCallingKeyPackageCountReturnValue_ThenReturnKeyPackageCountSuccess() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withAvailableKeyPackageCountReturn(Either.Right(KEY_PACKAGE_COUNT_DTO))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
+            .withDefaultCipherSuite(expectedCipherSuite)
             .withKeyPackageLimitSucceed()
-            .arrange()
+            .arrange {
+                withGetMLSEnabledReturning(true.right())
+            }
 
         val actual = keyPackageCountUseCase()
 
         coVerify {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
         }.wasInvoked(once)
         assertIs<MLSKeyPackageCountResult.Success>(actual)
         assertEquals(actual, MLSKeyPackageCountResult.Success(TestClient.CLIENT_ID, KEY_PACKAGE_COUNT, true))
@@ -82,24 +99,55 @@ class MLSKeyPackageCountUseCaseTest {
 
     @Test
     fun givenClientID_whenCallingKeyPackageCountReturnError_ThenReturnKeyPackageCountFailure() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+
         val (arrangement, keyPackageCountUseCase) = Arrangement()
             .withAvailableKeyPackageCountReturn(Either.Left(NETWORK_FAILURE))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
-            .arrange()
+            .withDefaultCipherSuite(expectedCipherSuite)
+            .arrange {
+                withGetMLSEnabledReturning(true.right())
+            }
 
         val actual = keyPackageCountUseCase()
 
         coVerify {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
         }.wasInvoked(once)
         assertIs<MLSKeyPackageCountResult.Failure.NetworkCallFailure>(actual)
         assertEquals(actual.networkFailure, NETWORK_FAILURE)
     }
 
-    private class Arrangement {
-                val keyPackageRepository = mock(KeyPackageRepository::class)
+    @Test
+    fun givenClientID_whenCallingGetMLSEnabledReturnFalse_ThenReturnKeyPackageCountNotEnabledFailure() = runTest {
+        val expectedCipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        val (arrangement, keyPackageCountUseCase) = Arrangement()
+            .withAvailableKeyPackageCountReturn(Either.Right(KEY_PACKAGE_COUNT_DTO))
+            .withClientId(Either.Right(TestClient.CLIENT_ID))
+            .withDefaultCipherSuite(expectedCipherSuite)
+            .arrange {
+                withGetMLSEnabledReturning(false.right())
+            }
+
+        val actual = keyPackageCountUseCase()
+
+        verify {
+            arrangement.userConfigRepository.isMLSEnabled()
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
+        }.wasNotInvoked()
+        assertIs<MLSKeyPackageCountResult.Failure.NotEnabled>(actual)
+    }
+
+    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+
+        val keyPackageRepository = mock(KeyPackageRepository::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
+        val mlsClientProvider = mock(MLSClientProvider::class)
+        val mlsClient = mock(MLSClient::class)
 
         suspend fun withClientId(result: Either<CoreFailure, ClientId>) = apply {
             coEvery {
@@ -115,13 +163,29 @@ class MLSKeyPackageCountUseCaseTest {
 
         suspend fun withAvailableKeyPackageCountReturn(result: Either<NetworkFailure, KeyPackageCountDTO>) = apply {
             coEvery {
-                keyPackageRepository.getAvailableKeyPackageCount(any())
+                keyPackageRepository.getAvailableKeyPackageCount(any(), any())
             }.returns(result)
         }
 
-        fun arrange() = this to MLSKeyPackageCountUseCaseImpl(
-            keyPackageRepository, currentClientIdProvider, keyPackageLimitsProvider
-        )
+        fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
+            every {
+                mlsClient.getDefaultCipherSuite()
+            }.returns(cipherSuite.toCrypto())
+        }
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = apply {
+            coEvery { mlsClientProvider.getMLSClient() }.returns(mlsClient.right())
+        }.apply {
+            runBlocking { block() }
+        }.let {
+            this to MLSKeyPackageCountUseCaseImpl(
+                keyPackageRepository = keyPackageRepository,
+                currentClientIdProvider = currentClientIdProvider,
+                keyPackageLimitsProvider = keyPackageLimitsProvider,
+                userConfigRepository = userConfigRepository,
+                mlsClientProvider = mlsClientProvider,
+            )
+        }
 
         companion object {
             val NETWORK_FAILURE = NetworkFailure.NoNetworkConnection(null)

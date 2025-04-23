@@ -75,10 +75,18 @@ internal class ClientDAOImpl internal constructor(
      * then any new value will be ignored.
      */
     override suspend fun insertClient(client: InsertClientParam): Unit = withContext(queriesContext) {
-        insert(client)
+        clientsQueries.transaction {
+            insert(client)
+            val changes = clientsQueries.selectChanges().executeAsOne()
+            if (changes == 0L) {
+                // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
+                this.rollback()
+            }
+        }
     }
 
-    private fun insert(client: InsertClientParam) = with(client) {
+    // returns true if any row has been inserted or modified, false if exactly the same data already exists
+    private fun insert(client: InsertClientParam): Boolean = with(client) {
         clientsQueries.insertClient(
             user_id = userId,
             id = id,
@@ -92,11 +100,16 @@ internal class ClientDAOImpl internal constructor(
             label = label,
             mls_public_keys = mlsPublicKeys
         )
+        clientsQueries.selectChanges().executeAsOne() > 0
     }
 
     override suspend fun insertClients(clients: List<InsertClientParam>) = withContext(queriesContext) {
         clientsQueries.transaction {
-            clients.forEach { client -> insert(client) }
+            val anyInsertedOrModified = clients.map { client -> insert(client) }.any { it }
+            if (!anyInsertedOrModified) {
+                // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
+                this.rollback()
+            }
         }
     }
 
@@ -116,8 +129,13 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>) = withContext(queriesContext) {
         clientsQueries.transaction {
             clients.groupBy { it.userId }.forEach { (userId, clientsList) ->
-                clientsList.forEach { client -> insert(client) }
+                val anyInsertedOrModified = clientsList.map { client -> insert(client) }.any { it }
                 clientsQueries.deleteClientsOfUserExcept(userId, clientsList.map { it.id })
+                val anyDeleted = clientsQueries.selectChanges().executeAsOne() > 0
+                if (!anyInsertedOrModified && !anyDeleted) {
+                    // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
+                    this.rollback()
+                }
             }
         }
     }
@@ -154,6 +172,11 @@ internal class ClientDAOImpl internal constructor(
         clientsQueries.selectAllClients(mapper::fromClient)
             .executeAsList()
             .groupBy { it.userId }
+
+    override suspend fun isMLSCapable(userId: QualifiedIDEntity, clientId: String): Boolean? = withContext(queriesContext) {
+        clientsQueries.isClientMLSCapable(userId, clientId)
+            .executeAsOneOrNull()
+    }
 
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)

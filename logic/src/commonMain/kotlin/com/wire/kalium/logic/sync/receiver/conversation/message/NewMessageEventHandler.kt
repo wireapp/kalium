@@ -20,7 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
@@ -30,9 +30,9 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
@@ -114,23 +114,27 @@ internal class NewMessageEventHandlerImpl(
 
                     is MLSMessageFailureResolution.InformUser -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-                        applicationMessageHandler.handleDecryptionError(
-                            eventId = event.id,
-                            conversationId = event.conversationId,
-                            messageInstant = event.messageInstant,
-                            senderUserId = event.senderUserId,
-                            senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                            content = MessageContent.FailedDecryption(
-                                isDecryptionResolved = false,
-                                senderUserId = event.senderUserId
+                        // messages from subconversations should not send a system message
+                        if (event.subconversationId == null) {
+                            applicationMessageHandler.handleDecryptionError(
+                                eventId = event.id,
+                                conversationId = event.conversationId,
+                                messageInstant = event.messageInstant,
+                                senderUserId = event.senderUserId,
+                                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                                content = MessageContent.FailedDecryption(
+                                    isDecryptionResolved = false,
+                                    senderUserId = event.senderUserId
+                                )
                             )
-                        )
+                        }
                     }
 
                     is MLSMessageFailureResolution.OutOfSync -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
                             event.conversationId,
+                            event.subconversationId,
                             event.messageInstant
                         )
                     }

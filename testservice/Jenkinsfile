@@ -16,7 +16,7 @@ pipeline {
                 }
             }
             steps {
-                withMaven(jdk: 'AdoptiumJDK17', maven: 'M3', mavenLocalRepo: '.repository') {
+                withMaven(jdk: 'JDK17', maven: 'M3', mavenLocalRepo: '.repository') {
                     sh 'PATH=$HOME/.cargo/bin:$PATH make'
                     sh 'sudo cp $WORKSPACE/native/libs/lib* /usr/lib/'
                     sh './gradlew clean'
@@ -25,7 +25,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                withMaven(jdk: 'AdoptiumJDK17', maven: 'M3', mavenLocalRepo: '.repository') {
+                withMaven(jdk: 'JDK17', maven: 'M3', mavenLocalRepo: '.repository') {
                     withCredentials([usernamePassword(credentialsId: 'READ_PACKAGES_GITHUB_TOKEN', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
                         sh './gradlew :testservice:shadowJar'
                     }
@@ -37,28 +37,14 @@ pipeline {
                 expression { return sh(returnStdout: true, script: 'uname -s').contains('Linux') }
             }
             steps {
-                // Remove old files
-                sh "rm -rf ${HOME}/.testservice/"
-                sh "mkdir -p ${HOME}/.config/systemd/user/"
-                sh """printf \\
-'[Unit]
-Description=kalium-testservice
-After=network.target
-[Service]
-LimitNOFILE=infinity
-LimitNPROC=infinity
-LimitCORE=infinity
-TimeoutStartSec=8
-WorkingDirectory=${WORKSPACE}
-Environment="PATH=/usr/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
-ExecStart=java -Djava.library.path=${WORKSPACE}/native/libs/ -jar ${WORKSPACE}/testservice/build/libs/testservice-0.0.1-SNAPSHOT-all.jar server ${WORKSPACE}/testservice/config.yml
-Restart=always
-[Install]
-WantedBy=default.target
-' \\
-> ${HOME}/.config/systemd/user/kalium-testservice.service"""
-                sh 'systemctl --user daemon-reload'
-                sh 'systemctl --user restart kalium-testservice'
+                ansiblePlaybook(
+                    credentialsId: 'callingservice_debian',
+                    disableHostKeyChecking: true,
+                    forks: 2,
+                    inventory: 'ansible/hosts.ini',
+                    playbook: 'ansible/site.yml',
+                    extras: '-verbose'
+                )
             }
         }
         stage('Deploy on macOS') {

@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangementImpl
 import io.mockative.any
@@ -243,7 +243,7 @@ class SearchUseCaseTest {
 
     private class Arrangement : SearchRepositoryArrangement by SearchRepositoryArrangementImpl() {
 
-        private val searchUseCase: SearchUsersUseCase = SearchUsersUseCase(
+        private val searchUseCase: SearchUsersUseCase = SearchUsersUseCaseImpl(
             searchUserRepository = searchUserRepository,
             selfUserId = selfUserID,
             maxRemoteSearchResultCount = 30

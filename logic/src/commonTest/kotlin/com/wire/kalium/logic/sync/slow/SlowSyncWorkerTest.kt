@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.sync.slow
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.user.LegalHoldStatus
@@ -31,7 +31,7 @@ import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -507,7 +507,7 @@ class SlowSyncWorkerTest {
             joinMLSConversations = joinMLSConversations,
             updateSupportedProtocols = updateSupportedProtocols,
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
-            oneOnOneResolver = oneOnOneResolver,
+            oneOnOneResolver = oneOnOneResolver
         )
 
         suspend fun withSyncSelfUserFailure() = apply {

@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
@@ -42,15 +42,15 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImp
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapFlowStorageRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.authenticated.message.Parameters
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
@@ -155,10 +155,7 @@ internal interface MessageRepository {
         messageOption: BroadcastMessageOption
     ): Either<CoreFailure, Instant>
 
-    suspend fun sendMLSMessage(
-        conversationId: ConversationId,
-        message: MLSMessageApi.Message
-    ): Either<CoreFailure, MessageSent>
+    suspend fun sendMLSMessage(message: MLSMessageApi.Message): Either<CoreFailure, MessageSent>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
@@ -255,6 +252,13 @@ internal interface MessageRepository {
         messageId: String,
         conversationId: ConversationId
     ): Either<StorageFailure, AssetTransferStatus>
+
+    suspend fun getAllAssetIdsFromConversationId(
+        conversationId: ConversationId,
+    ): Either<StorageFailure, List<String>>
+
+    suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
+    suspend fun getNextAudioMessageInConversation(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -509,11 +513,10 @@ internal class MessageDataSource internal constructor(
     }
 
     override suspend fun sendMLSMessage(
-        conversationId: ConversationId,
         message: MLSMessageApi.Message
     ): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
-            mlsMessageApi.sendMessage(message)
+            mlsMessageApi.sendMessage(message.value)
         }.flatMap { response ->
             Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
         }
@@ -708,4 +711,21 @@ internal class MessageDataSource internal constructor(
     ): Either<StorageFailure, AssetTransferStatus> = wrapStorageRequest {
         messageDAO.getMessageAssetTransferStatus(messageId, conversationId.toDao()).toModel()
     }
+
+    override suspend fun getAllAssetIdsFromConversationId(
+        conversationId: ConversationId
+    ): Either<StorageFailure, List<String>> {
+        return wrapStorageRequest {
+            messageDAO.getAllMessageAssetIdsForConversationId(conversationId = conversationId.toDao())
+        }
+    }
+
+    override suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String> =
+        wrapStorageRequest { messageDAO.getSenderNameById(messageId, conversationId.toDao()) }
+
+    override suspend fun getNextAudioMessageInConversation(
+        conversationId: ConversationId,
+        messageId: String
+    ): Either<CoreFailure, String> =
+        wrapStorageRequest { messageDAO.getNextAudioMessageInConversation(messageId, conversationId.toDao()) }
 }

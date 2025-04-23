@@ -18,12 +18,12 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
 import io.mockative.Mockable
@@ -55,7 +55,7 @@ internal class DeregisterTokenUseCaseImpl(
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&
-                it.kaliumException.isNotFound()
+                (it.kaliumException as KaliumException.InvalidRequestError).isNotFound()
             ) {
                 DeregisterTokenUseCase.Result.Failure.NotFound
             }

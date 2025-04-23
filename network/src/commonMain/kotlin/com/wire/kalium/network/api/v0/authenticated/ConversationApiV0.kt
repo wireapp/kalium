@@ -22,7 +22,6 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationPagingResponse
@@ -36,16 +35,19 @@ import com.wire.kalium.network.api.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.AddServiceResponse
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.JoinConversationRequestV0
@@ -111,14 +113,6 @@ internal open class ConversationApiV0 internal constructor(
         createConversationRequest: CreateConversationRequest
     ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
         httpClient.post(PATH_CONVERSATIONS) {
-            setBody(createConversationRequest)
-        }
-    }
-
-    override suspend fun createOne2OneConversation(
-        createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
-        httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
             setBody(createConversationRequest)
         }
     }
@@ -314,7 +308,7 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
-    private suspend fun handleServiceAddedResponse(
+    protected suspend fun handleServiceAddedResponse(
         httpResponse: HttpResponse
     ): NetworkResponse<ServiceAddedResponse> =
         when (httpResponse.status) {
@@ -378,7 +372,7 @@ internal open class ConversationApiV0 internal constructor(
         messageTimer: Long?
     ): NetworkResponse<EventContentDTO.Conversation.MessageTimerUpdate> =
         wrapKaliumResponse {
-            httpClient.put("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MESSAGE_TIMER") {
+            httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MESSAGE_TIMER") {
                 setBody(ConversationMessageTimerDTO(messageTimer))
             }
         }
@@ -403,11 +397,17 @@ internal open class ConversationApiV0 internal constructor(
             httpClient.get("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
         }
 
+    override suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermissionDTO
+    ): NetworkResponse<UpdateChannelAddPermissionResponse> = NetworkResponse.Error(
+        APINotSupported("updateChannelPermission api is only available on API V8")
+    )
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
         const val PATH_MEMBERS = "members"
-        const val PATH_ONE_2_ONE = "one2one"
         const val PATH_V2 = "v2"
         const val PATH_CONVERSATIONS_LIST = "list"
         const val PATH_LIST_IDS = "list-ids"

@@ -45,6 +45,19 @@ message GenericMessage {
         ButtonAction buttonAction = 21;
         ButtonActionConfirmation buttonActionConfirmation = 22;
         DataTransfer dataTransfer = 23; // client-side synchronization across devices of the same user
+        InCallEmoji inCallEmoji = 24;
+        // UnknownStrategy unknownStrategy = 25; -- Defined outside the oneof
+        // Next field should be 26 ↓
+        InCallHandRaise inCallHandRaise = 26;
+        Multipart multipart = 27;
+    }
+    optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
+
+    // See internal RFC: "2024-07-18 RFC Improve future-proofing for new OTR message types"
+    enum UnknownStrategy {
+        IGNORE = 0;                 // Ignore the message completely. Trash. Bye
+        DISCARD_AND_WARN = 1;       // Warn the user, but discard the message, as it won't be helpful in the future.
+        WARN_USER_ALLOW_RETRY = 2;  // Warn the user. Client has freedom to store it and retry in the future.
     }
 }
 
@@ -184,6 +197,7 @@ message Cleared {
     required int64 cleared_timestamp = 2;
     // only optional to maintain backwards compatibility
     optional QualifiedConversationId qualified_conversation_id = 3;
+    optional bool needToRemoveLocally = 4 [default = false];
 }
 
 message MessageHide {
@@ -330,6 +344,14 @@ message Reaction {
     optional LegalHoldStatus legal_hold_status = 3 [default = UNKNOWN]; // whether this message was sent to legal hold
 }
 
+message InCallEmoji {
+    map<string, int32> emojis = 1;
+}
+
+message InCallHandRaise {
+    required bool is_hand_up = 1; // true if the hand is raised, false if lowered
+}
+
 message Calling {
     required string content = 1;
     optional QualifiedConversationId qualified_conversation_id = 2;
@@ -359,4 +381,56 @@ enum LegalHoldStatus {
     UNKNOWN = 0;
     DISABLED = 1;
     ENABLED = 2;
+}
+
+message Multipart {
+    optional Text text = 1;
+    repeated Attachment attachments = 2;
+    // Standard flags for all message types
+    optional bool expects_read_confirmation = 3 [default = false];
+    optional LegalHoldStatus legal_hold_status = 4 [default = UNKNOWN];
+}
+
+message Attachment {
+    oneof content {
+        Asset asset = 1;
+        CellAsset cell_asset = 2;
+    }
+}
+
+message CellAsset {
+    // Required pydio backend reference
+    required string uuid = 1;
+    // known mime_type
+    required string content_type = 2;
+    // Fields below are used for optimistic display: they could have changed since first posting
+
+    // Path contains full path including name (last path part)
+    optional string initial_name = 3;
+    // Size of the file
+    optional int64 initial_size = 4;
+
+    oneof initial_meta_data {
+        ImageMetaData image = 5;
+        VideoMetaData video = 6;
+        AudioMetaData audio = 7;
+    }
+
+    message ImageMetaData {
+        required int32 width = 1;
+        required int32 height = 2;
+    }
+
+    message VideoMetaData {
+        optional int32 width = 1;
+        optional int32 height = 2;
+        optional uint64 duration_in_millis = 3;
+    }
+
+    message AudioMetaData {
+        optional uint64 duration_in_millis = 1;
+        optional bytes normalized_loudness = 2;
+    }
+
+
 }

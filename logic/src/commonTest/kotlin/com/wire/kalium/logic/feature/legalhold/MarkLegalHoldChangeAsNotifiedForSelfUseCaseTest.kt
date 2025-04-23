@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -56,7 +56,8 @@ class MarkLegalHoldChangeAsNotifiedForSelfUseCaseTest {
     }
 
     private class Arrangement {
-                val userConfigRepository = mock(UserConfigRepository::class)
+
+        val userConfigRepository = mock(UserConfigRepository::class)
         val useCase: MarkLegalHoldChangeAsNotifiedForSelfUseCase = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)
 
         fun arrange() = this to useCase

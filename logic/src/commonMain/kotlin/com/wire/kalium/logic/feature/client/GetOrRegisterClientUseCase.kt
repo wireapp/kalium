@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -27,9 +27,9 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.nullableFold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
 
 /**

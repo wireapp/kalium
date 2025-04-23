@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.waz.call.FlowManager
 import com.waz.log.LogHandler
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformView

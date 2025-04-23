@@ -17,9 +17,25 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-enum class ConversationFilter {
-    ALL,
-    FAVORITES,
-    GROUPS,
-    ONE_ON_ONE
+import kotlinx.serialization.Serializable
+
+@Serializable
+sealed class ConversationFilter {
+    @Serializable
+    data object All : ConversationFilter()
+
+    @Serializable
+    data object Favorites : ConversationFilter()
+
+    @Serializable
+    data object Groups : ConversationFilter()
+
+    @Serializable
+    data object OneOnOne : ConversationFilter()
+
+    @Serializable
+    data object Channels : ConversationFilter()
+
+    @Serializable
+    data class Folder(val folderName: String, val folderId: String) : ConversationFilter()
 }

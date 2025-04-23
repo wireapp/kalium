@@ -20,20 +20,21 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.mapLeft
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -133,7 +134,7 @@ internal class EI2EIClientProviderImpl(
                 handle = selfUser.handle!!,
                 teamId = selfUser.teamId?.value,
                 expiry = defaultE2EIExpiry,
-                defaultCipherSuite = defaultCipherSuite.tag.toUShort()
+                defaultCipherSuite = defaultCipherSuite.toCrypto()
             )
             e2EIClient = newE2EIClient
             Either.Right(newE2EIClient)
@@ -141,10 +142,14 @@ internal class EI2EIClientProviderImpl(
     }
 
     private suspend fun getSelfUserInfo(): Either<E2EIFailure, SelfUser> {
-        val selfUser = userRepository.getSelfUser() ?: return E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
-        return if (selfUser.name == null || selfUser.handle == null)
-            E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
-        else selfUser.right()
+        return userRepository.getSelfUser()
+            .mapLeft { E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound) }
+            .flatMap { selfUser ->
+                if (selfUser.name == null || selfUser.handle == null)
+                    E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
+                else selfUser.right()
+            }
+
     }
 
     override suspend fun nuke() {

@@ -17,14 +17,14 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery

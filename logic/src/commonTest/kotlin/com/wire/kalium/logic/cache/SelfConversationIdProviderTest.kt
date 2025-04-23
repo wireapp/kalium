@@ -18,11 +18,11 @@
 
 package com.wire.kalium.logic.cache
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -92,6 +92,7 @@ class SelfConversationIdProviderTest {
     }
 
     private class Arrangement {
+
         val clientRepository = mock(ClientRepository::class)
         val proteusSelfConversationIdProvider = mock(ProteusSelfConversationIdProvider::class)
         val mlsSelfConversationIdProvider = mock(MLSSelfConversationIdProvider::class)

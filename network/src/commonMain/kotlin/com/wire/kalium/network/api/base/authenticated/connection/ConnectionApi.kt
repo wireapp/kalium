@@ -27,8 +27,8 @@ import io.mockative.Mockable
 
 @Mockable
 interface ConnectionApi {
-
     suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse>
     suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO>
     suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<ConnectionDTO>
+    suspend fun userConnectionInfo(userId: UserId): NetworkResponse<ConnectionDTO>
 }

@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -41,6 +41,7 @@ class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
     }
 
     class Arrangement {
+
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() = this to MarkTeamAppLockStatusAsNotifiedUseCaseImpl(

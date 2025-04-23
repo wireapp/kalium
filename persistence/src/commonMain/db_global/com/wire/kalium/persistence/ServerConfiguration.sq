@@ -28,12 +28,15 @@ insert:
 INSERT OR FAIL INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxyHost, apiProxyNeedsAuthentication, apiProxyPort)
 VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?);
 
-updateApiVersion:
-UPDATE ServerConfiguration SET commonApiVersion = ? WHERE id = ?;
+updateServerMetaData:
+UPDATE ServerConfiguration SET federation = ?, commonApiVersion = ? WHERE id = ?;
 
 /** this function will be used when a config get updated from v0 where domain can be null */
 updateApiVersionAndDomain:
 UPDATE ServerConfiguration SET commonApiVersion = ?, domain = ? WHERE id = ?;
+
+getCommonApiVersionByDomain:
+SELECT commonApiVersion FROM ServerConfiguration WHERE domain = ?;
 
 updateLastBlackListCheckByIds:
 UPDATE ServerConfiguration SET lastBlackListCheck = ? WHERE id IN ?;
@@ -52,6 +55,9 @@ SELECT * FROM ServerConfiguration WHERE title = ? AND apiBaseUrl = ? AND webSock
 
 getByUser:
 SELECT * FROM ServerConfiguration WHERE id = (SELECT server_config_id FROM Accounts WHERE id = :userId);
+
+getTeamUrlByUser:
+SELECT teamsUrl FROM ServerConfiguration WHERE id = (SELECT server_config_id FROM Accounts WHERE id = :userId);
 
 getServerConfigsWithAccIdWithLastCheckBeforeDate:
 SELECT sc.*, acc.id

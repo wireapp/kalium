@@ -19,7 +19,7 @@ package com.wire.kalium.logic.util.arrangement
 
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -34,7 +34,7 @@ internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGrou
     override val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator =
         mock(NewGroupConversationSystemMessagesCreator::class)
 
-        val persistMessage = mock(PersistMessageUseCase::class)
+    val persistMessage = mock(PersistMessageUseCase::class)
 
     override suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
         coEvery {

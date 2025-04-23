@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -34,7 +34,7 @@ class SyncExceptionHandlerTest {
         val exception = CancellationException()
         val (arrangement, syncExceptionHandler) = Arrangement().arrange()
 
-        syncExceptionHandler.handleException(currentCoroutineContext(), exception)
+        syncExceptionHandler.handleException(exception)
 
         assertEquals(1, arrangement.onCancellationCalledCount)
     }
@@ -44,7 +44,7 @@ class SyncExceptionHandlerTest {
         val exception = CancellationException()
         val (arrangement, syncExceptionHandler) = Arrangement().arrange()
 
-        syncExceptionHandler.handleException(currentCoroutineContext(), exception)
+        syncExceptionHandler.handleException(exception)
 
         assertEquals(0, arrangement.onFailureCalledCount)
     }
@@ -54,7 +54,7 @@ class SyncExceptionHandlerTest {
         val exception = IOException()
         val (arrangement, syncExceptionHandler) = Arrangement().arrange()
 
-        syncExceptionHandler.handleException(currentCoroutineContext(), exception)
+        syncExceptionHandler.handleException(exception)
 
         assertEquals(0, arrangement.onCancellationCalledCount)
     }
@@ -64,7 +64,7 @@ class SyncExceptionHandlerTest {
         val exception = IOException()
         val (arrangement, syncExceptionHandler) = Arrangement().arrange()
 
-        syncExceptionHandler.handleException(currentCoroutineContext(), exception)
+        syncExceptionHandler.handleException(exception)
 
         assertEquals(1, arrangement.onFailureCalledCount)
     }
@@ -75,7 +75,7 @@ class SyncExceptionHandlerTest {
         val exception = KaliumSyncException("Oops", coreFailure)
         val (arrangement, syncExceptionHandler) = Arrangement().arrange()
 
-        syncExceptionHandler.handleException(currentCoroutineContext(), exception)
+        syncExceptionHandler.handleException(exception)
 
         assertContains(arrangement.onFailureCalledArguments, coreFailure)
     }
@@ -85,7 +85,7 @@ class SyncExceptionHandlerTest {
         val exception = IOException()
         val (arrangement, syncExceptionHandler) = Arrangement().arrange()
 
-        syncExceptionHandler.handleException(currentCoroutineContext(), exception)
+        syncExceptionHandler.handleException(exception)
 
         assertContains(arrangement.onFailureCalledArguments, CoreFailure.Unknown(exception))
     }

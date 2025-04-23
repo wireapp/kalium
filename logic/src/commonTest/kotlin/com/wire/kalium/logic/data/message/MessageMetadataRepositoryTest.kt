@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.arrangement.dao.MessageMetadataDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MessageMetadataDAOArrangementImpl

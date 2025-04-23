@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
@@ -115,7 +115,8 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
 
 
     private class Arrangement {
-                val featureSupport = mock(FeatureSupport::class)
+
+        val featureSupport = mock(FeatureSupport::class)
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
         val userConfigRepository = mock(UserConfigRepository::class)
 

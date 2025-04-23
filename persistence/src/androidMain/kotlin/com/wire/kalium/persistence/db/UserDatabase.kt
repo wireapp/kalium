@@ -51,7 +51,13 @@ actual fun userDatabaseBuilder(
     ) {
         isWALEnabled = enableWAL
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, isEncryptionEnabled)
+    return UserDatabaseBuilder(
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = platformDatabaseData,
+        isEncrypted = isEncryptionEnabled,
+    )
 }
 
 actual fun userDatabaseDriverByPath(
@@ -118,3 +124,15 @@ internal actual fun getDatabaseAbsoluteFileLocation(
         null
     }
 }
+
+internal actual fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+): String? =
+    (FileNameUtil.userDBName(userId)).let { fileName ->
+        platformDatabaseData.context.getDatabasePath(fileName).let {
+            it.delete()
+            it.createNewFile()
+            it.absolutePath
+        }
+    }

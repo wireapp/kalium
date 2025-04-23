@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -26,12 +26,12 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.authenticated.conversation.SubconversationMember
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
 import io.mockative.Mockable
 
 /**
@@ -73,7 +73,7 @@ internal class LeaveSubconversationUseCaseImpl(
             subconversationRepository.getSubconversationInfo(conversationId, subconversationId)?.let {
                 Either.Right(it)
             } ?: wrapApiRequest { conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi()) }.flatMap {
-                if (it.members.contains(SubconversationMember(selfClientId.value, selfUserId.value, selfUserId.domain))) {
+                if (it.members.contains(SubconversationMemberDTO(selfClientId.value, selfUserId.value, selfUserId.domain))) {
                     Either.Right(GroupID(it.groupId))
                 } else {
                     Either.Right(null)

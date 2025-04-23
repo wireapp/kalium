@@ -74,8 +74,8 @@ class CallMapperTest {
         val oneOnOneMap = callMapper.toConversationType(conversationType = ConversationEntity.Type.ONE_ON_ONE)
         val conferenceMap = callMapper.toConversationType(conversationType = ConversationEntity.Type.GROUP)
 
-        assertEquals(Conversation.Type.ONE_ON_ONE, oneOnOneMap)
-        assertEquals(Conversation.Type.GROUP, conferenceMap)
+        assertEquals(Conversation.Type.OneOnOne, oneOnOneMap)
+        assertEquals(Conversation.Type.Group.Regular, conferenceMap)
     }
 
     @Test
@@ -132,7 +132,7 @@ class CallMapperTest {
             conversationId = TestCall.CONVERSATION_ID,
             id = TestCall.DATABASE_ID,
             status = CallStatus.ESTABLISHED,
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerId = TestCall.CALLER_ID,
             type = ConversationTypeForCall.OneOnOne
         )

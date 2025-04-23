@@ -17,14 +17,14 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.notification.LocalNotification
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -34,9 +34,9 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface MessageRepositoryArrangement {
-        val messageRepository: MessageRepository
 
-        val systemMessageInserter: SystemMessageInserter
+    val messageRepository: MessageRepository
+    val systemMessageInserter: SystemMessageInserter
 
     suspend fun withGetMessageById(
         result: Either<StorageFailure, Message>,
@@ -66,8 +66,8 @@ internal interface MessageRepositoryArrangement {
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
-        override val messageRepository: MessageRepository = mock(MessageRepository::class)
 
+    override val messageRepository: MessageRepository = mock(MessageRepository::class)
     override val systemMessageInserter = mock(SystemMessageInserter::class)
 
     override suspend fun withGetMessageById(

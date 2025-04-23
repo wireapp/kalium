@@ -17,13 +17,15 @@
  */
 package com.wire.kalium.logic.feature.team
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
@@ -32,8 +34,6 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,14 +42,10 @@ class SyncSelfTeamUseCaseTest {
     @Test
     fun givenSelfUserDoesNotHaveValidTeam_whenSyncingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
         // given
-        val selfUserFlow = flowOf(
-            TestUser.SELF.copy(
-                teamId = null
-            )
-        )
+        val selfUser = TestUser.SELF.copy(teamId = null).right()
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
-            .withSelfUser(selfUserFlow)
+            .withSelfUser(selfUser)
             .witFetchAllTeamMembersEagerly(200)
             .arrange()
 
@@ -69,45 +65,46 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    fun givenSelfUserHasValidTeamAndFetchAllTeamMembersEagerlyIsTrue_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
-        // given
-        val selfUserFlow = flowOf(TestUser.SELF)
+    fun givenSelfUserHasValidTeamAndFetchAllTeamMembersEagerlyIsTrue_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() =
+        runTest {
+            // given
+            val selfUser = TestUser.SELF.right()
 
-        val (arrangement, syncSelfTeamUseCase) = Arrangement()
-            .withSelfUser(selfUserFlow)
-            .witFetchAllTeamMembersEagerly(200)
-            .withTeam()
-            .withTeamMembers()
-            .withServicesSync()
-            .arrange()
+            val (arrangement, syncSelfTeamUseCase) = Arrangement()
+                .withSelfUser(selfUser)
+                .witFetchAllTeamMembersEagerly(200)
+                .withTeam()
+                .withTeamMembers()
+                .withServicesSync()
+                .arrange()
 
-        // when
-        syncSelfTeamUseCase.invoke()
+            // when
+            syncSelfTeamUseCase.invoke()
 
-        // then
-        coVerify {
-            arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.teamRepository.fetchMembersByTeamId(
-                eq(TestUser.SELF.teamId!!),
-                eq(TestUser.SELF.id.domain),
-                any(),
-                any()
-            )
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
-        }.wasInvoked(exactly = once)
-    }
+            // then
+            coVerify {
+                arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.teamRepository.fetchMembersByTeamId(
+                    eq(TestUser.SELF.teamId!!),
+                    eq(TestUser.SELF.id.domain),
+                    any(),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
+            }.wasInvoked(exactly = once)
+        }
 
     @Test
     fun givenFetchingTeamInfoReturnsAnError_whenSyncingSelfTeam_thenServicesAreNotSynced() = runTest {
         // given
-        val selfUserFlow = flowOf(TestUser.SELF)
+        val selfUser = TestUser.SELF.right()
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
-            .withSelfUser(selfUserFlow)
+            .withSelfUser(selfUser)
             .witFetchAllTeamMembersEagerly(null)
             .withFailingTeamInfo()
             .arrange()
@@ -138,10 +135,10 @@ class SyncSelfTeamUseCaseTest {
     @Test
     fun givenServicesReturnAccessDenied_whenSyncingSelfTeam_thenServicesAreIgnoredButUseCaseSucceeds() = runTest {
         // given
-        val selfUserFlow = flowOf(TestUser.SELF)
+        val selfUser = TestUser.SELF.right()
 
         val (_, syncSelfTeamUseCase) = Arrangement()
-            .withSelfUser(selfUserFlow)
+            .withSelfUser(selfUser)
             .witFetchAllTeamMembersEagerly(null)
             .withTeam()
             .withTeamMembers()
@@ -158,10 +155,10 @@ class SyncSelfTeamUseCaseTest {
     @Test
     fun givenSelfUserHasValidTeamAndFetchLimitIsNull_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
         // given
-        val selfUserFlow = flowOf(TestUser.SELF)
+        val selfUser = TestUser.SELF.right()
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
-            .withSelfUser(selfUserFlow)
+            .withSelfUser(selfUser)
             .witFetchAllTeamMembersEagerly(null)
             .withTeamMembers()
             .withTeam()
@@ -195,10 +192,10 @@ class SyncSelfTeamUseCaseTest {
             fetchTeamMemberLimit = result
         }
 
-        suspend fun withSelfUser(selfUserFlow: Flow<SelfUser>) = apply {
+        suspend fun withSelfUser(result: Either<StorageFailure, SelfUser>) = apply {
             coEvery {
-                userRepository.observeSelfUser()
-            }.returns(selfUserFlow)
+                userRepository.getSelfUser()
+            }.returns(result)
         }
 
         suspend fun withTeam() = apply {

@@ -17,12 +17,11 @@
  */
 package com.wire.kalium.logic.util.arrangement
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.Either
-import io.mockative.any
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -31,7 +30,8 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface MessageSenderArrangement {
-        val messageSender: MessageSender
+
+    val messageSender: MessageSender
 
     suspend fun withSendMessageSucceed(
         message: Matcher<Message.Sendable> = AnyMatcher(valueOf()),
@@ -46,7 +46,8 @@ internal interface MessageSenderArrangement {
 }
 
 internal open class MessageSenderArrangementImpl : MessageSenderArrangement {
-        override val messageSender: MessageSender = mock(MessageSender::class)
+
+    override val messageSender: MessageSender = mock(MessageSender::class)
 
     override suspend fun withSendMessageSucceed(
         message: Matcher<Message.Sendable>,

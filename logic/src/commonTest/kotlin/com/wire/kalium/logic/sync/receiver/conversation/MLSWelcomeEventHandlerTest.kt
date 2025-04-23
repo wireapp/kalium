@@ -17,24 +17,25 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.WelcomeBundle
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -260,6 +261,9 @@ class MLSWelcomeEventHandlerTest {
         val checkRevocationList: RevocationListChecker = mock(RevocationListChecker::class)
         val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
+        @Mock
+        val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
+
         suspend fun withMLSClientProviderReturningMLSClient() = apply {
             coEvery {
                 mlsClientProvider.getMLSClient(any())
@@ -290,6 +294,12 @@ class MLSWelcomeEventHandlerTest {
             }.returns(result)
         }
 
+        suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                joinExistingMLSConversation(conversationId = any())
+            }.returns(result)
+        }
+
         suspend fun arrange() = run {
             withMLSClientProviderReturningMLSClient()
             block()
@@ -299,7 +309,8 @@ class MLSWelcomeEventHandlerTest {
                 oneOnOneResolver = oneOnOneResolver,
                 refillKeyPackages = refillKeyPackagesUseCase,
                 revocationListChecker = checkRevocationList,
-                certificateRevocationListRepository = certificateRevocationListRepository
+                certificateRevocationListRepository = certificateRevocationListRepository,
+                joinExistingMLSConversation = joinExistingMLSConversation
             )
         }
     }

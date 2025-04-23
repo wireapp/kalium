@@ -75,3 +75,15 @@ kotlin {
         }
     }
 }
+
+android {
+    defaultConfig {
+        ndk {
+            abiFilters.apply {
+                add("armeabi-v7a")
+                add("arm64-v8a")
+                add("x86_64")
+            }
+        }
+    }
+}

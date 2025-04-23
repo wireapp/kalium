@@ -38,6 +38,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
 /**
@@ -163,11 +165,14 @@ data class Conversation(
         (it.contains(AccessRole.SERVICE))
     }
 
-    enum class Type {
-        SELF,
-        ONE_ON_ONE,
-        GROUP,
-        CONNECTION_PENDING
+    sealed interface Type {
+        data object Self : Type
+        data object OneOnOne : Type
+        data object ConnectionPending : Type
+        sealed class Group : Type {
+            data object Regular : Group()
+            data object Channel : Group()
+        }
     }
 
     enum class AccessRole {
@@ -199,7 +204,7 @@ data class Conversation(
     enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED, UNKNOWN }
 
     val supportsUnreadMessageCount
-        get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
+        get() = type is Type.OneOnOne || type is Type.Group
 
     sealed interface ProtocolInfo {
         data object Proteus : ProtocolInfo {
@@ -258,11 +263,23 @@ data class Conversation(
         fun toLogMap(): Map<String, Any?>
     }
 
-    data class Member(val id: UserId, val role: Role) {
+    @Serializable
+    data class Member(
+        @SerialName("id") val id: UserId,
+        @SerialName("role") val role: Role
+    ) {
+
+        @Serializable
         sealed class Role {
+
+            @Serializable
             data object Member : Role()
+
+            @Serializable
             data object Admin : Role()
-            data class Unknown(val name: String) : Role()
+
+            @Serializable
+            data class Unknown(@SerialName("name") val name: String) : Role()
 
             override fun toString(): String =
                 when (this) {
@@ -283,26 +300,76 @@ data class Conversation(
     }
 }
 
-sealed class ConversationDetails(open val conversation: Conversation) {
+data class ConversationDetailsWithEvents(
+    val conversationDetails: ConversationDetails,
+    val unreadEventCount: UnreadEventCount = emptyMap(),
+    val lastMessage: MessagePreview? = null,
+    val hasNewActivitiesToShow: Boolean = false,
+)
 
-    data class Team(override val conversation: Conversation) : ConversationDetails(conversation)
+sealed interface ConversationDetails {
+    val conversation: Conversation
 
-    data class Self(override val conversation: Conversation) : ConversationDetails(conversation)
+    data class Team(override val conversation: Conversation) : ConversationDetails
+
+    data class Self(override val conversation: Conversation) : ConversationDetails
 
     data class OneOne(
         override val conversation: Conversation,
         val otherUser: OtherUser,
         val userType: UserType,
-    ) : ConversationDetails(conversation)
+        val isFavorite: Boolean = false,
+        val folder: ConversationFolder? = null
+    ) : ConversationDetails
 
-    data class Group(
-        override val conversation: Conversation,
-        val hasOngoingCall: Boolean = false,
-        val isSelfUserMember: Boolean,
-        val isSelfUserCreator: Boolean,
+    sealed interface Group : ConversationDetails {
+        val hasOngoingCall: Boolean
+        val isSelfUserMember: Boolean
         val selfRole: Conversation.Member.Role?
+        val isFavorite: Boolean
+        val folder: ConversationFolder?
+        val wireCell: String?
 //         val isTeamAdmin: Boolean, TODO kubaz
-    ) : ConversationDetails(conversation)
+
+        data class Regular(
+            override val conversation: Conversation,
+            override val hasOngoingCall: Boolean = false,
+            override val isSelfUserMember: Boolean,
+            override val selfRole: Conversation.Member.Role?,
+            override val isFavorite: Boolean = false,
+            override val folder: ConversationFolder? = null,
+            override val wireCell: String? = null,
+//         val isTeamAdmin: Boolean, TODO kubaz
+        ) : Group
+
+        data class Channel(
+            override val conversation: Conversation,
+            override val hasOngoingCall: Boolean = false,
+            override val isSelfUserMember: Boolean,
+            override val selfRole: Conversation.Member.Role?,
+            override val isFavorite: Boolean = false,
+            override val folder: ConversationFolder? = null,
+            override val wireCell: String? = null,
+            // TODO: Add channel-specific fields
+//         val isTeamAdmin: Boolean, TODO kubaz
+            val access: ChannelAccess,
+            val permission: ChannelAddPermission
+        ) : Group {
+            /**
+             * An enum class that defines the permissions for adding participants to a channel,
+             * specifying who is authorized to do so.
+             */
+            enum class ChannelAccess {
+                PUBLIC,
+                PRIVATE
+            }
+
+            enum class ChannelAddPermission {
+                ADMINS,
+                EVERYONE
+            }
+        }
+    }
 
     data class Connection(
         val conversationId: ConversationId,
@@ -313,39 +380,33 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val protocolInfo: ProtocolInfo,
         val access: List<Access>,
         val accessRole: List<AccessRole>
-    ) : ConversationDetails(
-        Conversation(
-            id = conversationId,
-            name = otherUser?.name,
-            type = Type.CONNECTION_PENDING,
-            teamId = otherUser?.teamId,
-            protocol = protocolInfo,
-            mutedStatus = MutedConversationStatus.AllAllowed,
-            removedBy = null,
-            lastNotificationDate = null,
-            lastModifiedDate = lastModifiedDate,
-            lastReadDate = Instant.DISTANT_PAST,
-            access = access,
-            accessRole = accessRole,
-            creatorId = null,
-            receiptMode = ReceiptMode.DISABLED,
-            messageTimer = null,
-            userMessageTimer = null,
-            archived = false,
-            archivedDateTime = null,
-            mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
-        )
-    )
+    ) : ConversationDetails {
+        override val conversation: Conversation
+            get() = Conversation(
+                id = conversationId,
+                name = otherUser?.name,
+                type = Type.ConnectionPending,
+                teamId = otherUser?.teamId,
+                protocol = protocolInfo,
+                mutedStatus = MutedConversationStatus.AllAllowed,
+                removedBy = null,
+                lastNotificationDate = null,
+                lastModifiedDate = lastModifiedDate,
+                lastReadDate = Instant.DISTANT_PAST,
+                access = access,
+                accessRole = accessRole,
+                creatorId = null,
+                receiptMode = ReceiptMode.DISABLED,
+                messageTimer = null,
+                userMessageTimer = null,
+                archived = false,
+                archivedDateTime = null,
+                mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+                proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+                legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+            )
+    }
 }
-
-data class ConversationDetailsWithEvents(
-    val conversationDetails: ConversationDetails,
-    val unreadEventCount: UnreadEventCount = emptyMap(),
-    val lastMessage: MessagePreview? = null,
-    val hasNewActivitiesToShow: Boolean = false,
-)
 
 fun ConversationDetails.interactionAvailability(): InteractionAvailability {
     val availability = when (this) {

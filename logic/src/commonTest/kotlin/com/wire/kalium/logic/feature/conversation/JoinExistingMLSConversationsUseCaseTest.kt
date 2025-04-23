@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -31,9 +31,11 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
@@ -128,6 +130,26 @@ class JoinExistingMLSConversationsUseCaseTest {
         }.wasInvoked(twice)
     }
 
+    @Test
+    fun givenServerMiscommunicationWithInvalidRequestError_WhenJoiningMLSConversation_ThenSkipConversation() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful()
+            .withJoinExistingMLSConversationReturningServerMiscommunication()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+        }.wasInvoked(twice)
+
+        coVerify {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement {
         val featureSupport = mock(FeatureSupport::class)
         val clientRepository = mock(ClientRepository::class)
@@ -182,6 +204,20 @@ class JoinExistingMLSConversationsUseCaseTest {
             coEvery {
                 clientRepository.hasRegisteredMLSClient()
             }.returns(Either.Right(result))
+        }
+
+        suspend fun withJoinExistingMLSConversationReturningServerMiscommunication() = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(any(), any())
+            }.returns(
+                Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(
+                            errorResponse = ErrorResponse(400, "Invalid LeafNode signature", "mls-protocol-error")
+                        )
+                    )
+                )
+            )
         }
 
         companion object {

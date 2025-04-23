@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -41,20 +41,22 @@ import com.wire.kalium.logic.data.user.ConnectionState.SENT
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isBadConnectionStatusUpdate
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -126,19 +128,33 @@ internal class ConnectionDataSource(
         return wrapApiRequest {
             connectionApi.createConnection(userId.toApi())
         }.flatMap { connection ->
-            val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
-            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionSent))
+            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connection))
         }.map { }
     }
 
-    private suspend fun updateRemoteConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, ConnectionDTO> {
+    suspend fun updateRemoteConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, ConnectionDTO> {
         val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!isValidConnectionState || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
 
-        return wrapApiRequest { connectionApi.updateConnection(userId.toApi(), newConnectionStatus) }
+        return wrapApiRequest {
+            connectionApi.updateConnection(userId.toApi(), newConnectionStatus)
+        }.onFailure { networkFailure ->
+            if (networkFailure is NetworkFailure.ServerMiscommunication &&
+                networkFailure.kaliumException is KaliumException.InvalidRequestError &&
+                (networkFailure.kaliumException as KaliumException.InvalidRequestError).isBadConnectionStatusUpdate()
+            ) {
+                kaliumLogger.e(
+                    "Failed to update connection status for ${userId.toLogString()}" +
+                            " to $connectionState, probably due to internal data error recovering"
+                )
+                wrapApiRequest { connectionApi.userConnectionInfo(userId.toApi()) }.flatMap {
+                    persistConnection(connectionMapper.fromApiToModel(it))
+                }
+            }
+        }
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> =
@@ -152,15 +168,18 @@ internal class ConnectionDataSource(
     override suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit> =
         updateRemoteConnectionStatus(userId, IGNORED)
             .flatMapLeft {
-                if (it is NetworkFailure.FederatedBackendFailure.FailedDomains)
-                    wrapStorageRequest { connectionDAO.getConnectionByUser(userId.toDao()) }
-                        .map { connectionEntity ->
-                            val updatedConnection = connectionMapper.fromDaoToModel(connectionEntity).copy(status = IGNORED)
-                            handleUserConnectionStatusPersistence(updatedConnection)
-                        }
-                else it.left()
+                if (it is NetworkFailure.FederatedBackendFailure.FailedDomains) Either.Right(Unit) else it.left()
             }
-            .map { Unit }
+            .onSuccess {
+                setConnectionStatus(userId, IGNORED)
+            }.map { Unit }
+
+    private suspend fun setConnectionStatus(userId: UserId, status: ConnectionState): Either<CoreFailure, Unit> =
+        wrapStorageRequest { connectionDAO.getConnectionByUser(userId.toDao()) }
+            .map { connectionEntity ->
+                val updatedConnection = connectionMapper.fromDaoToModel(connectionEntity).copy(status = status)
+                handleUserConnectionStatusPersistence(updatedConnection)
+            }
 
     /**
      * Check if we can transition to the correct connection status
@@ -250,7 +269,11 @@ internal class ConnectionDataSource(
                         archivedInstant = null,
                         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+                        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                        isChannel = false,
+                        channelAccess = null,
+                        channelAddPermission = null,
+                        wireCell = null,
                     )
                 )
             }
@@ -275,7 +298,7 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun getConnection(conversationId: ConversationId) = wrapStorageRequest {
-            connectionDAO.getConnection(conversationId.toDao())?.let { connectionMapper.fromDaoToConversationDetails(it) }
+        connectionDAO.getConnection(conversationId.toDao())?.let { connectionMapper.fromDaoToConversationDetails(it) }
     }
 
     /**

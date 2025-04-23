@@ -18,11 +18,12 @@
 package com.wire.kalium.logic.data.message
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.persistence.dao.message.LocalId
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -45,6 +46,8 @@ internal interface SystemMessageInserter {
     )
 
     suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit>
+
+    suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId)
 }
 
 internal class SystemMessageInserterImpl(
@@ -118,5 +121,20 @@ internal class SystemMessageInserterImpl(
             expirationData = null
         )
         return persistMessage(mlsEpochWarningMessage)
+    }
+
+    override suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId) {
+        persistMessage(
+            Message.System(
+                id = LocalId.generate(),
+                content = MessageContent.ConversationStartedUnverifiedWarning,
+                conversationId = conversationId,
+                date = Clock.System.now(),
+                senderUserId = selfUserId,
+                status = Message.Status.Sent,
+                visibility = Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+        )
     }
 }

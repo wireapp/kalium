@@ -19,8 +19,13 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -42,16 +47,15 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
@@ -60,27 +64,31 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRename
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -99,7 +107,6 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.EqualsMatcher
@@ -179,6 +186,40 @@ class ConversationRepositoryTest {
                         }
                     )
                 }.wasInvoked(exactly = once)
+            }
+        }
+
+    @Test
+    fun givenNewMLSConversationEvent_whenMLSIsDisabled_thenConversationShouldNotPersisted() =
+        runTest {
+            val event = Event.Conversation.NewConversation(
+                "id",
+                TestConversation.ID,
+                TestUser.SELF.id,
+                Instant.UNIX_FIRST_DATE,
+                CONVERSATION_RESPONSE.copy(
+                    groupId = RAW_GROUP_ID,
+                    protocol = MLS,
+                    mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
+                )
+            )
+            val selfUserFlow = flowOf(TestUser.SELF)
+            val (arrangement, conversationRepository) = Arrangement()
+                .withSelfUserFlow(selfUserFlow)
+                .withDisabledMlsClientProvider()
+                .withHasEstablishedMLSGroup(true)
+                .arrange()
+
+            conversationRepository.persistConversation(event.conversation, "teamId")
+
+            with(arrangement) {
+                coVerify {
+                    conversationDAO.insertConversation(
+                        matches { conversation ->
+                            conversation.id.value == CONVERSATION_RESPONSE.id.value
+                        }
+                    )
+                }.wasNotInvoked()
             }
         }
 
@@ -383,7 +424,7 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversation() =
+    fun givenUserHasKnownContactAndConversation_WhenGettingConversationByExistingConversation_ReturnTheCorrectConversation() =
         runTest {
             // given
             val (_, conversationRepository) = Arrangement()
@@ -394,6 +435,25 @@ class ConversationRepositoryTest {
 
             // when
             conversationRepository.observeOneToOneConversationWithOtherUser(OTHER_USER_ID).test {
+                val result = awaitItem()
+                // then
+                assertIs<Either.Right<ConversationDetails.OneOne>>(result)
+                awaitComplete()
+            }
+        }
+
+    @Test
+    fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversationDetails() =
+        runTest {
+            // given
+            val (_, conversationRepository) = Arrangement()
+                .withSelfUserFlow(flowOf(TestUser.SELF))
+                .withExpectedConversationDetailsWithOtherUser(TestConversation.VIEW_ONE_ON_ONE.copy(otherUserId = OTHER_USER_ID.toDao()))
+                .withExpectedOtherKnownUser(TestUser.OTHER)
+                .arrange()
+
+            // when
+            conversationRepository.observeOneToOneConversationDetailsWithOtherUser(OTHER_USER_ID).test {
                 val result = awaitItem()
                 // then
                 assertIs<Either.Right<ConversationDetails.OneOne>>(result)
@@ -1382,6 +1442,75 @@ class ConversationRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAPIError_whenUpdateChannelAddPermissionIsCalled_thenDoNothing() = runTest {
+        val error = NetworkResponse.Error(TestNetworkException.generic)
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateChannelAddPermissionRemotelyReturning(error)
+            .arrange()
+
+        val result = conversationRepository.updateChannelAddPermission(
+            CONVERSATION_ID,
+            ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
+        )
+
+        coVerify {
+            arrange.conversationDAO.updateChannelAddPermission(any(), any())
+        }.wasNotInvoked()
+        assertTrue { result.isLeft() }
+    }
+
+    @Test
+    fun givenPermissionUnchanged_whenUpdateChannelAddPermissionIsCalled_thenDoNothing() = runTest {
+        val permissionUnchanged =
+            NetworkResponse.Success(value = UpdateChannelAddPermissionResponse.PermissionUnchanged, mapOf(), HttpStatusCode.OK.value)
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateChannelAddPermissionRemotelyReturning(permissionUnchanged)
+            .arrange()
+
+        val result = conversationRepository.updateChannelAddPermission(
+            CONVERSATION_ID,
+            ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
+        )
+
+        coVerify {
+            arrange.conversationDAO.updateChannelAddPermission(any(), any())
+        }.wasNotInvoked()
+        assertTrue { result.isRight() }
+    }
+
+    @Test
+    fun givenPermissionChanged_whenUpdateChannelAddPermissionIsCalled_thenUpdateStateLocally() = runTest {
+        val permissionUpdated = NetworkResponse.Success(
+            value = UpdateChannelAddPermissionResponse.PermissionUpdated(
+                EventContentDTO.Conversation.ChannelAddPermissionUpdate(
+                    "conversationId",
+                    com.wire.kalium.network.api.model.ConversationId("conversationId", "domain"),
+                    ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.ADMINS),
+                    from = "userId",
+                    qualifiedFrom = com.wire.kalium.network.api.model.UserId("from_id", "from_domain"),
+                    time = Clock.System.now()
+                )
+            ), mapOf(), HttpStatusCode.OK.value
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateChannelAddPermissionRemotelyReturning(permissionUpdated)
+            .arrange()
+
+        val result = conversationRepository.updateChannelAddPermission(
+            CONVERSATION_ID,
+            ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
+        )
+
+        coVerify {
+            arrange.conversationDAO.updateChannelAddPermission(any(), any())
+        }.wasInvoked(exactly = once)
+        assertTrue { result.isRight() }
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1396,6 +1525,7 @@ class ConversationRepositoryTest {
         private val messageDAO = mock(MessageDAO::class)
         private val messageDraftDAO = mock(MessageDraftDAO::class)
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
+        val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
         val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
 
         val conversationRepository =
@@ -1410,7 +1540,8 @@ class ConversationRepositoryTest {
                 messageDraftDAO,
                 clientDao,
                 clientApi,
-                conversationMetaDataDAO
+                conversationMetaDataDAO,
+                metadataDAO
             )
 
 
@@ -1435,7 +1566,7 @@ class ConversationRepositoryTest {
         suspend fun withSelfUser(selfUser: SelfUser) = apply {
             coEvery {
                 userRepository.getSelfUser()
-            }.returns(selfUser)
+            }.returns(selfUser.right())
         }
 
         suspend fun withFetchConversationsDetails(response: NetworkResponse<ConversationResponse>) = apply {
@@ -1465,6 +1596,12 @@ class ConversationRepositoryTest {
             }.returns(flowOf(conversation))
         }
 
+        suspend fun withExpectedConversationDetailsWithOtherUser(conversation: ConversationViewEntity?) = apply {
+            coEvery {
+                conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(any())
+            }.returns(flowOf(conversation))
+        }
+
         suspend fun withUpdateConversationMemberStateResult(response: NetworkResponse<Unit>) = apply {
             coEvery {
                 conversationApi.updateConversationMemberState(any(), any())
@@ -1491,7 +1628,7 @@ class ConversationRepositoryTest {
 
         suspend fun withConversations(conversations: List<ConversationViewEntity>) = apply {
             coEvery {
-                conversationDAO.getAllConversationDetails(any())
+                conversationDAO.getAllConversationDetails(any(), any())
             }.returns(flowOf(conversations))
         }
 
@@ -1693,6 +1830,12 @@ class ConversationRepositoryTest {
             }.returns(flowOf(true))
         }
 
+        suspend fun withUpdateChannelAddPermissionRemotelyReturning(result: NetworkResponse<UpdateChannelAddPermissionResponse>) = apply {
+            coEvery {
+                conversationApi.updateChannelAddPermission(any(), any())
+            }.returns(result)
+        }
+
         suspend fun withUpdateLegalHoldStatus(updated: Boolean) = apply {
             coEvery {
                 conversationDAO.updateLegalHoldStatus(any(), any())
@@ -1703,6 +1846,12 @@ class ConversationRepositoryTest {
             coEvery {
                 conversationDAO.updateLegalHoldStatusChangeNotified(any(), any())
             }.returns(updated)
+        }
+
+        suspend fun withDisabledMlsClientProvider() = apply {
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Left(MLSFailure.Disabled))
         }
 
         suspend fun arrange() = this to conversationRepository.also {

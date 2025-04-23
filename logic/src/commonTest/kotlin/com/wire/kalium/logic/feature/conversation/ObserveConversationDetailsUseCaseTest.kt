@@ -19,12 +19,12 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -76,18 +76,16 @@ class ObserveConversationDetailsUseCaseTest {
             val conversation = TestConversation.GROUP()
             val conversationDetailsValues = listOf(
                 Either.Right(
-                    ConversationDetails.Group(
+                    ConversationDetails.Group.Regular(
                         conversation,
                         isSelfUserMember = true,
-                        isSelfUserCreator = true,
                         selfRole = Conversation.Member.Role.Member
                     )
                 ),
                 Either.Right(
-                    ConversationDetails.Group(
+                    ConversationDetails.Group.Regular(
                         conversation.copy(name = "New Name"),
                         isSelfUserMember = true,
-                        isSelfUserCreator = true,
                         selfRole = Conversation.Member.Role.Member
                     )
                 )

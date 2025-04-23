@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.user
 
@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -45,6 +46,8 @@ import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
+import com.wire.kalium.logic.feature.auth.PersistSelfUserEmailUseCase
+import com.wire.kalium.logic.feature.auth.PersistSelfUserEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
@@ -67,11 +70,14 @@ import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCase
+import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
+import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
@@ -81,7 +87,9 @@ import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicator
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCase
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.MetadataDAO
+import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
 class UserScope internal constructor(
@@ -109,18 +117,31 @@ class UserScope internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val sessionManager: SessionManager,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
-    private val userScopedLogger: KaliumLogger
+    private val userScopedLogger: KaliumLogger,
+    private val teamUrlUseCase: GetTeamUrlUseCase,
+    private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
+    val observeSelfUser: ObserveSelfUserUseCase get() = ObserveSelfUserUseCaseImpl(userRepository)
     val getSelfUserWithTeam: ObserveSelfUserWithTeamUseCase get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
+    val persistSelfUserEmail: PersistSelfUserEmailUseCase get() = PersistSelfUserEmailUseCaseImpl(userRepository)
 
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
+    val enrollE2EI: EnrollE2EIUseCase
+        get() = EnrollE2EIUseCaseImpl(
+            e2EIRepository = e2EIRepository,
+            userRepository = userRepository,
+            coroutineScope = userCoroutineScope,
+            conversationRepository = conversationRepository,
+        )
+    val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 
     val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
         get() = FinalizeMLSClientAfterE2EIEnrollmentImpl(
@@ -208,19 +229,27 @@ class UserScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase get() =
-        SyncCertificateRevocationListUseCase(
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            incrementalSyncRepository = incrementalSyncRepository,
-            revocationListChecker = checkRevocationList,
-            kaliumLogger = userScopedLogger,
-        )
+    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase
+        get() =
+            SyncCertificateRevocationListUseCase(
+                certificateRevocationListRepository = certificateRevocationListRepository,
+                incrementalSyncRepository = incrementalSyncRepository,
+                revocationListChecker = checkRevocationList,
+                kaliumLogger = userScopedLogger,
+            )
 
     val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
         FeatureFlagSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
             syncFeatureConfigs = syncFeatureConfigs,
             kaliumLogger = userScopedLogger,
+        )
+    }
+    val isPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase by lazy {
+        CanMigrateFromPersonalToTeamUseCaseImpl(
+            sessionManager = sessionManager,
+            serverConfigRepository = serverConfigRepository,
+            selfTeamIdProvider = selfTeamIdProvider
         )
     }
 }

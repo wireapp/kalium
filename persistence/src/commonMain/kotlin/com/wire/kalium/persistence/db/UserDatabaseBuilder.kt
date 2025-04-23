@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
+import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
 import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -58,6 +59,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -67,7 +70,11 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -82,6 +89,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -110,13 +118,14 @@ internal expect fun userDatabaseDriverByPath(
     enableWAL: Boolean
 ): SqlDriver
 
+@Suppress("LongParameterList")
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     internal val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -157,7 +166,12 @@ class UserDatabaseBuilder internal constructor(
         TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
         MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
-        MessageDraftAdapter = TableMapper.messageDraftsAdapter
+        MessageDraftAdapter = TableMapper.messageDraftsAdapter,
+        LastMessageAdapter = TableMapper.lastMessageAdapter,
+        LabeledConversationAdapter = TableMapper.labeledConversationAdapter,
+        ConversationFolderAdapter = TableMapper.conversationFolderAdapter,
+        MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
+        MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
     )
 
     init {
@@ -200,6 +214,12 @@ class UserDatabaseBuilder internal constructor(
             queriesContext,
         )
 
+    val conversationFolderDAO: ConversationFolderDAO
+        get() = ConversationFolderDAOImpl(
+            database.conversationFoldersQueries,
+            queriesContext
+        )
+
     private val conversationMembersCache =
         FlowCache<ConversationIDEntity, List<MemberEntity>>(databaseScope)
 
@@ -238,12 +258,19 @@ class UserDatabaseBuilder internal constructor(
     val databaseExporter: DatabaseExporter
         get() = DatabaseExporterImpl(userId, platformDatabaseData, this)
 
+    val obfuscatedCopyExporter: ObfuscatedCopyExporter
+        get() = ObfuscatedCopyExporter(userId, platformDatabaseData, this)
+
+    val databaseOptimizer: DatabaseOptimizer
+        get() = DatabaseOptimizer(this)
+
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
 
     val messageDAO: MessageDAO
         get() = MessageDAOImpl(
             database.messagesQueries,
+            database.messageAttachmentsQueries,
             database.messageAssetViewQueries,
             database.notificationQueries,
             database.conversationsQueries,
@@ -251,6 +278,7 @@ class UserDatabaseBuilder internal constructor(
             database.messagePreviewQueries,
             userId,
             database.reactionsQueries,
+            database.usersQueries,
             queriesContext,
             database.messageAssetTransferStatusQueries,
             database.buttonContentQueries
@@ -285,6 +313,7 @@ class UserDatabaseBuilder internal constructor(
         get() = MigrationDAOImpl(
             database.migrationQueries,
             database.messagesQueries,
+            database.messageAttachmentsQueries,
             database.unreadEventsQueries,
             database.conversationsQueries,
             database.buttonContentQueries,
@@ -298,6 +327,19 @@ class UserDatabaseBuilder internal constructor(
         get() = ConversationMetaDataDAOImpl(
             database.conversationsQueries,
             queriesContext
+        )
+
+    val messageAttachmentDraftDao: MessageAttachmentDraftDao
+        get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries)
+
+    val messageAttachments: MessageAttachmentsDao
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries)
+
+    val debugExtension: DebugExtension
+        get() = DebugExtension(
+            sqlDriver = sqlDriver,
+            metaDataDao = metadataDAO,
+            isEncrypted = isEncrypted,
         )
 
     /**
@@ -325,6 +367,11 @@ internal expect fun getDatabaseAbsoluteFileLocation(
     userId: UserIDEntity
 ): String?
 
+internal expect fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+): String?
+
 @Suppress("TooGenericExceptionCaught")
 fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
     val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
@@ -338,6 +385,8 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
             sqlSchema.migrate(this, oldVersion, newVersion)
         }
         true
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         false
     }

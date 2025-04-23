@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.network
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -27,7 +28,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.SessionDTO
@@ -59,7 +61,7 @@ class SessionManagerTest {
         }
 
         assertFailsWith<FailureToRefreshTokenException> {
-            sessionManager.updateToken(arrangement.accessTokenApi, "egal", "egal")
+            sessionManager.updateToken(arrangement.accessTokenApi, "egal")
         }
     }
 
@@ -92,15 +94,43 @@ class SessionManagerTest {
             withTokenRefresherResult(Either.Right(TEST_ACCOUNT_TOKENS))
         }
 
-        val accessToken = "egal"
         val refreshToken = "refreshToken"
-        sessionManager.updateToken(arrangement.accessTokenApi, accessToken, refreshToken)
+        sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
 
         coVerify {
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(eq(refreshToken), any())
+        }.wasInvoked()
+    }
 
-            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(eq(accessToken), eq(refreshToken))
-
+    @Test
+    fun givenCurrentClientId_whenUpdatingToken_thenItShouldCallTokenRefresherWithCurrentClientId() = runTest {
+        val currentClientId = ClientId("currentClientId")
+        val (arrangement, sessionManager) = arrange {
+            currentClientIdResponse = Either.Right(currentClientId)
+            withTokenRefresherResult(Either.Right(TEST_ACCOUNT_TOKENS))
         }
+
+        val refreshToken = "refreshToken"
+        sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
+
+        coVerify {
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(any(), eq(currentClientId))
+        }.wasInvoked()
+    }
+
+    @Test
+    fun givenNoCurrentClientId_whenUpdatingToken_thenItShouldCallTokenRefresherWithNullClientId() = runTest {
+        val (arrangement, sessionManager) = arrange {
+            currentClientIdResponse = Either.Left(StorageFailure.DataNotFound)
+            withTokenRefresherResult(Either.Right(TEST_ACCOUNT_TOKENS))
+        }
+
+        val refreshToken = "refreshToken"
+        sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
+
+        coVerify {
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(refreshToken, null)
+        }.wasInvoked()
     }
 
     @Test
@@ -162,12 +192,15 @@ class SessionManagerTest {
 
         private val sessionMapper = MapperProvider.sessionMapper()
 
+        var currentClientIdResponse: Either<CoreFailure, ClientId> = Either.Right(ClientId("testClientId"))
+
         suspend fun arrange(): Pair<Arrangement, SessionManager> = run {
             configure()
             this@Arrangement to SessionManagerImpl(
                 sessionRepository = sessionRepository,
                 accessTokenRefresherFactory = accessTokenRefresherFactory,
                 userId = userId,
+                currentClientIdProvider = { currentClientIdResponse },
                 tokenStorage = tokenStorage,
                 logout = logout,
                 serverConfigMapper = serverConfigMapper,

@@ -91,5 +91,8 @@ interface KeyPackageApi {
      *
      * @return unclaimed key package count
      */
-    suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO>
+    suspend fun getAvailableKeyPackageCount(
+        clientId: String,
+        cipherSuite: Int,
+    ): NetworkResponse<KeyPackageCountDTO>
 }

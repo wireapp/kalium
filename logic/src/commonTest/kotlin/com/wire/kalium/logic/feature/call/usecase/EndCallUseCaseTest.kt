@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCaseResult
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangementImpl
@@ -68,7 +69,9 @@ class EndCallUseCaseTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(
+                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+            )
         }.wasInvoked(once)
     }
 
@@ -76,7 +79,7 @@ class EndCallUseCaseTest {
     fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STILL_ONGOING,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -99,7 +102,9 @@ class EndCallUseCaseTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(
+                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+            )
         }.wasInvoked(once)
     }
 
@@ -107,7 +112,7 @@ class EndCallUseCaseTest {
     fun givenStartedOutgoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STARTED,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -130,7 +135,9 @@ class EndCallUseCaseTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(
+                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+            )
         }.wasInvoked(once)
     }
 
@@ -138,7 +145,7 @@ class EndCallUseCaseTest {
     fun givenIncomingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.INCOMING,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -161,7 +168,9 @@ class EndCallUseCaseTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(
+                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+            )
         }.wasInvoked(once)
     }
 
@@ -191,7 +200,9 @@ class EndCallUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.endCallResultListener.onCallEndedAskForFeedback(eq(false))
+            arrangement.endCallResultListener.onCallEndedAskForFeedback(
+                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+            )
         }.wasInvoked(once)
     }
 
@@ -216,8 +227,10 @@ class EndCallUseCaseTest {
             )
         }
 
-        suspend fun withShouldAskCallFeedback(should: Boolean = false) {
-            coEvery { shouldAskCallFeedback.invoke() }.returns(should)
+        suspend fun withShouldAskCallFeedback(
+            result: ShouldAskCallFeedbackUseCaseResult = ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100)
+        ) {
+            coEvery { shouldAskCallFeedback.invoke(any(), any()) }.returns(result)
         }
 
         suspend fun withOnCallEndedAskForFeedback() {
@@ -235,7 +248,7 @@ class EndCallUseCaseTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = null,
             callerTeamName = null,
             establishedTime = null

@@ -81,3 +81,11 @@ AND assetMimeType NOT IN :mimeTypes
 AND assetId IS NOT NULL
 AND expireAfterMillis IS NULL
 ORDER BY date DESC;
+
+getAllAssetMessagesByConversationId:
+SELECT assetId FROM MessageAssetView
+WHERE conversationId = :conversationId
+AND contentType IN :contentTypes
+AND assetId IS NOT NULL
+AND dataPath IS NOT NULL
+ORDER BY date DESC;

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.functional
 
 import app.cash.turbine.test
+import com.wire.kalium.common.functional.flatMapFromIterable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest

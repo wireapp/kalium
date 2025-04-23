@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.types.Uint32_t
-import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
@@ -29,10 +28,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
+import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
@@ -48,9 +49,9 @@ import org.junit.Test
 
 class OnCloseCallTest {
 
-        val callRepository = mock(CallRepository::class)
-
-        val networkStateObserver = mock(NetworkStateObserver::class)
+    val callRepository = mock(CallRepository::class)
+    val networkStateObserver = mock(NetworkStateObserver::class)
+    val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
 
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
@@ -66,7 +67,8 @@ class OnCloseCallTest {
             callRepository,
             testScope,
             qualifiedIdMapper,
-            networkStateObserver
+            networkStateObserver,
+            createAndPersistRecentlyEndedCallMetadata
         )
 
         every {
@@ -168,7 +170,7 @@ class OnCloseCallTest {
         testScope.runTest {
             val incomingCall = callMetadata.copy(
                 callStatus = CallStatus.INCOMING,
-                conversationType = Conversation.Type.GROUP
+                conversationType = Conversation.Type.Group.Regular
             )
 
             every {
@@ -205,7 +207,7 @@ class OnCloseCallTest {
         testScope.runTest {
             val closedInternallyCall = callMetadata.copy(
                 callStatus = CallStatus.CLOSED_INTERNALLY,
-                conversationType = Conversation.Type.GROUP
+                conversationType = Conversation.Type.Group.Regular
             )
 
             every {
@@ -243,7 +245,7 @@ class OnCloseCallTest {
             val establishedCall = callMetadata.copy(
                 callStatus = CallStatus.ESTABLISHED,
                 establishedTime = "time",
-                conversationType = Conversation.Type.GROUP
+                conversationType = Conversation.Type.Group.Regular
             )
 
             every {
@@ -335,6 +337,26 @@ class OnCloseCallTest {
             }.wasNotInvoked()
         }
 
+    @Test
+    fun givenClosedCall_whenOnCloseCallInvoked_thenCreateAndPersistRecentlyEndedCallIsInvoked() =
+        testScope.runTest {
+            val reason = CallClosedReason.CANCELLED.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                createAndPersistRecentlyEndedCallMetadata(any(), any())
+            }.wasInvoked(once)
+        }
+
     companion object {
         private val conversationId = ConversationId("conversationId", "wire.com")
         private const val conversationIdString = "conversationId@wire.com"
@@ -347,7 +369,7 @@ class OnCloseCallTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = null,
             callerTeamName = null,
             establishedTime = null,

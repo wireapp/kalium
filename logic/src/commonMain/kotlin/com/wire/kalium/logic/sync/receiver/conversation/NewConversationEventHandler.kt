@@ -28,13 +28,13 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -61,10 +61,17 @@ internal class NewConversationEventHandlerImpl(
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(selfUserTeamId, event)
                     .flatMap {
-                        conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
+                        conversationRepository.updateConversationModifiedDate(
+                            event.conversationId,
+                            DateTimeUtil.currentInstant()
+                        )
                     }
                     .flatMap {
-                        userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
+                        userRepository.fetchUsersIfUnknownByIds(
+                            event.conversation.members.otherMembers.map {
+                                it.id.toModel()
+                            }.toSet()
+                        )
                     }
                     .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
@@ -75,9 +82,13 @@ internal class NewConversationEventHandlerImpl(
             }
     }
 
-    private suspend fun resolveConversationIfOneOnOne(selfUserTeamId: TeamId?, event: Event.Conversation.NewConversation) =
+    private suspend fun resolveConversationIfOneOnOne(
+        selfUserTeamId: TeamId?,
+        event: Event.Conversation.NewConversation
+    ) =
         if (event.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
-            val otherUserId = event.conversation.members.otherMembers.first().id.toModel()
+            val otherUserId =
+                event.conversation.members.otherMembers.first().id.toModel()
             oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                 userId = otherUserId,
                 invalidateCurrentKnownProtocols = true
@@ -96,15 +107,22 @@ internal class NewConversationEventHandlerImpl(
         event: Event.Conversation.NewConversation
     ) {
         if (isNewUnhandledConversation) {
-            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation, event.dateTime)
+            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                event.conversation.id.toModel(),
+                event.dateTime
+            )
+            newGroupConversationSystemMessagesCreator.conversationStarted(
+                event.senderUserId,
+                event.conversation,
+                event.dateTime
+            )
             newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 event.conversationId.toDao(),
                 event.conversation.members.otherMembers.map { it.id.toModel() },
                 event.dateTime
             )
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation, event.dateTime)
-            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                event.conversation.id.toModel(),
+            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
+                event.conversation,
                 event.dateTime
             )
         }

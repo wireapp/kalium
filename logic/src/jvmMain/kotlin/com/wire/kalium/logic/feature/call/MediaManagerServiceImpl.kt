@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow

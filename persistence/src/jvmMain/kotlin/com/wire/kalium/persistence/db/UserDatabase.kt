@@ -86,6 +86,11 @@ internal actual fun getDatabaseAbsoluteFileLocation(
     return if (dbFile.exists()) dbFile.absolutePath else null
 }
 
+internal actual fun createEmptyDatabaseFile(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+): String? = TODO()
+
 /**
  * Creates an in-memory user database,
  * or returns an existing one if it already exists.

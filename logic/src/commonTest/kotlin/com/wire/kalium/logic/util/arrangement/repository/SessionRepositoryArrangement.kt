@@ -17,24 +17,26 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
 
 internal interface SessionRepositoryArrangement {
-        val sessionRepository: SessionRepository
+
+    val sessionRepository: SessionRepository
 
     suspend fun withIsFederated(result: Either<StorageFailure, Boolean>, userId: Matcher<UserId>)
 
 }
 
 internal class SessionRepositoryArrangementImpl : SessionRepositoryArrangement {
-        override val sessionRepository: SessionRepository = mock(SessionRepository::class)
+
+    override val sessionRepository: SessionRepository = mock(SessionRepository::class)
     override suspend fun withIsFederated(result: Either<StorageFailure, Boolean>, userId: Matcher<UserId>) {
         coEvery {
             sessionRepository.isFederated(matches { userId.matches(it) })

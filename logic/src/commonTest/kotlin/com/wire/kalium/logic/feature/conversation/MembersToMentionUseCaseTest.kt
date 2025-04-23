@@ -43,7 +43,7 @@ import kotlin.test.assertEquals
 
 class MembersToMentionUseCaseTest {
 
-        private val userRepository: UserRepository = mock(UserRepository::class)
+        private val selfUserId = SELF_USER.id
 
         private val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
 
@@ -51,10 +51,7 @@ class MembersToMentionUseCaseTest {
 
     @BeforeTest
     fun setup() = runBlocking {
-        membersToMention = MembersToMentionUseCase(observeConversationMembers, userRepository, TestKaliumDispatcher)
-        coEvery {
-            userRepository.getSelfUser()
-        }.returns(SELF_USER)
+        membersToMention = MembersToMentionUseCase(observeConversationMembers, selfUserId = selfUserId, TestKaliumDispatcher)
         coEvery {
             observeConversationMembers.invoke(any())
         }.returns(flowOf(members))

@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.data.auth.verification
 
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 
 class FakeSecondFactorVerificationRepository(
     private val requestVerificationCodeResponse: Either<NetworkFailure, Unit> = Either.Right(Unit)

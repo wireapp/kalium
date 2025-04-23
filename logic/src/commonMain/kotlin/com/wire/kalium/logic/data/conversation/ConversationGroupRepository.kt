@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.MLSFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -35,26 +35,26 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapNullableFlowStorageRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ServiceAddedResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationHasNoCode
@@ -143,10 +143,16 @@ internal class ConversationGroupRepositoryImpl(
                     lastUsersAttempt = lastUsersAttempt
                 )
 
-                is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
+                is Either.Right -> handleGroupConversationCreated(
+                    conversationResponse = apiResult.value,
+                    selfTeamId = selfTeamId,
+                    usersList = usersList,
+                    lastUsersAttempt = lastUsersAttempt
+                )
             }
         }
 
+    @Suppress("LongMethod")
     private suspend fun handleGroupConversationCreated(
         conversationResponse: ConversationResponse,
         selfTeamId: TeamId?,
@@ -154,13 +160,17 @@ internal class ConversationGroupRepositoryImpl(
         lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> {
         val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
+            apiModel = conversationResponse,
+            mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION,
+            selfUserTeamId = selfTeamId,
         )
         val mlsPublicKeys = conversationMapper.fromApiModel(conversationResponse.publicKeys)
         val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
 
         return wrapStorageRequest {
             conversationDAO.insertConversation(conversationEntity)
+        }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(conversationEntity.id.toModel())
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
         }.flatMap {
@@ -194,12 +204,6 @@ internal class ConversationGroupRepositoryImpl(
                             conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
                         )
                 }
-            }
-        }.flatMap {
-            wrapStorageRequest {
-                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                    conversationEntity.id.toModel()
-                )
             }
         }.onSuccess {
             legalHoldHandler.handleConversationMembersChanged(conversationEntity.id.toModel())
@@ -441,7 +445,7 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId
     ) = if (apiResult.value is ConversationMemberAddedResponse.Changed) {
         memberJoinEventHandler.handle(
-            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event)
+            eventMapper.conversationMemberJoin(LocalId.generate(), (apiResult.value as ConversationMemberAddedResponse.Changed).event)
         ).flatMap {
             if (lastUsersAttempt is LastUsersAttempt.Failed && lastUsersAttempt.failedUsers.isNotEmpty()) {
                 newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
@@ -495,13 +499,8 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.Proteus ->
                         deleteMemberFromCloudAndStorage(userId, conversationId)
 
-                    is ConversationEntity.ProtocolInfo.Mixed ->
-                        deleteMemberFromCloudAndStorage(userId, conversationId)
-                            .flatMap { deleteMemberFromMlsGroup(userId, conversationId, protocol) }
-
-                    is ConversationEntity.ProtocolInfo.MLS -> {
+                    is ConversationEntity.ProtocolInfo.MLSCapable ->
                         deleteMemberFromMlsGroup(userId, conversationId, protocol)
-                    }
                 }
             }
 
@@ -549,15 +548,24 @@ internal class ConversationGroupRepositoryImpl(
         userId: UserId,
         conversationId: ConversationId,
         protocol: ConversationEntity.ProtocolInfo.MLSCapable
-    ) =
-        if (userId == selfUserId) {
-            deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
-                mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))
+    ) = when (protocol) {
+        is ConversationEntity.ProtocolInfo.MLS -> {
+            if (userId == selfUserId) {
+                deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                    mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))
+                }
+            } else {
+                // when removing a member from an MLS group, don't need to call the api
+                mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
             }
-        } else {
-            // when removing a member from an MLS group, don't need to call the api
-            mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
         }
+
+        is ConversationEntity.ProtocolInfo.Mixed -> {
+            deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
+            }
+        }
+    }
 
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
         wrapApiRequest {
@@ -617,7 +625,7 @@ internal class ConversationGroupRepositoryImpl(
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&
-                it.kaliumException.isConversationHasNoCode()
+                (it.kaliumException as KaliumException.InvalidRequestError).isConversationHasNoCode()
             ) {
                 wrapStorageRequest {
                     conversationDAO.deleteGuestRoomLink(conversationId.toDao())

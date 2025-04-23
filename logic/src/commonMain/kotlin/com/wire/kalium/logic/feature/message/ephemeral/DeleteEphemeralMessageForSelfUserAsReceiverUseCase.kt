@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.message.ephemeral
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -31,12 +31,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.data.message.MessageTarget
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
@@ -62,7 +63,8 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
-    private val selfConversationIdProvider: SelfConversationIdProvider
+    private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val syncManager: SyncManager,
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
@@ -80,6 +82,11 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                                     conversationId,
                                     currentClientId
                                 ).flatMap {
+
+                                    // Wait until the sync is complete to avoid sending message with
+                                    // potentially invalid epoch
+                                    syncManager.waitUntilLive()
+
                                     sendDeleteMessageToOriginalSender(
                                         message.id,
                                         message.conversationId,

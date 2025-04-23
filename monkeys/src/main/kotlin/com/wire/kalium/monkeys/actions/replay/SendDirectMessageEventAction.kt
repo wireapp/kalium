@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.monkeys.actions.replay
 
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.monkeys.actions.SendMessageAction
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation

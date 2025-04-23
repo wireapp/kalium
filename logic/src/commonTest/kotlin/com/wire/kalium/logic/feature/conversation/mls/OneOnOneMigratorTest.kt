@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement
@@ -36,12 +36,17 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.every
+import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -134,6 +139,10 @@ class OneOnOneMigratorTest {
         }.wasNotInvoked()
 
         coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
+        }.wasNotInvoked()
+
+        coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasNotInvoked()
     }
@@ -177,6 +186,10 @@ class OneOnOneMigratorTest {
         }.wasNotInvoked()
 
         coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
+        }.wasNotInvoked()
+
+        coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasNotInvoked()
     }
@@ -190,8 +203,10 @@ class OneOnOneMigratorTest {
         val (_, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(TestConversation.ID))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
+            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = TestConversation.ID))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Left(failure))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
         oneOnOneMigrator.migrateToMLS(user)
@@ -210,8 +225,10 @@ class OneOnOneMigratorTest {
         val (arrangement, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(resolvedConversationId))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversationId)))
+            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = originalConversationId))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
         oneOnOneMigrator.migrateToMLS(user)
@@ -219,6 +236,10 @@ class OneOnOneMigratorTest {
 
         coVerify {
             arrangement.messageRepository.moveMessagesToAnotherConversation(eq(originalConversationId), eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(eq(resolvedConversationId))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -236,8 +257,10 @@ class OneOnOneMigratorTest {
         val (arrangement, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(resolvedConversationId))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversationId)))
+            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = originalConversationId))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
         oneOnOneMigrator.migrateToMLS(user)
@@ -248,7 +271,59 @@ class OneOnOneMigratorTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProteusConversation_whenMigratingToMLS_thenUpdateLastModifiedDateFromOriginalConversation() = runTest {
+        val lastModified = DateTimeUtil.currentInstant()
+        val originalConversation = TestConversation.CONVERSATION.copy(
+            id = ConversationId("someRandomConversationId", "testDomain"),
+            lastModifiedDate = lastModified
+        )
+        val resolvedConversationId = ConversationId("resolvedMLSConversationId", "anotherDomain")
+        val user = TestUser.OTHER.copy(activeOneOnOneConversationId = originalConversation.id)
+        val (arrangement, oneOnOneMigrator) = arrange {
+            withResolveConversationReturning(Either.Right(resolvedConversationId))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversation.id)))
+            withGetConversationByIdReturning(originalConversation)
+            withMoveMessagesToAnotherConversation(Either.Right(Unit))
+            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+        }
+
+        oneOnOneMigrator.migrateToMLS(user)
+            .shouldSucceed()
+
+        coVerify {
+            arrangement.conversationRepository.updateConversationModifiedDate(eq(resolvedConversationId), eq(lastModified))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNoProteusConversation_whenMigratingToMLS_thenUpdateLastModifiedDateToBeCurrentDate() = runTest {
+        val resolvedConversationId = ConversationId("resolvedMLSConversationId", "anotherDomain")
+        val lastModified = DateTimeUtil.currentInstant()
+        val user = TestUser.OTHER.copy(activeOneOnOneConversationId = null)
+        val (arrangement, oneOnOneMigrator) = arrange {
+            withResolveConversationReturning(Either.Right(resolvedConversationId))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf()))
+            withMoveMessagesToAnotherConversation(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+            withCurrentInstant(lastModified)
+        }
+
+        oneOnOneMigrator.migrateToMLS(user)
+            .shouldSucceed()
+
+        coVerify {
+            arrangement.conversationRepository.updateConversationModifiedDate(eq(resolvedConversationId), eq(lastModified))
         }.wasInvoked(exactly = once)
     }
 
@@ -258,6 +333,20 @@ class OneOnOneMigratorTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+
+        @Mock
+        val currentInstantProvider: CurrentInstantProvider = mock(CurrentInstantProvider::class)
+
+        fun withCurrentInstant(currentInstant: Instant) {
+            every {
+                currentInstantProvider()
+            }.returns(currentInstant)
+        }
+
+        init {
+            withCurrentInstant(DateTimeUtil.currentInstant())
+        }
+
         fun arrange() = run {
             runBlocking { block() }
             this@Arrangement to OneOnOneMigratorImpl(
@@ -266,7 +355,8 @@ class OneOnOneMigratorTest {
                 conversationRepository = conversationRepository,
                 messageRepository = messageRepository,
                 userRepository = userRepository,
-                systemMessageInserter = systemMessageInserter
+                systemMessageInserter = systemMessageInserter,
+                currentInstant = currentInstantProvider,
             )
         }
     }

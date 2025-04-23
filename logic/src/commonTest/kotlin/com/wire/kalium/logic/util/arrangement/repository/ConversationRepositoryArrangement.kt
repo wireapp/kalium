@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -59,7 +59,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement
     suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangement
     suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangement
-    suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangement
+    suspend fun withConversationByMLSGroupId(result: Either<StorageFailure, Conversation>): ConversationRepositoryArrangement
     suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
     suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
     suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
@@ -110,6 +110,11 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
     suspend fun withPersistMembers(result: Either<StorageFailure, Unit>)
     suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>)
+    suspend fun withAddConversationToDeleteQueue()
+    suspend fun withRemoveConversationToDeleteQueue()
+    suspend fun withGetConversationsDeleteQueue(result: List<ConversationId>)
+    suspend fun withClearContentSucceeding()
+    suspend fun withGetConversationMembers(result: List<UserId>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -176,9 +181,9 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>) = apply {
+    override suspend fun withConversationByMLSGroupId(result: Either<StorageFailure, Conversation>) = apply {
         coEvery {
-            conversationRepository.getConversationDetailsByMLSGroupId(any())
+            conversationRepository.getConversationByMLSGroupId(any())
         }.returns(result)
     }
 
@@ -269,5 +274,25 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
 
     override suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
         coEvery { conversationRepository.selectMembersNameAndHandle(any()) }.returns(result)
+    }
+
+    override suspend fun withAddConversationToDeleteQueue() {
+        coEvery { conversationRepository.addConversationToDeleteQueue(any()) }.returns(Unit)
+    }
+
+    override suspend fun withRemoveConversationToDeleteQueue() {
+        coEvery { conversationRepository.removeConversationFromDeleteQueue(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetConversationsDeleteQueue(result: List<ConversationId>) {
+        coEvery { conversationRepository.getConversationsDeleteQueue() }.returns(result)
+    }
+
+    override suspend fun withClearContentSucceeding() {
+        coEvery { conversationRepository.clearContent(any()) }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withGetConversationMembers(result: List<UserId>) {
+        coEvery { conversationRepository.getConversationMembers(any()) }.returns(Either.Right(result))
     }
 }

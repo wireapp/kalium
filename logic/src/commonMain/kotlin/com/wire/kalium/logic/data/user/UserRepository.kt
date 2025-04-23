@@ -18,11 +18,23 @@
 
 package com.wire.kalium.logic.data.user
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
@@ -44,26 +56,14 @@ import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
@@ -72,41 +72,30 @@ import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mockable
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlin.time.Duration.Companion.minutes
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface UserRepository {
+interface UserRepository : SelfUserObservationProvider {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
+    suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
     /**
      * Fetches user information for all of users id stored in the DB
      */
     suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
-    suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
-    suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
-    suspend fun getSelfUser(): SelfUser?
+    suspend fun getSelfUser(): Either<StorageFailure, SelfUser>
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): Either<StorageFailure, OtherUserMinimized>
@@ -166,15 +155,18 @@ interface UserRepository {
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
     suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
     suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
+    suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam>
+    suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit>
+    suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class UserDataSource internal constructor(
     private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
+    private val upgradePersonalToTeamApi: UpgradePersonalToTeamApi,
     private val teamsApi: TeamsApi,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
@@ -187,14 +179,6 @@ internal class UserDataSource internal constructor(
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
 ) : UserRepository {
-
-    /**
-     * Stores the last time a user's details were fetched from remote.
-     *
-     * @see Event.User.Update
-     * @see USER_DETAILS_MAX_AGE
-     */
-    private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { selfUserDTO ->
@@ -217,12 +201,13 @@ internal class UserDataSource internal constructor(
                     }
                     .flatMap { userEntity ->
                         wrapStorageRequest { userDAO.upsertUser(userEntity) }
-                            .flatMap {
-                                wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
-                            }
                     }
             }
         }
+
+    override suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(selfUserId.toDao(), email)
+    }
 
     private suspend fun updateSelfUserProviderAccountInfo(userDTO: SelfUserDTO): Either<StorageFailure, Unit> =
         sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
@@ -231,10 +216,6 @@ internal class UserDataSource internal constructor(
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
                 userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
-            }.onEach { otherUser ->
-                if (otherUser != null) {
-                    refreshUserDetailsIfNeeded(userId)
-                }
             }
 
     override suspend fun getUsersWithOneOnOneConversation(): List<OtherUser> {
@@ -242,29 +223,9 @@ internal class UserDataSource internal constructor(
             .map(userMapper::fromUserEntityToOtherUser)
     }
 
-    /**
-     * Only refresh user profiles if it wasn't fetched recently.
-     *
-     * @see userDetailsRefreshInstantCache
-     * @see USER_DETAILS_MAX_AGE
-     */
-    private suspend fun refreshUserDetailsIfNeeded(userId: UserId): Either<CoreFailure, Unit> {
-        val now = DateTimeUtil.currentInstant()
-        val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
-        return if (!wasFetchedRecently) {
-            when (userId) {
-                selfUserId -> fetchSelfUser()
-                else -> fetchUserInfo(userId)
-            }.also {
-                kaliumLogger.d("Refreshing user info from API after $USER_DETAILS_MAX_AGE")
-                userDetailsRefreshInstantCache[userId] = now
-            }
-        } else Either.Right(Unit)
-    }
-
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
-        return fetchUsersByIds(ids)
+        return fetchUsersByIds(ids).map { }
     }
 
     override suspend fun fetchUserInfo(userId: UserId) =
@@ -283,7 +244,7 @@ internal class UserDataSource internal constructor(
         } else {
             qualifiedUserIdList
                 .chunked(BATCH_SIZE)
-                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
+                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, usersDTO ->
                     wrapApiRequest {
                         kaliumLogger.d("Fetching ${chunk.size} users")
                         userDetailsApi.getMultipleUsers(
@@ -291,9 +252,9 @@ internal class UserDataSource internal constructor(
                         )
                     }.map {
                         kaliumLogger.d("Found ${it.usersFound.size} users and ${it.usersFailed.size} failed users")
-                        acc.copy(
-                            usersFound = (acc.usersFound + it.usersFound).distinct(),
-                            usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
+                        usersDTO.copy(
+                            usersFound = (usersDTO.usersFound + it.usersFound).distinct(),
+                            usersFailed = (usersDTO.usersFailed + it.usersFailed).distinct(),
                         )
                     }
                 }
@@ -326,8 +287,8 @@ internal class UserDataSource internal constructor(
                 }
         }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
-        fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean> =
+        fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { it.usersFound.isNotEmpty() }
 
     private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
@@ -409,43 +370,17 @@ internal class UserDataSource internal constructor(
         qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it && !userEntity.name.isNullOrBlank() } }
     }.flatMap { missingIds ->
         if (missingIds.isEmpty()) Either.Right(Unit)
-        else fetchUsersByIds(missingIds.map { it.toModel() }.toSet())
+        else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun observeSelfUser(): Flow<SelfUser> {
-        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
-            // If the self user is not in the database, proactively fetch it.
-            if (it == null) {
-                val logPrefix = "Observing self user before insertion"
-                kaliumLogger.w("$logPrefix: Triggering a fetch.")
-                fetchSelfUser().fold({ failure ->
-                    kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
-                }, {
-                    kaliumLogger.i("$logPrefix: Succeeded")
-                    userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
-                })
-            } else {
-                refreshUserDetailsIfNeeded(selfUserId)
-            }
-        }.filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.observeUserDetailsByQualifiedID(selfUserID)
-                .filterNotNull()
-                .map(userMapper::fromUserDetailsEntityToSelfUser)
-        }
-    }
+    override suspend fun observeSelfUser(): Flow<SelfUser> = userDAO.observeUserDetailsByQualifiedID(selfUserId.toDao()).filterNotNull()
+        .map(userMapper::fromUserDetailsEntityToSelfUser)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
-        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserDetailsWithTeamByQualifiedID(selfUserID)
-                .filterNotNull()
-                .map { (user, team) ->
-                    userMapper.fromUserDetailsEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
-                }
-        }
+        return userDAO.getUserDetailsWithTeamByQualifiedID(selfUserId.toDao()).filterNotNull()
+            .map { (user, team) ->
+                userMapper.fromUserDetailsEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
+            }
     }
 
     @Deprecated(
@@ -464,9 +399,11 @@ internal class UserDataSource internal constructor(
             }.map { }
     }
 
-    // TODO: replace the flow with selfUser and cache it
-    override suspend fun getSelfUser(): SelfUser? =
-        observeSelfUser().firstOrNull()
+    override suspend fun getSelfUser(): Either<StorageFailure, SelfUser> = wrapStorageRequest {
+        userDAO.getUserDetailsByQualifiedID(selfUserId.toDao())?.let {
+            userMapper.fromUserDetailsEntityToSelfUser(it)
+        }
+    }
 
     override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
@@ -627,7 +564,7 @@ internal class UserDataSource internal constructor(
     }.flatMap { usersWithoutMetadata ->
         kaliumLogger.d("Numbers of users to refresh: ${usersWithoutMetadata.size}")
         val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
-        fetchUsersByIds(userIds)
+        fetchUsersByIds(userIds).map { }
     }
 
     override suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID) = wrapStorageRequest {
@@ -649,18 +586,28 @@ internal class UserDataSource internal constructor(
         userDAO.getNameAndHandle(userId.toDao())
     }.map { NameAndHandle.fromEntity(it) }
 
-    companion object {
-        internal const val SELF_USER_ID_KEY = "selfUserID"
+    override suspend fun migrateUserToTeam(teamName: String): Either<CoreFailure, CreateUserTeam> {
+        return wrapApiRequest { upgradePersonalToTeamApi.migrateToTeam(teamName) }.map { dto ->
+            CreateUserTeam(dto.teamId, dto.teamName)
+        }
+            .onSuccess {
+                fetchSelfUser()
+            }
+            .onFailure { failure ->
+                kaliumLogger.e("Failed to migrate user to team: $failure")
+            }
+    }
 
-        /**
-         * Maximum age for user details.
-         *
-         * The USER_DETAILS_MAX_AGE constant represents the maximum age in minutes that user details can be considered valid. After
-         * this duration, the user details should be refreshed.
-         *
-         * This is needed because some users don't get `user.update` events, so we need to refresh their details every so often.
-         */
-        internal val USER_DETAILS_MAX_AGE = 5.minutes
+    override suspend fun updateTeamId(userId: UserId, teamId: TeamId): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userDAO.updateTeamId(userId.toDao(), teamId.value)
+    }
+
+    override suspend fun isClientMlsCapable(userId: UserId, clientId: ClientId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        clientDAO.isMLSCapable(userId.toDao(), clientId.value)
+    }
+
+    companion object {
+
         internal const val BATCH_SIZE = 500
     }
 }

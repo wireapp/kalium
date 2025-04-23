@@ -30,10 +30,10 @@ import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
@@ -44,7 +44,6 @@ expect class GlobalCallManager {
     internal fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
-        userRepository: UserRepository,
         currentClientIdProvider: CurrentClientIdProvider,
         selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
@@ -57,7 +56,8 @@ expect class GlobalCallManager {
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
         networkStateObserver: NetworkStateObserver,
-        kaliumConfigs: KaliumConfigs
+        kaliumConfigs: KaliumConfigs,
+        createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
     ): CallManager
 
     suspend fun removeInMemoryCallingManagerForUser(userId: UserId)

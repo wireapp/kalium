@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation.guestroomlink
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGuestLink
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.coEvery
 import io.mockative.coVerify

@@ -17,12 +17,13 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -37,6 +38,7 @@ internal interface UserConfigRepositoryArrangement {
     fun withSetDefaultProtocolSuccessful()
     fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
     fun withSetMLSEnabledSuccessful()
+    fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>)
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
@@ -49,10 +51,12 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withDeletePreviousTrackingIdentifier()
     suspend fun withUpdateNextTimeForCallFeedback()
     suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>)
+    suspend fun withConferenceCallingEnabled(result: Boolean)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
-        override val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+
+    override val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
     override suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>) {
         coEvery {
@@ -80,6 +84,12 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         every {
             userConfigRepository.setMLSEnabled(any())
         }.returns(Either.Right(Unit))
+    }
+
+    override fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
+        every {
+            userConfigRepository.isMLSEnabled()
+        }.returns(result)
     }
 
     override suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>) {
@@ -132,5 +142,9 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withUpdateNextTimeForCallFeedback() {
         coEvery { userConfigRepository.updateNextTimeForCallFeedback(any()) }.returns(Unit)
+    }
+
+    override suspend fun withConferenceCallingEnabled(result: Boolean) {
+        every { userConfigRepository.isConferenceCallingEnabled() }.returns(result.right())
     }
 }

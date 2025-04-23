@@ -19,15 +19,14 @@
 package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.first
 
 @Mockable
 internal interface SyncSelfTeamUseCase {
@@ -40,22 +39,21 @@ internal class SyncSelfTeamUseCaseImpl(
     private val fetchedUsersLimit: Int?
 ) : SyncSelfTeamUseCase {
 
-    override suspend fun invoke(): Either<CoreFailure, Unit> {
-        val user = userRepository.observeSelfUser().first()
-
-        return user.teamId?.let { teamId ->
-            teamRepository.fetchTeamById(teamId = teamId).flatMap {
-                teamRepository.fetchMembersByTeamId(
-                    teamId = teamId,
-                    userDomain = user.id.domain,
-                    fetchedUsersLimit = fetchedUsersLimit
-                )
-            }.onSuccess {
-                teamRepository.syncServices(teamId = teamId)
+    override suspend fun invoke(): Either<CoreFailure, Unit> =
+        userRepository.getSelfUser().flatMap { selfUser ->
+            selfUser.teamId?.let { teamId ->
+                teamRepository.fetchTeamById(teamId = teamId).flatMap {
+                    teamRepository.fetchMembersByTeamId(
+                        teamId = teamId,
+                        userDomain = selfUser.id.domain,
+                        fetchedUsersLimit = fetchedUsersLimit
+                    )
+                }.onSuccess {
+                    teamRepository.syncServices(teamId = teamId)
+                }
+            } ?: run {
+                kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
+                Either.Right(Unit)
             }
-        } ?: run {
-            kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
-            Either.Right(Unit)
         }
-    }
 }

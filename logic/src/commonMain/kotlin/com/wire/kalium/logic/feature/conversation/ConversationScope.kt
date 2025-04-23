@@ -23,22 +23,24 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -48,6 +50,27 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateChannelUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
+import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
+import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
+import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCase
+import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -61,10 +84,10 @@ import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTime
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
@@ -81,11 +104,13 @@ class ConversationScope internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
+    private val conversationFolderRepository: ConversationFolderRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
@@ -93,7 +118,6 @@ class ConversationScope internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
-    private val qualifiedIdMapper: QualifiedIdMapper,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
     userPropertyRepository: UserPropertyRepository,
@@ -103,6 +127,9 @@ class ConversationScope internal constructor(
     private val kaliumLogger: KaliumLogger,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val serverConfigLinks: ServerConfig.Links,
+    internal val messageRepository: MessageRepository,
+    internal val assetRepository: AssetRepository,
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -112,20 +139,20 @@ class ConversationScope internal constructor(
     val getConversationDetails: GetConversationUseCase
         get() = GetConversationUseCase(conversationRepository)
 
-    val getOneToOneConversation: GetOneToOneConversationUseCase
-        get() = GetOneToOneConversationUseCase(conversationRepository)
+    val getOneToOneConversation: GetOneToOneConversationDetailsUseCase
+        get() = GetOneToOneConversationDetailsUseCase(conversationRepository)
 
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
     val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
-        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository)
+        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository, conversationFolderRepository, getFavoriteFolder)
 
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
 
     val getMembersToMention: MembersToMentionUseCase
-        get() = MembersToMentionUseCase(observeConversationMembers, userRepository)
+        get() = MembersToMentionUseCase(observeConversationMembers = observeConversationMembers, selfUserId = selfUserId)
 
     val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)
@@ -141,6 +168,7 @@ class ConversationScope internal constructor(
             oneOnOneResolver,
             conversationRepository,
             deleteEphemeralMessageEndDate,
+            slowSyncRepository,
             kaliumLogger
         )
 
@@ -148,13 +176,18 @@ class ConversationScope internal constructor(
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
 
     val observeConversationInteractionAvailabilityUseCase: ObserveConversationInteractionAvailabilityUseCase
-        get() = ObserveConversationInteractionAvailabilityUseCase(conversationRepository, userRepository)
+        get() = ObserveConversationInteractionAvailabilityUseCase(
+            conversationRepository,
+            selfUserId = selfUserId,
+            selfClientIdProvider = currentClientIdProvider,
+            userRepository = userRepository
+        )
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
 
-    val createGroupConversation: CreateGroupConversationUseCase
-        get() = CreateGroupConversationUseCase(
+    internal val createGroupConversation: GroupConversationCreator
+        get() = GroupConversationCreatorImpl(
             conversationRepository,
             conversationGroupRepository,
             syncManager,
@@ -163,13 +196,11 @@ class ConversationScope internal constructor(
             refreshUsersWithoutMetadata
         )
 
-    internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
-        get() = NewGroupConversationSystemMessagesCreatorImpl(
-            persistMessage,
-            selfTeamIdProvider,
-            qualifiedIdMapper,
-            selfUserId
-        )
+    val createRegularGroup: CreateRegularGroupUseCase
+        get() = CreateRegularGroupUseCaseImpl(createGroupConversation)
+
+    val createChannel: CreateChannelUseCase
+        get() = CreateChannelUseCase(createGroupConversation)
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository, refreshUsersWithoutMetadata)
@@ -245,13 +276,26 @@ class ConversationScope internal constructor(
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
 
+    val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
+        get() = ClearConversationAssetsLocallyUseCaseImpl(
+            messageRepository,
+            assetRepository
+        )
+
     val clearConversationContent: ClearConversationContentUseCase
         get() = ClearConversationContentUseCaseImpl(
             conversationRepository,
             messageSender,
             selfUserId,
             currentClientIdProvider,
-            selfConversationIdProvider
+            selfConversationIdProvider,
+            clearConversationAssetsLocally
+        )
+
+    val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
+        get() = DeleteConversationLocallyUseCaseImpl(
+            clearConversationContent,
+            conversationRepository
         )
 
     val joinConversationViaCode: JoinConversationViaCodeUseCase
@@ -343,4 +387,20 @@ class ConversationScope internal constructor(
         get() = ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
     val syncConversationCode: SyncConversationCodeUseCase
         get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
+    val observeConversationsFromFolder: ObserveConversationsFromFolderUseCase
+        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository)
+    val getFavoriteFolder: GetFavoriteFolderUseCase
+        get() = GetFavoriteFolderUseCaseImpl(conversationFolderRepository)
+    val addConversationToFavorites: AddConversationToFavoritesUseCase
+        get() = AddConversationToFavoritesUseCaseImpl(conversationFolderRepository)
+    val removeConversationFromFavorites: RemoveConversationFromFavoritesUseCase
+        get() = RemoveConversationFromFavoritesUseCaseImpl(conversationFolderRepository)
+    val observeUserFolders: ObserveUserFoldersUseCase
+        get() = ObserveUserFoldersUseCaseImpl(conversationFolderRepository)
+    val moveConversationToFolder: MoveConversationToFolderUseCase
+        get() = MoveConversationToFolderUseCaseImpl(conversationFolderRepository)
+    val removeConversationFromFolder: RemoveConversationFromFolderUseCase
+        get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
+    val createConversationFolder: CreateConversationFolderUseCase
+        get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
 }

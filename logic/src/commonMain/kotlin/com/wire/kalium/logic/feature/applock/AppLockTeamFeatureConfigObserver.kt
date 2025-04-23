@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.common.functional.nullableFold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

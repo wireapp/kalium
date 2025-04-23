@@ -18,32 +18,35 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CertificateChain
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.MLSEpochObserver
+import com.wire.kalium.cryptography.MLSTransporter
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
@@ -53,6 +56,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 @Mockable
 interface MLSClientProvider {
@@ -80,7 +84,9 @@ class MLSClientProviderImpl(
     private val passphraseStorage: PassphraseStorage,
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val mlsTransportProvider: MLSTransportProvider,
+    private val epochObserver: MLSEpochObserver,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
@@ -100,7 +106,9 @@ class MLSClientProviderImpl(
             } ?: run {
                 mlsClient(
                     cryptoUserId,
-                    currentClientId
+                    currentClientId,
+                    mlsTransportProvider,
+                    epochObserver,
                 ).map {
                     mlsClient = it
                     return@run Either.Right(it)
@@ -132,6 +140,10 @@ class MLSClientProviderImpl(
     }
 
     override suspend fun getOrFetchMLSConfig(): Either<CoreFailure, SupportedCipherSuite> {
+        if (!userConfigRepository.isMLSEnabled().getOrElse(true)) {
+            kaliumLogger.w("$TAG: Cannot fetch MLS config, MLS is disabled.")
+            return MLSFailure.Disabled.left()
+        }
         return userConfigRepository.getSupportedCipherSuite().flatMapLeft<CoreFailure, SupportedCipherSuite> {
             featureConfigRepository.getFeatureConfigs().map {
                 it.mlsModel.supportedCipherSuite
@@ -168,16 +180,16 @@ class MLSClientProviderImpl(
                 val cc = try {
                     coreCryptoCentral(
                         rootDir = "$location/$KEYSTORE_NAME",
-                        databaseKey = passphrase
+                        databaseKey = passphrase,
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-
                     val logMap = mapOf(
                         "exception" to e,
                         "message" to e.message,
                         "stackTrace" to e.stackTraceToString()
                     )
-
                     kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
                     return@run Either.Left(CoreFailure.Unknown(e))
                 }
@@ -189,15 +201,22 @@ class MLSClientProviderImpl(
 
     private suspend fun mlsClient(
         userId: CryptoUserID,
-        clientId: ClientId
+        clientId: ClientId,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver
     ): Either<CoreFailure, MLSClient> {
-        return getCoreCrypto(clientId).flatMap { cc ->
-            getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
-                cc.mlsClient(
-                    clientId = CryptoQualifiedClientId(clientId.value, userId),
-                    allowedCipherSuites = supportedCipherSuite.map { it.tag.toUShort() },
-                    defaultCipherSuite = defaultCipherSuite.tag.toUShort()
-                )
+        return withContext(dispatchers.io) {
+            getCoreCrypto(clientId).flatMap { cc ->
+                getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
+                    cc.mlsClient(
+                        clientId = CryptoQualifiedClientId(clientId.value, userId),
+                        allowedCipherSuites = supportedCipherSuite.map { it.toCrypto() },
+                        defaultCipherSuite = defaultCipherSuite.toCrypto(),
+                        mlsTransporter = mlsTransporter,
+                        epochObserver = epochObserver,
+                        coroutineScope = this
+                    )
+                }
             }
         }
     }
@@ -210,18 +229,23 @@ class MLSClientProviderImpl(
         val (_, defaultCipherSuite) = getOrFetchMLSConfig().getOrElse {
             return E2EIFailure.GettingE2EIClient(it).left()
         }
+        return withContext(dispatchers.io) {
+            getCoreCrypto(clientId).fold({
+                E2EIFailure.GettingE2EIClient(it).left()
+            }, {
+                // MLS Keypackages taken care somewhere else, here we don't need to generate any
+                it.mlsClient(
+                    enrollment = enrollment,
+                    certificateChain = certificateChain,
+                    newMLSKeyPackageCount = 0U,
+                    defaultCipherSuite = defaultCipherSuite.toCrypto(),
+                    mlsTransportProvider,
+                    epochObserver,
+                    coroutineScope = this
+                ).right()
 
-        return getCoreCrypto(clientId).fold({
-            E2EIFailure.GettingE2EIClient(it).left()
-        }, {
-            // MLS Keypackages taken care somewhere else, here we don't need to generate any
-            it.mlsClient(
-                enrollment = enrollment,
-                certificateChain = certificateChain,
-                newMLSKeyPackageCount = 0U,
-                defaultCipherSuite = defaultCipherSuite.tag.toUShort()
-            ).right()
-        })
+            })
+        }
     }
 
     private companion object {

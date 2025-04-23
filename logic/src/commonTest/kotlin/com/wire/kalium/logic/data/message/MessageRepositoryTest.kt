@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -36,8 +36,8 @@ import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
@@ -436,7 +436,7 @@ class MessageRepositoryTest {
             .withFailedToSendMlsMapping(listOfUserIds)
             .arrange()
 
-        val result = messageRepository.sendMLSMessage(conversationID, MLSMessageApi.Message(ByteArray(0)))
+        val result = messageRepository.sendMLSMessage(MLSMessageApi.Message(ByteArray(0)))
         result.shouldSucceed()
 
         assertTrue {
@@ -446,7 +446,7 @@ class MessageRepositoryTest {
         coVerify {
             arrangement.mlsMessageApi.sendMessage(
                 matches {
-                    it.value.contentToString() == ByteArray(0).contentToString()
+                    it.contentToString() == ByteArray(0).contentToString()
                 },
             )
         }.wasInvoked(exactly = once)

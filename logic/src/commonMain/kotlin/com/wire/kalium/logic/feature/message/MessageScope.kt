@@ -18,6 +18,10 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -62,6 +66,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
+import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
@@ -104,6 +109,7 @@ class MessageScope internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val attachmentsRepository: MessageAttachmentDraftRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
@@ -125,6 +131,9 @@ class MessageScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
     private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
+    private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
+    private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
+    private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -236,6 +245,25 @@ class MessageScope internal constructor(
             scope = scope
         )
 
+    val sendMultipartMessage: SendMultipartMessageUseCase
+        get() = SendMultipartMessageUseCase(
+            persistMessage = persistMessage,
+            selfUserId = selfUserId,
+            provideClientId = currentClientIdProvider,
+            assetDataSource = assetRepository,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            userPropertyRepository = userPropertyRepository,
+            conversationRepository = conversationRepository,
+            attachmentsRepository = attachmentsRepository,
+            selfDeleteTimer = observeSelfDeletingMessages,
+            publishAttachments = publishAttachmentsUseCase,
+            removeAttachmentDrafts = removeAttachmentDraftsUseCase,
+            sendAssetMessage = sendAssetMessage,
+            scope = scope
+        )
+
     val sendEditTextMessage: SendEditTextMessageUseCase
         get() = SendEditTextMessageUseCase(
             messageRepository,
@@ -255,7 +283,10 @@ class MessageScope internal constructor(
         get() = RetryFailedMessageUseCase(
             messageRepository,
             assetRepository,
+            conversationRepository,
+            attachmentsRepository,
             persistMessage,
+            publishAttachmentsUseCase,
             scope,
             dispatcher,
             messageSender,
@@ -316,7 +347,8 @@ class MessageScope internal constructor(
             messageSender,
             selfUserId,
             currentClientIdProvider,
-            selfConversationIdProvider
+            selfConversationIdProvider,
+            deleteMessageAttachmentsUseCase,
         )
 
     val toggleReaction: ToggleReactionUseCase
@@ -435,7 +467,8 @@ class MessageScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
             selfUserId = selfUserId,
-            selfConversationIdProvider = selfConversationIdProvider
+            selfConversationIdProvider = selfConversationIdProvider,
+            syncManager = syncManager,
         )
 
     val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
@@ -453,4 +486,19 @@ class MessageScope internal constructor(
 
     val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
+
+    val sendInCallReactionUseCase: SendInCallReactionUseCase
+        get() = SendInCallReactionUseCase(
+            selfUserId = selfUserId,
+            provideClientId = currentClientIdProvider,
+            messageSender = messageSender,
+            dispatchers = dispatcher,
+            scope = scope,
+        )
+
+    val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
+        get() = GetSenderNameByMessageIdUseCase(messageRepository)
+
+    val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
+        get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 }

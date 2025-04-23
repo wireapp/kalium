@@ -18,22 +18,25 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.InteractionAvailability
 import com.wire.kalium.logic.data.conversation.interactionAvailability
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -48,6 +51,8 @@ import kotlinx.coroutines.withContext
 class ObserveConversationInteractionAvailabilityUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
+    private val selfUserId: UserId,
+    private val selfClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -56,13 +61,21 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
      * @return an [IsInteractionAvailableResult] containing Success or Failure cases
      */
     suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> = withContext(dispatcher.io) {
-        conversationRepository.observeConversationDetailsById(conversationId).combine(
-            userRepository.observeSelfUser()
-        ) { conversation, selfUser ->
-            conversation to selfUser
-        }.map { (eitherConversation, selfUser) ->
+
+        val isSelfClientMlsCapable = selfClientIdProvider().flatMap {
+            userRepository.isClientMlsCapable(selfUserId, it)
+        }.getOrElse {
+            return@withContext flow { IsInteractionAvailableResult.Failure(it) }
+        }
+
+        kaliumLogger.withTextTag("ObserveConversationInteractionAvailabilityUseCase").d("isSelfClientMlsCapable $isSelfClientMlsCapable")
+
+        conversationRepository.observeConversationDetailsById(conversationId).map { eitherConversation ->
             eitherConversation.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { conversationDetails ->
-                val isProtocolSupported = doesUserSupportConversationProtocol(conversationDetails, selfUser)
+                val isProtocolSupported = doesUserSupportConversationProtocol(
+                    conversationDetails = conversationDetails,
+                    isSelfClientMlsCapable = isSelfClientMlsCapable
+                )
                 if (!isProtocolSupported) { // short-circuit to Unsupported Protocol if it's the case
                     return@fold IsInteractionAvailableResult.Success(InteractionAvailability.UNSUPPORTED_PROTOCOL)
                 }
@@ -74,19 +87,12 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
 
     private fun doesUserSupportConversationProtocol(
         conversationDetails: ConversationDetails,
-        selfUser: SelfUser
-    ): Boolean {
-        val protocolInfo = conversationDetails.conversation.protocol
-        val acceptableProtocols = when (protocolInfo) {
-            is Conversation.ProtocolInfo.MLS -> setOf(SupportedProtocol.MLS)
-            // Messages in mixed conversations are sent through Proteus
-            is Conversation.ProtocolInfo.Mixed -> setOf(SupportedProtocol.PROTEUS)
-            Conversation.ProtocolInfo.Proteus -> setOf(SupportedProtocol.PROTEUS)
-        }
-        val isProtocolSupported = selfUser.supportedProtocols?.any { supported ->
-            acceptableProtocols.contains(supported)
-        } ?: false
-        return isProtocolSupported
+        isSelfClientMlsCapable: Boolean
+    ): Boolean = when (conversationDetails.conversation.protocol) {
+        is Conversation.ProtocolInfo.MLS -> isSelfClientMlsCapable
+        // Messages in mixed conversations are sent through Proteus
+        is Conversation.ProtocolInfo.Mixed,
+        Conversation.ProtocolInfo.Proteus -> true
     }
 }
 

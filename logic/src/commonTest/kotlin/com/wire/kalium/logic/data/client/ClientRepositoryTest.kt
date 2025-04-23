@@ -20,8 +20,8 @@ package com.wire.kalium.logic.data.client
 
 import app.cash.turbine.test
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -33,14 +33,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -256,7 +256,7 @@ class ClientRepositoryTest {
                     deviceType = DeviceTypeDTO.Desktop,
                     label = null,
                     model = "Mac ox",
-                    capabilities = null,
+                    capabilities = listOf(),
                     mlsPublicKeys = null,
                     cookie = null
                 ),
@@ -268,7 +268,7 @@ class ClientRepositoryTest {
                     deviceType = DeviceTypeDTO.Phone,
                     label = null,
                     model = "iphone 15",
-                    capabilities = null,
+                    capabilities = listOf(),
                     mlsPublicKeys = null,
                     cookie = null
                 )

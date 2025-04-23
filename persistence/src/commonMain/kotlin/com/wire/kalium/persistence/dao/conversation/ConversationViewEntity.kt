@@ -26,6 +26,8 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAccess
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAddPermission
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
 
@@ -47,7 +49,6 @@ data class ConversationViewEntity(
     val userDefederated: Boolean?,
     val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
     val otherUserId: QualifiedIDEntity?,
-    val isCreator: Long,
     val lastNotificationDate: Instant?,
     val selfRole: MemberEntity.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
@@ -74,6 +75,13 @@ data class ConversationViewEntity(
     val proteusVerificationStatus: ConversationEntity.VerificationStatus,
     val legalHoldStatus: ConversationEntity.LegalHoldStatus,
     val accentId: Int?,
+    val isFavorite: Boolean,
+    val folderId: String?,
+    val folderName: String?,
+    val isChannel: Boolean,
+    val channelAccess: ChannelAccess?,
+    val channelAddPermission: ChannelAddPermission?,
+    val wireCell: String?,
 ) {
     val isMember: Boolean get() = selfRole != null
 }

@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
@@ -51,6 +52,7 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 
 /**
  * A wrapper that joins [Event] with its [EventDeliveryInfo].
@@ -390,14 +392,16 @@ sealed class Event(open val id: String) {
             val uri: String?,
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeUpdated")
+            override fun toLogMap(): Map<String, Any?> =
+                mapOf(typeKey to "Conversation.CodeUpdated")
         }
 
         data class CodeDeleted(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeDeleted")
+            override fun toLogMap(): Map<String, Any?> =
+                mapOf(typeKey to "Conversation.CodeDeleted")
         }
 
         data class TypingIndicator(
@@ -427,6 +431,21 @@ sealed class Event(open val id: String) {
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
                 "protocol" to protocol.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+
+        data class ConversationChannelAddPermission(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val channelAddPermission: ChannelAddPermission,
+            val senderUserId: UserId
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ChannelAddPermission",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                "channelAddPermission" to channelAddPermission.name,
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }
@@ -706,6 +725,17 @@ sealed class Event(open val id: String) {
                 typeKey to "User.UserProperty.TypingIndicatorModeSet",
                 idKey to id.obfuscateId(),
                 "value" to "$value"
+            )
+        }
+
+        data class FoldersUpdate(
+            override val id: String,
+            val folders: List<FolderWithConversations>,
+        ) : UserProperty(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.FoldersUpdate",
+                idKey to id.obfuscateId(),
+                "folders" to folders.map { it.id.obfuscateId() }
             )
         }
     }

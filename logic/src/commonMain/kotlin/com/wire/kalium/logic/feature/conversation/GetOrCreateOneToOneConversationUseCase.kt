@@ -18,25 +18,21 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.flow.first
 
 /**
  * Operation that creates one-to-one Conversation with specific [UserId] (only if it is absent in local DB)
  * and returns [Conversation] data.
- *
- * @param otherUserId [UserId] private conversation with which we are interested in.
- * @return Result with [Conversation] in case of success, or [CoreFailure] if something went wrong:
- * can't get data from local DB, or can't create a conversation.
  */
 interface GetOrCreateOneToOneConversationUseCase {
     suspend operator fun invoke(otherUserId: UserId): CreateConversationResult
@@ -47,6 +43,14 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private val userRepository: UserRepository,
     private val oneOnOneResolver: OneOnOneResolver
 ) : GetOrCreateOneToOneConversationUseCase {
+
+    /**
+     * The use case operation operation params and return type.
+     *
+     * @param otherUserId [UserId] private conversation with which we are interested in.
+     * @return Result with [Conversation] in case of success, or [CoreFailure] if something went wrong:
+     * can't get data from local DB, or can't create a conversation.
+     */
     override suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         // TODO periodically re-resolve one-on-one
         return conversationRepository.observeOneToOneConversationWithOtherUser(otherUserId)
@@ -66,6 +70,18 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
             })
     }
 
+    /**
+     * Resolves one-on-one conversation with the user.
+     * Resolving conversations is the process of:
+     *
+     * - Intersecting the supported protocols of the self user and the other user.
+     * - Selecting the common protocol, based on the team settings with the highest priority.
+     * - Get or create a conversation with the other user.
+     * - If the protocol now is MLS, migrate the existing Proteus conversation to MLS.
+     * - Mark the conversation as active.
+     *
+     * If no common protocol is found, and we have existing Proteus conversations, we do best effort to use them as fallback.
+     */
     private suspend fun resolveOneOnOneConversationWithUser(otherUserId: UserId): Either<CoreFailure, Conversation> =
         userRepository.userById(otherUserId).flatMap { otherUser ->
             // TODO support lazily establishing mls group for team 1-1

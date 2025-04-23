@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -62,7 +63,7 @@ object TestConversation {
     fun ONE_ON_ONE(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "1O1 ID"),
         "ONE_ON_ONE Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         protocolInfo,
         MutedConversationStatus.AllAllowed,
@@ -86,7 +87,7 @@ object TestConversation {
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
-        Conversation.Type.SELF,
+        Conversation.Type.Self,
         TestTeam.TEAM_ID,
         protocolInfo,
         MutedConversationStatus.AllAllowed,
@@ -110,7 +111,7 @@ object TestConversation {
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID,
         "GROUP Name",
-        Conversation.Type.GROUP,
+        Conversation.Type.Group.Regular,
         TestTeam.TEAM_ID,
         protocolInfo,
         MutedConversationStatus.AllAllowed,
@@ -149,7 +150,6 @@ object TestConversation {
         userDeleted = false,
         connectionStatus = null,
         otherUserId = null,
-        isCreator = 0L,
         lastNotificationDate = null,
         protocolInfo = protocolInfo,
         creatorId = "someValue",
@@ -176,13 +176,20 @@ object TestConversation {
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-        accentId = null
+        accentId = null,
+        isFavorite = false,
+        folderId = null,
+        folderName = null,
+        isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
+        wireCell = null,
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
         convId,
         "ONE_ON_ONE Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
@@ -273,6 +280,7 @@ object TestConversation {
         )
 
     val GROUP_ID = GroupID("mlsGroupId")
+    val GROUP_WITH_EPOCH = GroupWithEpoch(GROUP_ID, 1UL)
     val ENTITY_ID = QualifiedIDEntity(conversationValue, conversationDomain)
     val ENTITY = ConversationEntity(
         ENTITY_ID,
@@ -293,11 +301,16 @@ object TestConversation {
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+        isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
+        wireCell = null,
     )
     val ENTITY_GROUP = ENTITY.copy(
         type = ConversationEntity.Type.GROUP
     )
+
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
         name = "convo name",
@@ -314,7 +327,6 @@ object TestConversation {
         userDeleted = false,
         connectionStatus = null,
         otherUserId = null,
-        isCreator = 0L,
         lastNotificationDate = null,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
@@ -341,7 +353,18 @@ object TestConversation {
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-        accentId = null
+        accentId = null,
+        isFavorite = false,
+        folderId = null,
+        folderName = null,
+        isChannel = false,
+        channelAccess = null,
+        channelAddPermission = null,
+        wireCell = null,
+    )
+
+    val VIEW_ONE_ON_ONE = VIEW_ENTITY.copy(
+        type = ConversationEntity.Type.ONE_ON_ONE,
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
@@ -365,7 +388,7 @@ object TestConversation {
     val CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "ONE_ON_ONE Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
@@ -389,7 +412,7 @@ object TestConversation {
     val MLS_CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "MLS Name",
-        Conversation.Type.ONE_ON_ONE,
+        Conversation.Type.OneOnOne,
         TestTeam.TEAM_ID,
         MLS_PROTOCOL_INFO,
         MutedConversationStatus.AllAllowed,

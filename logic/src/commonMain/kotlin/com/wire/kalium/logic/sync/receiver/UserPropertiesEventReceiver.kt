@@ -18,14 +18,15 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
 
@@ -33,7 +34,8 @@ import io.mockative.Mockable
 internal interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>
 
 internal class UserPropertiesEventReceiverImpl internal constructor(
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val conversationFolderRepository: ConversationFolderRepository
 ) : UserPropertiesEventReceiver {
 
     override suspend fun onEvent(event: Event.UserProperty, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
@@ -44,6 +46,10 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
 
             is Event.UserProperty.TypingIndicatorModeSet -> {
                 handleTypingIndicatorMode(event)
+            }
+
+            is Event.UserProperty.FoldersUpdate -> {
+                handleFoldersUpdate(event)
             }
         }
     }
@@ -64,6 +70,16 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return userConfigRepository
             .setTypingIndicatorStatus(event.value)
+            .onSuccess { logger.logSuccess() }
+            .onFailure { logger.logFailure(it) }
+    }
+
+    private suspend fun handleFoldersUpdate(
+        event: Event.UserProperty.FoldersUpdate
+    ): Either<CoreFailure, Unit> {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return conversationFolderRepository
+            .updateConversationFolders(event.folders)
             .onSuccess { logger.logSuccess() }
             .onFailure { logger.logFailure(it) }
     }

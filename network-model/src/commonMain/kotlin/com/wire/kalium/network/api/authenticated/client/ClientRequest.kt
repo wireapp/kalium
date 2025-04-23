@@ -22,8 +22,14 @@ import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO.Unknown
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.model.MLSPublicKey
 import com.wire.kalium.network.api.model.UserId
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class RegisterClientRequest(
@@ -86,12 +92,41 @@ enum class DeviceTypeDTO {
     }
 }
 
-@Serializable
-enum class ClientCapabilityDTO {
+@Serializable(with = ClientCapabilityDTOSerializer::class)
+sealed class ClientCapabilityDTO {
     @SerialName("legalhold-implicit-consent")
-    LegalHoldImplicitConsent {
-        override fun toString(): String {
-            return "legalhold-implicit-consent"
+    data object LegalHoldImplicitConsent : ClientCapabilityDTO()
+
+    @SerialName("consumable-notifications")
+    data object ConsumableNotifications : ClientCapabilityDTO()
+    data class Unknown(val name: String) : ClientCapabilityDTO()
+}
+
+object ClientCapabilityDTOSerializer : KSerializer<ClientCapabilityDTO> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(
+        serialName = "ClientCapabilityDTO",
+        kind = PrimitiveKind.STRING
+    )
+
+    override fun serialize(encoder: Encoder, value: ClientCapabilityDTO) {
+        when (value) {
+            is ClientCapabilityDTO.LegalHoldImplicitConsent ->
+                encoder.encodeString("legalhold-implicit-consent")
+
+            ClientCapabilityDTO.ConsumableNotifications ->
+                encoder.encodeString("consumable-notifications")
+
+            is ClientCapabilityDTO.Unknown ->
+                encoder.encodeString(value.name)
+
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): ClientCapabilityDTO {
+        return when (val value = decoder.decodeString()) {
+            "legalhold-implicit-consent" -> ClientCapabilityDTO.LegalHoldImplicitConsent
+            "consumable-notifications" -> ClientCapabilityDTO.ConsumableNotifications
+            else -> ClientCapabilityDTO.Unknown(value)
         }
     }
 }

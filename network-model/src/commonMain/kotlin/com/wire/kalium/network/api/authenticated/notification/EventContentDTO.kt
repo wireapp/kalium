@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUp
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -39,6 +40,7 @@ import com.wire.kalium.network.api.authenticated.notification.conversation.Messa
 import com.wire.kalium.network.api.authenticated.notification.team.TeamMemberIdData
 import com.wire.kalium.network.api.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.authenticated.notification.user.UserUpdateEventData
+import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.model.UserId
@@ -51,7 +53,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.Serializer
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -62,9 +63,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonTransformingSerializer
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlin.jvm.JvmInline
 
@@ -279,6 +283,16 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 
+        @Serializable
+        @SerialName("conversation.add-permission-update")
+        data class ChannelAddPermissionUpdate(
+            @SerialName("conversation") val conversation: String,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ChannelAddPermissionDTO,
+            @SerialName("from") val from: String,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant
+        ) : Conversation()
     }
 
     @Serializable
@@ -391,7 +405,6 @@ sealed class EventContentDTO {
         data class PropertiesDeleteDTO(
             @SerialName("key") val key: String,
         ) : UserProperty()
-
     }
 
     @Serializable(with = FieldKeyValueDeserializer::class)
@@ -406,32 +419,56 @@ sealed class EventContentDTO {
     value class FieldUnknownValue(val value: String) : FieldKeyValue
 
     @Serializable
+    @JvmInline
+    value class FieldLabelListValue(val value: LabelListResponseDTO) : FieldKeyValue
+
+    @Serializable
     @SerialName("unknown")
-    data class Unknown(
-        val type: String
-    ) : EventContentDTO()
+    data class Unknown(val type: String) : EventContentDTO()
 }
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
-@Serializer(EventContentDTO.FieldKeyValue::class)
 object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
     override val descriptor = buildSerialDescriptor("value", PolymorphicKind.SEALED)
     override fun serialize(encoder: Encoder, value: EventContentDTO.FieldKeyValue) {
         when (value) {
             is EventContentDTO.FieldKeyNumberValue -> encoder.encodeInt(value.value)
+            is EventContentDTO.FieldLabelListValue -> encoder.encodeSerializableValue(
+                EventContentDTO.FieldLabelListValue.serializer(),
+                value
+            )
+
             is EventContentDTO.FieldUnknownValue -> throw SerializationException("Not handled yet")
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     override fun deserialize(decoder: Decoder): EventContentDTO.FieldKeyValue {
-        return try {
-            EventContentDTO.FieldKeyNumberValue(decoder.decodeInt())
+        try {
+            val input = decoder as? JsonDecoder ?: throw SerializationException("Expected JsonDecoder")
+            return when (val element = input.decodeJsonElement()) {
+                is JsonPrimitive -> {
+                    if (element.isString) {
+                        EventContentDTO.FieldUnknownValue(element.content)
+                    } else {
+                        EventContentDTO.FieldKeyNumberValue(element.int)
+                    }
+                }
+
+                is JsonObject -> {
+                    if (element.containsKey("labels")) {
+                        return input.json.decodeFromJsonElement(EventContentDTO.FieldLabelListValue.serializer(), element)
+                    }
+                    EventContentDTO.FieldUnknownValue(element.toString())
+                }
+
+                else -> throw SerializationException("Unexpected JSON element type: ${element::class.simpleName}")
+            }
         } catch (exception: Exception) {
             val jsonElement = decoder.toJsonElement().toString()
             kaliumUtilLogger.d("Error deserializing 'user.properties-set', prop: $jsonElement")
             kaliumUtilLogger.w("Error deserializing 'user.properties-set', error: $exception")
-            EventContentDTO.FieldUnknownValue(jsonElement)
+            return EventContentDTO.FieldUnknownValue(jsonElement)
         }
     }
 }

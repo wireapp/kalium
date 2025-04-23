@@ -18,16 +18,15 @@
 
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -45,7 +44,6 @@ import kotlin.test.assertEquals
 
 class CallingParticipantsOrderTest {
 
-    private val userRepository = mock(UserRepository::class)
     private val participantsFilter = mock(ParticipantsFilter::class)
     private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
     private val participantsOrderByName = mock(ParticipantsOrderByName::class)
@@ -55,7 +53,12 @@ class CallingParticipantsOrderTest {
     @BeforeTest
     fun setup() {
         callingParticipantsOrder =
-            CallingParticipantsOrderImpl(userRepository, currentClientIdProvider, participantsFilter, participantsOrderByName)
+            CallingParticipantsOrderImpl(
+                currentClientIdProvider,
+                participantsFilter,
+                selfUserId = selfUserId,
+                participantsOrderByName = participantsOrderByName
+            )
     }
 
     @Test
@@ -84,10 +87,6 @@ class CallingParticipantsOrderTest {
         coEvery {
             currentClientIdProvider.invoke()
         }.returns(Either.Right(ClientId(selfClientId)))
-
-        coEvery {
-            userRepository.getSelfUser()
-        }.returns(selfUser)
 
         every {
             participantsFilter.otherParticipants(participants, selfClientId)

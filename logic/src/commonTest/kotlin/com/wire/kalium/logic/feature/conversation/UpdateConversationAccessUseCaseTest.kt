@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
@@ -385,7 +385,7 @@ class UpdateConversationAccessUseCaseTest {
         val conversationStub = Conversation(
             ConversationId(value = "someId", domain = "someDomain"),
             "GROUP Conversation",
-            Conversation.Type.GROUP,
+            Conversation.Type.Group.Regular,
             TeamId("someTeam"),
             ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,

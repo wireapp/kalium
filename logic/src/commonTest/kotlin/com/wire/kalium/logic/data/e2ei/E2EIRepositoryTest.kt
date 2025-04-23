@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.logic.data.e2ei
 
+import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.CoreCryptoCentral
@@ -24,8 +27,6 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
@@ -40,13 +41,13 @@ import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.REFRESH_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
@@ -56,9 +57,9 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -740,7 +741,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.rotateKeysAndMigrateConversations("")
+        val result = e2eiRepository.rotateKeysAndMigrateConversations("", listOf(Arrangement.GROUP_ID))
 
         // Then
         result.shouldSucceed()
@@ -754,7 +755,7 @@ class E2EIRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -768,7 +769,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.rotateKeysAndMigrateConversations("")
+        val result = e2eiRepository.rotateKeysAndMigrateConversations("", listOf(Arrangement.GROUP_ID))
 
         // Then
         result.shouldFail()
@@ -782,7 +783,7 @@ class E2EIRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -1040,7 +1041,7 @@ class E2EIRepositoryTest {
 
         suspend fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
             coEvery {
-                mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+                mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any())
             }.returns(result)
         }
 
@@ -1139,12 +1140,12 @@ class E2EIRepositoryTest {
             coEvery {
                 acmeApi.sendAuthorizationRequest(eq(url), any())
             }.returns(
-                    NetworkResponse.Success(
-                        ACME_AUTHORIZATION_RESPONSE.copy(challengeType = challengeType),
-                        headers = HEADERS,
-                        200
-                    )
+                NetworkResponse.Success(
+                    ACME_AUTHORIZATION_RESPONSE.copy(challengeType = challengeType),
+                    headers = HEADERS,
+                    200
                 )
+            )
         }
 
         suspend fun withSendAuthorizationRequestFails() = apply {
@@ -1238,6 +1239,7 @@ class E2EIRepositoryTest {
             val RANDOM_ACCESS_TOKEN = "xxxxx"
             val RANDOM_ID_TOKEN = "xxxxx"
             val RANDOM_URL = "https://random.rn"
+            val GROUP_ID = GroupID("groupId")
 
             val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"
 

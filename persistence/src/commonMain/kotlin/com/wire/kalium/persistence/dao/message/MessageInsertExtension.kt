@@ -18,12 +18,14 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlinx.datetime.Instant
+import kotlin.coroutines.cancellation.CancellationException
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
     assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
@@ -47,6 +49,7 @@ internal interface MessageInsertExtension {
 
 internal class MessageInsertExtensionImpl(
     private val messagesQueries: MessagesQueries,
+    private val attachmentQueries: MessageAttachmentsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
     private val buttonContentQueries: ButtonContentQueries,
@@ -96,6 +99,8 @@ internal class MessageInsertExtensionImpl(
             insertBaseMessageOrError(message)
             insertMessageContent(message)
             insertUnreadEvent(message)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             /* no-op */
         }
@@ -111,8 +116,8 @@ internal class MessageInsertExtensionImpl(
             sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
             visibility = message.visibility,
             last_edit_date =
-                if (message is MessageEntity.Regular && message.editStatus is MessageEntity.EditStatus.Edited) message.editStatus.lastDate
-                else null,
+            if (message is MessageEntity.Regular && message.editStatus is MessageEntity.EditStatus.Edited) message.editStatus.lastDate
+            else null,
             status = message.status,
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
@@ -314,6 +319,53 @@ internal class MessageInsertExtensionImpl(
                 legal_hold_member_list = content.memberUserIdList,
                 legal_hold_type = content.type
             )
+
+            is MessageEntityContent.Multipart -> {
+                messagesQueries.insertMessageTextContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    text_body = content.messageBody,
+                    quoted_message_id = content.quotedMessageId,
+                    is_quote_verified = content.isQuoteVerified
+                )
+                content.linkPreview.forEach {
+                    messagesQueries.insertMessageLinkPreview(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        url = it.url,
+                        url_offset = it.urlOffset,
+                        permanent_url = it.permanentUrl,
+                        summary = it.summary,
+                        title = it.title
+                    )
+                }
+                content.mentions.forEach {
+                    messagesQueries.insertMessageMention(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId
+                    )
+                }
+                content.attachments.forEach {
+                    attachmentQueries.insertCellAttachment(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        asset_id = it.assetId,
+                        asset_version_id = it.assetVersionId,
+                        cell_asset = true,
+                        asset_mime_type = it.mimeType,
+                        asset_path = it.assetPath,
+                        asset_size = it.assetSize,
+                        local_path = it.localPath ?: "",
+                        asset_width = it.assetWidth,
+                        asset_height = it.assetHeight,
+                        asset_duration_ms = it.assetDuration,
+                        asset_transfer_status = it.assetTransferStatus,
+                    )
+                }
+            }
         }
     }
 
@@ -339,6 +391,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
                 is MessageEntityContent.Location,
+                is MessageEntityContent.Multipart,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
@@ -374,7 +427,7 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationStartedUnverifiedWarning,
                 is MessageEntityContent.TeamMemberRemoved,
                 is MessageEntityContent.LegalHold,
-                -> {
+                    -> {
                     /* no-op */
                 }
             }
@@ -468,9 +521,12 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationProtocolChangedDuringACall ->
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL
+
         is MessageEntityContent.ConversationStartedUnverifiedWarning ->
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
+
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
         is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
+        is MessageEntityContent.Multipart -> MessageEntity.ContentType.MULTIPART
     }
 }

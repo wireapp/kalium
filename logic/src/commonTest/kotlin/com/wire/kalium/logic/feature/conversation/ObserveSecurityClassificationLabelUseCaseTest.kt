@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -138,7 +138,8 @@ class ObserveSecurityClassificationLabelUseCaseTest {
         }
 
     private class Arrangement {
-                val observeConversationMembersUseCase = mock(ObserveConversationMembersUseCase::class)
+
+        val observeConversationMembersUseCase = mock(ObserveConversationMembersUseCase::class)
         val conversationRepository = mock(ConversationRepository::class)
         val userConfigRepository = mock(UserConfigRepository::class)
 

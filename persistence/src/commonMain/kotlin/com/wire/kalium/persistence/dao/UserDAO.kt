@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
@@ -260,6 +259,7 @@ interface UserDAO {
     suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?>
     suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
+    suspend fun getUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): UserDetailsEntity?
     suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity>
     suspend fun getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
@@ -281,6 +281,7 @@ interface UserDAO {
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
+    suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String)
     suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,
@@ -318,4 +319,7 @@ interface UserDAO {
     suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity?
     suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized>
     suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
+    suspend fun updateTeamId(userId: UserIDEntity, teamId: String)
+    suspend fun countContactsAmount(selfUserId: QualifiedIDEntity): Int
+    suspend fun countTeamMembersAmount(teamId: String): Int
 }

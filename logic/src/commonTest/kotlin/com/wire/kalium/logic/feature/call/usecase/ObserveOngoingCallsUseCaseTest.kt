@@ -86,7 +86,7 @@ class ObserveOngoingCallsUseCaseTest {
             isCbrEnabled = false,
             callerId = TestCall.CALLER_ID,
             conversationName = null,
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.Group.Regular,
             callerName = null,
             callerTeamName = null
         )

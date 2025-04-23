@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
@@ -30,6 +30,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.toInstant
 
 /**
  * This use case is responsible for ending a call.
@@ -58,7 +59,7 @@ internal class EndCallUseCaseImpl(
      * @param conversationId the id of the conversation for the call should be ended.
      */
     override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
-        callRepository.callsFlow().first().find {
+        val endedCall = callRepository.callsFlow().first().find {
             // This use case can be invoked while joining the call or when the call is established.
             it.conversationId == conversationId && it.status in listOf(
                 CallStatus.STARTED,
@@ -67,17 +68,18 @@ internal class EndCallUseCaseImpl(
                 CallStatus.ESTABLISHED
             )
         }?.let {
-            if (it.conversationType == Conversation.Type.GROUP) {
+            if (it.conversationType is Conversation.Type.Group) {
                 callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
                 callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
             } else {
                 callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED")
                 callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
             }
+            it
         }
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
-        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback())
+        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback(endedCall?.establishedTime?.toInstant()))
     }
 }

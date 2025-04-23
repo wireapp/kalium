@@ -18,8 +18,12 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.toModel
+import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -29,14 +33,15 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.Attachment
 import com.wire.kalium.protobuf.messages.Button
 import com.wire.kalium.protobuf.messages.ButtonAction
 import com.wire.kalium.protobuf.messages.ButtonActionConfirmation
 import com.wire.kalium.protobuf.messages.Calling
+import com.wire.kalium.protobuf.messages.CellAsset
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
 import com.wire.kalium.protobuf.messages.Composite
@@ -45,6 +50,8 @@ import com.wire.kalium.protobuf.messages.DataTransfer
 import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
+import com.wire.kalium.protobuf.messages.InCallEmoji
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
@@ -52,6 +59,7 @@ import com.wire.kalium.protobuf.messages.Location
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
+import com.wire.kalium.protobuf.messages.Multipart
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
@@ -60,6 +68,7 @@ import com.wire.kalium.protobuf.messages.TrackingIdentifier
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
+import pbandk.Message
 
 @Mockable
 interface ProtoContentMapper {
@@ -84,7 +93,10 @@ class ProtoContentMapperImpl(
             is ProtoContent.Readable -> mapReadableContentToProtobuf(protoContent)
         }
 
-        val message = GenericMessage(protoContent.messageUid, messageContent)
+        val message = GenericMessage(
+            messageId = protoContent.messageUid,
+            content = messageContent
+        )
         return PlainMessageBlob(message.encodeToByteArray())
     }
 
@@ -144,7 +156,61 @@ class ProtoContentMapperImpl(
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
 
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
+            is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
+            is MessageContent.Multipart -> packMultipart(readableContent, expectsReadConfirmation, legalHoldStatus)
         }
+    }
+
+    private fun packMultipart(
+        readableContent: MessageContent.Multipart,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Multipart {
+        val linkPreview = readableContent.linkPreviews.map { linkPreviewMapper.fromModelToProto(it) }
+        val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
+        val quote = readableContent.quotedMessageReference?.let {
+            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+        }
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
+        val attachments = readableContent.attachments.map { attachment ->
+            when (attachment) {
+                is AssetContent ->
+                    Attachment(
+                        content = Attachment.Content.Asset(
+                            asset = assetMapper.fromAssetContentToProtoAssetMessage(
+                                messageContent = MessageContent.Asset(value = attachment),
+                                expectsReadConfirmation = expectsReadConfirmation,
+                                legalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus),
+                            )
+                        )
+                    )
+                is CellAssetContent ->
+                    Attachment(
+                        content = Attachment.Content.CellAsset(
+                            cellAsset = CellAsset(
+                                uuid = attachment.id,
+                                contentType = attachment.mimeType,
+                                initialName = attachment.assetPath,
+                                initialSize = attachment.assetSize,
+                                initialMetaData = attachment.metadata?.toProto()
+                            )
+                        )
+                    )
+            }
+        }
+        return GenericMessage.Content.Multipart(
+            Multipart(
+                text = Text(
+                    content = readableContent.value ?: "",
+                    linkPreview = linkPreview,
+                    mentions = mentions,
+                    quote = quote,
+                ),
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = protoLegalHoldStatus,
+                attachments = attachments,
+            )
+        )
     }
 
     private fun packLocation(
@@ -264,7 +330,9 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited,
-            is MessageContent.DataTransfer -> throw IllegalArgumentException(
+            is MessageContent.DataTransfer,
+            is MessageContent.InCallEmoji,
+            is MessageContent.Multipart -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
         }
@@ -332,7 +400,7 @@ class ProtoContentMapperImpl(
         genericMessage: GenericMessage,
         encodedContent: PlainMessageBlob
     ): MessageContent.FromProto {
-        val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
+        val typeName = genericMessage.content?.value?.let { it as? Message }?.descriptor?.name
 
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent.value)
@@ -375,13 +443,59 @@ class ProtoContentMapperImpl(
                 MessageContent.Ignored
             }
 
+            is GenericMessage.Content.InCallEmoji -> unpackInCallEmoji(protoContent)
+
             null -> {
-                kaliumLogger.w("Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
-                MessageContent.Ignored
+                kaliumLogger.w(
+                    "Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}" +
+                            " Message Unknown Strategy = ${genericMessage.unknownStrategy}"
+                )
+                when (genericMessage.unknownStrategy) {
+                    UnknownStrategy.DISCARD_AND_WARN -> MessageContent.Unknown()
+                    UnknownStrategy.WARN_USER_ALLOW_RETRY -> MessageContent.Unknown(encodedData = encodedContent.data)
+                    UnknownStrategy.IGNORE,
+                    is UnknownStrategy.UNRECOGNIZED,
+                    null -> MessageContent.Ignored
+                }
             }
+
+            is GenericMessage.Content.InCallHandRaise -> MessageContent.Ignored
+            is GenericMessage.Content.Multipart -> unpackMultipart(protoContent.value)
         }
         return readableContent
     }
+
+    private fun unpackMultipart(
+        protoContent: Multipart
+    ): MessageContent.FromProto = MessageContent.Multipart(
+        value = protoContent.text?.content,
+        linkPreviews = protoContent.text?.linkPreview?.mapNotNull { linkPreviewMapper.fromProtoToModel(it) } ?: emptyList(),
+        mentions = protoContent.text?.mentions?.mapNotNull { messageMentionMapper.fromProtoToModel(it) } ?: emptyList(),
+        quotedMessageReference = protoContent.text?.quote?.let {
+            MessageContent.QuoteReference(
+                quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
+            )
+        },
+        quotedMessageDetails = null,
+        attachments = protoContent.attachments.mapNotNull { attachment ->
+            when (val content = attachment.content) {
+                is Attachment.Content.Asset -> {
+                    // TODO: implement support for regular assets WPB-16590
+                    return MessageContent.Ignored
+                }
+                is Attachment.Content.CellAsset -> CellAssetContent(
+                    id = content.value.uuid,
+                    versionId = "",
+                    mimeType = content.value.contentType,
+                    assetPath = content.value.initialName,
+                    assetSize = content.value.initialSize,
+                    metadata = content.value.initialMetaData?.toModel(),
+                    transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
+                )
+                null -> null
+            }
+        },
+    )
 
     private fun unpackLocation(
         protoContent: GenericMessage.Content.Location
@@ -563,13 +677,15 @@ class ProtoContentMapperImpl(
         Cleared(
             conversationId = readableContent.conversationId.value,
             qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
-            clearedTimestamp = readableContent.time.toEpochMilliseconds()
+            clearedTimestamp = readableContent.time.toEpochMilliseconds(),
+            needToRemoveLocally = readableContent.needToRemoveLocally
         )
     )
 
     private fun unpackCleared(protoContent: GenericMessage.Content.Cleared) = MessageContent.Cleared(
         conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
-        time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
+        time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp),
+        needToRemoveLocally = protoContent.value.needToRemoveLocally ?: false
     )
 
     private fun toProtoLegalHoldStatus(legalHoldStatus: Conversation.LegalHoldStatus): LegalHoldStatus =
@@ -736,6 +852,29 @@ class ProtoContentMapperImpl(
         return MessageContent.Composite(
             textContent = text,
             buttonList = buttonList
+        )
+    }
+
+    private fun unpackInCallEmoji(protoContent: GenericMessage.Content.InCallEmoji): MessageContent.InCallEmoji {
+        return MessageContent.InCallEmoji(
+            // Map of emoji to senderId
+            emojis = protoContent.value.emojis
+                .mapNotNull {
+                    val key = it.key ?: return@mapNotNull null
+                    val value = it.value ?: return@mapNotNull null
+                    key to value
+                }
+                .associateBy({ it.first }, { it.second })
+        )
+    }
+
+    private fun packInCallEmoji(content: MessageContent.InCallEmoji): GenericMessage.Content.InCallEmoji {
+        return GenericMessage.Content.InCallEmoji(
+            inCallEmoji = InCallEmoji(
+                emojis = content.emojis.map { entry ->
+                   InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
+                }
+            )
         )
     }
 

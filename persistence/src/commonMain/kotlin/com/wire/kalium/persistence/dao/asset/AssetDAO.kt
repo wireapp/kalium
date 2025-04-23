@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.asset
 
+import com.wire.kalium.persistence.Asset
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
@@ -37,4 +38,5 @@ interface AssetDAO {
     suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?>
     suspend fun updateAsset(assetEntity: AssetEntity)
     suspend fun deleteAsset(key: String)
+    suspend fun getAssets(): List<Asset>
 }

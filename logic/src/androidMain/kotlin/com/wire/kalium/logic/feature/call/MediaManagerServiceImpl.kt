@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.waz.media.manager.MediaManager
 import com.waz.media.manager.MediaManagerListener
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

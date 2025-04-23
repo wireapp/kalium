@@ -25,7 +25,7 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -36,9 +36,9 @@ import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.CurrentPlatform
@@ -81,7 +81,6 @@ actual class GlobalCallManager(
     internal actual fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
-        userRepository: UserRepository,
         currentClientIdProvider: CurrentClientIdProvider,
         selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
@@ -94,14 +93,15 @@ actual class GlobalCallManager(
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
         networkStateObserver: NetworkStateObserver,
-        kaliumConfigs: KaliumConfigs
+        kaliumConfigs: KaliumConfigs,
+        createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
     ): CallManager {
         if (kaliumConfigs.enableCalling) {
             return callManagerHolder.computeIfAbsent(userId) {
                 CallManagerImpl(
                     calling = calling,
                     callRepository = callRepository,
-                    userRepository = userRepository,
+                    selfUserId = userId,
                     currentClientIdProvider = currentClientIdProvider,
                     selfConversationIdProvider = selfConversationIdProvider,
                     callMapper = callMapper,
@@ -116,7 +116,8 @@ actual class GlobalCallManager(
                     mediaManagerService = mediaManager,
                     flowManagerService = flowManager,
                     userConfigRepository = userConfigRepository,
-                    kaliumConfigs = kaliumConfigs
+                    kaliumConfigs = kaliumConfigs,
+                    createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
                 )
             }
         } else {

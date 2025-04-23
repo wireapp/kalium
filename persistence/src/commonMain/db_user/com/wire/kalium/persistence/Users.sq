@@ -32,6 +32,7 @@ CREATE TABLE User (
 );
 CREATE INDEX user_team_index ON User(team);
 CREATE INDEX user_service_id ON User(bot_service);
+CREATE INDEX idx_user_connection_deleted_handle ON User (connection_status, deleted, handle);
 
 deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
@@ -40,21 +41,40 @@ insertUser:
 INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
-name = excluded.name,
-handle = excluded.handle,
-email = excluded.email,
-phone = excluded.phone,
-accent_id = excluded.accent_id,
-team = excluded.team,
-preview_asset_id = excluded.preview_asset_id,
-complete_asset_id = excluded.complete_asset_id,
-user_type = excluded.user_type,
-bot_service = excluded.bot_service,
-deleted = excluded.deleted,
-incomplete_metadata = excluded.incomplete_metadata,
-expires_at = excluded.expires_at,
-defederated = 0,
-supported_protocols = excluded.supported_protocols;
+    name = excluded.name,
+    handle = excluded.handle,
+    email = excluded.email,
+    phone = excluded.phone,
+    accent_id = excluded.accent_id,
+    team = excluded.team,
+    preview_asset_id = excluded.preview_asset_id,
+    complete_asset_id = excluded.complete_asset_id,
+    user_type = excluded.user_type,
+    bot_service = excluded.bot_service,
+    deleted = excluded.deleted,
+    incomplete_metadata = excluded.incomplete_metadata,
+    expires_at = excluded.expires_at,
+    defederated = 0,
+    supported_protocols = excluded.supported_protocols
+WHERE -- execute the update only if any of the fields changed
+    User.name IS NOT excluded.name
+    OR User.handle IS NOT excluded.handle
+    OR User.email IS NOT excluded.email
+    OR User.phone IS NOT excluded.phone
+    OR User.accent_id IS NOT excluded.accent_id
+    OR User.team IS NOT excluded.team
+    OR User.preview_asset_id IS NOT excluded.preview_asset_id
+    OR User.complete_asset_id IS NOT excluded.complete_asset_id
+    OR User.user_type IS NOT excluded.user_type
+    OR User.bot_service IS NOT excluded.bot_service
+    OR User.deleted IS NOT excluded.deleted
+    OR User.incomplete_metadata IS NOT excluded.incomplete_metadata
+    OR User.expires_at IS NOT excluded.expires_at
+    OR User.defederated IS NOT 0
+    OR User.supported_protocols IS NOT excluded.supported_protocols;
+
+selectChanges:
+SELECT changes();
 
 insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
@@ -117,9 +137,9 @@ insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id, incomplete_metadata)
 VALUES(?, 1);
 
-insertOrIgnoreUserIdWithConnectionStatus:
-INSERT OR IGNORE INTO User(qualified_id, connection_status)
-VALUES(?, ?);
+insertOrIgnoreUserIdWithEmail:
+INSERT OR IGNORE INTO User(qualified_id, email, incomplete_metadata)
+VALUES(?, ?, 1);
 
 upsertUserConnectionStatus:
 INSERT INTO User(qualified_id, connection_status)
@@ -273,3 +293,16 @@ SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :userId;
 
 selectNamesAndHandle:
 SELECT name, handle FROM User WHERE qualified_id = :userId;
+
+updateTeamId:
+UPDATE User SET team = ? WHERE qualified_id = ?;
+
+selectNameByMessageId:
+SELECT name FROM User
+WHERE qualified_id = (SELECT Message.sender_user_id FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId);
+
+countContacts:
+SELECT COUNT() FROM User WHERE User.connection_status = 'ACCEPTED' AND User.qualified_id != :self_user_id;
+
+countTeamMembersFromTeam:
+SELECT COUNT() FROM User WHERE User.team = :team_id;

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.properties
 
+import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mockable
@@ -27,5 +28,7 @@ interface PropertiesApi {
 
     suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit>
     suspend fun deleteProperty(propertyKey: PropertyKey): NetworkResponse<Unit>
+    suspend fun getLabels(): NetworkResponse<LabelListResponseDTO>
+    suspend fun updateLabels(labelList: LabelListResponseDTO): NetworkResponse<Unit>
 
 }

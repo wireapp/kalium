@@ -34,13 +34,13 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_EVENTS_FI
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.decodeBufferSequence
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -50,6 +50,7 @@ import kotlinx.coroutines.withContext
 import okio.Path
 import okio.buffer
 import okio.use
+import kotlin.coroutines.cancellation.CancellationException
 
 @Mockable
 interface RestoreWebBackupUseCase {
@@ -113,8 +114,10 @@ internal class RestoreWebBackupUseCaseImpl(
                             if (migratedConversation != null) {
                                 migratedConversations.add(migratedConversation)
                             }
-                        } catch (exception: Exception) {
-                            kaliumLogger.e("$TAG ${exception.message}")
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            kaliumLogger.e("$TAG ${e.message}")
                         }
                     }
                     if (migratedConversations.isNotEmpty()) {

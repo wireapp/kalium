@@ -67,7 +67,7 @@ CREATE TABLE MessageMention (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, start) -- there should not be any overlapping mentions
 );
-CREATE INDEX message_mentioned_user_id_index ON MessageMention(user_id);
+CREATE INDEX message_mentioned_user_id_and_message_index ON MessageMention(user_id, message_id);
 
 CREATE TABLE MessageTextContent (
       message_id TEXT NOT NULL,
@@ -91,7 +91,7 @@ CREATE TABLE MessageRestrictedAssetContent (
       asset_size INTEGER NOT NULL,
       asset_name TEXT NOT NULL,
 
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
 
@@ -501,14 +501,11 @@ selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectLastMessagesByConversationIds:
-SELECT MessageDetailsView.* FROM MessageDetailsView
-JOIN (
-    SELECT conversationId, MAX(date) AS latest_date
-    FROM MessageDetailsView
-    WHERE conversationId IN :conversationIds
-    GROUP BY conversationId
-) AS lastMessage
-ON MessageDetailsView.conversationId = lastMessage.conversationId AND MessageDetailsView.date = lastMessage.latest_date;
+SELECT MessageDetailsView.*
+FROM LastMessage
+INNER JOIN MessageDetailsView
+ON MessageDetailsView.conversationId = LastMessage.conversation_id AND MessageDetailsView.id = LastMessage.message_id
+WHERE LastMessage.conversation_id IN :conversationIds;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
@@ -611,3 +608,11 @@ WHERE conversation_id = :conversationId
 AND creation_date >= (SELECT creation_date FROM Message WHERE id = :messageId LIMIT 1)
 AND expire_after_millis IS NULL
 ORDER BY creation_date DESC;
+
+selectNextAudioMessage:
+SELECT Message.id
+FROM Message LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+WHERE Message.conversation_id = :conversationId
+AND AssetContent.asset_mime_type LIKE "%audio/%"
+AND Message.creation_date > (SELECT Message.creation_date FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId)
+LIMIT 1;

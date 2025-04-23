@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.functional.fold
 import io.mockative.Mockable
 
 @Mockable
@@ -29,10 +29,10 @@ internal interface CallingParticipantsOrder {
 }
 
 internal class CallingParticipantsOrderImpl(
-    private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val participantsFilter: ParticipantsFilter,
     private val participantsOrderByName: ParticipantsOrderByName,
+    private val selfUserId: UserId
 ) : CallingParticipantsOrder {
 
     override suspend fun reorderItems(participants: List<Participant>): List<Participant> {
@@ -40,7 +40,6 @@ internal class CallingParticipantsOrderImpl(
             currentClientIdProvider().fold({
                 participants
             }, { selfClientId ->
-                val selfUserId = userRepository.getSelfUser()?.id!!
 
                 val selfParticipant = participantsFilter.selfParticipant(participants, selfUserId, selfClientId.value)
                 val otherParticipants = participantsFilter.otherParticipants(participants, selfClientId.value)

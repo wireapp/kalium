@@ -198,10 +198,14 @@ class ClientMapper(
 
     private fun toClientCapabilityDTO(clientCapability: ClientCapability): ClientCapabilityDTO = when (clientCapability) {
         ClientCapability.LegalHoldImplicitConsent -> ClientCapabilityDTO.LegalHoldImplicitConsent
+        ClientCapability.ConsumableNotifications -> ClientCapabilityDTO.ConsumableNotifications
+        is ClientCapability.Unknown -> ClientCapabilityDTO.Unknown(clientCapability.name)
     }
 
     private fun fromClientCapabilityDTO(clientCapabilityDTO: ClientCapabilityDTO): ClientCapability = when (clientCapabilityDTO) {
         ClientCapabilityDTO.LegalHoldImplicitConsent -> ClientCapability.LegalHoldImplicitConsent
+        ClientCapabilityDTO.ConsumableNotifications -> ClientCapability.ConsumableNotifications
+        is ClientCapabilityDTO.Unknown -> ClientCapability.Unknown(clientCapabilityDTO.name)
     }
 
     fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =

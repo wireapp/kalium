@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.authenticated.conversation
 
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse.GroupType
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -90,7 +91,25 @@ data class ConversationResponse(
     val receiptMode: ReceiptMode,
 
     @SerialName("public_keys")
-    val publicKeys: MLSPublicKeysDTO? = null
+    val publicKeys: MLSPublicKeysDTO? = null,
+
+    /**
+     * Only groups are expected to have a non-null value.
+     * Since API V8
+     * @see GroupType
+     */
+    @SerialName("group_conv_type")
+    val conversationGroupType: GroupType? = null,
+
+    @SerialName("add_permission")
+    val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null,
+
+    /**
+     * Status of the wire cell for conversation: disabled, pending, ready
+     * Since API V8
+     */
+    @SerialName("cells_state")
+    val cellsState: String? = null,
 ) {
 
     @Suppress("MagicNumber")
@@ -106,12 +125,20 @@ data class ConversationResponse(
             fun fromId(id: Int): Type = values().first { type -> type.id == id }
         }
     }
+
+    enum class GroupType {
+        @SerialName("group_conversation")
+        REGULAR_GROUP,
+
+        @SerialName("channel")
+        CHANNEL,
+    }
 }
 
 @Serializable
 data class ConversationResponseV3(
     @SerialName("creator")
-    val creator: String,
+    val creator: String?,
 
     @SerialName("members")
     val members: ConversationMembersResponse,
@@ -157,6 +184,66 @@ data class ConversationResponseV3(
 
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode,
+)
+
+@Serializable
+data class ConversationResponseV8(
+    @SerialName("creator")
+    val creator: String?,
+
+    @SerialName("members")
+    val members: ConversationMembersResponse,
+
+    @SerialName("name")
+    val name: String?,
+
+    @SerialName("qualified_id")
+    val id: ConversationId,
+
+    @SerialName("group_id")
+    val groupId: String?,
+
+    @SerialName("epoch")
+    val epoch: ULong?,
+
+    @Serializable(with = ConversationTypeSerializer::class)
+    val type: ConversationResponse.Type,
+
+    @SerialName("message_timer")
+    val messageTimer: Long?,
+
+    @SerialName("team")
+    val teamId: TeamId?,
+
+    @SerialName("protocol")
+    val protocol: ConvProtocol,
+
+    @SerialName("last_event_time")
+    val lastEventTime: String,
+
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int?,
+
+    @SerialName("access")
+    val access: Set<ConversationAccessDTO>,
+
+    @SerialName("access_role")
+    val accessRole: Set<ConversationAccessRoleDTO>?,
+
+    @SerialName("receipt_mode")
+    val receiptMode: ReceiptMode,
+
+    @SerialName("public_keys")
+    val publicKeys: MLSPublicKeysDTO? = null,
+
+    @SerialName("group_conv_type")
+    val conversationGroupType: GroupType? = null,
+
+    @SerialName("add_permission")
+    val channelAddUserPermissionTypeDTO: ChannelAddPermissionTypeDTO? = null,
+
+    @SerialName("cells_state")
+    val cellsState: String? = null,
 )
 
 @Serializable
@@ -252,11 +339,11 @@ data class SubconversationResponse(
     val mlsCipherSuiteTag: Int?,
 
     @SerialName("members")
-    val members: List<SubconversationMember>,
+    val members: List<SubconversationMemberDTO>,
 )
 
 @Serializable
-data class SubconversationMember(
+data class SubconversationMemberDTO(
     @SerialName("client_id") val clientId: String,
     @SerialName("user_id") val userId: String,
     @SerialName("domain") val domain: String
@@ -274,3 +361,6 @@ class ConversationTypeSerializer : KSerializer<ConversationResponse.Type> {
         return ConversationResponse.Type.fromId(rawValue)
     }
 }
+
+fun ConversationResponse.cellEnabled(): Boolean =
+    this.cellsState == "ready" || this.cellsState == "pending"

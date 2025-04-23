@@ -19,16 +19,16 @@ package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CrlRegistration
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.test_util
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
@@ -133,6 +133,14 @@ object TestNetworkException {
 
     val federationNotEnabled = KaliumException.FederationError(
         ErrorResponse(400, "no federator configured", "federation-not-enabled")
+    )
+
+    val accountSuspended = KaliumException.InvalidRequestError(
+        ErrorResponse(403, message = "account suspended", label = "suspended")
+    )
+
+    val accountPendingActivation = KaliumException.InvalidRequestError(
+        ErrorResponse(403, message = "account pending activation", label = "pending-activation")
     )
 }
 

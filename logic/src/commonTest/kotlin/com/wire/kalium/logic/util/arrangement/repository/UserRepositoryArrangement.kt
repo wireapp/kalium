@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -28,7 +30,6 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -54,7 +55,7 @@ internal interface UserRepositoryArrangement {
         userIdMatcher: Matcher<UserId> = AnyMatcher(valueOf())
     )
 
-    suspend fun withSelfUserReturning(selfUser: SelfUser?)
+    suspend fun withSelfUserReturning(result: Either<StorageFailure, SelfUser>)
 
     suspend fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>)
 
@@ -71,7 +72,7 @@ internal interface UserRepositoryArrangement {
     suspend fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>)
 
     suspend fun withFetchUsersByIdReturning(
-        result: Either<CoreFailure, Unit>,
+        result: Either<CoreFailure, Boolean>,
         userIdList: Matcher<Set<UserId>> = AnyMatcher(valueOf())
     )
 
@@ -94,11 +95,26 @@ internal interface UserRepositoryArrangement {
     )
 
     suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
+
+    suspend fun withIsClientMlsCapable(
+        result: Either<StorageFailure, Boolean>,
+        userId: Matcher<UserId> = AnyMatcher(valueOf()),
+        clientId: Matcher<ClientId> = AnyMatcher(valueOf())
+    )
+
+    suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>)
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
-        override val userRepository: UserRepository = mock(UserRepository::class)
+
+    override val userRepository: UserRepository = mock(UserRepository::class)
+
+    override suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            userRepository.fetchSelfUser()
+        }.returns(result)
+    }
 
     override suspend fun withDefederateUser(
         result: Either<CoreFailure, Unit>,
@@ -135,10 +151,10 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
             .returns(Either.Right(result))
     }
 
-    override suspend fun withSelfUserReturning(selfUser: SelfUser?) {
+    override suspend fun withSelfUserReturning(result: Either<StorageFailure, SelfUser>) {
         coEvery {
             userRepository.getSelfUser()
-        }.returns(selfUser)
+        }.returns(result)
     }
 
     override suspend fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>) {
@@ -184,7 +200,7 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
     }
 
     override suspend fun withFetchUsersByIdReturning(
-        result: Either<CoreFailure, Unit>,
+        result: Either<CoreFailure, Boolean>,
         userIdList: Matcher<Set<UserId>>
     ) {
         coEvery {
@@ -230,5 +246,18 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
 
     override suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
         coEvery { userRepository.getNameAndHandle(matches { userId.matches(it) }) }.returns(result)
+    }
+
+    override suspend fun withIsClientMlsCapable(
+        result: Either<StorageFailure, Boolean>,
+        userId: Matcher<UserId>,
+        clientId: Matcher<ClientId>
+    ) {
+        coEvery {
+            userRepository.isClientMlsCapable(
+                userId = matches { userId.matches(it) },
+                clientId = matches { clientId.matches(it) }
+            )
+        }.returns(result)
     }
 }

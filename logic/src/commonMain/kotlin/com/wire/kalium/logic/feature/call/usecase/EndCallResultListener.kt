@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCaseResult
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,7 +26,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 interface EndCallResultListener {
     suspend fun observeCallEndedResult(): Flow<EndCallResult>
     suspend fun onCallEndedBecauseOfVerificationDegraded()
-    suspend fun onCallEndedAskForFeedback(shouldAsk: Boolean)
+    suspend fun onCallEndedAskForFeedback(shouldAskCallFeedback: ShouldAskCallFeedbackUseCaseResult)
 }
 
 /**
@@ -41,12 +42,12 @@ object EndCallResultListenerImpl : EndCallResultListener {
         conversationCallEnded.emit(EndCallResult.VerificationDegraded)
     }
 
-    override suspend fun onCallEndedAskForFeedback(shouldAsk: Boolean) {
-        conversationCallEnded.emit(EndCallResult.AskForFeedback(shouldAsk))
+    override suspend fun onCallEndedAskForFeedback(shouldAskCallFeedback: ShouldAskCallFeedbackUseCaseResult) {
+        conversationCallEnded.emit(EndCallResult.AskForFeedback(shouldAskCallFeedback))
     }
 }
 
 sealed class EndCallResult {
     data object VerificationDegraded : EndCallResult()
-    data class AskForFeedback(val shouldAsk: Boolean) : EndCallResult()
+    data class AskForFeedback(val shouldAskCallFeedback: ShouldAskCallFeedbackUseCaseResult) : EndCallResult()
 }

@@ -86,7 +86,7 @@ class ConversationRepositoryExtensionsTest {
         private val conversationMapper: ConversationMapper = mock(ConversationMapper::class)
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
         private val conversationRepositoryExtensions: ConversationRepositoryExtensions by lazy {
-            ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper, messageMapper)
+            ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
         }
 
         init {

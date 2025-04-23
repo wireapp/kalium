@@ -19,16 +19,15 @@
 package com.wire.kalium.logic.sync.incremental
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
@@ -37,13 +36,10 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -65,7 +61,6 @@ class EventGathererTest {
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning("2022-03-30T15:36:00.000Z")
             .arrange()
@@ -99,7 +94,6 @@ class EventGathererTest {
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
-            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -130,7 +124,6 @@ class EventGathererTest {
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(flowOf(Either.Right(pendingEvent)))
-            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -156,14 +149,12 @@ class EventGathererTest {
             emit(WebSocketEvent.Open())
             repeat(repeatValue) { value ->
                 emit(WebSocketEvent.BinaryPayloadReceived(TestEvent.newConnection(eventId = "event_$value").wrapInEnvelope()))
-
             }
         }
 
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
-            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
             .withLiveEventsReturning(Either.Right(liveEventsChannel))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -172,30 +163,8 @@ class EventGathererTest {
             repeat(repeatValue) { value ->
                 assertEquals("event_$value", awaitItem().event.id)
             }
-        }
-
-    }
-
-    @Test
-    fun givenWebsocketEventAndDisconnectPolicy_whenGathering_thenShouldCompleteFlow() = runTest {
-        val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
-
-        val (_, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withPendingEventsReturning(emptyFlow())
-            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .withFetchServerTimeReturning(null)
-            .arrange()
-
-        // Open Websocket should trigger fetching pending events
-        liveEventsChannel.send(WebSocketEvent.Open())
-
-        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(TestEvent.newConnection().wrapInEnvelope()))
-        advanceUntilIdle()
-
-        eventGatherer.gatherEvents().test {
             awaitComplete()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -206,7 +175,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -231,7 +199,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
-            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -243,6 +210,12 @@ class EventGathererTest {
                 advanceUntilIdle()
                 assertEquals(EventSource.PENDING, awaitItem())
                 assertEquals(EventSource.LIVE, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+        eventGatherer.gatherEvents().test {
+            eventGatherer.currentSource.test {
                 assertEquals(EventSource.PENDING, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
@@ -258,7 +231,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -283,7 +255,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.receiveAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -305,7 +276,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(emptyFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -328,7 +298,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(flowOf(Either.Right(event)))
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -351,7 +320,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -377,7 +345,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(flowOf(Either.Right(event)))
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -413,7 +380,6 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
-            .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange()
@@ -436,7 +402,7 @@ class EventGathererTest {
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
         val serverTimeHandler = mock(ServerTimeHandler::class)
 
-        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository, serverTimeHandler)
+        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, serverTimeHandler)
 
         suspend fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>) = apply {
             coEvery {
@@ -460,18 +426,6 @@ class EventGathererTest {
             coEvery {
                 eventRepository.lastProcessedEventId()
             }.returns(either)
-        }
-
-        fun withConnectionPolicyReturning(policyStateFlow: StateFlow<ConnectionPolicy>) = apply {
-            every {
-                incrementalSyncRepository.connectionPolicyState
-            }.returns(policyStateFlow)
-        }
-
-        fun withKeepAliveConnectionPolicy() = apply {
-            every {
-                incrementalSyncRepository.connectionPolicyState
-            }.returns(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
         }
 
         fun arrange() = this to eventGatherer

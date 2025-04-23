@@ -19,13 +19,13 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import io.mockative.Mockable
@@ -46,7 +46,7 @@ internal class UpgradeCurrentSessionUseCaseImpl(
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit> =
         wrapStorageRequest { sessionManager.session()?.refreshToken }
             .flatMap { currentRefreshToken ->
-                accessTokenRefresher.refreshTokenAndPersistSession(currentRefreshToken, clientId.value)
+                accessTokenRefresher.refreshTokenAndPersistSession(currentRefreshToken, clientId)
             }.map {
                 authenticatedNetworkContainer.clearCachedToken()
             }

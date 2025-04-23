@@ -24,8 +24,8 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher

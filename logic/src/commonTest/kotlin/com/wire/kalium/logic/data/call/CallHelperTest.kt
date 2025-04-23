@@ -17,15 +17,14 @@
  */
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.common.functional.Either
 import io.mockative.of
 import io.mockative.every
 import io.mockative.mock
@@ -48,7 +47,7 @@ class CallHelperTest {
             val shouldEndSFTOneOnOneCall1 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
                 callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 newCallParticipants = listOf(participantMinimized1),
                 previousCallParticipants = listOf(participant1)
             )
@@ -58,7 +57,7 @@ class CallHelperTest {
             val shouldEndSFTOneOnOneCall2 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
                 callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.GROUP,
+                conversationType = Conversation.Type.Group.Regular,
                 newCallParticipants = listOf(participantMinimized1, participantMinimized2),
                 previousCallParticipants = listOf(participant1, participant2)
             )
@@ -68,7 +67,7 @@ class CallHelperTest {
             val shouldEndSFTOneOnOneCall3 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
                 callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 previousCallParticipants = listOf(participant1, participant2),
                 newCallParticipants = listOf(
                     participantMinimized1,
@@ -90,7 +89,7 @@ class CallHelperTest {
             val shouldEndSFTOneOnOneCall1 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
                 callProtocol = Conversation.ProtocolInfo.Proteus,
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 newCallParticipants = listOf(participantMinimized1, participantMinimized2),
                 previousCallParticipants = listOf(participant1, participant2)
             )
@@ -100,7 +99,7 @@ class CallHelperTest {
             val shouldEndSFTOneOnOneCall2 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
                 callProtocol = Conversation.ProtocolInfo.Proteus,
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 newCallParticipants = listOf(participantMinimized1),
                 previousCallParticipants = listOf(participant1, participant2)
             )

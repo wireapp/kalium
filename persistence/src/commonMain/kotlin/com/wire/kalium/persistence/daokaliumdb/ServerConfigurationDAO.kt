@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -119,6 +120,7 @@ internal object ServerConfigMapper {
     )
 }
 
+@Suppress("TooManyFunctions")
 @Mockable
 interface ServerConfigurationDAO {
     suspend fun deleteById(id: String)
@@ -127,12 +129,15 @@ interface ServerConfigurationDAO {
     suspend fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
     suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
-    suspend fun updateApiVersion(id: String, commonApiVersion: Int)
+    suspend fun getCommonApiVersion(domain: String): Int
+    suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int)
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
+    suspend fun teamUrlForUser(userId: UserIDEntity): String?
     suspend fun setFederationToTrue(id: String)
     suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
     suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String)
+    suspend fun getServerConfigByLinksFlow(links: ServerConfigEntity.Links): Flow<ServerConfigEntity?>
 
     data class InsertData(
         val id: String,
@@ -153,6 +158,7 @@ interface ServerConfigurationDAO {
     )
 }
 
+@Suppress("TooManyFunctions")
 internal class ServerConfigurationDAOImpl internal constructor(
     private val queries: ServerConfigurationQueries,
     private val queriesContext: CoroutineContext,
@@ -211,8 +217,14 @@ internal class ServerConfigurationDAOImpl internal constructor(
         }.executeAsOneOrNull()
     }
 
-    override suspend fun updateApiVersion(id: String, commonApiVersion: Int) = withContext(queriesContext) {
-        queries.updateApiVersion(commonApiVersion, id)
+    override suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int) {
+        withContext(queriesContext) {
+            queries.updateServerMetaData(federation, commonApiVersion, id)
+        }
+    }
+
+    override suspend fun getCommonApiVersion(domain: String): Int = withContext(queriesContext) {
+        queries.getCommonApiVersionByDomain(domain).executeAsOne()
     }
 
     override suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =
@@ -235,4 +247,22 @@ internal class ServerConfigurationDAOImpl internal constructor(
     override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {
         queries.updateLastBlackListCheckByIds(date, configIds)
     }
+
+    override suspend fun teamUrlForUser(userId: UserIDEntity): String? = withContext(queriesContext) {
+        queries.getTeamUrlByUser(userId).executeAsOneOrNull()
+    }
+
+    override suspend fun getServerConfigByLinksFlow(links: ServerConfigEntity.Links): Flow<ServerConfigEntity?> =
+        withContext(queriesContext) {
+            with(links) {
+                queries.getByLinks(
+                    apiBaseUrl = api,
+                    webSocketBaseUrl = webSocket,
+                    title = title,
+                    api_proxy_host = apiProxy?.host,
+                    api_proxy_port = apiProxy?.port,
+                    mapper = mapper::fromServerConfiguration
+                )
+            }.asFlow().mapToOneOrNull()
+        }
 }

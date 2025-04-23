@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.data.e2ei
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration

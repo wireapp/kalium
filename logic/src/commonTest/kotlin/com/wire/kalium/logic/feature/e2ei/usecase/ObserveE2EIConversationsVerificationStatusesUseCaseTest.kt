@@ -18,14 +18,13 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangementImpl
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -38,7 +37,7 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
     @Test
     fun givenEpochChanged_thenFetchingMLSVerificationIsCalled() = runTest {
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_WITH_EPOCH))
         }
 
         handler()

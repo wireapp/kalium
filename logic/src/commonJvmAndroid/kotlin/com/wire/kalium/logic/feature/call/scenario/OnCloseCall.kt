@@ -25,12 +25,13 @@ import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +42,8 @@ class OnCloseCall(
     private val callRepository: CallRepository,
     private val scope: CoroutineScope,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val networkStateObserver: NetworkStateObserver
+    private val networkStateObserver: NetworkStateObserver,
+    private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
 ) : CloseCallHandler {
     override fun onClosedCall(
         reason: Int,
@@ -62,6 +64,7 @@ class OnCloseCall(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {
+            val callMetadata = callRepository.getCallMetadataProfile()[conversationIdWithDomain]
 
             val isConnectedToInternet =
                 networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
@@ -78,10 +81,14 @@ class OnCloseCall(
                 status = callStatus
             )
 
-            if (callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.protocol is Conversation.ProtocolInfo.MLS) {
+            if (callMetadata?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)
             }
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
+        }
+
+        scope.launch {
+            createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
         }
     }
 
@@ -92,7 +99,7 @@ class OnCloseCall(
         if (callStatus == CallStatus.MISSED)
             return true
         return callRepository.getCallMetadataProfile().data[conversationId]?.let {
-            val isGroupCall = it.conversationType == Conversation.Type.GROUP
+            val isGroupCall = it.conversationType is Conversation.Type.Group
             (callStatus == CallStatus.CLOSED &&
                     isGroupCall &&
                     it.establishedTime.isNullOrEmpty() &&

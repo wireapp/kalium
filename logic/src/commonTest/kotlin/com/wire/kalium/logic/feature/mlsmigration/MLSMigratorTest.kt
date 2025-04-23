@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.feature.mlsmigration
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -36,9 +36,9 @@ import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorTest.Arrangement.Co
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -60,7 +60,7 @@ class MLSMigratorTest {
     @Test
     fun givenTeamConversation_whenMigrating_thenProtocolIsUpdatedToMixedAndGroupIsEstablished() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -102,7 +102,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnOngoingCall_whenMigrating_thenInsertSystemMessages() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -152,7 +152,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnError_whenMigrating_thenStillConsiderItASuccess() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -174,7 +174,7 @@ class MLSMigratorTest {
     @Test
     fun givenTeamConversation_whenFinalising_thenKnownUsersAreFetchedAndProtocolIsUpdatedToMls() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -200,7 +200,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnError_whenFinalising_thenStillConsiderItASuccess() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -231,7 +231,7 @@ class MLSMigratorTest {
         suspend fun withGetProteusTeamConversationsReturning(conversationsIds: List<ConversationId>) = apply {
             coEvery {
                 conversationRepository.getConversationIds(
-                    Conversation.Type.GROUP,
+                    Conversation.Type.Group.Regular,
                     Conversation.Protocol.PROTEUS,
                     TeamId(value = "Some-team")
                 )

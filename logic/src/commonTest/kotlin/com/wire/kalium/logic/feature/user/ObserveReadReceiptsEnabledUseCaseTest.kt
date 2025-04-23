@@ -19,10 +19,10 @@
 package com.wire.kalium.logic.feature.user
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -75,7 +75,8 @@ class ObserveReadReceiptsEnabledUseCaseTest {
     }
 
     private class Arrangement {
-                val userPropertyRepository = mock(UserPropertyRepository::class)
+
+        val userPropertyRepository = mock(UserPropertyRepository::class)
 
         val observeReadReceiptsEnabled = ObserveReadReceiptsEnabledUseCaseImpl(userPropertyRepository)
 

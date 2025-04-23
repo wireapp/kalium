@@ -19,20 +19,20 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
@@ -41,10 +41,10 @@ import kotlinx.datetime.Clock
  * client behaviour. It should not be used by clients itself.
  */
 class SendConfirmationUseCase internal constructor(
-    private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val selfUserId: UserId
 ) {
 
     suspend operator fun invoke(
@@ -57,8 +57,6 @@ class SendConfirmationUseCase internal constructor(
             it is SlowSyncStatus.Complete
         }
 
-        val selfUser = userRepository.observeSelfUser().first()
-
         val generatedMessageUuid = uuid4().toString()
 
         return currentClientIdProvider().flatMap { currentClientId ->
@@ -67,7 +65,7 @@ class SendConfirmationUseCase internal constructor(
                 content = MessageContent.Receipt(type, listOf(firstMessageId) + moreMessageIds),
                 conversationId = conversationId,
                 date = Clock.System.now(),
-                senderUserId = selfUser.id,
+                senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,
                 isSelfMessage = true,

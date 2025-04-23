@@ -26,9 +26,9 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
 import io.mockative.Mockable
 
@@ -157,6 +157,7 @@ internal class AssetMessageHandlerImpl(
             is MessageContent.Location,
             is MessageContent.Composite,
             is MessageContent.Text,
+            is MessageContent.Multipart,
             is MessageContent.Unknown -> error("Invalid asset message content type ${persistedMessage.content.getType()}")
         }
         // The message was previously received with just metadata info, so let's update it with the raw data info

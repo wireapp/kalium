@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -100,7 +100,7 @@ class SyncConversationsUseCaseTest {
             protocol: Conversation.Protocol? = null
         ) = apply {
             coEvery {
-                conversationRepository.getConversationIds(eq(Conversation.Type.GROUP), protocol?.let { eq(it) } ?: any(), eq<TeamId?>(null))
+                conversationRepository.getConversationIds(eq(Conversation.Type.Group.Regular), protocol?.let { eq(it) } ?: any(), eq<TeamId?>(null))
             }.returns(Either.Right(conversationIds))
         }
 

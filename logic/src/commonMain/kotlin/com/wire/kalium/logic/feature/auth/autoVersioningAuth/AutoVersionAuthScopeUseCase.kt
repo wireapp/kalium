@@ -19,7 +19,7 @@
 
 package com.wire.kalium.logic.feature.auth.autoVersioningAuth
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.CoreLogicCommon
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.SupportedApiVersions
 
 /**

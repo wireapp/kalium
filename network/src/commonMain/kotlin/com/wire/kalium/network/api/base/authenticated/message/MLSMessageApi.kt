@@ -52,7 +52,7 @@ interface MLSMessageApi {
      *
      * @param message MLS Message
      */
-    suspend fun sendMessage(message: Message): NetworkResponse<SendMLSMessageResponse>
+    suspend fun sendMessage(message: ByteArray): NetworkResponse<SendMLSMessageResponse>
 
     /**
      * Send an MLS commit bundle to a MLS group. The destination group is encoded into the message itself.

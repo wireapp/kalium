@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -31,13 +31,13 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.LegalHoldState
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.util.TriggerBuffer
@@ -84,6 +84,11 @@ internal class LegalHoldHandlerImpl internal constructor(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : LegalHoldHandler {
     private val scope = CoroutineScope(kaliumDispatcher.default)
+
+    // FIXME: Sync Cyclic Dependency.
+    //        Many functions of this Handler can be called DURING sync. It should not observe sync.
+    //        If this is intentional, the `scope.launch` and `bufferedUpdatedConversationIds` should live
+    //        In a different class, so we have an entity responsible for scheduling work, and another for performing it.
     private val bufferedUpdatedConversationIds =
         TriggerBuffer<ConversationId>(observeSyncState().distinctUntilChanged().map { it == SyncState.Live }, scope)
 

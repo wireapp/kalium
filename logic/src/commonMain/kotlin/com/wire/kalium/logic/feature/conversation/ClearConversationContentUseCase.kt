@@ -19,17 +19,18 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Clock
 
@@ -41,11 +42,11 @@ interface ClearConversationContentUseCase {
      * @param conversationId The conversation id to clear all messages.
      * @return [Result] of the operation, indicating success or failure.
      */
-    suspend operator fun invoke(conversationId: ConversationId): Result
+    suspend operator fun invoke(conversationId: ConversationId, needToRemoveConversation: Boolean = false): Result
 
     sealed class Result {
         data object Success : Result()
-        data object Failure : Result()
+        data class Failure(val failure: CoreFailure) : Result()
     }
 }
 
@@ -54,32 +55,38 @@ internal class ClearConversationContentUseCaseImpl(
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val selfConversationIdProvider: SelfConversationIdProvider
+    private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase
 ) : ClearConversationContentUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result =
-        conversationRepository.clearContent(conversationId).flatMap {
-            currentClientIdProvider().flatMap { currentClientId ->
-                selfConversationIdProvider().flatMap { selfConversationIds ->
-                    selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                        val regularMessage = Message.Signaling(
-                            id = uuid4().toString(),
-                            content = MessageContent.Cleared(
-                                conversationId = conversationId,
-                                time = DateTimeUtil.currentInstant()
-                            ),
-                            // sending the message to clear this conversation
-                            conversationId = selfConversationId,
-                            date = Clock.System.now(),
-                            senderUserId = selfUserId,
-                            senderClientId = currentClientId,
-                            status = Message.Status.Pending,
-                            isSelfMessage = true,
-                            expirationData = null
-                        )
-                        messageSender.sendMessage(regularMessage)
-                    }
+    override suspend fun invoke(
+        conversationId: ConversationId,
+        needToRemoveConversation: Boolean
+    ): ClearConversationContentUseCase.Result =
+        currentClientIdProvider().flatMap { currentClientId ->
+            selfConversationIdProvider().flatMap { selfConversationIds ->
+                selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                    val regularMessage = Message.Signaling(
+                        id = uuid4().toString(),
+                        content = MessageContent.Cleared(
+                            conversationId = conversationId,
+                            time = DateTimeUtil.currentInstant(),
+                            needToRemoveLocally = needToRemoveConversation
+                        ),
+                        // sending the message to clear this conversation
+                        conversationId = selfConversationId,
+                        date = Clock.System.now(),
+                        senderUserId = selfUserId,
+                        senderClientId = currentClientId,
+                        status = Message.Status.Pending,
+                        isSelfMessage = true,
+                        expirationData = null
+                    )
+                    messageSender.sendMessage(regularMessage)
                 }
             }
-        }.fold({ ClearConversationContentUseCase.Result.Failure }, { ClearConversationContentUseCase.Result.Success })
+        }
+            .flatMap { conversationRepository.clearContent(conversationId) }
+            .flatMap { clearLocalConversationAssets(conversationId) }
+            .fold({ ClearConversationContentUseCase.Result.Failure(it) }, { ClearConversationContentUseCase.Result.Success })
 }

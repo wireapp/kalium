@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -87,7 +87,8 @@ class FeatureConfigRepositoryTest {
                 Instant.DISTANT_FUTURE,
                 Instant.DISTANT_FUTURE,
                 Status.ENABLED
-            )
+            ),
+            ChannelFeatureConfiguration.Disabled
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -170,7 +171,8 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.MLSMigration(
                 MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
-            )
+            ),
+            FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED)
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

@@ -17,13 +17,12 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import io.mockative.any
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -32,7 +31,8 @@ import io.mockative.matches
 import io.mockative.mock
 
 interface MessageMetadataRepositoryArrangement {
-        val messageMetadataRepository: MessageMetadataRepository
+
+    val messageMetadataRepository: MessageMetadataRepository
 
     suspend fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,

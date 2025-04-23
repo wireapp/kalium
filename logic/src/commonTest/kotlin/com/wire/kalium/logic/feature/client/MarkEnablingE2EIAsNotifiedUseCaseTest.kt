@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -92,7 +92,8 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
     }
 
     private class Arrangement {
-                val userConfigRepository = mock(UserConfigRepository::class)
+
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         init {
             every {

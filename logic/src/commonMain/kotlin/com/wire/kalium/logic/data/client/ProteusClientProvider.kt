@@ -18,19 +18,21 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.cryptography.cryptoboxProteusClient
+import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
-import com.wire.kalium.logic.wrapProteusRequest
+import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -60,20 +62,15 @@ class ProteusClientProviderImpl(
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
     private val kaliumConfigs: KaliumConfigs,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
 ) : ProteusClientProvider {
 
     private var _proteusClient: ProteusClient? = null
     private val mutex = Mutex()
 
     override suspend fun clearLocalFiles() {
-        mutex.withLock {
-            withContext(dispatcher.io) {
-                _proteusClient?.close()
-                _proteusClient = null
-                FileUtil.deleteDirectory(rootProteusPath)
-            }
-        }
+        mutex.withLock { removeLocalFiles() }
     }
 
     override suspend fun getOrCreate(): ProteusClient {
@@ -108,10 +105,9 @@ class ProteusClientProviderImpl(
             val central = try {
                 coreCryptoCentral(
                     rootDir = rootProteusPath,
-                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
+                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value,
                 )
             } catch (e: Exception) {
-
                 val logMap = mapOf(
                     "userId" to userId.value.obfuscateId(),
                     "exception" to e,
@@ -121,13 +117,41 @@ class ProteusClientProviderImpl(
                 kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
                 throw e
             }
-            central.proteusClient()
+            getCentralProteusClientOrError(central)
         } else {
             cryptoboxProteusClient(
                 rootDir = rootProteusPath,
                 defaultContext = dispatcher.default,
                 ioContext = dispatcher.io
             )
+        }
+    }
+
+    private suspend fun getCentralProteusClientOrError(central: CoreCryptoCentral): ProteusClient {
+        return try {
+            central.proteusClient()
+        } catch (exception: ProteusStorageMigrationException) {
+            proteusMigrationRecoveryHandler.clearClientData { removeLocalFiles() }
+            val logMap = mapOf(
+                "userId" to userId.value.obfuscateId(),
+                "exception" to exception,
+                "message" to exception.message,
+                "stackTrace" to exception.stackTraceToString()
+            )
+            kaliumLogger.withTextTag(TAG).logStructuredJson(KaliumLogLevel.ERROR, "Proteus storage migration failed", logMap)
+            throw exception
+        }
+    }
+
+    /**
+     * Actually deletes the proteus local files.
+     * Important! It is the caller responsibility to use the mutex, DON'T add a mutex here or it will be dead lock it.
+     */
+    private suspend fun removeLocalFiles() {
+        withContext(dispatcher.io) {
+            _proteusClient?.close()
+            _proteusClient = null
+            FileUtil.deleteDirectory(rootProteusPath)
         }
     }
 

@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -191,7 +191,7 @@ class EndCallOnConversationChangeUseCaseTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.Group.Regular,
             callerName = null,
             callerTeamName = null,
             establishedTime = null
@@ -200,7 +200,7 @@ class EndCallOnConversationChangeUseCaseTest {
         val conversation = Conversation(
             id = conversationId,
             name = "Conv Name",
-            type = Conversation.Type.ONE_ON_ONE,
+            type = Conversation.Type.OneOnOne,
             teamId = TeamId("team_id"),
             protocol = Conversation.ProtocolInfo.Proteus,
             mutedStatus = MutedConversationStatus.AllAllowed,
@@ -241,11 +241,10 @@ class EndCallOnConversationChangeUseCaseTest {
             supportedProtocols = setOf(SupportedProtocol.PROTEUS)
         )
 
-        private val groupConversationDetail = ConversationDetails.Group(
+        private val groupConversationDetail = ConversationDetails.Group.Regular(
             conversation = conversation,
             hasOngoingCall = true,
             isSelfUserMember = false,
-            isSelfUserCreator = false,
             selfRole = null
         )
 

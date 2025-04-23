@@ -30,7 +30,7 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.getOrFail
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.logic.util.TimeLogger
 import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.requests.ACMERequests
@@ -46,9 +46,11 @@ import com.wire.kalium.network.api.authenticated.notification.NotificationRespon
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.TestRequestHandler
 import com.wire.kalium.network.utils.TestRequestHandler.Companion.TEST_BACKEND_CONFIG
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
@@ -138,8 +140,10 @@ class PocIntegrationTest {
 
         launch {
             val userSession = initUserSession(createCoreLogic(mockedRequests))
+            val syncJob = launch { userSession.syncExecutor.request { awaitCancellation() } }
 
-            val selfUserId = userSession.users.getSelfUser().first().id
+            advanceUntilIdle() // Let it sync
+            val selfUserId = userSession.users.observeSelfUser().first().id
             val selfClientId = userSession.clientIdProvider().getOrFail { throw IllegalStateException("No self client is registered") }
             val targetUserId = UserId(value = selfUserId.value, domain = selfUserId.domain)
 
@@ -178,6 +182,7 @@ class PocIntegrationTest {
             logger.start()
             userSession.debug.synchronizeExternalData(encodedData)
             logger.finish()
+            syncJob.cancel()
         }
     }
 

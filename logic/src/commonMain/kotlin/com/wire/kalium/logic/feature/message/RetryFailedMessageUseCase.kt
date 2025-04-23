@@ -20,26 +20,33 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
@@ -51,7 +58,10 @@ import kotlinx.datetime.Clock
 class RetryFailedMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
+    private val conversationRepository: ConversationRepository,
+    private val attachmentsRepository: MessageAttachmentDraftRepository,
     private val persistMessage: PersistMessageUseCase,
+    private val publishAttachments: PublishAttachmentsUseCase,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
     private val messageSender: MessageSender,
@@ -95,6 +105,9 @@ class RetryFailedMessageUseCase internal constructor(
 
                                 message is Message.Regular && message.editStatus is Message.EditStatus.Edited ->
                                     retrySendingEditMessage(message)
+
+                                message is Message.Regular && content is MessageContent.Multipart ->
+                                    retrySendingMultipartMessage(message)
 
                                 message is Message.Sendable -> retrySendingMessage(message)
 
@@ -160,6 +173,7 @@ class RetryFailedMessageUseCase internal constructor(
                                 .map { updatedMessage } // we need to persist new asset remoteData and status
                         }
                     }
+                    .onSuccess { updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id) }
                     .onFailure {
                         kaliumLogger.e("Failed to retry sending asset message. Failure = $it")
                         updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
@@ -213,6 +227,39 @@ class RetryFailedMessageUseCase internal constructor(
                     )
                 }
         }
+
+    private suspend fun retrySendingMultipartMessage(message: Message.Regular): Either<CoreFailure, Unit> {
+
+        val isCellEnabled = conversationRepository.isCellEnabled(message.conversationId)
+            .onFailure {
+                return it.left()
+            }
+            .getOrElse(false)
+
+        if (isCellEnabled) {
+            val attachments: List<MessageAttachment> = attachmentsRepository.getAll(message.conversationId)
+                .getOrElse { emptyList() }
+                .map {
+                    CellAssetContent(
+                        id = it.uuid,
+                        versionId = it.versionId,
+                        mimeType = it.mimeType,
+                        assetPath = it.remoteFilePath,
+                        assetSize = it.fileSize,
+                        localPath = it.localFilePath,
+                        previewUrl = null,
+                        metadata = it.metadata(),
+                        transferStatus = AssetTransferStatus.SAVED_INTERNALLY,
+                    )
+                }
+
+            publishAttachments(attachments).onSuccess {
+                messageSender.sendMessage(message)
+            }
+        }
+
+        return messageSender.sendMessage(message)
+    }
 
     private fun handleError(message: String): Either.Left<CoreFailure> =
         Either.Left(CoreFailure.Unknown(IllegalStateException(message)))

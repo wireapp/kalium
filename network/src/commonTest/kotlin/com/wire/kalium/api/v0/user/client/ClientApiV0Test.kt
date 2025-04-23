@@ -24,9 +24,9 @@ import com.wire.kalium.mocks.responses.ClientResponseJson
 import com.wire.kalium.mocks.responses.RegisterClientRequestJson
 import com.wire.kalium.mocks.responses.RegisterTokenJson
 import com.wire.kalium.mocks.responses.UpdateClientRequestJson
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.authenticated.client.UpdateClientCapabilitiesRequest
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.v0.authenticated.ClientApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -58,7 +58,30 @@ internal class ClientApiV0Test : ApiTest() {
             val clientApi: ClientApi = ClientApiV0(networkClient)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
-            assertEquals(response.value, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
+            assertEquals(VALID_REGISTER_CLIENT_RESPONSE.serializableData, response.value)
+        }
+
+    @Test
+    fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpointWithOldFormat_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+
+            val rowJson = VALID_REGISTER_CLIENT_OLD_RESPONSE.rawJson
+            val data = VALID_REGISTER_CLIENT_OLD_RESPONSE.serializableData
+
+            val networkClient = mockAuthenticatedNetworkClient(
+                rowJson,
+                statusCode = HttpStatusCode.Created,
+                assertion = {
+                    assertPost()
+                    assertJson()
+                    assertNoQueryParams()
+                    assertPathEqual(PATH_CLIENTS)
+                }
+            )
+            val clientApi: ClientApi = ClientApiV0(networkClient)
+            val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
+            assertTrue(response.isSuccessful())
+            assertEquals(data, response.value)
         }
 
     @Test
@@ -93,6 +116,7 @@ internal class ClientApiV0Test : ApiTest() {
 
             assertTrue(response.isSuccessful())
         }
+
     @Test
     fun givenAValidUpdateClientCapabilitiesRequest_whenCallingTheUpdateClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
@@ -172,6 +196,7 @@ internal class ClientApiV0Test : ApiTest() {
         const val PATH_CLIENTS = "/clients"
         val REGISTER_CLIENT_REQUEST = RegisterClientRequestJson.valid
         val VALID_REGISTER_CLIENT_RESPONSE = ClientResponseJson.valid
+        val VALID_REGISTER_CLIENT_OLD_RESPONSE = ClientResponseJson.validCapabilitiesObject
         val UPDATE_CLIENT_REQUEST = UpdateClientRequestJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
         val VALID_PUSH_TOKEN_REQUEST = RegisterTokenJson.validPushTokenRequest

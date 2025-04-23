@@ -58,10 +58,6 @@ CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
     WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
 END AS otherUserActiveConversationId,
-CASE
-    WHEN (SelfUser.id LIKE (Conversation.creator_id || '@%')) THEN 1
-    ELSE 0
-END AS isCreator,
 CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
     ELSE 1
@@ -92,6 +88,9 @@ Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
+Conversation.is_channel,
+Conversation.channel_access,
+Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
     WHEN Conversation.type = 'GROUP' THEN
@@ -108,7 +107,11 @@ CASE
             ELSE 1
         END
     ELSE 0
-END AS interactionEnabled
+END AS interactionEnabled,
+LabeledConversation.folder_id IS NOT NULL AS isFavorite,
+CurrentFolder.id AS folderId,
+CurrentFolder.name AS folderName,
+Conversation.wire_cell AS wireCell
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -123,7 +126,11 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          OR Connection.status = 'NOT_CONNECTED'
          AND Conversation.type IS 'CONNECTION_PENDING')
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
-LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1)
+LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 'FAVORITE'
+LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
+LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
+LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE';
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails
@@ -138,10 +145,23 @@ WHERE
     AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
     AND archived = :fromArchive
     AND isActive
+    AND CASE
+            -- When filter is ALL, do not apply additional filters on conversation type
+            WHEN :conversationFilter = 'ALL' THEN 1 = 1
+            -- When filter is GROUPS, filter only group conversations
+            WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP' AND is_channel = 0
+            -- When filter is ONE_ON_ONE, filter only one-on-one conversations
+            WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+            -- When filter is CHANNELS (future implementation)
+            WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
+            -- When filter is FAVORITES (future implementation)
+            ELSE 1 = 0
+        END
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectConversationDetailsByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
-selectConversationDetailsByGroupId:
-SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
+selectActiveOneOnOneConversationDetails:
+SELECT * FROM ConversationDetails
+WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);

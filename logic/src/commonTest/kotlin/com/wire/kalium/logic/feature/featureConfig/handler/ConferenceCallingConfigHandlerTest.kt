@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.featureConfig.handler
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.isLeft
-import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.isRight
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock

@@ -23,7 +23,7 @@ import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
-import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -31,16 +31,17 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrFail
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapE2EIRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapE2EIRequest
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
@@ -86,7 +87,12 @@ interface E2EIRepository {
     suspend fun finalize(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, ACMEResponse>
-    suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
+    suspend fun rotateKeysAndMigrateConversations(
+        certificateChain: String,
+        groupIdList: List<GroupID>,
+        isNewClient: Boolean = false,
+    ): Either<E2EIFailure, Unit>
+
     suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
@@ -322,12 +328,22 @@ class E2EIRepositoryImpl(
             }.fold({ E2EIFailure.Certificate(it).left() }, { it.right() })
         }
 
-    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean) =
+    override suspend fun rotateKeysAndMigrateConversations(
+        certificateChain: String,
+        groupIdList: List<GroupID>,
+        isNewClient: Boolean
+    ) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             currentClientIdProvider().fold({
                 E2EIFailure.RotationAndMigration(it).left()
             }, { clientId ->
-                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain, isNewClient)
+                mlsConversationRepository.rotateKeysAndMigrateConversations(
+                    clientId,
+                    e2eiClient,
+                    certificateChain,
+                    groupIdList,
+                    isNewClient
+                )
             })
         }
 
@@ -346,14 +362,14 @@ class E2EIRepositoryImpl(
     }
 
     override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {
-            wrapApiRequest {
-                acmeApi.getACMEFederationCertificateChain(it)
-            }.fold({
-                E2EIFailure.IntermediateCert(it).left()
-            }, { data ->
-                registerIntermediateCAs(data)
-            })
-        }
+        wrapApiRequest {
+            acmeApi.getACMEFederationCertificateChain(it)
+        }.fold({
+            E2EIFailure.IntermediateCert(it).left()
+        }, { data ->
+            registerIntermediateCAs(data)
+        })
+    }
 
     private suspend fun registerIntermediateCAs(data: List<String>) =
         currentClientIdProvider().fold({

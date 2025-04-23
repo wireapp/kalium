@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -49,6 +50,8 @@ import com.wire.kalium.network.api.v2.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
 import com.wire.kalium.network.api.v6.authenticated.networkContainer.AuthenticatedNetworkContainerV6
+import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
+import com.wire.kalium.network.api.v8.authenticated.networkContainer.AuthenticatedNetworkContainerV8
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.HttpClient
@@ -108,6 +111,8 @@ interface AuthenticatedNetworkContainer {
     val propertiesApi: PropertiesApi
 
     val wildCardApi: WildCardApi
+
+    val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
 
     companion object {
 
@@ -188,6 +193,26 @@ interface AuthenticatedNetworkContainer {
                     kaliumLogger
                 )
 
+                7 -> AuthenticatedNetworkContainerV7(
+                    sessionManager,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                8 -> AuthenticatedNetworkContainerV8(
+                    sessionManager,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
+                // bump API version and generate all needed classes
                 else -> error("Unsupported version: $version")
             }
         }
@@ -228,7 +253,6 @@ internal class AuthenticatedHttpClientProviderImpl(
         }
         val newSession = sessionManager.updateToken(
             accessTokenApi = accessTokenApi(client),
-            oldAccessToken = oldTokens!!.accessToken,
             oldRefreshToken = oldTokens!!.refreshToken
         )
         BearerTokens(

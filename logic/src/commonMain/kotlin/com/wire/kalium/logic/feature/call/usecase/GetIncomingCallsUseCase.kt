@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.functional.nullableFold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -72,7 +72,6 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
         userRepository.observeSelfUser()
             .flatMapLatest {
-
                 // if user is AWAY we don't show any IncomingCalls
                 if (it.availabilityStatus == UserAvailabilityStatus.AWAY) {
                     logger.d("$TAG; Ignoring possible calls based user's status")

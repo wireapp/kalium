@@ -18,14 +18,14 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import io.mockative.Mockable
 
@@ -128,6 +128,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MemberChange.RemovedFromTeam -> false
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.DataTransfer -> false
+            is MessageContent.InCallEmoji -> false
+            is MessageContent.Multipart -> true
         }
 
     @Suppress("ComplexMethod")
@@ -138,7 +140,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Knock,
             is MessageContent.RestrictedAsset,
             is MessageContent.MissedCall,
-            is MessageContent.Location -> true
+            is MessageContent.Location,
+            is MessageContent.Multipart -> true
 
             is MessageContent.MemberChange.Added,
             is MessageContent.MemberChange.Removed,
@@ -182,6 +185,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.LegalHold,
             is MessageContent.MemberChange.RemovedFromTeam,
             is MessageContent.TeamMemberRemoved,
-            is MessageContent.DataTransfer -> false
+            is MessageContent.DataTransfer,
+            is MessageContent.InCallEmoji -> false
         }
 }

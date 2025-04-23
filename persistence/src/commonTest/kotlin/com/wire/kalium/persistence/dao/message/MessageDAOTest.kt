@@ -27,10 +27,12 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
+import com.wire.kalium.persistence.utils.stubs.allMessageEntities
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
@@ -49,6 +51,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -61,6 +64,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     private lateinit var userDAO: UserDAO
     private lateinit var receiptDao: ReceiptDAO
     private lateinit var assetDao: AssetDAO
+    private lateinit var reactionDao: ReactionDAO
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val conversationEntity2 = newConversationEntity("Test2")
@@ -80,6 +84,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         userDAO = db.userDAO
         receiptDao = db.receiptDAO
         assetDao = db.assetDAO
+        reactionDao = db.reactionDAO
     }
 
     @Test
@@ -1946,15 +1951,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMessagesAreInserted_whenGettingLastMessagesByConversations_thenOnlyLastMessagesForEachConversationAreReturned() = runTest {
         // given
         insertInitialData()
-        fun createMessage(id: String, conversationId: QualifiedIDEntity, date: Instant) = newRegularMessageEntity(
-            id = id,
-            conversationId = conversationId,
-            date = date,
-            senderUserId = userEntity1.id,
-            senderName = userEntity1.name!!,
-            sender = userDetailsEntity1
-        )
-
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
         val messages = listOf(
             createMessage(id = "1A", conversationId = conversationEntity1.id, date = baseInstant),
@@ -1970,6 +1966,124 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(messages[2], result[conversationEntity1.id])
         assertEquals(messages[1], result[conversationEntity2.id])
         assertEquals(null, result[conversationEntity3.id])
+    }
+
+
+    @Test
+    fun givenNewMessageIsInserted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+        // given
+        insertInitialData()
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val lastMessage = createMessage(id = "1", conversationId = conversationEntity1.id, date = baseInstant)
+        val newMessage = createMessage(id = "2", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds)
+        messageDAO.insertOrIgnoreMessages(listOf(lastMessage))
+        // when
+        val resultBefore = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        messageDAO.insertOrIgnoreMessages(listOf(newMessage))
+        val resultAfter = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        // then
+        assertEquals(lastMessage.id, resultBefore[conversationEntity1.id]?.id)
+        assertEquals(newMessage.id, resultAfter[conversationEntity1.id]?.id)
+    }
+
+    @Test
+    fun givenLastMessageIsDeleted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+        // given
+        insertInitialData()
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val olderMessage = createMessage(id = "1", conversationId = conversationEntity1.id, date = baseInstant)
+        val lastMessage = createMessage(id = "2", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds)
+        messageDAO.insertOrIgnoreMessages(listOf(olderMessage, lastMessage))
+        // when
+        val resultBefore = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        messageDAO.deleteMessage(lastMessage.id, conversationEntity1.id)
+        val resultAfter = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        // then
+        assertEquals(lastMessage.id, resultBefore[conversationEntity1.id]?.id)
+        assertEquals(olderMessage.id, resultAfter[conversationEntity1.id]?.id)
+    }
+
+    @Test
+    fun givenLastMessageIsMovedToAnotherConversation_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+        // given
+        insertInitialData()
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val lastMessageConversation1 = createMessage(id = "1", conversationId = conversationEntity1.id, date = baseInstant)
+        val lastMessageConversation2 = createMessage(id = "2", conversationId = conversationEntity2.id, date = baseInstant + 1.seconds)
+        messageDAO.insertOrIgnoreMessages(listOf(lastMessageConversation1, lastMessageConversation2))
+        // when
+        val resultBefore = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id, conversationEntity2.id))
+        messageDAO.moveMessages(conversationEntity2.id, conversationEntity1.id)
+        val resultAfter = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id, conversationEntity2.id))
+        // then
+        assertEquals(lastMessageConversation1.id, resultBefore[conversationEntity1.id]?.id)
+        assertEquals(lastMessageConversation2.id, resultBefore[conversationEntity2.id]?.id)
+
+        assertEquals(lastMessageConversation2.id, resultAfter[conversationEntity1.id]?.id)
+        assertEquals(null, resultAfter[conversationEntity2.id]?.id) // conversation 2 should be empty - all messages are moved to 1
+    }
+
+    @Test
+    fun givenLastMessageIsEdited_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+        // given
+        insertInitialData()
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val lastMessageTextContent = MessageEntityContent.Text("message")
+        val lastMessage = createMessage(id = "2", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds)
+            .copy(content = lastMessageTextContent)
+        val editedLastMessageId = lastMessage.id + "_edit"
+        messageDAO.insertOrIgnoreMessages(listOf(lastMessage))
+        // when
+        val resultBefore = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        messageDAO.updateTextMessageContent(
+            editInstant = baseInstant + 2.seconds,
+            conversationId = conversationEntity1.id,
+            currentMessageId = lastMessage.id,
+            newTextContent = lastMessageTextContent.copy(messageBody = "edited"),
+            newMessageId = editedLastMessageId,
+        )
+        val resultAfter = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        // then
+        assertEquals(lastMessage.id, resultBefore[conversationEntity1.id]?.id)
+        assertEquals(editedLastMessageId, resultAfter[conversationEntity1.id]?.id)
+    }
+
+    @Test
+    fun givenNewAssetMessageWithIncompleteDataIsInserted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+        // given
+        insertInitialData()
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val currentLastVisibleMessage = createMessage(id = "1", conversationId = conversationEntity1.id, date = baseInstant)
+        val newerAssetMessageIncompleteData =
+            createImageAssetMessage(id = "2", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds, isComplete = false)
+        messageDAO.insertOrIgnoreMessages(listOf(currentLastVisibleMessage))
+        // when
+        val resultBefore = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        messageDAO.insertOrIgnoreMessage(newerAssetMessageIncompleteData)
+        val resultAfter = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        // then
+        assertEquals(currentLastVisibleMessage.id, resultBefore[conversationEntity1.id]?.id)
+        assertEquals(currentLastVisibleMessage.id, resultAfter[conversationEntity1.id]?.id)
+    }
+
+    @Test
+    fun givenLastAssetMessageRemoteDataUpdated_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+        // given
+        insertInitialData()
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val currentLastVisibleMessage = createMessage(id = "1", conversationId = conversationEntity1.id, date = baseInstant)
+        val newerAssetMessageIncompleteData =
+            createImageAssetMessage(id = "2", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds, isComplete = false)
+        val newerAssetMessageCompleteData =
+            createImageAssetMessage(id = "2", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds, isComplete = true)
+        messageDAO.insertOrIgnoreMessages(listOf(currentLastVisibleMessage, newerAssetMessageIncompleteData))
+        // when
+        val resultBefore = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        messageDAO.insertOrIgnoreMessage(newerAssetMessageCompleteData)
+        val resultAfter = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        // then
+        assertEquals(currentLastVisibleMessage.id, resultBefore[conversationEntity1.id]?.id)
+        assertEquals(newerAssetMessageCompleteData.id, resultAfter[conversationEntity1.id]?.id)
     }
 
     @Test
@@ -2235,6 +2349,142 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(messages.size, assetStatuses.size)
     }
 
+    @Test
+    fun givenMessagesAndUsersAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
+        insertInitialData()
+
+        val userInQuestion = userDetailsEntity1
+        val otherUser = userDetailsEntity2
+
+        val insertingMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userInQuestion.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userInQuestion.name!!,
+                sender = userInQuestion
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = otherUser.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = otherUser.name!!,
+                sender = otherUser
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(insertingMessages)
+
+        val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
+
+        assertEquals(userDetailsEntity1.name, result)
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
+        insertInitialData()
+
+        val insertingMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userDetailsEntity1.name!!,
+                sender = userDetailsEntity1
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity2.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userDetailsEntity2.name!!,
+                sender = userDetailsEntity2
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(insertingMessages)
+
+        val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
+
+        assertEquals(userDetailsEntity1.name, result)
+    }
+
+    @Test
+    fun givenMessagesAreButNoUserInserted_whenGettingSenderNameByMessageId_thenNullNameReturned() = runTest {
+        insertInitialData()
+
+        val insertingMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity1.id.copy(value = "absolutely_another_value"),
+                status = MessageEntity.Status.PENDING,
+                senderName = "s",
+                sender = userDetailsEntity1.copy(name = "s", id = userDetailsEntity1.id.copy(value = "absolutely_another_value"))
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity2.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userDetailsEntity2.name!!,
+                sender = userDetailsEntity2
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(insertingMessages)
+
+        val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheLastOne_thenNullIdReturned() = runTest {
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOfMessageWithAudioAssets())
+
+        val result = messageDAO.getNextAudioMessageInConversation("4", conversationEntity1.id)
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheFirstOne_thenCorrespondingIdReturned() = runTest {
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOfMessageWithAudioAssets())
+
+        val result = messageDAO.getNextAudioMessageInConversation("1", conversationEntity1.id)
+
+        assertEquals("3", result)
+    }
+
+    @Test
+    fun givenAllTypesOfMessages_whenMovingToAnotherConversation_thenItSucceeds() = runTest {
+        // Given
+        insertInitialData()
+        val messages = allMessageEntities(conversationId = conversationEntity1.id, senderUserId = userEntity1.id)
+        val firstEmoji = "🫡"
+        messageDAO.insertOrIgnoreMessages(messages)
+        reactionDao.insertReaction(
+            messages.first().id,
+            messages.first().conversationId,
+            userEntity1.id,
+            Instant.DISTANT_PAST,
+            firstEmoji
+        )
+
+        // When
+        val exception = kotlin.runCatching {
+            messageDAO.moveMessages(conversationEntity1.id, conversationEntity2.id)
+        }.exceptionOrNull()
+
+        // Then
+        assertNull(exception, "Expected no exception but got: ${exception?.message}")
+        val result = messageDAO.getMessagesByConversationAndVisibility(conversationEntity2.id, 100, 0).first()
+        assertEquals(messages.size, result.size)
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(
@@ -2244,5 +2494,90 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)
+    }
+
+    private fun createMessage(id: String, conversationId: QualifiedIDEntity, date: Instant) = newRegularMessageEntity(
+        id = id,
+        conversationId = conversationId,
+        date = date,
+        senderUserId = userEntity1.id,
+        senderName = userEntity1.name!!,
+        sender = userDetailsEntity1,
+    )
+
+    private fun createImageAssetMessage(id: String, conversationId: QualifiedIDEntity, date: Instant, isComplete: Boolean) =
+        newRegularMessageEntity(
+            id = id,
+            conversationId = conversationId,
+            date = date,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!,
+            sender = userDetailsEntity1,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = if (isComplete) 100000L else 0L,
+                assetName = "test name",
+                assetMimeType = "JPG",
+                assetId = if (isComplete) "assetId" else "",
+                assetOtrKey = if (isComplete) byteArrayOf(1) else byteArrayOf(),
+                assetSha256Key = if (isComplete) byteArrayOf(1) else byteArrayOf(),
+                assetToken = "",
+                assetDomain = "domain",
+                assetEncryptionAlgorithm = "",
+                assetWidth = if (isComplete) 100 else null,
+                assetHeight = if (isComplete) 100 else null,
+                assetDurationMs = null,
+                assetNormalizedLoudness = null,
+            ),
+            visibility = if (isComplete) MessageEntity.Visibility.VISIBLE else MessageEntity.Visibility.HIDDEN
+        )
+
+    private fun listOfMessageWithAudioAssets(): List<MessageEntity> {
+        val messageTemplate = newRegularMessageEntity(
+            conversationId = conversationEntity1.id,
+            senderUserId = userDetailsEntity1.id,
+            status = MessageEntity.Status.DELIVERED,
+            sender = userDetailsEntity1,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = 1000,
+                assetMimeType = "audio/mp4",
+                assetOtrKey = byteArrayOf(1),
+                assetSha256Key = byteArrayOf(1),
+                assetId = "assetId",
+                assetEncryptionAlgorithm = "",
+                assetDurationMs = 10
+            )
+        )
+
+        return listOf(
+            messageTemplate.copy(id = "1", date = messageTemplate.date.plus(10.seconds)),
+            messageTemplate.copy(
+                id = "2",
+                date = messageTemplate.date.plus(20.seconds),
+                content = MessageEntityContent.Text("Test Text")
+            ),
+            messageTemplate.copy(id = "3", date = messageTemplate.date.plus(30.seconds)),
+            messageTemplate.copy(id = "4", date = messageTemplate.date.plus(40.seconds)),
+            newRegularMessageEntity(
+                id = "5",
+                conversationId = conversationEntity1.id,
+                senderUserId = userDetailsEntity1.id,
+                status = MessageEntity.Status.DELIVERED,
+                sender = userDetailsEntity1,
+                date = messageTemplate.date.plus(50.seconds)
+            ),
+            messageTemplate.copy(
+                id = "6",
+                date = messageTemplate.date.plus(60.seconds),
+                content = MessageEntityContent.Asset(
+                    assetSizeInBytes = 1000,
+                    assetMimeType = "video/mp4",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId",
+                    assetEncryptionAlgorithm = "",
+                    assetDurationMs = 10
+                )
+            )
+        )
     }
 }

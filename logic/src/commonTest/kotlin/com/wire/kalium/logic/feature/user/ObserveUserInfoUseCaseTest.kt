@@ -19,14 +19,14 @@
 package com.wire.kalium.logic.feature.user
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -230,7 +230,34 @@ class ObserveUserInfoUseCaseTest {
         }
     }
 
+    @Test
+    fun givenAUserIdWhichIsNotInDBAndNotOnServer_whenInvokingObserveUserInfo_thenErrorIsReturned() = runTest {
+        // given
+        val (arrangement, useCase) = arrangement
+            .withFailingUserRetrieveFromDB()
+            .withSuccessfulTeamRetrieve(localTeamPresent = true)
+            .withSuccessfulUserFetchingNoUsersFound()
+            .arrange()
+
+        // when
+        useCase(userId).test {
+            val result = awaitItem()
+
+            // then
+            assertIs<GetUserInfoResult.Failure>(result)
+
+            with(arrangement) {
+                coVerify {
+                    userRepository.fetchUsersByIds(any())
+                }.wasInvoked(once)
+            }
+
+            awaitComplete()
+        }
+    }
+
     private class ObserveUserInfoUseCaseTestArrangement {
+
         val userRepository: UserRepository = mock(UserRepository::class)
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
@@ -271,7 +298,15 @@ class ObserveUserInfoUseCaseTest {
         suspend fun withSuccessfulUserFetching(): ObserveUserInfoUseCaseTestArrangement {
             coEvery {
                 userRepository.fetchUsersByIds(any())
-            }.returns(Either.Right(Unit))
+            }.returns(Either.Right(true))
+
+            return this
+        }
+
+        suspend fun withSuccessfulUserFetchingNoUsersFound(): ObserveUserInfoUseCaseTestArrangement {
+            coEvery {
+                userRepository.fetchUsersByIds(any())
+            }.returns(Either.Right(false))
 
             return this
         }

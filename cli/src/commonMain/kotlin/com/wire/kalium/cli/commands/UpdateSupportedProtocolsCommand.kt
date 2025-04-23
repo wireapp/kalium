@@ -22,7 +22,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.requireObject
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.runBlocking
 
 class UpdateSupportedProtocolsCommand : CliktCommand(name = "update-supported-protocols") {
@@ -30,7 +30,9 @@ class UpdateSupportedProtocolsCommand : CliktCommand(name = "update-supported-pr
     private val userSession by requireObject<UserSessionScope>()
 
     override fun run() = runBlocking {
-        userSession.syncManager.waitUntilLive()
+        userSession.syncExecutor.request {
+            waitUntilLiveOrFailure()
+        }
         userSession.users.updateSupportedProtocols().fold({ failure ->
             throw PrintMessage("updating supported protocols failed: $failure")
         }, {

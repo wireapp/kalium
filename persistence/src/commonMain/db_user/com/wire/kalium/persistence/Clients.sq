@@ -46,15 +46,28 @@ insertClient:
 INSERT INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys, is_mls_capable)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, user_id) DO UPDATE SET
-device_type = coalesce(excluded.device_type, device_type),
-client_type = coalesce(excluded.client_type, client_type),
-registration_date = coalesce(excluded.registration_date, registration_date),
-label = coalesce(excluded.label, label),
-model = coalesce(excluded.model, model),
-is_valid = is_valid,
-last_active = coalesce(excluded.last_active, last_active),
-mls_public_keys = excluded.mls_public_keys,
-is_mls_capable = excluded.is_mls_capable OR is_mls_capable; -- it's not possible to remove mls capability once added
+    device_type = coalesce(excluded.device_type, device_type),
+    client_type = coalesce(excluded.client_type, client_type),
+    registration_date = coalesce(excluded.registration_date, registration_date),
+    label = coalesce(excluded.label, label),
+    model = coalesce(excluded.model, model),
+    is_valid = is_valid,
+    last_active = coalesce(excluded.last_active, last_active),
+    mls_public_keys = excluded.mls_public_keys,
+    is_mls_capable = excluded.is_mls_capable OR is_mls_capable -- it's not possible to remove mls capability once added
+WHERE -- execute the update only if any of the fields changed
+    Client.device_type IS NOT coalesce(excluded.device_type, Client.device_type)
+    OR Client.client_type IS NOT coalesce(excluded.client_type, Client.client_type)
+    OR Client.registration_date IS NOT coalesce(excluded.registration_date, Client.registration_date)
+    OR Client.label IS NOT coalesce(excluded.label, Client.label)
+    OR Client.model IS NOT coalesce(excluded.model, Client.model)
+    OR Client.last_active IS NOT coalesce(excluded.last_active, Client.last_active)
+    OR Client.mls_public_keys IS NOT excluded.mls_public_keys
+    OR Client.is_mls_capable IS NOT (excluded.is_mls_capable OR Client.is_mls_capable);
+
+selectChanges:
+SELECT changes();
+
 
 selectAllClients:
 SELECT * FROM Client;
@@ -73,6 +86,9 @@ SELECT * FROM Client WHERE user_id = :user_id AND id = :client_id;
 
 deleteClientsOfUserExcept:
 DELETE FROM Client WHERE user_id = :user_id AND id NOT IN :exception_ids;
+
+isClientMLSCapable:
+SELECT is_mls_capable FROM Client WHERE user_id = :user_id AND id = :client_id;
 
 tryMarkAsInvalid:
 UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = :user_id AND  id IN :clientId_List;

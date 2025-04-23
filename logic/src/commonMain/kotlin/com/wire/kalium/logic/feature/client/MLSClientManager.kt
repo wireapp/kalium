@@ -23,10 +23,10 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -66,18 +66,16 @@ internal class MLSClientManagerImpl(
         job = scope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live &&
-                    isAllowedToRegisterMLSClient()
-                ) {
-                    registerMLSClientIfNeeded()
+                if (syncState is IncrementalSyncStatus.Live) {
+                    registerMLSClientIfPossibleAndNeeded()
                 }
             }
         }
     }
 
-    private suspend fun registerMLSClientIfNeeded() {
-        clientRepository.value.hasRegisteredMLSClient().flatMap {
-            if (!it) {
+    private suspend fun registerMLSClientIfPossibleAndNeeded() {
+        clientRepository.value.hasRegisteredMLSClient().flatMap { isMLSClientRegistered ->
+            if (!isMLSClientRegistered && isAllowedToRegisterMLSClient()) {
                 currentClientIdProvider().flatMap { clientId ->
                     kaliumLogger.i("No existing MLS Client, registering..")
                     registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->

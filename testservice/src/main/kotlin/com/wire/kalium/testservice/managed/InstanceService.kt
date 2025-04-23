@@ -22,7 +22,7 @@ import com.codahale.metrics.Gauge
 import com.codahale.metrics.MetricRegistry
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
@@ -40,7 +40,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.testservice.KaliumLogWriter
 import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse
@@ -145,6 +145,7 @@ class InstanceService(
                 File.separator + ".testservice" + File.separator + instanceId
         log.info("Instance $instanceId: Creating $instancePath")
         val kaliumConfigs = KaliumConfigs(
+            encryptProteusStorage = true,
             developmentApiEnabled = instanceRequest.developmentApiEnabled ?: false
         )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
@@ -197,6 +198,12 @@ class InstanceService(
             AuthenticationResult.Failure.SocketError ->
                 throw WebApplicationException("Instance $instanceId: Login failed, socket error!")
 
+            AuthenticationResult.Failure.AccountSuspended ->
+                throw WebApplicationException("Instance $instanceId: Login failed, account suspended!")
+
+            AuthenticationResult.Failure.AccountPendingActivation ->
+                throw WebApplicationException("Instance $instanceId: Login failed, account pending activation!")
+
             is AuthenticationResult.Success -> {
                 log.info("Instance $instanceId: Login successful")
             }
@@ -245,10 +252,12 @@ class InstanceService(
                             )
                             instances.put(instanceId, instance)
 
-                            syncManager.waitUntilLiveOrFailure().onFailure {
-                                log.error("Instance $instanceId: Sync failed with $it")
+                            syncExecutor.request {
+                                keepSyncAlwaysOn()
+                                waitUntilLiveOrFailure().onFailure {
+                                    log.error("Instance $instanceId: Sync failed with $it")
+                                }
                             }
-
                             return@runBlocking instance
                         }
                         is RegisterClientResult.E2EICertificateRequired ->

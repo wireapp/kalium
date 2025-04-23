@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 
 @Suppress("TooManyFunctions")
 class CallManagerImpl : CallManager {
@@ -45,7 +45,7 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
-    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean) {
+    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) {
         TODO("Not yet implemented")
     }
 

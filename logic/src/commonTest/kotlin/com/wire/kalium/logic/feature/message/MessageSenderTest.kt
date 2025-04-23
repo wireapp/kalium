@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -53,7 +53,7 @@ import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Compa
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement
@@ -64,7 +64,6 @@ import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
@@ -322,7 +321,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.staleEpochVerifier.verifyEpoch(eq(Arrangement.TEST_CONVERSATION_ID), any())
+                arrangement.staleEpochVerifier.verifyEpoch(eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
             }.wasInvoked(once)
         }
     }
@@ -346,7 +345,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_CONVERSATION_ID), eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
             }.wasInvoked(twice)
         }
     }
@@ -1138,7 +1137,7 @@ class MessageSenderTest {
         ) = apply {
             var invocationCounter = 0
             coEvery {
-                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times }, any())
+                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times })
             }.returns(result)
         }
 

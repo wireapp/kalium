@@ -24,6 +24,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
+import com.wire.kalium.logic.data.auth.DomainRegistrationMapper
+import com.wire.kalium.logic.data.auth.DomainRegistrationMapperImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -67,6 +69,8 @@ import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.message.SendMessagePartialFailureMapper
 import com.wire.kalium.logic.data.message.SendMessagePartialFailureMapperImpl
+import com.wire.kalium.logic.data.message.attachment.MessageAttachmentMapper
+import com.wire.kalium.logic.data.message.attachment.MessageAttachmentMapperImpl
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapperImpl
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
@@ -147,6 +151,7 @@ internal object MapperProvider {
 
     fun linkPreviewMapper(): LinkPreviewMapper = LinkPreviewMapperImpl(encryptionAlgorithmMapper())
     fun messageMentionMapper(selfUserId: UserId): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
+    fun attachmentsMapper(): MessageAttachmentMapper = MessageAttachmentMapperImpl()
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
@@ -176,4 +181,5 @@ internal object MapperProvider {
     fun serviceMapper(): ServiceMapper = ServiceMapper()
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
     fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
+    fun domainRegistrationMapper(): DomainRegistrationMapper = DomainRegistrationMapperImpl
 }

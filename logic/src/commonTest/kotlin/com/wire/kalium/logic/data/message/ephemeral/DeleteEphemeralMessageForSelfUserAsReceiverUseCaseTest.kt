@@ -23,15 +23,17 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.SyncManagerArrangement
+import com.wire.kalium.logic.util.arrangement.SyncManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangement
@@ -163,7 +165,8 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         MessageSenderArrangement by MessageSenderArrangementImpl(),
         SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl(),
-        AssetRepositoryArrangement by AssetRepositoryArrangementImpl() {
+        AssetRepositoryArrangement by AssetRepositoryArrangementImpl(),
+        SyncManagerArrangement by SyncManagerArrangementImpl() {
 
         private val useCase: DeleteEphemeralMessageForSelfUserAsReceiverUseCase =
             DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
@@ -172,7 +175,8 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                 selfUserId = SELF_USER_ID,
                 selfConversationIdProvider = selfConversationIdProvider,
                 assetRepository = assetRepository,
-                currentClientIdProvider = currentClientIdProvider
+                currentClientIdProvider = currentClientIdProvider,
+                syncManager = syncManager,
             )
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteEphemeralMessageForSelfUserAsReceiverUseCase> {

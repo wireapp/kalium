@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.mlsmigration
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
@@ -29,13 +29,13 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
@@ -60,7 +60,8 @@ internal class MLSMigratorImpl(
         selfTeamIdProvider().flatMap {
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
-            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.PROTEUS, teamId)
+            // TODO: Add support for channels here. Although... channels should always be MLS
+            conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.PROTEUS, teamId)
                 .flatMap {
                     it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         migrate(conversationId)
@@ -72,7 +73,8 @@ internal class MLSMigratorImpl(
         selfTeamIdProvider().flatMap {
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
-            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.MIXED, teamId)
+            // TODO: Add support for channels here. Although... channels should always be MLS
+            conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.MIXED, teamId)
                 .flatMap {
                     it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         finalise(conversationId)

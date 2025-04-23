@@ -86,9 +86,7 @@ data class WelcomeBundle(
 )
 
 data class RotateBundle(
-    var commits: Map<MLSGroupId, CommitBundle>,
     var newKeyPackages: List<ByteArray>,
-    var keyPackageRefsToRemove: List<ByteArray>,
     val crlNewDistributionPoints: List<String>?
 )
 
@@ -154,7 +152,7 @@ interface MLSClient {
      * Get the default ciphersuite for the client.
      * the Default ciphersuite is set when creating the mls client.
      */
-    fun getDefaultCipherSuite(): UShort
+    fun getDefaultCipherSuite(): MLSCiphersuite
 
     /**
      * Free up any resources and shutdown the client.
@@ -169,7 +167,7 @@ interface MLSClient {
      * @return public key of the client
      * @return ciphersuite used for the public key
      */
-    suspend fun getPublicKey(): Pair<ByteArray, UShort>
+    suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite>
 
     /**
      * Generate a fresh set of key packages.
@@ -190,47 +188,20 @@ interface MLSClient {
      *
      * @param groupId MLS group ID for an existing conversation
      *
-     * @return commit bundle, which needs to be sent to the distribution service.
+     * @return nothing, because commit is handled by [MLSTransporter]
      */
-    suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
-
-    /**
-     * Request to join an existing conversation
-     *
-     * @param groupId MLS group ID for an existing conversation
-     * @param epoch current epoch for the conversation
-     *
-     * @return proposal, which needs to be sent to the distribution service.
-     */
-    suspend fun joinConversation(
-        groupId: MLSGroupId,
-        epoch: ULong
-    ): HandshakeMessage
+    suspend fun updateKeyingMaterial(groupId: MLSGroupId)
 
     /**
      * Request to join an existing conversation by external commit
      *
      * @param publicGroupState MLS group state for an existing conversation
      *
-     * @return commit bundle, which needs to be sent to the distribution service.
+     * @return welcome bundle, which needs to be sent to the distribution service.
      */
     suspend fun joinByExternalCommit(
         publicGroupState: ByteArray
-    ): CommitBundle
-
-    /**
-     * Request to merge an existing conversation by external commit
-     *
-     * @param groupId MLS group ID provided by BE
-     */
-    suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
-
-    /**
-     * Clear pending external commits
-     *
-     * @param groupId MLS group ID provided by BE
-     */
-    suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId)
+    ): WelcomeBundle
 
     /**
      * Query if a conversation exists
@@ -278,22 +249,11 @@ interface MLSClient {
     suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle
 
     /**
-     * Signal that last sent commit was accepted by the distribution service
-     */
-    suspend fun commitAccepted(groupId: MLSGroupId)
-
-    /**
      * Create a commit for any pending proposals
      *
-     * @return commit bundle, which needs to be sent to the distribution service. If there are no
-     * pending proposals null is returned.
+     * @return nothing, because commit is handled by [MLSTransporter]
      */
-    suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle?
-
-    /**
-     * Clear a pending commit which has not yet been accepted by the distribution service
-     */
-    suspend fun clearPendingCommit(groupId: MLSGroupId)
+    suspend fun commitPendingProposals(groupId: MLSGroupId)
 
     /**
      * Encrypt a message for distribution in a group
@@ -338,12 +298,12 @@ interface MLSClient {
      * @param groupId MLS group
      * @param membersKeyPackages list of claimed key package for each member.
      *
-     * @return commit bundle, which needs to be sent to the distribution service.
+     * @return potentially newly discovered certificate revocation list distribution points
      */
     suspend fun addMember(
         groupId: MLSGroupId,
         membersKeyPackages: List<MLSKeyPackage>
-    ): CommitBundle?
+    ): List<String>?
 
     /**
      * Remove a user/client from an existing MLS group
@@ -351,12 +311,12 @@ interface MLSClient {
      * @param groupId MLS group
      * @param members list of clients
      *
-     * @return commit bundle, which needs to be sent to the distribution service.
+     * @return nothing, because commit is handled by [MLSTransporter]
      */
     suspend fun removeMember(
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
-    ): CommitBundle
+    )
 
     /**
      * Derive a secret key from the current MLS group state
@@ -405,22 +365,6 @@ interface MLSClient {
     suspend fun isE2EIEnabled(): Boolean
 
     /**
-     * The MLS Credentials based on the E2EI State
-     *
-     * @return the MLS Credentials for the current MLS Client
-     */
-    suspend fun getMLSCredentials(): CredentialType
-
-    /**
-     * Generate new keypackages after E2EI certificate issued
-     */
-    suspend fun e2eiRotateAll(
-        enrollment: E2EIClient,
-        certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
-    ): RotateBundle
-
-    /**
      * Conversation E2EI Verification Status
      *
      * @return the conversation verification status
@@ -452,4 +396,24 @@ interface MLSClient {
         groupId: MLSGroupId,
         users: List<CryptoQualifiedID>
     ): Map<String, List<WireIdentity>>
+
+    /**
+    * Deletes the stale key packages locally
+    */
+    suspend fun removeStaleKeyPackages()
+
+    /**
+     * Save the X509 Credential for the given enrollment
+     *
+     * @param enrollment the enrollment for which the credential is saved
+     * @param certificateChain the certificate chain to be saved
+     *
+     * @return potentially newly discovered certificate revocation list distribution points
+     */
+    suspend fun saveX509Credential(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>?
+
+    /**
+     * Rotates credentials for each conversation
+     */
+    suspend fun e2eiRotateGroups(groupList: List<MLSGroupId>)
 }

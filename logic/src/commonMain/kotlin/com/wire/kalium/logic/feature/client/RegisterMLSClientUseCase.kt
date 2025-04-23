@@ -18,20 +18,20 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.toModel
 import io.mockative.Mockable
 
 sealed class RegisterMLSClientResult {
@@ -70,7 +70,7 @@ internal class RegisterMLSClientUseCaseImpl(
                 mlsClient.getPublicKey()
             }
         }.flatMap { (publicKey, cipherSuite) ->
-            clientRepository.registerMLSClient(clientId, publicKey, CipherSuite.fromTag(cipherSuite))
+            clientRepository.registerMLSClient(clientId, publicKey, cipherSuite.toModel())
         }.flatMap {
             keyPackageRepository.uploadNewKeyPackages(clientId, keyPackageLimitsProvider.refillAmount())
             Either.Right(RegisterMLSClientResult.Success)

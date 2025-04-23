@@ -19,8 +19,8 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.call.Call
@@ -40,7 +40,7 @@ import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.any
 import io.mockative.coEvery
@@ -50,7 +50,6 @@ import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.time
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -339,6 +338,39 @@ class LogoutUseCaseTest {
         coVerify {
             arrangement.endCall.invoke(any())
         }.wasInvoked(exactly = calls.size.time)
+    }
+
+    @Test
+    fun givenAMigrationFailedLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
+        val reason = LogoutReason.MIGRATION_TO_CC_FAILED
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.logoutRepository.clearClientRelatedLocalMetadata()
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.clientRepository.clearRetainedClientId()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {

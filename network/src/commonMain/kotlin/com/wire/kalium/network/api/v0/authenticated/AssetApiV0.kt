@@ -52,6 +52,7 @@ import okio.Buffer
 import okio.Sink
 import okio.Source
 import okio.use
+import kotlin.coroutines.cancellation.CancellationException
 
 internal open class AssetApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -83,6 +84,9 @@ internal open class AssetApiV0 internal constructor(
             }
         }
     }.getOrElse { unhandledException ->
+        if (unhandledException is CancellationException) {
+            throw unhandledException
+        }
         // since we are handling manually our network exceptions for this endpoint, handle ie: no host exception
         NetworkResponse.Error(KaliumException.GenericError(unhandledException))
     }
@@ -107,6 +111,8 @@ internal open class AssetApiV0 internal constructor(
             sink.close()
         }
         NetworkResponse.Success(Unit, httpResponse)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         NetworkResponse.Error(KaliumException.GenericError(e))
     }

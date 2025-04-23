@@ -20,13 +20,10 @@ package com.wire.kalium.logic.data.conversation
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingData
 import app.cash.paging.map
-import com.wire.kalium.logic.data.message.MessageMapper
-import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
-import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -42,8 +39,7 @@ interface ConversationRepositoryExtensions {
 
 class ConversationRepositoryExtensionsImpl internal constructor(
     private val conversationDAO: ConversationDAO,
-    private val conversationMapper: ConversationMapper,
-    private val messageMapper: MessageMapper,
+    private val conversationMapper: ConversationMapper
 ) : ConversationRepositoryExtensions {
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
@@ -63,27 +59,13 @@ class ConversationRepositoryExtensionsImpl internal constructor(
             )
         }
 
-        return pager.pagingDataFlow.map {
-            it.map {
-                ConversationDetailsWithEvents(
-                    conversationDetails = conversationMapper.fromDaoModelToDetails(it.conversationViewEntity),
-                    lastMessage = when {
-                        it.messageDraft != null -> messageMapper.fromDraftToMessagePreview(it.messageDraft!!)
-                        it.lastMessage != null -> messageMapper.fromEntityToMessagePreview(it.lastMessage!!)
-                        else -> null
-                    },
-                    unreadEventCount = it.unreadEvents.unreadEvents.mapKeys {
-                        when (it.key) {
-                            UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
-                            UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
-                            UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
-                            UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
-                            UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
-                        }
-                    },
-                    hasNewActivitiesToShow = it.hasNewActivitiesToShow,
-                )
-            }
+        return pager.pagingDataFlow.map { pagingData ->
+            pagingData
+                .map { conversationDetailsWithEventsEntity ->
+                    conversationMapper.fromDaoModelToDetailsWithEvents(
+                        conversationDetailsWithEventsEntity
+                    )
+                }
         }
     }
 }
@@ -93,5 +75,5 @@ data class ConversationQueryConfig(
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,
     val newActivitiesOnTop: Boolean = false,
-    val conversationFilter: ConversationFilter = ConversationFilter.ALL,
+    val conversationFilter: ConversationFilter = ConversationFilter.All,
 )

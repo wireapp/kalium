@@ -27,9 +27,13 @@ import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationConflictResponse
 import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCOUNT_PENDING_ACTIVATION
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCOUNT_SUSPENDED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_CONNECTION_UPDATE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.ENTERPRISE_SERVICE_NOT_ENABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_NOT_ENABLED
@@ -45,6 +49,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CO
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_PROTOCOL_ERROR
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_FOUND
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_TEAM_MEMBER
@@ -224,9 +229,17 @@ fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
     return errorResponse.label == ACCESS_DENIED
 }
 
+fun KaliumException.InvalidRequestError.isMLSProtocol(): Boolean {
+    return errorResponse.label == MLS_PROTOCOL_ERROR
+}
+
 fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
     return (errorResponse.label == WRONG_CONVERSATION_PASSWORD) ||
             (errorResponse.label == BAD_REQUEST && errorResponse.message.contains("password"))
+}
+
+fun KaliumException.InvalidRequestError.isBadConnectionStatusUpdate(): Boolean {
+    return errorResponse.label == BAD_CONNECTION_UPDATE
 }
 
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
@@ -237,3 +250,8 @@ val KaliumException.InvalidRequestError.authenticationCodeFailure: Authenticatio
 fun KaliumException.FederationError.isFederationDenied() = errorResponse.label == FEDERATION_DENIED
 fun KaliumException.FederationError.isFederationNotEnabled() = errorResponse.label == FEDERATION_NOT_ENABLED
 fun KaliumException.InvalidRequestError.isMissingLegalHoldConsent(): Boolean = errorResponse.label == MISSING_LEGALHOLD_CONSENT
+fun KaliumException.InvalidRequestError.isAccountSuspended(): Boolean = errorResponse.label == ACCOUNT_SUSPENDED
+fun KaliumException.InvalidRequestError.isAccountPendingActivation(): Boolean = errorResponse.label == ACCOUNT_PENDING_ACTIVATION
+
+fun KaliumException.ServerError.isEnterpriseServiceNotEnabled(): Boolean =
+    errorResponse.code == HttpStatusCode.ServiceUnavailable.value && errorResponse.label == ENTERPRISE_SERVICE_NOT_ENABLED

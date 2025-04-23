@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.sync
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository.Companion.BUFFER_SIZE
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -45,20 +45,7 @@ internal interface IncrementalSyncRepository {
      */
     val incrementalSyncState: Flow<IncrementalSyncStatus>
 
-    /**
-     * Buffered flow of [ConnectionPolicy].
-     * - Has a replay size of 1, so the latest
-     * value is always immediately available for new observers.
-     * - Doesn't emit repeated values.
-     * - It has a limited buffer of size [BUFFER_SIZE]
-     * that will drop the oldest values if the buffer is full
-     * to prevent emissions from being suspended due to slow
-     * collectors.
-     * @see [BufferOverflow]
-     */
-    val connectionPolicyState: Flow<ConnectionPolicy>
     suspend fun updateIncrementalSyncState(newState: IncrementalSyncStatus)
-    suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy)
 
     companion object {
         // The same default buffer size used by Coroutines channels
@@ -82,19 +69,8 @@ internal class InMemoryIncrementalSyncRepository(
         .asSharedFlow()
         .distinctUntilChanged()
 
-    private val _connectionPolicy = MutableSharedFlow<ConnectionPolicy>(
-        replay = 1,
-        extraBufferCapacity = BUFFER_SIZE,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
-
-    override val connectionPolicyState = _connectionPolicy
-        .asSharedFlow()
-        .distinctUntilChanged()
-
     init {
         _syncState.tryEmit(IncrementalSyncStatus.Pending)
-        _connectionPolicy.tryEmit(ConnectionPolicy.KEEP_ALIVE)
     }
 
     override suspend fun updateIncrementalSyncState(newState: IncrementalSyncStatus) {
@@ -102,8 +78,4 @@ internal class InMemoryIncrementalSyncRepository(
         _syncState.emit(newState)
     }
 
-    override suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
-        logger.i("IncrementalSync Connection Policy changed: $connectionPolicy")
-        _connectionPolicy.emit(connectionPolicy)
-    }
 }

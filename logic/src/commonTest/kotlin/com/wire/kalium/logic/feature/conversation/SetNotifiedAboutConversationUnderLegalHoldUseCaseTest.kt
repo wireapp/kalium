@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -47,7 +47,8 @@ class SetNotifiedAboutConversationUnderLegalHoldUseCaseTest {
     }
 
     private class Arrangement {
-                val conversationRepository = mock(ConversationRepository::class)
+
+        val conversationRepository = mock(ConversationRepository::class)
 
         private val useCase: SetNotifiedAboutConversationUnderLegalHoldUseCase by lazy {
             SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl(conversationRepository)

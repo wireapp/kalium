@@ -18,19 +18,18 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser.USER_ID
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -79,7 +78,8 @@ class RenameConversationUseCaseTest {
     }
 
     private class Arrangement {
-                val conversationRepository = mock(ConversationRepository::class)
+
+        val conversationRepository = mock(ConversationRepository::class)
         val persistMessage = mock(PersistMessageUseCase::class)
         val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
 

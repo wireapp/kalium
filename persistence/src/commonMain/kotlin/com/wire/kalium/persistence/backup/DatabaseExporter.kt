@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlin.coroutines.cancellation.CancellationException
 import io.mockative.Mockable
 
 @Mockable
@@ -96,6 +97,8 @@ internal class DatabaseExporterImpl internal constructor(
             // attach the plain DB to the user DB
             // dump the content of the user DB into the plain DB
             plainDatabase.database.dumpContentQueries.dumpAllTables()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
             // if the dump failed, delete the backup DB file
@@ -134,6 +137,8 @@ internal class DatabaseExporterImpl internal constructor(
                     bindBytes(1, localDBPassphrase.value)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             kaliumLogger.e("Failed to attach the local DB to the plain DB ${e.message}")
             return false

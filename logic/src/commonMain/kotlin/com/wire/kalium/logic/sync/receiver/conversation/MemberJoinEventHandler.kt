@@ -20,7 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -28,10 +28,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
@@ -46,7 +48,9 @@ internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val legalHoldHandler: LegalHoldHandler
+    private val legalHoldHandler: LegalHoldHandler,
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val selfUserId: UserId,
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -77,15 +81,20 @@ internal class MemberJoinEventHandlerImpl(
             }.onSuccess {
                 conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->
                     when (conversation.type) {
-                        Conversation.Type.ONE_ON_ONE -> {
+                        Conversation.Type.OneOnOne -> {
+                            addUnverifiedWarningSystemMessageIfNeeded(event)
                             if (event.members.size == 1) {
                                 userRepository.updateActiveOneOnOneConversationIfNotSet(event.members.first().id, event.conversationId)
                             }
                         }
 
-                        Conversation.Type.GROUP -> addSystemMessage(event)
-                        Conversation.Type.SELF,
-                        Conversation.Type.CONNECTION_PENDING -> {
+                        is Conversation.Type.Group -> {
+                            addUnverifiedWarningSystemMessageIfNeeded(event)
+                            addMemberAddedSystemMessage(event)
+                        }
+
+                        Conversation.Type.Self,
+                        Conversation.Type.ConnectionPending -> {
                             /* no-op */
                         }
                     }
@@ -98,7 +107,14 @@ internal class MemberJoinEventHandlerImpl(
             }
     }
 
-    private suspend fun addSystemMessage(event: Event.Conversation.MemberJoin) {
+    private suspend fun addUnverifiedWarningSystemMessageIfNeeded(event: Event.Conversation.MemberJoin) {
+        if (event.members.any { it.id == selfUserId }) { // if self user is being added to group
+            newGroupConversationSystemMessagesCreator
+                .conversationStartedUnverifiedWarning(event.conversationId, event.dateTime)
+        }
+    }
+
+    private suspend fun addMemberAddedSystemMessage(event: Event.Conversation.MemberJoin) {
         val message = Message.System(
             id = event.id.ifEmpty { uuid4().toString() },
             content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),

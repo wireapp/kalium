@@ -18,14 +18,14 @@
 
 package com.wire.kalium.logic.feature.connection
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -67,7 +67,8 @@ class UnblockUserUseCaseTest {
     }
 
     private class Arrangement {
-                val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
+
+        val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
         val unblockUser = UnblockUserUseCaseImpl(connectionRepository)
 

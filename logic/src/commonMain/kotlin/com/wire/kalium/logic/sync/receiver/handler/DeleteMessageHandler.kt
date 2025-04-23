@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.common.functional.onSuccess
 import io.mockative.Mockable
 
 @Mockable

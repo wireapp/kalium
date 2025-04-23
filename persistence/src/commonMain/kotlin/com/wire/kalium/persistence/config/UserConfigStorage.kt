@@ -145,6 +145,11 @@ interface UserConfigStorage {
      */
     fun isConferenceCallingEnabled(): Boolean
 
+    /**
+     * Get a flow of saved flag to know if conference calling is enabled or not
+     */
+    fun isConferenceCallingEnabledFlow(): Flow<Boolean>
+
     fun persistUseSftForOneOnOneCalls(shouldUse: Boolean)
 
     fun shouldUseSftForOneOnOneCalls(): Boolean
@@ -325,6 +330,12 @@ class UserConfigStorageImpl(
             onBufferOverflow = BufferOverflow.DROP_OLDEST
         )
 
+    private val conferenceCallingEnabledFlow =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+
     private val legalHoldRequestFlow =
         MutableSharedFlow<Unit>(
             extraBufferCapacity = 1,
@@ -497,6 +508,7 @@ class UserConfigStorageImpl(
 
     override fun persistConferenceCalling(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
+        conferenceCallingEnabledFlow.tryEmit(Unit)
     }
 
     override fun isConferenceCallingEnabled(): Boolean =
@@ -504,6 +516,10 @@ class UserConfigStorageImpl(
             ENABLE_CONFERENCE_CALLING,
             DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         )
+
+    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> = conferenceCallingEnabledFlow
+        .map { isConferenceCallingEnabled() }
+        .onStart { emit(isConferenceCallingEnabled()) }
 
     override fun persistUseSftForOneOnOneCalls(shouldUse: Boolean) {
         kaliumPreferences.putBoolean(USE_SFT_FOR_ONE_ON_ONE_CALLS, shouldUse)

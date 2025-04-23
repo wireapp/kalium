@@ -23,13 +23,15 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -66,14 +68,14 @@ internal class ProteusSyncWorkerImpl(
             .collectLatest { lastRefill ->
                 val now = Clock.System.now()
                 val nextCheckTime = lastRefill?.plus(minIntervalBetweenRefills) ?: now
-                val delayUntilNextCheck = nextCheckTime - now
+                val delayUntilNextCheck = (nextCheckTime - now).coerceIn(ZERO, minIntervalBetweenRefills)
                 logger.logStructuredJson(
                     level = KaliumLogLevel.DEBUG,
                     leadingMessage = "Delaying until next check",
                     jsonStringKeyValues = mapOf(
                         "lastRefillPerformedAt" to lastRefill?.toIsoDateTimeString(),
                         "nextCheckTimeAt" to nextCheckTime.toIsoDateTimeString(),
-                        "delayingFor" to delayUntilNextCheck
+                        "delayingFor" to delayUntilNextCheck.toString(),
                     )
                 )
                 delay(delayUntilNextCheck)
@@ -86,7 +88,8 @@ internal class ProteusSyncWorkerImpl(
         logger.i("Waiting until live to refill prekeys if needed")
         incrementalSyncRepository.incrementalSyncState
             .filter { it is IncrementalSyncStatus.Live }
-            .collect {
+            .firstOrNull()
+            ?.let {
                 logger.i("Refilling prekeys if needed")
                 proteusPreKeyRefiller.refillIfNeeded()
             }

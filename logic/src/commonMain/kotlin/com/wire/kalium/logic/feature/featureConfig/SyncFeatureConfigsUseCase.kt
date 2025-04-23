@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.featureConfig
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
@@ -31,10 +31,11 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 import io.mockative.Mockable
@@ -60,14 +61,15 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
     private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
     private val e2EIConfigHandler: E2EIConfigHandler,
-    private val appLockConfigHandler: AppLockConfigHandler
+    private val appLockConfigHandler: AppLockConfigHandler,
+    private val channelsConfigHandler: ChannelsFeatureConfigurationHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             guestRoomConfigHandler.handle(it.guestRoomLinkModel)
             fileSharingConfigHandler.handle(it.fileSharingModel)
-             mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
+            mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
             it.mlsMigrationModel?.let { mlsMigrationConfigHandler.handle(it, duringSlowSync = true) }
             classifiedDomainsConfigHandler.handle(it.classifiedDomainsModel)
             conferenceCallingConfigHandler.handle(it.conferenceCallingModel)
@@ -75,13 +77,14 @@ internal class SyncFeatureConfigsUseCaseImpl(
             selfDeletingMessagesConfigHandler.handle(it.selfDeletingMessagesModel)
             it.e2EIModel.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
             appLockConfigHandler.handle(it.appLockModel)
+            channelsConfigHandler.handle(it.channelsModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
                 networkFailure is NetworkFailure.ServerMiscommunication &&
                 networkFailure.kaliumException is KaliumException.InvalidRequestError
             ) {
-                if (networkFailure.kaliumException.isNoTeam()) {
+                if ((networkFailure.kaliumException as KaliumException.InvalidRequestError).isNoTeam()) {
                     kaliumLogger.i("this user doesn't belong to a team")
                 } else {
                     kaliumLogger.d("operation denied due to insufficient permissions")

@@ -17,10 +17,12 @@
  */
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cryptography.utils.SHA256Key
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
@@ -38,7 +40,8 @@ import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
@@ -155,6 +158,38 @@ class RetryFailedMessageUseCaseTest {
                                 && (it.content as MessageContent.TextEdited).editMessageId == message.id // original id in edited content
                     }, any()
                 )
+            }.wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenAValidFailedAndNotUploadedAssetMessage_whenSuccessfullyUploadedAsset_thenAssetTransferShouldBeChangedToUploaded() =
+        runTest(testDispatcher.default) {
+            // given
+            val name = "some_asset.txt"
+            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
+            val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+            val message = assetMessage().copy(content = content, status = Message.Status.Failed)
+            val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
+            val uploadedAssetSha = SHA256Key(byteArrayOf())
+            val (arrangement, useCase) = Arrangement()
+                .withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+                .withFetchPrivateDecodedAsset(Either.Right(path))
+                .withStoredData(mockedLongAssetData(), path)
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+                .withUploadAndPersistPrivateAsset(Either.Right(uploadedAssetId to uploadedAssetSha))
+                .withPersistMessage(Either.Right(Unit))
+                .withSendMessage(Either.Right(Unit))
+                .arrange()
+
+            // when
+            useCase.invoke(message.id, message.conversationId)
+            advanceUntilIdle()
+
+            // then
+            coVerify {
+                arrangement.updateAssetMessageTransferStatus.invoke(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
             }.wasInvoked(exactly = once)
         }
 
@@ -333,13 +368,17 @@ class RetryFailedMessageUseCaseTest {
         }
 
     private class Arrangement {
+
         val messageRepository = mock(MessageRepository::class)
         val assetRepository = mock(AssetRepository::class)
+        val attachmentsRepository = mock(MessageAttachmentDraftRepository::class)
+        val conversationRepository = mock(ConversationRepository::class)
         val persistMessage = mock(PersistMessageUseCase::class)
         val messageSender = mock(MessageSender::class)
         val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
         val getAssetMessageTransferStatus = mock(GetAssetMessageTransferStatusUseCase::class)
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
+        val publishAttachments = mock(PublishAttachmentsUseCase::class)
 
         private val testScope = TestScope(testDispatcher.default)
 
@@ -401,7 +440,10 @@ class RetryFailedMessageUseCaseTest {
         fun arrange() = this to RetryFailedMessageUseCase(
             messageRepository,
             assetRepository,
+            conversationRepository,
+            attachmentsRepository,
             persistMessage,
+            publishAttachments,
             testScope,
             testDispatcher,
             messageSender,

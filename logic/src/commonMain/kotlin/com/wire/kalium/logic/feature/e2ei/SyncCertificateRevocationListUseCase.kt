@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.common.functional.map
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 

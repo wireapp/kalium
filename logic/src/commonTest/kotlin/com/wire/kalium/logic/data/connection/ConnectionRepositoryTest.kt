@@ -18,11 +18,12 @@
 
 package com.wire.kalium.logic.data.connection
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -30,7 +31,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -41,6 +42,7 @@ import com.wire.kalium.network.api.authenticated.connection.ConnectionResponse
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID
@@ -55,13 +57,17 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import io.mockative.Matchers
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
+import io.mockative.matchers.EqualsMatcher
+import io.mockative.matchers.Matcher
 import io.mockative.matchers.PredicateMatcher
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
@@ -125,7 +131,9 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
-            .withSuccessfulCreateConnectionResponse(userId)
+            .withSuccessfulCreateConnectionResponse(
+                userId = EqualsMatcher(userId)
+            )
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
             .withFetchSentConversationSucceed()
 
@@ -169,11 +177,15 @@ class ConnectionRepositoryTest {
     fun givenAConnectionRequest_WhenSendingAConnectionAndPersistingReturnsAnError_thenTheConnectionShouldNotBePersisted() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
+        val expectedConnection = Arrangement.stubConnectionOne.copy(status = ConnectionStateDTO.SENT)
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulGetUserById(arrangement.stubUserEntity.id)
-            .withSuccessfulCreateConnectionResponse(userId)
+            .withSuccessfulCreateConnectionResponse(
+                result = expectedConnection,
+                userId = EqualsMatcher(userId)
+            )
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
@@ -204,7 +216,7 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
@@ -317,7 +329,7 @@ class ConnectionRepositoryTest {
     }
 
     @Test
-    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
+    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBeUpdated() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
@@ -327,11 +339,34 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
             arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withGetConnectionByUser()
+            .withSuccessfulUpdateConnectionStatusResponse(userId)
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { Arrangement.stubConnectionOne }
+
+        // then
+        coVerify {
+            arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
+                lastUpdateDate = any(),
+                status = ConnectionEntity.State.IGNORED
+            ))
         }.wasInvoked(exactly = once)
     }
 
@@ -353,6 +388,29 @@ class ConnectionRepositoryTest {
     }
 
     @Test
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBeUpdated() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withErrorUpdatingConnectionStatusResponse(
+                userId,
+                KaliumException.FederationUnreachableException(FederationUnreachableResponse())
+            )
+            .withConnectionEntityByUser()
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { Arrangement.stubConnectionOne }
+
+        // then
+        coVerify {
+            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBePersisted() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
@@ -367,11 +425,14 @@ class ConnectionRepositoryTest {
 
         // when
         val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-        result.shouldSucceed { arrangement.stubConnectionOne }
+        result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
-            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
+            arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
+                lastUpdateDate = any(),
+                status = ConnectionEntity.State.IGNORED
+            ))
         }.wasInvoked(exactly = once)
     }
 
@@ -387,13 +448,50 @@ class ConnectionRepositoryTest {
 
             // when
             val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-            result.shouldFail { arrangement.stubConnectionOne }
+            result.shouldFail { Arrangement.stubConnectionOne }
 
             // then
             coVerify {
-                arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
-            }.wasInvoked(exactly = once)
+                arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
+                    status = ConnectionEntity.State.IGNORED
+                ))
+            }.wasInvoked(exactly = 0)
         }
+
+    @Test
+    fun givenBadConnectionRequestError_whenUpdatingRemote_thenRecoverByGettingTheCorrectStatus() = runTest {
+        // given
+        val userId = UserId("user_id", "domain_id")
+        val expectedRecoveryResponse = Arrangement.stubConnectionOne.copy(
+            qualifiedToId = userId.toApi(),
+            status = ConnectionStateDTO.BLOCKED
+        )
+        val (arrangement, connectionRepository) = Arrangement()
+            .withErrorUpdatingConnectionStatusResponse(
+                userId = userId.toApi(),
+                exception = KaliumException.InvalidRequestError(
+                    ErrorResponse(
+                        message = "bad connection update",
+                        code = 403,
+                        label = "bad-conn-update"
+                    )
+                )
+            ).withUserConnectionInfo(
+                result = NetworkResponse.Success(
+                    expectedRecoveryResponse,
+                    emptyMap(),
+                    200
+                ),
+                userId = EqualsMatcher(userId.toApi())
+            )
+            .arrange()
+
+        connectionRepository.updateRemoteConnectionStatus(userId, ConnectionState.ACCEPTED)
+
+        coVerify {
+            arrangement.connectionDAO.insertConnection(ConnectionMapperImpl().fromApiToDao(expectedRecoveryResponse))
+        }.wasInvoked(exactly = 1)
+    }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
@@ -415,15 +513,7 @@ class ConnectionRepositoryTest {
             conversationRepository = conversationRepository
         )
 
-        val stubConnectionOne = ConnectionDTO(
-            conversationId = "conversationId1",
-            from = "fromId",
-            lastUpdate = Instant.UNIX_FIRST_DATE,
-            qualifiedConversationId = ConversationId("conversationId1", "domain"),
-            qualifiedToId = NetworkUserId("connectionId1", "domain"),
-            status = ConnectionStateDTO.ACCEPTED,
-            toId = "connectionId1"
-        )
+
         val stubConnectionTwo = ConnectionDTO(
             conversationId = "conversationId2",
             from = "fromId",
@@ -490,10 +580,13 @@ class ConnectionRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessfulCreateConnectionResponse(userId: NetworkUserId): Arrangement {
+        suspend fun withSuccessfulCreateConnectionResponse(
+            result: ConnectionDTO = stubConnectionOne,
+            userId: Matcher<NetworkUserId>
+        ): Arrangement {
             coEvery {
-                connectionApi.createConnection(eq(userId))
-            }.returns(NetworkResponse.Success(stubConnectionOne, mapOf(), 200))
+                connectionApi.createConnection(matches { userId.matches(it) })
+            }.returns(NetworkResponse.Success(result, mapOf(), 200))
 
             return this
         }
@@ -558,6 +651,17 @@ class ConnectionRepositoryTest {
             }.returns(NetworkResponse.Error(exception))
         }
 
+        suspend fun withUserConnectionInfo(
+            result: NetworkResponse<ConnectionDTO>,
+            userId: Matcher<com.wire.kalium.network.api.model.UserId>
+        ) = apply {
+            coEvery {
+                connectionApi.userConnectionInfo(
+                    matches { userId.matches(it) }
+                )
+            }.returns(result)
+        }
+
         suspend fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
             coEvery {
                 connectionDAO.deleteConnectionDataAndConversation(eq(conversationId))
@@ -609,6 +713,24 @@ class ConnectionRepositoryTest {
             }.returns(connection)
         }
 
+        suspend fun withGetConnectionByUser(): Arrangement = apply {
+            coEvery {
+                connectionDAO.getConnectionByUser(any())
+            }.returns(connectionEntity)
+        }
+
         fun arrange() = this to connectionRepository
+
+        companion object {
+            val stubConnectionOne = ConnectionDTO(
+                conversationId = "conversationId1",
+                from = "fromId",
+                lastUpdate = Instant.UNIX_FIRST_DATE,
+                qualifiedConversationId = ConversationId("conversationId1", "domain"),
+                qualifiedToId = NetworkUserId("connectionId1", "domain"),
+                status = ConnectionStateDTO.ACCEPTED,
+                toId = "connectionId1"
+            )
+        }
     }
 }

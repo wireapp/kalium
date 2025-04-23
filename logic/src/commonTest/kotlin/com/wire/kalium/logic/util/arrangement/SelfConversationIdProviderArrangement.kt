@@ -19,18 +19,20 @@ package com.wire.kalium.logic.util.arrangement
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface SelfConversationIdProviderArrangement {
-        val selfConversationIdProvider: SelfConversationIdProvider
+
+    val selfConversationIdProvider: SelfConversationIdProvider
 
     suspend fun withSelfConversationIds(conversationIds: List<ConversationId>)
 }
 
 internal open class SelfConversationIdProviderArrangementImpl : SelfConversationIdProviderArrangement {
-        override val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
+
+    override val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
     override suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) {
         coEvery {

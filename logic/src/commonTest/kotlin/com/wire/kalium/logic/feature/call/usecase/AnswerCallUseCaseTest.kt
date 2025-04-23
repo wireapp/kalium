@@ -27,129 +27,78 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class AnswerCallUseCaseTest {
 
-    private val getAllCallsWithSortedParticipants = mock(GetAllCallsWithSortedParticipantsUseCase::class)
+    private val observeOngoingAndIncomingCalls = mock(ObserveOngoingAndIncomingCallsUseCase::class)
     private val muteCall = mock(MuteCallUseCase::class)
-    private val unMuteCall = mock(UnMuteCallUseCase::class)
     private val callManager = mock(CallManager::class)
 
     private val answerCall = AnswerCallUseCaseImpl(
-        allCalls = getAllCallsWithSortedParticipants,
+        observeOngoingAndIncomingCalls = observeOngoingAndIncomingCalls,
         muteCall = muteCall,
-        unMuteCall = unMuteCall,
         callManager = lazy { callManager },
         kaliumConfigs = KaliumConfigs(),
         dispatchers = TestKaliumDispatcher
     )
 
-    @BeforeTest
-    fun setUp() = runBlocking {
-        coEvery {
-            callManager.answerCall(eq(conversationId), eq(false))
-        }.returns(Unit)
-    }
-
     @Test
-    fun givenCbrEnabled_whenAnsweringACall_thenInvokeAnswerCallWithCbrOnce() = runTest(TestKaliumDispatcher.main) {
+    fun givenIncomingVideoCallWithCbrEnabled_whenAnsweringACall_thenInvokeAnswerCallWithCbrOnce() = runTest(TestKaliumDispatcher.main) {
         val isCbrEnabled = true
         val configs = KaliumConfigs(forceConstantBitrateCalls = isCbrEnabled)
 
         coEvery {
-            getAllCallsWithSortedParticipants.invoke()
-        }.returns(flowOf(listOf()))
+            observeOngoingAndIncomingCalls()
+        }.returns(flowOf(listOf(call.copy(isCameraOn = true))))
+
+        coEvery {
+            callManager.answerCall(eq(conversationId), eq(configs.forceConstantBitrateCalls), any())
+        }.returns(Unit)
 
         val answerCallWithCBR = AnswerCallUseCaseImpl(
-            allCalls = getAllCallsWithSortedParticipants,
+            observeOngoingAndIncomingCalls = observeOngoingAndIncomingCalls,
             muteCall = muteCall,
-            unMuteCall = unMuteCall,
             callManager = lazy { callManager },
             kaliumConfigs = configs,
             dispatchers = testKaliumDispatcher
         )
-
-        coEvery {
-            callManager.answerCall(eq(conversationId), eq(configs.forceConstantBitrateCalls))
-        }.returns(Unit)
 
         answerCallWithCBR(
             conversationId = conversationId
         )
 
         coVerify {
-            callManager.answerCall(eq(conversationId), eq(isCbrEnabled))
+            callManager.answerCall(eq(conversationId), eq(isCbrEnabled), eq(true))
         }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenACall_whenAnsweringIt_thenInvokeAnswerCallOnce() = runTest(TestKaliumDispatcher.main) {
+    fun givenAnOnGoingGroupCall_whenJoiningIt_thenMuteThatCall() = runTest(TestKaliumDispatcher.main) {
         coEvery {
-            getAllCallsWithSortedParticipants.invoke()
-        }.returns(flowOf(listOf()))
+            observeOngoingAndIncomingCalls()
+        }.returns(flowOf(listOf(call.copy(status = CallStatus.STILL_ONGOING))))
 
         answerCall(
             conversationId = conversationId
         )
 
         coVerify {
-            callManager.answerCall(eq(conversationId), eq(false))
-        }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenOnGoingGroupCall_whenJoiningIt_thenMuteThatCall() = runTest(TestKaliumDispatcher.main) {
-        coEvery {
-            getAllCallsWithSortedParticipants.invoke()
-        }.returns(flowOf(listOf(call)))
-
-        answerCall(
-            conversationId = conversationId
-        )
-
-        coVerify {
-            muteCall.invoke(eq(conversationId), eq(true))
+            callManager.answerCall(eq(conversationId), eq(false), eq(false))
         }.wasInvoked(exactly = once)
 
         coVerify {
-            callManager.answerCall(eq(conversationId), eq(false))
+            muteCall(any(), any())
         }.wasInvoked(exactly = once)
 
-    }
-
-    @Test
-    fun givenIncomingOneOnOneCallWithIsMutedFalse_whenAnsweringTheCall_thenUnMuteThatCall() = runTest(TestKaliumDispatcher.main) {
-        val newCall = call.copy(
-            status = CallStatus.INCOMING,
-            conversationType = Conversation.Type.ONE_ON_ONE,
-            isMuted = false
-        )
-
-        coEvery {
-            getAllCallsWithSortedParticipants.invoke()
-        }.returns(flowOf(listOf(newCall)))
-
-        answerCall(
-            conversationId = conversationId
-        )
-
-        coVerify {
-            unMuteCall.invoke(eq(conversationId), eq(true))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            callManager.answerCall(eq(conversationId), eq(false))
-        }.wasInvoked(exactly = once)
     }
 
     companion object {
@@ -159,13 +108,13 @@ class AnswerCallUseCaseTest {
         )
         val call = Call(
             conversationId = conversationId,
-            status = CallStatus.STILL_ONGOING,
+            status = CallStatus.INCOMING,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
             callerId = TestCall.CALLER_ID,
             conversationName = "caller-name",
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.Group.Regular,
             callerName = "Name",
             callerTeamName = "group",
             establishedTime = null

@@ -25,11 +25,16 @@ import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
+import com.wire.kalium.persistence.LastMessage
+import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageAssetTransferStatus
+import com.wire.kalium.persistence.MessageAttachmentDraft
+import com.wire.kalium.persistence.MessageAttachments
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
@@ -109,7 +114,9 @@ internal object TableMapper {
         archived_date_timeAdapter = InstantTypeAdapter,
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
-        legal_hold_statusAdapter = EnumColumnAdapter()
+        legal_hold_statusAdapter = EnumColumnAdapter(),
+        channel_accessAdapter = EnumColumnAdapter(),
+        channel_add_permissionAdapter = EnumColumnAdapter()
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,
@@ -264,5 +271,30 @@ internal object TableMapper {
     val messageDraftsAdapter = MessageDraft.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         mention_listAdapter = MentionListAdapter()
+    )
+
+    val lastMessageAdapter = LastMessage.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter,
+    )
+
+    val labeledConversationAdapter = LabeledConversation.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val conversationFolderAdapter = ConversationFolder.Adapter(
+        folder_typeAdapter = EnumColumnAdapter()
+    )
+
+    val messageAttachmentDraftAdapter = MessageAttachmentDraft.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        asset_widthAdapter = IntColumnAdapter,
+        asset_heightAdapter = IntColumnAdapter,
+    )
+
+    val messageAttachmentsAdapter = MessageAttachments.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        asset_widthAdapter = IntColumnAdapter,
+        asset_heightAdapter = IntColumnAdapter,
     )
 }

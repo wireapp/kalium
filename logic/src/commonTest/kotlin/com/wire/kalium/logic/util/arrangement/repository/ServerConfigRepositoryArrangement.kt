@@ -17,12 +17,11 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import io.mockative.any
+import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -31,7 +30,8 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface ServerConfigRepositoryArrangement {
-        val serverConfigRepository: ServerConfigRepository
+
+    val serverConfigRepository: ServerConfigRepository
 
     suspend fun withServerConfigForUser(
         result: Either<StorageFailure, ServerConfig>,
@@ -45,5 +45,5 @@ internal interface ServerConfigRepositoryArrangement {
 
 internal class ServerConfigRepositoryArrangementImpl : ServerConfigRepositoryArrangement {
 
-        override val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
+    override val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
 }
