@@ -52,6 +52,7 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -85,6 +86,7 @@ class MLSClientProviderImpl(
     private val mlsTransportProvider: MLSTransportProvider,
     private val epochObserver: MLSEpochObserver,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val processingScope: CoroutineScope,
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
@@ -96,21 +98,19 @@ class MLSClientProviderImpl(
     override suspend fun isMLSClientInitialised() = mlsClientMutex.withLock { mlsClient != null }
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = mlsClientMutex.withLock {
-        withContext(dispatchers.io) {
-            val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
-            val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
-            return@withContext mlsClient?.let {
-                Either.Right(it)
-            } ?: run {
-                mlsClient(
-                    cryptoUserId,
-                    currentClientId,
-                    mlsTransportProvider,
-                    epochObserver,
-                ).map {
-                    mlsClient = it
-                    return@run Either.Right(it)
-                }
+        val currentClientId = clientId ?: currentClientIdProvider().fold({ return Either.Left(it) }, { it })
+        val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
+        return mlsClient?.let {
+            Either.Right(it)
+        } ?: run {
+            mlsClient(
+                cryptoUserId,
+                currentClientId,
+                mlsTransportProvider,
+                epochObserver,
+            ).map {
+                mlsClient = it
+                return@run Either.Right(it)
             }
         }
     }
@@ -120,19 +120,17 @@ class MLSClientProviderImpl(
         certificateChain: CertificateChain,
         clientId: ClientId?
     ): Either<E2EIFailure, Unit> = mlsClientMutex.withLock {
-        withContext(dispatchers.io) {
-            val currentClientId =
-                clientId ?: currentClientIdProvider().fold({ return@withContext E2EIFailure.GettingE2EIClient(it).left() }, { it })
-            return@withContext mlsClient?.let {
-                Unit.right()
-            } ?: run {
-                e2eiMLSClient(
-                    enrollment,
-                    certificateChain,
-                    currentClientId
-                ).map {
-                    mlsClient = it
-                }
+        val currentClientId =
+            clientId ?: currentClientIdProvider().fold({ return E2EIFailure.GettingE2EIClient(it).left() }, { it })
+        return mlsClient?.let {
+            Unit.right()
+        } ?: run {
+            e2eiMLSClient(
+                enrollment,
+                certificateChain,
+                currentClientId
+            ).map {
+                mlsClient = it
             }
         }
     }
@@ -201,20 +199,18 @@ class MLSClientProviderImpl(
         userId: CryptoUserID,
         clientId: ClientId,
         mlsTransporter: MLSTransporter,
-        epochObserver: MLSEpochObserver
+        epochObserver: MLSEpochObserver,
     ): Either<CoreFailure, MLSClient> {
-        return withContext(dispatchers.io) {
-            getCoreCrypto(clientId).flatMap { cc ->
-                getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
-                    cc.mlsClient(
-                        clientId = CryptoQualifiedClientId(clientId.value, userId),
-                        allowedCipherSuites = supportedCipherSuite.map { it.toCrypto() },
-                        defaultCipherSuite = defaultCipherSuite.toCrypto(),
-                        mlsTransporter = mlsTransporter,
-                        epochObserver = epochObserver,
-                        coroutineScope = this
-                    )
-                }
+        return getCoreCrypto(clientId).flatMap { cc ->
+            getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
+                cc.mlsClient(
+                    clientId = CryptoQualifiedClientId(clientId.value, userId),
+                    allowedCipherSuites = supportedCipherSuite.map { it.toCrypto() },
+                    defaultCipherSuite = defaultCipherSuite.toCrypto(),
+                    mlsTransporter = mlsTransporter,
+                    epochObserver = epochObserver,
+                    coroutineScope = processingScope
+                )
             }
         }
     }
@@ -222,28 +218,26 @@ class MLSClientProviderImpl(
     private suspend fun e2eiMLSClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
-        clientId: ClientId
+        clientId: ClientId,
     ): Either<E2EIFailure, MLSClient> {
         val (_, defaultCipherSuite) = getOrFetchMLSConfig().getOrElse {
             return E2EIFailure.GettingE2EIClient(it).left()
         }
-        return withContext(dispatchers.io) {
-            getCoreCrypto(clientId).fold({
-                E2EIFailure.GettingE2EIClient(it).left()
-            }, {
-                // MLS Keypackages taken care somewhere else, here we don't need to generate any
-                it.mlsClient(
-                    enrollment = enrollment,
-                    certificateChain = certificateChain,
-                    newMLSKeyPackageCount = 0U,
-                    defaultCipherSuite = defaultCipherSuite.toCrypto(),
-                    mlsTransportProvider,
-                    epochObserver,
-                    coroutineScope = this
-                ).right()
+        return getCoreCrypto(clientId).fold({
+            E2EIFailure.GettingE2EIClient(it).left()
+        }, {
+            // MLS Keypackages taken care somewhere else, here we don't need to generate any
+            it.mlsClient(
+                enrollment = enrollment,
+                certificateChain = certificateChain,
+                newMLSKeyPackageCount = 0U,
+                defaultCipherSuite = defaultCipherSuite.toCrypto(),
+                mlsTransportProvider,
+                epochObserver,
+                coroutineScope = processingScope
+            ).right()
 
-            })
-        }
+        })
     }
 
     private companion object {
