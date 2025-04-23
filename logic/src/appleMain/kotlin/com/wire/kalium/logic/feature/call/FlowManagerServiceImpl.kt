@@ -25,23 +25,23 @@ import com.wire.kalium.logic.util.PlatformView
 actual class FlowManagerServiceImpl(
     appContext: PlatformContext
 ) : FlowManagerService {
-    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
+    actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun flipToFrontCamera(conversationId: ConversationId) {
+    actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun flipToBackCamera(conversationId: ConversationId) {
+    actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun setUIRotation(rotation: Int) {
+    actual override suspend fun setUIRotation(rotation: Int) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun startFlowManager() {
+    actual override suspend fun startFlowManager() {
         TODO("Not yet implemented")
     }
 }

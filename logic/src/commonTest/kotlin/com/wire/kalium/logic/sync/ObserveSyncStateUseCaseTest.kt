@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -135,11 +134,7 @@ class ObserveSyncStateUseCaseTest {
         }
 
     private class Arrangement {
-
-        @Mock
         val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
         fun arrange() = this to ObserveSyncStateUseCaseImpl(

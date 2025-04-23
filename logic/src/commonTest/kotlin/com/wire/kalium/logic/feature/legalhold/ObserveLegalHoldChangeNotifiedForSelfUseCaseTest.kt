@@ -21,7 +21,6 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -90,11 +89,7 @@ class ObserveLegalHoldChangeNotifiedForSelfUseCaseTest {
 
     private class Arrangement {
         val selfUserId = TestUser.SELF.id
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val observeLegalHoldForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
         val useCase: ObserveLegalHoldChangeNotifiedForSelfUseCase =
             ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(selfUserId, userConfigRepository, observeLegalHoldForUser)

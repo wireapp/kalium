@@ -23,10 +23,12 @@ package com.wire.kalium.network
 import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
+import io.mockative.Mockable
 
 val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
 val DevelopmentApiVersions = setOf(6)
 
+@Mockable
 interface BackendMetaDataUtil {
     fun calculateApiVersion(
         versionInfoDTO: VersionInfoDTO,

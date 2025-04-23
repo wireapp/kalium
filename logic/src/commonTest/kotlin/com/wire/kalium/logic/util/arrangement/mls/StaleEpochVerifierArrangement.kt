@@ -20,7 +20,6 @@ package com.wire.kalium.logic.util.arrangement.mls
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -35,8 +34,7 @@ interface StaleEpochVerifierArrangement {
 
 class StaleEpochVerifierArrangementImpl : StaleEpochVerifierArrangement {
 
-    @Mock
-    override val staleEpochVerifier = mock(StaleEpochVerifier::class)
+        override val staleEpochVerifier = mock(StaleEpochVerifier::class)
 
     override suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) {
         coEvery {

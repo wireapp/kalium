@@ -31,7 +31,6 @@ import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -135,10 +134,7 @@ class ClientRemoteRepositoryTest {
 
     private class Arrangement {
 
-        @Mock
         val clientApi = mock(ClientApi::class)
-
-        @Mock
         val clientConfig: ClientConfig = mock(ClientConfig::class)
 
         var clientRepository: ClientRemoteRepository =

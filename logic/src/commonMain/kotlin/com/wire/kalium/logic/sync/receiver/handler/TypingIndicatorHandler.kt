@@ -25,7 +25,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 
+@Mockable
 internal interface TypingIndicatorHandler {
     suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
 }

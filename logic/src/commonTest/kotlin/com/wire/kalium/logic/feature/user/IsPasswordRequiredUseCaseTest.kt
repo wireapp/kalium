@@ -25,7 +25,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.model.SsoIdEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -105,8 +104,6 @@ class IsPasswordRequiredUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val sessionRepository: SessionRepository = mock(SessionRepository::class)
 
         val selfUserId = UserId("user_id", "domain")

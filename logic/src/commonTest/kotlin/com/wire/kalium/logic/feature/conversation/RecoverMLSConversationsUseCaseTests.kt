@@ -31,7 +31,6 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -162,19 +161,10 @@ class RecoverMLSConversationsUseCaseTests {
     }
 
     private class Arrangement {
-        @Mock
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
+                val mlsConversationRepository = mock(MLSConversationRepository::class)
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
         private var recoverMLSConversationsUseCase = RecoverMLSConversationsUseCaseImpl(

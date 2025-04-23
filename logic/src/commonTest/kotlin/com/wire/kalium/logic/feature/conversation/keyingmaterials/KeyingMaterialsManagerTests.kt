@@ -29,7 +29,6 @@ import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -141,21 +140,12 @@ class KeyingMaterialsManagerTests {
         }
 
     private class Arrangement {
-        @Mock
-        val sessionRepository = mock(SessionRepository::class)
+                val sessionRepository = mock(SessionRepository::class)
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val updateKeyingMaterialsUseCase = mock(UpdateKeyingMaterialsUseCase::class)
-
-        @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
 
         suspend fun withTimestampKeyCheck(hasPassed: Boolean) = apply {

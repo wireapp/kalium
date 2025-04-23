@@ -33,7 +33,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -85,23 +84,11 @@ class SendButtonMessageCaseTest {
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         val userPropertyRepository = mock(UserPropertyRepository::class)
-
-        @Mock
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         suspend fun withSendMessageSuccess() = apply {

@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -106,8 +105,7 @@ class ObserveIsSelfUserMemberUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
+                val conversationRepository = mock(ConversationRepository::class)
 
         val observeIsSelfUserMember: ObserveIsSelfUserMemberUseCase =
             ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, TestUser.SELF.id)

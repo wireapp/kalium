@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -139,11 +138,7 @@ class IncrementalSyncWorkerTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
-
-        @Mock
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
 
         init {

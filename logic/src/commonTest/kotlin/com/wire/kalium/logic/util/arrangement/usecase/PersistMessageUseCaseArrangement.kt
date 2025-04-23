@@ -21,7 +21,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -39,8 +38,7 @@ internal interface PersistMessageUseCaseArrangement {
 }
 
 internal open class PersistMessageUseCaseArrangementImpl : PersistMessageUseCaseArrangement {
-    @Mock
-    override val persistMessageUseCase: PersistMessageUseCase = mock(PersistMessageUseCase::class)
+        override val persistMessageUseCase: PersistMessageUseCase = mock(PersistMessageUseCase::class)
 
     override suspend fun withPersistingMessage(
         result: Either<CoreFailure, Unit>,

@@ -31,7 +31,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -47,17 +46,13 @@ import kotlin.test.Test
 
 class MLSMessageCreatorTest {
 
-    @Mock
-    private val mlsClientProvider = mock(MLSClientProvider::class)
+        private val mlsClientProvider = mock(MLSClientProvider::class)
 
-    @Mock
-    private val protoContentMapper = mock(ProtoContentMapper::class)
+        private val protoContentMapper = mock(ProtoContentMapper::class)
 
-    @Mock
-    private val conversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository = mock(ConversationRepository::class)
 
-    @Mock
-    private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
+        private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
 
     private lateinit var mlsMessageCreator: MLSMessageCreator
 

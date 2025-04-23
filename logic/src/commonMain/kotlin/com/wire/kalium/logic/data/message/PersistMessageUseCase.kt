@@ -27,11 +27,13 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
+import io.mockative.Mockable
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
  */
+@Mockable
 interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }

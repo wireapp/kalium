@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.functional.fold
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.map
  * Checks if the self user is a team member or not.
  * @return true if the self user is a team member, false otherwise.
  */
+@Mockable
 interface IsSelfATeamMemberUseCase {
     /**
      * Flow that emits the current value, _i.e._ whether self user is a team member or not.

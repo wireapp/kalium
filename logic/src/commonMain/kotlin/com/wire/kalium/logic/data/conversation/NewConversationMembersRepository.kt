@@ -27,11 +27,13 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import io.mockative.Mockable
 
 /**
  * Handles the addition of members to a new conversation and the related system messages when a conversation is started.
  * Either all users are added or some of them could fail to be added.
  */
+@Mockable
 internal interface NewConversationMembersRepository {
     // TODO(refactor): Use Set<UserId> instead of List to avoid duplications
     suspend fun persistMembersAdditionToTheConversation(

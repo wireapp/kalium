@@ -31,7 +31,9 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import io.mockative.Mockable
 
+@Mockable
 internal interface AccessTokenRepository {
     /**
      * Retrieves a new access token using the provided refresh token and client ID.

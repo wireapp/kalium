@@ -51,7 +51,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -684,41 +683,17 @@ class ScheduleNewAssetMessageUseCaseTest {
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val assetDataSource = mock(AssetRepository::class)
-
-        @Mock
         private val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val updateTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
-
-        @Mock
         private val userPropertyRepository = mock(UserPropertyRepository::class)
-
-        @Mock
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
-
-        @Mock
         val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
-
-        @Mock
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
-
-        @Mock
         val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
-
-        @Mock
         val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(ObserveFileSharingStatusUseCase::class)
 
         val someClientId = ClientId("some-client-id")

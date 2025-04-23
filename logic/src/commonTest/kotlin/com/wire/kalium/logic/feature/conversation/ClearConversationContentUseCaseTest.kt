@@ -27,7 +27,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -169,16 +168,9 @@ class ClearConversationContentUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
 
         suspend fun withClearConversationContent(isSuccessFull: Boolean) = apply {

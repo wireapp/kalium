@@ -21,12 +21,14 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
  * Use case that allows to observe the legal hold state for a given user.
  */
+@Mockable
 interface ObserveLegalHoldStateForUserUseCase {
     suspend operator fun invoke(userId: UserId): Flow<LegalHoldState>
 }

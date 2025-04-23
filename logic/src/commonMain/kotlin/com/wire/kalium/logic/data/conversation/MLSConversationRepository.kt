@@ -82,6 +82,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.decodeBase64Bytes
+import io.mockative.Mockable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -104,6 +105,7 @@ data class DecryptedMessageBundle(
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
+@Mockable
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
 

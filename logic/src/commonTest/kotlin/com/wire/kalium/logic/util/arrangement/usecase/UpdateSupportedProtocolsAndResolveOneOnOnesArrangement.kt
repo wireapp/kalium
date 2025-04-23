@@ -19,7 +19,6 @@ package com.wire.kalium.logic.util.arrangement.usecase
 
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -32,8 +31,7 @@ internal interface UpdateSupportedProtocolsAndResolveOneOnOnesArrangement {
 
 internal class UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
     : UpdateSupportedProtocolsAndResolveOneOnOnesArrangement {
-        @Mock
-        override val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase =
+                override val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase =
             mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
 
     override suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful() {

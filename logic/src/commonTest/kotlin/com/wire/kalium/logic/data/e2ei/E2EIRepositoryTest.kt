@@ -55,7 +55,6 @@ import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -1208,34 +1207,15 @@ class E2EIRepositoryTest {
             }.returns(Unit)
         }
 
-        @Mock
         val e2eiApi: E2EIApi = mock(E2EIApi::class)
-
-        @Mock
         val acmeApi: ACMEApi = mock(ACMEApi::class)
-
-        @Mock
         val e2eiClientProvider: E2EIClientProvider = mock(E2EIClientProvider::class)
-
-        @Mock
         val e2eiClient = mock(E2EIClient::class)
-
-        @Mock
         val coreCryptoCentral = mock(CoreCryptoCentral::class)
-
-        @Mock
         val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() =

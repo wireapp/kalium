@@ -26,10 +26,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
+import io.mockative.Mockable
 
 /**
  * This use case is used to get the e2ei certificate
  */
+@Mockable
 interface GetMLSClientIdentityUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity>
 }

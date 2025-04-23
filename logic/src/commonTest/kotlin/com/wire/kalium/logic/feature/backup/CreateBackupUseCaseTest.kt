@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -184,16 +183,9 @@ class CreateBackupUseCaseTest {
     private inner class Arrangement {
         private var userId = UserId("some-user-id", "some-user-domain")
 
-        @Mock
         val clientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val databaseExporter = mock(DatabaseExporter::class)
-
-        @Mock
         val securityHelper = mock(SecurityHelper::class)
 
         fun withUserDBPassphrase(passphrase: UserDBSecret?) = apply {

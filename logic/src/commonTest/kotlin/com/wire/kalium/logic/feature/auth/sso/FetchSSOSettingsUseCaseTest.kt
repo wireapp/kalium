@@ -23,7 +23,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -93,7 +92,7 @@ class FetchSSOSettingsUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val ssoLoginRepository: SSOLoginRepository = mock(SSOLoginRepository::class)
 
         private val useCase: FetchSSOSettingsUseCase = FetchSSOSettingsUseCase(ssoLoginRepository)

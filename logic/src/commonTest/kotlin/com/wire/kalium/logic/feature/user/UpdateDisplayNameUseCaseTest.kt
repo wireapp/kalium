@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -64,8 +63,6 @@ class UpdateDisplayNameUseCaseTest {
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher) {
-
-        @Mock
         val accountRepository = mock(AccountRepository::class)
 
         suspend fun withSuccessfulUploadResponse() = apply {

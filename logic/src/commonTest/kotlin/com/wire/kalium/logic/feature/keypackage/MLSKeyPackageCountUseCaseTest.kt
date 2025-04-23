@@ -31,7 +31,6 @@ import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Ar
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -98,13 +97,8 @@ class MLSKeyPackageCountUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val keyPackageRepository = mock(KeyPackageRepository::class)
-
-        @Mock
+                val keyPackageRepository = mock(KeyPackageRepository::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         suspend fun withClientId(result: Either<CoreFailure, ClientId>) = apply {

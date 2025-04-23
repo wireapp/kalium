@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.user.e2ei
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
@@ -55,8 +54,6 @@ class ObserveShouldNotifyForRevokedCertificateUseCaseTest {
         }
 
     internal class Arrangement {
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() = this to ObserveShouldNotifyForRevokedCertificateUseCaseImpl(

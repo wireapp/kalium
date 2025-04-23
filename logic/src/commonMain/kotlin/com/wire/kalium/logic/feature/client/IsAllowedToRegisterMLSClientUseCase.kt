@@ -24,6 +24,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 
 /**
  * Answers the question if the self user allowed to register an MLS client
@@ -33,6 +34,7 @@ import com.wire.kalium.util.DelicateKaliumApi
  * - MLS supported is configured on the backend, which can be verified by looking for the existence of MLS public keys.
  */
 @DelicateKaliumApi("This use case performs network calls, consider using IsMLSEnabledUseCase.")
+@Mockable
 interface IsAllowedToRegisterMLSClientUseCase {
     suspend operator fun invoke(): Boolean
 }

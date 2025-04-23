@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -63,8 +62,7 @@ class PersistWebSocketStatusUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val sessionRepository = mock(SessionRepository::class)
+                val sessionRepository = mock(SessionRepository::class)
 
         val persistPersistentWebSocketConnectionStatusUseCaseImpl =
             PersistPersistentWebSocketConnectionStatusUseCaseImpl(UserId("test", "domain"), sessionRepository)

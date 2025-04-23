@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import io.mockative.Mockable
 
+@Mockable
 internal interface LastReadContentHandler {
     suspend fun handle(
         message: Message.Signaling,

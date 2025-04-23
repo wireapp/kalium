@@ -30,7 +30,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -195,7 +194,7 @@ class ConfirmationDeliveryHandlerTest {
             .withSendDeliverSignalResult()
             .arrange()
 
-        coEvery { arrangement.syncManager.waitUntilLive() }.invokes { ->
+        coEvery { arrangement.syncManager.waitUntilLive() }.invokes { _ ->
             delay(10.seconds)
         }
 
@@ -237,13 +236,8 @@ class ConfirmationDeliveryHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val syncManager: SyncManager = mock(SyncManager::class)
-
-        @Mock
         val sendDeliverSignal: SendDeliverSignalUseCase = mock(SendDeliverSignalUseCase::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
         val pendingConfirmationMessages: ConcurrentMutableMap<ConversationId, MutableSet<String>> = ConcurrentMutableMap()

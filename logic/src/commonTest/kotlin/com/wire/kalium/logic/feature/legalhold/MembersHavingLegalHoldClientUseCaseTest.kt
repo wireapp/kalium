@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -78,8 +77,7 @@ class MembersHavingLegalHoldClientUseCaseTest {
     }
 
     internal class Arrangement {
-        @Mock
-        private val clientRepository = mock(ClientRepository::class)
+                private val clientRepository = mock(ClientRepository::class)
         private val useCase by lazy { MembersHavingLegalHoldClientUseCaseImpl(clientRepository) }
         fun arrange() = this to useCase
         suspend fun withGetClientsOfConversation(result: Either<StorageFailure, Map<UserId, List<Client>>>) = apply {

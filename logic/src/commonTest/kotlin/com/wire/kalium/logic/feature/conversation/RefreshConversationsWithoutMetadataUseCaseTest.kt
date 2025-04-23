@@ -24,7 +24,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -50,8 +49,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
+                val conversationRepository = mock(ConversationRepository::class)
 
         suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             coEvery {

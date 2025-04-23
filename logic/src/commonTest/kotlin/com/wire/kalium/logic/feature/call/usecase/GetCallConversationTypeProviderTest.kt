@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -148,14 +147,8 @@ class GetCallConversationTypeProviderTest {
         }
 
     private class Arrangement {
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val callMapper = mock(CallMapper::class)
 
         private val getCallConversationType = GetCallConversationTypeProviderImpl(

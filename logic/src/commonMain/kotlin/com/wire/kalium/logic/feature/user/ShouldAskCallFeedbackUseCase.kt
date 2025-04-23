@@ -21,11 +21,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
 /**
  * Use case that returns [Boolean] if user should be asked for a feedback about call quality or not.
  */
+@Mockable
 interface ShouldAskCallFeedbackUseCase {
     /**
      * @return [Boolean] if user should be asked for a feedback about call quality or not.

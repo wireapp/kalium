@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -121,13 +120,8 @@ class ClientFingerprintUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val preKeyRepository = mock(PreKeyRepository::class)
-
-        @Mock
         private val proteusClientProvider = mock(ProteusClientProvider::class)
-
-        @Mock
         val proteusClient = mock(ProteusClient::class)
 
         val userCase = ClientFingerprintUseCaseImpl(

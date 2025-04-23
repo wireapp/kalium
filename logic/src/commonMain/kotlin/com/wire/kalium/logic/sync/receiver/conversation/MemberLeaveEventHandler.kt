@@ -41,7 +41,9 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import io.mockative.Mockable
 
+@Mockable
 interface MemberLeaveEventHandler {
     suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
 }

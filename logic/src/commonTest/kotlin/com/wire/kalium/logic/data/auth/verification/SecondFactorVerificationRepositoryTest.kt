@@ -25,7 +25,6 @@ import com.wire.kalium.network.api.base.unauthenticated.verification.Verificatio
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -162,8 +161,6 @@ class SecondFactorVerificationRepositoryTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val verificationCodeApi = mock(VerificationCodeApi::class)
 
         suspend fun withCodeRequestSucceeding() = withCodeRequestReturning(

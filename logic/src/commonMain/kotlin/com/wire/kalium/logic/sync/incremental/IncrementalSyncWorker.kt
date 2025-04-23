@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 /**
  * Gathers and processes IncrementalSync events.
  */
+@Mockable
 interface IncrementalSyncWorker {
     /**
      * Upon collection, will start collecting and processing events,

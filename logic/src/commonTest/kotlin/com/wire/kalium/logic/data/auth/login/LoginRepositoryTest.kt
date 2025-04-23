@@ -26,7 +26,6 @@ import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -39,8 +38,7 @@ import kotlin.test.Test
 
 class LoginRepositoryTest {
 
-    @Mock
-    val loginApi = mock(LoginApi::class)
+        val loginApi = mock(LoginApi::class)
 
     private lateinit var loginRepository: LoginRepository
 
@@ -94,8 +92,6 @@ class LoginRepositoryTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val loginApi = mock(LoginApi::class)
 
         suspend fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {

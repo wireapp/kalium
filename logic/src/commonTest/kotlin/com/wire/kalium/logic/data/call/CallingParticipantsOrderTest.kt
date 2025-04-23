@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -46,16 +45,9 @@ import kotlin.test.assertEquals
 
 class CallingParticipantsOrderTest {
 
-    @Mock
     private val userRepository = mock(UserRepository::class)
-
-    @Mock
     private val participantsFilter = mock(ParticipantsFilter::class)
-
-    @Mock
     private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-    @Mock
     private val participantsOrderByName = mock(ParticipantsOrderByName::class)
 
     private lateinit var callingParticipantsOrder: CallingParticipantsOrder

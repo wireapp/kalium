@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.eq
 import io.mockative.mock
@@ -84,8 +83,6 @@ class SearchServiceByNameUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val serviceRepository: ServiceRepository = mock(ServiceRepository::class)
 
         private val searchServiceByNameUseCase = SearchServicesByNameUseCaseImpl(serviceRepository)

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -53,8 +52,7 @@ internal interface UserConfigRepositoryArrangement {
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
-    @Mock
-    override val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        override val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
     override suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>) {
         coEvery {

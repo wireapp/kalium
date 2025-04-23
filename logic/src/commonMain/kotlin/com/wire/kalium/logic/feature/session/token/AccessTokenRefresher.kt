@@ -22,7 +22,9 @@ import com.wire.kalium.logic.data.session.token.AccessTokenRepository
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import io.mockative.Mockable
 
+@Mockable
 internal interface AccessTokenRefresher {
     /**
      * Refreshes the access token using the provided refresh token and persists the session in the repository.

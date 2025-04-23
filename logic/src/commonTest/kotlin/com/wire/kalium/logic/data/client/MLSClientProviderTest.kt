@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArr
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
-import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
@@ -108,11 +107,7 @@ class MLSClientProviderTest {
 
         val rootKeyStorePath: String = "rootKeyStorePath"
         val userId: UserId = UserId("userId", "domain")
-
-        @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
 
         fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {

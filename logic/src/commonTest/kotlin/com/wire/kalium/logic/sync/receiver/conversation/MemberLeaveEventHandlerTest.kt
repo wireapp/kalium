@@ -39,7 +39,6 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -256,11 +255,7 @@ class MemberLeaveEventHandlerTest {
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
-
-        @Mock
         val updateConversationClientsForCurrentCall = mock(UpdateConversationClientsForCurrentCallUseCase::class)
-
-        @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler

@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -44,14 +43,11 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class SessionResetSenderTest {
 
-    @Mock
-    private val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
+        private val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 
-    @Mock
-    private val provideClientId = mock(CurrentClientIdProvider::class)
+        private val provideClientId = mock(CurrentClientIdProvider::class)
 
-    @Mock
-    private val messageSender = mock(MessageSender::class)
+        private val messageSender = mock(MessageSender::class)
 
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 

@@ -62,7 +62,6 @@ import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.reflect.instanceOf
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1557,49 +1556,20 @@ class CallRepositoryTest {
 
     private class Arrangement {
 
-        @Mock
         val callApi = mock(CallApi::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val teamRepository = mock(TeamRepository::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         val joinSubconversationUseCase = mock(JoinSubconversationUseCase::class)
-
-        @Mock
         val leaveSubconversationUseCase = mock(LeaveSubconversationUseCase::class)
-
-        @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val epochChangesObserver = mock(EpochChangesObserver::class)
-
-        @Mock
         val callDAO = mock(CallDAO::class)
 
         private val callMapper = CallMapperImpl(qualifiedIdMapper)

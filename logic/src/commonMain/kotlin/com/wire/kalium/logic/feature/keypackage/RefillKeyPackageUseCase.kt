@@ -26,6 +26,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
 sealed class RefillKeyPackagesResult {
 
@@ -38,6 +39,7 @@ sealed class RefillKeyPackagesResult {
  * This use case will check if the number of key packages is below the minimum threshold and will
  * upload new key packages if needed.
  */
+@Mockable
 interface RefillKeyPackagesUseCase {
 
     suspend operator fun invoke(): RefillKeyPackagesResult

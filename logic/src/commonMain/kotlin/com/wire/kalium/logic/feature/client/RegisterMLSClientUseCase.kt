@@ -32,6 +32,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()
@@ -42,6 +43,7 @@ sealed class RegisterMLSClientResult {
 /**
  * Register an MLS client with an existing client already registered on the backend.
  */
+@Mockable
 interface RegisterMLSClientUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult>
 }

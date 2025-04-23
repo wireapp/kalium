@@ -20,10 +20,12 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
+import io.mockative.Mockable
 
 /**
  * Checks if the current user's team has enabled E2EI and MLS.
  */
+@Mockable
 interface IsE2EIEnabledUseCase {
     /**
      * @return true if E2EI and MLS is enabled, false otherwise.

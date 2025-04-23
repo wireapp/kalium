@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -87,10 +86,8 @@ class AddMemberToConversationUseCaseTest {
     }
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
-        @Mock
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
-        @Mock
+        val conversationGroupRepository = mock(ConversationGroupRepository::class)
         val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
 
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(

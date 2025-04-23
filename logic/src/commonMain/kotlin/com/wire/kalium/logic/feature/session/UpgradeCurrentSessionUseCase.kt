@@ -28,10 +28,12 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
+import io.mockative.Mockable
 
 /**
  * Upgrade the current login session to be associated with self user's client ID
  */
+@Mockable
 interface UpgradeCurrentSessionUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit>
 }

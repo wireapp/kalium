@@ -34,7 +34,9 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
+@Mockable
 interface OneOnOneMigrator {
     suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId>
     suspend fun migrateToMLS(user: OtherUser): Either<CoreFailure, ConversationId>

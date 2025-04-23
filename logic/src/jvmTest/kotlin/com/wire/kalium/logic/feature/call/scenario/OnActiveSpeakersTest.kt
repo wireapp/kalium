@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.every
@@ -76,8 +75,7 @@ class OnActiveSpeakersTest {
     private fun userId(suffix: Int) = QualifiedID("userId$suffix", "some-domain")
 
     internal class Arrangement {
-        @Mock
-        val callRepository = mock(CallRepository::class)
+                val callRepository = mock(CallRepository::class)
 
         val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 

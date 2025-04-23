@@ -48,10 +48,12 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
+@Mockable
 internal interface ApplicationMessageHandler {
 
     suspend fun handleContent(

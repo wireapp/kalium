@@ -37,7 +37,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -173,14 +172,8 @@ class ServerConfigRepositoryTest {
         val SERVER_CONFIG_URL = "https://test.test/test.json"
         val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
         val SERVER_CONFIG = newServerConfig(1)
-
-        @Mock
         val serverConfigApi = mock(ServerConfigApi::class)
-
-        @Mock
         val serverConfigDAO = mock(ServerConfigurationDAO::class)
-
-        @Mock
         val versionApi = mock(VersionApi::class)
 
         private var serverConfigRepository: ServerConfigRepository =

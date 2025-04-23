@@ -76,7 +76,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1671,44 +1670,18 @@ class ConversationGroupRepositoryTest {
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
-
-        @Mock
         val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
-
-        @Mock
         val memberLeaveEventHandler = mock(MemberLeaveEventHandler::class)
-
-        @Mock
         val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
-
-        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
-
-        @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         val conversationApi: ConversationApi = mock(ConversationApi::class)
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
-
-        @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
-
-        @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
-
-        @Mock
         val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
 
         val conversationGroupRepository =

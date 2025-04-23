@@ -22,8 +22,9 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -69,6 +70,9 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
+
+                // mocking
+                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

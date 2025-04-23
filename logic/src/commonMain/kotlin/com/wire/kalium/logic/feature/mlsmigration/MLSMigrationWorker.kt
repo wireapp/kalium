@@ -26,7 +26,9 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
+@Mockable
 interface MLSMigrationWorker {
     suspend fun runMigration(): Either<CoreFailure, Unit>
 }

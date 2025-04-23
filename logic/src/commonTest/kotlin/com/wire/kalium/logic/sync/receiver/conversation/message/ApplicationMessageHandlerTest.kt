@@ -45,7 +45,6 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.util.MessageContentEncoder
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -173,49 +172,21 @@ class ApplicationMessageHandlerTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val messageRepository = mock(MessageRepository::class)
-
-        @Mock
         private val userRepository = mock(UserRepository::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         private val callManager = mock(CallManager::class)
-
-        @Mock
         val persistReactionsUseCase = mock(PersistReactionUseCase::class)
-
-        @Mock
         val messageTextEditHandler = mock(MessageTextEditHandler::class)
-
-        @Mock
         val lastReadContentHandler = mock(LastReadContentHandler::class)
-
-        @Mock
         val clearConversationContentHandler = mock(ClearConversationContentHandler::class)
-
-        @Mock
         val deleteForMeHandler = mock(DeleteForMeHandler::class)
-
-        @Mock
         val deleteMessageHandler = mock(DeleteMessageHandler::class)
-
-        @Mock
         val receiptMessageHandler = mock(ReceiptMessageHandler::class)
-
-        @Mock
         val assetMessageHandler = mock(AssetMessageHandler::class)
-
-        @Mock
         val buttonActionConfirmationHandler = mock(ButtonActionConfirmationHandler::class)
-
-        @Mock
         val dataTransferEventHandler = mock(DataTransferEventHandler::class)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(

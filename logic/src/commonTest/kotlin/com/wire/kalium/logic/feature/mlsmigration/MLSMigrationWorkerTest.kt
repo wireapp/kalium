@@ -38,9 +38,8 @@ import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.of
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -216,17 +215,10 @@ class MLSMigrationWorkerTest {
         }
 
     private class Arrangement {
-        @Mock
-        val userConfigRepository: UserConfigRepository = mock(classOf<UserConfigRepository>())
-
-        @Mock
-        val featureConfigRepository: FeatureConfigRepository = mock(classOf<FeatureConfigRepository>())
-
-        @Mock
-        val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
-
-        @Mock
-        val mlsMigrator: MLSMigrator = mock(classOf<MLSMigrator>())
+                val userConfigRepository: UserConfigRepository = mock(of<UserConfigRepository>())
+        val featureConfigRepository: FeatureConfigRepository = mock(of<FeatureConfigRepository>())
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock(of<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
+        val mlsMigrator: MLSMigrator = mock(of<MLSMigrator>())
 
         val mlsConfigHandler = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
 

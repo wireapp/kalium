@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -53,7 +52,7 @@ interface ConversationGroupRepositoryArrangement {
 }
 
 class ConversationGroupRepositoryArrangementImpl : ConversationGroupRepositoryArrangement {
-    @Mock
+
     override val conversationGroupRepository = mock(ConversationGroupRepository::class)
 }
 

@@ -29,7 +29,9 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import io.mockative.Mockable
 
+@Mockable
 internal interface MessageTextEditHandler {
     suspend fun handle(
         message: Message.Signaling,

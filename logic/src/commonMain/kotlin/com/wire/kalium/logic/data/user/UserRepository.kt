@@ -79,6 +79,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -92,6 +93,7 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.minutes
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
 

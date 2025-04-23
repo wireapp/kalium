@@ -19,11 +19,13 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 @Suppress("LongParameterList", "TooManyFunctions")
+@Mockable
 interface ClientRegistrationStorage {
     suspend fun getRegisteredClientId(): String?
     suspend fun setRegisteredClientId(registeredClientId: String)

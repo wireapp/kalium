@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -53,8 +52,7 @@ class PersistReactionUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val reactionRepository = mock(ReactionRepository::class)
+                val reactionRepository = mock(ReactionRepository::class)
 
         suspend fun arrange() = this to PersistReactionUseCaseImpl(
             reactionRepository = reactionRepository

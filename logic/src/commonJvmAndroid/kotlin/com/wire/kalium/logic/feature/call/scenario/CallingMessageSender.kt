@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import io.ktor.http.HttpStatusCode
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.channels.Channel
@@ -43,6 +44,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
+@Mockable
 internal interface CallingMessageSender {
 
     suspend fun processQueue()

@@ -27,7 +27,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -41,16 +40,9 @@ import kotlin.test.Test
 
 class AnswerCallUseCaseTest {
 
-    @Mock
     private val getAllCallsWithSortedParticipants = mock(GetAllCallsWithSortedParticipantsUseCase::class)
-
-    @Mock
     private val muteCall = mock(MuteCallUseCase::class)
-
-    @Mock
     private val unMuteCall = mock(UnMuteCallUseCase::class)
-
-    @Mock
     private val callManager = mock(CallManager::class)
 
     private val answerCall = AnswerCallUseCaseImpl(

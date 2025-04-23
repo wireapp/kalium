@@ -24,7 +24,9 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
+@Mockable
 interface FederatedIdMapper {
     suspend fun parseToFederatedId(qualifiedID: QualifiedID): String
     suspend fun parseToFederatedId(qualifiedStringID: String): String

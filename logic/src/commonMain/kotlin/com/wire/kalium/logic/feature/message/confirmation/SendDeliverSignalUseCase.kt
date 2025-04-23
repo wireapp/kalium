@@ -35,11 +35,13 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.logStructuredJson
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
 /**
  * Use case for sending a delivery confirmation signal for a list of messages in a conversation.
  */
+@Mockable
 interface SendDeliverSignalUseCase {
     suspend operator fun invoke(conversation: Conversation, messages: List<MessageId>): Either<CoreFailure, Unit>
 }

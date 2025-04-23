@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.cryptography
 
+import io.mockative.Mockable
 import kotlin.time.Duration
 
+@Mockable
 interface CoreCryptoCentral {
     suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,

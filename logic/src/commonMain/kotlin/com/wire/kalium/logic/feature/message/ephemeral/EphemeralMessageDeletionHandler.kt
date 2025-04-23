@@ -28,6 +28,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -36,6 +37,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 
+@Mockable
 internal interface EphemeralMessageDeletionHandler {
 
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)

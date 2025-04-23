@@ -21,6 +21,8 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -35,6 +37,9 @@ kotlin {
                 // coroutines
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
+
+                // mocking
+                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

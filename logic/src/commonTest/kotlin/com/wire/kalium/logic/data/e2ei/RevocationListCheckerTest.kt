@@ -33,7 +33,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -191,23 +190,11 @@ class RevocationListCheckerTest {
     }
 
     internal class Arrangement {
-
-        @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-
-        @Mock
         val coreCrypto = mock(CoreCryptoCentral::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() = this to RevocationListCheckerImpl(

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -70,10 +69,7 @@ class IsSelfATeamMemberUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
+                val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 
         private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(

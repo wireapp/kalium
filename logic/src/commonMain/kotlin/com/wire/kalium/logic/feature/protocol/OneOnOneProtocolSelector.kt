@@ -25,7 +25,9 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import io.mockative.Mockable
 
+@Mockable
 internal interface OneOnOneProtocolSelector {
     suspend fun getProtocolForUser(userId: UserId): Either<CoreFailure, SupportedProtocol>
 }

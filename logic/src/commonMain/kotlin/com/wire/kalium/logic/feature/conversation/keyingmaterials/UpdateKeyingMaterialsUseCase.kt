@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProv
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import io.mockative.Mockable
 
 sealed class UpdateKeyingMaterialsResult {
 
@@ -36,6 +37,7 @@ sealed class UpdateKeyingMaterialsResult {
  * This use case will check if the number of keying materials is below the minimum threshold and will
  * upload new keying materials if needed for the mls conversations of the user.
  */
+@Mockable
 interface UpdateKeyingMaterialsUseCase {
     suspend operator fun invoke(): UpdateKeyingMaterialsResult
 }

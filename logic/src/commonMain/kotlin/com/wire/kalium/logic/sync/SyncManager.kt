@@ -28,11 +28,13 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.transform
 
+@Mockable
 interface SyncManager {
     /**
      * Suspends the caller until all pending events are processed,

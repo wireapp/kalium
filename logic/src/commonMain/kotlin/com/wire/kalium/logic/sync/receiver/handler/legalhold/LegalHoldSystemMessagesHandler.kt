@@ -28,9 +28,11 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
+@Mockable
 internal interface LegalHoldSystemMessagesHandler {
     suspend fun handleEnabledForUser(userId: UserId, systemMessageInstant: Instant)
     suspend fun handleDisabledForUser(userId: UserId, systemMessageInstant: Instant)

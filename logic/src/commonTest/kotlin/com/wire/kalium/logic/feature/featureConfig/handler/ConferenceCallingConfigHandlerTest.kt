@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
@@ -99,7 +98,6 @@ class ConferenceCallingConfigHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() = run {

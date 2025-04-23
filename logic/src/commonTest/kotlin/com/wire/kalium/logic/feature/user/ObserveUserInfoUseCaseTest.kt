@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -232,11 +231,7 @@ class ObserveUserInfoUseCaseTest {
     }
 
     private class ObserveUserInfoUseCaseTestArrangement {
-
-        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
-
-        @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
         suspend fun withSuccessfulUserRetrieveFromDB(

@@ -29,7 +29,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -330,8 +329,6 @@ class ObserveConversationListDetailsUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         suspend fun withConversationsDetailsChannelUpdates(

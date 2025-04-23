@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.base.authenticated.notification
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 sealed class WebSocketEvent<BinaryPayloadType> {
@@ -48,6 +49,7 @@ sealed class WebSocketEvent<BinaryPayloadType> {
     data class Close<BinaryPayloadType>(val cause: Throwable?) : WebSocketEvent<BinaryPayloadType>()
 }
 
+@Mockable
 interface NotificationApi {
     suspend fun mostRecentNotification(queryClient: String): NetworkResponse<EventResponse>
 

@@ -29,7 +29,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onSuccess
+import io.mockative.Mockable
 
+@Mockable
 internal interface TeamEventReceiver : EventReceiver<Event.Team>
 
 internal class TeamEventReceiverImpl(

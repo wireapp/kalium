@@ -42,7 +42,6 @@ import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -234,17 +233,9 @@ class RestoreBackupUseCaseTest {
     }
 
     private inner class Arrangement {
-
-        @Mock
         val databaseImporter = mock(DatabaseImporter::class)
-
-        @Mock
         val restoreWebBackupUseCase = mock(RestoreWebBackupUseCase::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
 
         val fakeDBFileName = BACKUP_USER_DB_NAME

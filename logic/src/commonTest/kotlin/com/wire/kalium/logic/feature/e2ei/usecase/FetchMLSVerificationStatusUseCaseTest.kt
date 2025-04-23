@@ -46,7 +46,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -240,13 +239,8 @@ class FetchMLSVerificationStatusUseCaseTest {
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         suspend fun withIsGroupVerified(result: E2EIConversationState) {

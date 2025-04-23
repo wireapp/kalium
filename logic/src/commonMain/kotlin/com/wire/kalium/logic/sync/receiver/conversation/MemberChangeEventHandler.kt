@@ -28,7 +28,9 @@ import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
+import io.mockative.Mockable
 
+@Mockable
 interface MemberChangeEventHandler {
     suspend fun handle(event: Event.Conversation.MemberChanged)
 }

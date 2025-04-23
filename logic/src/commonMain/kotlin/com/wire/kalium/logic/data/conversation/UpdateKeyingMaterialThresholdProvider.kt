@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import io.mockative.Mockable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
+@Mockable
 interface UpdateKeyingMaterialThresholdProvider {
 
     val keyingMaterialUpdateThreshold: Duration

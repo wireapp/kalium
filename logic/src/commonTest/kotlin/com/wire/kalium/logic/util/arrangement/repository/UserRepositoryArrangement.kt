@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -99,8 +98,7 @@ internal interface UserRepositoryArrangement {
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
-    @Mock
-    override val userRepository: UserRepository = mock(UserRepository::class)
+        override val userRepository: UserRepository = mock(UserRepository::class)
 
     override suspend fun withDefederateUser(
         result: Either<CoreFailure, Unit>,

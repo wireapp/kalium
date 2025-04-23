@@ -21,7 +21,9 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
+import io.mockative.Mockable
 
+@Mockable
 internal interface CallingParticipantsOrder {
     suspend fun reorderItems(participants: List<Participant>): List<Participant>
 }

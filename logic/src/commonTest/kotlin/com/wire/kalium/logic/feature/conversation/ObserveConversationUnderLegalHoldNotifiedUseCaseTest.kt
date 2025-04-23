@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -72,8 +71,7 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseTest {
         testObserving(Either.Right(Conversation.LegalHoldStatus.DISABLED to true), true)
 
     private class Arrangement {
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
+                val conversationRepository = mock(ConversationRepository::class)
 
         private val useCase: ObserveConversationUnderLegalHoldNotifiedUseCase by lazy {
             ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)

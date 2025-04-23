@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -53,6 +54,7 @@ data class PreKeyCrypto(
 /**
  * @sample samples.cryptography.ProteusClient.basicEncryption
  */
+@Mockable
 interface ProteusClient {
 
     @Throws(ProteusException::class, CancellationException::class)

@@ -24,7 +24,6 @@ import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -107,8 +106,6 @@ class ProteusSyncWorkerTest {
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl(),
         PreKeyRepositoryArrangement by PreKeyRepositoryArrangementImpl() {
-
-        @Mock
         val proteusPreKeyRefiller = mock(ProteusPreKeyRefiller::class)
         var minIntervalBetweenRefills: Duration = 1.days
 

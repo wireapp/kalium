@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -44,7 +43,7 @@ internal interface ConnectionRepositoryArrangement {
 }
 
 internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryArrangement {
-    @Mock
+
     override val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
     override suspend fun withGetConnections(

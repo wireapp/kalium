@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -101,15 +100,9 @@ class SendFCMTokenToAPIUseCaseTest {
 
 
     private class Arrangement {
-
-        @Mock
         private val currentClientIdProvider: CurrentClientIdProvider =
             mock(CurrentClientIdProvider::class)
-
-        @Mock
         private val clientRepository: ClientRepository = mock(ClientRepository::class)
-
-        @Mock
         private val notificationTokenRepository: NotificationTokenRepository =
             mock(NotificationTokenRepository::class)
 

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
@@ -125,7 +124,6 @@ class AppLockConfigHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() = run {

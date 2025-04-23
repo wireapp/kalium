@@ -21,7 +21,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -37,8 +36,7 @@ interface OneOnOneMigratorArrangement {
 
 class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
 
-    @Mock
-    override val oneOnOneMigrator = mock(OneOnOneMigrator::class)
+        override val oneOnOneMigrator = mock(OneOnOneMigrator::class)
 
     override suspend fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>) {
         coEvery {

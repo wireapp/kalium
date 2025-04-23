@@ -23,9 +23,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.TokenStorage
+import io.mockative.Mockable
 
 data class NotificationToken(val token: String, val transport: String, val applicationId: String)
 
+@Mockable
 interface NotificationTokenRepository {
 
     fun persistNotificationToken(token: String, transport: String, applicationId: String): Either<StorageFailure, Unit>

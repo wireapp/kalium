@@ -22,6 +22,8 @@ plugins {
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -37,6 +39,9 @@ kotlin {
                 api(project(":logger"))
 
                 implementation(libs.coroutines.core)
+
+                // mocking
+                implementation(libs.mockative.runtime)
             }
         }
     }

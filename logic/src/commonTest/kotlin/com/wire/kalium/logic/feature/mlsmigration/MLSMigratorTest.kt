@@ -44,7 +44,6 @@ import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -216,23 +215,11 @@ class MLSMigratorTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val systemMessageInserter = mock(SystemMessageInserter::class)
-
-        @Mock
         val callRepository = mock(CallRepository::class)
 
         suspend fun withFetchAllOtherUsersSucceeding() = apply {

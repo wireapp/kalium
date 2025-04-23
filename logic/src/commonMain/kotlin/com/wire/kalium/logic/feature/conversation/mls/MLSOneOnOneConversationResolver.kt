@@ -28,6 +28,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
 /**
  * Attempts to find an existing MLS-capable one-on-one conversation,
@@ -35,6 +36,7 @@ import com.wire.kalium.logic.kaliumLogger
  * In case the conversation already exists, but it's not established yet
  * (see [GroupState.ESTABLISHED]), it will attempt to join it, returning failure if it fails.
  */
+@Mockable
 internal interface MLSOneOnOneConversationResolver {
     /**
      * Attempts to find an existing MLS-capable one-on-one conversation,

@@ -28,7 +28,6 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -99,11 +98,7 @@ class ObserveIsAppLockEditableUseCaseTest {
     }
 
     class Arrangement {
-
-        @Mock
         val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
 
         private val useCase by lazy {

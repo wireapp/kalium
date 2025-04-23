@@ -38,7 +38,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -394,26 +393,12 @@ class NewMessageEventHandlerTest {
         }
 
     private class Arrangement {
-
-        @Mock
         val proteusMessageUnpacker = mock(ProteusMessageUnpacker::class)
-
-        @Mock
         val mlsMessageUnpacker = mock(MLSMessageUnpacker::class)
-
-        @Mock
         val applicationMessageHandler = mock(ApplicationMessageHandler::class)
-
-        @Mock
         val staleEpochVerifier = mock(StaleEpochVerifier::class)
-
-        @Mock
         val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)
-
-        @Mock
         val confirmationDeliveryHandler = mock(ConfirmationDeliveryHandler::class)
-
-        @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(

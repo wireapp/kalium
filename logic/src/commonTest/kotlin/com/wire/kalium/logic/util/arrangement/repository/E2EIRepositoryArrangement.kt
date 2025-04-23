@@ -19,7 +19,6 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 
@@ -30,7 +29,7 @@ internal interface E2EIRepositoryArrangement {
 }
 
 internal class E2EIRepositoryArrangementImpl : E2EIRepositoryArrangement {
-    @Mock
+
     override val e2eiRepository: E2EIRepository = mock(E2EIRepository::class)
 
     override suspend fun withFetchACMECertificates() {

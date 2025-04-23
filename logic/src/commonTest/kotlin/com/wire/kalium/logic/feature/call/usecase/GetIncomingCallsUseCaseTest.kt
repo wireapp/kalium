@@ -32,7 +32,6 @@ import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -200,14 +199,8 @@ class GetIncomingCallsUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
-
-        @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val callRepository: CallRepository = mock(CallRepository::class)
 
         val getIncomingCallsUseCase: GetIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(

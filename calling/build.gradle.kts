@@ -21,6 +21,8 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -53,12 +55,18 @@ kotlin {
                         }
                     })
                 })
+
+                // mocking
+                implementation(libs.mockative.runtime)
             }
         }
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
+
+                // mocking
+                implementation(libs.mockative.runtime)
             }
         }
 

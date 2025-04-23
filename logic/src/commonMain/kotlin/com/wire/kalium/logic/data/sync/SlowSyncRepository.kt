@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
+@Mockable
 internal interface SlowSyncRepository {
     val slowSyncStatus: StateFlow<SlowSyncStatus>
     suspend fun setLastSlowSyncCompletionInstant(instant: Instant)

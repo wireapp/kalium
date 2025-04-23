@@ -36,7 +36,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -184,11 +183,7 @@ class ToggleReactionUseCaseTest {
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         val currentClientIdProvider: CurrentClientIdProvider = CurrentClientIdProvider { Either.Right(TEST_CURRENT_CLIENT) }
-
-        @Mock
         val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val messageSender: MessageSender = mock(MessageSender::class)
 
         fun withSlowSyncCompleted() = apply {

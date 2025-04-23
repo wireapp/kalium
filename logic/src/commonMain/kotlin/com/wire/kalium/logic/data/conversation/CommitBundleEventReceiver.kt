@@ -27,7 +27,9 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.EventReceiver
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import io.mockative.Mockable
 
+@Mockable
 internal interface CommitBundleEventReceiver : EventReceiver<Event.Conversation>
 
 internal class CommitBundleEventReceiverImpl(

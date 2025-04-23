@@ -25,7 +25,9 @@ import com.wire.kalium.logic.data.conversation.link
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import io.mockative.Mockable
 
+@Mockable
 internal interface CodeUpdatedHandler {
     suspend fun handle(event: Event.Conversation.CodeUpdated): Either<StorageFailure, Unit>
 }

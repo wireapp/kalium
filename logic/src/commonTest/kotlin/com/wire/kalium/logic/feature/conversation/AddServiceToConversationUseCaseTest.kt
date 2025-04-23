@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -70,7 +69,7 @@ class AddServiceToConversationUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
         private val addService = AddServiceToConversationUseCase(

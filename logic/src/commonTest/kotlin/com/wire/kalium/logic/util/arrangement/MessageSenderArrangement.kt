@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -32,8 +31,7 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface MessageSenderArrangement {
-    @Mock
-    val messageSender: MessageSender
+        val messageSender: MessageSender
 
     suspend fun withSendMessageSucceed(
         message: Matcher<Message.Sendable> = AnyMatcher(valueOf()),
@@ -48,8 +46,7 @@ internal interface MessageSenderArrangement {
 }
 
 internal open class MessageSenderArrangementImpl : MessageSenderArrangement {
-    @Mock
-    override val messageSender: MessageSender = mock(MessageSender::class)
+        override val messageSender: MessageSender = mock(MessageSender::class)
 
     override suspend fun withSendMessageSucceed(
         message: Matcher<Message.Sendable>,

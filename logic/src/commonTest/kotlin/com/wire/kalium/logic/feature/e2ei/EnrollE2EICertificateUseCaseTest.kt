@@ -36,7 +36,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -1019,7 +1018,6 @@ class EnrollE2EICertificateUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val e2EIRepository = mock(E2EIRepository::class)
 
         suspend fun withInitializingE2EIClientSucceed() = apply {

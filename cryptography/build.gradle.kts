@@ -24,6 +24,8 @@ plugins {
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -33,7 +35,17 @@ kaliumLibrary {
 }
 
 kotlin {
-    ios {
+    iosX64 {
+        binaries.all {
+            linkerOpts("-framework", "Security")
+        }
+    }
+    iosArm64 {
+        binaries.all {
+            linkerOpts("-framework", "Security")
+        }
+    }
+    iosSimulatorArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
         }
@@ -55,6 +67,9 @@ kotlin {
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
+
+                // mocking
+                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

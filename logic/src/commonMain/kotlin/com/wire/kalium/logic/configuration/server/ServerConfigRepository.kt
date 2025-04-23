@@ -37,8 +37,10 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.Url
+import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
+@Mockable
 internal interface ServerConfigRepository {
     suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>
     suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>

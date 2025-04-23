@@ -20,7 +20,6 @@ package com.wire.kalium.logic.util.arrangement.usecase
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -33,8 +32,7 @@ internal interface JoinExistingMLSConversationUseCaseArrangement {
 
 internal class JoinExistingMLSConversationUseCaseArrangementImpl : JoinExistingMLSConversationUseCaseArrangement {
 
-    @Mock
-    override val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase =
+        override val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase =
         mock(JoinExistingMLSConversationUseCase::class)
 
     override suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) {

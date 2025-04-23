@@ -43,13 +43,13 @@ internal actual class GlobalWorkSchedulerImpl(
 }
 
 internal actual class UserSessionWorkSchedulerImpl(
-    override val userId: UserId
+    actual override val userId: UserId
 ) : UserSessionWorkScheduler {
-    override fun scheduleSendingOfPendingMessages() {
+    actual override fun scheduleSendingOfPendingMessages() {
         TODO("Not yet implemented")
     }
 
-    override fun cancelScheduledSendingOfPendingMessages() {
+    actual override fun cancelScheduledSendingOfPendingMessages() {
         TODO("Not yet implemented")
     }
 

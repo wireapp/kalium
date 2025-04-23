@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -108,13 +107,8 @@ class DeleteTeamConversationUseCaseTest {
 
         var deleteTeamConversation: DeleteTeamConversationUseCase
 
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
-
-        @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         init {

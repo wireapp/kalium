@@ -27,9 +27,11 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEvent
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Mockable
 interface ConversationRepositoryExtensions {
     suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,

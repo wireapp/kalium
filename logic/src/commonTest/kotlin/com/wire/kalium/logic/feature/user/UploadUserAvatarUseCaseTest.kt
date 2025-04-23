@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -93,11 +92,7 @@ class UploadUserAvatarUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val assetRepository = mock(AssetRepository::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
 
         val dispatcher = KaliumDispatcherImpl

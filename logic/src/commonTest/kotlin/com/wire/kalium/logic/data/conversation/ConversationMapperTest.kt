@@ -46,7 +46,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
@@ -59,28 +58,13 @@ import kotlin.test.assertIs
 
 class ConversationMapperTest {
 
-    @Mock
     val idMapper = mock(IdMapper::class)
-
-    @Mock
     val protocolInfoMapper = mock(ProtocolInfoMapper::class)
-
-    @Mock
     val conversationStatusMapper = mock(ConversationStatusMapper::class)
-
-    @Mock
     val userAvailabilityStatusMapper = mock(AvailabilityStatusMapper::class)
-
-    @Mock
     val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
-
-    @Mock
     val connectionStatusMapper = mock(ConnectionStatusMapper::class)
-
-    @Mock
     val conversationMemberMapper = mock(ConversationRoleMapper::class)
-
-    @Mock
     val messageMapper = mock(MessageMapper::class)
 
     private lateinit var conversationMapper: ConversationMapper

@@ -64,29 +64,29 @@ actual class FlowManagerServiceImpl(
             }
         }
 
-    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
+    actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         withContext(dispatchers.default) {
             flowManager.await().setVideoPreview(conversationId.toString(), view.view)
         }
     }
 
-    override suspend fun flipToFrontCamera(conversationId: ConversationId) {
+    actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
         withContext(dispatchers.default) {
             flowManager.await().setVideoCaptureDevice(conversationId.toString(), "front")
         }
     }
 
-    override suspend fun flipToBackCamera(conversationId: ConversationId) {
+    actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
         withContext(dispatchers.default) {
             flowManager.await().setVideoCaptureDevice(conversationId.toString(), "back")
         }
     }
 
-    override suspend fun setUIRotation(rotation: Int) {
+    actual override suspend fun setUIRotation(rotation: Int) {
         withContext(dispatchers.default) {
             flowManager.await().setUIRotation(rotation)
         }
     }
 
-    override suspend fun startFlowManager() { flowManager.await() }
+    actual override suspend fun startFlowManager() { flowManager.await() }
 }

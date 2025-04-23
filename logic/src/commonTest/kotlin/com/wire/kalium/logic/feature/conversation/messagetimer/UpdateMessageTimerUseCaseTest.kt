@@ -22,7 +22,6 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -69,8 +68,6 @@ class UpdateMessageTimerUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
         private val updateMessageTimerUseCase = UpdateMessageTimerUseCaseImpl(

@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.combine
  * in waiting for slow collectors.
  * In case a slow collector is interested in receiving all values, it should add a buffer of its own.
  */
+@Mockable
 interface ObserveSyncStateUseCase {
     operator fun invoke(): Flow<SyncState>
 }

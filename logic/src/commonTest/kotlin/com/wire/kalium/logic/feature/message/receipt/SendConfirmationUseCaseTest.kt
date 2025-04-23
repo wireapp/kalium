@@ -30,7 +30,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -96,23 +95,11 @@ class SendConfirmationUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         private val syncManager = mock(SyncManager::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         private val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val messageRepository = mock(MessageRepository::class)
-
-        @Mock
         private val userPropertyRepository = mock(UserPropertyRepository::class)
 
         suspend fun withCurrentClientIdProvider() = apply {

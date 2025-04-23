@@ -23,7 +23,9 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import io.mockative.Mockable
 
+@Mockable
 interface LegalHoldStatusMapper {
     fun fromApiModel(legalHoldStatusDTO: LegalHoldStatusDTO): LegalHoldStatus
     fun mapLegalHoldConversationStatus(

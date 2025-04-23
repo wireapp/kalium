@@ -43,6 +43,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackRes
 import com.wire.kalium.logic.util.TriggerBuffer
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -53,6 +54,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.milliseconds
 
+@Mockable
 internal interface LegalHoldHandler {
     suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
     suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>

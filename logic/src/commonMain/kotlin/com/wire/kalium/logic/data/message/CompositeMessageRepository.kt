@@ -24,7 +24,9 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
+import io.mockative.Mockable
 
+@Mockable
 interface CompositeMessageRepository {
     suspend fun markSelected(
         messageId: MessageId,

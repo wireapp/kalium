@@ -30,12 +30,14 @@ import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for clearing the client data.
  * The proteus client will be cleared and the MLS client will be cleared.
  */
+@Mockable
 interface ClearClientDataUseCase {
     suspend operator fun invoke()
 }

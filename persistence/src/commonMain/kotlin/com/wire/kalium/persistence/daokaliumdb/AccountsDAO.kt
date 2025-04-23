@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -148,6 +149,7 @@ internal object AccountMapper {
 }
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface AccountsDAO {
     suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity?
     suspend fun insertOrReplace(

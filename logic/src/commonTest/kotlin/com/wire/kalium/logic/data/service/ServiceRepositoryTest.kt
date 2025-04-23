@@ -28,7 +28,6 @@ import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.ServiceEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -254,8 +253,7 @@ class ServiceRepositoryTest {
     }
 
     private class Arrangement {
-        @Mock
-        val serviceDAO: ServiceDAO = mock(ServiceDAO::class)
+                val serviceDAO: ServiceDAO = mock(ServiceDAO::class)
 
         private val serviceRepository: ServiceRepository = ServiceDataSource(serviceDAO)
 

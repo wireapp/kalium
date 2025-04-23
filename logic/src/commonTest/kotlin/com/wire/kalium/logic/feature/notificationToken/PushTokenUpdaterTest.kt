@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.model.PushTokenBody
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -137,15 +136,8 @@ class PushTokenUpdaterTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val clientRepository: ClientRepository = mock(ClientRepository::class)
-
-        @Mock
-        val notificationTokenRepository: NotificationTokenRepository =
-            mock(NotificationTokenRepository::class)
-
-        @Mock
+        val notificationTokenRepository: NotificationTokenRepository = mock(NotificationTokenRepository::class)
         val pushTokenRepository: PushTokenRepository = mock(PushTokenRepository::class)
 
         private val pushTokenUpdater: PushTokenUpdater = PushTokenUpdater(

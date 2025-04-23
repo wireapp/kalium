@@ -36,8 +36,10 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
+@Mockable
 interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>

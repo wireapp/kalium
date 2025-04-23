@@ -21,7 +21,9 @@ package com.wire.kalium.network.api.base.authenticated.logout
 import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByIdsRequest
 import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByLabels
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface LogoutApi {
     suspend fun logout(): NetworkResponse<Unit>
     suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit>

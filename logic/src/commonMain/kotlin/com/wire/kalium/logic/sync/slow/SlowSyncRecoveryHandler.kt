@@ -23,11 +23,14 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
+@Mockable
 internal interface SlowSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onSlowSyncRetryCallback: OnSlowSyncRetryCallback)
 }
 
+@Mockable
 internal fun interface OnSlowSyncRetryCallback {
     suspend fun retry()
 }

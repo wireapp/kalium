@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -102,11 +101,7 @@ class UpdateConversationReceiptModeUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
 
         val selfUserId = TestUser.USER_ID

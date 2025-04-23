@@ -28,15 +28,19 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 
+@Mockable
 internal fun interface SelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, List<ConversationId>>
 }
 
+@Mockable
 internal fun interface ProteusSelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, ConversationId>
 }
 
+@Mockable
 internal fun interface MLSSelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, ConversationId>
 }

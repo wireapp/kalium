@@ -28,7 +28,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -108,7 +107,6 @@ class AccessTokenRefresherTest {
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
 
-        @Mock
         val repository = mock(AccessTokenRepository::class)
 
         suspend fun arrange(): Pair<Arrangement, AccessTokenRefresher> = run {

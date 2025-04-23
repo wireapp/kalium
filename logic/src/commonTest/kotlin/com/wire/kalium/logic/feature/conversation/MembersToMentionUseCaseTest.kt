@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -44,11 +43,9 @@ import kotlin.test.assertEquals
 
 class MembersToMentionUseCaseTest {
 
-    @Mock
-    private val userRepository: UserRepository = mock(UserRepository::class)
+        private val userRepository: UserRepository = mock(UserRepository::class)
 
-    @Mock
-    private val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
+        private val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
 
     private lateinit var membersToMention: MembersToMentionUseCase
 

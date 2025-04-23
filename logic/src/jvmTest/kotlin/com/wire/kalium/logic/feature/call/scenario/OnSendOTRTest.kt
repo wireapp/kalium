@@ -31,7 +31,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -121,14 +120,8 @@ class OnSendOTRTest {
     }
 
     internal class Arrangement {
-
-        @Mock
         val calling = mock(Calling::class)
-
-        @Mock
         val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
-
-        @Mock
         val messageSender = mock(CallingMessageSender::class)
 
         val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)

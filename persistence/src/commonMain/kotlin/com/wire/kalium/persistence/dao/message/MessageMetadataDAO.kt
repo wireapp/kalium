@@ -20,9 +20,11 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.MessageMetadataQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
+@Mockable
 interface MessageMetadataDAO {
     suspend fun originalSenderId(conversationId: ConversationIDEntity, messageId: String): UserIDEntity?
 }

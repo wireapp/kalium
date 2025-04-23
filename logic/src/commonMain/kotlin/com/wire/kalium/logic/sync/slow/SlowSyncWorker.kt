@@ -43,12 +43,14 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
+import io.mockative.Mockable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 
+@Mockable
 internal interface SlowSyncWorker {
 
     /**

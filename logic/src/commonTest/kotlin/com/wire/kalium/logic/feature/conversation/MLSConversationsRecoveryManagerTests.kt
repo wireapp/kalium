@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -133,19 +132,10 @@ class MLSConversationsRecoveryManagerTests {
         }
 
     private class Arrangement {
-        @Mock
-        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
-
-        @Mock
+                val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val recoverMLSConversationsUseCase = mock(RecoverMLSConversationsUseCase::class)
-
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
         suspend fun withMLSNeedsRecoveryReturn(state: Boolean) = apply {

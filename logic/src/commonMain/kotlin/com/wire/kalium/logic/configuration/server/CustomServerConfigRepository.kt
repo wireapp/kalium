@@ -31,6 +31,7 @@ import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.map
  * Repository for the fetching and storing wire server configurations
  * If you are looking for doing operations related to API version or blacklisted then use [ServerConfigRepository]
  */
+@Mockable
 internal interface CustomServerConfigRepository {
     /**
      * download an on premise server configuration from a json file

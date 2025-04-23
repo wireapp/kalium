@@ -26,9 +26,11 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
+@Mockable
 interface UserPropertyRepository {
     suspend fun getReadReceiptsStatus(): Boolean
     suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>

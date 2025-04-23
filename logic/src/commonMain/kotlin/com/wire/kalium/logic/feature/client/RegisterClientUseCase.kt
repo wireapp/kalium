@@ -46,6 +46,7 @@ import com.wire.kalium.network.exceptions.isTooManyClients
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 sealed class RegisterClientResult {
@@ -87,6 +88,7 @@ sealed class RegisterClientResult {
  *
  * @see RequestSecondFactorVerificationCodeUseCase
  */
+@Mockable
 interface RegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientParam

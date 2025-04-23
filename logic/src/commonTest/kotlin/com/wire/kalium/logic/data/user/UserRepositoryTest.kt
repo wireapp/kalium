@@ -66,7 +66,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -802,31 +801,14 @@ class UserRepositoryTest {
     }
 
     private class Arrangement {
-        @Mock
-        val userDAO = mock(UserDAO::class)
-
-        @Mock
+                val userDAO = mock(UserDAO::class)
         val metadataDAO = mock(MetadataDAO::class)
-
-        @Mock
         val clientDAO = mock(ClientDAO::class)
-
-        @Mock
         val selfApi = mock(SelfApi::class)
-
-        @Mock
         val userDetailsApi = mock(UserDetailsApi::class)
-
-        @Mock
         val teamsApi = mock(TeamsApi::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
 
         val selfUserId = TestUser.SELF.id

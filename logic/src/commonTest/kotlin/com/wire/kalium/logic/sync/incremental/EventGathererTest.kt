@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -433,13 +432,8 @@ class EventGathererTest {
 
     private class Arrangement {
 
-        @Mock
         val eventRepository = mock(EventRepository::class)
-
-        @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
-
-        @Mock
         val serverTimeHandler = mock(ServerTimeHandler::class)
 
         val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository, serverTimeHandler)

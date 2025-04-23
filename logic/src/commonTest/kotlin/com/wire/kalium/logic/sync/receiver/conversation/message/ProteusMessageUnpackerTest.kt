@@ -41,7 +41,6 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -142,13 +141,8 @@ class ProteusMessageUnpackerTest {
     }
 
     private class Arrangement {
-        @Mock
-        val proteusClient = mock(ProteusClient::class)
-
-        @Mock
+                val proteusClient = mock(ProteusClient::class)
         val proteusClientProvider = mock(ProteusClientProvider::class)
-
-        @Mock
         val protoContentMapper = mock(ProtoContentMapper::class)
 
         suspend fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {

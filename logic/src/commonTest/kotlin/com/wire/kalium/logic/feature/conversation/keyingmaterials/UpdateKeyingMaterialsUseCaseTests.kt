@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -108,10 +107,7 @@ class UpdateKeyingMaterialsUseCaseTests {
     }
 
     private class Arrangement {
-        @Mock
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
+                val mlsConversationRepository = mock(MLSConversationRepository::class)
         val updateKeyingMaterialThresholdProvider = mock(UpdateKeyingMaterialThresholdProvider::class)
 
         private var updateKeyingMaterialsUseCase = UpdateKeyingMaterialsUseCaseImpl(

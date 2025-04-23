@@ -37,11 +37,13 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
+import io.mockative.Mockable
 
 /**
  * This use case is to get the file sharing status of the team management settings from the server and
  * save it in the local storage (in Android case is shared preference)
  */
+@Mockable
 internal interface SyncFeatureConfigsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }

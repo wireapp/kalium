@@ -24,7 +24,9 @@ import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.MIN
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.REMOTE_PREKEYS_TARGET_COUNT
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import io.mockative.Mockable
 
+@Mockable
 internal interface ProteusPreKeyRefiller {
     /**
      * Generates more prekeys and upload them to the backend if needed.

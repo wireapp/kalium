@@ -27,7 +27,6 @@ import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -116,17 +115,9 @@ class MLSMigrationManagerTest {
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         val kaliumConfigs = KaliumConfigs()
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val isMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
-
-        @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
-
-        @Mock
         val mlsMigrationWorker = mock(MLSMigrationWorker::class)
 
         suspend fun withRunMigrationSucceeds() = apply {

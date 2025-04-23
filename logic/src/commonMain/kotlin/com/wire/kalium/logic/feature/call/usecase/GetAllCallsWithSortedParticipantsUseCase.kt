@@ -21,12 +21,14 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.call.Call
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
  * Use case to get a list of all calls with the participants sorted according to the [CallingParticipantsOrder]
  */
+@Mockable
 interface GetAllCallsWithSortedParticipantsUseCase {
     suspend operator fun invoke(): Flow<List<Call>>
 }

@@ -43,7 +43,9 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapProteusRequest
 import io.ktor.utils.io.core.toByteArray
+import io.mockative.Mockable
 
+@Mockable
 internal interface ProteusMessageUnpacker {
 
     suspend fun <T : Any> unpackProteusMessage(

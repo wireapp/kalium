@@ -21,7 +21,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -41,8 +40,7 @@ interface OneOnOneResolverArrangement {
 
 class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
-    @Mock
-    override val oneOnOneResolver = mock(OneOnOneResolver::class)
+        override val oneOnOneResolver = mock(OneOnOneResolver::class)
     override suspend fun withScheduleResolveOneOnOneConversationWithUserId() {
         coEvery {
             oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any())

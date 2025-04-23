@@ -33,6 +33,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import io.ktor.util.collections.ConcurrentSet
+import io.mockative.Mockable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -40,6 +41,7 @@ import kotlinx.coroutines.launch
 /**
  * Iterates over all locally stored server configs and update each api version
  */
+@Mockable
 interface UpdateApiVersionsUseCase {
     suspend operator fun invoke()
 }

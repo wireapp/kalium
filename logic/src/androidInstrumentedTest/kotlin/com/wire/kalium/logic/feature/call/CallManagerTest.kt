@@ -41,7 +41,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.mock
@@ -55,52 +54,21 @@ import kotlin.test.Test
 
 class CallManagerTest {
 
-    @Mock
     private val calling = mock(Calling::class)
-
-    @Mock
     private val callRepository = mock(CallRepository::class)
-
-    @Mock
     private val userRepository = mock(UserRepository::class)
-
-    @Mock
     private val messageSender = mock(MessageSender::class)
-
-    @Mock
     private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-    @Mock
     private val mediaManagerService = mock(MediaManagerService::class)
-
-    @Mock
     private val flowManagerService = mock(FlowManagerService::class)
-
-    @Mock
     private val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
-
-    @Mock
     private val userConfigRepository = mock(UserConfigRepository::class)
-
-    @Mock
     private val conversationRepository = mock(ConversationRepository::class)
-
-    @Mock
     private val federatedIdMapper = mock(FederatedIdMapper::class)
-
-    @Mock
     private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
-
-    @Mock
     private val conversationClientsInCallUpdater = mock(ConversationClientsInCallUpdater::class)
-
-    @Mock
     private val videoStateChecker = mock(VideoStateChecker::class)
-
-    @Mock
     private val networkStateObserver = mock(NetworkStateObserver::class)
-
-    @Mock
     private val getCallConversationType = mock(GetCallConversationTypeProvider::class)
 
     private val dispatcher = TestKaliumDispatcher

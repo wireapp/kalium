@@ -1,6 +1,6 @@
 [versions]
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.25"
+kotlin = "2.1.0"
+ksp = "2.1.0-1.0.28"
 activity-compose = "1.9.0"
 app-compat = "1.6.1"
 android-paging3 = "3.2.1"
@@ -14,7 +14,7 @@ android-security = "1.1.0-alpha06"
 ktor = "2.3.10"
 okio = "3.9.0"
 ok-http = "4.12.0"
-mockative = "2.2.0"
+mockative = "3.0.0"
 android-work = "2.9.0"
 android-test-runner = "1.5.2"
 android-test-core-ktx = "1.5.0"
@@ -87,6 +87,7 @@ protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
 benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" }
 allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }
+mockative = { id = "io.mockative", version.ref = "mockative" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]

@@ -33,7 +33,6 @@ import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
@@ -49,11 +48,9 @@ import org.junit.Test
 
 class OnCloseCallTest {
 
-    @Mock
-    val callRepository = mock(CallRepository::class)
+        val callRepository = mock(CallRepository::class)
 
-    @Mock
-    val networkStateObserver = mock(NetworkStateObserver::class)
+        val networkStateObserver = mock(NetworkStateObserver::class)
 
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 

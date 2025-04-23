@@ -27,7 +27,9 @@ import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 
+@Mockable
 interface DatabaseExporter {
 
     /**

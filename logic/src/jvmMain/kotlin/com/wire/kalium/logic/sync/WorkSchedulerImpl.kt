@@ -45,16 +45,16 @@ internal actual class GlobalWorkSchedulerImpl(
 }
 
 internal actual class UserSessionWorkSchedulerImpl(
-    override val userId: UserId,
+    actual override val userId: UserId,
 ) : UserSessionWorkScheduler {
 
-    override fun scheduleSendingOfPendingMessages() {
+    actual override fun scheduleSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }
 
-    override fun cancelScheduledSendingOfPendingMessages() {
+    actual override fun cancelScheduledSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Cancelling scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )

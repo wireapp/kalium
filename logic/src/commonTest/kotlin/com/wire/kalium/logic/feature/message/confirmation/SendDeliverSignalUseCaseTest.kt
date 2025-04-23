@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -85,11 +84,7 @@ class SendDeliverSignalUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
 
         suspend fun withCurrentClientIdProvider() = apply {

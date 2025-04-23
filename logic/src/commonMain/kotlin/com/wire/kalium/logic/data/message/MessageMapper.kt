@@ -49,11 +49,13 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
+@Mockable
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone

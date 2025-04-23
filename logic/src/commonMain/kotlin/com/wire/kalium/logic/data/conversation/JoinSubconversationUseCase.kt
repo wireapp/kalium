@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.authenticated.conversation.SubconversationDel
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -46,6 +47,7 @@ import kotlin.time.Duration
 /**
  * Join a sub-conversation of a MLS conversation
  */
+@Mockable
 internal interface JoinSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }

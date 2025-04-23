@@ -25,11 +25,13 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
+import io.mockative.Mockable
 
 /**
  * Fetches the list of clients of the current user from remote.
  * @return the [SelfClientsResult] with the list of clients of the current user, otherwise a [CoreFailure]
  */
+@Mockable
 interface FetchSelfClientsFromRemoteUseCase {
     /**
      * @return the [SelfClientsResult] with the list of clients of the current user, otherwise a [CoreFailure]

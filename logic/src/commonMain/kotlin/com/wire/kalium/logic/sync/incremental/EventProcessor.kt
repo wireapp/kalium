@@ -36,6 +36,7 @@ import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -45,6 +46,7 @@ import kotlinx.coroutines.withContext
  * Handles incoming events from remote.
  * @see [Event]
  */
+@Mockable
 internal interface EventProcessor {
 
     /**

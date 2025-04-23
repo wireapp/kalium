@@ -21,7 +21,6 @@ package com.wire.kalium.logic.network
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -148,8 +147,6 @@ class ApiMigrationManagerTest {
     class Arrangement {
 
         var apiVersion: Int = 0
-
-        @Mock
         val metadataDAO = mock(MetadataDAO::class)
         var migrations: MutableList<Pair<Int, ApiMigration>> = mutableListOf()
 

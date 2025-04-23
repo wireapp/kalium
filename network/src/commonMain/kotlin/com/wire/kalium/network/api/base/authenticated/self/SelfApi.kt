@@ -23,13 +23,14 @@ import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 import kotlinx.serialization.SerialName
 
 @kotlinx.serialization.Serializable
 data class ChangeHandleRequest(
     @SerialName("handle") val handle: String
 )
-
+@Mockable
 interface SelfApi : BaseApi {
     suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO>
     suspend fun updateSelf(userUpdateRequest: UserUpdateRequest): NetworkResponse<Unit>

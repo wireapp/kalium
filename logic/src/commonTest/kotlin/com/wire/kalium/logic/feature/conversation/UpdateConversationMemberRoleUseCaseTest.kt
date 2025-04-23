@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -38,8 +37,7 @@ import kotlin.test.assertIs
 
 class UpdateConversationMemberRoleUseCaseTest {
 
-    @Mock
-    private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     private lateinit var updateConversationMemberRoleUseCase: UpdateConversationMemberRoleUseCase
 

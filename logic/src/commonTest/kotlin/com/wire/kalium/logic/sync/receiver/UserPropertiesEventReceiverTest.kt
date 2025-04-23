@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
@@ -47,8 +46,6 @@ class UserPropertiesEventReceiverTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         private val userPropertiesEventReceiver: UserPropertiesEventReceiver = UserPropertiesEventReceiverImpl(

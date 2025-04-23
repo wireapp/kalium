@@ -36,7 +36,6 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -342,13 +341,8 @@ class NewGroupConversationSystemMessagesCreatorTest {
     }
 
     private class Arrangement {
-        @Mock
-        val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
+                val persistMessage = mock(PersistMessageUseCase::class)
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
         init {

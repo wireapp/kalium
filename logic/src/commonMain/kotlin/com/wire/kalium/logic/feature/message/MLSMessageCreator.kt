@@ -35,8 +35,10 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
+@Mockable
 interface MLSMessageCreator {
 
     suspend fun createOutgoingMLSMessage(

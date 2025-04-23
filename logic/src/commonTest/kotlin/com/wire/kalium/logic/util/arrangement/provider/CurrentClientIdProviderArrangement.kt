@@ -22,13 +22,11 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 
 interface CurrentClientIdProviderArrangement {
 
-    @Mock
     val currentClientIdProvider: CurrentClientIdProvider
     suspend fun withCurrentClientIdSuccess(currentClientId: ClientId)
     suspend fun withCurrentClientIdFailure(error: CoreFailure = StorageFailure.DataNotFound)
@@ -36,7 +34,6 @@ interface CurrentClientIdProviderArrangement {
 
 class CurrentClientIdProviderArrangementImpl : CurrentClientIdProviderArrangement {
 
-    @Mock
     override val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
     override suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) {

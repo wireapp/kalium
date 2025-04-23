@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -68,8 +67,6 @@ class LegalHoldRequestHandlerTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() =

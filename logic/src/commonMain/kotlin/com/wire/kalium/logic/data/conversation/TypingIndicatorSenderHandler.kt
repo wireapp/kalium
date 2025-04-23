@@ -22,6 +22,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,6 +39,7 @@ import kotlin.time.toDuration
  * - For each started sent event, will 'enqueue' a stopped event after a timeout.
  *
  */
+@Mockable
 internal interface TypingIndicatorSenderHandler {
     fun sendStoppingEvent(conversationId: ConversationId)
     fun sendStartedAndEnqueueStoppingEvent(conversationId: ConversationId)

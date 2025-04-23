@@ -31,7 +31,9 @@ import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
+import io.mockative.Mockable
 
+@Mockable
 internal interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String): Either<NetworkFailure, Unit>
     suspend fun verifyActivationCode(

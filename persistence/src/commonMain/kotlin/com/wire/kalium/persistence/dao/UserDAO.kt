@@ -22,6 +22,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -205,6 +206,7 @@ enum class ManagedByEntity {
 internal typealias UserAssetIdEntity = QualifiedIDEntity
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface UserDAO {
     /**
      * Inserts each user into the local storage or ignores if already exists

@@ -23,7 +23,9 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
+@Mockable
 internal interface DataTransferEventHandler {
     suspend fun handle(
         message: Message.Signaling,

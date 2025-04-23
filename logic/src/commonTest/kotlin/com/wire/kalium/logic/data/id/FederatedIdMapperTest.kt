@@ -22,7 +22,6 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -37,10 +36,7 @@ class FederatedIdMapperTest {
 
     private lateinit var federatedIdMapper: FederatedIdMapper
 
-    @Mock
     private val sessionRepository = mock(SessionRepository::class)
-
-    @Mock
     private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
     private val qualifiedId = "aaa-bbb-ccc@wire.com"

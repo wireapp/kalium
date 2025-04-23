@@ -25,10 +25,12 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 
 /**
  * Checks if the given client is still exists on the backend, otherwise returns failure.
  */
+@Mockable
 interface VerifyExistingClientUseCase {
 
     /**

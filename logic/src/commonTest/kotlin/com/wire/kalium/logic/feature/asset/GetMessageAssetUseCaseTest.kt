@@ -40,7 +40,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -281,16 +280,9 @@ class GetMessageAssetUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val messageRepository = mock(MessageRepository::class)
-
-        @Mock
+                val messageRepository = mock(MessageRepository::class)
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val assetDataSource = mock(AssetRepository::class)
-
-        @Mock
         val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
 
         private val testScope = TestScope(testDispatcher.default)

@@ -28,8 +28,10 @@ import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import io.mockative.Mockable
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface CallManager {
     suspend fun onCallingMessageReceived(
         message: Message.Signaling,

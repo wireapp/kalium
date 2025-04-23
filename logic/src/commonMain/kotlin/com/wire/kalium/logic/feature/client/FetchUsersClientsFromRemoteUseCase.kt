@@ -26,10 +26,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import io.mockative.Mockable
 
 /**
  * Use case to get the other users clients (devices) from remote and save it in our local db so it can be fetched later
  */
+@Mockable
 interface FetchUsersClientsFromRemoteUseCase {
     suspend operator fun invoke(userIdList: List<UserId>)
 }

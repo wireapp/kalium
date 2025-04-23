@@ -25,10 +25,12 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
+import io.mockative.Mockable
 
 /**
  * This use case will return the current number of key packages.
  */
+@Mockable
 interface MLSKeyPackageCountUseCase {
     suspend operator fun invoke(fromAPI: Boolean = true): MLSKeyPackageCountResult
 }

@@ -31,7 +31,6 @@ import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.right
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -178,32 +177,14 @@ class GetOrRegisterClientUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val pushTokenRepository = mock(PushTokenRepository::class)
-
-        @Mock
         val logoutRepository = mock(LogoutRepository::class)
-
-        @Mock
         val registerClientUseCase = mock(RegisterClientUseCase::class)
-
-        @Mock
         val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
-
-        @Mock
         val upgradeCurrentSessionUseCase = mock(UpgradeCurrentSessionUseCase::class)
-
-        @Mock
         val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
-
-        @Mock
         val verifyExistingClientUseCase = mock(VerifyExistingClientUseCase::class)
-
-        @Mock
         val cachedClientIdClearer = mock(CachedClientIdClearer::class)
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(

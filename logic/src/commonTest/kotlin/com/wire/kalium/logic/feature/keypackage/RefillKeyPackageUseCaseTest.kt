@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -94,13 +93,8 @@ class RefillKeyPackageUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val keyPackageRepository = mock(KeyPackageRepository::class)
-
-        @Mock
+                val keyPackageRepository = mock(KeyPackageRepository::class)
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(

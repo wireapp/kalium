@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.functional.Either
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -88,11 +87,7 @@ class ObserveLegalHoldRequestUseCaseTest {
         }
 
     private class Arrangement {
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val preKeyRepository = mock(PreKeyRepository::class)
 
         fun withUserConfigRepositorySuccess() = apply {

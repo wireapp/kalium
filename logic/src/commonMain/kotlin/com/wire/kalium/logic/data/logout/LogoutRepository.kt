@@ -26,10 +26,12 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
+@Mockable
 interface LogoutRepository {
 
     /**
