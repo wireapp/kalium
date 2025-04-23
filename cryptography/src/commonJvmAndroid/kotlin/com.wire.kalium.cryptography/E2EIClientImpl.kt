@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.E2eiEnrollment
+import com.wire.crypto.E2EIEnrollment
 import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class E2EIClientImpl(
-    val wireE2eIdentity: E2eiEnrollment
+    val wireE2eIdentity: E2EIEnrollment
 ) : E2EIClient {
 
     private val defaultDPoPTokenExpiry: UInt = 30U
@@ -35,7 +35,7 @@ class E2EIClientImpl(
         wireE2eIdentity.newAccountRequest(previousNonce)
 
     override suspend fun setAccountResponse(account: JsonRawData) =
-        wireE2eIdentity.newAccountResponse(account)
+        wireE2eIdentity.accountResponse(account)
 
     override suspend fun getNewOrderRequest(previousNonce: String) =
         wireE2eIdentity.newOrderRequest(previousNonce)
@@ -47,7 +47,7 @@ class E2EIClientImpl(
         wireE2eIdentity.newAuthzRequest(url, previousNonce)
 
     override suspend fun setAuthzResponse(authz: JsonRawData) =
-        toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(authz))
+        toNewAcmeAuthz(wireE2eIdentity.authzResponse(authz))
 
     override suspend fun createDpopToken(backendNonce: String) =
         wireE2eIdentity.createDpopToken(expirySecs = defaultDPoPTokenExpiry, backendNonce)
@@ -59,10 +59,12 @@ class E2EIClientImpl(
         wireE2eIdentity.newOidcChallengeRequest(idToken, refreshToken, previousNonce)
 
     override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) =
-        wireE2eIdentity.newOidcChallengeResponse((coreCrypto as CoreCryptoCentralImpl).getCoreCrypto(), challenge)
+        (coreCrypto as CoreCryptoCentralImpl).transaction { cc ->
+            wireE2eIdentity.contextOidcChallengeResponse(cc, challenge)
+        }
 
     override suspend fun setDPoPChallengeResponse(challenge: JsonRawData) {
-        wireE2eIdentity.newDpopChallengeResponse(challenge)
+        wireE2eIdentity.dpopChallengeResponse(challenge)
     }
 
     override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String) =
@@ -95,12 +97,12 @@ class E2EIClientImpl(
         )
 
         fun toNewAcmeOrder(value: com.wire.crypto.NewAcmeOrder) = NewAcmeOrder(
-            value.delegate.toUByteArray().asByteArray(),
+            value.raw,
             value.authorizations
         )
 
         private fun toAcmeChallenge(value: com.wire.crypto.AcmeChallenge) = AcmeChallenge(
-            value.delegate.toUByteArray().asByteArray(),
+            value.raw,
             value.url,
             value.target
         )

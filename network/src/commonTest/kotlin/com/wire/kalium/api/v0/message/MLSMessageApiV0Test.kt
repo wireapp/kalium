@@ -47,7 +47,7 @@ internal class MLSMessageApiV0Test : ApiTest() {
         }
 
     private companion object {
-        val MESSAGE = MLSMessageApi.Message("ApplicationMessage".encodeToByteArray())
+        val MESSAGE = "ApplicationMessage".encodeToByteArray()
         val WELCOME_MESSAGE = MLSMessageApi.WelcomeMessage("WelcomeMessage".encodeToByteArray())
         val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
     }

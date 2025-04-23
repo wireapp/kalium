@@ -17,20 +17,28 @@
  */
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 
+@Suppress("LongParameterList")
 interface CoreCryptoCentral {
     suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient
 
     suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient
 
     suspend fun proteusClient(): ProteusClient
@@ -47,7 +55,7 @@ interface CoreCryptoCentral {
         handle: String,
         teamId: String?,
         expiry: Duration,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): E2EIClient
 
     /**

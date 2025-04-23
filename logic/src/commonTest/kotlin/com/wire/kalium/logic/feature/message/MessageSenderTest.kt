@@ -346,7 +346,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_CONVERSATION_ID), eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
             }.wasInvoked(twice)
         }
     }
@@ -1159,7 +1159,7 @@ class MessageSenderTest {
         ) = apply {
             var invocationCounter = 0
             coEvery {
-                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times }, any())
+                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times })
             }.returns(result)
         }
 

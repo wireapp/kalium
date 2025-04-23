@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -279,6 +280,7 @@ object TestConversation {
         )
 
     val GROUP_ID = GroupID("mlsGroupId")
+    val GROUP_WITH_EPOCH = GroupWithEpoch(GROUP_ID, 1UL)
     val ENTITY_ID = QualifiedIDEntity(conversationValue, conversationDomain)
     val ENTITY = ConversationEntity(
         ENTITY_ID,

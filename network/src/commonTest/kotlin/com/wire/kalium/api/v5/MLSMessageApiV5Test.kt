@@ -161,7 +161,7 @@ internal class MLSMessageApiV5Test : ApiTest() {
         const val PATH_MESSAGE = "/mls/messages"
         const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
 
-        val MESSAGE = MLSMessageApi.Message("ApplicationMessage".encodeToByteArray())
+        val MESSAGE = "ApplicationMessage".encodeToByteArray()
         val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
     }
 }
