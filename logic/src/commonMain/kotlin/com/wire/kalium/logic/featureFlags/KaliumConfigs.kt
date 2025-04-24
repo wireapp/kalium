@@ -30,7 +30,6 @@ data class KaliumConfigs(
     val shouldEncryptData: Boolean = true,
     val encryptProteusStorage: Boolean = false,
     val lowerKeyPackageLimits: Boolean = false,
-    val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
     val developmentApiEnabled: Boolean = false,
     val ignoreSSLCertificatesForUnboundCalls: Boolean = false,
     val guestRoomLink: Boolean = true,
