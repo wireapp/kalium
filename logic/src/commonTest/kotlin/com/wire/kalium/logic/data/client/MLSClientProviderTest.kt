@@ -43,6 +43,7 @@ import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -65,7 +66,7 @@ class MLSClientProviderTest {
             status = Status.ENABLED
         )
 
-        val (arrangement, mlsClientProvider) = Arrangement().arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetSupportedCipherSuitesReturning(StorageFailure.DataNotFound.left())
             withGetFeatureConfigsReturning(FeatureConfigTest.newModel(mlsModel = expected).right())
             withGetMLSEnabledReturning(true.right())
@@ -95,7 +96,7 @@ class MLSClientProviderTest {
             default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
         )
 
-        val (arrangement, mlsClientProvider) = Arrangement().arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetSupportedCipherSuitesReturning(expected.right())
             withGetMLSEnabledReturning(true.right())
             withGetFeatureConfigsReturning(FeatureConfigTest.newModel().right())
@@ -120,7 +121,7 @@ class MLSClientProviderTest {
     @Test
     fun givenMLSDisabledWhenGetOrFetchMLSConfigIsCalledThenDoNotCallGetSupportedCipherSuiteOrGetFeatureConfigs() = runTest {
         // given
-        val (arrangement, mlsClientProvider) = Arrangement().arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetMLSEnabledReturning(false.right())
             withGetSupportedCipherSuitesReturning(
                 SupportedCipherSuite(
@@ -148,7 +149,9 @@ class MLSClientProviderTest {
             .wasNotInvoked()
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
+    private class Arrangement(
+        val processingScope: CoroutineScope
+    ) : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
         FeatureConfigRepositoryArrangement by FeatureConfigRepositoryArrangementImpl() {
 
         val rootKeyStorePath: String = "rootKeyStorePath"
@@ -176,6 +179,7 @@ class MLSClientProviderTest {
                 featureConfigRepository = featureConfigRepository,
                 mlsTransportProvider = mlsTransportProvider,
                 epochObserver = epochChangesObserver,
+                processingScope = processingScope,
             )
         }
     }

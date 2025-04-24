@@ -688,7 +688,8 @@ class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository,
             featureConfigRepository = featureConfigRepository,
             mlsTransportProvider = mlsTransportProvider,
-            epochObserver = epochChangesObserver
+            epochObserver = epochChangesObserver,
+            processingScope = this@UserSessionScope
         )
     }
 
@@ -715,8 +716,7 @@ class UserSessionScope internal constructor(
             keyPackageLimitsProvider,
             checkRevocationList,
             certificateRevocationListRepository,
-            mutex = mlsMutex,
-            epochChangesObserver = epochChangesObserver
+            mutex = mlsMutex
         )
 
     private val e2eiRepository: E2EIRepository
