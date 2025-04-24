@@ -19,8 +19,6 @@
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -29,28 +27,20 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.logic.sync.SyncStateObserver
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
-
-// The duration in hours after which we should re-check keying materials.
-internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
 
 /**
  * Observes MLS conversations last keying material update
  * if a conversation's LastKeyingMaterialUpdate surpassed the threshold then
  * it'll send a new UpdateCommit for that conversation.
  */
-internal interface KeyingMaterialsManager
 
-internal class KeyingMaterialsManagerImpl(
+class KeyingMaterialsManager internal constructor(
     private val featureSupport: FeatureSupport,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val syncStateObserver: SyncStateObserver,
     private val clientRepository: Lazy<ClientRepository>,
     private val updateKeyingMaterialsUseCase: Lazy<UpdateKeyingMaterialsUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
@@ -97,4 +87,8 @@ internal class KeyingMaterialsManagerImpl(
                 Either.Right(Unit)
             }.onFailure { kaliumLogger.w("Error while updating keying materials:: $it") }
 
+    private companion object {
+        // The duration in hours after which we should re-check keying materials.
+        val KEYING_MATERIAL_CHECK_DURATION = 24.hours
+    }
 }

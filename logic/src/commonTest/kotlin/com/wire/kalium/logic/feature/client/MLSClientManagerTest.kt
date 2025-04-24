@@ -154,14 +154,14 @@ class MLSClientManagerTest {
             }.returns(enabled)
         }
 
-        fun arrange() = this to MLSClientManagerImpl(
+        fun arrange() = this to MLSClientManager(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
-            incrementalSyncRepository,
+            TODO(),
             lazy { slowSyncRepository },
             lazy { clientRepository },
             lazy { registerMLSClient },
-            TestKaliumDispatcher
+            TODO()
         )
     }
 }

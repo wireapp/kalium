@@ -188,13 +188,13 @@ class KeyingMaterialsManagerTests {
             }.returns(Either.Right(result))
         }
 
-        fun arrange() = this to KeyingMaterialsManagerImpl(
+        fun arrange() = this to KeyingMaterialsManager(
             featureSupport,
-            incrementalSyncRepository,
+            TODO(),
             lazy { clientRepository },
             lazy { updateKeyingMaterialsUseCase },
             lazy { timestampKeyRepository },
-            TestKaliumDispatcher
+            TODO()
         )
     }
 }
