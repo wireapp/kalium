@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.common.functional.Either
 import io.mockative.Mock
@@ -29,13 +28,11 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
-import kotlin.time.Duration.Companion.days
 
 class UpdateKeyingMaterialsUseCaseTests {
 
@@ -44,7 +41,6 @@ class UpdateKeyingMaterialsUseCaseTests {
         val (arrangement, updateKeyingMaterialsUseCase) = Arrangement()
             .withOutdatedGroupsReturns(Either.Right(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS))
             .withUpdateKeyingMaterialsSuccessful()
-            .withKeyingMaterialThreshold()
             .arrange()
 
         val actual = updateKeyingMaterialsUseCase()
@@ -61,7 +57,6 @@ class UpdateKeyingMaterialsUseCaseTests {
         val (arrangement, updateKeyingMaterialsUseCase) = Arrangement()
             .withOutdatedGroupsReturns(Either.Right(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS))
             .withUpdateKeyingMaterialsFailsFor(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS[0])
-            .withKeyingMaterialThreshold()
             .arrange()
 
         val actual = updateKeyingMaterialsUseCase()
@@ -78,7 +73,6 @@ class UpdateKeyingMaterialsUseCaseTests {
         val (arrangement, updateKeyingMaterialsUseCase) = Arrangement()
             .withOutdatedGroupsReturns(Either.Right(listOf()))
             .withUpdateKeyingMaterialsSuccessful()
-            .withKeyingMaterialThreshold()
             .arrange()
 
         val actual = updateKeyingMaterialsUseCase()
@@ -95,7 +89,6 @@ class UpdateKeyingMaterialsUseCaseTests {
         val (arrangement, updateKeyingMaterialsUseCase) = Arrangement()
             .withOutdatedGroupsReturns(Either.Left(StorageFailure.DataNotFound))
             .withUpdateKeyingMaterialsSuccessful()
-            .withKeyingMaterialThreshold()
             .arrange()
 
         val actual = updateKeyingMaterialsUseCase()
@@ -111,23 +104,14 @@ class UpdateKeyingMaterialsUseCaseTests {
         @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
-        @Mock
-        val updateKeyingMaterialThresholdProvider = mock(UpdateKeyingMaterialThresholdProvider::class)
-
         private var updateKeyingMaterialsUseCase = UpdateKeyingMaterialsUseCaseImpl(
             mlsConversationRepository,
-            updateKeyingMaterialThresholdProvider
         )
 
         suspend fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<GroupID>>) = apply {
             coEvery {
                 mlsConversationRepository.getMLSGroupsRequiringKeyingMaterialUpdate(any())
             }.returns(either)
-        }
-
-        fun withKeyingMaterialThreshold() = apply {
-            every { updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold }
-                .returns(1.days)
         }
 
         suspend fun withUpdateKeyingMaterialsSuccessful() = apply {
