@@ -205,6 +205,7 @@ sealed interface MLSFailure : CoreFailure {
     data object ConversationNotFound : MLSFailure
     data object OrphanWelcome : MLSFailure
     data object BufferedCommit : MLSFailure
+    data object PendingCommitExist : MLSFailure
     sealed class MessageRejected : MLSFailure {
         data object MlsClientMismatch : MessageRejected()
         data object MlsCommitMissingReferences : MessageRejected()

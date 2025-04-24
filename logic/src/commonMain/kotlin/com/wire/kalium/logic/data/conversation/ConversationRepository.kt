@@ -346,6 +346,7 @@ interface ConversationRepository {
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
 
     suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean>
+    suspend fun getGroupInfo(conversationId: ConversationId): Either<CoreFailure, ByteArray>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1250,6 +1251,10 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
+    override suspend fun getGroupInfo(
+        conversationId: ConversationId
+    ): Either<CoreFailure, ByteArray> = wrapApiRequest { conversationApi.fetchGroupInfo(conversationId.toApi()) }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

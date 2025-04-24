@@ -66,6 +66,11 @@ value class GroupID(val value: String) {
     fun toLogString() = value.obfuscateId()
 }
 
+data class ConversationIdWithGroup(
+    val conversationId: QualifiedID,
+    val groupId: GroupID
+)
+
 @JvmInline
 value class SubconversationId(val value: String) {
     fun toLogString() = value.obfuscateId()

@@ -247,7 +247,7 @@ updateKeyingMaterialDate:
 UPDATE Conversation SET mls_last_keying_material_update_date= ? WHERE mls_group_id = ?;
 
 selectByKeyingMaterialUpdate:
-SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
+SELECT mls_group_id, qualified_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
 
 updateProposalTimer:
 UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;

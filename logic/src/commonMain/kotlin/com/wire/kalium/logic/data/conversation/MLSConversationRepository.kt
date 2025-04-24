@@ -46,6 +46,7 @@ import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.ConversationIdWithGroup
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -146,7 +147,7 @@ interface MLSConversationRepository {
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
     suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean>
-    suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
+    suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<ConversationIdWithGroup>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
@@ -309,9 +310,16 @@ internal class MLSConversationDataSource(
             }
         }
 
-    override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>> =
+    override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(
+        threshold: Duration
+    ): Either<CoreFailure, List<ConversationIdWithGroup>> =
         wrapStorageRequest {
-            conversationDAO.getConversationsByKeyingMaterialUpdate(threshold).map(idMapper::fromGroupIDEntity)
+            conversationDAO.getConversationsByKeyingMaterialUpdate(threshold).map {
+                ConversationIdWithGroup(
+                    conversationId = it.conversationId.toModel(),
+                    groupId = idMapper.fromGroupIDEntity(it.groupId)
+                )
+            }
         }
 
     override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> {

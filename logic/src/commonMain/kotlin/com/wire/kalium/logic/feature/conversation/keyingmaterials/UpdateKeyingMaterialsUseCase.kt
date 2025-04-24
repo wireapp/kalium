@@ -19,11 +19,17 @@
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.id.ConversationIdWithGroup
 
 sealed class UpdateKeyingMaterialsResult {
 
@@ -41,17 +47,45 @@ interface UpdateKeyingMaterialsUseCase {
 }
 
 internal class UpdateKeyingMaterialsUseCaseImpl(
-    val mlsConversationRepository: MLSConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val conversationRepository: ConversationRepository,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) : UpdateKeyingMaterialsUseCase {
-    override suspend fun invoke(): UpdateKeyingMaterialsResult = mlsConversationRepository
-        .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
-        .flatMap { groups ->
-            groups.map { mlsConversationRepository.updateKeyingMaterial(it) }
-                .foldToEitherWhileRight(Unit) { value, _ -> value }
-        }.fold(
-            { UpdateKeyingMaterialsResult.Failure(it) },
-            { UpdateKeyingMaterialsResult.Success }
-        )
+
+    override suspend fun invoke(): UpdateKeyingMaterialsResult {
+        return mlsConversationRepository
+            .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
+            .flatMap { groups ->
+                groups.map { conversationIdWithGroup ->
+                    mlsConversationRepository.updateKeyingMaterial(conversationIdWithGroup.groupId)
+                        .flatMapLeft { failure ->
+                            if (failure is MLSFailure.PendingCommitExist) {
+                                kaliumLogger.e(
+                                    "Pending commit exist for group ${conversationIdWithGroup.groupId}, trying to recover from it"
+                                )
+                                recoverFromPendingCommit(conversationIdWithGroup)
+                            } else {
+                                Either.Left(failure)
+                            }
+                        }
+                }
+                    .foldToEitherWhileRight(Unit) { value, _ -> value }
+            }.fold(
+                { UpdateKeyingMaterialsResult.Failure(it) },
+                { UpdateKeyingMaterialsResult.Success }
+            )
+    }
+
+    private suspend fun recoverFromPendingCommit(conversationIdWithGroup: ConversationIdWithGroup): Either<CoreFailure, Unit> =
+        mlsConversationRepository.leaveGroup(conversationIdWithGroup.groupId)
+            .flatMap {
+                conversationRepository.getGroupInfo(conversationIdWithGroup.conversationId)
+                    .flatMap {
+                        mlsConversationRepository.joinGroupByExternalCommit(conversationIdWithGroup.groupId, it)
+                    }
+            }
+            .flatMap {
+                mlsConversationRepository.updateKeyingMaterial(conversationIdWithGroup.groupId)
+            }
 
 }

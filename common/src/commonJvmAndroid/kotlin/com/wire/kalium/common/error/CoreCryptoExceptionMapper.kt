@@ -40,6 +40,8 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
                     MLSFailure.CommitForMissingProposal
                 } else if (otherError.startsWith(CONVERSATION_NOT_FOUND)) {
                     MLSFailure.ConversationNotFound
+                } else if (otherError.startsWith(PENDING_COMMIT_EXIST)) {
+                    MLSFailure.PendingCommitExist
                 } else {
                     MLSFailure.Other
                 }
@@ -75,3 +77,4 @@ private fun containsMessageRejected(message: String): Boolean =
 
 private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"
 private const val CONVERSATION_NOT_FOUND = "Couldn't find conversation"
+private const val PENDING_COMMIT_EXIST = "Can't execute operation because a pending commit exists"

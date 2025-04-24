@@ -54,6 +54,7 @@ internal object MLSMessageFailureHandler {
             MLSFailure.BufferedCommit,
             is MLSFailure.MessageRejected,
             MLSFailure.OrphanWelcome,
+            is MLSFailure.PendingCommitExist,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,

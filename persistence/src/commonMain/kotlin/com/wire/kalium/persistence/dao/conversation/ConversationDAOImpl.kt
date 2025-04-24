@@ -358,12 +358,18 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.updateKeyingMaterialDate(timestamp, groupId)
     }
 
-    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
-        conversationQueries.selectByKeyingMaterialUpdate(
-            ConversationEntity.GroupState.ESTABLISHED,
-            DateTimeUtil.currentInstant().minus(threshold)
-        ).executeAsList()
-    }
+    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<ConversationIdWithGroupEntity> =
+        withContext(coroutineContext) {
+            conversationQueries.selectByKeyingMaterialUpdate(
+                ConversationEntity.GroupState.ESTABLISHED,
+                DateTimeUtil.currentInstant().minus(threshold)
+            ).executeAsList().map {
+                ConversationIdWithGroupEntity(
+                    conversationId = it.qualified_id,
+                    groupId = it.mls_group_id,
+                )
+            }
+        }
 
     override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) = withContext(coroutineContext) {
         conversationQueries.updateProposalTimer(proposalTimer.firingDate.toString(), proposalTimer.groupID)
