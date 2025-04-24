@@ -1412,8 +1412,7 @@ class MLSConversationRepositoryTest {
             keyPackageLimitsProvider,
             checkRevocationList,
             certificateRevocationListRepository,
-            mutex = Mutex(),
-            epochChangesObserver = epochChangesObserver
+            mutex = Mutex()
         )
 
         suspend fun withClearProposalTimerSuccessful() = apply {
