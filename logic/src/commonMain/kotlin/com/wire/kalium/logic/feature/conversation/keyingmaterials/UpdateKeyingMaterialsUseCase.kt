@@ -20,10 +20,10 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import kotlin.time.Duration.Companion.days
 
 sealed class UpdateKeyingMaterialsResult {
 
@@ -42,10 +42,9 @@ interface UpdateKeyingMaterialsUseCase {
 
 internal class UpdateKeyingMaterialsUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository,
-    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) : UpdateKeyingMaterialsUseCase {
     override suspend fun invoke(): UpdateKeyingMaterialsResult = mlsConversationRepository
-        .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
+        .getMLSGroupsRequiringKeyingMaterialUpdate(KEYING_MATERIAL_UPDATE_THRESHOLD)
         .flatMap { groups ->
             groups.map { mlsConversationRepository.updateKeyingMaterial(it) }
                 .foldToEitherWhileRight(Unit) { value, _ -> value }
@@ -54,4 +53,8 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
             { UpdateKeyingMaterialsResult.Success }
         )
 
+    private companion object {
+        // TODO: there are some edge cases and optimisations points to consider for M5-> please see: https://wearezeta.atlassian.net/browse/AR-1633
+        val KEYING_MATERIAL_UPDATE_THRESHOLD = 90.days
+    }
 }

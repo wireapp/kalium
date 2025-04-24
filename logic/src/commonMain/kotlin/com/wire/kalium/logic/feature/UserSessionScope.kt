@@ -92,8 +92,6 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderDataSource
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -651,9 +649,6 @@ class UserSessionScope internal constructor(
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
-
-    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
-        get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
         ProteusMigrationRecoveryHandlerImpl(lazy { logout })
@@ -1874,7 +1869,6 @@ class UserSessionScope internal constructor(
             userId,
             selfConversationIdProvider,
             persistMessage,
-            updateKeyingMaterialThresholdProvider,
             selfTeamId,
             messages.sendConfirmation,
             renamedConversationHandler,
