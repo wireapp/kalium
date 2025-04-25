@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncStateObserver
 import kotlinx.coroutines.CoroutineScope
@@ -44,28 +45,16 @@ class KeyingMaterialsManager internal constructor(
     private val clientRepository: Lazy<ClientRepository>,
     private val updateKeyingMaterialsUseCase: Lazy<UpdateKeyingMaterialsUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : KeyingMaterialsManager {
-    /**
-     * A dispatcher with limited parallelism of 1.
-     * This means using this dispatcher only a single coroutine will be processed at a time.
-     */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
+    private val userCoroutineScope: CoroutineScope,
+) {
 
-    private val updateKeyingMaterialsScope = CoroutineScope(dispatcher)
-
-    private var updateKeyingMaterialsJob: Job? = null
-
-    init {
-        updateKeyingMaterialsJob = updateKeyingMaterialsScope.launch {
-            incrementalSyncRepository.incrementalSyncState.collect { syncState ->
-                ensureActive()
-                if (syncState is IncrementalSyncStatus.Live &&
-                    featureSupport.isMLSSupported &&
-                    clientRepository.value.hasRegisteredMLSClient().getOrElse(false)) {
-                    updateKeyingMaterialIfNeeded()
-                }
+    suspend operator fun invoke() {
+        syncStateObserver.waitUntilLiveOrFailure().onSuccess {
+            if (
+                featureSupport.isMLSSupported &&
+                clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
+            ) {
+                userCoroutineScope.launch { updateKeyingMaterialIfNeeded() }.join()
             }
         }
     }
