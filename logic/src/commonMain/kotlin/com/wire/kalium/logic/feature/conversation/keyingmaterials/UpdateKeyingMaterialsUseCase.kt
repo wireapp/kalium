@@ -29,8 +29,8 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.ConversationIdWithGroup
+import kotlin.time.Duration.Companion.days
 
 sealed class UpdateKeyingMaterialsResult {
 
@@ -50,12 +50,11 @@ interface UpdateKeyingMaterialsUseCase {
 internal class UpdateKeyingMaterialsUseCaseImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationRepository: ConversationRepository,
-    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) : UpdateKeyingMaterialsUseCase {
 
     override suspend fun invoke(): UpdateKeyingMaterialsResult {
         return mlsConversationRepository
-            .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
+            .getMLSGroupsRequiringKeyingMaterialUpdate(KEYING_MATERIAL_UPDATE_THRESHOLD)
             .flatMap { groups ->
                 // TODO this should be done in parallel
                 groups.map { conversationIdWithGroup ->
@@ -64,7 +63,8 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
                             when (failure) {
                                 is MLSFailure.PendingCommitExist -> {
                                     kaliumLogger.e(
-                                        "Pending commit exist for group ${conversationIdWithGroup.groupId.toLogString()}, trying to recover from it"
+                                        "Pending commit exist for group ${conversationIdWithGroup.groupId.toLogString()}, " +
+                                                "trying to recover from it"
                                     )
                                     recoverFromPendingCommit(conversationIdWithGroup)
                                 }
@@ -94,4 +94,9 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
                         mlsConversationRepository.joinGroupByExternalCommit(conversationIdWithGroup.groupId, it)
                     }
             }
+
+    private companion object {
+        // TODO: there are some edge cases and optimisations points to consider for M5-> please see: https://wearezeta.atlassian.net/browse/AR-1633
+        val KEYING_MATERIAL_UPDATE_THRESHOLD = 90.days
+    }
 }
