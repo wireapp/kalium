@@ -84,8 +84,4 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
                         mlsConversationRepository.joinGroupByExternalCommit(conversationIdWithGroup.groupId, it)
                     }
             }
-            .flatMap {
-                mlsConversationRepository.updateKeyingMaterial(conversationIdWithGroup.groupId)
-            }
-
 }

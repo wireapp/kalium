@@ -21,12 +21,12 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.ConversationIdWithGroup
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestConversation
 import io.mockative.Mock
 import io.mockative.any
@@ -93,19 +93,19 @@ class UpdateKeyingMaterialsUseCaseTests {
 
         coVerify {
             arrangement.mlsConversationRepository.updateKeyingMaterial(any())
-        }.wasInvoked(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size + oneRetry)
+        }.wasInvoked(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size)
 
         coVerify {
             arrangement.conversationRepository.getGroupInfo(any())
-        }.wasInvoked(1)
+        }.wasInvoked(oneRetry)
 
         coVerify {
             arrangement.mlsConversationRepository.leaveGroup(any())
-        }.wasInvoked(1)
+        }.wasInvoked(oneRetry)
 
         coVerify {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any())
-        }.wasInvoked(1)
+        }.wasInvoked(oneRetry)
 
         assertIs<UpdateKeyingMaterialsResult.Success>(actual)
     }
