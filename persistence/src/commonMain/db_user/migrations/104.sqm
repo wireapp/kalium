@@ -1,0 +1,9 @@
+CREATE INDEX IF NOT EXISTS convo_estab_proto_age_idx
+    ON Conversation (
+        protocol,
+        mls_last_keying_material_update_date,
+        mls_group_id
+    )
+    WHERE mls_group_state = 'ESTABLISHED'
+      AND protocol IN ('MLS','MIXED')
+      AND mls_group_id IS NOT NULL;

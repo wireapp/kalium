@@ -66,6 +66,15 @@ CREATE INDEX conversation_creator_index ON Conversation(creator_id);
 CREATE INDEX conversation_verification_status ON Conversation(verification_status);
 CREATE INDEX conversation_archiverd_index ON Conversation(archived);
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
+CREATE INDEX IF NOT EXISTS convo_estab_proto_age_idx
+    ON Conversation (
+        protocol,                       -- 'MLS' or 'MIXED'  (equality)
+        mls_last_keying_material_update_date,   -- range “< ?”
+        mls_group_id                    -- returned by SELECT → covering scan
+    )
+    WHERE mls_group_state = 'ESTABLISHED'          -- constant filter
+      AND protocol IN ('MLS','MIXED')              -- constant filter
+      AND mls_group_id IS NOT NULL;                -- constant filter
 
 conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
@@ -247,7 +256,7 @@ updateKeyingMaterialDate:
 UPDATE Conversation SET mls_last_keying_material_update_date= ? WHERE mls_group_id = ?;
 
 selectByKeyingMaterialUpdate:
-SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
+SELECT mls_group_id FROM Conversation WHERE mls_group_state = 'ESTABLISHED' AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
 
 updateProposalTimer:
 UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;

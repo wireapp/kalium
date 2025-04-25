@@ -360,7 +360,6 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
         conversationQueries.selectByKeyingMaterialUpdate(
-            ConversationEntity.GroupState.ESTABLISHED,
             DateTimeUtil.currentInstant().minus(threshold)
         ).executeAsList()
     }
