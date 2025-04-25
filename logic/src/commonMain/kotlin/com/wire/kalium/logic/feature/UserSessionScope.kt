@@ -200,7 +200,6 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseIm
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
-import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
@@ -222,7 +221,6 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
-import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
@@ -283,7 +281,6 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
-import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorImpl
@@ -1234,28 +1231,30 @@ class UserSessionScope internal constructor(
         lazy { users.timestampKeyRepository }
     )
 
-    internal val keyingMaterialsManager: KeyingMaterialsManager = KeyingMaterialsManagerImpl(
+    val keyingMaterialsManager: KeyingMaterialsManager get() = KeyingMaterialsManager(
         featureSupport,
-        incrementalSyncRepository,
+        syncStateObserver,
         lazy { clientRepository },
         lazy { conversations.updateMLSGroupsKeyingMaterials },
-        lazy { users.timestampKeyRepository }
+        lazy { users.timestampKeyRepository },
+        this,
     )
 
-    val mlsClientManager: MLSClientManager = MLSClientManagerImpl(
+    val mlsClientManager: MLSClientManager get() = MLSClientManager(
         clientIdProvider,
         isAllowedToRegisterMLSClient,
-        incrementalSyncRepository,
+        syncStateObserver,
         lazy { slowSyncRepository },
         lazy { clientRepository },
         lazy {
             RegisterMLSClientUseCaseImpl(
                 mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
             )
-        }
+        },
+        this,
     )
 
-    internal val mlsMigrationWorker
+    private val mlsMigrationWorker
         get() = MLSMigrationWorkerImpl(
             userConfigRepository,
             featureConfigRepository,
@@ -1264,13 +1263,14 @@ class UserSessionScope internal constructor(
             mlsMigrator,
         )
 
-    internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
+    val mlsMigrationManager: MLSMigrationManager get() = MLSMigrationManager(
         kaliumConfigs,
         isMLSEnabled,
-        incrementalSyncRepository,
+        syncStateObserver,
         lazy { clientRepository },
         lazy { users.timestampKeyRepository },
-        lazy { mlsMigrationWorker }
+        lazy { mlsMigrationWorker },
+        this,
     )
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository
