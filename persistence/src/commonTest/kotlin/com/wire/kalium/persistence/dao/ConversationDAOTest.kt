@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationIdWithGroupEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
 import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
@@ -538,7 +539,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.updateKeyingMaterial(outdatedGroupId2, outdatedDate2)
 
             // then
-            assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
+            assertEquals(
+                listOf(ConversationIdWithGroupEntity(outDatedConversation2.id, outdatedGroupId2)),
+                conversationDAO.getConversationsByKeyingMaterialUpdate(90.days)
+            )
         }
 
     @Test

@@ -63,6 +63,7 @@ class KeyingMaterialsManager internal constructor(
         timestampKeyRepository.value.hasPassed(LAST_KEYING_MATERIAL_UPDATE_CHECK, KEYING_MATERIAL_CHECK_DURATION)
             .flatMap { exceeded ->
                 if (exceeded) {
+                    kaliumLogger.d("Keying materials check exceeded, updating keying materials")
                     updateKeyingMaterialsUseCase.value().let { result ->
                         when (result) {
                             is UpdateKeyingMaterialsResult.Failure ->

@@ -101,7 +101,7 @@ interface ConversationDAO {
     )
 
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
-    suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
+    suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<ConversationIdWithGroupEntity>
     suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity)
     suspend fun clearProposalTimer(groupID: String)
     suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
