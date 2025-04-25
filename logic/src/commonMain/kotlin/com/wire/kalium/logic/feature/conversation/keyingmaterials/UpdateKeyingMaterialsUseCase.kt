@@ -19,10 +19,14 @@
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.id.GroupID
 import kotlin.time.Duration.Companion.days
 
 sealed class UpdateKeyingMaterialsResult {
@@ -45,14 +49,28 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
 ) : UpdateKeyingMaterialsUseCase {
     override suspend fun invoke(): UpdateKeyingMaterialsResult = mlsConversationRepository
         .getMLSGroupsRequiringKeyingMaterialUpdate(KEYING_MATERIAL_UPDATE_THRESHOLD)
-        .flatMap { groups ->
-            groups.map { mlsConversationRepository.updateKeyingMaterial(it) }
-                .foldToEitherWhileRight(Unit) { value, _ -> value }
-        }.fold(
-            { UpdateKeyingMaterialsResult.Failure(it) },
-            { UpdateKeyingMaterialsResult.Success }
-        )
+        .fold(
+            {
+                UpdateKeyingMaterialsResult.Failure(it)
+            },
+            { groups ->
+                val failedGroup: MutableList<GroupID> = mutableListOf()
+                // TODO: this should run in parallel
+                for (group in groups) {
+                    mlsConversationRepository.updateKeyingMaterial(group).onFailure {
+                        if (it is NetworkFailure.NoNetworkConnection) {
+                            return@fold UpdateKeyingMaterialsResult.Failure(it)
 
+                        }            }
+                    failedGroup.add(group)
+                }
+                if (failedGroup.size == 0) {
+                    kaliumLogger.d("Keying materials updated successfully returning success")
+                } else {
+                    kaliumLogger.d("Keying materials update failed for groups: ${failedGroup.map { it.toLogString() }} returning success")
+                }
+                UpdateKeyingMaterialsResult.Success
+            })
     private companion object {
         // TODO: there are some edge cases and optimisations points to consider for M5-> please see: https://wearezeta.atlassian.net/browse/AR-1633
         val KEYING_MATERIAL_UPDATE_THRESHOLD = 90.days
