@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -56,16 +57,25 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
         return mlsConversationRepository
             .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
             .flatMap { groups ->
+                // TODO this should be done in parallel
                 groups.map { conversationIdWithGroup ->
                     mlsConversationRepository.updateKeyingMaterial(conversationIdWithGroup.groupId)
                         .flatMapLeft { failure ->
-                            if (failure is MLSFailure.PendingCommitExist) {
-                                kaliumLogger.e(
-                                    "Pending commit exist for group ${conversationIdWithGroup.groupId}, trying to recover from it"
-                                )
-                                recoverFromPendingCommit(conversationIdWithGroup)
-                            } else {
-                                Either.Left(failure)
+                            when (failure) {
+                                is MLSFailure.PendingCommitExist -> {
+                                    kaliumLogger.e(
+                                        "Pending commit exist for group ${conversationIdWithGroup.groupId.toLogString()}, trying to recover from it"
+                                    )
+                                    recoverFromPendingCommit(conversationIdWithGroup)
+                                }
+
+                                is NetworkFailure.NoNetworkConnection -> {
+                                    Either.Left(failure)
+                                }
+
+                                else -> {
+                                    Either.Right(Unit)
+                                }
                             }
                         }
                 }
