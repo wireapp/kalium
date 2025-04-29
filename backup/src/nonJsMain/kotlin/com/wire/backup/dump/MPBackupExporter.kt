@@ -17,7 +17,6 @@
  */
 package com.wire.backup.dump
 
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
@@ -89,7 +88,6 @@ public actual class MPBackupExporter : CommonMPBackupExporter {
      * This method should be called after all the data was added.
      * @param password optional password for the encryption. Can be an empty string, to export an unencrypted backup.
      */
-    @NativeCoroutines
     @Suppress("TooGenericExceptionCaught")
     public suspend fun finalize(password: String): BackupExportResult = try {
         val fileName = getBackupFileName()

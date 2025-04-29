@@ -24,7 +24,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
-    alias(libs.plugins.kotlinNativeCoroutines)
+    alias(libs.plugins.skie)
 }
 
 version = "0.0.1"
