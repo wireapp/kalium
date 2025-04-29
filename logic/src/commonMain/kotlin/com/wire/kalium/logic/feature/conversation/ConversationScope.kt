@@ -33,7 +33,6 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -114,7 +113,6 @@ class ConversationScope internal constructor(
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
-    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
@@ -274,7 +272,7 @@ class ConversationScope internal constructor(
         )
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
-        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
+        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
 
     val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
         get() = ClearConversationAssetsLocallyUseCaseImpl(

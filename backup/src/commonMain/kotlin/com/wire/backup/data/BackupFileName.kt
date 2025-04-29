@@ -15,14 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.ingest
+package com.wire.backup.data
 
-public fun interface BackupFileUnzipper {
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
-    /**
-     * Unzip all the entries stored within the file at [zipPath] to _some_ directory of choice.
-     * @return the path to a directory where all the entries were extracted.
-     */
-    @Throws(Throwable::class)
-    public fun unzipBackup(zipPath: String): String
+private const val FILENAME_SUFFIX = ".wbu"
+private const val FILENAME_PREFIX = "WireBackup"
+
+internal fun getBackupFileName(
+    time: Instant = Clock.System.now(),
+    timeZone: TimeZone = TimeZone.currentSystemDefault()
+): String {
+    val timestamp = time.toLocalDateTime(timeZone).toString()
+    return "$FILENAME_PREFIX-$timestamp$FILENAME_SUFFIX"
 }

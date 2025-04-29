@@ -21,6 +21,7 @@ import com.wire.crypto.ClientId
 import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
+import kotlinx.coroutines.CoroutineScope
 import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 
@@ -59,23 +60,28 @@ private class Callbacks : CoreCryptoCallbacks {
 
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
-    private val rootDir: String
+    private val rootDir: String,
 ) : CoreCryptoCentral {
 
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        allowedCipherSuites: List<MLSCiphersuite>,
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
-        cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
-        return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite)
+        TODO("Not yet implemented")
     }
 
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite,
+        mlsTransporter: MLSTransporter,
+        epochObserver: MLSEpochObserver,
+        coroutineScope: CoroutineScope
     ): MLSClient {
         TODO("Not yet implemented")
     }
@@ -90,7 +96,7 @@ class CoreCryptoCentralImpl(
         handle: String,
         teamId: String?,
         expiry: Duration,
-        defaultCipherSuite: UShort
+        defaultCipherSuite: MLSCiphersuite
     ): E2EIClient {
         TODO("Not yet implemented")
     }

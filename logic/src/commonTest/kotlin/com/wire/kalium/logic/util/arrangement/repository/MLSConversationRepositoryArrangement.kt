@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.data.id.GroupID
 import io.mockative.Mock
 import io.mockative.every
@@ -27,7 +28,7 @@ import kotlinx.coroutines.flow.Flow
 internal interface MLSConversationRepositoryArrangement {
     val epochChangesObserver: EpochChangesObserver
 
-    fun withObserveEpochChanges(result: Flow<GroupID>)
+    fun withObserveEpochChanges(result: Flow<GroupWithEpoch>)
 }
 
 internal open class MLSConversationRepositoryArrangementImpl :
@@ -36,7 +37,7 @@ internal open class MLSConversationRepositoryArrangementImpl :
     @Mock
     override val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
 
-    override fun withObserveEpochChanges(result: Flow<GroupID>) {
+    override fun withObserveEpochChanges(result: Flow<GroupWithEpoch>) {
         every {
             epochChangesObserver.observe()
         }.returns(result)
