@@ -44,7 +44,7 @@ class MPBackupExporterTest {
             }
         }
 
-        val result = subject.finalize(null, Buffer())
+        val result = subject.finalize("", Buffer())
         assertIs<ExportResult.Failure.ZipError>(result)
         assertEquals(thrownException.message, result.message)
     }

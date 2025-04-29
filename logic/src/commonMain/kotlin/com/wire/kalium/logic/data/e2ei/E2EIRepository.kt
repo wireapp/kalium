@@ -41,6 +41,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapE2EIRequest
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
@@ -84,7 +85,12 @@ interface E2EIRepository {
     suspend fun finalize(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, ACMEResponse>
-    suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
+    suspend fun rotateKeysAndMigrateConversations(
+        certificateChain: String,
+        groupIdList: List<GroupID>,
+        isNewClient: Boolean = false,
+    ): Either<E2EIFailure, Unit>
+
     suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
@@ -320,12 +326,22 @@ class E2EIRepositoryImpl(
             }.fold({ E2EIFailure.Certificate(it).left() }, { it.right() })
         }
 
-    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean) =
+    override suspend fun rotateKeysAndMigrateConversations(
+        certificateChain: String,
+        groupIdList: List<GroupID>,
+        isNewClient: Boolean
+    ) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             currentClientIdProvider().fold({
                 E2EIFailure.RotationAndMigration(it).left()
             }, { clientId ->
-                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain, isNewClient)
+                mlsConversationRepository.rotateKeysAndMigrateConversations(
+                    clientId,
+                    e2eiClient,
+                    certificateChain,
+                    groupIdList,
+                    isNewClient
+                )
             })
         }
 
@@ -344,14 +360,14 @@ class E2EIRepositoryImpl(
     }
 
     override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {
-            wrapApiRequest {
-                acmeApi.getACMEFederationCertificateChain(it)
-            }.fold({
-                E2EIFailure.IntermediateCert(it).left()
-            }, { data ->
-                registerIntermediateCAs(data)
-            })
-        }
+        wrapApiRequest {
+            acmeApi.getACMEFederationCertificateChain(it)
+        }.fold({
+            E2EIFailure.IntermediateCert(it).left()
+        }, { data ->
+            registerIntermediateCAs(data)
+        })
+    }
 
     private suspend fun registerIntermediateCAs(data: List<String>) =
         currentClientIdProvider().fold({

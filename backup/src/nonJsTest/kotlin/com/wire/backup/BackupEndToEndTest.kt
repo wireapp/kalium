@@ -22,6 +22,7 @@ import com.wire.backup.dump.BackupExportResult
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.BackupPeekResult
 import com.wire.backup.ingest.MPBackupImporter
 import okio.FileSystem
 import okio.SYSTEM
@@ -41,9 +42,27 @@ actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubj
 
     override suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,
-        passphrase: String?,
+        passphrase: String,
         export: CommonMPBackupExporter.() -> Unit,
     ): BackupImportResult {
+        val (artifactPath, importer) = createBackup(selfUserId, export, passphrase)
+        return importer.importFromFile(artifactPath, passphrase)
+    }
+
+    override suspend fun exportPeekTest(
+        selfUserId: BackupQualifiedId,
+        passphrase: String,
+        export: CommonMPBackupExporter.() -> Unit
+    ): BackupPeekResult {
+        val (artifactPath, importer) = createBackup(selfUserId, export, passphrase)
+        return importer.peekBackupFile(artifactPath)
+    }
+
+    private suspend fun createBackup(
+        selfUserId: BackupQualifiedId,
+        export: CommonMPBackupExporter.() -> Unit,
+        passphrase: String
+    ): Pair<String, MPBackupImporter> {
         val zipper = FakeZip(zipDirectory)
         val exporter = MPBackupExporter(
             selfUserId,
@@ -55,6 +74,6 @@ actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubj
         val artifactPath = (exporter.finalize(passphrase) as BackupExportResult.Success).pathToOutputFile
 
         val importer = MPBackupImporter(exportDirectory.toString(), zipper)
-        return importer.importFromFile(artifactPath, passphrase)
+        return Pair(artifactPath, importer)
     }
 }

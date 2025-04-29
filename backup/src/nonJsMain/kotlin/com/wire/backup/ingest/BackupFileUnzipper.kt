@@ -23,5 +23,6 @@ public fun interface BackupFileUnzipper {
      * Unzip all the entries stored within the file at [zipPath] to _some_ directory of choice.
      * @return the path to a directory where all the entries were extracted.
      */
+    @Throws(Throwable::class)
     public fun unzipBackup(zipPath: String): String
 }

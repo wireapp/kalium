@@ -64,11 +64,8 @@ SELECT asset_path FROM MessageAttachments WHERE asset_id = ?;
 setTransferStatus:
 UPDATE MessageAttachments SET asset_transfer_status = ? WHERE asset_id = ?;
 
-setContentHash:
-UPDATE MessageAttachments SET content_hash = ? WHERE asset_id = ?;
-
-setContentUrlAndHash:
-UPDATE MessageAttachments SET content_url = ?, content_hash = ? WHERE asset_id = ?;
+updateAttachment:
+UPDATE MessageAttachments SET content_url = ?, content_hash = ?, asset_path = ? WHERE asset_id = ?;
 
 getAttachments:
 SELECT * FROM MessageAttachments WHERE message_id = ? AND conversation_id = ?;

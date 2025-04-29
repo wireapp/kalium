@@ -21,8 +21,18 @@ import org.khronos.webgl.Uint8Array
 
 @JsExport
 public sealed class BackupExportResult {
+    /**
+     * Represents a successful export.
+     *
+     * @property bytes the exported data.
+     * @property fileName a suggested file name for the backup file, containing the type.
+     *
+     * @see Failure for more information about failures.
+     *
+     */
     public class Success(
-        public val bytes: Uint8Array
+        public val bytes: Uint8Array,
+        public val fileName: String,
     ) : BackupExportResult()
     public sealed class Failure(public val message: String) : BackupExportResult() {
         /**
