@@ -30,6 +30,7 @@ import kotlinx.serialization.SerialName
 data class ChangeHandleRequest(
     @SerialName("handle") val handle: String
 )
+
 @Mockable
 interface SelfApi : BaseApi {
     suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO>
