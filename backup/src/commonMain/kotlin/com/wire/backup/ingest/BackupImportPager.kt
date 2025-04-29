@@ -23,11 +23,12 @@ import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.decodeFromByteArray
+import okio.Closeable
 import okio.buffer
 import kotlin.js.JsExport
 
 @JsExport
-public class BackupImportPager internal constructor(private val entries: List<BackupPage>) {
+public class BackupImportPager internal constructor(private val entries: List<BackupPage>) : Closeable {
 
     public val totalPagesCount: Int = entries.size
 
@@ -43,6 +44,9 @@ public class BackupImportPager internal constructor(private val entries: List<Ba
         UserPager(entries.filter { it.name.startsWith(BackupPage.USERS_PREFIX) })
     }
 
+    override fun close() {
+        entries.close()
+    }
 }
 
 // The abstract / implementation are done this way to avoid having GenericClass<Data>, which can be lost on ObjC/Swift interop.
@@ -107,3 +111,5 @@ public class MessagePager internal constructor(entries: List<BackupPage>) : Back
         return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).messages
     }
 }
+
+internal fun List<BackupPage>.close() = forEach { it.data.close() }

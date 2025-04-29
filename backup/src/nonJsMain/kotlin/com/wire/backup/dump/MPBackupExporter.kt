@@ -33,6 +33,7 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.Source
+import okio.use
 
 /**
  * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
@@ -43,12 +44,11 @@ public actual class MPBackupExporter(
     selfUserId: BackupQualifiedId,
     workDirectory: String,
     private val outputDirectory: String,
-    private val fileZipper: FileZipper
+    private val fileZipper: FileZipper,
+    private val fileSystem: FileSystem = FileSystem.SYSTEM,
 ) : CommonMPBackupExporter(selfUserId) {
 
     private val workDirectoryPath = workDirectory.toPath() / "backupDump"
-
-    private val fileSystem = FileSystem.SYSTEM
 
     override val storage: BackupPageStorage = FileBasedBackupPageStorage(
         fileSystem = fileSystem,
@@ -77,11 +77,12 @@ public actual class MPBackupExporter(
         val path = outputDirectory.toPath() / fileName
         fileSystem.delete(path)
         fileSystem.createDirectories(path.parent!!)
-        val fileHandle = fileSystem.openReadWrite(path)
-        when (val result = finalize(password, fileHandle.sink())) {
-            is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
-            is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
-            ExportResult.Success -> BackupExportResult.Success(path.toString())
+        fileSystem.openReadWrite(path).use { fileHandle ->
+            when (val result = finalize(password, fileHandle.sink())) {
+                is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
+                is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
+                ExportResult.Success -> BackupExportResult.Success(path.toString())
+            }
         }
     } catch (io: Throwable) {
         BackupExportResult.Failure.IOError(io.message ?: "Unknown IO error.")

@@ -30,6 +30,7 @@ import com.wire.backup.envelope.HashData
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.ingest.MPBackupMapper
+import com.wire.backup.ingest.close
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportUser
@@ -154,7 +155,12 @@ public abstract class CommonMPBackupExporter(
     internal suspend fun finalize(password: String, output: Sink): ExportResult {
         flushAll()
         val zippedData = try {
-            zipEntries(storage.listEntries()).await()
+            val entries = storage.listEntries()
+            try {
+                zipEntries(entries).await()
+            } finally {
+                entries.close()
+            }
         } catch (t: Throwable) {
             return ExportResult.Failure.ZipError(t.message ?: "Unknown ZIP error.")
         }
