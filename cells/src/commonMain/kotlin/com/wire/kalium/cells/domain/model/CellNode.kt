@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.model
 
+// TODO remove this class and use [Node] instead
 public data class CellNode(
     val uuid: String,
     val versionId: String,

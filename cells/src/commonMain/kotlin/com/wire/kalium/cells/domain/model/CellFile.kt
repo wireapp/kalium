@@ -20,32 +20,46 @@ package com.wire.kalium.cells.domain.model
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 
 /**
- * Represents file uploaded to wire cell.
- * Contains information from Cell server + local data (local path, owner name, conversation name)
-  */
-public data class CellFile(
-    val uuid: String,
-    val versionId: String,
-    val fileName: String,
-    val mimeType: String,
-    val remotePath: String?,
-    val localPath: String? = null,
-    val assetSize: Long?,
-    val contentHash: String? = null,
-    val contentUrl: String? = null,
-    val previewUrl: String? = null,
-    val metadata: AssetMetadata? = null,
-    val userName: String? = null,
-    val conversationName: String? = null,
-    val publicLinkId: String? = null,
-    val lastModified: Long? = null,
-)
+ * Represents file or folder.
+ */
+public sealed class Node {
+    public abstract val name: String?
+    public abstract val uuid: String
+
+    public data class Folder(
+        override val name: String?,
+        override val uuid: String,
+        val contents: List<Node> // folder can has files and nested folders
+    ) : Node()
+
+    /**
+     * Represents file uploaded to wire cell.
+     * Contains information from Cell server + local data (local path, owner name, conversation name)
+     */
+    public data class File(
+        override val name: String?,
+        override val uuid: String,
+        val versionId: String,
+        val mimeType: String,
+        val remotePath: String?,
+        val localPath: String? = null,
+        val assetSize: Long?,
+        val contentHash: String? = null,
+        val contentUrl: String? = null,
+        val previewUrl: String? = null,
+        val metadata: AssetMetadata? = null,
+        val userName: String? = null,
+        val conversationName: String? = null,
+        val publicLinkId: String? = null,
+        val lastModified: Long? = null,
+    ) : Node()
+}
 
 @Suppress("MagicNumber")
-internal fun CellNode.toFileModel() = CellFile(
+internal fun CellNode.toFileModel() = Node.File(
     uuid = uuid,
     versionId = versionId,
-    fileName = path.substringAfterLast("/"),
+    name = path.substringAfterLast("/"),
     mimeType = mimeType ?: "",
     remotePath = path,
     contentHash = contentHash,

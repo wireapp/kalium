@@ -21,7 +21,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.cells.domain.model.CellFile
+import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.toFileModel
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
@@ -36,14 +36,14 @@ public interface GetCellFilesUseCase {
      * Requests list of nodes from wire cell matching the query (all nodes for empty query)
      * Combines it with local data (local file name, file owner and conversation names)
      *
-     * @return [List] of [CellFile]
+     * @return [List] of [Node.File]
      */
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
         limit: Int = 100,
         offset: Int = 0
-    ): Either<CoreFailure, List<CellFile>>
+    ): Either<CoreFailure, List<Node.File>>
 }
 
 internal class GetCellFilesUseCaseImpl(
@@ -58,7 +58,7 @@ internal class GetCellFilesUseCaseImpl(
         query: String,
         limit: Int,
         offset: Int
-    ): Either<CoreFailure, List<CellFile>> {
+    ): Either<CoreFailure, List<Node.File>> {
 
         // Collect all data required to show the file
         val userNames = usersRepository.getUserNames().getOrElse(emptyList())

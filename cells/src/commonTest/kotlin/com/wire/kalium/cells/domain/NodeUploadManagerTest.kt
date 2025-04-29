@@ -54,7 +54,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class CellUploadManagerTest {
+class NodeUploadManagerTest {
 
     private companion object {
         val assetPath = "path".toPath()
