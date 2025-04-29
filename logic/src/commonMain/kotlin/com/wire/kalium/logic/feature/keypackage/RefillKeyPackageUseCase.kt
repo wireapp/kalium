@@ -19,17 +19,17 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
-import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.toModel
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 
 sealed class RefillKeyPackagesResult {
 
@@ -59,7 +59,7 @@ internal class RefillKeyPackagesUseCaseImpl(
             return RefillKeyPackagesResult.Failure(it)
         }
 
-        return mlsClientProvider.getMLSClient().map { CipherSuite.fromTag(it.getDefaultCipherSuite()) }.flatMap { cipherSuite ->
+        return mlsClientProvider.getMLSClient().map { it.getDefaultCipherSuite().toModel() }.flatMap { cipherSuite ->
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite)
         }.flatMap {
             kaliumLogger.i("Key packages: Found ${it.count} available key packages")

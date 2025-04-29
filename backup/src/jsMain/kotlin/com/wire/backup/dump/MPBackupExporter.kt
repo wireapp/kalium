@@ -21,6 +21,7 @@ import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
+import com.wire.backup.data.getBackupFileName
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.InMemoryBackupPageStorage
@@ -67,12 +68,17 @@ public actual class MPBackupExporter(
         return result.asDeferred()
     }
 
-    public fun finalize(password: String?): Promise<BackupExportResult> = GlobalScope.promise {
+    /**
+     * Exports all the previously added data to a [BackupExportResult].
+     * This method should be called after all the data was added.
+     * @param password optional password for the encryption. Can be an empty string, to export an unencrypted backup.
+     */
+    public fun finalize(password: String): Promise<BackupExportResult> = GlobalScope.promise {
         val output = Buffer()
         when (val result = finalize(password, output)) {
             is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
             is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
-            ExportResult.Success -> BackupExportResult.Success(output.readByteArray().toUByteArray().toUInt8Array())
+            ExportResult.Success -> BackupExportResult.Success(output.readByteArray().toUByteArray().toUInt8Array(), getBackupFileName())
         }
     }
 }

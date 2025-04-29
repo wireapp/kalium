@@ -19,73 +19,54 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.logic.sync.SyncStateObserver
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.launch
-
-interface MLSClientManager
+import kotlinx.coroutines.async
 
 /**
  * MLSClientManager is responsible for registering an MLS client when a user
  * upgrades to an MLS supported build.
  */
 @Suppress("LongParameterList")
-internal class MLSClientManagerImpl(
+class MLSClientManager internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val syncStateObserver: SyncStateObserver,
     private val slowSyncRepository: Lazy<SlowSyncRepository>,
     private val clientRepository: Lazy<ClientRepository>,
     private val registerMLSClient: Lazy<RegisterMLSClientUseCase>,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : MLSClientManager {
+    private val userCoroutineScope: CoroutineScope,
+) {
     /**
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
-    private val scope = CoroutineScope(dispatcher)
-
-    private var job: Job? = null
-
-    init {
-        job = scope.launch {
-            incrementalSyncRepository.incrementalSyncState.collect { syncState ->
-                ensureActive()
-                if (syncState is IncrementalSyncStatus.Live &&
-                    isAllowedToRegisterMLSClient()
-                ) {
-                    registerMLSClientIfNeeded()
-                }
-            }
+    suspend operator fun invoke() {
+        syncStateObserver.waitUntilLiveOrFailure().onSuccess {
+            registerMLSClientIfPossibleAndNeeded()
         }
     }
 
-    private suspend fun registerMLSClientIfNeeded() {
-        clientRepository.value.hasRegisteredMLSClient().flatMap {
-            if (!it) {
-                currentClientIdProvider().flatMap { clientId ->
-                    kaliumLogger.i("No existing MLS Client, registering..")
-                    registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
-                        kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
-                        kaliumLogger.i("Triggering slow sync after enabling MLS")
-                        slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
+    private suspend fun registerMLSClientIfPossibleAndNeeded() {
+        clientRepository.value.hasRegisteredMLSClient().flatMap { isMLSClientRegistered ->
+            if (!isMLSClientRegistered && isAllowedToRegisterMLSClient()) {
+                userCoroutineScope.async {
+                    currentClientIdProvider().flatMap { clientId ->
+                        kaliumLogger.i("No existing MLS Client, registering..")
+                        registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
+                            kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
+                            kaliumLogger.i("Triggering slow sync after enabling MLS")
+                            slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
+                        }
                     }
-                }
+                }.await()
             } else {
                 Either.Right(Unit)
             }
