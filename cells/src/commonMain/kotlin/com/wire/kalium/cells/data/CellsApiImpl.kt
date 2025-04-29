@@ -25,19 +25,21 @@ import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
 import com.wire.kalium.cells.sdk.kmp.model.RestActionParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateCheckRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestIncomingNode
+import com.wire.kalium.cells.sdk.kmp.model.RestLookupFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupRequest
+import com.wire.kalium.cells.sdk.kmp.model.RestLookupScope
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
-import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocators
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
 import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
-import com.wire.kalium.cells.sdk.kmp.model.TreeQuery
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -66,9 +68,13 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
-                    query = TreeQuery(
-                        fileName = query,
-                        type = TreeNodeType.LEAF
+                    scope = RestLookupScope(recursive = true),
+                    filters = RestLookupFilter(
+                        type = TreeNodeType.LEAF,
+                        text = LookupFilterTextSearch(
+                            searchIn = LookupFilterTextSearchIn.BaseName,
+                            term = query
+                        ),
                     ),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
@@ -82,13 +88,7 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
-                    locators = RestNodeLocators(
-                        listOf(
-                            RestNodeLocator(
-                                path = "$path/*"
-                            )
-                        )
-                    ),
+                    scope = RestLookupScope(listOf(RestNodeLocator(path = "$path/*"))),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -172,7 +172,7 @@ internal class CellsApiImpl(
         }
     }
 
-   override suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit> =
+    override suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit> =
         wrapCellsResponse {
             nodeServiceApi.deletePublicLink(linkUuid)
         }.mapSuccess {}
