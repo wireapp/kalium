@@ -26,6 +26,8 @@ import okio.Path
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.Sink
+import okio.Source
+import okio.use
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
@@ -38,12 +40,13 @@ import kotlin.native.ObjCName
 @OptIn(ExperimentalObjCName::class)
 public actual class MPBackupImporter(
     private val pathToWorkDirectory: String,
-    private val backupFileUnzipper: BackupFileUnzipper
+    private val backupFileUnzipper: BackupFileUnzipper,
+    private val fileSystem: FileSystem = FileSystem.SYSTEM,
 ) : CommonMPBackupImporter() {
 
     init {
         pathToWorkDirectory.toPath().also {
-            if (!FileSystem.SYSTEM.exists(it)) FileSystem.SYSTEM.createDirectories(it)
+            if (!fileSystem.exists(it)) fileSystem.createDirectories(it)
         }
     }
 
@@ -58,7 +61,7 @@ public actual class MPBackupImporter(
     @NativeCoroutines
     public suspend fun peekBackupFile(
         pathToBackupFile: String
-    ): BackupPeekResult = peekBackup(FileSystem.SYSTEM.source(pathToBackupFile.toPath()))
+    ): BackupPeekResult = withBackupFile(pathToBackupFile) { peekBackup(it) }
 
     /**
      * Imports a backup from the specified root path.
@@ -70,20 +73,25 @@ public actual class MPBackupImporter(
     public suspend fun importFromFile(
         multiplatformBackupFilePath: String,
         passphrase: String?,
-    ): BackupImportResult = importBackup(FileSystem.SYSTEM.source(multiplatformBackupFilePath.toPath()), passphrase)
+    ): BackupImportResult = withBackupFile(multiplatformBackupFilePath) { importBackup(it, passphrase) }
 
     private val archiveZipPath: Path
         get() = pathToWorkDirectory.toPath() / ZIP_FILE_NAME
 
     override fun getUnencryptedArchiveSink(): Sink {
-        FileSystem.SYSTEM.delete(archiveZipPath, mustExist = false)
-        return FileSystem.SYSTEM.sink(archiveZipPath)
+        fileSystem.delete(archiveZipPath, mustExist = false)
+        return fileSystem.sink(archiveZipPath)
     }
 
     override suspend fun unzipAllEntries(): BackupPageStorage {
         val unzipPath = backupFileUnzipper.unzipBackup(archiveZipPath.toString())
         return FileBasedBackupPageStorage(FileSystem.SYSTEM, unzipPath.toPath(), false)
     }
+
+    private inline fun <T> withBackupFile(
+        path: String,
+        block: (Source) -> T
+    ): T = fileSystem.source(path.toPath()).use { block(it) }
 
     private companion object {
         const val ZIP_FILE_NAME = "unencryptedArchive.zip"
