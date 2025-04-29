@@ -17,7 +17,6 @@
  */
 package com.wire.backup.ingest
 
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.data.BackupData
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
@@ -55,7 +54,6 @@ public actual class MPBackupImporter(
      * such as version, encryption status, etc.
      */
     @ObjCName("peek")
-    @NativeCoroutines
     public suspend fun peekBackupFile(
         pathToBackupFile: String
     ): BackupPeekResult = peekBackup(FileSystem.SYSTEM.source(pathToBackupFile.toPath()))
@@ -66,7 +64,6 @@ public actual class MPBackupImporter(
      * @param multiplatformBackupFilePath the path to the decrypted, unzipped backup data file
      */
     @ObjCName("importFile")
-    @NativeCoroutines
     public suspend fun importFromFile(
         multiplatformBackupFilePath: String,
         passphrase: String?,
