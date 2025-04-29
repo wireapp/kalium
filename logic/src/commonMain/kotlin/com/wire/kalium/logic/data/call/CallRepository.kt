@@ -20,11 +20,23 @@ package com.wire.kalium.logic.data.call
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.onlyRight
+import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -51,18 +63,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.onlyRight
-import com.wire.kalium.common.logger.logStructuredJson
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapMLSRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -725,7 +725,7 @@ internal class CallDataSource(
                         flowOf(
                             flowOf(initialEpochInfo),
                             epochChangesObserver.observe()
-                                .filter { it == protocolInfo.groupId || it == subconversationGroupId }
+                                .filter { it.groupId == protocolInfo.groupId || it.groupId == subconversationGroupId }
                                 .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
                         ).flattenConcat()
                     }

@@ -31,6 +31,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -51,6 +54,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
     private val e2EIRepository: E2EIRepository,
     private val userRepository: UserRepository,
     private val coroutineScope: CoroutineScope,
+    private val conversationRepository: ConversationRepository,
 ) : EnrollE2EIUseCase {
     /**
      * Operation to initial E2EI certificate enrollment
@@ -207,9 +211,18 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 return it.left()
             }
         } else {
+            val groupIdList = conversationRepository.observeConversationList().first().mapNotNull {
+                when (val protocol = it.protocol) {
+                    is Conversation.ProtocolInfo.MLS -> protocol.groupId
+                    is Conversation.ProtocolInfo.Mixed -> protocol.groupId
+                    Conversation.ProtocolInfo.Proteus -> null
+                }
+            }
+
             e2EIRepository.rotateKeysAndMigrateConversations(
                 certificateRequest.response.decodeToString(),
-                initializationResult.isNewClientRegistration
+                groupIdList,
+                initializationResult.isNewClientRegistration,
             ).onFailure { return it.left() }
         }
 

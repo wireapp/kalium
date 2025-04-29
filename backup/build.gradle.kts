@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 /*
@@ -42,12 +43,17 @@ kotlin {
     // Useful for a library that will be called by other clients
     // This way we need to think before putting "public" in things, and we can be reminded by the compiler to use "internal" more often
     explicitApi()
-    val xcf = XCFramework()
+    val xcf = XCFramework("KaliumBackup")
     val appleTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64(), macosArm64(), macosX64())
     appleTargets.forEach {
         it.binaries.framework {
-            baseName = "backup"
+            baseName = "KaliumBackup"
             xcf.add(this)
+        }
+    }
+    targets.withType<KotlinNativeTarget> {
+        compilations.all {
+            kotlinOptions.freeCompilerArgs += "-Xexport-kdoc"
         }
     }
     js {

@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
@@ -42,6 +43,7 @@ import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -64,7 +66,7 @@ class MLSClientProviderTest {
             status = Status.ENABLED
         )
 
-        val (arrangement, mlsClientProvider) = Arrangement().arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetSupportedCipherSuitesReturning(StorageFailure.DataNotFound.left())
             withGetFeatureConfigsReturning(FeatureConfigTest.newModel(mlsModel = expected).right())
             withGetMLSEnabledReturning(true.right())
@@ -94,7 +96,7 @@ class MLSClientProviderTest {
             default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
         )
 
-        val (arrangement, mlsClientProvider) = Arrangement().arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetSupportedCipherSuitesReturning(expected.right())
             withGetMLSEnabledReturning(true.right())
             withGetFeatureConfigsReturning(FeatureConfigTest.newModel().right())
@@ -119,7 +121,7 @@ class MLSClientProviderTest {
     @Test
     fun givenMLSDisabledWhenGetOrFetchMLSConfigIsCalledThenDoNotCallGetSupportedCipherSuiteOrGetFeatureConfigs() = runTest {
         // given
-        val (arrangement, mlsClientProvider) = Arrangement().arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetMLSEnabledReturning(false.right())
             withGetSupportedCipherSuitesReturning(
                 SupportedCipherSuite(
@@ -147,7 +149,9 @@ class MLSClientProviderTest {
             .wasNotInvoked()
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
+    private class Arrangement(
+        val processingScope: CoroutineScope
+    ) : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
         FeatureConfigRepositoryArrangement by FeatureConfigRepositoryArrangementImpl() {
 
         val rootKeyStorePath: String = "rootKeyStorePath"
@@ -159,14 +163,23 @@ class MLSClientProviderTest {
         @Mock
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
 
+        @Mock
+        val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
+
+        @Mock
+        val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+
         fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {
             this to MLSClientProviderImpl(
                 rootKeyStorePath = rootKeyStorePath,
+                userId = userId,
                 currentClientIdProvider = currentClientIdProvider,
                 passphraseStorage = passphraseStorage,
                 userConfigRepository = userConfigRepository,
                 featureConfigRepository = featureConfigRepository,
-                userId = userId
+                mlsTransportProvider = mlsTransportProvider,
+                epochObserver = epochChangesObserver,
+                processingScope = processingScope,
             )
         }
     }
