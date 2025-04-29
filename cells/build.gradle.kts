@@ -18,8 +18,9 @@
 plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
-    alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -27,7 +28,7 @@ kaliumLibrary {
 }
 
 kotlin {
-    explicitApi()
+    explicitApiWarning() // explicitApi() throws errors for ksp-generated mockative classes
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -41,6 +42,9 @@ kotlin {
                 implementation(libs.okio.core)
                 implementation(libs.benAsherUUID)
                 implementation(libs.wire.cells.sdk)
+
+                // mocking
+                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

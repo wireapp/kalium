@@ -170,8 +170,6 @@ class ClearConversationContentUseCaseTest {
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         val clearConversationAssetsLocally = mock(ClearConversationAssetsLocallyUseCase::class)
 
         suspend fun withClearConversationContent(isSuccessFull: Boolean) = apply {

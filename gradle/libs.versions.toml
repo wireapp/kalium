@@ -15,7 +15,7 @@ ktor = "2.3.10"
 kotlinNativeCoroutines = "1.0.0-ALPHA-26"
 okio = "3.9.0"
 ok-http = "4.12.0"
-mockative = "3.0.0"
+mockative = "3.0.1"
 android-work = "2.9.0"
 android-test-runner = "1.6.2"
 android-test-core-ktx = "1.6.1"
@@ -81,6 +81,7 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlinNativeCoroutines = { id = "com.rickclephas.kmp.nativecoroutines", version.ref = "kotlinNativeCoroutines"}
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }

@@ -106,11 +106,7 @@ class RefillKeyPackageUseCaseTest {
                 val keyPackageRepository = mock(KeyPackageRepository::class)
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val mlsClient: MLSClient = mock(MLSClient::class)
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(

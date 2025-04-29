@@ -260,8 +260,6 @@ class MLSWelcomeEventHandlerTest {
         val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
         val checkRevocationList: RevocationListChecker = mock(RevocationListChecker::class)
         val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-
-        @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         suspend fun withMLSClientProviderReturningMLSClient() = apply {

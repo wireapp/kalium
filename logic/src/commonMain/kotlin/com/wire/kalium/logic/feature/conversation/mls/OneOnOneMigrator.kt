@@ -168,6 +168,7 @@ internal class OneOnOneMigratorImpl(
     }
 }
 
+@Mockable
 fun interface CurrentInstantProvider {
     operator fun invoke(): Instant
 }

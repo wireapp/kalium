@@ -247,8 +247,6 @@ class DeleteMessageUseCaseTest {
         val messageSender: MessageSender = mock(MessageSender::class)
         val assetRepository: AssetRepository = mock(AssetRepository::class)
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
-
-        @Mock
         val deleteCellAssets: DeleteMessageAttachmentsUseCase = mock(DeleteMessageAttachmentsUseCase::class)
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()

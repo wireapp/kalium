@@ -42,9 +42,7 @@ import kotlin.test.Test
 
 class LoginRepositoryTest {
 
-        val loginApi = mock(LoginApi::class)
-
-    @Mock
+    val loginApi = mock(LoginApi::class)
     val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
 
     private lateinit var loginRepository: LoginRepository
@@ -119,8 +117,6 @@ class LoginRepositoryTest {
 
     private class Arrangement {
         val loginApi = mock(LoginApi::class)
-
-        @Mock
         val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
 
         suspend fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {

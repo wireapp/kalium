@@ -102,8 +102,6 @@ class NotifyConversationIsOpenUseCaseTest {
     ) : OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
         private val deleteEphemeralMessageEndDate = mock(DeleteEphemeralMessagesAfterEndDateUseCase::class)
-
-        @Mock
         private val slowSyncRepository = mock(SlowSyncRepository::class)
 
         suspend fun withDeleteEphemeralMessageEndDateSuccess() {

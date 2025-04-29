@@ -31,7 +31,6 @@ import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -368,10 +367,7 @@ class RefreshCellAssetStateUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val cellsRepository = mock(CellsRepository::class)
-
-        @Mock
         val attachmentsRepository = mock(CellAttachmentsRepository::class)
 
         val fileSystem = FakeFileSystem()
