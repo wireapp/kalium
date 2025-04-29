@@ -22,34 +22,51 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.yield
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MLSClientManagerTest {
+    private lateinit var testScope: TestScope
+
+    @BeforeTest
+    fun setup() {
+        testScope = TestScope()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        testScope.cancel()
+    }
 
     @Test
     fun givenMLSClientIsNotRegisteredAndMLSSupportIsDisabled_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mlsClientManager) = Arrangement()
+                .withSyncStates(Unit.right())
                 .withIsAllowedToRegisterMLSClient(false)
                 .withHasRegisteredMLSClient(Either.Right(false))
-                .arrange()
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mlsClientManager.invoke()
+            advanceUntilIdle()
+
 
             coVerify {
                 arrangement.registerMLSClient.invoke(any())
@@ -58,16 +75,18 @@ class MLSClientManagerTest {
 
     @Test
     fun givenMLSClientIsNotRegisteredAndMLSSupportIsEnabled_whenObservingSyncFinishes_thenMLSClientIsRegistered() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mlsClientManager) = Arrangement()
                 .withIsAllowedToRegisterMLSClient(true)
                 .withHasRegisteredMLSClient(Either.Right(false))
                 .withCurrentClientId(Either.Right(TestClient.CLIENT_ID))
                 .withRegisterMLSClientSuccessful()
-                .arrange()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mlsClientManager.invoke()
+            advanceUntilIdle()
+
 
             coVerify {
                 arrangement.registerMLSClient.invoke(any())
@@ -80,14 +99,15 @@ class MLSClientManagerTest {
 
     @Test
     fun givenMLSClientIsRegistered_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mlsClientManager) = Arrangement()
                 .withIsAllowedToRegisterMLSClient(true)
+                .withSyncStates(Unit.right())
                 .withHasRegisteredMLSClient(Either.Right(true))
-                .arrange()
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mlsClientManager.invoke()
+            advanceUntilIdle()
 
             coVerify {
                 arrangement.registerMLSClient.invoke(any())
@@ -96,13 +116,14 @@ class MLSClientManagerTest {
 
     @Test
     fun givenMLSClientIsRegistered_whenObservingSyncFinishes_thenDoNotEvenCheckIfIsAllowedToRegisterMLSClient() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mlsClientManager) = Arrangement()
                 .withHasRegisteredMLSClient(Either.Right(true))
-                .arrange()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mlsClientManager.invoke()
+            advanceUntilIdle()
 
             coVerify {
                 arrangement.isAllowedToRegisterMLSClient()
@@ -111,7 +132,7 @@ class MLSClientManagerTest {
 
     private class Arrangement {
 
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
+        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
         var slowSyncRepository = mock(SlowSyncRepository::class)
         var clientIdProvider = mock(CurrentClientIdProvider::class)
         val clientRepository = mock(ClientRepository::class)
@@ -142,15 +163,20 @@ class MLSClientManagerTest {
                 isAllowedToRegisterMLSClient()
             }.returns(enabled)
         }
+        suspend fun withSyncStates(result : Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                syncStateObserver.waitUntilLiveOrFailure()
+            }.returns(result)
+        }
 
-        fun arrange() = this to MLSClientManagerImpl(
+        fun arrange(testScope: TestScope) = this to MLSClientManager(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
-            incrementalSyncRepository,
+            syncStateObserver,
             lazy { slowSyncRepository },
             lazy { clientRepository },
             lazy { registerMLSClient },
-            TestKaliumDispatcher
+            testScope
         )
     }
 }

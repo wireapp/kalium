@@ -18,17 +18,15 @@
 
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -37,26 +35,44 @@ import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.yield
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class KeyingMaterialsManagerTests {
+    private lateinit var testScope: TestScope
+
+    @BeforeTest
+    fun setup() {
+        testScope = TestScope()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        testScope.cancel()
+    }
+
     @Test
     fun givenLastCheckTimestampKeyHasPassedAndUpdateKeyingMaterialsSucceeded_whenObservingAndSyncFinishes_TimestampKeyResetCalled() =
-        runTest(TestKaliumDispatcher.default) {
+        testScope.runTest {
 
-            val (arrangement, _) = Arrangement()
+            val (arrangement, keyingMaterialManager) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
                 .withTimestampKeyCheck(true)
                 .withTimestampKeyResetSuccessful()
-                .arrange()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            keyingMaterialManager.invoke()
+            advanceUntilIdle()
+
             coVerify {
                 arrangement.updateKeyingMaterialsUseCase.invoke()
             }.wasInvoked(once)
@@ -67,17 +83,19 @@ class KeyingMaterialsManagerTests {
 
     @Test
     fun givenLastCheckTimestampKeyHasNotPassed_whenObservingAndSyncFinishes_updateKeyingMaterialsUseCaseNotPerformed() =
-        runTest(TestKaliumDispatcher.default) {
+        testScope.runTest {
 
-            val (arrangement, _) = Arrangement()
+            val (arrangement, keyingMaterialManager) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
                 .withTimestampKeyCheck(false)
-                .arrange()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            keyingMaterialManager.invoke()
+            advanceUntilIdle()
+
             coVerify {
                 arrangement.updateKeyingMaterialsUseCase.invoke()
             }.wasNotInvoked()
@@ -88,14 +106,15 @@ class KeyingMaterialsManagerTests {
 
     @Test
     fun givenMLSSupportIsDisabled_whenObservingAndSyncFinishes_updateKeyingMaterialsUseCaseNotPerformed() =
-        runTest(TestKaliumDispatcher.default) {
+        testScope.runTest {
 
-            val (arrangement, _) = Arrangement()
+            val (arrangement, keyingMaterialManager) = Arrangement()
                 .withIsMLSSupported(false)
-                .arrange()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            keyingMaterialManager.invoke()
+            advanceUntilIdle()
             coVerify {
                 arrangement.updateKeyingMaterialsUseCase.invoke()
             }.wasNotInvoked()
@@ -103,15 +122,16 @@ class KeyingMaterialsManagerTests {
 
     @Test
     fun givenMLSClientHasNotBeenRegistered_whenObservingAndSyncFinishes_updateKeyingMaterialsUseCaseNotPerformed() =
-        runTest(TestKaliumDispatcher.default) {
+        testScope.runTest {
 
-            val (arrangement, _) = Arrangement()
+            val (arrangement, keyingMaterialManager) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(false)
-                .arrange()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            keyingMaterialManager.invoke()
+            advanceUntilIdle()
             coVerify {
                 arrangement.updateKeyingMaterialsUseCase.invoke()
             }.wasNotInvoked()
@@ -119,18 +139,19 @@ class KeyingMaterialsManagerTests {
 
     @Test
     fun givenLastCheckTimestampKeyHasPassedAndUpdateKeyingMaterialsFailed_whenObservingAndSyncFinishes_TimestampKeyResetNotCalled() =
-        runTest(TestKaliumDispatcher.default) {
+        testScope.runTest {
 
-            val (arrangement, _) = Arrangement()
+            val (arrangement, keyingMaterialManager) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Failure(StorageFailure.DataNotFound))
                 .withTimestampKeyCheck(true)
                 .withTimestampKeyResetSuccessful()
-                .arrange()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            keyingMaterialManager.invoke()
+            advanceUntilIdle()
             coVerify {
                 arrangement.updateKeyingMaterialsUseCase.invoke()
             }.wasInvoked(once)
@@ -140,9 +161,8 @@ class KeyingMaterialsManagerTests {
         }
 
     private class Arrangement {
-                val sessionRepository = mock(SessionRepository::class)
 
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
+        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
         val clientRepository = mock(ClientRepository::class)
         val featureSupport = mock(FeatureSupport::class)
         val updateKeyingMaterialsUseCase = mock(UpdateKeyingMaterialsUseCase::class)
@@ -178,13 +198,19 @@ class KeyingMaterialsManagerTests {
             }.returns(Either.Right(result))
         }
 
-        fun arrange() = this to KeyingMaterialsManagerImpl(
+        suspend fun withSyncStates(result : Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                syncStateObserver.waitUntilLiveOrFailure()
+            }.returns(result)
+        }
+
+        fun arrange(testScope: TestScope) = this to KeyingMaterialsManager(
             featureSupport,
-            incrementalSyncRepository,
+            syncStateObserver,
             lazy { clientRepository },
             lazy { updateKeyingMaterialsUseCase },
             lazy { timestampKeyRepository },
-            TestKaliumDispatcher
+            testScope
         )
     }
 }

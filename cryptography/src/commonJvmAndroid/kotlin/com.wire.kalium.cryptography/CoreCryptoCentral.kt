@@ -33,6 +33,7 @@ import com.wire.crypto.setMaxLogLevel
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
+import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
 import java.io.File
 import kotlin.time.Duration
@@ -112,7 +113,7 @@ class CoreCryptoCentralImpl(
                 coroutineScope,
                 epochObserver = object : EpochObserver {
                     override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
-                        epochObserver.onEpochChange(conversationId.decodeToString(), epoch)
+                        epochObserver.onEpochChange(conversationId.encodeBase64(), epoch)
                     }
                 }
             )
@@ -157,7 +158,7 @@ class CoreCryptoCentralImpl(
             coroutineScope,
             epochObserver = object : EpochObserver {
                 override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
-                    epochObserver.onEpochChange(conversationId.decodeToString(), epoch)
+                    epochObserver.onEpochChange(conversationId.encodeBase64(), epoch)
                 }
             }
         )

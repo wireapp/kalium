@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.mlsmigration
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -26,6 +27,9 @@ import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -34,25 +38,39 @@ import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.yield
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class MLSMigrationManagerTest {
 
+    private val testScope: TestScope = TestScope()
+
     @Test
     fun givenMigrationUpdateTimerHasElapsed_whenObservingAndSyncFinishes_migrationIsUpdated() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mLSMigrationManager) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withLastMLSMigrationCheck(true)
                 .withRunMigrationSucceeds()
                 .withLastMLSMigrationCheckResetSucceeds()
-                .arrange()
+                .withWaitUntilLiveOrFailure(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mLSMigrationManager.invoke()
+            advanceUntilIdle()
 
             coVerify {
                 arrangement.mlsMigrationWorker.runMigration()
@@ -61,16 +79,17 @@ class MLSMigrationManagerTest {
 
     @Test
     fun givenMigrationUpdateTimerHasNotElapsed_whenObservingSyncFinishes_migrationIsNotUpdated() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mLSMigrationManager) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withLastMLSMigrationCheck(false)
                 .withRunMigrationSucceeds()
-                .arrange()
+                .withWaitUntilLiveOrFailure(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mLSMigrationManager.invoke()
+            advanceUntilIdle()
 
             coVerify {
                 arrangement.mlsMigrationWorker.runMigration()
@@ -79,14 +98,15 @@ class MLSMigrationManagerTest {
 
     @Test
     fun givenMLSSupportIsDisabled_whenObservingSyncFinishes_migrationIsNotUpdated() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mLSMigrationManager) = Arrangement()
                 .withIsMLSSupported(false)
                 .withRunMigrationSucceeds()
-                .arrange()
+                .withWaitUntilLiveOrFailure(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mLSMigrationManager.invoke()
+            advanceUntilIdle()
 
             coVerify {
                 arrangement.mlsMigrationWorker.runMigration()
@@ -95,15 +115,16 @@ class MLSMigrationManagerTest {
 
     @Test
     fun givenNoMLSClientIsRegistered_whenObservingSyncFinishes_migrationIsNotUpdated() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
+        testScope.runTest {
+            val (arrangement, mLSMigrationManager) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(false)
                 .withRunMigrationSucceeds()
-                .arrange()
+                .withWaitUntilLiveOrFailure(Unit.right())
+                .arrange(testScope)
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
+            mLSMigrationManager.invoke()
+            advanceUntilIdle()
 
             coVerify {
                 arrangement.mlsMigrationWorker.runMigration()
@@ -111,8 +132,8 @@ class MLSMigrationManagerTest {
         }
 
     private class Arrangement {
-
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
+        @Mock
+        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
 
         val kaliumConfigs = KaliumConfigs()
         val clientRepository = mock(ClientRepository::class)
@@ -151,14 +172,26 @@ class MLSMigrationManagerTest {
             }.returns(Either.Right(result))
         }
 
-        fun arrange() = this to MLSMigrationManagerImpl(
+        fun withSyncStates(flow: StateFlow<SyncState>) = apply {
+            every {
+                syncStateObserver.syncState
+            }.returns(flow)
+        }
+
+        suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                syncStateObserver.waitUntilLiveOrFailure()
+            }.returns(result)
+        }
+
+        fun arrange(coroutineScope: CoroutineScope) = this to MLSMigrationManager(
             kaliumConfigs,
             isMLSEnabledUseCase,
-            incrementalSyncRepository,
+            syncStateObserver,
             lazy { clientRepository },
             lazy { timestampKeyRepository },
             lazy { mlsMigrationWorker },
-            TestKaliumDispatcher
+            coroutineScope,
         )
     }
 }

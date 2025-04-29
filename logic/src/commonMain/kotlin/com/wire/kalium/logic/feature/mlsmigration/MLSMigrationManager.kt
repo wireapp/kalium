@@ -21,8 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
@@ -33,53 +31,40 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.logic.sync.SyncStateObserver
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 /**
  * Orchestrates the migration from proteus to MLS.
  */
-internal interface MLSMigrationManager
 
 @Suppress("LongParameterList")
-internal class MLSMigrationManagerImpl(
+class MLSMigrationManager internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val syncStateObserver: SyncStateObserver,
     private val clientRepository: Lazy<ClientRepository>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     private val mlsMigrationWorker: Lazy<MLSMigrationWorker>,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : MLSMigrationManager {
+    private val userCoroutineScope: CoroutineScope,
+) {
     /**
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
-    private val mlsMigrationScope = CoroutineScope(dispatcher)
-
-    private var mlsMigrationJob: Job? = null
-
-    init {
-        mlsMigrationJob = mlsMigrationScope.launch {
-            incrementalSyncRepository.incrementalSyncState.collect { syncState ->
-                ensureActive()
-                if (syncState is IncrementalSyncStatus.Live &&
+    suspend operator fun invoke() {
+        syncStateObserver.waitUntilLiveOrFailure()
+            .onSuccess {
+                if (
                     isMLSEnabledUseCase() &&
                     clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
                 ) {
                     updateMigration()
                 }
             }
-        }
     }
 
     private suspend fun updateMigration(): Either<CoreFailure, Unit> =
@@ -90,14 +75,15 @@ internal class MLSMigrationManagerImpl(
             kaliumLogger.d("Migration needs to be updated: $lastMlsMigrationCheckHasPassed")
             if (lastMlsMigrationCheckHasPassed) {
                 kaliumLogger.d("Running mls migration")
-                mlsMigrationWorker.value.runMigration()
-                    .onSuccess {
+                userCoroutineScope.launch {
+                    mlsMigrationWorker.value.runMigration().onSuccess {
                         kaliumLogger.d("Successfully advanced the mls migration")
                         timestampKeyRepository.value.reset(TimestampKeys.LAST_MLS_MIGRATION_CHECK)
                     }
-                    .onFailure {
-                        kaliumLogger.d("Failure while advancing the mls migration: $it")
-                    }
+                        .onFailure {
+                            kaliumLogger.d("Failure while advancing the mls migration: $it")
+                        }
+                }.join()
             }
             Either.Right(Unit)
         }
