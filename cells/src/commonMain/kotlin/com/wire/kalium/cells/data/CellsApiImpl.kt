@@ -77,6 +77,7 @@ internal class CellsApiImpl(
                         ),
                     ),
                     sortField = SORTED_BY,
+                    sortDirDesc = true,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
             )
