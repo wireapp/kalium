@@ -536,6 +536,7 @@ class SlowSyncWorkerTest {
         init {
             runBlocking {
                 withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+                withIsClientAsyncNotificationsCapableReturning(false)
             }
         }
 
