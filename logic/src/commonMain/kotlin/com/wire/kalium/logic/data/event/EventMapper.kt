@@ -49,6 +49,7 @@ import com.wire.kalium.network.api.authenticated.notification.ConsumableNotifica
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventType
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_RECEIPT_MODE
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
@@ -87,13 +88,26 @@ class EventMapper(
 
     fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse): List<EventEnvelope> {
         val deliveryTag = consumableNotificationResponse.data?.deliveryTag ?: ULong.MIN_VALUE
-        val event = consumableNotificationResponse.data?.event
-        return event?.payload?.map { eventContentDTO ->
-            EventEnvelope(
-                event = fromEventContentDTO(id = event.id, eventContentDTO = eventContentDTO),
-                deliveryInfo = EventDeliveryInfo.Async(deliveryTag = deliveryTag, source = EventSource.LIVE)
-            )
-        } ?: listOf()
+        when (consumableNotificationResponse.type) {
+            EventType.MISSED -> {
+                return listOf(
+                    EventEnvelope(
+                        event = Event.AsyncMissed,
+                        deliveryInfo = EventDeliveryInfo.AsyncMissed
+                    )
+                )
+            }
+
+            EventType.EVENT -> {
+                val event = consumableNotificationResponse.data?.event
+                return event?.payload?.map { eventContentDTO ->
+                    EventEnvelope(
+                        event = fromEventContentDTO(id = event.id, eventContentDTO = eventContentDTO),
+                        deliveryInfo = EventDeliveryInfo.Async(deliveryTag = deliveryTag, source = EventSource.LIVE)
+                    )
+                } ?: listOf()
+            }
+        }
     }
 
     /**

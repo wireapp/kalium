@@ -154,6 +154,7 @@ internal class SyncExecutorImpl(
         return Request(syncStateFlow, syncJob, logger)
     }
 
+    // TODO(ym): request new sync when `notifications.missed`
     override suspend fun <T> request(
         requestAction: suspend SyncRequest.() -> T
     ): T = coroutineScope {

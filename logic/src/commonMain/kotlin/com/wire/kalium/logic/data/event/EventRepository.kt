@@ -115,6 +115,8 @@ class EventDataSource(
                     }
                 )
             }
+
+            is EventDeliveryInfo.AsyncMissed -> TODO("handle this for full ack")
             // Legacy events are not acknowledged
             is EventDeliveryInfo.Legacy -> Unit.right()
         }

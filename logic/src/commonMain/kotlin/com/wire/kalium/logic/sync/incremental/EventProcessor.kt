@@ -116,6 +116,7 @@ internal class EventProcessorImpl(
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
+            is Event.AsyncMissed -> TODO("trigger full sync")
         }.onSuccess {
             // todo (ym) check for errors and decide if lastProcessedEventId should be updated so we can re-ack
             eventRepository.acknowledgeEvent(eventEnvelope)
