@@ -93,6 +93,7 @@ interface EventRepository {
     suspend fun fetchServerTime(): String?
 }
 
+@Suppress("TooManyFunctions")
 class EventDataSource(
     private val notificationApi: NotificationApi,
     private val metadataDAO: MetadataDAO,

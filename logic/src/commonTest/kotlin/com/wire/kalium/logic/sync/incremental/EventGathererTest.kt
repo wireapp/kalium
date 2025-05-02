@@ -24,9 +24,9 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -115,7 +116,7 @@ class EventGathererTest {
             }.wasNotInvoked()
             coVerify {
                 arrangement.serverTimeHandler.computeTimeOffset(any())
-            }.wasInvoked(exactly = once)
+            }.wasNotInvoked()
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -430,18 +431,72 @@ class EventGathererTest {
         }
     }
 
+    @Test
+    fun givenWebSocketOpens_whenGatheringAndAsyncNotificationsCapable_thenShouldNotFetchPendingEventsNorLastEvent() = runTest {
+        val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
+
+        val (arrangement, eventGatherer) = Arrangement()
+            .withIsClientAsyncNotificationsCapableReturning(true)
+            .withPendingEventsReturning(emptyFlow())
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            coVerify {
+                arrangement.isClientAsyncNotificationsCapableProvider.invoke()
+            }.wasInvoked(exactly = once)
+
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
+
+            // Open Websocket should trigger fetching pending events
+            liveEventsChannel.send(WebSocketEvent.Open(shouldProcessPendingEvents = false))
+
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.eventRepository.liveEvents()
+            }.wasInvoked(exactly = once)
+
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.serverTimeHandler.computeTimeOffset(any())
+            }.wasNotInvoked()
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private class Arrangement {
 
         @Mock
         val eventRepository = mock(EventRepository::class)
 
         @Mock
-        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
+        val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
 
         @Mock
         val serverTimeHandler = mock(ServerTimeHandler::class)
 
-        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, serverTimeHandler)
+        val eventGatherer: EventGatherer = EventGathererImpl(isClientAsyncNotificationsCapableProvider, eventRepository, serverTimeHandler)
+
+        init {
+            runBlocking {
+                withIsClientAsyncNotificationsCapableReturning(false)
+            }
+        }
+
+        suspend fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
+            coEvery {
+                isClientAsyncNotificationsCapableProvider.invoke()
+            }.returns(value.right())
+        }
 
         suspend fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>) = apply {
             coEvery {
