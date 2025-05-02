@@ -30,6 +30,7 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.util.KaliumDispatcher
@@ -165,6 +166,14 @@ internal class CellsDataSource internal constructor(
     override suspend fun deletePublicLink(linkUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.deletePublicLink(linkUuid)
+        }
+    }
+
+    override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.createFolder(folderName)
+        }.map { response ->
+            response.nodes.map { it.toModel() }
         }
     }
 }

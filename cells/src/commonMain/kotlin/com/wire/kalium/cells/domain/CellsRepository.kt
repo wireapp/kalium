@@ -40,4 +40,5 @@ internal interface CellsRepository {
     suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink>
     suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, String>
     suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit>
+    suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>>
 }
