@@ -3,7 +3,7 @@ name: Deploy Dokka docs
 on:
   push:
     branches:
-      - "feat/newsync-doingacks" # later on we should stick to main, since there will be the releases
+      - develop # later on we should stick to main, since there will be the releases
   workflow_dispatch:
 
 jobs:
@@ -17,19 +17,17 @@ jobs:
 
             - name: Setup Java and Gradle
               uses: ./.github/actions/setup-java-gradle
-#
-#            - name: Generate Dokka docs
-#              run: make doc/generate-kdocs
-#              env:
-#                GITHUB_USER: ${{ github.actor }}
-#                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#
-#            - name: Deploy docs 🚀
-#            - name: Generate Dokka docs
-#              run: make doc/generate-kdocs
-#              env:
-#                GITHUB_USER: ${{ github.actor }}
-#                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: testsssssss
-              run: ./gradlew :backup:assembleDebug
+            - name: Generate Dokka docs
+              run: make doc/generate-kdocs
+              env:
+                GITHUB_USER: ${{ github.actor }}
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Deploy docs 🚀
+              uses: JamesIves/github-pages-deploy-action@v4.7.3
+              with:
+                  branch: gh-pages
+                  clean: false
+                  folder: build/dokka/htmlMultiModule
+                  target-folder: docs
