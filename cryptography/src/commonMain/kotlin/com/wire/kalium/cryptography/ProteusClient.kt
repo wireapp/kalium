@@ -50,7 +50,7 @@ data class PreKeyCrypto(
     val encodedData: String
 )
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 /**
  * @sample samples.cryptography.ProteusClient.basicEncryption
  */

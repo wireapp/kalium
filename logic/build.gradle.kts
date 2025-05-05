@@ -136,14 +136,6 @@ android {
     testOptions.unitTests.isIncludeAndroidResources = true
 }
 
-dependencies {
-    configurations
-        .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
-        .forEach {
-            add(it.name, libs.mockative.processor)
-        }
-}
-
 android {
     testOptions.unitTests.all { test ->
         // only run tests that are different for the android platform, the rest is covered by the jvm tests

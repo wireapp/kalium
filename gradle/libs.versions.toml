@@ -5,14 +5,14 @@ activity-compose = "1.9.0"
 app-compat = "1.6.1"
 android-paging3 = "3.2.1"
 cli-kt = "3.5.0"
-coroutines = "1.8.1"
+coroutines = "1.9.0"
 compose-ui = "1.7.6"
 compose-material = "1.6.6"
 cryptobox4j = "1.4.0"
 cryptobox-android = "1.1.5"
 android-security = "1.1.0-alpha06"
 ktor = "2.3.10"
-kotlinNativeCoroutines = "1.0.0-ALPHA-26"
+kotlinNativeCoroutines = "1.0.0-ALPHA-37"
 okio = "3.9.0"
 ok-http = "4.12.0"
 mockative = "3.0.1"
@@ -199,7 +199,6 @@ sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerial
 
 # mocks and testing
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
-mockative-processor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
