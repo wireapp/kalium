@@ -69,7 +69,7 @@ jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.48.0.0"
 kotlinx-io = "0.5.3"
-cells-sdk = "0.1.1-alpha08.04"
+cells-sdk = "0.1.1-alpha10"
 
 [plugins]
 # Home-made convention plugins
