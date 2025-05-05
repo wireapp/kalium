@@ -280,6 +280,8 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
+import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorker
+import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
@@ -1737,6 +1739,14 @@ class UserSessionScope internal constructor(
         )
     }
 
+    val mlsPublicKeysSyncWorker: MLSPublicKeysSyncWorker by lazy {
+        MLSPublicKeysSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            mlsPublicKeysRepository = mlsPublicKeysRepository,
+            kaliumLogger = userScopedLogger,
+        )
+    }
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
@@ -1946,6 +1956,7 @@ class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userScopedLogger,
             getTeamUrlUseCase,
+            mlsPublicKeysSyncWorker,
             this,
         )
     }
@@ -2250,6 +2261,10 @@ class UserSessionScope internal constructor(
 
         launch {
             proteusSyncWorker.execute()
+        }
+
+        launch {
+            mlsPublicKeysSyncWorker.schedule()
         }
 
         launch {
