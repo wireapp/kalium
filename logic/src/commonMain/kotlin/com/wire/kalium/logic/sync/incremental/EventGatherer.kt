@@ -152,7 +152,9 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen() {
         logger.i("Websocket Open")
-        handleTimeDrift()
+        // TODO: Handle time drift in a different way, e.g. the notification api is already called
+        //  somewhere else so maybe we can take the time from there ?
+//          handleTimeDrift()
         eventRepository
             .pendingEvents()
             .onEach { result ->
