@@ -45,6 +45,8 @@ import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
+import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
@@ -154,6 +156,9 @@ public class CellsScope(
 
     public val observeFiles: GetCellFilesUseCase
         get() = GetCellFilesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
+
+    public val observePagedFiles: GetCellFilesPagedUseCase
+        get() = GetCellFilesPagedUseCaseImpl(observeFiles)
 
     public val enableWireCell: SetWireCellForConversationUseCase
         get() = SetWireCellForConversationUseCaseImpl(cellsConversationRepository)
