@@ -65,14 +65,22 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.decodeBase64Bytes
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import io.mockative.Mockable
 
 data class ApplicationMessage(
@@ -227,31 +235,47 @@ internal class MLSConversationDataSource(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val mutex: Mutex,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSConversationRepository {
 
-    /**
-     * A dispatcher with limited parallelism of 1.
-     * This means using this dispatcher only a single coroutine will be processed at a time.
-     *
-     * This used for operations where ordering is important. For example when sending commit to
-     * add client to a group, this a two-step operation:
-     *
-     * 1. Create pending commit and send to distribution server
-     * 2. Merge pending commit when accepted by distribution server
-     *
-     * Here's it's critical that no other operation like `decryptMessage` is performed
-     * between step 1 and 2. We enforce this by dispatching all `decrypt` and `commit` operations
-     * onto this serial dispatcher.
-     */
     private val logger = kaliumLogger.withTextTag("MLSConversationDataSource")
+
+    /**
+     * Performs a work using the Mutex lock returning its result, exactly like the regular withLock function.
+     * However, this will monitor the work and log warnings using the provided [workIdentifier]
+     * every 10 seconds, while the work isn't completed.
+     */
+    @Suppress("MagicNumber")
+    private suspend fun <T> Mutex.withLock(workIdentifier: String, block: suspend () -> T): T = coroutineScope {
+        val asyncLockWork = async {
+            withLock {
+                block()
+            }
+        }
+        val startInstant = Clock.System.now()
+        val waitJob = launch(dispatchers.default) {
+            while (asyncLockWork.isActive) {
+                delay(10.seconds)
+                if (asyncLockWork.isActive) {
+                    val currentInstant = Clock.System.now()
+                    val elapsedTime = currentInstant.minus(startInstant)
+                    logger.w("Waiting for Mutex work '$workIdentifier' to complete for a long time! Elapsed time: $elapsedTime.")
+                }
+            }
+        }
+        asyncLockWork.invokeOnCompletion {
+            waitJob.cancel()
+        }
+        asyncLockWork.await()
+    }
 
     override suspend fun decryptMessage(
         message: ByteArray,
         groupID: GroupID
     ): Either<CoreFailure, List<DecryptedMessageBundle>> {
         logger.d("Decrypting message for group ${groupID.toLogString()}")
-        return mutex.withLock {
+        return mutex.withLock("decryptMessage") {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.decryptMessage(

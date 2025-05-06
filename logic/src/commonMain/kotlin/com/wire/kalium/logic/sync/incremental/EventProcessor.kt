@@ -93,6 +93,7 @@ internal class EventProcessorImpl(
             logger.w("Skipping processing of ${event.toLogString()} due to debug option")
             Either.Right(Unit)
         } else {
+            logger.i("Starting processing of event: ${event.toLogString()}")
             withContext(NonCancellable) {
                 doProcess(event, deliveryInfo, eventEnvelope)
             }

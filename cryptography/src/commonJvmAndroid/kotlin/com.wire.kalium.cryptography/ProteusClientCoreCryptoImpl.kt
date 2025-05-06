@@ -50,27 +50,27 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun getLocalFingerprint(): ByteArray {
         return wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("getLocalFingerprint") {
                 it.proteusGetLocalFingerprint()
             }
         }
     }
 
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = wrapException {
-        coreCrypto.transaction {
+        coreCrypto.transaction("remoteFingerPrint") {
             it.proteusGetRemoteFingerprint(sessionId.value)
         }
     }
 
     override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray = wrapException {
-        coreCrypto.transaction {
+        coreCrypto.transaction("getFingerprintFromPreKey") {
             it.proteusGetPrekeyFingerprint(preKey.encodedData.decodeBase64Bytes())
         }
     }
 
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
         return wrapException {
-            coreCrypto.transaction { crypto ->
+            coreCrypto.transaction("newPreKeys") { crypto ->
                 crypto.proteusNewPreKeys(from, count).map {
                     PreKeyCrypto(it.id.toInt(), it.data.encodeBase64())
                 } as ArrayList<PreKeyCrypto>
@@ -80,7 +80,7 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException {
-            coreCrypto.transaction { context ->
+            coreCrypto.transaction("newLastResortPreKey") { context ->
                 context.proteusNewLastPreKey().toCryptography()
             }
         }
@@ -91,7 +91,7 @@ class ProteusClientCoreCryptoImpl private constructor(
             return@withLock true
         }
         wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("doesSessionExist") {
                 it.proteusDoesSessionExist(sessionId.value)
             }
         }.also { exists ->
@@ -103,7 +103,7 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
         wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("createSession") {
                 it.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
             }
         }
@@ -116,7 +116,7 @@ class ProteusClientCoreCryptoImpl private constructor(
     ): T {
 
         return wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("decrypt") {
                 handleDecryptedMessage(it.proteusDecrypt(message, sessionId.value))
             }
         }
@@ -124,7 +124,7 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("encrypt") {
                 it.proteusEncrypt(message, sessionId.value)
             }
         }
@@ -132,7 +132,7 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
         return wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("encryptBatched") {
                 it.proteusEncryptBatched(sessionIds.map { sessionId -> sessionId.value }, message).mapNotNull { entry ->
                     CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
                         sessionId to entry.value
@@ -148,7 +148,7 @@ class ProteusClientCoreCryptoImpl private constructor(
         sessionId: CryptoSessionId
     ): ByteArray {
         return wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("encryptWithPreKey") {
                 it.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
                 it.proteusEncrypt(message, sessionId.value)
             }
@@ -158,7 +158,7 @@ class ProteusClientCoreCryptoImpl private constructor(
     override suspend fun deleteSession(sessionId: CryptoSessionId) = mutex.withLock {
         existingSessionsCache.remove(sessionId)
         wrapException {
-            coreCrypto.transaction {
+            coreCrypto.transaction("deleteSession") {
                 it.proteusDeleteSession(sessionId.value)
             }
         }
@@ -182,7 +182,6 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
     }
 
-    @OptIn(ExperimentalUnsignedTypes::class)
     companion object {
 
         val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
@@ -201,7 +200,7 @@ class ProteusClientCoreCryptoImpl private constructor(
         suspend operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientCoreCryptoImpl {
             try {
                 migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
-                coreCrypto.transaction {
+                coreCrypto.transaction("invoke/proteusInit") {
                     it.proteusInit()
                 }
                 return ProteusClientCoreCryptoImpl(coreCrypto)
@@ -224,7 +223,7 @@ class ProteusClientCoreCryptoImpl private constructor(
             try {
                 if (cryptoBoxFilesExists(File(rootDir))) {
                     kaliumLogger.i("migrating from crypto box at: $rootDir")
-                    coreCrypto.transaction {
+                    coreCrypto.transaction("migrateFromCryptoBoxIfNecessary") {
                         it.proteusCryptoboxMigrate(rootDir)
                     }
                     kaliumLogger.i("migration successful")

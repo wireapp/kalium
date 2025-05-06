@@ -96,7 +96,7 @@ jobs:
         run: apt-get update && apt-get install -y -qq git
 
       - name: Upload test report to codecov
-        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574
+        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: "build/reports/kover/report.xml"
