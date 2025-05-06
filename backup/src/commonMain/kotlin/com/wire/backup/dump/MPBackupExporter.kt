@@ -154,17 +154,18 @@ public abstract class CommonMPBackupExporter(
     @Suppress("TooGenericExceptionCaught")
     internal suspend fun finalize(password: String, output: Sink): ExportResult {
         flushAll()
-        val zippedData = try {
+        return try {
             val entries = storage.listEntries()
             try {
-                zipEntries(entries).await()
+                zipEntries(entries).await().use { source ->
+                    writeBackupArtifact(output, password, source)
+                }
             } finally {
                 entries.close()
             }
         } catch (t: Throwable) {
-            return ExportResult.Failure.ZipError(t.message ?: "Unknown ZIP error.")
+            ExportResult.Failure.ZipError(t.message ?: "Unknown ZIP error.")
         }
-        return writeBackupArtifact(output, password, zippedData)
     }
 
     @Suppress("TooGenericExceptionCaught")

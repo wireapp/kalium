@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.backup.ingest.BackupImportDataPager
-import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.ImportDataPager
+import com.wire.backup.ingest.ImportResultPager
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toConversation
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
 import com.wire.kalium.logic.feature.backup.mapper.toUser
+import com.wire.kalium.logic.feature.backup.provider.ImportResult
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProviderImpl
 import com.wire.kalium.logic.util.ExtractFilesParam
@@ -79,27 +80,27 @@ internal class RestoreMPBackupUseCaseImpl(
         )
 
         when (val result = importer.importFromFile(backupFilePath.toString(), password)) {
-            is BackupImportResult.Success -> {
-                persistBackupData(result)
+            is ImportResult.Success -> {
+                persistBackupData(result.pager)
                 RestoreBackupResult.Success
             }
-            BackupImportResult.Failure.MissingOrWrongPassphrase -> RestoreBackupResult.Failure(
+            ImportResult.Failure.MissingOrWrongPassphrase -> RestoreBackupResult.Failure(
                 RestoreBackupResult.BackupRestoreFailure.InvalidPassword
             )
-            BackupImportResult.Failure.ParsingFailure -> RestoreBackupResult.Failure(
+            ImportResult.Failure.ParsingFailure -> RestoreBackupResult.Failure(
                 RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure")
             )
-            is BackupImportResult.Failure.UnzippingError -> RestoreBackupResult.Failure(
+            is ImportResult.Failure.UnzippingError -> RestoreBackupResult.Failure(
                 RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unzipping error")
             )
-            is BackupImportResult.Failure.UnknownError -> RestoreBackupResult.Failure(
+            is ImportResult.Failure.UnknownError -> RestoreBackupResult.Failure(
                 RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error")
             )
         }
     }
 
-    private suspend fun persistBackupData(result: BackupImportResult.Success) {
-        result.pager.use { pager ->
+    private suspend fun persistBackupData(resultData: ImportResultPager) {
+        resultData.use { pager ->
             pager.usersPager.pages().forEach { page ->
                 backupRepository.insertUsers(page.map { it.toUser() })
                     .onFailure { error ->
@@ -122,7 +123,7 @@ internal class RestoreMPBackupUseCaseImpl(
     }
 }
 
-private fun <T> BackupImportDataPager<T>.pages(): Sequence<Array<T>> = sequence {
+private fun <T> ImportDataPager<T>.pages(): Sequence<Array<T>> = sequence {
     while (hasMorePages()) {
         yield(nextPage())
     }

@@ -17,11 +17,22 @@
  */
 package com.wire.kalium.logic.feature.backup.provider
 
+import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupUser
+import com.wire.backup.dump.BackupExportResult
 import com.wire.backup.dump.FileZipper
 import com.wire.backup.dump.MPBackupExporter
 import okio.FileSystem
 import okio.SYSTEM
+
+interface BackupExporter {
+    fun add(user: BackupUser)
+    fun add(conversation: BackupConversation)
+    fun add(message: BackupMessage)
+    suspend fun finalize(password: String): BackupExportResult
+}
 
 interface MPBackupExporterProvider {
     fun provideExporter(
@@ -29,7 +40,7 @@ interface MPBackupExporterProvider {
         workDirectory: String,
         outputDirectory: String,
         fileZipper: FileZipper,
-    ): MPBackupExporter
+    ): BackupExporter
 }
 
 internal class MPBackupExporterProviderImpl(
@@ -40,11 +51,30 @@ internal class MPBackupExporterProviderImpl(
         workDirectory: String,
         outputDirectory: String,
         fileZipper: FileZipper,
-    ) = MPBackupExporter(
-        selfUserId = selfUserId,
-        workDirectory = workDirectory,
-        outputDirectory = outputDirectory,
-        fileZipper = fileZipper,
-        fileSystem = fileSystem,
-    )
+    ): BackupExporter {
+
+        val exporter = MPBackupExporter(
+            selfUserId = selfUserId,
+            workDirectory = workDirectory,
+            outputDirectory = outputDirectory,
+            fileZipper = fileZipper,
+            fileSystem = fileSystem,
+        )
+
+        return object : BackupExporter {
+            override fun add(user: BackupUser) {
+                exporter.add(user)
+            }
+
+            override fun add(conversation: BackupConversation) {
+                exporter.add(conversation)
+            }
+
+            override fun add(message: BackupMessage) {
+                exporter.add(message)
+            }
+
+            override suspend fun finalize(password: String): BackupExportResult = exporter.finalize(password)
+        }
+    }
 }

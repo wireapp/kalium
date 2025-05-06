@@ -18,17 +18,45 @@
 package com.wire.kalium.logic.feature.backup.provider
 
 import com.wire.backup.ingest.BackupFileUnzipper
+import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.BackupPeekResult
+import com.wire.backup.ingest.ImportResultPager
 import com.wire.backup.ingest.MPBackupImporter
 import okio.FileSystem
 import okio.SYSTEM
+
+interface BackupImporter {
+    suspend fun peekBackupFile(pathToBackupFile: String): BackupPeekResult
+    suspend fun importFromFile(multiplatformBackupFilePath: String, passphrase: String?): ImportResult
+}
+
+sealed class ImportResult {
+    class Success(val pager: ImportResultPager) : ImportResult()
+    sealed class Failure : ImportResult() {
+        data object ParsingFailure : Failure()
+        data object MissingOrWrongPassphrase : Failure()
+        data class UnzippingError(val message: String) : Failure()
+        data class UnknownError(val message: String) : Failure()
+    }
+}
+
+private fun BackupImportResult.toImportResult() = when (this) {
+    is BackupImportResult.Success -> ImportResult.Success(pager)
+    is BackupImportResult.Failure -> when (this) {
+        is BackupImportResult.Failure.ParsingFailure -> ImportResult.Failure.ParsingFailure
+        is BackupImportResult.Failure.MissingOrWrongPassphrase -> ImportResult.Failure.MissingOrWrongPassphrase
+        is BackupImportResult.Failure.UnzippingError -> ImportResult.Failure.UnzippingError(message)
+        is BackupImportResult.Failure.UnknownError -> ImportResult.Failure.UnknownError(message)
+    }
+}
 
 interface MPBackupImporterProvider {
     fun provideImporter(
         pathToWorkDirectory: String,
         backupFileUnzipper: BackupFileUnzipper,
-    ): MPBackupImporter
+    ): BackupImporter
 
-    fun providePeekImporter(): MPBackupImporter
+    fun providePeekImporter(): BackupImporter
 }
 
 internal class MPBackupImporterProviderImpl(
@@ -38,14 +66,31 @@ internal class MPBackupImporterProviderImpl(
     override fun provideImporter(
         pathToWorkDirectory: String,
         backupFileUnzipper: BackupFileUnzipper,
-    ) = MPBackupImporter(
-        pathToWorkDirectory = pathToWorkDirectory,
-        backupFileUnzipper = backupFileUnzipper,
-    )
+    ): BackupImporter {
+        val importer = MPBackupImporter(
+            pathToWorkDirectory = pathToWorkDirectory,
+            backupFileUnzipper = backupFileUnzipper,
+        )
 
-    override fun providePeekImporter() = MPBackupImporter(
-        pathToWorkDirectory = "",
-        backupFileUnzipper = { error("Not used for backup file verification") },
-        fileSystem = fileSystem,
-    )
+        return object : BackupImporter {
+            override suspend fun peekBackupFile(pathToBackupFile: String) = importer.peekBackupFile(pathToBackupFile)
+
+            override suspend fun importFromFile(multiplatformBackupFilePath: String, passphrase: String?) =
+                importer.importFromFile(multiplatformBackupFilePath, passphrase).toImportResult()
+        }
+    }
+
+    override fun providePeekImporter(): BackupImporter {
+        val importer = MPBackupImporter(
+            pathToWorkDirectory = "",
+            backupFileUnzipper = { error("Not used for backup file verification") },
+            fileSystem = fileSystem,
+        )
+        return object : BackupImporter {
+            override suspend fun peekBackupFile(pathToBackupFile: String) = importer.peekBackupFile(pathToBackupFile)
+
+            override suspend fun importFromFile(multiplatformBackupFilePath: String, passphrase: String?) =
+                importer.importFromFile(multiplatformBackupFilePath, passphrase).toImportResult()
+        }
+    }
 }
