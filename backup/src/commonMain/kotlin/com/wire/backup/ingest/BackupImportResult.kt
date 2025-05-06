@@ -21,7 +21,7 @@ import kotlin.js.JsExport
 
 @JsExport
 public sealed class BackupImportResult {
-    public class Success(public val pager: BackupImportPager) : BackupImportResult()
+    public class Success(public val pager: ImportResultPager) : BackupImportResult()
     public sealed class Failure : BackupImportResult() {
         /**
          * The file has an incompatible format.

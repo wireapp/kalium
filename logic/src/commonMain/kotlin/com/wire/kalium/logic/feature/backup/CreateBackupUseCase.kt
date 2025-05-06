@@ -19,28 +19,28 @@
 
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.cryptography.backup.Passphrase
-import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.clientPlatform
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.backup.BackupCoder
+import com.wire.kalium.cryptography.backup.Passphrase
+import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
+import com.wire.kalium.logic.clientPlatform
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
@@ -93,12 +93,13 @@ internal class CreateBackupUseCaseImpl(
         try {
             createBackupFile(userId, plainDBPath, backupFilePath).fold(
                 { error -> CreateBackupResult.Failure(error) },
-                { (backupFilePath, backupSize) ->
+                { path ->
                     val isBackupEncrypted = password.isNotEmpty()
                     if (isBackupEncrypted) {
-                        encryptAndCompressFile(backupFilePath, password)
-                    } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
-                })
+                        encryptAndCompressFile(path, password)
+                    } else CreateBackupResult.Success(backupFilePath, path.name)
+                }
+            )
         } finally {
             databaseExporter.deleteBackupDBFile()
         }
@@ -125,7 +126,7 @@ internal class CreateBackupUseCaseImpl(
             deleteTempFiles(backupFilePath, encryptedBackupFilePath)
 
             if (backupEncryptedCompressedDataSize > 0) {
-                CreateBackupResult.Success(finalBackupFilePath, backupEncryptedCompressedDataSize, finalBackupFilePath.name)
+                CreateBackupResult.Success(finalBackupFilePath, finalBackupFilePath.name)
             } else {
                 CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to encrypt backup file")))
             }
@@ -169,7 +170,7 @@ internal class CreateBackupUseCaseImpl(
         userId: UserId,
         plainDBPath: Path,
         backupZipFilePath: Path
-    ): Either<CoreFailure, Pair<Path, Long>> {
+    ): Either<CoreFailure, Path> {
         return try {
             val backupSink = kaliumFileSystem.sink(backupZipFilePath)
             val backupMetadataPath = createMetadataFile(userId)
@@ -178,8 +179,8 @@ internal class CreateBackupUseCaseImpl(
                 kaliumFileSystem.source(plainDBPath) to BACKUP_USER_DB_NAME
             )
 
-            createCompressedFile(filesList, backupSink).flatMap { compressedFileSize ->
-                Either.Right(backupZipFilePath to compressedFileSize)
+            createCompressedFile(filesList, backupSink).flatMap {
+                Either.Right(backupZipFilePath)
             }
         } catch (e: FileNotFoundException) {
             kaliumLogger.e("There was an error when fetching the user db data path", e)
@@ -190,5 +191,5 @@ internal class CreateBackupUseCaseImpl(
 
 sealed class CreateBackupResult {
     data class Failure(val coreFailure: CoreFailure) : CreateBackupResult()
-    data class Success(val backupFilePath: Path, val backupFileSize: Long, val backupFileName: String) : CreateBackupResult()
+    data class Success(val backupFilePath: Path, val backupFileName: String) : CreateBackupResult()
 }

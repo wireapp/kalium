@@ -18,9 +18,15 @@
 
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.backup.ingest.BackupPeekResult
+import com.wire.backup.ingest.isCreatedBySameUser
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.backup.mapper.toBackupQualifiedId
+import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
+import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProviderImpl
 import com.wire.kalium.logic.util.checkIfCompressedFileContainsFileTypes
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -37,44 +43,78 @@ interface VerifyBackupUseCase {
 }
 
 internal class VerifyBackupUseCaseImpl(
+    private val userId: UserId,
     private val kaliumFileSystem: KaliumFileSystem,
+    private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : VerifyBackupUseCase {
 
     override suspend operator fun invoke(compressedBackupFilePath: Path): VerifyBackupResult = withContext(dispatchers.io) {
-        checkIfCompressedFileContainsFileTypes(
-            compressedBackupFilePath,
-            kaliumFileSystem,
-            BackupConstants.ACCEPTED_EXTENSIONS
-        ).fold({
-            VerifyBackupResult.Failure.Generic(it)
-        }, {
-            when {
-                it.keys.any { it !in BackupConstants.ACCEPTED_EXTENSIONS } -> VerifyBackupResult.Failure.InvalidBackupFile
+        when (val result = verifyMpBackupFile(compressedBackupFilePath)) {
+            VerifyBackupResult.Failure.InvalidBackupFile -> verifyRegularBackupFile(compressedBackupFilePath)
+            else -> result
+        }
+    }
 
-                it[BackupConstants.BACKUP_ENCRYPTED_EXTENSION] == true ->
-                    VerifyBackupResult.Success.Encrypted
+    private fun verifyRegularBackupFile(
+        compressedBackupFilePath: Path,
+    ) = checkIfCompressedFileContainsFileTypes(
+        compressedBackupFilePath,
+        kaliumFileSystem,
+        BackupConstants.ACCEPTED_EXTENSIONS
+    ).fold({
+        VerifyBackupResult.Failure.Generic(it)
+    }, { result ->
+        when {
+            result.keys.any { it !in BackupConstants.ACCEPTED_EXTENSIONS } -> VerifyBackupResult.Failure.InvalidBackupFile
 
-                it[BackupConstants.BACKUP_DB_EXTENSION] == true && it[BackupConstants.BACKUP_METADATA_EXTENSION] == true ->
-                    VerifyBackupResult.Success.NotEncrypted
+            result[BackupConstants.BACKUP_ENCRYPTED_EXTENSION] == true ->
+                VerifyBackupResult.AndroidBackup(true)
 
-                it[BackupConstants.BACKUP_METADATA_EXTENSION] == true -> VerifyBackupResult.Success.Web
-                else ->
-                    VerifyBackupResult.Failure.InvalidBackupFile
-            }
-        })
+            result[BackupConstants.BACKUP_DB_EXTENSION] == true && result[BackupConstants.BACKUP_METADATA_EXTENSION] == true ->
+                VerifyBackupResult.AndroidBackup(false)
+
+            else -> VerifyBackupResult.Failure.InvalidBackupFile
+        }
+    })
+
+    private suspend fun verifyMpBackupFile(
+        backupFilePath: Path,
+    ): VerifyBackupResult {
+
+        val mpBackupImporter = backupImporterProvider.providePeekImporter()
+
+        return when (val peek = mpBackupImporter.peekBackupFile(backupFilePath.toString())) {
+            BackupPeekResult.Failure.UnknownFormat -> VerifyBackupResult.Failure.InvalidBackupFile
+            is BackupPeekResult.Failure.UnsupportedVersion -> VerifyBackupResult.Failure.UnsupportedVersion(peek.backupVersion)
+            is BackupPeekResult.Success ->
+                if (peek.isCreatedBySameUser(userId.toBackupQualifiedId())) {
+                    VerifyBackupResult.MultiPlatformBackup(peek.isEncrypted)
+                } else {
+                    VerifyBackupResult.Failure.InvalidUserId
+                }
+        }
     }
 }
 
+enum class BackupFileFormat {
+    ANDROID, MULTIPLATFORM
+}
+
 sealed class VerifyBackupResult {
-    sealed class Success : VerifyBackupResult() {
-        data object Encrypted : Success()
-        data object NotEncrypted : Success()
-        data object Web : Success()
+
+    @Suppress("FunctionName")
+    companion object {
+        internal fun AndroidBackup(isEncrypted: Boolean) = Success(BackupFileFormat.ANDROID, isEncrypted)
+        internal fun MultiPlatformBackup(isEncrypted: Boolean) = Success(BackupFileFormat.MULTIPLATFORM, isEncrypted)
     }
+
+    data class Success(val format: BackupFileFormat, val isEncrypted: Boolean) : VerifyBackupResult()
 
     sealed class Failure : VerifyBackupResult() {
         data object InvalidBackupFile : Failure()
+        data class UnsupportedVersion(val version: String) : Failure()
         data class Generic(val error: CoreFailure) : Failure()
+        data object InvalidUserId : Failure()
     }
 }
