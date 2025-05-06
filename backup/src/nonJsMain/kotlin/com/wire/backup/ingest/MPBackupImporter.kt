@@ -85,7 +85,7 @@ public actual class MPBackupImporter(
 
     override suspend fun unzipAllEntries(): BackupPageStorage {
         val unzipPath = backupFileUnzipper.unzipBackup(archiveZipPath.toString())
-        return FileBasedBackupPageStorage(FileSystem.SYSTEM, unzipPath.toPath(), false)
+        return FileBasedBackupPageStorage(fileSystem, unzipPath.toPath(), false)
     }
 
     private inline fun <T> withBackupFile(

@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.BackupExportResult
-import com.wire.backup.dump.MPBackupExporter
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
@@ -33,6 +32,7 @@ import com.wire.kalium.logic.feature.backup.CreateBackupResult.Failure
 import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
+import com.wire.kalium.logic.feature.backup.provider.BackupExporter
 import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
 import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProviderImpl
 import com.wire.kalium.logic.util.createCompressedFile
@@ -118,17 +118,13 @@ internal class CreateMPBackupUseCaseImpl(
         timestampIso = DateTimeUtil.currentSimpleDateTimeString(),
     )
 
-    private fun createBackupExporter(selfUser: SelfUser, backupFileName: String, backupWorkDir: String): MPBackupExporter {
-
-        val backupFilePath = kaliumFileSystem.tempFilePath(backupFileName)
-
-        deleteBackupFiles(backupFilePath)
-
-        return exporterProvider.provideExporter(
+    private fun createBackupExporter(selfUser: SelfUser, backupFileName: String, backupWorkDir: String): BackupExporter =
+        exporterProvider.provideExporter(
             selfUserId = BackupQualifiedId(selfUser.id.value, selfUser.id.domain),
             workDirectory = backupWorkDir,
             outputDirectory = backupWorkDir,
-            fileZipper = { entries ->
+            fileZipper = { entries, workDirectory ->
+                val backupFilePath = workDirectory / backupFileName
                 fileSystem.sink(backupFilePath).use { output ->
                     createCompressedFile(
                         files = entries.map { file ->
@@ -147,7 +143,6 @@ internal class CreateMPBackupUseCaseImpl(
                 )
             }
         )
-    }
 
     private fun deleteBackupFiles(backupFilePath: Path) {
         if (fileSystem.exists(backupFilePath))

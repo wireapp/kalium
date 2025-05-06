@@ -58,7 +58,7 @@ public actual class MPBackupExporter(
 
     override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
-        val pathToZippedArchive = fileZipper.zip(entries).toPath()
+        val pathToZippedArchive = fileZipper.zip(entries, workDirectoryPath).toPath()
         return CompletableDeferred(
             fileSystem.source(pathToZippedArchive)
                 .also { fileSystem.delete(pathToZippedArchive) }
@@ -86,5 +86,7 @@ public actual class MPBackupExporter(
         }
     } catch (io: Throwable) {
         BackupExportResult.Failure.IOError(io.message ?: "Unknown IO error.")
+    } finally {
+        fileSystem.deleteRecursively(workDirectoryPath)
     }
 }
