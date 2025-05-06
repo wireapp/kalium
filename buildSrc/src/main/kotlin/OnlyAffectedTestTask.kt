@@ -87,11 +87,12 @@ open class OnlyAffectedTestTask : DefaultTask() {
         tasksName.forEach(::runTargetTask)
     }
 
-    // Mockative 3 doesn't work with Android instrumented tests when mockative is used in multiple modules.
+    // Mockative 3 doesn't work with Android instrumented tests or iOS tests when mockative is used in multiple modules.
     // https://github.com/mockative/mockative/issues/143
-    // Until it's fixed, we need to filter out the modules that use mockative dependency from running instrumented tests.
+    // Until it's fixed, we need to filter out the modules that use mockative dependency from running these tests.
     private fun MutableCollection<Project>.filterMockativeIfNeeded() =
-        if (configuration == TestTaskConfiguration.ANDROID_INSTRUMENTED_TEST_TASK) {
+        if (configuration == TestTaskConfiguration.ANDROID_INSTRUMENTED_TEST_TASK
+            || configuration == TestTaskConfiguration.IOS_TEST_TASK) {
 
             fun Project.checkMockativeDependency(): Boolean = configurations.any { configuration ->
                 configuration.dependencies.any { dependency -> dependency.group == "io.mockative" }
