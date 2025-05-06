@@ -36,7 +36,9 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.DecryptedBatch
 import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.EncryptedMessage
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -55,6 +57,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.message.mls.MLSMessage
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -72,6 +75,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 data class ApplicationMessage(
@@ -104,12 +108,13 @@ data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?,
-    val identity: WireIdentity?
+    val identity: WireIdentity?,
+    val messageInstant: Instant,
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
-    suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
+    suspend fun decryptMessages(messages: List<MLSMessage>, groupID: GroupID): Either<CoreFailure, DecryptedBatch>
 
     /**
      * Establishes an MLS (Messaging Layer Security) group with the specified group ID and members.
@@ -244,25 +249,23 @@ internal class MLSConversationDataSource(
      */
     private val logger = kaliumLogger.withTextTag("MLSConversationDataSource")
 
-    override suspend fun decryptMessage(
-        message: ByteArray,
+    override suspend fun decryptMessages(
+        messages: List<MLSMessage>,
         groupID: GroupID
-    ): Either<CoreFailure, List<DecryptedMessageBundle>> {
-        logger.d("Decrypting message for group ${groupID.toLogString()}")
-        return mutex.withLock {
-            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                wrapMLSRequest {
-                    mlsClient.decryptMessage(
-                        idMapper.toCryptoModel(groupID),
-                        message
-                    ).let { messages ->
-                        messages.map {
-                            it.crlNewDistributionPoints?.let { newDistributionPoints ->
-                                checkRevocationList(newDistributionPoints)
-                            }
-                            it.toModel(groupID)
+    ): Either<CoreFailure, DecryptedBatch> = mutex.withLock {
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.decryptMessages(
+                    idMapper.toCryptoModel(groupID),
+                    messages.map { EncryptedMessage(it.id, it.content.decodeBase64Bytes(), it.messageInstant) }
+                ).let { decryptedBatch ->
+                    decryptedBatch.messages.map {
+                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
+                            checkRevocationList(newDistributionPoints)
                         }
+                        it.toModel(groupID)
                     }
+                    decryptedBatch
                 }
             }
         }

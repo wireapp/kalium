@@ -40,7 +40,9 @@ import com.wire.kalium.util.serialization.toJsonElement
 
 internal interface NewMessageEventHandler {
     suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo)
-    suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo)
+    suspend fun handleNewMLSBatch(event: Event.Conversation.MLSGroupMessages, deliveryInfo: EventDeliveryInfo)
+    suspend fun handleNewMLSSubGroupBatch(event: Event.Conversation.MLSSubGroupMessages, deliveryInfo: EventDeliveryInfo)
+
 }
 
 @Suppress("LongParameterList")
@@ -101,9 +103,112 @@ internal class NewMessageEventHandlerImpl(
         }
     }
 
-    override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
+//     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
+//         var eventLogger = logger.createEventProcessingLogger(event)
+//         mlsMessageUnpacker.unpackMlsMessage(event)
+//             .onFailure {
+//                 when (MLSMessageFailureHandler.handleFailure(it)) {
+//                     is MLSMessageFailureResolution.Ignore -> {
+//                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+//                     }
+//
+//                     is MLSMessageFailureResolution.InformUser -> {
+//                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+//                         // messages from subconversations should not send a system message
+//                         if (event.subconversationId == null) {
+//                             applicationMessageHandler.handleDecryptionError(
+//                                 eventId = event.id,
+//                                 conversationId = event.conversationId,
+//                                 messageInstant = event.messageInstant,
+//                                 senderUserId = event.senderUserId,
+//                                 senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+//                                 content = MessageContent.FailedDecryption(
+//                                     isDecryptionResolved = false,
+//                                     senderUserId = event.senderUserId
+//                                 )
+//                             )
+//                         }
+//                     }
+//
+//                     is MLSMessageFailureResolution.OutOfSync -> {
+//                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+//                         staleEpochVerifier.verifyEpoch(
+//                             event.conversationId,
+//                             event.subconversationId,
+//                             event.messageInstant
+//                         )
+//                     }
+//                 }
+//             }.onSuccess { batchResult ->
+//                 batchResult.forEach { message ->
+//                     if (message is MessageUnpackResult.ApplicationMessage) {
+//                         processApplicationMessage(message, deliveryInfo)
+//                     }
+//                     eventLogger.logSuccess(
+//                         "protocol" to "MLS",
+//                         "isPartOfMLSBatch" to (batchResult.size > 1),
+//                         "messageType" to message.messageTypeDescription
+//                     )
+//                     // reset the time for next messages, if this is a batch
+//                     eventLogger = logger.createEventProcessingLogger(event)
+//                 }
+//             }
+//     }
+
+    override suspend fun handleNewMLSBatch(event: Event.Conversation.MLSGroupMessages, deliveryInfo: EventDeliveryInfo) {
         var eventLogger = logger.createEventProcessingLogger(event)
-        mlsMessageUnpacker.unpackMlsMessage(event)
+
+        mlsMessageUnpacker.unpackMlsGroupMessages(event)
+            .onFailure {
+                when (MLSMessageFailureHandler.handleFailure(it)) {
+                    is MLSMessageFailureResolution.Ignore -> {
+                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+                    }
+
+                    is MLSMessageFailureResolution.InformUser -> {
+                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+//                             applicationMessageHandler.handleDecryptionError(
+//                                 eventId = event.id,
+//                                 conversationId = event.conversationId,
+//                                 messageInstant = event.messageInstant,
+//                                 senderUserId = event.senderUserId,
+//                                 senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+//                                 content = MessageContent.FailedDecryption(
+//                                     isDecryptionResolved = false,
+//                                     senderUserId = event.senderUserId
+//                                 )
+//                             )
+                    }
+
+                    is MLSMessageFailureResolution.OutOfSync -> {
+                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                        staleEpochVerifier.verifyEpoch(
+                            event.conversationId,
+                            null,
+                            event.messages.first().messageInstant
+                        )
+                    }
+                }
+            }.onSuccess { batchResult ->
+                batchResult.forEach { message ->
+                    if (message is MessageUnpackResult.ApplicationMessage) {
+                        processApplicationMessage(message, deliveryInfo)
+                    }
+                    eventLogger.logSuccess(
+                        "protocol" to "MLS",
+                        "isPartOfMLSBatch" to (batchResult.size > 1),
+                        "messageType" to message.messageTypeDescription
+                    )
+                    // reset the time for next messages, if this is a batch
+                    eventLogger = logger.createEventProcessingLogger(event)
+                }
+            }
+    }
+
+    override suspend fun handleNewMLSSubGroupBatch(event: Event.Conversation.MLSSubGroupMessages, deliveryInfo: EventDeliveryInfo) {
+        var eventLogger = logger.createEventProcessingLogger(event)
+
+        mlsMessageUnpacker.unpackMlsSubGroupMessages(event)
             .onFailure {
                 when (MLSMessageFailureHandler.handleFailure(it)) {
                     is MLSMessageFailureResolution.Ignore -> {
@@ -113,27 +218,14 @@ internal class NewMessageEventHandlerImpl(
                     is MLSMessageFailureResolution.InformUser -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
                         // messages from subconversations should not send a system message
-                        if (event.subconversationId == null) {
-                            applicationMessageHandler.handleDecryptionError(
-                                eventId = event.id,
-                                conversationId = event.conversationId,
-                                messageInstant = event.messageInstant,
-                                senderUserId = event.senderUserId,
-                                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                                content = MessageContent.FailedDecryption(
-                                    isDecryptionResolved = false,
-                                    senderUserId = event.senderUserId
-                                )
-                            )
-                        }
                     }
 
                     is MLSMessageFailureResolution.OutOfSync -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
                             event.conversationId,
-                            event.subconversationId,
-                            event.messageInstant
+                            event.subConversationId,
+                            event.messages.first().messageInstant // TODO we need to return proper timestamp
                         )
                     }
                 }

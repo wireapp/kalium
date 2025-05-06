@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
@@ -82,7 +83,15 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
+    override suspend fun decryptMessage(
+        groupId: MLSGroupId,
+        message: ApplicationMessage,
+        messageInstant: Instant
+    ): List<DecryptedMessageBundle> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun decryptMessages(groupId: MLSGroupId, messages: List<EncryptedMessage>): DecryptedBatch {
         TODO("Not yet implemented")
     }
 

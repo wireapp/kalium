@@ -34,6 +34,7 @@ import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import com.wire.kalium.cryptography.utils.toExternalSenderKey
 import io.ktor.util.decodeBase64Bytes
+import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 typealias ConversationId = ByteArray
@@ -117,9 +118,7 @@ class MLSClientImpl(
             val mlsCredentialType = credentialType(it)
 
             it.createConversation(
-                com.wire.crypto.MLSGroupId(
-                    groupId.decodeBase64Bytes()
-                ),
+                com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
                 defaultCipherSuite,
                 mlsCredentialType.toCrypto(),
                 listOf(com.wire.crypto.ExternalSenderKey(externalSenders))
@@ -150,7 +149,11 @@ class MLSClientImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
+    override suspend fun decryptMessage(
+        groupId: MLSGroupId,
+        message: ApplicationMessage,
+        messageInstant: Instant
+    ): List<DecryptedMessageBundle> {
         var decryptedMessage: DecryptedMessage? = null
 
         coreCrypto.transaction {
@@ -174,12 +177,65 @@ class MLSClientImpl(
             return emptyList()
         }
 
-        val mainMessageBundle = listOf(decryptedMessage!!.toBundle())
+        val mainMessageBundle = listOf(decryptedMessage!!.toBundle(messageInstant))
         val bufferedBundles = decryptedMessage!!.bufferedMessages
-            ?.map { it.toBundle() }
+            ?.map { it.toBundle(messageInstant) }
             ?: emptyList()
 
         return mainMessageBundle + bufferedBundles
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun decryptMessages(
+        groupId: MLSGroupId,
+        messages: List<EncryptedMessage>
+    ): DecryptedBatch {
+        val results = mutableListOf<DecryptedMessageBundle>()
+        var lastHandledEventId: String? = null
+
+        coreCrypto.transaction { context ->
+            messages.forEach { message ->
+                try {
+                    val decrypted = context.decryptMessage(
+                        com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
+                        MlsMessage(message.content)
+                    )
+
+                    decrypted.let { dec ->
+                        results += dec.toBundle(message.messageInstant)
+                        results += dec.bufferedMessages?.map { buf -> buf.toBundle(message.messageInstant) }.orEmpty()
+
+                        lastHandledEventId = message.eventId
+                    }
+
+                } catch (throwable: Throwable) {
+                    if (throwable is CoreCryptoException.Mls) {
+                        when (throwable.exception) {
+                            is MlsException.BufferedFutureMessage,
+                            is MlsException.BufferedCommit,
+                            is MlsException.DuplicateMessage -> {
+                                // IGNORE
+                            }
+                            else -> {
+                                throw throwable
+                            }
+                        }
+                    } else {
+                        throw throwable
+                    }
+                }
+            }
+
+            lastHandledEventId?.let { id ->
+                context.setData(id.encodeToByteArray())
+            }
+        }
+
+        return DecryptedBatch(
+            messages = results,
+            groupId = groupId,
+            failedMessage = null
+        )
     }
 
     override suspend fun commitPendingProposals(groupId: MLSGroupId) {

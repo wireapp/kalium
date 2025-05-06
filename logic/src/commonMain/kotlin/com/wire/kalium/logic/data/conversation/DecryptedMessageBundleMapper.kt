@@ -33,5 +33,6 @@ fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID
             )
         },
         commitDelay,
-        identity
+        identity,
+        messageInstant
     )

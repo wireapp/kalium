@@ -45,6 +45,7 @@ import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import kotlinx.datetime.Instant
 
 fun MLSCiphersuite.toCrypto(): Ciphersuite = when (this) {
     MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -144,22 +145,24 @@ fun com.wire.crypto.E2eiConversationState.toCryptography(): E2EIConversationStat
     E2eiConversationState.NotEnabled -> E2EIConversationState.NOT_ENABLED
 }
 
-fun DecryptedMessage.toBundle() = DecryptedMessageBundle(
+fun DecryptedMessage.toBundle(messageInstant: Instant) = DecryptedMessageBundle(
     message,
     commitDelay,
     senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
     hasEpochChanged,
     identity.toCryptography(),
-    crlNewDistributionPoints?.value?.map { it.toString() }
+    crlNewDistributionPoints?.value?.map { it.toString() },
+    messageInstant
 )
 
-fun BufferedDecryptedMessage.toBundle() = DecryptedMessageBundle(
+fun BufferedDecryptedMessage.toBundle(messageInstant: Instant) = DecryptedMessageBundle(
     message,
     commitDelay,
     senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
     hasEpochChanged,
     identity.toCryptography(),
-    crlNewDistributionPoints?.value?.map { it.toString() }
+    crlNewDistributionPoints?.value?.map { it.toString() },
+    messageInstant
 )
 
 fun CredentialType.toCrypto() = when (this) {

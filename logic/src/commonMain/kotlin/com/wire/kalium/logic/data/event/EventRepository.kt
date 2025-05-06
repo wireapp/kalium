@@ -133,7 +133,9 @@ class EventDataSource(
     ) = flow<Either<CoreFailure, EventEnvelope>> {
 
         var hasMore = true
-        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+        var lastFetchedNotificationId: String? =
+//             "d9b2f07e-2732-11f0-bfff-fafb988e2be2"
+            metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
 
         while (coroutineContext.isActive && hasMore) {
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
@@ -142,9 +144,10 @@ class EventDataSource(
                 hasMore = notificationsPageResult.value.hasMore
                 lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
 
-                notificationsPageResult.value.notifications.flatMap {
-                    eventMapper.fromDTO(it, isLive = false)
-                }.forEach { event ->
+                eventMapper.fromBatch(
+                    notificationsPageResult.value.notifications,
+                    isLive = false
+                ).forEach { event ->
                     if (!coroutineContext.isActive) {
                         return@flow
                     }

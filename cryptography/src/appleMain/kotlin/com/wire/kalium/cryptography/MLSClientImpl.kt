@@ -29,6 +29,7 @@ import com.wire.crypto.MlsWirePolicy
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.ktor.utils.io.core.String
+import kotlinx.datetime.Instant
 import okio.internal.commonToUtf8String
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
@@ -112,8 +113,31 @@ class MLSClientImpl(
         return toByteArray(applicationMessage)
     }
 
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
-        return listOf(toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))))
+    override suspend fun decryptMessage(
+        groupId: MLSGroupId,
+        message: ApplicationMessage,
+        messageInstant: Instant
+    ): List<DecryptedMessageBundle> {
+        return listOf(
+            toDecryptedMessageBundle(
+                coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)),
+                messageInstant
+            )
+        )
+    }
+
+    override suspend fun decryptMessages(groupId: MLSGroupId, messages: List<EncryptedMessage>): DecryptedBatch {
+        val decryptedMessages = messages.map {
+            toDecryptedMessageBundle(
+                coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(it.content)),
+                it.messageInstant
+            )
+        }
+        return DecryptedBatch(
+            groupId = groupId,
+            messages = decryptedMessages,
+            failedMessage = null,
+        )
     }
 
     override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
@@ -237,13 +261,14 @@ class MLSClientImpl(
             MlsRatchetTreeType.BY_REF -> RatchetTreeType.BY_REF
         }
 
-        fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
+        fun toDecryptedMessageBundle(value: DecryptedMessage, messageInstant: Instant) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
             value.hasEpochChanged,
             identity = null,
-            crlNewDistributionPoints = null
+            crlNewDistributionPoints = null,
+            messageInstant = messageInstant
         )
     }
 

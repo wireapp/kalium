@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.datetime.Instant
 import kotlin.jvm.JvmInline
 import kotlin.time.Duration
 
@@ -48,6 +49,30 @@ open class GroupInfoBundle(
     var ratchetTreeType: RatchetTreeType,
     var payload: ByteArray
 )
+
+data class EncryptedMessage(
+    val eventId: String,
+    val content: ApplicationMessage,
+    val messageInstant: Instant,
+    ) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as EncryptedMessage
+
+        if (eventId != other.eventId) return false
+        if (!content.contentEquals(other.content)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = eventId.hashCode()
+        result = 31 * result + content.contentHashCode()
+        return result
+    }
+}
 
 data class CommitBundle(
     val commit: ByteArray,
@@ -89,14 +114,26 @@ data class RotateBundle(
     val crlNewDistributionPoints: List<String>?
 )
 
+data class DecryptedBatch(
+    val messages: List<DecryptedMessageBundle>,
+    val groupId: MLSGroupId,
+    val failedMessage: FailedMessage?,
+)
+
+data class FailedMessage(
+    val eventId: String,
+    val error: Throwable,
+)
+
 data class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
     val identity: WireIdentity?,
-    val crlNewDistributionPoints: List<String>?
-) {
+    val crlNewDistributionPoints: List<String>?,
+    val messageInstant: Instant,
+    ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -278,8 +315,24 @@ interface MLSClient {
      */
     suspend fun decryptMessage(
         groupId: MLSGroupId,
-        message: ApplicationMessage
+        message: ApplicationMessage,
+        messageInstant: Instant,
     ): List<DecryptedMessageBundle>
+
+    /**
+     * Decrypt batch of application messages and handshake messages
+     *
+     * **NOTE**: handshake messages doesn't return any decrypted message.
+     *
+     * @param groupId MLS group where the message was received
+     * @param messages batch of application messages and handshake messages
+     *
+     * @return decrypted message bundle, which contains the decrypted message.
+     */
+    suspend fun decryptMessages(
+        groupId: MLSGroupId,
+        messages: List<EncryptedMessage>
+    ): DecryptedBatch
 
     /**
      * Current members of the group.

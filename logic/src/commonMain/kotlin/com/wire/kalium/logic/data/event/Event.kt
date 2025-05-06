@@ -43,6 +43,7 @@ import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
+import com.wire.kalium.logic.data.message.mls.MLSMessage
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
@@ -108,11 +109,14 @@ sealed class Event(open val id: String) {
         const val clientIdKey = "clientId"
         const val userIdKey = "userId"
         const val conversationIdKey = "conversationId"
+        const val subconversationIdKey = "subconversationId"
         const val senderUserIdKey = "senderUserId"
         const val teamIdKey = "teamId"
         const val memberIdKey = "memberId"
         const val timestampIsoKey = "timestampIso"
         const val selfDeletionDurationKey = "selfDeletionDuration"
+        const val messagesKey = "messages"
+        const val messagesCountKey = "messagesCount"
     }
 
     open fun toLogString(): String {
@@ -161,21 +165,47 @@ sealed class Event(open val id: String) {
             )
         }
 
-        data class NewMLSMessage(
+        data class MLSGroupMessages(
             override val id: String,
             override val conversationId: ConversationId,
-            val subconversationId: SubconversationId?,
-            val senderUserId: UserId,
-            val messageInstant: Instant,
-            val content: String
+            val messages: List<MLSMessage>
         ) : Conversation(id, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "Conversation.NewMLSMessage",
+                typeKey to "Conversation.MLSGroupMessages",
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
-                senderUserIdKey to senderUserId.toLogString(),
-                timestampIsoKey to messageInstant.toIsoDateTimeString()
+                messagesCountKey to messages.size,
+                messagesKey to messages.map {
+                    mapOf(
+                        idKey to it.id.obfuscateId(),
+                        senderUserIdKey to it.senderUserId.toLogString(),
+                        timestampIsoKey to it.messageInstant.toIsoDateTimeString()
+                    )
+                },
+            )
+        }
+
+        data class MLSSubGroupMessages(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val subConversationId: SubconversationId,
+            val messages: List<MLSMessage>
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.MLSSubGroupMessages",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                subconversationIdKey to subConversationId.toLogString(),
+                messagesCountKey to messages.size,
+                messagesKey to messages.map {
+                    mapOf(
+                        idKey to it.id.obfuscateId(),
+                        senderUserIdKey to it.senderUserId.toLogString(),
+                        timestampIsoKey to it.messageInstant.toIsoDateTimeString()
+                    )
+                },
             )
         }
 

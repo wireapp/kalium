@@ -73,8 +73,17 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.NewMLSMessage -> {
-                newMessageHandler.handleNewMLSMessage(event, deliveryInfo)
+//             is Event.Conversation.NewMLSMessage -> {
+//                 newMessageHandler.handleNewMLSMessage(event, deliveryInfo)
+//                 Either.Right(Unit)
+//             }
+
+            is Event.Conversation.MLSGroupMessages -> {
+                newMessageHandler.handleNewMLSBatch(event, deliveryInfo)
+                Either.Right(Unit)
+            }
+            is Event.Conversation.MLSSubGroupMessages -> {
+                newMessageHandler.handleNewMLSSubGroupBatch(event, deliveryInfo)
                 Either.Right(Unit)
             }
 

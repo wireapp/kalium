@@ -18,14 +18,21 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.DecryptedBatch
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -35,23 +42,15 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.sync.KaliumSyncException
-import io.ktor.util.decodeBase64Bytes
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
 internal interface MLSMessageUnpacker {
-    suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>>
-    suspend fun unpackMlsBundle(
-        bundle: DecryptedMessageBundle,
-        conversationId: ConversationId,
-        messageInstant: Instant
-    ): MessageUnpackResult
+    //     suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>>
+    suspend fun unpackMlsGroupMessages(event: Event.Conversation.MLSGroupMessages): Either<CoreFailure, List<MessageUnpackResult>>
+    suspend fun unpackMlsSubGroupMessages(event: Event.Conversation.MLSSubGroupMessages): Either<CoreFailure, List<MessageUnpackResult>>
+
 }
 
 @Suppress("LongParameterList")
@@ -66,23 +65,37 @@ internal class MLSMessageUnpackerImpl(
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
-    override suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>> =
-        messageFromMLSMessage(event).map { bundles ->
-            if (bundles.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
+    override suspend fun unpackMlsGroupMessages(
+        event: Event.Conversation.MLSGroupMessages
+    ): Either<CoreFailure, List<MessageUnpackResult>> {
+        return messagesFromMLSGroupMessages(event).map { batch ->
+            if (batch.messages.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
 
-            bundles.map { bundle ->
-                unpackMlsBundle(bundle, event.conversationId, event.messageInstant)
+            batch.messages.map { bundle ->
+                unpackMlsBundle(bundle.toModel(GroupID(batch.groupId)), event.conversationId)
             }
         }
+    }
 
-    override suspend fun unpackMlsBundle(
+    override suspend fun unpackMlsSubGroupMessages(
+        event: Event.Conversation.MLSSubGroupMessages
+    ): Either<CoreFailure, List<MessageUnpackResult>> {
+        return messagesFromMLSSubGroupMessages(event).map { batch ->
+            if (batch == null || batch.messages.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
+
+            batch.messages.map { bundle ->
+                unpackMlsBundle(bundle.toModel(GroupID(batch.groupId)), event.conversationId)
+            }
+        }
+    }
+
+    private suspend fun unpackMlsBundle(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
-        messageInstant: Instant
     ): MessageUnpackResult {
         bundle.commitDelay?.let {
             handlePendingProposal(
-                timestamp = messageInstant,
+                timestamp = bundle.messageInstant,
                 groupId = bundle.groupID,
                 commitDelay = it
             )
@@ -95,7 +108,7 @@ internal class MLSMessageUnpackerImpl(
             }
             MessageUnpackResult.ApplicationMessage(
                 conversationId = conversationId,
-                instant = messageInstant,
+                instant = bundle.messageInstant,
                 senderUserId = it.senderID,
                 senderClientId = it.senderClientID,
                 content = protoContent
@@ -117,32 +130,43 @@ internal class MLSMessageUnpackerImpl(
         )
     }
 
-    private suspend fun messageFromMLSMessage(
-        messageEvent: Event.Conversation.NewMLSMessage
-    ): Either<CoreFailure, List<DecryptedMessageBundle>> =
-        messageEvent.subconversationId?.let { subConversationId ->
-            subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
-                logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation", mapOf(
-                        "conversationId" to messageEvent.conversationId.toLogString(),
-                        "subConversationId" to subConversationId.toLogString(),
-                        "groupID" to groupID.toLogString()
-                    )
-                )
-                mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), groupID)
-            }
-        } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
+    private suspend fun messagesFromMLSGroupMessages(
+        event: Event.Conversation.MLSGroupMessages
+    ): Either<CoreFailure, DecryptedBatch> = conversationRepository.getConversationProtocolInfo(event.conversationId)
+        .flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation", mapOf(
-                        "conversationId" to messageEvent.conversationId.toLogString(),
+                    KaliumLogLevel.DEBUG,
+                    "Decrypting MLS for Conversation",
+                    mapOf(
+                        "conversationId" to event.conversationId.toLogString(),
                         "groupID" to protocolInfo.groupId.toLogString(),
                         "protocolInfo" to protocolInfo.toLogMap()
                     )
                 )
-                mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
+                mlsConversationRepository.decryptMessages(
+                    event.messages,
+                    protocolInfo.groupId
+                )
             } else {
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
+
+    private suspend fun messagesFromMLSSubGroupMessages(
+        event: Event.Conversation.MLSSubGroupMessages
+    ): Either<CoreFailure, DecryptedBatch?> =
+        subconversationRepository.getSubconversationInfo(event.conversationId, event.subConversationId)
+            ?.let { groupID ->
+                logger.logStructuredJson(
+                    KaliumLogLevel.DEBUG,
+                    "Decrypting MLS for SubConversation",
+                    mapOf(
+                        "conversationId" to event.conversationId.toLogString(),
+                        "subConversationId" to event.subConversationId.toLogString(),
+                        "groupID" to groupID.toLogString()
+                    )
+                )
+                mlsConversationRepository.decryptMessages(event.messages, groupID)
+            } ?: Either.Right(null) // TODO can we handle it
 }

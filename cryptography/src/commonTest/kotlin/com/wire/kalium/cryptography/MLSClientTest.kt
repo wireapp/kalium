@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -105,7 +106,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
         val keyMaterialCommit = bobArrangement.sendCommitBundleFlow.first()
 
-        val result = aliceClient.decryptMessage(welcomeBundle.groupId, keyMaterialCommit.first.commit)
+        val result = aliceClient.decryptMessage(welcomeBundle.groupId, keyMaterialCommit.first.commit,  Clock.System.now())
 
         assertNull(result.first().message)
     }
@@ -158,7 +159,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
         val applicationMessage = aliceClient.encryptMessage(welcomeBundle.groupId, PLAIN_TEXT.encodeToByteArray())
-        val plainMessage = bobClient.decryptMessage(welcomeBundle.groupId, applicationMessage).first().message
+        val plainMessage = bobClient.decryptMessage(welcomeBundle.groupId, applicationMessage,  Clock.System.now()).first().message
 
         assertEquals(PLAIN_TEXT, plainMessage?.decodeToString())
     }
@@ -223,7 +224,7 @@ class MLSClientTest : BaseMLSClientTest() {
         )
         val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
 
-        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).first().message)
+        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit,  Clock.System.now()).first().message)
     }
 
     @Test
@@ -261,7 +262,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientRemovalList = listOf(CAROL1.qualifiedClientId)
         bobClient.removeMember(welcomeBundle.groupId, clientRemovalList)
         val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
-        assertNull(aliceClient.decryptMessage(welcomeBundle.groupId, commit).first().message)
+        assertNull(aliceClient.decryptMessage(welcomeBundle.groupId, commit, Clock.System.now()).first().message)
     }
 
     @Test
@@ -311,7 +312,7 @@ class MLSClientTest : BaseMLSClientTest() {
         // and return an empty DecryptedMessage list.
 
         val decryptedBundlesResult = runCatching {
-            aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol)
+            aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol,  Clock.System.now())
         }
 
         // The exception should be caught internally, so from the caller's perspective we succeed with an empty result.
@@ -370,7 +371,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
 
         // Alice tries to decrypt the removeCarol commit first => out-of-order => should buffer
-        val removeResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol)
+        val removeResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol,  Clock.System.now())
         assertTrue(
             removeResult.isEmpty(),
             "Out-of-order remove commit should be buffered and return an empty list."
@@ -378,7 +379,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
         // Now Alice processes the missing 'addCarol' commit.
         // By processing the addCarol commit, MLS should also flush any previously buffered commits (the removeCarol).
-        val addResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitAddCarol)
+        val addResult = aliceClient.decryptMessage(MLS_CONVERSATION_ID, commitAddCarol,  Clock.System.now())
 
         val epoch = aliceArrangement.epochChangeFlow.first()
 
@@ -394,6 +395,110 @@ class MLSClientTest : BaseMLSClientTest() {
             "Epoch should be incremented after processing the 'addCarol' and 'removeCarol' commit."
         )
     }
+
+    @Test
+    fun givenBatchOfMessages_whenCallingDecryptMessages_weGetDecryptedBatch() = runTest {
+        val aliceArrangement = create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+
+        // Set up
+        bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+        bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(aliceClient.generateKeyPackages(1).first())
+        )
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
+
+        // Encrypt a few messages
+        val messages = (1..3).map { idx ->
+            val message = aliceClient.encryptMessage(welcomeBundle.groupId, "Test message $idx".encodeToByteArray())
+            EncryptedMessage(
+                content = message,
+                eventId = "event-$idx",
+                messageInstant = Clock.System.now()
+            )
+        }
+
+        // Decrypt batch
+        val decryptedBatch = bobClient.decryptMessages(welcomeBundle.groupId, messages)
+
+        // Assertions
+        assertEquals(3, decryptedBatch.messages.size)
+        decryptedBatch.messages.forEachIndexed { idx, messageBundle ->
+            assertTrue(messageBundle.message?.decodeToString()?.contains("Test message ${idx + 1}") == true)
+        }
+    }
+
+    @Test
+    fun givenDuplicateMessageInBatch_whenDecrypting_shouldIgnoreAndContinue() = runTest {
+        val aliceArrangement = create(
+            ALICE1,
+            ::createMLSClient,
+        )
+        val bobArrangement = create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+
+        // Set up conversation
+        bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+        bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(aliceClient.generateKeyPackages(1).first())
+        )
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
+
+        // Alice encrypts two messages
+        val message1 = aliceClient.encryptMessage(welcomeBundle.groupId, "First".encodeToByteArray())
+        val message2 = aliceClient.encryptMessage(welcomeBundle.groupId, "Second".encodeToByteArray())
+
+        val encryptedMessages = listOf(
+            EncryptedMessage(
+                content = message1,
+                eventId = "event-1",
+                messageInstant = Clock.System.now()
+            ),
+            EncryptedMessage(
+                content = message1, // <- intentionally duplicate!
+                eventId = "event-duplicate",
+                messageInstant = Clock.System.now()
+            ),
+            EncryptedMessage(
+                content = message2,
+                eventId = "event-2",
+                messageInstant = Clock.System.now()
+            )
+        )
+
+        // First decrypt call: decrypt all messages (no duplicates yet)
+        val firstDecrypt = bobClient.decryptMessages(welcomeBundle.groupId, encryptedMessages.take(1))
+        assertEquals(1, firstDecrypt.messages.size)
+
+        // Second decrypt call: batch with duplicate + new message
+        val secondDecrypt = bobClient.decryptMessages(welcomeBundle.groupId, encryptedMessages)
+
+        // Should decrypt only the second NEW message
+        assertEquals(1, secondDecrypt.messages.size)
+        assertTrue(secondDecrypt.messages.first().message?.decodeToString()?.contains("Second") == true)
+    }
+
+
+
 
     companion object {
         val externalSenderKey = ByteArray(32)
