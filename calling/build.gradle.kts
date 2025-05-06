@@ -55,18 +55,12 @@ kotlin {
                         }
                     })
                 })
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
 

@@ -37,9 +37,6 @@ kotlin {
                 // coroutines
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

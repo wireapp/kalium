@@ -43,9 +43,6 @@ kotlin {
                 implementation(libs.benAsherUUID)
                 implementation(libs.sqldelight.androidxPaging)
                 implementation(libs.wire.cells.sdk)
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {
@@ -56,7 +53,6 @@ kotlin {
                 // ktor test
                 implementation(libs.ktor.mock)
                 // mocks
-                implementation(libs.mockative.runtime)
                 implementation(libs.okio.test)
             }
         }

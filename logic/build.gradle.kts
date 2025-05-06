@@ -71,9 +71,6 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {
@@ -85,7 +82,6 @@ kotlin {
                 implementation(libs.turbine)
 
                 // mocking
-                implementation(libs.mockative.runtime)
                 implementation(libs.okio.test)
                 implementation(libs.settings.kmpTest)
             }

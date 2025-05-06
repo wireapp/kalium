@@ -69,9 +69,6 @@ kotlin {
 
                 // UUIDs
                 implementation(libs.benAsherUUID)
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

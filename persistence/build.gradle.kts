@@ -75,9 +75,6 @@ kotlin {
 
                 implementation(project(":util"))
                 api(project(":logger"))
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

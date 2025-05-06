@@ -67,9 +67,6 @@ kotlin {
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
         val commonTest by getting {

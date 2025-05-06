@@ -39,9 +39,6 @@ kotlin {
                 api(project(":logger"))
 
                 implementation(libs.coroutines.core)
-
-                // mocking
-                implementation(libs.mockative.runtime)
             }
         }
     }
