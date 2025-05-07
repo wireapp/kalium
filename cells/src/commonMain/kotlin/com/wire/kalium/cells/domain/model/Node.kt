@@ -25,11 +25,16 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 public sealed class Node {
     public abstract val name: String?
     public abstract val uuid: String
+    public abstract val userName: String?
+    public abstract val conversationName: String?
+    public abstract val modifiedTime: Long?
 
     public data class Folder(
         override val name: String?,
         override val uuid: String,
-        val contents: List<Node> // folder can has files and nested folders
+        override val userName: String? = null,
+        override val conversationName: String? = null,
+        override val modifiedTime: Long?,
     ) : Node()
 
     /**
@@ -39,6 +44,9 @@ public sealed class Node {
     public data class File(
         override val name: String?,
         override val uuid: String,
+        override val userName: String? = null,
+        override val conversationName: String? = null,
+        override val modifiedTime: Long? = null,
         val versionId: String,
         val mimeType: String,
         val remotePath: String?,
@@ -48,10 +56,7 @@ public sealed class Node {
         val contentUrl: String? = null,
         val previewUrl: String? = null,
         val metadata: AssetMetadata? = null,
-        val userName: String? = null,
-        val conversationName: String? = null,
         val publicLinkId: String? = null,
-        val lastModified: Long? = null,
     ) : Node()
 }
 
@@ -67,5 +72,11 @@ internal fun CellNode.toFileModel() = Node.File(
     previewUrl = previews.maxByOrNull { it.dimension }?.url,
     assetSize = size,
     publicLinkId = publicLinkId,
-    lastModified = modified?.let { it * 1000 },
+    modifiedTime = modified?.let { it * 1000 },
+)
+
+internal fun CellNode.toFolderModel() = Node.Folder(
+    uuid = uuid,
+    name = path.substringAfterLast("/"),
+    modifiedTime = modified?.let { it * 1000 },
 )

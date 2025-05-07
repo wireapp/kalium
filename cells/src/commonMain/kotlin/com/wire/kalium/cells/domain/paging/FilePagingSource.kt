@@ -32,9 +32,9 @@ internal class FilePagingSource(
     val conversationId: String?,
     val pageSize: Int,
     val getCellFilesUseCase: GetCellFilesUseCase,
-) : PagingSource<Int, Node.File>() {
+) : PagingSource<Int, Node>() {
 
-    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node.File> =
+    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node> =
         getCellFilesUseCase(
             conversationId = conversationId,
             query = query,
@@ -42,20 +42,20 @@ internal class FilePagingSource(
             offset = params.key ?: 0,
         ).fold(
             {
-                PagingSourceLoadResultError<Int, Node.File>(
+                PagingSourceLoadResultError<Int, Node>(
                     throwable = Exception("Failed to load files")
-                ) as PagingSourceLoadResult<Int, Node.File>
+                ) as PagingSourceLoadResult<Int, Node>
             },
             { files ->
                 PagingSourceLoadResultPage(
                     data = files.data,
                     prevKey = null,
                     nextKey = files.pagination?.nextOffset
-                ) as PagingSourceLoadResult<Int, Node.File>
+                ) as PagingSourceLoadResult<Int, Node>
             }
         )
 
-    override fun getRefreshKey(state: PagingState<Int, Node.File>): Int? {
+    override fun getRefreshKey(state: PagingState<Int, Node>): Int? {
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)
             anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)

@@ -36,3 +36,8 @@ public data class CellNode(
     val conversationId: String? = null,
     val publicLinkId: String? = null,
 )
+
+public enum class CellNodeType(public val value: String) {
+    FOLDER("COLLECTION"),
+    FILE("LEAF"),
+}

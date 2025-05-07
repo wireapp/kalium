@@ -28,7 +28,7 @@ public interface GetCellFilesPagedUseCase {
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
-    ): Flow<PagingData<Node.File>>
+    ): Flow<PagingData<Node>>
 }
 
 internal class GetCellFilesPagedUseCaseImpl(
@@ -42,7 +42,7 @@ internal class GetCellFilesPagedUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
-    ): Flow<PagingData<Node.File>> {
+    ): Flow<PagingData<Node>> {
         return Pager(
             config = PagingConfig(
                 pageSize = PAGE_SIZE
