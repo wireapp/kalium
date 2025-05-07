@@ -18,6 +18,8 @@
 
 import OnlyAffectedTestTask.TestTaskConfiguration
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -70,6 +72,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
         val tasksName = mutableListOf<String>()
         val hasToRunAllTests = hasToRunAllTests()
         project.childProjects.values
+            .filterMockativeIfNeeded()
             .filter { computeModulesPredicate(hasToRunAllTests, affectedModules.contains(it.name) && !ignoredModules.contains(it.name)) }
             .forEach { childProject ->
                 tasksName.addAll(childProject.tasks
@@ -83,6 +86,35 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
         tasksName.forEach(::runTargetTask)
     }
+
+    // Mockative 3 doesn't work with Android instrumented tests or iOS tests when mockative is used in multiple modules.
+    // https://github.com/mockative/mockative/issues/143
+    // Until it's fixed, we need to filter out the modules that use mockative dependency from running these tests.
+    private fun MutableCollection<Project>.filterMockativeIfNeeded() =
+        if (configuration == TestTaskConfiguration.ANDROID_INSTRUMENTED_TEST_TASK
+            || configuration == TestTaskConfiguration.IOS_TEST_TASK) {
+
+            fun Project.checkMockativeDependency(): Boolean = configurations.any { configuration ->
+                configuration.dependencies.any { dependency -> dependency.group == "io.mockative" }
+            }
+
+            val dependencyCheckMap: Map<Project, Boolean> = this.associateWith { it.checkMockativeDependency() }
+
+            fun Project.checkChildProjectDependencies() = configurations.any {
+                it.dependencies
+                    .filterIsInstance<DefaultProjectDependency>()
+                    .any {
+                        dependencyCheckMap[it.dependencyProject] ?: it.dependencyProject.checkMockativeDependency()
+                    }
+            }
+
+            filterNot {
+                println("Checking project ${it.name} direct: ${dependencyCheckMap[it]}, child: ${it.checkChildProjectDependencies()}")
+
+                dependencyCheckMap[it] == true || it.checkChildProjectDependencies()
+            }.toMutableList()
+        }
+        else this
 
     private fun runTargetTask(targetTask: String) {
         println("\uD83D\uDD27 Running tests on '$targetTask'.")
