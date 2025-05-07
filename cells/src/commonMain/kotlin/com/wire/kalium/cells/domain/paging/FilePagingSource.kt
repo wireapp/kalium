@@ -23,7 +23,7 @@ import app.cash.paging.PagingSourceLoadResult
 import app.cash.paging.PagingSourceLoadResultError
 import app.cash.paging.PagingSourceLoadResultPage
 import app.cash.paging.PagingState
-import com.wire.kalium.cells.domain.model.CellFile
+import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
 import com.wire.kalium.common.functional.fold
 
@@ -32,9 +32,9 @@ internal class FilePagingSource(
     val conversationId: String?,
     val pageSize: Int,
     val getCellFilesUseCase: GetCellFilesUseCase,
-) : PagingSource<Int, CellFile>() {
+) : PagingSource<Int, Node.File>() {
 
-    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, CellFile> =
+    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node.File> =
         getCellFilesUseCase(
             conversationId = conversationId,
             query = query,
@@ -42,20 +42,20 @@ internal class FilePagingSource(
             offset = params.key ?: 0,
         ).fold(
             {
-                PagingSourceLoadResultError<Int, CellFile>(
+                PagingSourceLoadResultError<Int, Node.File>(
                     throwable = Exception("Failed to load files")
-                ) as PagingSourceLoadResult<Int, CellFile>
+                ) as PagingSourceLoadResult<Int, Node.File>
             },
             { files ->
                 PagingSourceLoadResultPage(
                     data = files.data,
                     prevKey = null,
                     nextKey = files.pagination?.nextOffset
-                ) as PagingSourceLoadResult<Int, CellFile>
+                ) as PagingSourceLoadResult<Int, Node.File>
             }
         )
 
-    override fun getRefreshKey(state: PagingState<Int, CellFile>): Int? {
+    override fun getRefreshKey(state: PagingState<Int, Node.File>): Int? {
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)
             anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
