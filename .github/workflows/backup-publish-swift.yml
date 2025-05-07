@@ -1,0 +1,36 @@
+name: Backup / Publish Swift
+on:
+  push:
+    tags:
+      - "backup/*"
+
+jobs:
+  publish-swift:
+    if: github.repository == 'wireapp/kalium'
+    runs-on: macos-latest
+    steps:
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.1.0'
+
+      - uses: actions/checkout@v4
+      - name: Force fetch the tag to work around actions/checkout#290
+        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+      - name: Ensure the tag is signed
+        run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build XCFramework
+        run: ./gradlew :backup:assembleBackupReleaseXCFramework
+
+      - name: Create XCFramework Zip
+        working-directory: backup/build/XCFrameworks/release
+        run: zip -rXq KaliumBackup.xcframework.zip KaliumBackup.xcframework
+
+      - name: Upload XCFramework (GH Releases)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            backup/build/XCFrameworks/release/KaliumBackup.xcframework.zip
