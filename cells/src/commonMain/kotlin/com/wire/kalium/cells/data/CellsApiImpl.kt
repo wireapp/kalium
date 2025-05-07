@@ -78,7 +78,7 @@ internal class CellsApiImpl(
                         ),
                     ),
                     sortField = SORTED_BY,
-                    flags = listOf(RestFlag.WithPreSignedURLs)
+                    flags = listOf(RestFlag.WithVersionsAll, RestFlag.WithPreSignedURLs)
                 )
             )
         }.mapSuccess { response -> response.toDto() }
@@ -89,7 +89,9 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
-                    scope = RestLookupScope(listOf(RestNodeLocator(path = "$path/*"))),
+                    scope = RestLookupScope(
+                        root = RestNodeLocator(path = path),
+                    ),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
