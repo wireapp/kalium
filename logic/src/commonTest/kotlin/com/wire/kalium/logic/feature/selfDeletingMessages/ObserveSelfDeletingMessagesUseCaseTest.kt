@@ -31,7 +31,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -200,10 +199,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-        @Mock
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
+                val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         val observeSelfDeletionStatus: ObserveSelfDeletionTimerSettingsForConversationUseCase by lazy {

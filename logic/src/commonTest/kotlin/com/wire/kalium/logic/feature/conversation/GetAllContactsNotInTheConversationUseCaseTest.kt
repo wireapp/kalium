@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
@@ -117,11 +116,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                 )
             )
         }
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
 
         fun withSuccessFullGetUsersNotPartOfConversation(allContacts: List<OtherUser> = mockAllContacts): Arrangement {

@@ -37,7 +37,6 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -172,14 +171,8 @@ class KeyPackageRepositoryTest {
     }
 
     class Arrangement {
-
-        @Mock
         val keyPackageApi = mock(KeyPackageApi::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
 
         suspend fun withMLSClient() = apply {
@@ -255,8 +248,7 @@ class KeyPackageRepositoryTest {
                 )
             )
 
-            @Mock
-            val MLS_CLIENT = mock(MLSClient::class)
+                        val MLS_CLIENT = mock(MLSClient::class)
         }
     }
 }

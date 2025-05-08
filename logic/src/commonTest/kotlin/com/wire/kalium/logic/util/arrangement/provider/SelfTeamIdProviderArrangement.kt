@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 
@@ -33,7 +32,6 @@ internal interface SelfTeamIdProviderArrangement {
 }
 internal class SelfTeamIdProviderArrangementImpl : SelfTeamIdProviderArrangement {
 
-    @Mock
     override val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
     override suspend fun withTeamId(teamId: Either<StorageFailure, TeamId?>) {

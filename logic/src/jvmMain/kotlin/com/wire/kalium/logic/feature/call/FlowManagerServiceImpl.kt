@@ -29,23 +29,23 @@ actual class FlowManagerServiceImpl(
     appContext: PlatformContext,
     scope: CoroutineScope
 ) : FlowManagerService {
-    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
+    actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         kaliumLogger.w("setVideoPreview for JVM but not supported yet.")
     }
 
-    override suspend fun flipToFrontCamera(conversationId: ConversationId) {
+    actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun flipToBackCamera(conversationId: ConversationId) {
+    actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun setUIRotation(rotation: Int) {
+    actual override suspend fun setUIRotation(rotation: Int) {
         kaliumLogger.w("setUIRotation for JVM but not supported yet.")
     }
 
-    override suspend fun startFlowManager() {
+    actual override suspend fun startFlowManager() {
         kaliumLogger.w("FlowManager not fully supported on JVM.")
     }
 }

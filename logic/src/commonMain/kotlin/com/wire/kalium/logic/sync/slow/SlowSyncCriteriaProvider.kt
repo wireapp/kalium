@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.MissingRequirement
 import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.Ready
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -51,6 +52,7 @@ internal interface SyncCriteriaResolution {
  * Ingests multiple signals across the logic module
  * to signal if Sync should start or not.
  */
+@Mockable
 internal interface SlowSyncCriteriaProvider {
 
     /**

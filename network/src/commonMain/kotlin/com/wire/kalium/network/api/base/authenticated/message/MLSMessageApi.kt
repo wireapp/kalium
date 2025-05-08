@@ -20,8 +20,10 @@ package com.wire.kalium.network.api.base.authenticated.message
 
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 import kotlin.jvm.JvmInline
 
+@Mockable
 interface MLSMessageApi {
 
     /**

@@ -20,7 +20,9 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
+import io.mockative.Mockable
 
+@Mockable
 interface ClientConfig {
     fun deviceType(): DeviceType
     fun deviceModelName(): String
@@ -28,4 +30,9 @@ interface ClientConfig {
     fun clientType(): ClientType
 }
 
-expect class ClientConfigImpl : ClientConfig
+expect class ClientConfigImpl : ClientConfig {
+    override fun deviceType(): DeviceType
+    override fun deviceModelName(): String
+    override fun deviceName(): String
+    override fun clientType(): ClientType
+}

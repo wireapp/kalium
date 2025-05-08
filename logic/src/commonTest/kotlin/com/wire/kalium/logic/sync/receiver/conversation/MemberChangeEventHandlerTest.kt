@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -157,10 +156,7 @@ class MemberChangeEventHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         private val userRepository = mock(UserRepository::class)
 
         private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(conversationRepository)

@@ -25,7 +25,9 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import io.mockative.Mockable
 
+@Mockable
 internal interface ReceiptMessageHandler {
     suspend fun handle(
         message: Message.Signaling,

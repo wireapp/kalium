@@ -24,8 +24,10 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
+@Mockable
 interface GetAssetMessageTransferStatusUseCase {
     /**
      * Function that gets [AssetTransferStatus]. If status does not exist then it returns [AssetTransferStatus.NOT_DOWNLOADED]

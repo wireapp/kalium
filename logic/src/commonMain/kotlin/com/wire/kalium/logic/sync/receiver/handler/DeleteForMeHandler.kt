@@ -24,7 +24,9 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 
+@Mockable
 internal interface DeleteForMeHandler {
     suspend fun handle(
         message: Message.Signaling,

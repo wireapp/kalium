@@ -20,12 +20,14 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 /**
  * This use case will observe and return the list of conversation details for the current user.
  * @see ConversationDetails
  */
+@Mockable
 fun interface ObserveConversationListDetailsUseCase {
     suspend operator fun invoke(fromArchive: Boolean): Flow<List<ConversationDetails>>
 }

@@ -59,7 +59,7 @@ actual class MediaManagerServiceImpl(
         }
     }
 
-    override suspend fun startMediaManager() {
+    actual override suspend fun startMediaManager() {
         mediaManager.await()
     }
 
@@ -68,13 +68,13 @@ actual class MediaManagerServiceImpl(
         _isLoudSpeakerOnFlow.value = mediaManager.await().isLoudSpeakerOn
     }
 
-    override suspend fun turnLoudSpeakerOn() {
+    actual override suspend fun turnLoudSpeakerOn() {
         mediaManager.await().turnLoudSpeakerOn()
     }
 
-    override suspend fun turnLoudSpeakerOff() {
+    actual override suspend fun turnLoudSpeakerOff() {
         mediaManager.await().turnLoudSpeakerOff()
     }
 
-    override fun observeSpeaker(): Flow<Boolean> = isLoudSpeakerOnFlow
+    actual override fun observeSpeaker(): Flow<Boolean> = isLoudSpeakerOnFlow
 }

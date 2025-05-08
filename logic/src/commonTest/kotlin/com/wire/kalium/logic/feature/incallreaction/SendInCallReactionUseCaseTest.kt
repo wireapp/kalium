@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -40,7 +39,6 @@ import kotlin.test.Test
 
 class SendInCallReactionUseCaseTest {
 
-    @Mock
     val messageSender = mock(MessageSender::class)
 
     @Test
@@ -84,10 +82,8 @@ class SendInCallReactionUseCaseTest {
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {
-        @Mock
-        val messageSender = mock(MessageSender::class)
 
-        @Mock
+        val messageSender = mock(MessageSender::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         suspend fun withSendMessageSuccess() = apply {

@@ -34,7 +34,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -120,20 +119,10 @@ class LeaveSubconversationUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val conversationApi = mock(ConversationApi::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
-
-        @Mock
         val selfClientIdProvider = mock(CurrentClientIdProvider::class)
 
         suspend fun arrange() = this to LeaveSubconversationUseCaseImpl(

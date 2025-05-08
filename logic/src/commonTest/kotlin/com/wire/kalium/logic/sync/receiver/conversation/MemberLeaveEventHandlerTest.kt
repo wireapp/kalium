@@ -46,7 +46,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -389,19 +388,10 @@ class MemberLeaveEventHandlerTest {
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        @Mock
         val updateConversationClientsForCurrentCall = mock(UpdateConversationClientsForCurrentCallUseCase::class)
-
-        @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val conversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler

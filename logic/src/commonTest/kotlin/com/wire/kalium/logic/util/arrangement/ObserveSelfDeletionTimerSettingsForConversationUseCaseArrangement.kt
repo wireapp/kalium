@@ -20,7 +20,6 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -31,8 +30,7 @@ import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
-    @Mock
-    val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase
+        val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase
 
     suspend fun withConversationTimer(
         result: Flow<SelfDeletionTimer>,
@@ -43,8 +41,7 @@ interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
 
 open class ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl :
     ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
-    @Mock
-    override val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase =
+        override val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase =
         mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
     override suspend fun withConversationTimer(

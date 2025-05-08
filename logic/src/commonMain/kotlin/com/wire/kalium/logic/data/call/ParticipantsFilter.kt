@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
+import io.mockative.Mockable
 
+@Mockable
 interface ParticipantsFilter {
     fun otherParticipants(participants: List<Participant>, clientId: String): List<Participant>
     fun selfParticipant(participants: List<Participant>, userId: UserId, clientId: String): Participant

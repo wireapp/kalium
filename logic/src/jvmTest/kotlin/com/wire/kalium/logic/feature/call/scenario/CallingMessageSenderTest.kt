@@ -31,7 +31,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -249,13 +248,8 @@ class CallingMessageSenderTest {
 
     internal class Arrangement(private val testScope: CoroutineScope) {
 
-        @Mock
         val calling = mock(Calling::class)
-
-        @Mock
         var messageSender = mock(MessageSender::class)
-
-        @Mock
         val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         val handle = Handle(42)
@@ -297,7 +291,7 @@ class CallingMessageSenderTest {
             }.returns(Either.Left(StorageFailure.DataNotFound))
         }
 
-        suspend fun givenSendMessageInvokes(block: suspend () -> Either<CoreFailure, Unit>) = apply {
+        suspend fun givenSendMessageInvokes(block: suspend (args: Array<Any?>) -> Either<CoreFailure, Unit>) = apply {
             coEvery {
                 messageSender.sendMessage(any(), any())
             }.invokes(block)

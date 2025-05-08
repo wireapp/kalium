@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -89,14 +88,8 @@ class ObserveAllServicesUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val serviceRepository: ServiceRepository = mock(ServiceRepository::class)
-
-        @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         private val useCase: ObserveAllServicesUseCase = ObserveAllServicesUseCaseImpl(

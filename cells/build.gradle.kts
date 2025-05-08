@@ -18,8 +18,9 @@
 plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
-    alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -27,7 +28,7 @@ kaliumLibrary {
 }
 
 kotlin {
-    explicitApi()
+    explicitApiWarning() // explicitApi() throws errors for ksp-generated mockative classes
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -52,7 +53,6 @@ kotlin {
                 // ktor test
                 implementation(libs.ktor.mock)
                 // mocks
-                implementation(libs.mockative.runtime)
                 implementation(libs.okio.test)
             }
         }
@@ -76,12 +76,4 @@ kotlin {
             }
         }
     }
-}
-
-dependencies {
-    configurations
-        .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
-        .forEach {
-            add(it.name, libs.mockative.processor)
-        }
 }

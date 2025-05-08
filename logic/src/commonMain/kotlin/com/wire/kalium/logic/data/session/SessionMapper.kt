@@ -34,9 +34,11 @@ import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
+import io.mockative.Mockable
 import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface SessionMapper {
     fun toSessionDTO(authSession: AccountTokens): SessionDTO
     fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO

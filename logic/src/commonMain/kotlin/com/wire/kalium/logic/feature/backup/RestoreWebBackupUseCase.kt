@@ -44,6 +44,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import okio.Path
@@ -51,6 +52,7 @@ import okio.buffer
 import okio.use
 import kotlin.coroutines.cancellation.CancellationException
 
+@Mockable
 interface RestoreWebBackupUseCase {
 
     /**

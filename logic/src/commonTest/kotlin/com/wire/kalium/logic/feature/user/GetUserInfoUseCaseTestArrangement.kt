@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -33,11 +32,9 @@ import kotlinx.coroutines.flow.flowOf
 
 internal class GetUserInfoUseCaseTestArrangement {
 
-    @Mock
-    val userRepository: UserRepository = mock(UserRepository::class)
+        val userRepository: UserRepository = mock(UserRepository::class)
 
-    @Mock
-    val teamRepository: TeamRepository = mock(TeamRepository::class)
+        val teamRepository: TeamRepository = mock(TeamRepository::class)
 
     suspend fun withSuccessfulUserRetrieve(
         localUserPresent: Boolean = true,

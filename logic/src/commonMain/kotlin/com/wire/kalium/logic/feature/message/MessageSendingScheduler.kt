@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
+import io.mockative.Mockable
 
 /**
  * Responsible for [scheduleSendingOfPendingMessages].
  */
+@Mockable
 interface MessageSendingScheduler {
 
     /**

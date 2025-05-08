@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -90,10 +89,7 @@ class TypingIndicatorOutgoingRepositoryTest {
         }
 
     private class Arrangement {
-        @Mock
-        val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
-
-        @Mock
+                val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
         val typingIndicatorSenderHandler: TypingIndicatorSenderHandler = mock(TypingIndicatorSenderHandler::class)
 
         suspend fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {

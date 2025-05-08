@@ -48,7 +48,6 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -386,27 +385,14 @@ class TeamRepositoryTest {
     }
 
     private class Arrangement {
-        @Mock
-        val teamDAO = mock(TeamDAO::class)
-
-        @Mock
+                val teamDAO = mock(TeamDAO::class)
         val userDAO = mock(UserDAO::class)
 
         val teamMapper = MapperProvider.teamMapper()
-
-        @Mock
         val userConfigDAO = mock(UserConfigDAO::class)
-
-        @Mock
         val teamsApi = mock(TeamsApi::class)
-
-        @Mock
         val serviceDAO = mock(ServiceDAO::class)
-
-        @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
-
-        @Mock
         val legalHoldRequestHandler = mock(LegalHoldRequestHandler::class)
 
         val teamRepository: TeamRepository = TeamDataSource(

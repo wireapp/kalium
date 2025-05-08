@@ -29,9 +29,8 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.of
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -163,14 +162,9 @@ class CertificateRevocationListRepositoryTest {
 
     private class Arrangement {
 
-        @Mock
         val acmeApi = mock(ACMEApi::class)
-
-        @Mock
         val metadataDAO = mock(MetadataDAO::class)
-
-        @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(of<UserConfigRepository>())
 
         fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
 

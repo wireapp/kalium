@@ -31,7 +31,6 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -225,19 +224,12 @@ class UpdateApiVersionUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val sessionRepository: SessionRepository = mock(SessionRepository::class)
-
-        @Mock
+                val sessionRepository: SessionRepository = mock(SessionRepository::class)
         val tokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
 
         var serverConfigProviderCalledCount: Int = 0
             private set
-
-        @Mock
         val serverConfigRepository1: ServerConfigRepository = mock(ServerConfigRepository::class)
-
-        @Mock
         val serverConfigRepository2: ServerConfigRepository = mock(ServerConfigRepository::class)
 
         fun withProxyCredForUser(

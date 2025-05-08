@@ -27,7 +27,6 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -163,19 +162,10 @@ class KeyingMaterialsManagerTests {
 
     private class Arrangement {
 
-        @Mock
         val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val updateKeyingMaterialsUseCase = mock(UpdateKeyingMaterialsUseCase::class)
-
-        @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
 
         suspend fun withTimestampKeyCheck(hasPassed: Boolean) = apply {

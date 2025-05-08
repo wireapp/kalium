@@ -38,7 +38,9 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import io.mockative.Mockable
 
+@Mockable
 internal interface SessionEstablisher {
 
     /**

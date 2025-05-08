@@ -99,10 +99,10 @@ internal actual class GlobalWorkSchedulerImpl(
 
 internal actual class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
-    override val userId: UserId
+    actual override val userId: UserId
 ) : UserSessionWorkScheduler {
 
-    override fun scheduleSendingOfPendingMessages() {
+    actual override fun scheduleSendingOfPendingMessages() {
         val inputData = WrapperWorkerFactory.workData(PendingMessagesSenderWorker::class, userId)
 
         val connectedConstraint = Constraints.Builder()
@@ -122,7 +122,7 @@ internal actual class UserSessionWorkSchedulerImpl(
         )
     }
 
-    override fun cancelScheduledSendingOfPendingMessages() {
+    actual override fun cancelScheduledSendingOfPendingMessages() {
         WorkManager.getInstance(appContext).cancelUniqueWork(WORK_NAME_PREFIX_PER_USER + userId.value)
     }
 

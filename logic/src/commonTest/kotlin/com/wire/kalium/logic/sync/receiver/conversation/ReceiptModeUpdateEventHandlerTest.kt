@@ -25,7 +25,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -106,11 +105,7 @@ class ReceiptModeUpdateEventHandlerTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val conversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
 
         private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler = ReceiptModeUpdateEventHandlerImpl(

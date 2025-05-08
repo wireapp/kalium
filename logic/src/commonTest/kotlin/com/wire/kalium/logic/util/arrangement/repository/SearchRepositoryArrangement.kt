@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -34,7 +33,7 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface SearchRepositoryArrangement {
-    @Mock
+
     val searchUserRepository: SearchUserRepository
 
     suspend fun withSearchUserRemoteDirectory(
@@ -61,7 +60,7 @@ internal interface SearchRepositoryArrangement {
 }
 
 internal class SearchRepositoryArrangementImpl : SearchRepositoryArrangement {
-    @Mock
+
     override val searchUserRepository: SearchUserRepository = mock(SearchUserRepository::class)
 
     override suspend fun withSearchUserRemoteDirectory(

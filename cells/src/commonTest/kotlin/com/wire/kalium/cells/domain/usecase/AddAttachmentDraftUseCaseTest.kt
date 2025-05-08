@@ -26,7 +26,6 @@ import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -151,13 +150,8 @@ class AddAttachmentDraftUseCaseTest {
 
     private class Arrangement(val useCaseScope: CoroutineScope = TestScope()) {
 
-        @Mock
         val uploadManager = mock(CellUploadManager::class)
-
-        @Mock
         val conversationRepository = mock(CellConversationRepository::class)
-
-        @Mock
         val repository = mock(MessageAttachmentDraftRepository::class)
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()

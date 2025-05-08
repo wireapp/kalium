@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,6 +47,7 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * Persist migrated messages from old datasource
  */
+@Mockable
 interface PersistMigratedMessagesUseCase {
     suspend operator fun invoke(
         messages: List<MigratedMessage>,

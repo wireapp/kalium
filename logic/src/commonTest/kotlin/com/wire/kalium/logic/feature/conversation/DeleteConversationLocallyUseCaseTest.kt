@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -91,10 +90,8 @@ class DeleteConversationLocallyUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
 
-        @Mock
+        val conversationRepository = mock(ConversationRepository::class)
         val clearConversationContent = mock(ClearConversationContentUseCase::class)
 
         suspend fun withDeleteLocalConversation(result: Either<CoreFailure, Unit>) = apply {

@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.PROTEUS_PROTOCOL_INFO
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -117,13 +116,8 @@ class IsFederationSearchAllowedUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
-
-        @Mock
         val getDefaultProtocol = mock(GetDefaultProtocolUseCase::class)
-
-        @Mock
         val getConversationProtocolInfo = mock(GetConversationProtocolInfoUseCase::class)
 
         private val MLS_PUBLIC_KEY = MLSPublicKeys(

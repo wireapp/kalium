@@ -58,7 +58,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Matchers
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -496,25 +495,13 @@ class ConnectionRepositoryTest {
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
-        @Mock
+
         val conversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val connectionDAO = mock(ConnectionDAO::class)
-
-        @Mock
         val connectionApi = mock(ConnectionApi::class)
-
-        @Mock
         val userDetailsApi = mock(UserDetailsApi::class)
-
-        @Mock
         val userDAO = mock(UserDAO::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         val connectionRepository = ConnectionDataSource(

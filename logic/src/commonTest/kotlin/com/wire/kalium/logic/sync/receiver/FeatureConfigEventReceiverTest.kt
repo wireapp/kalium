@@ -43,7 +43,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -317,10 +316,7 @@ class FeatureConfigEventReceiverTest {
 
         var kaliumConfigs = KaliumConfigs()
 
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
 
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {

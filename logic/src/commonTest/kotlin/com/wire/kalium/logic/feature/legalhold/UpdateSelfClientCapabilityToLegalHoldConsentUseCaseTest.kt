@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -102,16 +101,9 @@ class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val clientRemoteRepository: ClientRemoteRepository = mock(ClientRemoteRepository::class)
-
-        @Mock
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val selfClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
         val useCase: UpdateSelfClientCapabilityToLegalHoldConsentUseCase by lazy {

@@ -41,7 +41,6 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -319,16 +318,9 @@ class ObserveE2EIRequiredUseCaseTest {
     }
 
     private class Arrangement(testDispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()) {
-        @Mock
-        val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
+                val userConfigRepository = mock(UserConfigRepository::class)
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val e2eiCertificate = mock(GetMLSClientIdentityUseCase::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         private var observeMLSEnabledUseCase: ObserveE2EIRequiredUseCase =

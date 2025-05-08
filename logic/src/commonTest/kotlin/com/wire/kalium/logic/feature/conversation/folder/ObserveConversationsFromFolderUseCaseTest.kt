@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.conversation.folder
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.framework.TestConversationDetails
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -76,7 +75,7 @@ class ObserveConversationsFromFolderUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationFolderRepository = mock(ConversationFolderRepository::class)
 
         private val observeConversationsFromFolderUseCase = ObserveConversationsFromFolderUseCaseImpl(

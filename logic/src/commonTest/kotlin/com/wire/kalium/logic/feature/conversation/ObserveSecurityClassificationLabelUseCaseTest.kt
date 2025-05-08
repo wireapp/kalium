@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -139,13 +138,9 @@ class ObserveSecurityClassificationLabelUseCaseTest {
         }
 
     private class Arrangement {
-        @Mock
+
         val observeConversationMembersUseCase = mock(ObserveConversationMembersUseCase::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(

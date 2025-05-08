@@ -19,8 +19,10 @@ package com.wire.kalium.persistence.dao.conversation.folder
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
+@Mockable
 interface ConversationFolderDAO {
     suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity>
     suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>>

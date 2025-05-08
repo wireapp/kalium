@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -91,8 +90,6 @@ class ObserveAssetStatusesUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val messageRepository = mock(MessageRepository::class)
 
         suspend fun withAssetStatuses(result: Either<StorageFailure, List<MessageAssetStatus>>) = apply {

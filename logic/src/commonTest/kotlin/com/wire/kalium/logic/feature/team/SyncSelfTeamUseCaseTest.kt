@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -185,11 +184,7 @@ class SyncSelfTeamUseCaseTest {
     private class Arrangement {
 
         var fetchTeamMemberLimit: Int? = null
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val teamRepository = mock(TeamRepository::class)
 
         private lateinit var syncSelfTeamUseCase: SyncSelfTeamUseCase

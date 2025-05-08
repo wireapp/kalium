@@ -33,7 +33,6 @@ import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -50,13 +49,8 @@ import org.junit.Test
 
 class OnCloseCallTest {
 
-    @Mock
     val callRepository = mock(CallRepository::class)
-
-    @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
-
-    @Mock
     val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
 
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)

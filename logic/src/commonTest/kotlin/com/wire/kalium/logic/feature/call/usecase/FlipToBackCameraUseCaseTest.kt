@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.FlowManagerService
-import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -31,7 +30,6 @@ import kotlin.test.Test
 
 class FlipToBackCameraUseCaseTest {
 
-    @Mock
     private val flowManagerService = mock(FlowManagerService::class)
 
     private lateinit var flipToBackCamera: FlipToBackCameraUseCase

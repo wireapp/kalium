@@ -23,7 +23,9 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageAttachment
+import io.mockative.Mockable
 
+@Mockable
 public interface PublishAttachmentsUseCase {
     /**
      * For TESTING purposes only.

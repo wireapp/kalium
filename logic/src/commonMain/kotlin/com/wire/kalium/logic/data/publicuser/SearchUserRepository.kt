@@ -45,7 +45,9 @@ import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import io.mockative.Mockable
 
+@Mockable
 internal interface SearchUserRepository {
     suspend fun searchUserRemoteDirectory(
         searchQuery: String,

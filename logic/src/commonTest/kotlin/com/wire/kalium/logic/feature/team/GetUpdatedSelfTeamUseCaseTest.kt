@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -92,10 +91,7 @@ class GetUpdatedSelfTeamUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
+                val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
         suspend fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {

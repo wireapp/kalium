@@ -34,8 +34,10 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.Url
+import io.mockative.Mockable
 import kotlinx.serialization.SerializationException
 
+@Mockable
 interface ServerConfigApi {
     suspend fun fetchServerConfig(serverConfigUrl: String): NetworkResponse<ServerConfigDTO.Links>
 }

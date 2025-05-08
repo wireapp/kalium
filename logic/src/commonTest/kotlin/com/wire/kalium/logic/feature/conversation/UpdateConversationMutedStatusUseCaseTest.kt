@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -37,7 +36,6 @@ import kotlin.test.assertEquals
 
 class UpdateConversationMutedStatusUseCaseTest {
 
-    @Mock
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     private lateinit var updateConversationMutedStatus: UpdateConversationMutedStatusUseCase

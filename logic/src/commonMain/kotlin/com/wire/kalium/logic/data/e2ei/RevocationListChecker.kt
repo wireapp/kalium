@@ -28,10 +28,12 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 
 /**
  * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.
  */
+@Mockable
 internal interface RevocationListChecker {
     suspend fun check(url: String): Either<CoreFailure, ULong?>
 }

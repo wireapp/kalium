@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -40,13 +39,8 @@ import kotlin.test.Test
 
 class ConversationClientsInCallUpdaterTest {
 
-    @Mock
     private val callManager = mock(CallManager::class)
-
-    @Mock
     private val conversationRepository = mock(ConversationRepository::class)
-
-    @Mock
     private val federatedIdMapper = mock(FederatedIdMapper::class)
 
     private lateinit var conversationClientsInCallUpdater: ConversationClientsInCallUpdater

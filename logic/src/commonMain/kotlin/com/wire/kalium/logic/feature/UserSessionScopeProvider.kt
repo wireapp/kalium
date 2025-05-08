@@ -22,7 +22,9 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import io.mockative.Mockable
 
+@Mockable
 interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
     fun getOrCreate(userId: UserId): UserSessionScope
@@ -58,4 +60,9 @@ abstract class UserSessionScopeProviderCommon(
     abstract fun create(userId: UserId): UserSessionScope
 }
 
-internal expect class UserSessionScopeProviderImpl : UserSessionScopeProviderCommon
+internal expect class UserSessionScopeProviderImpl : UserSessionScopeProvider {
+    override fun get(userId: UserId): UserSessionScope?
+    override fun getOrCreate(userId: UserId): UserSessionScope
+    override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
+    override suspend fun delete(userId: UserId)
+}

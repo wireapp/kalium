@@ -33,7 +33,6 @@ import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -51,14 +50,11 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountRepositoryTest {
-    @Mock
-    private val registerApi: RegisterApi = mock(RegisterApi::class)
+        private val registerApi: RegisterApi = mock(RegisterApi::class)
 
-    @Mock
-    private val idMapper = mock(IdMapper::class)
+        private val idMapper = mock(IdMapper::class)
 
-    @Mock
-    private val sessionMapper = mock(SessionMapper::class)
+        private val sessionMapper = mock(SessionMapper::class)
 
     private lateinit var registerAccountRepository: RegisterAccountRepository
 

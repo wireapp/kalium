@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -49,8 +48,6 @@ class RemoveMessageDraftUseCaseTest {
     }
 
     private inner class Arrangement {
-
-        @Mock
         val messageDraftRepository: MessageDraftRepository = mock(MessageDraftRepository::class)
 
         private val removeMessageDraft by lazy {

@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -120,7 +119,6 @@ class ObserveLoginContextUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val serverConfigRepository: CustomServerConfigRepository = mock(CustomServerConfigRepository::class)
 
         suspend fun withObserveServerConfigByLinks(result: Flow<Either<NetworkFailure, ServerConfig>>) = apply {

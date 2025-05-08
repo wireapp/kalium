@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.util.isPositiveNotNull
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
@@ -36,6 +37,7 @@ import kotlinx.coroutines.withContext
 /**
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]
  */
+@Mockable
 interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
     /**
      * @param conversationId the conversation id to observe

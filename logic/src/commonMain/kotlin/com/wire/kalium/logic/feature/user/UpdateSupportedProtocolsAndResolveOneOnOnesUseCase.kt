@@ -21,12 +21,14 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import io.mockative.Mockable
 
 /**
  * Update self supported protocols, and if the supported protocols
  * did change we also resolve the active protocol for all one-on-one
  * conversations.
  */
+@Mockable
 interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 
     /**

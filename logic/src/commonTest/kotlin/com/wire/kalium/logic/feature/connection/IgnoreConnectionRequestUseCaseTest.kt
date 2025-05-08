@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -39,7 +38,6 @@ import kotlin.test.assertEquals
 
 class IgnoreConnectionRequestUseCaseTest {
 
-    @Mock
     private val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
     lateinit var ignoreConnectionRequestUseCase: IgnoreConnectionRequestUseCase

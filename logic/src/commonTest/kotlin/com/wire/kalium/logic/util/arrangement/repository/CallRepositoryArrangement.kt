@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.doesNothing
@@ -45,7 +44,6 @@ internal interface CallRepositoryArrangement {
 
 internal open class CallRepositoryArrangementImpl : CallRepositoryArrangement {
 
-    @Mock
     override val callRepository: CallRepository = mock(CallRepository::class)
 
     override suspend fun withEstablishedCallsFlow(calls: List<Call>) {

@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -73,7 +72,7 @@ class GetDefaultProtocolUseCaseTest {
     }
 
     internal class GetDefaultProtocolUseCaseTestArrangement {
-        @Mock
+
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
         val useCase = GetDefaultProtocolUseCaseImpl(

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
-import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -36,11 +35,9 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class MemberMapperTest {
 
-    @Mock
-    val idMapper = mock(IdMapper::class)
+        val idMapper = mock(IdMapper::class)
 
-    @Mock
-    private val roleMapper: ConversationRoleMapper = mock(ConversationRoleMapper::class)
+        private val roleMapper: ConversationRoleMapper = mock(ConversationRoleMapper::class)
 
     private lateinit var memberMapper: MemberMapper
 

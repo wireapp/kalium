@@ -23,7 +23,6 @@ import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -67,7 +66,7 @@ class IsFileSharingEnabledUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
         val isFileSharingEnabledUseCase = IsFileSharingEnabledUseCaseImpl(userConfigRepository)

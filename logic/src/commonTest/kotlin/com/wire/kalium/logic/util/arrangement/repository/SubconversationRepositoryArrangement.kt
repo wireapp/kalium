@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -70,7 +69,6 @@ internal interface SubconversationRepositoryArrangement {
 
 internal class SubconversationRepositoryArrangementImpl : SubconversationRepositoryArrangement {
 
-    @Mock
     override val subconversationRepository: SubconversationRepository = mock(SubconversationRepository::class)
 
     override suspend fun withInsertSubconversation(

@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -43,6 +42,6 @@ internal interface CodeUpdatedHandlerArrangement {
 }
 
 internal class CodeUpdatedHandlerArrangementImpl : CodeUpdatedHandlerArrangement {
-    @Mock
+
     override val codeUpdatedHandler = mock(CodeUpdatedHandler::class)
 }

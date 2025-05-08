@@ -29,7 +29,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.message.KaliumPager
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
@@ -81,16 +80,10 @@ class ConversationRepositoryExtensionsTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationDaoExtensions: ConversationExtensions = mock(ConversationExtensions::class)
-
-        @Mock
         private val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         private val conversationMapper: ConversationMapper = mock(ConversationMapper::class)
-
-        @Mock
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
         private val conversationRepositoryExtensions: ConversationRepositoryExtensions by lazy {
             ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)

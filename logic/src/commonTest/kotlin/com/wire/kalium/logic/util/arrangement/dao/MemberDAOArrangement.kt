@@ -21,7 +21,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -32,8 +31,7 @@ import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 interface MemberDAOArrangement {
-    @Mock
-    val memberDAO: MemberDAO
+        val memberDAO: MemberDAO
 
     suspend fun withUpdateOrInsertOneOnOneMemberSuccess(
         member: Matcher<MemberEntity> = AnyMatcher(valueOf()),
@@ -82,8 +80,7 @@ interface MemberDAOArrangement {
 }
 
 class MemberDAOArrangementImpl : MemberDAOArrangement {
-    @Mock
-    override val memberDAO: MemberDAO = mock(MemberDAO::class)
+        override val memberDAO: MemberDAO = mock(MemberDAO::class)
 
     override suspend fun withUpdateOrInsertOneOnOneMemberSuccess(
         member: Matcher<MemberEntity>,

@@ -36,7 +36,6 @@ import com.wire.kalium.cryptography.MLSCiphersuite
 import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -156,23 +155,11 @@ class RegisterMLSClientUseCaseTest {
         }
 
     private class Arrangement {
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         var mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val keyPackageRepository = mock(KeyPackageRepository::class)
-
-        @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {

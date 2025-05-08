@@ -28,7 +28,9 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 
+@Mockable
 internal interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>
 
 internal class UserPropertiesEventReceiverImpl internal constructor(

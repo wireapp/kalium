@@ -17,9 +17,12 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import io.mockative.Mockable
+
 /**
  * This use case deletes ephemeral [Message] that have an end date set and it has passed current time
  */
+@Mockable
 interface DeleteEphemeralMessagesAfterEndDateUseCase {
     suspend operator fun invoke()
 }

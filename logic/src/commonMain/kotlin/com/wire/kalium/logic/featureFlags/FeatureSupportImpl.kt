@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.featureFlags
 
+import io.mockative.Mockable
+
+@Mockable
 interface FeatureSupport {
     val isMLSSupported: Boolean
 }

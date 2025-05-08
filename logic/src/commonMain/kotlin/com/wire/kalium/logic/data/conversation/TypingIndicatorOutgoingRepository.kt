@@ -21,7 +21,9 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.common.functional.Either
+import io.mockative.Mockable
 
+@Mockable
 internal interface TypingIndicatorOutgoingRepository {
     suspend fun sendTypingIndicatorStatus(
         conversationId: ConversationId,

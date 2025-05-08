@@ -38,7 +38,6 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -60,20 +59,15 @@ import kotlin.test.assertTrue
 
 class MessageEnvelopeCreatorTest {
 
-    @Mock
-    private val proteusClient = mock(ProteusClient::class)
+        private val proteusClient = mock(ProteusClient::class)
 
-    @Mock
-    private val proteusClientProvider = mock(ProteusClientProvider::class)
+        private val proteusClientProvider = mock(ProteusClientProvider::class)
 
-    @Mock
-    private val protoContentMapper = mock(ProtoContentMapper::class)
+        private val protoContentMapper = mock(ProtoContentMapper::class)
 
-    @Mock
-    private val conversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository = mock(ConversationRepository::class)
 
-    @Mock
-    private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
+        private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
 
     private lateinit var messageEnvelopeCreator: MessageEnvelopeCreator
 

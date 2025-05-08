@@ -27,7 +27,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -114,10 +113,7 @@ class PersistMessageUseCaseTest {
         }
 
     private class Arrangement {
-        @Mock
-        val messageRepository = mock(MessageRepository::class)
-
-        @Mock
+                val messageRepository = mock(MessageRepository::class)
         val notificationEventsManager = mock(NotificationEventsManager::class)
 
         fun arrange() = this to PersistMessageUseCaseImpl(

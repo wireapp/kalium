@@ -30,7 +30,6 @@ import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegi
 import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -43,10 +42,7 @@ import kotlin.test.Test
 
 class LoginRepositoryTest {
 
-    @Mock
     val loginApi = mock(LoginApi::class)
-
-    @Mock
     val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
 
     private lateinit var loginRepository: LoginRepository
@@ -120,11 +116,7 @@ class LoginRepositoryTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val loginApi = mock(LoginApi::class)
-
-        @Mock
         val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
 
         suspend fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {

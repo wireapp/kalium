@@ -34,7 +34,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.receipt.DetailedReceiptEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
@@ -182,14 +181,8 @@ class ReceiptsMapperTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val availabilityStatusMapper = mock(AvailabilityStatusMapper::class)
-
-        @Mock
         val connectionStateMapper = mock(ConnectionStateMapper::class)
-
-        @Mock
         val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
 
         fun withDomainUserTypeStandard() = apply {

@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -119,20 +118,10 @@ class SendEditTextMessageUseCaseTest {
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-
-        @Mock
         val messageRepository = mock(MessageRepository::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         suspend fun withSendMessageSuccess() = apply {

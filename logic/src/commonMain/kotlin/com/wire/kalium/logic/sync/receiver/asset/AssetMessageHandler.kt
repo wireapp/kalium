@@ -30,7 +30,9 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
+import io.mockative.Mockable
 
+@Mockable
 internal interface AssetMessageHandler {
     suspend fun handle(message: Message.Regular)
 }

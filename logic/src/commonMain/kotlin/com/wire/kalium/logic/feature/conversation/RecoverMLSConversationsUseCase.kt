@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 
 sealed class RecoverMLSConversationsResult {
     data object Success : RecoverMLSConversationsResult()
@@ -43,6 +44,7 @@ sealed class RecoverMLSConversationsResult {
  * Iterate over all MLS Established conversations after 404 sync error and
  * check for out of sync epochs, if out of sync then it tries to re-join.
  */
+@Mockable
 internal interface RecoverMLSConversationsUseCase {
     suspend operator fun invoke(): RecoverMLSConversationsResult
 }
