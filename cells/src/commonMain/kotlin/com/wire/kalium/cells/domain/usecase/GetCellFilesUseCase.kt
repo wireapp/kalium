@@ -22,9 +22,9 @@ import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNodeType
-import com.wire.kalium.cells.domain.model.Nodeimport com.wire.kalium.cells.domain.model.PaginatedList
+import com.wire.kalium.cells.domain.model.Node
+import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.toFileModel
-import com.wire.kalium.cells.domain.model.toFolderModel
 import com.wire.kalium.cells.domain.model.toFolderModel
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
