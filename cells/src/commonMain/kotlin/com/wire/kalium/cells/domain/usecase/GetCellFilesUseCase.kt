@@ -22,14 +22,14 @@ import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNodeType
-import com.wire.kalium.cells.domain.model.Node
+import com.wire.kalium.cells.domain.model.Nodeimport com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.toFileModel
+import com.wire.kalium.cells.domain.model.toFolderModel
 import com.wire.kalium.cells.domain.model.toFolderModel
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.message.CellAssetContent
 
 public interface GetCellFilesUseCase {
@@ -45,7 +45,7 @@ public interface GetCellFilesUseCase {
         query: String,
         limit: Int = 100,
         offset: Int = 0
-    ): Either<CoreFailure, List<Node>>
+    ): Either<CoreFailure, PaginatedList<Node>>
 }
 
 internal class GetCellFilesUseCaseImpl(
@@ -60,7 +60,7 @@ internal class GetCellFilesUseCaseImpl(
         query: String,
         limit: Int,
         offset: Int
-    ): Either<CoreFailure, List<Node>> {
+    ): Either<CoreFailure, PaginatedList<Node>> {
 
         // Collect all data required to show the file
         val userNames = usersRepository.getUserNames().getOrElse(emptyList())
@@ -69,25 +69,28 @@ internal class GetCellFilesUseCaseImpl(
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
         return cellsRepository.getFiles(conversationId, query, limit, offset)
-            .flatMap { nodes ->
-                nodes.asSequence()
-                    .filterNot { it.isDraft }
-                    .map { node ->
-                        if (node.type == CellNodeType.FOLDER.value) {
-                            node.toFolderModel().copy(
-                                userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
-                                conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                            )
-                        } else {
-                            val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
-                            node.toFileModel().copy(
-                                localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
-                                metadata = attachment?.metadata,
-                                userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
-                                conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                            )
-                        }
-                    }.toList().right()
+            .map { nodes ->
+                PaginatedList(
+                    data = nodes.data.asSequence()
+                        .filterNot { it.isDraft }
+                        .map { node ->
+                            if (node.type == CellNodeType.FOLDER.value) {
+                                node.toFolderModel().copy(
+                                    userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
+                                    conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                                )
+                            } else {
+                                val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
+                                node.toFileModel().copy(
+                                    localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
+                                    metadata = attachment?.metadata,
+                                    userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
+                                    conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                                )
+                            }
+                        }.toList(),
+                    pagination = nodes.pagination
+                )
             }
     }
 }

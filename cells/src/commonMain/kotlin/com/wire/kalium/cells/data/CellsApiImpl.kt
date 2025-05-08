@@ -78,7 +78,8 @@ internal class CellsApiImpl(
                         ),
                     ),
                     sortField = SORTED_BY,
-                    flags = listOf(RestFlag.WithVersionsAll, RestFlag.WithPreSignedURLs)
+                    sortDirDesc = true,
+                    flags = listOf(RestFlag.WithPreSignedURLs)
                 )
             )
         }.mapSuccess { response -> response.toDto() }
