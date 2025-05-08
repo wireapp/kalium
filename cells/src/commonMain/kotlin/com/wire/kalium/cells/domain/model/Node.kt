@@ -75,6 +75,7 @@ internal fun CellNode.toFileModel() = Node.File(
     modifiedTime = modified?.let { it * 1000 },
 )
 
+@Suppress("MagicNumber")
 internal fun CellNode.toFolderModel() = Node.Folder(
     uuid = uuid,
     name = path.substringAfterLast("/"),
