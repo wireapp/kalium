@@ -22,6 +22,7 @@ import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
@@ -67,7 +68,7 @@ class GetNodesUseCaseTest {
         )
 
         assertTrue(result.isRight())
-        assertTrue(result.getOrNull()?.data?.all { it.localPath == "local_path" } == true)
+        assertTrue(result.getOrNull()?.data?.all { (it as Node.File).localPath == "local_path" } == true)
     }
 
     @Test
@@ -82,7 +83,7 @@ class GetNodesUseCaseTest {
         )
 
         assertTrue(result.isRight())
-        assertTrue(result.getOrNull()?.data?.all { it.metadata is AssetContent.AssetMetadata.Image } == true)
+        assertTrue(result.getOrNull()?.data?.all { (it as Node.File).metadata is AssetContent.AssetMetadata.Image } == true)
     }
 
     @Test
