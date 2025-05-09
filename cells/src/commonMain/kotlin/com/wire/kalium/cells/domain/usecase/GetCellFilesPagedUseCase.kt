@@ -32,7 +32,7 @@ public interface GetCellFilesPagedUseCase {
 }
 
 internal class GetCellFilesPagedUseCaseImpl(
-    private val getCellFilesUseCase: GetCellFilesUseCase,
+    private val getNodesUseCase: GetNodesUseCase,
 ) : GetCellFilesPagedUseCase {
 
     private companion object {
@@ -52,7 +52,7 @@ internal class GetCellFilesPagedUseCaseImpl(
                     query = query,
                     pageSize = PAGE_SIZE,
                     conversationId = conversationId,
-                    getCellFilesUseCase = getCellFilesUseCase
+                    getNodesUseCase = getNodesUseCase
                 )
             }
         ).flow

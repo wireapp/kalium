@@ -38,7 +38,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class GetCellFilesUseCaseTest {
+class GetNodesUseCaseTest {
 
     @Test
     fun givenSuccessResponse_whenUseCaseInvoked_thenDraftsAreFiltered() = runTest {
@@ -129,9 +129,9 @@ class GetCellFilesUseCaseTest {
         @Mock
         val usersRepository = mock(CellUsersRepository::class)
 
-        suspend fun arrange(): Pair<Arrangement, GetCellFilesUseCase> {
+        suspend fun arrange(): Pair<Arrangement, GetNodesUseCase> {
 
-            coEvery { cellsRepository.getFiles(any(), any(), any(), any()) }.returns(
+            coEvery { cellsRepository.getNodes(any(), any(), any(), any()) }.returns(
                 PaginatedList(
                     data = testNodes,
                     pagination = null,
@@ -146,7 +146,7 @@ class GetCellFilesUseCaseTest {
 
             coEvery { attachmentsRepository.getStandaloneAssetPaths() }.returns(testAssetPaths.right())
 
-            return this to GetCellFilesUseCaseImpl(
+            return this to GetNodesUseCaseImpl(
                 cellsRepository = cellsRepository,
                 conversationRepository = conversationRepository,
                 attachmentsRepository = attachmentsRepository,
