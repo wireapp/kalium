@@ -39,7 +39,7 @@ import okio.SYSTEM
  * transfer status is set to NOT_FOUND.
  */
 public interface DeleteCellAssetUseCase {
-    public suspend operator fun invoke(assetId: String, localPath: String?): Either<CoreFailure, Unit>
+        public suspend operator fun invoke(assetId: String, localPath: String?): Either<CoreFailure, Unit>
 }
 
 internal class DeleteCellAssetUseCaseImpl(

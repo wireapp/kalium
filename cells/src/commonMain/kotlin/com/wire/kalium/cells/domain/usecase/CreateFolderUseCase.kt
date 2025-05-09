@@ -17,25 +17,19 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import androidx.paging.PagingData
-import com.wire.kalium.cells.domain.model.Node
-import kotlinx.coroutines.flow.Flow
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 
-public interface GetPaginatedFilesFlowUseCase {
-    public suspend operator fun invoke(
-        conversationId: String?,
-        query: String,
-    ): Flow<PagingData<Node>>
+public interface CreateFolderUseCase {
+    public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
 }
 
-internal class GetPaginatedFilesFlowUseCaseImpl(
-    private val getCellFilesUseCase: GetCellFilesPagedUseCase,
-) : GetPaginatedFilesFlowUseCase {
-
-    override suspend operator fun invoke(
-        conversationId: String?,
-        query: String,
-    ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query)
+internal class CreateFolderUseCaseImpl(
+    private val cellsRepository: CellsRepository,
+) : CreateFolderUseCase {
+    override suspend fun invoke(path: String): Either<CoreFailure, Unit> {
+        return cellsRepository.createFolder(path).map { }
     }
 }
