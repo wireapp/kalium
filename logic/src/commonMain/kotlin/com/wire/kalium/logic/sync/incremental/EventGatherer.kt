@@ -91,33 +91,27 @@ internal class EventGathererImpl(
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
-        // todo (ym) improve readability and reusage of this code
+        /**
+         * Fetches and emits live events based on whether the client supports async notifications.
+         * Throws [KaliumSyncException] if event retrieval fails.
+         */
         isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
-            when {
-                isAsyncNotifications -> {
-                    eventRepository.liveEvents()
-                        .onSuccess { webSocketEventFlow ->
-                            emitEvents(webSocketEventFlow)
-                        }.onFailure {
-                            // throw so it is handled by coroutineExceptionHandler
-                            throw KaliumSyncException("Failure when gathering events", it)
-                        }
-                }
-
-                else -> {
-                    eventRepository.lastProcessedEventId().flatMap {
-                        eventRepository.liveEvents()
-                    }.onSuccess { webSocketEventFlow ->
-                        emitEvents(webSocketEventFlow)
-                    }.onFailure {
-                        // throw so it is handled by coroutineExceptionHandler
-                        throw KaliumSyncException("Failure when gathering events", it)
-                    }
-                }
-            }
+            fetchEventFlow(isAsyncNotifications)
+                .onSuccess { emitEvents(it) }
+                .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
         }
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
+    }
+
+    /**
+     * Retrieves the event flow based on async notification capability.
+     */
+    private suspend fun fetchEventFlow(isAsyncNotifications: Boolean) = if (isAsyncNotifications) {
+        eventRepository.liveEvents()
+    } else {
+        // in the old system we fetch pending events from the notification stream based on last processed event id
+        eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
     }
 
     private suspend fun FlowCollector<EventEnvelope>.emitEvents(
@@ -150,9 +144,9 @@ internal class EventGathererImpl(
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketEventReceived(
         webSocketEvent: WebSocketEvent.BinaryPayloadReceived<EventEnvelope>
     ) {
-        logger.i("Websocket Received binary payload")
         val envelope = webSocketEvent.payload
         val obfuscatedId = envelope.event.id.obfuscateId()
+        logger.i("Websocket Received payload: ${envelope.event.toLogString()}")
         if (offlineEventBuffer.contains(envelope.event)) {
             if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
                 // Really live
@@ -172,8 +166,10 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen(shouldProcessPendingEvents: Boolean) {
         logger.i("Websocket Open")
+        // TODO: Handle time drift in a different way, e.g. the notification api is already called
+        //  somewhere else so maybe we can take the time from there ?
+//          handleTimeDrift()
         if (shouldProcessPendingEvents) {
-            handleTimeDrift()
             eventRepository
                 .pendingEvents()
                 .onEach { result ->
@@ -182,7 +178,7 @@ internal class EventGathererImpl(
                 .filterIsInstance<Either.Right<EventEnvelope>>()
                 .map { offlineEvent -> offlineEvent.value }
                 .collect {
-                    logger.i("Collecting offline event: ${it.event.id.obfuscateId()}")
+                    logger.i("Collecting offline event: ${it.event.toLogString()}")
                     offlineEventBuffer.add(it.event)
                     emit(it)
                 }

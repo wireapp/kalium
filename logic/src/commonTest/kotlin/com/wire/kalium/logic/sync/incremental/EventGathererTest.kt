@@ -82,10 +82,6 @@ class EventGathererTest {
                 arrangement.eventRepository.pendingEvents()
             }.wasInvoked(exactly = once)
 
-            coVerify {
-                arrangement.serverTimeHandler.computeTimeOffset(any())
-            }.wasInvoked(exactly = once)
-
             cancelAndIgnoreRemainingEvents()
         }
     }

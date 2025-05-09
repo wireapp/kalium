@@ -427,16 +427,20 @@ sealed class Event(open val id: String) {
             val uri: String?,
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> =
-                mapOf(typeKey to "Conversation.CodeUpdated")
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
+                typeKey to "Conversation.CodeUpdated"
+            )
         }
 
         data class CodeDeleted(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> =
-                mapOf(typeKey to "Conversation.CodeDeleted")
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
+                typeKey to "Conversation.CodeDeleted"
+            )
         }
 
         data class TypingIndicator(
@@ -447,6 +451,7 @@ sealed class Event(open val id: String) {
             val typingIndicatorMode: TypingIndicatorMode,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
                 typeKey to "Conversation.TypingIndicator",
                 conversationIdKey to conversationId.toLogString(),
                 "typingIndicatorMode" to typingIndicatorMode.name,
