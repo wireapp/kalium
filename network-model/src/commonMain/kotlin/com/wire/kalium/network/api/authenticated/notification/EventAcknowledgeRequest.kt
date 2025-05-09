@@ -25,7 +25,7 @@ data class EventAcknowledgeRequest(
     @SerialName("type")
     val type: AcknowledgeType,
     @SerialName("data")
-    val data: AcknowledgeData
+    val data: AcknowledgeData? = null,
 )
 
 @Serializable

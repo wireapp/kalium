@@ -127,6 +127,13 @@ class EventMapper(
         )
     }
 
+    companion object {
+        /**
+         * Full sync acknowledge request for notifications missed.
+         */
+        val FULL_ACKNOWLEDGE_REQUEST: EventAcknowledgeRequest = EventAcknowledgeRequest(type = AcknowledgeType.ACK_FULL_SYNC)
+    }
+
     @Suppress("ComplexMethod")
     fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO): Event =
         when (eventContentDTO) {
