@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
@@ -52,7 +53,6 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
-import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 
 /**
  * A wrapper that joins [Event] with its [EventDeliveryInfo].
@@ -406,16 +406,20 @@ sealed class Event(open val id: String) {
             val uri: String?,
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> =
-                mapOf(typeKey to "Conversation.CodeUpdated")
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
+                typeKey to "Conversation.CodeUpdated"
+            )
         }
 
         data class CodeDeleted(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> =
-                mapOf(typeKey to "Conversation.CodeDeleted")
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
+                typeKey to "Conversation.CodeDeleted"
+            )
         }
 
         data class TypingIndicator(
@@ -426,6 +430,7 @@ sealed class Event(open val id: String) {
             val typingIndicatorMode: TypingIndicatorMode,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
                 typeKey to "Conversation.TypingIndicator",
                 conversationIdKey to conversationId.toLogString(),
                 "typingIndicatorMode" to typingIndicatorMode.name,
