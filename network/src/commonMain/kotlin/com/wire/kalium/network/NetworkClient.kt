@@ -38,6 +38,10 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
+import io.ktor.http.Url
+import io.ktor.http.appendPathSegments
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.websocket.WebSocketSession
 
@@ -107,13 +111,31 @@ internal class AuthenticatedWebSocketClient(
     private val kaliumLogger: KaliumLogger,
     private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)? = null
 ) {
+
+    /**
+     * Creates a [Url] for the WebSocket connection with the ability to be versioned.
+     */
+    fun createWSSUrl(shouldAddApiVersion: Boolean = false, vararg path: String): Url {
+        val baseUrl = Url(serverConfigDTO.links.webSocket)
+        return URLBuilder(
+            protocol = URLProtocol.WSS,
+            host = baseUrl.host,
+            port = URLProtocol.WSS.defaultPort,
+        )
+            .appendPathSegments(baseUrl.pathSegments)
+            .appendPathSegments(
+                if (shouldAddApiVersion) "v${serverConfigDTO.metaData.commonApiVersion.version}" else ""
+            ).appendPathSegments(path.toList())
+            .build()
+    }
+
     /**
      * Creates a disposable [HttpClient] for a single use.
      * Once the websocket is disconnected
      * it's okay to use a new HttpClient,
      * as the old one can be dead.
      */
-    fun createDisposableHttpClient(): HttpClient =
+    private fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine, kaliumLogger) {
             installWireDefaultRequest(serverConfigDTO)
             installAuth(bearerAuthProvider)

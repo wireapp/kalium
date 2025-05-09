@@ -275,11 +275,14 @@ object TestEvent {
 
     fun Event.wrapInEnvelope(
         isTransient: Boolean = false,
-        source: EventSource = EventSource.LIVE
-    ): EventEnvelope {
-        return EventEnvelope(this, EventDeliveryInfo.Legacy(isTransient, source))
+        source: EventSource = EventSource.LIVE,
+        isAsync: Boolean = false
+    ): EventEnvelope = when {
+        isAsync -> EventEnvelope(this, EventDeliveryInfo.Async(ULong.MAX_VALUE, source))
+        else -> EventEnvelope(this, EventDeliveryInfo.Legacy(isTransient, source))
     }
 
     val liveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.LIVE)
     val nonLiveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.PENDING)
+
 }

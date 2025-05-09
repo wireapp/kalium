@@ -21,41 +21,30 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ConsumableNotificationResponse(
+data class EventAcknowledgeRequest(
     @SerialName("type")
-    val type: EventType,
+    val type: AcknowledgeType,
     @SerialName("data")
-    val data: EventDataDTO?
+    val data: AcknowledgeData
 )
 
 @Serializable
-data class EventDataDTO(
+data class AcknowledgeData(
     @SerialName("delivery_tag")
     val deliveryTag: ULong,
-    @SerialName("event")
-    val event: ConsumableEventDTO
+    @SerialName("multiple")
+    val multiple: Boolean = false
 )
 
 @Serializable
-enum class EventType {
-    @SerialName("event")
-    EVENT,
+enum class AcknowledgeType {
+    @SerialName("ack")
+    ACK,
 
-    @SerialName("notification.missed")
-    MISSED;
+    @SerialName("ack_full_sync")
+    ACK_FULL_SYNC;
 
     override fun toString(): String {
-        return when (this) {
-            EVENT -> "event"
-            MISSED -> "notification.missed"
-        }
+        return this.name.lowercase()
     }
 }
-
-@Serializable
-data class ConsumableEventDTO(
-    @SerialName("id")
-    val id: String,
-    @SerialName("payload")
-    val payload: List<EventContentDTO>
-)

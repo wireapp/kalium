@@ -26,12 +26,12 @@ import com.wire.kalium.network.api.authenticated.notification.EventType
 
 object ConsumableNotificationEventsResponseJson {
     val validEventDataJson = ConsumableNotificationResponse(
-        eventType = EventType.EVENT,
+        type = EventType.EVENT,
         data = EventDataDTO((ULong.MAX_VALUE), ConsumableEventDTO("some_id", listOf(EventContentDTOJson.validMemberJoin.serializableData)))
     ).toJsonString()
 
     val validMissedNotificationsJson = ConsumableNotificationResponse(
-        eventType = EventType.MISSED,
+        type = EventType.MISSED,
         data = null
     ).toJsonString()
 

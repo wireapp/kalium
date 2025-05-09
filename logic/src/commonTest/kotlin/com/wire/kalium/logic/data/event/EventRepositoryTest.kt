@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -180,6 +182,34 @@ class EventRepositoryTest {
         assertNull(result)
     }
 
+    @Test
+    fun givenAcknowledgeEvent_whenIsNotAsyncNotifications_thenSkip() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .arrange()
+
+        val eventEnvelope = TestEvent.newConversationEvent().wrapInEnvelope()
+        val result = eventRepository.acknowledgeEvent(eventEnvelope)
+
+        result.shouldSucceed()
+        coVerify {
+            arrangement.notificationApi.acknowledgeEvents(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenAcknowledgeEvent_whenIsAsyncNotifications_thenACK() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .withAcknowledgeEvents()
+            .arrange()
+
+        val eventEnvelope = TestEvent.newConversationEvent().wrapInEnvelope(isAsync = true)
+        val result = eventRepository.acknowledgeEvent(eventEnvelope)
+
+        result.shouldSucceed()
+        coVerify {
+            arrangement.notificationApi.acknowledgeEvents(any(), any())
+        }.wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
@@ -275,6 +305,12 @@ class EventRepositoryTest {
             coEvery {
                 notificationApi.listenToLiveEvents(any())
             }.returns(result)
+        }
+
+        suspend fun withAcknowledgeEvents() = apply {
+            coEvery {
+                notificationApi.acknowledgeEvents(any(), any())
+            }.returns(Unit)
         }
 
         inline fun arrange(): Pair<Arrangement, EventRepository> {

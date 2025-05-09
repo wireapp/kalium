@@ -28,6 +28,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -73,6 +74,7 @@ internal interface EventGatherer {
 }
 
 internal class EventGathererImpl(
+    private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     logger: KaliumLogger = kaliumLogger,
@@ -89,16 +91,27 @@ internal class EventGathererImpl(
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
-        eventRepository.lastProcessedEventId().flatMap {
-            eventRepository.liveEvents()
-        }.onSuccess { webSocketEventFlow ->
-            emitEvents(webSocketEventFlow)
-        }.onFailure {
-            // throw so it is handled by coroutineExceptionHandler
-            throw KaliumSyncException("Failure when gathering events", it)
+        /**
+         * Fetches and emits live events based on whether the client supports async notifications.
+         * Throws [KaliumSyncException] if event retrieval fails.
+         */
+        isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
+            fetchEventFlow(isAsyncNotifications)
+                .onSuccess { emitEvents(it) }
+                .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
         }
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
+    }
+
+    /**
+     * Retrieves the event flow based on async notification capability.
+     */
+    private suspend fun fetchEventFlow(isAsyncNotifications: Boolean) = if (isAsyncNotifications) {
+        eventRepository.liveEvents()
+    } else {
+        // in the old system we fetch pending events from the notification stream based on last processed event id
+        eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
     }
 
     private suspend fun FlowCollector<EventEnvelope>.emitEvents(

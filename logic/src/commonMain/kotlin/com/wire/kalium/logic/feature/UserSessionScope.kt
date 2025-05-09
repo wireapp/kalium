@@ -58,6 +58,8 @@ import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSTransportProvider
@@ -537,6 +539,9 @@ class UserSessionScope internal constructor(
             userId, qualifiedIdMapper, globalScope.sessionRepository
         )
 
+    private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
+        get() = IsClientAsyncNotificationsCapableProviderImpl(clientRegistrationStorage)
+
     val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
         MLSSelfConversationIdProviderImpl(
@@ -967,6 +972,7 @@ class UserSessionScope internal constructor(
 
     private val eventGatherer: EventGatherer
         get() = EventGathererImpl(
+            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
             logger = userScopedLogger
         )
@@ -1125,6 +1131,7 @@ class UserSessionScope internal constructor(
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
+            isClientAsyncNotificationsCapableProvider,
             eventRepository,
             syncSelfUser,
             syncFeatureConfigsUseCase,

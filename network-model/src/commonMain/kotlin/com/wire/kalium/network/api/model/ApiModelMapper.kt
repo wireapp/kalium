@@ -43,7 +43,7 @@ interface ApiModelMapper {
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
 
     /**
-     * Forcing to clients using v8+ to have ConsumableNotifications capability.
+     * Forcing to clients using v8+ to have ConsumableNotifications and Implicit Legal hold consent capability.
      */
     fun toApiV8(request: RegisterClientRequest): RegisterClientRequest
 }
@@ -161,7 +161,8 @@ class ApiModelMapperImpl : ApiModelMapper {
             label = request.label,
             capabilities = request.capabilities?.toMutableSet()?.apply {
                 add(ClientCapabilityDTO.ConsumableNotifications)
-            }?.toList() ?: listOf(ClientCapabilityDTO.ConsumableNotifications),
+                add(ClientCapabilityDTO.LegalHoldImplicitConsent)
+            }?.toList() ?: listOf(ClientCapabilityDTO.ConsumableNotifications, ClientCapabilityDTO.LegalHoldImplicitConsent),
             model = request.model,
             cookieLabel = request.cookieLabel,
             secondFactorVerificationCode = request.secondFactorVerificationCode
