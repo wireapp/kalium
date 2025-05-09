@@ -1,0 +1,29 @@
+name: Backup / Publish Web
+on:
+  push:
+    tags:
+      - "backup/*"
+
+jobs:
+  publish-swift:
+    if: github.repository == 'wireapp/kalium'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Force fetch the tag to work around actions/checkout#290
+        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+      - name: Ensure the tag is signed
+        run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build JS/TS
+        run: ./gradlew :backup:jsBrowserProductionLibraryDistribution
+
+      - name: Publish package to npm
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          package: "backup/dist/js/productionLibrary/package.json"
