@@ -395,6 +395,8 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
@@ -986,6 +988,7 @@ class UserSessionScope internal constructor(
             featureConfigEventReceiver = featureConfigEventReceiver,
             userPropertiesEventReceiver = userPropertiesEventReceiver,
             federationEventReceiver = federationEventReceiver,
+            missedNotificationsEventReceiver = missedNotificationsEventReceiver,
             processingScope = this@UserSessionScope,
             logger = userScopedLogger,
         )
@@ -1702,6 +1705,13 @@ class UserSessionScope internal constructor(
             legalHoldRequestHandler,
             legalHoldHandler
         )
+
+    private val missedNotificationsEventReceiver: MissedNotificationsEventReceiver by lazy {
+        MissedNotificationsEventReceiverImpl(
+            userId = userId,
+            userSessionScopeProvider = userSessionScopeProvider,
+        )
+    }
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
         get() = UserPropertiesEventReceiverImpl(userConfigRepository, conversationFolderRepository)
