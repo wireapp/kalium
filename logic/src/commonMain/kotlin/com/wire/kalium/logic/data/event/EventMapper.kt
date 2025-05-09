@@ -97,7 +97,8 @@ class EventMapper(
     }
 
     /**
-     * todo. handle case of multiple events mapping when we want to implement multiple ack
+     * Converts a single processed event to an acknowledge request.
+     * Note: we can extend this when we want to implement multiple ack at once.
      */
     fun toAcknowledgeRequest(
         eventDeliveryInfo: EventDeliveryInfo.Async,
