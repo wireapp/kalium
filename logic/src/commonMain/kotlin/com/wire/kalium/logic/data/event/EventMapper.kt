@@ -127,7 +127,7 @@ class EventMapper(
         )
     }
 
-    companion object {
+    internal companion object {
         /**
          * Full sync acknowledge request for notifications missed.
          */
