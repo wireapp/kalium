@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
-import com.wire.kalium.cells.data.model.GetFilesResponseDTO
+import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
@@ -62,7 +62,7 @@ internal class CellsApiImpl(
             nodeServiceApi.getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun getFiles(query: String, limit: Int, offset: Int): NetworkResponse<GetFilesResponseDTO> =
+    override suspend fun getNodes(query: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(
@@ -83,7 +83,7 @@ internal class CellsApiImpl(
             )
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun getFilesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetFilesResponseDTO> =
+    override suspend fun getNodesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(

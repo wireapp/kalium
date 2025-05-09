@@ -19,7 +19,7 @@ package com.wire.kalium.cells.data.model
 
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeCollection
 
-internal data class GetFilesResponseDTO(
+internal data class GetNodesResponseDTO(
     val nodes: List<CellNodeDTO>,
     val pagination: PaginationDTO? = null,
 )
@@ -32,7 +32,7 @@ internal data class PaginationDTO(
     val nextOffset: Int?,
 )
 
-internal fun RestNodeCollection.toDto() = GetFilesResponseDTO(
+internal fun RestNodeCollection.toDto() = GetNodesResponseDTO(
     nodes = nodes?.map { node ->
         node.toDto()
     } ?: emptyList(),

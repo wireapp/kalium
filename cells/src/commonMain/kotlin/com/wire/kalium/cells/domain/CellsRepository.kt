@@ -31,7 +31,7 @@ internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
-    suspend fun getFiles(path: String?, query: String, limit: Int, offset: Int): Either<NetworkFailure, PaginatedList<CellNode>>
+    suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int): Either<NetworkFailure, PaginatedList<CellNode>>
     suspend fun deleteFile(nodeUuid: String): Either<NetworkFailure, Unit>
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit>
     suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit>

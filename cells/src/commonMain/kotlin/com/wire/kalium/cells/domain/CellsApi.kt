@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.domain
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
-import com.wire.kalium.cells.data.model.GetFilesResponseDTO
+import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.network.utils.NetworkResponse
@@ -29,10 +29,10 @@ internal interface CellsApi {
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit>
     suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit>
     suspend fun delete(nodeUuid: String): NetworkResponse<Unit>
-    suspend fun getFiles(query: String, limit: Int, offset: Int): NetworkResponse<GetFilesResponseDTO>
+    suspend fun getNodes(query: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO>
     suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink>
     suspend fun delete(paths: List<String>): NetworkResponse<Unit>
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
     suspend fun getPublicLink(linkUuid: String): NetworkResponse<String>
-    suspend fun getFilesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetFilesResponseDTO>
+    suspend fun getNodesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO>
 }
