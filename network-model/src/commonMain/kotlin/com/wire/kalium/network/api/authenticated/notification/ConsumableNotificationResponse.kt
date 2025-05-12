@@ -41,13 +41,13 @@ enum class EventType {
     @SerialName("event")
     EVENT,
 
-    @SerialName("notification.missed")
+    @SerialName("notifications.missed")
     MISSED;
 
     override fun toString(): String {
         return when (this) {
             EVENT -> "event"
-            MISSED -> "notification.missed"
+            MISSED -> "notifications.missed"
         }
     }
 }
