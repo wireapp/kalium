@@ -27,6 +27,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import okio.Path
 
+@Suppress("TooManyFunctions")
 internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>

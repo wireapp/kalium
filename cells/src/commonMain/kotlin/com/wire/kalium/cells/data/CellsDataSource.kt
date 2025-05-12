@@ -32,7 +32,6 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.util.KaliumDispatcher
@@ -46,6 +45,7 @@ import okio.FileSystem
 import okio.Path
 import okio.use
 
+@Suppress("TooManyFunctions")
 internal class CellsDataSource internal constructor(
     private val cellsApi: CellsApi,
     private val awsClient: CellsAwsClient,
