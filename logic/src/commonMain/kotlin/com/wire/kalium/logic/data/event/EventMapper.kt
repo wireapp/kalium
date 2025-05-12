@@ -43,7 +43,10 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
@@ -91,6 +94,23 @@ class EventMapper(
                 deliveryInfo = EventDeliveryInfo.Async(deliveryTag = deliveryTag, source = EventSource.LIVE)
             )
         } ?: listOf()
+    }
+
+    /**
+     * Converts a single processed event to an acknowledge request.
+     * Note: we can extend this when we want to implement multiple ack at once.
+     */
+    fun toAcknowledgeRequest(
+        eventDeliveryInfo: EventDeliveryInfo.Async,
+        multiple: Boolean = false
+    ): EventAcknowledgeRequest {
+        return EventAcknowledgeRequest(
+            type = AcknowledgeType.ACK,
+            data = AcknowledgeData(
+                deliveryTag = eventDeliveryInfo.deliveryTag,
+                multiple = multiple
+            )
+        )
     }
 
     @Suppress("ComplexMethod")

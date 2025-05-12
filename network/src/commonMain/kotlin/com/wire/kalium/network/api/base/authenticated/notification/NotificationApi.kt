@@ -19,6 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.notification
 
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.BaseApi
@@ -69,5 +70,6 @@ interface NotificationApi : BaseApi {
     @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
     suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>>
     suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
+    suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
 
 }
