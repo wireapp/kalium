@@ -1710,6 +1710,7 @@ class UserSessionScope internal constructor(
         MissedNotificationsEventReceiverImpl(
             userId = userId,
             userSessionScopeProvider = userSessionScopeProvider,
+            slowSyncRepository = slowSyncRepository,
         )
     }
 
