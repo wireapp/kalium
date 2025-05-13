@@ -25,9 +25,11 @@ import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
+import com.wire.crypto.DatabaseKey
 import com.wire.crypto.EpochObserver
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportResponse
+import com.wire.crypto.migrateDatabaseKeyTypeToBytes
 import com.wire.crypto.setLogger
 import com.wire.crypto.setMaxLogLevel
 import com.wire.kalium.cryptography.exceptions.CryptographyException
@@ -40,10 +42,23 @@ import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    oldKey: String,
+    passphrase: ByteArray,
+    hasMigrated: Boolean
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
+
+    val databaseKey = DatabaseKey(passphrase)
+
+    if (!hasMigrated) {
+        migrateDatabaseKeyTypeToBytes(
+            oldKey = oldKey,
+            name = path,
+            newKey = databaseKey
+        )
+    }
+
     val coreCrypto = CoreCrypto(
         keystore = path,
         databaseKey = databaseKey

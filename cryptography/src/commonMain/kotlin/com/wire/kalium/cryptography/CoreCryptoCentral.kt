@@ -80,5 +80,7 @@ interface CoreCryptoCentral {
 
 expect suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    oldKey: String,
+    passphrase: ByteArray,
+    hasMigrated: Boolean
 ): CoreCryptoCentral

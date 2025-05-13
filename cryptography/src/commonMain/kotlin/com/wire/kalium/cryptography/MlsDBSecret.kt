@@ -18,7 +18,28 @@
 
 package com.wire.kalium.cryptography
 
-import kotlin.jvm.JvmInline
+data class MlsDBSecret(
+    @Deprecated("Use passphrase after migration") val value: String,
+    val passphrase: ByteArray,
+    val hasMigrated: Boolean
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
 
-@JvmInline
-value class MlsDBSecret(val value: String)
+        other as MlsDBSecret
+
+        if (hasMigrated != other.hasMigrated) return false
+        if (value != other.value) return false
+        if (!passphrase.contentEquals(other.passphrase)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = hasMigrated.hashCode()
+        result = 31 * result + value.hashCode()
+        result = 31 * result + passphrase.contentHashCode()
+        return result
+    }
+}

@@ -101,9 +101,13 @@ class ProteusClientProviderImpl(
     private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
             val central = try {
+
+                val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId)
                 coreCryptoCentral(
                     rootDir = rootProteusPath,
-                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value,
+                    oldKey = dbSecret.value,
+                    passphrase = dbSecret.passphrase,
+                    hasMigrated = dbSecret.hasMigrated
                 )
             } catch (e: Exception) {
                 val logMap = mapOf(
