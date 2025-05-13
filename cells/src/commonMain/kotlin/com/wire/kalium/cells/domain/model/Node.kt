@@ -28,6 +28,8 @@ public sealed class Node {
     public abstract val lastModified: Long?
     public abstract val userName: String?
     public abstract val conversationName: String?
+    public abstract val remotePath: String?
+    public abstract val size: Long?
 
     public data class Folder(
         override val name: String?,
@@ -35,7 +37,8 @@ public sealed class Node {
         override val conversationName: String? = null,
         override val uuid: String,
         override val lastModified: Long?,
-        val contents: List<Node> // folder can has files and nested folders
+        override val remotePath: String?,
+        override val size: Long?
     ) : Node()
 
     /**
@@ -48,11 +51,11 @@ public sealed class Node {
         override val userName: String? = null,
         override val conversationName: String? = null,
         override val lastModified: Long?,
+        override val remotePath: String?,
+        override val size: Long?,
         val versionId: String,
         val mimeType: String,
-        val remotePath: String?,
         val localPath: String? = null,
-        val assetSize: Long?,
         val contentHash: String? = null,
         val contentUrl: String? = null,
         val previewUrl: String? = null,
@@ -71,7 +74,7 @@ internal fun CellNode.toFileModel() = Node.File(
     contentHash = contentHash,
     contentUrl = contentUrl,
     previewUrl = previews.maxByOrNull { it.dimension }?.url,
-    assetSize = size,
+    size = size,
     publicLinkId = publicLinkId,
     lastModified = modified?.let { it * 1000 },
 )
@@ -81,5 +84,6 @@ internal fun CellNode.toFolderModel() = Node.Folder(
     uuid = uuid,
     name = path.substringAfterLast("/"),
     lastModified = modified?.let { it * 1000 },
-    contents = emptyList(),
+    remotePath = path,
+    size = size
 )
