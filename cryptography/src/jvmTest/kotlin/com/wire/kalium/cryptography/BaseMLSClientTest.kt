@@ -45,6 +45,6 @@ actual open class BaseMLSClientTest {
     ): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test")
+        return coreCryptoCentral(keyStore.absolutePath, "test", ByteArray(32) { 0 }, true)
     }
 }

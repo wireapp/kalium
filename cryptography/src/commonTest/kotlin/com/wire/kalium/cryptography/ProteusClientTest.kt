@@ -226,6 +226,6 @@ class ProteusClientTest : BaseProteusClientTest() {
     }
 
     companion object {
-        val PROTEUS_DB_SECRET = ProteusDBSecret("secret")
+        val PROTEUS_DB_SECRET = ProteusDBSecret("secret", ByteArray(32) { 0 }, true)
     }
 }
