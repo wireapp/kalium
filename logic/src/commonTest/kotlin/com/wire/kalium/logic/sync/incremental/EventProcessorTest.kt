@@ -27,6 +27,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -348,6 +349,9 @@ class EventProcessorTest {
         @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
 
+        @Mock
+        val missedNotificationsEventReceiver = mock(MissedNotificationsEventReceiver::class)
+
         init {
             runBlocking {
                 withAcknowledgeEventReceiverReturning(Unit.right())
@@ -416,6 +420,12 @@ class EventProcessorTest {
             }.returns(result)
         }
 
+        suspend fun withMissedNotificationsEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                missedNotificationsEventReceiver.onEvent(any(), any())
+            }.returns(result)
+        }
+
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
             withConversationEventReceiverSucceeding()
             withUserEventReceiverSucceeding()
@@ -430,6 +440,7 @@ class EventProcessorTest {
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver,
+                missedNotificationsEventReceiver,
                 processingScope
             )
         }

@@ -131,7 +131,8 @@ class EventMapper(
         /**
          * Full sync acknowledge request for notifications missed.
          */
-        val FULL_ACKNOWLEDGE_REQUEST: EventAcknowledgeRequest = EventAcknowledgeRequest(type = AcknowledgeType.ACK_FULL_SYNC)
+        val FULL_ACKNOWLEDGE_REQUEST: EventAcknowledgeRequest =
+            EventAcknowledgeRequest(type = AcknowledgeType.ACK_FULL_SYNC)
     }
 
     @Suppress("ComplexMethod")
