@@ -1708,8 +1708,7 @@ class UserSessionScope internal constructor(
 
     private val missedNotificationsEventReceiver: MissedNotificationsEventReceiver by lazy {
         MissedNotificationsEventReceiverImpl(
-            userId = userId,
-            userSessionScopeProvider = userSessionScopeProvider,
+            syncExecutor = lazy { syncExecutor },
             slowSyncRepository = slowSyncRepository,
         )
     }

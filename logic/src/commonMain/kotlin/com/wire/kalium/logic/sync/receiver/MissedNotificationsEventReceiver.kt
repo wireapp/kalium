@@ -21,9 +21,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.sync.SyncExecutor
 
 /**
  * Internal event receiver for missed notifications, will trigger a full sync.
@@ -31,16 +30,13 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 internal interface MissedNotificationsEventReceiver : EventReceiver<Event.AsyncMissed>
 
 internal class MissedNotificationsEventReceiverImpl(
-    private val userId: QualifiedID,
-    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val syncExecutor: Lazy<SyncExecutor>,
     private val slowSyncRepository: SlowSyncRepository
 ) : MissedNotificationsEventReceiver {
 
     override suspend fun onEvent(event: Event.AsyncMissed, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         triggerFullSyncCriteria()
-        return userSessionScopeProvider.get(userId)?.syncExecutor?.request {
-            waitUntilLiveOrFailure()
-        }!!
+        return syncExecutor.value.request { waitUntilLiveOrFailure() }
     }
 
     private suspend fun triggerFullSyncCriteria() {
