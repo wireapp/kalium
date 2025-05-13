@@ -37,9 +37,14 @@ internal class MissedNotificationsEventReceiverImpl(
 ) : MissedNotificationsEventReceiver {
 
     override suspend fun onEvent(event: Event.AsyncMissed, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
-        slowSyncRepository.clearLastSlowSyncCompletionInstant()
+        triggerFullSyncCriteria()
         return userSessionScopeProvider.get(userId)?.syncExecutor?.request {
             waitUntilLiveOrFailure()
         }!!
+    }
+
+    private suspend fun triggerFullSyncCriteria() {
+        slowSyncRepository.clearLastSlowSyncCompletionInstant()
+        slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
     }
 }
