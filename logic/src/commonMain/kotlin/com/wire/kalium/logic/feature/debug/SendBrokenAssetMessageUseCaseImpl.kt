@@ -47,9 +47,10 @@ import com.wire.kalium.logic.util.fileExtension
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import okio.Path
+import okio.Path.Companion.toPath
 
 @Suppress("MaxLineLength")
-fun interface SendBrokenAssetMessageUseCase {
+interface SendBrokenAssetMessageUseCase {
     /**
      * Function that can be used to send manipulated asset messages to a given conversation. Manipulation can be either a wrong
      * checksum or a changed otrKey. This debug function can be used to test correct client behaviour. It should not be used by
@@ -74,6 +75,15 @@ fun interface SendBrokenAssetMessageUseCase {
         assetMimeType: String,
         brokenState: BrokenState
     ): SendBrokenAssetMessageResult
+
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        assetDataPath: String,
+        assetDataSize: Long,
+        assetName: String,
+        assetMimeType: String,
+        brokenState: BrokenState,
+    ): SendBrokenAssetMessageResult
 }
 
 @Suppress("LongParameterList", "MaxLineLength")
@@ -86,6 +96,18 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     private val messageRepository: MessageRepository
 ) : SendBrokenAssetMessageUseCase {
     private lateinit var currentAssetMessageContent: AssetMessageMetadata
+
+    override suspend fun invoke(
+        conversationId: ConversationId,
+        assetDataPath: String,
+        assetDataSize: Long,
+        assetName: String,
+        assetMimeType: String,
+        brokenState: BrokenState,
+    ): SendBrokenAssetMessageResult {
+        return invoke(conversationId, assetDataPath.toPath(), assetDataSize, assetName, assetMimeType, brokenState)
+    }
+
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
