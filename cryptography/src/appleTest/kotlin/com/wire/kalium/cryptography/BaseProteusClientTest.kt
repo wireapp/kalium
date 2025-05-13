@@ -32,7 +32,7 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-        return coreCryptoCentral(proteusStore.value, "secret").proteusClient()
+        return coreCryptoCentral(proteusStore.value, "secret", ByteArray(32) { 0 }, true).proteusClient()
     }
 
 }
