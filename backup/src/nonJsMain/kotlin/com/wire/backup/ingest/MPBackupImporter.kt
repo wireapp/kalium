@@ -38,17 +38,29 @@ import kotlin.native.ObjCName
  * @sample samples.backup.BackupSamples.commonImport
  */
 @OptIn(ExperimentalObjCName::class)
-public actual class MPBackupImporter(
-    private val pathToWorkDirectory: String,
-    private val backupFileUnzipper: BackupFileUnzipper,
-    private val fileSystem: FileSystem = FileSystem.SYSTEM,
-) : CommonMPBackupImporter() {
+public actual class MPBackupImporter : CommonMPBackupImporter {
 
-    init {
+    private val pathToWorkDirectory: String
+    private val backupFileUnzipper: BackupFileUnzipper
+    private val fileSystem: FileSystem
+
+    public constructor(
+        pathToWorkDirectory: String,
+        backupFileUnzipper: BackupFileUnzipper,
+        fileSystem: FileSystem
+    ) : super() {
+        this.pathToWorkDirectory = pathToWorkDirectory
+        this.backupFileUnzipper = backupFileUnzipper
+        this.fileSystem = fileSystem
         pathToWorkDirectory.toPath().also {
             if (!fileSystem.exists(it)) fileSystem.createDirectories(it)
         }
     }
+
+    public constructor(
+        pathToWorkDirectory: String,
+        backupFileUnzipper: BackupFileUnzipper,
+    ) : this(pathToWorkDirectory, backupFileUnzipper, FileSystem.SYSTEM)
 
     /**
      * Peeks into the specified backup file and retrieves metadata about it.

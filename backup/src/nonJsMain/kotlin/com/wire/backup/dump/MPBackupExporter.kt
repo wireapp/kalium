@@ -30,6 +30,7 @@ import com.wire.kalium.protobuf.backup.BackupData
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.Source
@@ -40,21 +41,39 @@ import okio.use
  * into a cross-platform [BackupData] format.
  * @sample samples.backup.BackupSamplesNonJS.exportBackup
  */
-public actual class MPBackupExporter(
-    selfUserId: BackupQualifiedId,
-    workDirectory: String,
-    private val outputDirectory: String,
-    private val fileZipper: FileZipper,
-    private val fileSystem: FileSystem = FileSystem.SYSTEM,
-) : CommonMPBackupExporter(selfUserId) {
+public actual class MPBackupExporter : CommonMPBackupExporter {
+    private val outputDirectory: String
+    private val fileZipper: FileZipper
+    private val fileSystem: FileSystem
 
-    private val workDirectoryPath = workDirectory.toPath() / "backupDump"
+    public constructor(
+        selfUserId: BackupQualifiedId,
+        workDirectory: String,
+        outputDirectory: String,
+        fileZipper: FileZipper,
+        fileSystem: FileSystem
+    ) : super(selfUserId) {
+        this.outputDirectory = outputDirectory
+        this.fileZipper = fileZipper
+        this.fileSystem = fileSystem
+        this.workDirectoryPath = workDirectory.toPath() / "backupDump"
+        this.storage = FileBasedBackupPageStorage(
+            fileSystem = fileSystem,
+            workDirectory = workDirectoryPath,
+            shouldBeCleared = true
+        )
+    }
 
-    override val storage: BackupPageStorage = FileBasedBackupPageStorage(
-        fileSystem = fileSystem,
-        workDirectory = workDirectoryPath,
-        shouldBeCleared = true
-    )
+    public constructor(
+        selfUserId: BackupQualifiedId,
+        workDirectory: String,
+        outputDirectory: String,
+        fileZipper: FileZipper
+    ) : this(selfUserId, workDirectory, outputDirectory, fileZipper, FileSystem.SYSTEM)
+
+    private val workDirectoryPath: Path
+
+    override val storage: BackupPageStorage
 
     override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
