@@ -24,18 +24,18 @@ import app.cash.paging.PagingSourceLoadResultError
 import app.cash.paging.PagingSourceLoadResultPage
 import app.cash.paging.PagingState
 import com.wire.kalium.cells.domain.model.Node
-import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
+import com.wire.kalium.cells.domain.usecase.GetNodesUseCase
 import com.wire.kalium.common.functional.fold
 
 internal class FilePagingSource(
     val query: String,
     val conversationId: String?,
     val pageSize: Int,
-    val getCellFilesUseCase: GetCellFilesUseCase,
+    val getNodesUseCase: GetNodesUseCase,
 ) : PagingSource<Int, Node>() {
 
     override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node> =
-        getCellFilesUseCase(
+        getNodesUseCase(
             conversationId = conversationId,
             query = query,
             limit = pageSize,

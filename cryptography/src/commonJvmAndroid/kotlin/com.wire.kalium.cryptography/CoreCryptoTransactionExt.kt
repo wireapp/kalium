@@ -24,6 +24,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlin.random.Random
+import kotlin.random.nextUInt
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -36,10 +38,14 @@ internal suspend fun <T> CoreCrypto.transaction(
     workIdentifier: String,
     block: suspend (context: CoreCryptoContext) -> T
 ): T = coroutineScope {
+    val workUniqueId = "$workIdentifier;${Random.nextUInt()}"
     val asyncLockWork = async {
-        transaction {
+        val result = transaction {
+            kaliumLogger.d("CC Transaction '$workUniqueId' started.")
             block(it)
         }
+        kaliumLogger.d("CC Transaction '$workUniqueId' completed.")
+        result
     }
     val startInstant = Clock.System.now()
     val waitJob = launch {
@@ -49,7 +55,7 @@ internal suspend fun <T> CoreCrypto.transaction(
                 val currentInstant = Clock.System.now()
                 val elapsedTime = currentInstant.minus(startInstant)
                 kaliumLogger.w(
-                    "Waiting for CC Transaction Work '$workIdentifier' to complete for a long time! Elapsed time: $elapsedTime."
+                    "Waiting for CC Transaction '$workUniqueId' to complete for a long time! Elapsed time: $elapsedTime."
                 )
             }
         }

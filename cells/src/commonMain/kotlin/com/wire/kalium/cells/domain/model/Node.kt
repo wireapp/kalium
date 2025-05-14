@@ -25,17 +25,16 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 public sealed class Node {
     public abstract val name: String?
     public abstract val uuid: String
-    public abstract val lastModified: Long?
     public abstract val userName: String?
     public abstract val conversationName: String?
+    public abstract val modifiedTime: Long?
 
     public data class Folder(
         override val name: String?,
+        override val uuid: String,
         override val userName: String? = null,
         override val conversationName: String? = null,
-        override val uuid: String,
-        override val lastModified: Long?,
-        val contents: List<Node> // folder can has files and nested folders
+        override val modifiedTime: Long?,
     ) : Node()
 
     /**
@@ -47,7 +46,7 @@ public sealed class Node {
         override val uuid: String,
         override val userName: String? = null,
         override val conversationName: String? = null,
-        override val lastModified: Long?,
+        override val modifiedTime: Long? = null,
         val versionId: String,
         val mimeType: String,
         val remotePath: String?,
@@ -73,13 +72,12 @@ internal fun CellNode.toFileModel() = Node.File(
     previewUrl = previews.maxByOrNull { it.dimension }?.url,
     assetSize = size,
     publicLinkId = publicLinkId,
-    lastModified = modified?.let { it * 1000 },
+    modifiedTime = modified?.let { it * 1000 },
 )
 
 @Suppress("MagicNumber")
 internal fun CellNode.toFolderModel() = Node.Folder(
     uuid = uuid,
     name = path.substringAfterLast("/"),
-    lastModified = modified?.let { it * 1000 },
-    contents = emptyList(),
+    modifiedTime = modified?.let { it * 1000 },
 )
