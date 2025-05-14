@@ -25,18 +25,18 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 public sealed class Node {
     public abstract val name: String?
     public abstract val uuid: String
-    public abstract val lastModified: Long?
     public abstract val userName: String?
     public abstract val conversationName: String?
+    public abstract val modifiedTime: Long?
     public abstract val remotePath: String?
     public abstract val size: Long?
 
     public data class Folder(
         override val name: String?,
+        override val uuid: String,
         override val userName: String? = null,
         override val conversationName: String? = null,
-        override val uuid: String,
-        override val lastModified: Long?,
+        override val modifiedTime: Long?,
         override val remotePath: String?,
         override val size: Long?
     ) : Node()
@@ -50,12 +50,14 @@ public sealed class Node {
         override val uuid: String,
         override val userName: String? = null,
         override val conversationName: String? = null,
-        override val lastModified: Long?,
+        override val modifiedTime: Long? = null,
         override val remotePath: String?,
         override val size: Long?,
         val versionId: String,
         val mimeType: String,
+        val remotePath: String?,
         val localPath: String? = null,
+        val size: Long?,
         val contentHash: String? = null,
         val contentUrl: String? = null,
         val previewUrl: String? = null,
@@ -76,14 +78,14 @@ internal fun CellNode.toFileModel() = Node.File(
     previewUrl = previews.maxByOrNull { it.dimension }?.url,
     size = size,
     publicLinkId = publicLinkId,
-    lastModified = modified?.let { it * 1000 },
+    modifiedTime = modified?.let { it * 1000 },
 )
 
 @Suppress("MagicNumber")
 internal fun CellNode.toFolderModel() = Node.Folder(
     uuid = uuid,
     name = path.substringAfterLast("/"),
-    lastModified = modified?.let { it * 1000 },
+    modifiedTime = modified?.let { it * 1000 },
     remotePath = path,
-    size = size
+    size = size,
 )
