@@ -54,7 +54,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class CellUploadManagerTest {
+class NodeUploadManagerTest {
 
     private companion object {
         val assetPath = "path".toPath()
@@ -286,7 +286,7 @@ private class TestRepository : CellsRepository {
         return Unit.right()
     }
 
-    override suspend fun getFiles(path: String?, query: String, limit: Int, offset: Int) = PaginatedList<CellNode>(
+    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int) = PaginatedList<CellNode>(
         data = emptyList(),
         pagination = null
     ).right()
