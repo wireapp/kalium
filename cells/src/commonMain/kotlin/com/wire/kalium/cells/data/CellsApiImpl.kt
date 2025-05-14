@@ -181,7 +181,7 @@ internal class CellsApiImpl(
             nodeServiceApi.deletePublicLink(linkUuid)
         }.mapSuccess {}
 
-    override suspend fun createFolder(path: String): NetworkResponse<GetFilesResponseDTO> {
+    override suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO> {
         return wrapCellsResponse {
             nodeServiceApi.create(
                 RestCreateRequest(
