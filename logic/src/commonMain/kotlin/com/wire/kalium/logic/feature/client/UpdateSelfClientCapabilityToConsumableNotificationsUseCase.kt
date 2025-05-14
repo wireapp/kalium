@@ -34,6 +34,10 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import kotlinx.coroutines.flow.filter
 
+/**
+ * Use case that updates the client capabilities of the current user to include the [ClientCapability.ConsumableNotifications] capability.
+ * It will only update the capability if the server supports it and the client does not already have it.
+ */
 internal interface UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
@@ -74,7 +78,7 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
                     clientID = clientId.value
                 ).flatMap {
                     clientRepository.setShouldUpdateClientConsumableNotificationsCapability(false)
-                    // refresh the client to local storage has capability
+                    clientRepository.persistClientHasConsumableNotifications(true)
                 }.onFailure {
                     logger.e("Failed to update client capabilities $it")
                 }
