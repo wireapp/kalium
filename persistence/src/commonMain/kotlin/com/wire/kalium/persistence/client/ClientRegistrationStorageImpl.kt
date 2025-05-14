@@ -42,6 +42,8 @@ interface ClientRegistrationStorage {
     suspend fun isBlockedByE2EI(): Boolean
     suspend fun setHasConsumableNotifications(hasConsumableNotifications: Boolean)
     suspend fun observeHasConsumableNotifications(): Flow<Boolean>
+    suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean)
+    suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -76,6 +78,13 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
             it.toBoolean() && !it.isNullOrEmpty()
         }
 
+    override suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean) {
+        metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPGRADE_CLIENT_CONSUMABLE_NOTIFICATIONS_CAPABILITY)
+    }
+
+    override suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean =
+        metadataDAO.valueByKey(SHOULD_UPGRADE_CLIENT_CONSUMABLE_NOTIFICATIONS_CAPABILITY)?.toBoolean() ?: true
+
     override suspend fun setClientRegistrationBlockedByE2EI() =
         metadataDAO.insertValue(true.toString(), CLIENT_REGISTRATION_BLOCKED_BY_E2EI)
 
@@ -92,5 +101,7 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
         private const val HAS_REGISTERED_MLS_CLIENT_KEY = "has_registered_mls_client"
         private const val CLIENT_REGISTRATION_BLOCKED_BY_E2EI = "client_registration_blocked_by_e2ei"
         private const val CLIENT_HAS_CONSUMABLE_NOTIFICATIONS = "client_has_consumable_notifications"
+        private const val SHOULD_UPGRADE_CLIENT_CONSUMABLE_NOTIFICATIONS_CAPABILITY =
+            "should_upgrade_client_consumable_notifications_capability"
     }
 }
