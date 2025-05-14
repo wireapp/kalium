@@ -1708,7 +1708,7 @@ class UserSessionScope internal constructor(
 
     private val missedNotificationsEventReceiver: MissedNotificationsEventReceiver by lazy {
         MissedNotificationsEventReceiverImpl(
-            syncExecutor = lazy { syncExecutor },
+            slowSyncExecutionProvider = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
         )
     }

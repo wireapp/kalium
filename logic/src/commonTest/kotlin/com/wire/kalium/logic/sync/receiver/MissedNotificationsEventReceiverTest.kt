@@ -17,17 +17,12 @@
  */
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.sync.SyncExecutor
-import com.wire.kalium.logic.sync.SyncRequest
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.any
-import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
@@ -42,7 +37,7 @@ class MissedNotificationsEventReceiverTest {
 
     @Test
     fun givenAMissedNotificationsEventsReceived_thenShouldTriggerFullSync() = runTest(TestKaliumDispatcher.default) {
-        val (arrangement, receiver) = Arrangement().withSyncExecutor().arrange()
+        val (arrangement, receiver) = Arrangement().arrange()
 
         receiver.onEvent(event = TestEvent.notificationsMissed(), deliveryInfo = TestEvent.liveDeliveryInfo)
 
@@ -50,22 +45,22 @@ class MissedNotificationsEventReceiverTest {
             advanceUntilIdle()
             arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
             arrangement.slowSyncRepository.setNeedsToPersistHistoryLostMessage(eq(true))
+            arrangement.slowSyncExecutorProvider.invoke()
         }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
-        @Mock
-        val syncExecutor = mock(SyncExecutor::class)
 
         @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
-        suspend fun withSyncExecutor() = apply {
-            coEvery { syncExecutor.request(any<SyncRequest.() -> Either<CoreFailure, Unit>>()) }.returns(Unit.right())
+        @Mock
+        val slowSyncExecutorProvider: suspend () -> Either.Right<Unit> = {
+            Unit.right()
         }
 
         fun arrange() = this to MissedNotificationsEventReceiverImpl(
-            syncExecutor = lazy { syncExecutor },
+            slowSyncExecutionProvider = slowSyncExecutorProvider,
             slowSyncRepository = slowSyncRepository
         )
     }
