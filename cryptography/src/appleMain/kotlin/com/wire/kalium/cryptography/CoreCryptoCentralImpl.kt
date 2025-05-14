@@ -22,18 +22,13 @@ import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
 import kotlinx.coroutines.CoroutineScope
-import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
     passphrase: ByteArray
 ): CoreCryptoCentral {
-    val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
-    NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
-    val coreCrypto = CoreCrypto.deferredInit(path, oldKey, null)
-    coreCrypto.setCallbacks(Callbacks())
-    return CoreCryptoCentralImpl(coreCrypto, rootDir)
+    TODO("Not yet implemented")
 }
 
 private class Callbacks : CoreCryptoCallbacks {
