@@ -169,16 +169,15 @@ class MLSClientProviderImpl(
                 // TODO: migrate to okio solution once assert refactor is merged
                 FileUtil.mkDirs(it)
             }
-            val dbSecret = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId)
+            val rootDir = "$location/$KEYSTORE_NAME"
+            val dbSecret = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId, rootDir)
             return@withContext coreCryptoCentral?.let {
                 Either.Right(it)
             } ?: run {
                 val cc = try {
                     coreCryptoCentral(
-                        rootDir = "$location/$KEYSTORE_NAME",
-                        oldKey = dbSecret.value,
+                        rootDir = rootDir,
                         passphrase = dbSecret.passphrase,
-                        hasMigrated = dbSecret.hasMigrated
                     )
                 } catch (e: CancellationException) {
                     throw e

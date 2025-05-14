@@ -18,28 +18,18 @@
 
 package com.wire.kalium.cryptography
 
-data class MlsDBSecret(
-    @Deprecated("Use passphrase after migration") val value: String,
-    val passphrase: ByteArray,
-    val hasMigrated: Boolean
-) {
+data class MlsDBSecret(val passphrase: ByteArray) {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
         other as MlsDBSecret
 
-        if (hasMigrated != other.hasMigrated) return false
-        if (value != other.value) return false
-        if (!passphrase.contentEquals(other.passphrase)) return false
-
-        return true
+        return passphrase.contentEquals(other.passphrase)
     }
 
     override fun hashCode(): Int {
-        var result = hasMigrated.hashCode()
-        result = 31 * result + value.hashCode()
-        result = 31 * result + passphrase.contentHashCode()
-        return result
+        return this::class.hashCode()
     }
 }

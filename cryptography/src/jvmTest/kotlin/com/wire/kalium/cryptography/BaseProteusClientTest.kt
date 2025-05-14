@@ -36,7 +36,7 @@ actual open class BaseProteusClientTest {
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
         return databaseKey?.let {
-            coreCryptoCentral(proteusStore.value, it.value, it.passphrase, it.hasMigrated).proteusClient()
+            coreCryptoCentral(proteusStore.value, it.passphrase).proteusClient()
         } ?: cryptoboxProteusClient(proteusStore.value, testCoroutineScheduler, testCoroutineScheduler)
     }
 }

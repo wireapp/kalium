@@ -31,6 +31,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,6 +47,7 @@ class SecurityHelperTest {
     private val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
     private val v1Alias = "mls_db_secret_alias_$userId"
     private val v2Alias = "mls_db_secret_alias_v2_$userId"
+    private val rootPath = "/root/path"
 
     @BeforeTest
     fun setup() {
@@ -53,7 +55,7 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun whenCallingGlobalDBSecretTwice_thenTheSameValueIsReturned() {
+    fun whenCallingGlobalDBSecretTwice_thenTheSameValueIsReturned() = runTest {
         every {
             passphraseStorage.getPassphrase(any())
         }.returns(null)
@@ -75,7 +77,7 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun whenCallingUserDBSecretTwice_thenTheSameValueIsReturned() {
+    fun whenCallingUserDBSecretTwice_thenTheSameValueIsReturned() = runTest {
         every {
             passphraseStorage.getPassphrase(any())
         }.returns(null)
@@ -97,7 +99,7 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun whenCallingMlsDBSecretTwiceForTheSameUser_thenTheSameValueIsReturned() {
+    fun whenCallingMlsDBSecretTwiceForTheSameUser_thenTheSameValueIsReturned() = runTest {
         val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
 
         val oldKeyBytes = ByteArray(32) { 0 }
@@ -105,8 +107,8 @@ class SecurityHelperTest {
         setupSequencedGetPassphrase("mls_db_secret_alias_v2_$userId", listOf(oldKeyBytes.encodeBase64(), oldKeyBytes.encodeBase64()))
         setupSequencedGetPassphrase("mls_db_secret_alias_$userId", listOf(null, "oldKeyBase64"))
 
-        val secret1 = securityHelper.mlsDBSecret(userId)
-        val secret2 = securityHelper.mlsDBSecret(userId)
+        val secret1 = securityHelper.mlsDBSecret(userId, rootPath)
+        val secret2 = securityHelper.mlsDBSecret(userId, rootPath)
 
         assertTrue(secret1.passphrase.contentEquals(secret2.passphrase))
 
@@ -114,7 +116,7 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun whenBothV1AndV2Exist_thenHasMigratedTrueAndNoNewV2Produced() {
+    fun whenBothV1AndV2Exist_thenHasMigratedTrueAndNoNewV2Produced() = runTest {
         val v1b64 = "oldBase64"
         val v2b64 = "newBase64"
 
@@ -123,16 +125,14 @@ class SecurityHelperTest {
 
         every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
 
-        val secret = securityHelper.mlsDBSecret(userId)
+        val secret = securityHelper.mlsDBSecret(userId, rootPath)
 
-        assertTrue(secret.hasMigrated)
-        assertEquals(v1b64, secret.value)
         assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
         verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
     }
 
     @Test
-    fun whenV2ExistsButV1Absent_thenGeneratesOnlyV1() {
+    fun whenV2ExistsButV1Absent_thenGeneratesOnlyV1() = runTest {
         val v2b64 = "newBase64"
         val captured = mutableListOf<String>()
 
@@ -140,9 +140,8 @@ class SecurityHelperTest {
         setupSequencedGetPassphrase(v1Alias, listOf(null, "generatedOldB64"))
         setupSequencedSetPassphrase(v1Alias, captured)
 
-        val secret = securityHelper.mlsDBSecret(userId)
+        val secret = securityHelper.mlsDBSecret(userId, rootPath)
 
-        assertTrue(secret.hasMigrated)
         assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
         assertEquals(1, captured.size)
     }
