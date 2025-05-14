@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.model
 
+// TODO remove this class and use [Node] instead
 public data class CellNode(
     val uuid: String,
     val versionId: String,
@@ -35,3 +36,8 @@ public data class CellNode(
     val conversationId: String? = null,
     val publicLinkId: String? = null,
 )
+
+public enum class CellNodeType(public val value: String) {
+    FOLDER("COLLECTION"),
+    FILE("LEAF"),
+}

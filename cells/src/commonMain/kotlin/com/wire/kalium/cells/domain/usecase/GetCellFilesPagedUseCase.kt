@@ -20,7 +20,7 @@ package com.wire.kalium.cells.domain.usecase
 import app.cash.paging.Pager
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingData
-import com.wire.kalium.cells.domain.model.CellFile
+import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.paging.FilePagingSource
 import kotlinx.coroutines.flow.Flow
 
@@ -28,11 +28,11 @@ public interface GetCellFilesPagedUseCase {
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
-    ): Flow<PagingData<CellFile>>
+    ): Flow<PagingData<Node>>
 }
 
 internal class GetCellFilesPagedUseCaseImpl(
-    private val getCellFilesUseCase: GetCellFilesUseCase,
+    private val getNodesUseCase: GetNodesUseCase,
 ) : GetCellFilesPagedUseCase {
 
     private companion object {
@@ -42,7 +42,7 @@ internal class GetCellFilesPagedUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
-    ): Flow<PagingData<CellFile>> {
+    ): Flow<PagingData<Node>> {
         return Pager(
             config = PagingConfig(
                 pageSize = PAGE_SIZE
@@ -52,7 +52,7 @@ internal class GetCellFilesPagedUseCaseImpl(
                     query = query,
                     pageSize = PAGE_SIZE,
                     conversationId = conversationId,
-                    getCellFilesUseCase = getCellFilesUseCase
+                    getNodesUseCase = getNodesUseCase
                 )
             }
         ).flow
