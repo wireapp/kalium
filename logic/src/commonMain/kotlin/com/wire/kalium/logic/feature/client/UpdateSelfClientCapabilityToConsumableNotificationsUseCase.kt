@@ -19,8 +19,15 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
@@ -34,8 +41,9 @@ internal interface UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
 internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl internal constructor(
     private val selfClientIdProvider: CurrentClientIdProvider,
     private val clientRepository: ClientRepository,
+    private val clientRemoteRepository: ClientRemoteRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val selfServerConfigUseCase: SelfServerConfigUseCase,
+    private val selfServerConfig: SelfServerConfigUseCase,
     kaliumLogger: KaliumLogger
 ) : UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
 
@@ -45,13 +53,36 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
         incrementalSyncRepository.incrementalSyncState.filter { it is IncrementalSyncStatus.Live }.collect {
             val isMigrationDone = clientRepository.shouldUpdateClientConsumableNotificationsCapability()
             val isEnabledByServer =
-                (selfServerConfigUseCase() as SelfServerConfigUseCase.Result.Success).serverLinks.metaData.commonApiVersion.version >=
+                (selfServerConfig() as SelfServerConfigUseCase.Result.Success).serverLinks.metaData.commonApiVersion.version >=
                         MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
-            val clientHasConsumableNotifications = clientRepository.clientHasConsumableNotifications()
-
-
+            val clientHasConsumableNotifications = clientRepository.clientHasConsumableNotifications().getOrElse(false)
+            if (isMigrationDone || !isEnabledByServer || clientHasConsumableNotifications) {
+                logger.d(
+                    "Skipping client migration: isMigrationDone: $isMigrationDone, isEnabledByServer: " +
+                            "$isEnabledByServer, clientHasConsumableNotifications: $clientHasConsumableNotifications"
+                )
+                return@collect
+            }
+            selfClientIdProvider().flatMap { clientId ->
+                clientRemoteRepository.updateClientCapabilities(
+                    updateClientCapabilitiesParam = UpdateClientCapabilitiesParam(
+                        capabilities = listOf(
+                            ClientCapability.LegalHoldImplicitConsent,
+                            ClientCapability.ConsumableNotifications
+                        )
+                    ),
+                    clientID = clientId.value
+                ).flatMap {
+                    clientRepository.setShouldUpdateClientConsumableNotificationsCapability(false)
+                    // refresh the client to local storage has capability
+                }.onFailure {
+                    logger.e("Failed to update client capabilities $it")
+                }
+            }.onFailure {
+                logger.e("Failed to update client capabilities $it")
+            }
         }
-        return Either.Right(Unit)
+        return Unit.right()
     }
 }
 
