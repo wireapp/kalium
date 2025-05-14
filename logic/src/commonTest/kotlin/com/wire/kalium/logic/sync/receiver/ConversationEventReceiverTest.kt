@@ -73,14 +73,14 @@ class ConversationEventReceiverTest {
 
     @Test
     fun givenNewMLSMessageEvent_whenOnEventInvoked_thenNewMLSMessageEventHandlerShouldBeCalled() = runTest {
-        val newMLSMessageEvent = TestEvent.newMLSMessageEvent(Instant.DISTANT_FUTURE)
+        val newMLSMessageEvent = TestEvent.newMLSMessageBatchEvent(Instant.DISTANT_FUTURE)
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
         val result = featureConfigEventReceiver.onEvent(newMLSMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.newMessageEventHandler.handleNewMLSMessage(eq(newMLSMessageEvent), any())
+            arrangement.newMessageEventHandler.handleNewMLSBatch(eq(newMLSMessageEvent), any())
         }.wasInvoked(once)
 
         result.shouldSucceed()

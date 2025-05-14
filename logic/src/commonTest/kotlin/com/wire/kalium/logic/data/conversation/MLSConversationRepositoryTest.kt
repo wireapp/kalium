@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.DecryptedBatch
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
@@ -40,6 +41,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.DECRYPTED_MESSAGE_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.KEY_PACKAGE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.MLS_CLIENT_MISMATCH_ERROR
@@ -56,6 +58,7 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.message.mls.MLSMessage
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -107,8 +110,8 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenCommitMessageWithNewDistributionPoints_whenDecryptingMessage_thenCheckRevocationList() =
         runTest(TestKaliumDispatcher.default) {
-            val messageWithNewDistributionPoints = Arrangement.DECRYPTED_MESSAGE_BUNDLE.copy(
-                crlNewDistributionPoints = listOf("url")
+            val messageWithNewDistributionPoints = Arrangement.DECRYPTED_BATCH.copy(
+                messages = listOf(DECRYPTED_MESSAGE_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))),
             )
             val (arrangement, mlsConversationRepository) = Arrangement()
                 .withGetMLSClientSuccessful()
@@ -116,7 +119,7 @@ class MLSConversationRepositoryTest {
                 .withCheckRevocationListResult()
                 .arrange()
 
-            mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+            mlsConversationRepository.decryptMessages(listOf(Arrangement.MLS_MESSAGE), Arrangement.GROUP_ID)
 
             coVerify {
                 arrangement.checkRevocationList.check(any())
@@ -1635,10 +1638,10 @@ class MLSConversationRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withDecryptMLSMessageSuccessful(decryptedMessage: com.wire.kalium.cryptography.DecryptedMessageBundle) = apply {
+        suspend fun withDecryptMLSMessageSuccessful(decryptedBatch: DecryptedBatch) = apply {
             coEvery {
-                mlsClient.decryptMessage(any(), any())
-            }.returns(listOf(decryptedMessage))
+                mlsClient.decryptMessages(any(), any())
+            }.returns(decryptedBatch)
         }
 
         suspend fun withRemoveMemberSuccessful() = apply {
@@ -1726,6 +1729,13 @@ class MLSConversationRepositoryTest {
             val WELCOME = "welcome".encodeToByteArray()
             val EXTERNAL_SENDER_KEY = ExternalSenderKey("externalSenderKey".encodeToByteArray())
             val COMMIT = "commit".encodeToByteArray()
+            val MLS_MESSAGE = MLSMessage(
+                "id",
+                TestUser.USER_ID,
+                TIME,
+                "commit",
+            )
+
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
             val PUBLIC_GROUP_STATE_BUNDLE = GroupInfoBundle(
                 GroupInfoEncryptionType.PLAINTEXT,
@@ -1757,14 +1767,23 @@ class MLSConversationRepositoryTest {
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
+
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
                 message = null,
                 commitDelay = null,
                 senderClientId = null,
                 hasEpochChanged = true,
                 identity = null,
-                crlNewDistributionPoints = null
+                crlNewDistributionPoints = null,
+                TIME
             )
+
+            val DECRYPTED_BATCH = DecryptedBatch(
+                listOf(DECRYPTED_MESSAGE_BUNDLE),
+                MLS_GROUP_ID,
+                null
+            )
+
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,

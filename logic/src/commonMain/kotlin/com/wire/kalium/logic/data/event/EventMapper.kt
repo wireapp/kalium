@@ -71,45 +71,72 @@ class EventMapper(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) {
 
+    @Suppress("CyclomaticComplexMethod")
     fun fromBatch(
         batch: List<EventResponse>,
         isLive: Boolean
     ): List<EventEnvelope> {
         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
 
-        val mlsMessages = extractGroupedMLS(batch)
-        val otherEvents = extractOtherEvents(batch)
-
-        return toEventEnvelopes(mlsMessages, source) + mapToEventEnvelopes(otherEvents, source)
-    }
-
-    private fun extractGroupedMLS(batch: List<EventResponse>): List<Event> {
-        val grouped = batch
-            .flatMap { response ->
-                val id = response.id
-                response.payload.orEmpty()
-                    .filterIsInstance<EventContentDTO.Conversation.NewMLSMessageDTO>()
-                    .map { id to it }
-            }
-        return groupMLSMessages(grouped)
-    }
-
-    private fun extractOtherEvents(batch: List<EventResponse>): List<Pair<String, EventContentDTO>> {
-        return batch.flatMap { response ->
+        val allEvents: List<Triple<String, EventContentDTO, Boolean>> = batch.flatMap { response ->
             val id = response.id
-            response.payload.orEmpty()
-                .filterNot { it is EventContentDTO.Conversation.NewMLSMessageDTO }
-                .map { id to it }
+            val isTransient = response.transient
+            response.payload.orEmpty().map { payload ->
+                Triple(id, payload, isTransient)
+            }
         }
-    }
 
-    private fun toEventEnvelopes(events: List<Event>, source: EventSource): List<EventEnvelope> {
-        return events.map { EventEnvelope(it, EventDeliveryInfo(isTransient = false, source = source)) }
-    }
+        val groupedByConversation = allEvents.groupBy { (_, dto, _) ->
+            when (dto) {
+                is EventContentDTO.Conversation.NewMLSMessageDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.MLSWelcomeDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.ConversationTypingDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.ConversationRenameDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.NewMessageDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.MemberJoinDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.MemberLeaveDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.MemberUpdateDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.ProtocolUpdate -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.ReceiptModeUpdate -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.MessageTimerUpdate -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.AccessUpdate -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.CodeUpdated -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.CodeDeleted -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.DeletedConversationDTO -> dto.qualifiedConversation
+                is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> dto.qualifiedConversation
+                else -> null
+            }
+        }
 
-    private fun mapToEventEnvelopes(events: List<Pair<String, EventContentDTO>>, source: EventSource): List<EventEnvelope> {
-        return events.map { (id, dto) ->
-            EventEnvelope(fromEventContentDTO(id, dto), EventDeliveryInfo(isTransient = false, source = source))
+        return groupedByConversation.flatMap { (_, events) ->
+            val (mlsMessages, others) = events.partition { it.second is EventContentDTO.Conversation.NewMLSMessageDTO }
+            val (welcomes, remainingOthers) = others.partition { it.second is EventContentDTO.Conversation.MLSWelcomeDTO }
+
+            val result = mutableListOf<EventEnvelope>()
+
+            // 1. Welcome
+            result += welcomes.map { (id, dto, isTransient) ->
+                EventEnvelope(fromEventContentDTO(id, dto), EventDeliveryInfo(isTransient, source))
+            }
+
+            // 2. MLS messages
+            if (mlsMessages.isNotEmpty()) {
+                val grouped = groupMLSMessages(
+                    mlsMessages.map { (id, dto, _) ->
+                        id to (dto as EventContentDTO.Conversation.NewMLSMessageDTO)
+                    }
+                )
+                result += grouped.map { event ->
+                    EventEnvelope(event, EventDeliveryInfo(isTransient = false, source = source))
+                }
+            }
+
+            // 3. Others
+            result += remainingOthers.map { (id, dto, isTransient) ->
+                EventEnvelope(fromEventContentDTO(id, dto), EventDeliveryInfo(isTransient, source))
+            }
+
+            result
         }
     }
 
@@ -316,6 +343,7 @@ class EventMapper(
         protocol = eventContentDTO.data.protocol.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
+
     private fun conversationChannelPermissionUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ChannelAddPermissionUpdate,

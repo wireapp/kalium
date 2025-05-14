@@ -18,3 +18,71 @@
 package com.wire.kalium.cryptography.exceptions
 
 class CryptographyException(override val message: String, val rootCause: Throwable? = null) : Exception(message, rootCause)
+
+sealed class CryptographyMLSException : Exception() {
+    class ConversationAlreadyExists(
+        val conversationId: ByteArray
+    ) : CryptographyMLSException() {
+        override val message
+            get() = "conversationId=$conversationId"
+    }
+
+    class DuplicateMessage : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class BufferedFutureMessage : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class WrongEpoch : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class BufferedCommit : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class MessageEpochTooOld : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class SelfCommitIgnored : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class UnmergedPendingGroup : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class StaleProposal : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class StaleCommit : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class OrphanWelcome : CryptographyMLSException() {
+        override val message
+            get() = ""
+    }
+
+    class MessageRejected(
+        private val reason: String
+    ) : CryptographyMLSException() {
+        override val message
+            get() = reason
+    }
+
+    class Other(override val message: String) : CryptographyMLSException()
+}

@@ -47,7 +47,6 @@ import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
 internal interface MLSMessageUnpacker {
-    //     suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>>
     suspend fun unpackMlsGroupMessages(event: Event.Conversation.MLSGroupMessages): Either<CoreFailure, List<MessageUnpackResult>>
     suspend fun unpackMlsSubGroupMessages(event: Event.Conversation.MLSSubGroupMessages): Either<CoreFailure, List<MessageUnpackResult>>
 

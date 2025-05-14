@@ -19,6 +19,9 @@
 package com.wire.kalium.cryptography
 
 import com.wire.kalium.cryptography.MLSClientTest.Arrangement.Companion.create
+import com.wire.kalium.cryptography.exceptions.CryptographyMLSException
+import com.wire.kalium.cryptography.utils.assertMLSException
+import com.wire.kalium.cryptography.utils.mapMLSException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -497,8 +500,108 @@ class MLSClientTest : BaseMLSClientTest() {
         assertTrue(secondDecrypt.messages.first().message?.decodeToString()?.contains("Second") == true)
     }
 
+    @Test
+    fun givenMessageFromNextEpoch_shouldBeBufferedNotFail() = runTest {
+        val aliceArrangement = create(ALICE1, ::createMLSClient)
+        val bobArrangement = create(BOB1, ::createMLSClient)
 
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+        val groupId = MLS_CONVERSATION_ID
 
+        // Bob tworzy grupę i dodaje Alice
+        bobClient.createConversation(groupId, externalSenderKey)
+        val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
+        bobClient.addMember(groupId, listOf(aliceKeyPackage))
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        aliceClient.processWelcomeMessage(welcome)
+
+        val dummyArrangement = create(CAROL1, ::createMLSClient)
+        val dummyKeyPackage = dummyArrangement.mlsClient.generateKeyPackages(1).first()
+        bobClient.addMember(groupId, listOf(dummyKeyPackage))
+
+        val encryptedMessage = bobClient.encryptMessage(groupId, "msg from epoch+1".encodeToByteArray())
+        val encrypted = EncryptedMessage(
+            content = encryptedMessage,
+            eventId = "future-epoch-buffered",
+            messageInstant = Clock.System.now()
+        )
+
+        val result = aliceClient.decryptMessages(groupId, listOf(encrypted))
+
+        assertTrue(result.messages.isEmpty())
+        assertNull(result.failedMessage)
+    }
+
+    @Test
+    fun givenMessageFromTooFarFutureEpoch_shouldThrowWrongEpoch() = runTest {
+        val aliceArrangement = create(ALICE1, ::createMLSClient)
+        val bobArrangement = create(BOB1, ::createMLSClient)
+        val dummyArrangement = create(CAROL1, ::createMLSClient)
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+        val dummyClient = dummyArrangement.mlsClient
+        val groupId = MLS_CONVERSATION_ID
+
+        bobClient.createConversation(groupId, externalSenderKey)
+        val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
+        bobClient.addMember(groupId, listOf(aliceKeyPackage))
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        aliceClient.processWelcomeMessage(welcome)
+
+        repeat(2) {
+            val kp = dummyClient.generateKeyPackages(1).first()
+            bobClient.addMember(groupId, listOf(kp))
+            bobClient.removeMember(groupId, listOf(CAROL1.qualifiedClientId))
+        }
+
+        val encryptedMessage = bobClient.encryptMessage(groupId, "too far".encodeToByteArray())
+        val encrypted = EncryptedMessage(
+            content = encryptedMessage,
+            eventId = "too-far-future",
+            messageInstant = Clock.System.now()
+        )
+
+        assertMLSException<CryptographyMLSException.WrongEpoch> {
+            aliceClient.decryptMessages(groupId, listOf(encrypted))
+        }
+    }
+
+    @Test
+    fun givenMessageWithTooOldEpoch_whenDecrypting_shouldThrowMessageEpochTooOld() = runTest {
+        val aliceArrangement = create(ALICE1, ::createMLSClient)
+        val bobArrangement = create(BOB1, ::createMLSClient)
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+
+        bobClient.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+
+        bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(aliceClient.generateKeyPackages(1).first())
+        )
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        aliceClient.processWelcomeMessage(welcome)
+
+        val encryptedMessage = aliceClient.encryptMessage(MLS_CONVERSATION_ID, "Legacy".encodeToByteArray())
+
+        repeat(4) {
+            bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID)
+        }
+
+        val exception = runCatching {
+            bobClient.decryptMessage(MLS_CONVERSATION_ID, encryptedMessage, Clock.System.now())
+        }.exceptionOrNull()
+
+        val mapped = mapMLSException(exception as Exception)
+
+        assertTrue(
+            mapped is CryptographyMLSException.MessageEpochTooOld,
+            "Expected MessageEpochTooOld but got: ${mapped::class.simpleName}"
+        )
+    }
 
     companion object {
         val externalSenderKey = ByteArray(32)
@@ -533,7 +636,6 @@ class MLSClientTest : BaseMLSClientTest() {
         private val sendMessageResponses: MutableList<MlsTransportResponse>,
         private val sendCommitResponses: MutableList<MlsTransportResponse>,
         private val mutex: Mutex,
-
         ) {
 
         companion object {

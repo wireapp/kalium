@@ -18,24 +18,24 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.cryptography.DecryptedBatch
+import com.wire.kalium.cryptography.DecryptedMessageBundle
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -45,6 +45,7 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
@@ -60,8 +61,8 @@ class MLSMessageUnpackerTest {
             .withGetConversationProtocolInfoSuccessful(TestConversation.PROTEUS_PROTOCOL_INFO)
             .arrange()
 
-        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
-        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        val messageEvent = TestEvent.newMLSMessageBatchEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsGroupMessages(messageEvent)
         result.shouldFail { failure ->
             assertEquals(CoreFailure.NotSupportedByProteus, failure)
         }
@@ -75,11 +76,17 @@ class MLSMessageUnpackerTest {
         val (_, mlsUnpacker) = Arrangement()
             .withMLSClientProviderReturningClient()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MIXED_PROTOCOL_INFO)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .withDecryptMessageReturning(
+                Either.Right(
+                    DECRYPTED_BATCH.copy(
+                        messages = listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))
+                    )
+                )
+            )
             .arrange()
 
-        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
-        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        val messageEvent = TestEvent.newMLSMessageBatchEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsGroupMessages(messageEvent)
         result.shouldSucceed()
 
         assertEquals(listOf(MessageUnpackResult.HandshakeMessage), result.getOrNull())
@@ -93,11 +100,17 @@ class MLSMessageUnpackerTest {
         val (_, mlsUnpacker) = Arrangement()
             .withMLSClientProviderReturningClient()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .withDecryptMessageReturning(
+                Either.Right(
+                    DECRYPTED_BATCH.copy(
+                        messages = listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))
+                    )
+                )
+            )
             .arrange()
 
-        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
-        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        val messageEvent = TestEvent.newMLSMessageBatchEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsGroupMessages(messageEvent)
         result.shouldSucceed()
 
         assertEquals(listOf(MessageUnpackResult.HandshakeMessage), result.getOrNull())
@@ -111,12 +124,21 @@ class MLSMessageUnpackerTest {
         val (arrangement, mlsUnpacker) = Arrangement()
             .withMLSClientProviderReturningClient()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .withDecryptMessageReturning(
+                Either.Right(
+                    DECRYPTED_BATCH.copy(
+                        messages = listOf(DECRYPTED_MESSAGE_BUNDLE
+                            .copy(
+                                messageInstant = eventTimestamp,
+                                commitDelay = commitDelay))
+                    )
+                )
+            )
             .withScheduleCommitSucceeding()
             .arrange()
 
-        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
-        mlsUnpacker.unpackMlsMessage(messageEvent)
+        val messageEvent = TestEvent.newMLSMessageBatchEvent(eventTimestamp)
+        mlsUnpacker.unpackMlsGroupMessages(messageEvent)
 
         coVerify {
             arrangement.pendingProposalScheduler.scheduleCommit(eq(TestConversation.GROUP_ID), eq(eventTimestamp.plus(commitDelay.seconds)))
@@ -129,14 +151,17 @@ class MLSMessageUnpackerTest {
         val (arrangement, mlsUnpacker) = Arrangement()
             .withMLSClientProviderReturningClient()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE)))
+            .withDecryptMessageReturning(Either.Right(DECRYPTED_BATCH))
             .arrange()
 
-        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
-        mlsUnpacker.unpackMlsMessage(messageEvent)
+        val messageEvent = TestEvent.newMLSMessageBatchEvent(eventTimestamp)
+        mlsUnpacker.unpackMlsGroupMessages(messageEvent)
 
         coVerify {
-            arrangement.mlsConversationRepository.decryptMessage(matches { it.contentEquals(messageEvent.content.decodeBase64Bytes()) }, eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.decryptMessages(
+                matches { it.size == messageEvent.messages.size },
+                eq(TestConversation.GROUP_ID)
+            )
         }.wasInvoked(once)
     }
 
@@ -174,9 +199,9 @@ class MLSMessageUnpackerTest {
             }.returns(Either.Right(mlsClient))
         }
 
-        suspend fun withDecryptMessageReturning(result: Either<CoreFailure, List<DecryptedMessageBundle>>) = apply {
+        suspend fun withDecryptMessageReturning(result: Either<CoreFailure, DecryptedBatch>) = apply {
             coEvery {
-                mlsConversationRepository.decryptMessage(any(), any())
+                mlsConversationRepository.decryptMessages(any(), any())
             }.returns(result)
         }
 
@@ -194,13 +219,25 @@ class MLSMessageUnpackerTest {
 
         fun arrange() = this to mlsMessageUnpacker
     }
+
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
+        val TIME = Instant.DISTANT_PAST
+
         val DECRYPTED_MESSAGE_BUNDLE = DecryptedMessageBundle(
-            groupID = TestConversation.GROUP_ID,
-            applicationMessage = null,
+            message = null,
             commitDelay = null,
-            identity = null
+            senderClientId = null,
+            hasEpochChanged = true,
+            identity = null,
+            crlNewDistributionPoints = null,
+            messageInstant = TIME
+        )
+
+        val DECRYPTED_BATCH = DecryptedBatch(
+            listOf(DECRYPTED_MESSAGE_BUNDLE),
+            "mlsGroupId",
+            null
         )
     }
 }

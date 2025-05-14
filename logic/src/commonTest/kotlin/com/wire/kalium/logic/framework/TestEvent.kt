@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.message.mls.MLSMessage
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -197,17 +198,33 @@ object TestEvent {
         encryptedExternalContent
     )
 
-    fun newMLSMessageEvent(
+    fun newMLSMessageBatchEvent(dateTime: Instant) = Event.Conversation.MLSGroupMessages(
+        "eventId",
+        TestConversation.ID,
+        listOf(MLSMessage(
+            "eventId",
+            TestUser.USER_ID,
+            dateTime,
+            "content".encodeBase64(),
+        ))
+    )
+
+    fun newMLSMessageSubGroupBatchEvent(
         dateTime: Instant,
-        subConversationId: SubconversationId? = null
-    ) = Event.Conversation.NewMLSMessage(
+        subConversationId: SubconversationId
+    ) = Event.Conversation.MLSSubGroupMessages(
         "eventId",
         TestConversation.ID,
         subConversationId,
-        TestUser.USER_ID,
-        dateTime,
-        "content".encodeBase64(),
+        listOf(MLSMessage(
+            "eventId",
+            TestUser.USER_ID,
+            dateTime,
+            "content".encodeBase64(),
+        ))
     )
+
+
 
     fun newConversationEvent() = Event.Conversation.NewConversation(
         id = "eventId",

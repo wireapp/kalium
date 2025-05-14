@@ -131,12 +131,12 @@ class NewMessageEventHandlerTest {
             .withMLSUnpackerReturning(Either.Right(listOf(MessageUnpackResult.HandshakeMessage)))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = TestEvent.newMLSMessageBatchEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSBatch(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent))
+            arrangement.mlsMessageUnpacker.unpackMlsGroupMessages(eq(newMessageEvent))
         }.wasInvoked(exactly = once)
     }
 
@@ -157,9 +157,9 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = TestEvent.newMLSMessageBatchEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSBatch(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.legalHoldHandler.handleNewMessage(any(), any())
@@ -177,12 +177,12 @@ class NewMessageEventHandlerTest {
             .withMLSUnpackerReturning(Either.Right(listOf(applicationMessage)))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = TestEvent.newMLSMessageBatchEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSBatch(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent))
+            arrangement.mlsMessageUnpacker.unpackMlsGroupMessages(eq(newMessageEvent))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -297,10 +297,10 @@ class NewMessageEventHandlerTest {
             .withMLSUnpackerReturning(Either.Right(listOf(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        val newMessageEvent = TestEvent.newMLSMessageBatchEvent(DateTimeUtil.currentInstant())
+        newMessageEventHandler.handleNewMLSBatch(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        coVerify { arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.mlsMessageUnpacker.unpackMlsGroupMessages(eq(newMessageEvent)) }.wasInvoked(exactly = once)
         coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasInvoked(exactly = once)
     }
 
@@ -367,15 +367,15 @@ class NewMessageEventHandlerTest {
             .withVerifyEpoch(Either.Right(Unit))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = TestEvent.newMLSMessageBatchEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSBatch(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.staleEpochVerifier.verifyEpoch(
                 eq(newMessageEvent.conversationId),
                 any(),
-                eq(newMessageEvent.messageInstant)
+                eq(newMessageEvent.messages.first().messageInstant)
             )
         }.wasInvoked(exactly = once)
     }
@@ -388,9 +388,9 @@ class NewMessageEventHandlerTest {
                 .withVerifyEpoch(Either.Right(Unit))
                 .arrange()
 
-            val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+            val newMessageEvent = TestEvent.newMLSMessageBatchEvent(DateTimeUtil.currentInstant())
 
-            newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+            newMessageEventHandler.handleNewMLSBatch(newMessageEvent, TestEvent.liveDeliveryInfo)
 
             coVerify {
                 arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
@@ -399,18 +399,18 @@ class NewMessageEventHandlerTest {
 
     @Test
     fun givenSubconversationId_whenHandlingInformUserFailure_thenShouldNotSendSystemMessage() = runTest {
-        val event = TestEvent.newMLSMessageEvent(
+        val event = TestEvent.newMLSMessageSubGroupBatchEvent(
             dateTime = DateTimeUtil.currentInstant(),
             subConversationId = SubconversationId("subconversation-id")
         )
 
         val (arrangement, newMessageEventHandler) = Arrangement()
             .apply {
-                withMLSUnpackerReturning(Either.Left(CoreFailure.Unknown(null)))
+                withMLSUnpackerSubGroupReturning(Either.Left(CoreFailure.Unknown(null)))
             }
             .arrange()
 
-        newMessageEventHandler.handleNewMLSMessage(event, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSSubGroupBatch(event, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.applicationMessageHandler.handleDecryptionError(
@@ -487,7 +487,14 @@ class NewMessageEventHandlerTest {
         suspend fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) =
             apply {
                 coEvery {
-                    mlsMessageUnpacker.unpackMlsMessage(any())
+                    mlsMessageUnpacker.unpackMlsGroupMessages(any())
+                }.returns(result)
+            }
+
+        suspend fun withMLSUnpackerSubGroupReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) =
+            apply {
+                coEvery {
+                    mlsMessageUnpacker.unpackMlsSubGroupMessages(any())
                 }.returns(result)
             }
 
