@@ -26,7 +26,9 @@ import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.authenticated.client.UpdateClientCapabilitiesRequest
 import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface ClientApi {
 
     suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO>

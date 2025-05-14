@@ -19,14 +19,12 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface IncrementalSyncRepositoryArrangement {
-    @Mock
-    val incrementalSyncRepository: IncrementalSyncRepository
+        val incrementalSyncRepository: IncrementalSyncRepository
 
     fun withIncrementalSyncState(statusFlow: Flow<IncrementalSyncStatus>)
 }

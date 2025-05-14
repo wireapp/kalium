@@ -30,9 +30,11 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.QualifiedUserId
+import io.mockative.Mockable
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface IdMapper {
     fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId
     fun fromClient(client: Client): ClientId

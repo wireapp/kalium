@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -85,10 +84,8 @@ class ClearConversationAssetsLocallyUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+        
         val messageRepository = mock(MessageRepository::class)
-
-        @Mock
         val assetRepository = mock(AssetRepository::class)
 
         suspend fun withAssetClearSuccess(id: String) = apply {

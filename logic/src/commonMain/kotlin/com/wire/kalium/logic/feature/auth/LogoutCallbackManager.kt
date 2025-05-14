@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.auth
 import co.touchlab.stately.collections.ConcurrentMutableList
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
+import io.mockative.Mockable
 
 /**
  * This manager is used to register callbacks that will be called when a user session is being logged out.
@@ -40,6 +41,7 @@ internal class LogoutCallbackManagerImpl : LogoutCallbackManager, LogoutCallback
     override suspend fun invoke(userId: UserId, reason: LogoutReason) { callbacks.forEach { it(userId, reason) } }
 }
 
+@Mockable
 interface LogoutCallback {
     suspend operator fun invoke(userId: UserId, reason: LogoutReason)
 }

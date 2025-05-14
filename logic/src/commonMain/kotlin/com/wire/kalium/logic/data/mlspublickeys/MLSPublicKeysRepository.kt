@@ -30,6 +30,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import io.ktor.util.decodeBase64Bytes
+import io.mockative.Mockable
 
 fun MLSPublicKeys.getRemovalKey(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
     val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
@@ -40,6 +41,7 @@ fun MLSPublicKeys.getRemovalKey(cipherSuite: CipherSuite): Either<CoreFailure, B
     return key.decodeBase64Bytes().right()
 }
 
+@Mockable
 interface MLSPublicKeysRepository {
     suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
     suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys>

@@ -42,11 +42,13 @@ import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
+import io.mockative.Mockable
 
 // A magic number used to initialize AVS (required for all mobile platforms).
 const val ENVIRONMENT_DEFAULT = 0
 
 @Suppress("FunctionNaming")
+@Mockable
 interface Calling : Library {
 
     fun wcall_create(

@@ -28,28 +28,17 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
 interface E2EIClientProviderArrangement {
-    @Mock
+
     val mlsClientProvider: MLSClientProvider
-
-    @Mock
     val mlsClient: MLSClient
-
-    @Mock
     val coreCryptoCentral: CoreCryptoCentral
-
-    @Mock
     val e2eiClient: E2EIClient
-
-    @Mock
     val userRepository: UserRepository
-
-    @Mock
     val currentClientIdProvider: CurrentClientIdProvider
 
     suspend fun withGettingCoreCryptoSuccessful()

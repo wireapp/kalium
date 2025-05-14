@@ -28,7 +28,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -75,10 +74,7 @@ class ApiMigrationV3Test {
 
     class Arrangement {
 
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val upgradeCurrentSessionUseCase = mock(UpgradeCurrentSessionUseCase::class)
 
         suspend fun withClientId(clientId: ClientId?) = apply {

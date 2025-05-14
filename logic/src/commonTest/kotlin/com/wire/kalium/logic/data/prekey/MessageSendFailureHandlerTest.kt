@@ -41,7 +41,6 @@ import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrange
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -355,19 +354,10 @@ class MessageSendFailureHandlerTest {
     }
 
     class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
-        @Mock
-        internal val userRepository = mock(UserRepository::class)
-
-        @Mock
+                internal val userRepository = mock(UserRepository::class)
         internal val messageRepository = mock(MessageRepository::class)
-
-        @Mock
         val messageSendingScheduler = mock(MessageSendingScheduler::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val clientRemoteRepository = mock(ClientRemoteRepository::class)
 
         val clientMapper: ClientMapper = MapperProvider.clientMapper()

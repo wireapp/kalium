@@ -28,7 +28,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
@@ -105,8 +104,6 @@ class OnIncomingCallTest {
     }
 
     private class Arrangement(val testScope: TestScope) {
-
-        @Mock
         val callRepository: CallRepository = mock(CallRepository::class)
 
         val kaliumConfigs = KaliumConfigs()

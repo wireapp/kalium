@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -109,8 +108,7 @@ class TypingIndicatorIncomingRepositoryTest {
         }
 
     private class Arrangement {
-        @Mock
-        val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
+                val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
 
         suspend fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
             coEvery {

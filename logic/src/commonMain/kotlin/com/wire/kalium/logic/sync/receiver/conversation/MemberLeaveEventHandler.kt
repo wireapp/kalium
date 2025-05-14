@@ -47,7 +47,9 @@ import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import io.mockative.Mockable
 
+@Mockable
 interface MemberLeaveEventHandler {
     suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
 }

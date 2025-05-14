@@ -19,7 +19,9 @@
 package com.wire.kalium.persistence.dbPassphrase
 
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
+import io.mockative.Mockable
 
+@Mockable
 interface PassphraseStorage {
     fun getPassphrase(key: String): String?
     fun setPassphrase(key: String, passphrase: String)

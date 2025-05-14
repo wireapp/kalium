@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -60,6 +61,7 @@ data class ConnectionEntity(
     }
 }
 
+@Mockable
 interface ConnectionDAO {
     suspend fun getConnections(): Flow<List<ConnectionEntity>>
     suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>>

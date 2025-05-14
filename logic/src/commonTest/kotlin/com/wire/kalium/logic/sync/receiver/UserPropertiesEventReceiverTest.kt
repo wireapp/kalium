@@ -22,7 +22,6 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -65,10 +64,7 @@ class UserPropertiesEventReceiverTest {
 
     private class Arrangement {
 
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val conversationFolderRepository = mock(ConversationFolderRepository::class)
 
         private val userPropertiesEventReceiver: UserPropertiesEventReceiver = UserPropertiesEventReceiverImpl(

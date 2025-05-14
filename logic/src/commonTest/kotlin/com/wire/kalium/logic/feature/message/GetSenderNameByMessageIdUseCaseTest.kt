@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -80,7 +79,6 @@ class GetSenderNameByMessageIdUseCaseTest {
 
     private inner class Arrangement {
 
-        @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
 
         private val getSenderNameByMessageId by lazy {

@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -37,7 +36,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class CurrentSessionFlowUseCaseTest {
-    @Mock
+
     val sessionRepository = mock(SessionRepository::class)
 
     lateinit var currentSessionFlowUseCase: CurrentSessionFlowUseCase

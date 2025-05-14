@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -122,8 +121,7 @@ class UpdateEmailUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val accountRepository = mock(AccountRepository::class)
+                val accountRepository = mock(AccountRepository::class)
 
         private val useCase = UpdateEmailUseCase(accountRepository)
 

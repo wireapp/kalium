@@ -23,7 +23,6 @@ import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -52,10 +51,8 @@ class ObserveAttachmentDraftsUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val repository = mock(MessageAttachmentDraftRepository::class)
 
-        @Mock
+        val repository = mock(MessageAttachmentDraftRepository::class)
         val uploadManager = mock(CellUploadManager::class)
 
         fun withUploadManager() = apply {

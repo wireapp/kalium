@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.call.usecase
 import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.asFlow
@@ -112,7 +111,7 @@ class ObserveConferenceCallingEnabledUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withDefaultValue(values: List<Boolean>) = apply {

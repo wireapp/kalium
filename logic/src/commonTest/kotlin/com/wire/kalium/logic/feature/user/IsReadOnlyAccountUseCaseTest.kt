@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -64,8 +63,6 @@ class IsReadOnlyAccountUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val sessionRepository: SessionRepository = mock(SessionRepository::class)
 
         val selfUserId = UserId("user_id", "domain")

@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.TestRequestHandler.Companion.TEST_BACKEND_CONFIG
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
@@ -103,14 +102,9 @@ class CanMigrateFromPersonalToTeamUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
+        
         val serverConfigRepository = mock(ServerConfigRepository::class)
-
-        @Mock
         val sessionManager = mock(SessionManager::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         suspend fun withTeamId(result: Either<CoreFailure, TeamId?>) = apply {

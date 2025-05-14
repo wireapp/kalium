@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -44,7 +43,6 @@ class DeleteEphemeralMessagesAfterEndDateUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)
 
         suspend fun withDeleteSelfDeletionMessagesFromEndDateSuccess() = apply {

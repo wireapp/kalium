@@ -18,7 +18,9 @@
 package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import io.mockative.Mockable
 
+@Mockable
 interface ConversationMetaDataDAO {
     suspend fun isInformedAboutDegradedMLSVerification(conversationId: QualifiedIDEntity): Boolean
     suspend fun setInformedAboutDegradedMLSVerificationFlag(conversationId: QualifiedIDEntity, isInformed: Boolean)

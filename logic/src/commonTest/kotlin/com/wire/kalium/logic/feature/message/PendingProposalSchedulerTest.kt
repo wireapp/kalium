@@ -30,7 +30,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatten
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -167,11 +166,7 @@ class PendingProposalSchedulerTest {
     private class Arrangement {
 
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
 
         val pendingProposalScheduler = PendingProposalSchedulerImpl(

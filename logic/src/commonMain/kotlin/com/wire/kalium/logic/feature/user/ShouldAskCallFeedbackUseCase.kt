@@ -22,11 +22,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
 /**
  * Use case to determine if the call feedback should be asked.
  */
+@Mockable
 interface ShouldAskCallFeedbackUseCase {
     suspend operator fun invoke(
         establishedTime: Instant?,

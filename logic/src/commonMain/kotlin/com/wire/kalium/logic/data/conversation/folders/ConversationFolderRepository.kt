@@ -46,10 +46,12 @@ import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import io.ktor.http.HttpStatusCode
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
+@Mockable
 internal interface ConversationFolderRepository {
 
     suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder>

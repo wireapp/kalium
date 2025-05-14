@@ -29,20 +29,20 @@ actual class MediaManagerServiceImpl(
     platformContext: PlatformContext,
     scope: CoroutineScope,
 ) : MediaManagerService {
-    override suspend fun turnLoudSpeakerOn() {
+    actual override suspend fun turnLoudSpeakerOn() {
         kaliumLogger.w("turnLoudSpeakerOn for JVM but not supported yet.")
     }
 
-    override suspend fun turnLoudSpeakerOff() {
+    actual override suspend fun turnLoudSpeakerOff() {
         kaliumLogger.w("turnLoudSpeakerOff for JVM but not supported yet.")
     }
 
-    override fun observeSpeaker(): Flow<Boolean> {
+    actual override fun observeSpeaker(): Flow<Boolean> {
         kaliumLogger.w("observeSpeaker for JVM but not supported yet.")
         return MutableStateFlow(false)
     }
 
-    override suspend fun startMediaManager() {
+    actual override suspend fun startMediaManager() {
         kaliumLogger.w("Media Manager is not supported on JVM.")
     }
 }

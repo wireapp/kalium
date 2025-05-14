@@ -19,7 +19,6 @@ package com.wire.kalium.logic.util.arrangement.provider
 
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
 import io.mockative.fake.valueOf
@@ -41,8 +40,7 @@ internal interface SyncMigrationStepsProviderArrangement {
 
 internal class SyncMigrationStepsProviderArrangementImpl : SyncMigrationStepsProviderArrangement {
 
-    @Mock
-    override val syncMigrationStepsProvider: SyncMigrationStepsProvider = mock(SyncMigrationStepsProvider::class)
+        override val syncMigrationStepsProvider: SyncMigrationStepsProvider = mock(SyncMigrationStepsProvider::class)
 
     override fun withSyncMigrationSteps(
         steps: List<SyncMigrationStep>,

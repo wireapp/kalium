@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase.Result
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -134,7 +133,7 @@ class RemoveConversationFromFolderUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationFolderRepository = mock(ConversationFolderRepository::class)
 
         private val removeConversationFromFolderUseCase = RemoveConversationFromFolderUseCaseImpl(

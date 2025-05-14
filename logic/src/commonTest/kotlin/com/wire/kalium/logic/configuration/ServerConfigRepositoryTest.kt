@@ -36,7 +36,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -169,10 +168,7 @@ class ServerConfigRepositoryTest {
 
     private class Arrangement(dispatcher: KaliumDispatcher) {
 
-        @Mock
         val serverConfigDAO = mock(ServerConfigurationDAO::class)
-
-        @Mock
         val versionApi = mock(VersionApi::class)
 
         private var serverConfigRepository: ServerConfigRepository =

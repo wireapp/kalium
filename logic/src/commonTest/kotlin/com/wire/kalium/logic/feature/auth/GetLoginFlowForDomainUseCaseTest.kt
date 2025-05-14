@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -112,10 +111,7 @@ class GetLoginFlowForDomainUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val loginRepository: LoginRepository = mock(LoginRepository::class)
-
-        @Mock
         val customServerConfigRepository = mock(CustomServerConfigRepository::class)
 
         suspend fun withDomainRegistrationResult(result: Either<NetworkFailure, LoginDomainPath>) = apply {

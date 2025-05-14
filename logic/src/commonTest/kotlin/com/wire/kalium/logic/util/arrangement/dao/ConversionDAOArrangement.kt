@@ -19,7 +19,6 @@ package com.wire.kalium.logic.util.arrangement.dao
 
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -53,6 +52,6 @@ interface ConversionDAOArrangement {
 }
 
 class ConversionDAOArrangementImpl : ConversionDAOArrangement {
-    @Mock
+
     override val conversionDAO: ConversationDAO = mock(ConversationDAO::class)
 }

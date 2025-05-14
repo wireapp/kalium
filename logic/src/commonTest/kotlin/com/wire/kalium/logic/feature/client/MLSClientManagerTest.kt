@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -55,7 +54,7 @@ class MLSClientManagerTest {
     fun tearDown() {
         testScope.cancel()
     }
-    
+
     @Test
     fun givenMLSClientIsNotRegisteredAndMLSSupportIsDisabled_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
         testScope.runTest {
@@ -133,22 +132,11 @@ class MLSClientManagerTest {
 
     private class Arrangement {
 
-        @Mock
         val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
-
-        @Mock
         var slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         var clientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val isAllowedToRegisterMLSClient = mock(IsAllowedToRegisterMLSClientUseCase::class)
-
-        @Mock
         val registerMLSClient = mock(RegisterMLSClientUseCase::class)
 
         suspend fun withCurrentClientId(result: Either<CoreFailure, ClientId>) = apply {

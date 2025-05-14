@@ -22,7 +22,9 @@ import com.wire.kalium.network.api.authenticated.message.Parameters
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface MessageApi {
 
     suspend fun qualifiedSendMessage(

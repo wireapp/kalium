@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newTestServer
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -551,14 +550,8 @@ class LoginUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val loginRepository = mock(LoginRepository::class)
-
-        @Mock
         val validateEmailUseCase = mock(ValidateEmailUseCase::class)
-
-        @Mock
         val validateUserHandleUseCase = mock(ValidateUserHandleUseCase::class)
 
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()

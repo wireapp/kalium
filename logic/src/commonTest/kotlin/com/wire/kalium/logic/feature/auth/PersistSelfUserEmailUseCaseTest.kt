@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserRepository
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -64,7 +63,6 @@ class PersistSelfUserEmailUseCaseTest {
 
     inner class Arrangement {
 
-        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
 
         internal val useCase by lazy {

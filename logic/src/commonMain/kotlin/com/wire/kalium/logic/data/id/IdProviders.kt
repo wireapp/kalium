@@ -20,11 +20,14 @@ package com.wire.kalium.logic.data.id
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.common.functional.Either
+import io.mockative.Mockable
 
+@Mockable
 fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
 
+@Mockable
 internal fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }

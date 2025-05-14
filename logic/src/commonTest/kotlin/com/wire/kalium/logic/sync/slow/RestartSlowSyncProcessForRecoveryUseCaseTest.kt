@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
@@ -50,8 +49,6 @@ class RestartSlowSyncProcessForRecoveryUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
         private val restartSlowSyncProcessForRecovery = RestartSlowSyncProcessForRecoveryUseCaseImpl(slowSyncRepository)

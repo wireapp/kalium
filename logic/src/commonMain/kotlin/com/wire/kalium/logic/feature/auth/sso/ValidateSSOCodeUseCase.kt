@@ -20,10 +20,12 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.benasher44.uuid.uuidFrom
 import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.Companion.SSO_CODE_WIRE_PREFIX
+import io.mockative.Mockable
 
 /**
  * Validates a SSO code
  */
+@Mockable
 interface ValidateSSOCodeUseCase {
     /**
      * @param ssoCode the SSO code to validate

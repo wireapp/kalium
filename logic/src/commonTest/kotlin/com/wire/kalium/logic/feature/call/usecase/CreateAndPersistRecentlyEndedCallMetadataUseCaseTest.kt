@@ -33,7 +33,6 @@ import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_MINIMIZED
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -150,13 +149,9 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+        
         val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val callRepository = mock(CallRepository::class)
 
         fun withOutgoingCall() = apply {

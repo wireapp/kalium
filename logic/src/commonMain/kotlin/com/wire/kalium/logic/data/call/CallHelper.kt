@@ -19,10 +19,12 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import io.mockative.Mockable
 
 /**
  * Helper class to handle call related operations.
  */
+@Mockable
 interface CallHelper {
 
     /**

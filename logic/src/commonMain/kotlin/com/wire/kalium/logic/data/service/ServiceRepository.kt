@@ -28,9 +28,11 @@ import com.wire.kalium.common.error.wrapFlowStorageRequest
 import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.persistence.dao.ServiceDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Mockable
 interface ServiceRepository {
     suspend fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>>
     suspend fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>>

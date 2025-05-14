@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -66,13 +65,8 @@ class CertificateRevocationListCheckWorkerTest {
 
     private class Arrangement {
 
-        @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-
-        @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
-
-        @Mock
         val checkRevocationList = mock(RevocationListChecker::class)
 
         fun arrange() = this to SyncCertificateRevocationListUseCase(

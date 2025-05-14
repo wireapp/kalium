@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.eq
 import io.mockative.mock
@@ -55,8 +54,6 @@ class ObserveIsServiceMemberUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         private val serviceRepository = mock(ServiceRepository::class)
 
         private val observeIsServiceMember = ObserveIsServiceMemberUseCaseImpl(

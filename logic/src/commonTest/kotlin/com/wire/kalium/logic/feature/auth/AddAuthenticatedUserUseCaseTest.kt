@@ -36,7 +36,6 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -225,10 +224,8 @@ class AddAuthenticatedUserUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val sessionRepository = mock(SessionRepository::class)
 
-        @Mock
+        val sessionRepository = mock(SessionRepository::class)
         val serverConfigurationDAO = mock(ServerConfigurationDAO::class)
 
         private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigurationDAO)

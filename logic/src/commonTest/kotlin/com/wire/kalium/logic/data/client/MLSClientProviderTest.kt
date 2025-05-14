@@ -38,7 +38,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import io.ktor.util.reflect.instanceOf
-import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
@@ -156,17 +155,9 @@ class MLSClientProviderTest {
 
         val rootKeyStorePath: String = "rootKeyStorePath"
         val userId: UserId = UserId("userId", "domain")
-
-        @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
-
-        @Mock
         val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
-
-        @Mock
         val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
 
         fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {

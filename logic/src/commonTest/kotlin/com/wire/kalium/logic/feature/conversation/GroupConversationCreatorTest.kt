@@ -38,7 +38,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -213,22 +212,11 @@ class GroupConversationCreatorTest {
 
     private class Arrangement {
 
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
-
-        @Mock
         val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val syncManager = mock(SyncManager::class)
-
-        @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         private val createGroupConversation = GroupConversationCreatorImpl(

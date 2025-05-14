@@ -20,7 +20,9 @@ package com.wire.kalium.network.api.base.authenticated.featureConfigs
 
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface FeatureConfigApi {
     suspend fun featureConfigs(): NetworkResponse<FeatureConfigResponse>
 }

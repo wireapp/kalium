@@ -31,7 +31,6 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -196,19 +195,11 @@ class ObserveNewClientsUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val observeValidAccounts = mock(ObserveValidAccountsUseCase::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val clientRepository1 = mock(ClientRepository::class)
-
-        @Mock
         val clientRepository2 = mock(ClientRepository::class)
-
-        @Mock
         val userClientRepositoryProvider = mock(UserClientRepositoryProvider::class)
 
         init {

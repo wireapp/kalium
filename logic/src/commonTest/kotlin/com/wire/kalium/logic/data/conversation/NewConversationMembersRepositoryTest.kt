@@ -31,7 +31,6 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -83,8 +82,6 @@ class NewConversationMembersRepositoryTest {
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
-
-        @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         suspend fun withPersistResolvedMembersSystemMessageSuccess() = apply {

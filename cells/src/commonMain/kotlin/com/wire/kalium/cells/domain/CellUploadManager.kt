@@ -20,9 +20,11 @@ package com.wire.kalium.cells.domain
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import okio.Path
 
+@Mockable
 public interface CellUploadManager {
     /**
      * Starts file upload to the cell. Returns immediately after pre-checking the file name and returns the new node.

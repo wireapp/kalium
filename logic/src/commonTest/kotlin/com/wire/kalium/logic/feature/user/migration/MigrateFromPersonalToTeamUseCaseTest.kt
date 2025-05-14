@@ -29,7 +29,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -114,10 +113,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
-
-        @Mock
         val syncContacts: SyncContactsUseCase = mock(SyncContactsUseCase::class)
 
         var isCachedTeamIdInvalidated = false

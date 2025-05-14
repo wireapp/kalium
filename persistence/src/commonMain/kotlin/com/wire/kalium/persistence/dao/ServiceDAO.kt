@@ -21,6 +21,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ServiceQueries
 import com.wire.kalium.persistence.util.mapToList
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -63,6 +64,7 @@ internal fun mapToServiceEntity(
     completeAssetId = completeAssetId
 )
 
+@Mockable
 interface ServiceDAO {
     suspend fun byId(id: BotIdEntity): ServiceEntity?
     suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?>

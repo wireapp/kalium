@@ -21,9 +21,11 @@ package com.wire.kalium.network.api.base.authenticated.asset
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 import okio.Sink
 import okio.Source
 
+@Mockable
 interface AssetApi {
     /**
      * Downloads an asset, this will try to consume api v4 (federated aware endpoint)

@@ -20,7 +20,6 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -41,7 +40,7 @@ internal interface AnalyticsRepositoryArrangement {
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal open class AnalyticsRepositoryArrangementImpl : AnalyticsRepositoryArrangement {
-    @Mock
+    
     override val analyticsRepository: AnalyticsRepository = mock(AnalyticsRepository::class)
 
     override suspend fun withContactsAmountCached(result: Either<StorageFailure, Int>) {

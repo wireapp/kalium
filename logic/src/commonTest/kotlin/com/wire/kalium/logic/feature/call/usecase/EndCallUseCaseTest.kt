@@ -30,7 +30,6 @@ import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -210,10 +209,7 @@ class EndCallUseCaseTest {
     private class Arrangement : CallRepositoryArrangement by CallRepositoryArrangementImpl(),
         CallManagerArrangement by CallManagerArrangementImpl() {
 
-        @Mock
         val endCallResultListener = mock(EndCallResultListener::class)
-
-        @Mock
         val shouldAskCallFeedback = mock(ShouldAskCallFeedbackUseCase::class)
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, EndCallUseCase> {

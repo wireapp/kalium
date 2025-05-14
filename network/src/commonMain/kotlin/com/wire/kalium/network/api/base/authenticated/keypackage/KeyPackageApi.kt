@@ -23,7 +23,9 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface KeyPackageApi {
 
     sealed class Param {

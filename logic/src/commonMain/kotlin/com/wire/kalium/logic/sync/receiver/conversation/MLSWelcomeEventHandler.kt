@@ -44,8 +44,10 @@ import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import io.ktor.util.decodeBase64Bytes
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
+@Mockable
 interface MLSWelcomeEventHandler {
     suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
 }

@@ -24,7 +24,9 @@ import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface RegisterApi {
 
     suspend fun register(

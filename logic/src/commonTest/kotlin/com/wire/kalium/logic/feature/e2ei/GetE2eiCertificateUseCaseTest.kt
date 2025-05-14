@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImp
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -128,8 +127,6 @@ class GetE2eiCertificateUseCaseTest {
         }
 
     class Arrangement {
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         fun arrange() = this to GetMLSClientIdentityUseCaseImpl(

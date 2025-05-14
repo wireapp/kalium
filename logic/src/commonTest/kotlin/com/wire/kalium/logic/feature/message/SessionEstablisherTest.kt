@@ -37,7 +37,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
-import io.mockative.Mock
 import io.mockative.any
 
 import io.mockative.coEvery
@@ -126,13 +125,8 @@ class SessionEstablisherTest {
     }
 
     private class Arrangement {
-        @Mock
-        val proteusClient = mock(ProteusClient::class)
-
-        @Mock
+                val proteusClient = mock(ProteusClient::class)
         val proteusClientProvider = mock(ProteusClientProvider::class)
-
-        @Mock
         val preKeyRepository = mock(PreKeyRepository::class)
 
         private val sessionEstablisher: SessionEstablisher =

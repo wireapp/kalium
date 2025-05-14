@@ -22,7 +22,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -31,7 +30,7 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface ServerConfigRepositoryArrangement {
-    @Mock
+
     val serverConfigRepository: ServerConfigRepository
 
     suspend fun withServerConfigForUser(
@@ -46,6 +45,5 @@ internal interface ServerConfigRepositoryArrangement {
 
 internal class ServerConfigRepositoryArrangementImpl : ServerConfigRepositoryArrangement {
 
-    @Mock
     override val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
 }

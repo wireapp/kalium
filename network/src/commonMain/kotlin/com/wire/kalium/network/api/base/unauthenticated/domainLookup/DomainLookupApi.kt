@@ -19,7 +19,9 @@ package com.wire.kalium.network.api.base.unauthenticated.domainLookup
 
 import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface DomainLookupApi {
     suspend fun lookup(domain: String): NetworkResponse<DomainLookupResponse>
 }

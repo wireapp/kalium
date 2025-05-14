@@ -65,10 +65,12 @@ import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 import pbandk.Message
 
+@Mockable
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent

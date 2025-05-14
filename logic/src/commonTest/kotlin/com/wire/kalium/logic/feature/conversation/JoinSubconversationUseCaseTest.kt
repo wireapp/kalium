@@ -37,7 +37,6 @@ import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -176,14 +175,8 @@ class JoinSubconversationUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val conversationApi = mock(ConversationApi::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
 
         fun arrange() = this to JoinSubconversationUseCaseImpl(

@@ -30,7 +30,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -124,10 +123,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val useCase: FetchLegalHoldForSelfUserFromRemoteUseCase by lazy {
             FetchLegalHoldForSelfUserFromRemoteUseCaseImpl(teamRepository, selfTeamIdProvider)

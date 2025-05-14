@@ -27,7 +27,6 @@ import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotC
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -142,7 +141,7 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
         )
 
     private class Arrangement {
-        @Mock
+
         val userConfigRepository = mock(UserConfigRepository::class)
 
         val observeScreenshotCensoringConfig = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository)

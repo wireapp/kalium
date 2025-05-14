@@ -35,7 +35,6 @@ import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -317,8 +316,6 @@ class UserSearchApiWrapperTest {
     private class Arrangement : MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         lateinit var selfUserId: UserId
-
-        @Mock
         private val userSearchApi: UserSearchApi = mock(UserSearchApi::class)
 
         fun withSelfUserId(selfUserId: UserId) = apply {

@@ -21,7 +21,9 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import io.mockative.Mockable
 
+@Mockable
 internal interface CellConversationRepository {
     suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
     suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit>

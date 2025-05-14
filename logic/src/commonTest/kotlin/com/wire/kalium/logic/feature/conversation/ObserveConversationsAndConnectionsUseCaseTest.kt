@@ -21,12 +21,10 @@ package com.wire.kalium.logic.feature.conversation
 // todo: apply below testCases from here to the new changes
 class ObserveConversationsAndConnectionsUseCaseTest {
 
-   /* @Mock
-    val observeConversationListDetailsUseCase: ObserveConversationListDetailsUseCase =
+   /*     val observeConversationListDetailsUseCase: ObserveConversationListDetailsUseCase =
         mock(ObserveConversationListDetailsUseCase::class)
 
-    @Mock
-    val observeConnectionListUseCase: ObserveConnectionListUseCase = mock(ObserveConnectionListUseCase::class)
+        val observeConnectionListUseCase: ObserveConnectionListUseCase = mock(ObserveConnectionListUseCase::class)
 
     private lateinit var observeConversationsAndConnectionsUseCase: ObserveConversationsAndConnectionsUseCase
 

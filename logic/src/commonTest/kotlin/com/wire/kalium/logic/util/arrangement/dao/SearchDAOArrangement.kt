@@ -20,7 +20,6 @@ package com.wire.kalium.logic.util.arrangement.dao
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserSearchEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -30,8 +29,7 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface SearchDAOArrangement {
-    @Mock
-    val searchDAO: SearchDAO
+        val searchDAO: SearchDAO
 
     suspend fun withGetKnownContacts(
         result: List<UserSearchEntity>
@@ -67,8 +65,7 @@ internal interface SearchDAOArrangement {
 
 internal class SearchDAOArrangementImpl : SearchDAOArrangement {
 
-    @Mock
-    override val searchDAO: SearchDAO = mock(SearchDAO::class)
+        override val searchDAO: SearchDAO = mock(SearchDAO::class)
 
     override suspend fun withGetKnownContacts(
         result: List<UserSearchEntity>

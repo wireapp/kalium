@@ -34,7 +34,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -463,16 +462,9 @@ class AssetMessageHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val messageRepository = mock(MessageRepository::class)
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val validateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
 
         private val assetMessageHandlerImpl =

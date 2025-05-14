@@ -18,8 +18,10 @@
 
 package com.wire.kalium.logic.feature.call
 
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
+@Mockable
 interface MediaManagerService {
     suspend fun turnLoudSpeakerOn()
     suspend fun turnLoudSpeakerOff()
@@ -32,4 +34,9 @@ interface MediaManagerService {
     suspend fun startMediaManager()
 }
 
-expect class MediaManagerServiceImpl : MediaManagerService
+expect class MediaManagerServiceImpl : MediaManagerService {
+    override suspend fun turnLoudSpeakerOn()
+    override suspend fun turnLoudSpeakerOff()
+    override fun observeSpeaker(): Flow<Boolean>
+    override suspend fun startMediaManager()
+}

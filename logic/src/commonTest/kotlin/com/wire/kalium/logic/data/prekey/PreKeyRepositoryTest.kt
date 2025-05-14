@@ -48,7 +48,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -337,26 +336,12 @@ class PreKeyRepositoryTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val preKeyApi: PreKeyApi = mock(PreKeyApi::class)
-
-        @Mock
         val proteusClient: ProteusClient = mock(ProteusClient::class)
-
-        @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val proteusClientProvider: ProteusClientProvider = mock(ProteusClientProvider::class)
-
-        @Mock
         val prekeyDAO: PrekeyDAO = mock(PrekeyDAO::class)
-
-        @Mock
         val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
-
-        @Mock
         val clientDAO: ClientDAO = mock(ClientDAO::class)
 
         init {

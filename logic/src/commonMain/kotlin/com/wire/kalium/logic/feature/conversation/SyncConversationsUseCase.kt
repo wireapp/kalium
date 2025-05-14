@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import io.mockative.Mockable
 
+@Mockable
 internal interface SyncConversationsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }

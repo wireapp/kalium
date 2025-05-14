@@ -32,7 +32,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -157,20 +156,10 @@ class StartCallUseCaseTest {
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-
-        @Mock
         val callManager = mock(CallManager::class)
-
-        @Mock
         val syncManager = mock(SyncManager::class)
-
-        @Mock
         val answerCall = mock(AnswerCallUseCase::class)
-
-        @Mock
         val getCallConversationType = mock(GetCallConversationTypeProvider::class)
-
-        @Mock
         val callRepository = mock(CallRepository::class)
 
         private val kaliumConfigs = KaliumConfigs()

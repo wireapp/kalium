@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -43,8 +42,7 @@ import kotlin.test.assertIs
 
 class ObserveConversationDetailsUseCaseTest {
 
-    @Mock
-    private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 

@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
 /**
@@ -30,6 +31,7 @@ import kotlinx.datetime.Instant
  * This mapper is useful in case we receive a successful response from the backend, but there are some
  * users that failed to receive the message. ie: federated users and/or conversations.
  */
+@Mockable
 interface SendMessagePartialFailureMapper {
     fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse): MessageSent
     fun fromMlsDTO(sendMLSMessageResponse: SendMLSMessageResponse): MessageSent

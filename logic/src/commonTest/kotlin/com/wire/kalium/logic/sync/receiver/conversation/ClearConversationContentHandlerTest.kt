@@ -30,7 +30,6 @@ import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -212,10 +211,8 @@ class ClearConversationContentHandlerTest {
 
 
     private class Arrangement : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
-        @Mock
+        
         val isMessageSentInSelfConversationUseCase = mock(IsMessageSentInSelfConversationUseCase::class)
-
-        @Mock
         val clearConversationAssetsLocally = mock(ClearConversationAssetsLocallyUseCase::class)
 
         suspend fun withMessageSentInSelfConversation(isSentInSelfConv: Boolean) = apply {

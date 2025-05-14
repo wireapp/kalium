@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -104,8 +103,6 @@ class GetSearchedConversationMessagePositionUseCaseTest {
     }
 
     private inner class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-
-        @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
 
         private val getSearchedConversationMessagePosition by lazy {
