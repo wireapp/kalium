@@ -74,6 +74,7 @@ Commands:
   refill-key-packages
   mark-as-read                Mark a conversation as read
   update-supported-protocols
+  send-broken-asset           Send a broken asset with malformed metadata
 ```
 
 ##### JVM
