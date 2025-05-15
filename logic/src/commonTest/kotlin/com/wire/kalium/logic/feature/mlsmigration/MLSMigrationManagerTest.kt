@@ -168,8 +168,8 @@ class MLSMigrationManagerTest {
             }.returns(Either.Right(Unit))
         }
 
-        fun withIsMLSSupported(supported: Boolean) = apply {
-            every {
+        suspend fun withIsMLSSupported(supported: Boolean) = apply {
+            coEvery {
                 isMLSEnabledUseCase()
             }.returns(supported)
 

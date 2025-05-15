@@ -76,7 +76,7 @@ class MLSClientProviderTest {
             assertEquals(expected.supportedCipherSuite, it)
         }
 
-        verify { arrangement.userConfigRepository.isMLSEnabled() }
+        coVerify { arrangement.userConfigRepository.isMLSEnabled() }
             .wasInvoked(exactly = once)
 
         coVerify { arrangement.userConfigRepository.getSupportedCipherSuite() }
@@ -106,7 +106,7 @@ class MLSClientProviderTest {
             assertEquals(expected, it)
         }
 
-        verify { arrangement.userConfigRepository.isMLSEnabled() }
+        coVerify { arrangement.userConfigRepository.isMLSEnabled() }
             .wasInvoked(exactly = once)
 
         coVerify {
