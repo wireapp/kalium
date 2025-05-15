@@ -18,13 +18,15 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.calling.ConversationTypeCalling
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.call.ConversationTypeForCall
-import com.wire.kalium.logic.data.call.mapper.CallMapper
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 
 /**
  * This class is responsible for providing the conversation type for a call.
@@ -35,37 +37,43 @@ interface GetCallConversationTypeProvider {
 
 internal class GetCallConversationTypeProviderImpl(
     private val userConfigRepository: UserConfigRepository,
-    private val conversationRepository: ConversationRepository,
-    private val callMapper: CallMapper,
+    private val conversationMetaDataRepository: ConversationMetaDataRepository,
 ) : GetCallConversationTypeProvider {
     override suspend fun invoke(conversationId: ConversationId): ConversationTypeCalling {
+        return conversationMetaDataRepository.getConversationTypeAndProtocolInfo(conversationId)
+            .flatMap { (type: Conversation.Type, protocolInfo: Conversation.ProtocolInfo) ->
+                when (type) {
+                    is Conversation.Type.Group -> {
+                        handleGroupConversation(protocolInfo)
+                    }
 
-        val type = conversationRepository.getConversationTypeById(conversationId).fold(
-            { ConversationTypeForCall.Unknown },
-            {
-                conversationRepository.getConversationProtocolInfo(conversationId).fold({
-                    ConversationTypeForCall.Unknown
-                }, { protocol ->
-                    callMapper.fromConversationTypeToConversationTypeForCall(it, protocol)
-                })
-            }
-        )
+                    Conversation.Type.OneOnOne -> {
+                        handleOneToOne(protocolInfo)
+                    }
 
-        val callConversationType = callMapper.toConversationTypeCalling(type)
-
-        return userConfigRepository.shouldUseSFTForOneOnOneCalls().fold({
-            callConversationType
-        }, { shouldUseSFTForOneOnOneCalls ->
-            if (shouldUseSFTForOneOnOneCalls) {
-                userConfigRepository.isMLSEnabled().map {
-                    if (it) {
-                        return@fold ConversationTypeCalling.ConferenceMls
+                    Conversation.Type.ConnectionPending,
+                    Conversation.Type.Self -> {
+                        ConversationTypeCalling.Unknown.right()
                     }
                 }
-                ConversationTypeCalling.Conference
-            } else {
-                callConversationType
-            }
-        })
+            }.fold(
+                { ConversationTypeCalling.Unknown },
+                { it }
+            )
     }
+
+    private fun handleGroupConversation(protocolInfo: Conversation.ProtocolInfo): Either.Right<ConversationTypeCalling> = when (protocolInfo) {
+        is Conversation.ProtocolInfo.MLS -> ConversationTypeCalling.ConferenceMls
+        is Conversation.ProtocolInfo.Proteus,
+        is Conversation.ProtocolInfo.Mixed -> ConversationTypeCalling.Conference
+    }.right()
+
+    private suspend fun handleOneToOne(protocolInfo: Conversation.ProtocolInfo): Either<StorageFailure, ConversationTypeCalling> =
+        userConfigRepository.shouldUseSFTForOneOnOneCalls().flatMap { shouldUseSFTForOneOnOneCalls ->
+            if (!shouldUseSFTForOneOnOneCalls) {
+                return@flatMap ConversationTypeCalling.OneOnOne.right()
+            }
+            // in the case of using SFT for 1:1 calls must be treated as group
+            handleGroupConversation(protocolInfo)
+        }
 }

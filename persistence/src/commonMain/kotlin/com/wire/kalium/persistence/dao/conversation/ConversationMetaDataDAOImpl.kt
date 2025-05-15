@@ -17,21 +17,47 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
+import com.wire.kalium.persistence.ConversationMetadataQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
 class ConversationMetaDataDAOImpl internal constructor(
-    private val conversationQueries: ConversationsQueries,
-    private val coroutineContext: CoroutineContext
+    private val conversationMetadataQueries: ConversationMetadataQueries,
+    private val coroutineContext: CoroutineContext,
+    private val conversationMapper: ConversationMapper = ConversationMapper,
 ) : ConversationMetaDataDAO {
-    override suspend fun isInformedAboutDegradedMLSVerification(conversationId: QualifiedIDEntity): Boolean =
-        conversationQueries.isInformedAboutDegradedMLSVerification(conversationId).executeAsOne()
+    override suspend fun isInformedAboutDegradedMLSVerification(conversationId: QualifiedIDEntity): Boolean = withContext(coroutineContext) {
+        conversationMetadataQueries.isInformedAboutDegradedMLSVerification(conversationId).executeAsOne()
+    }
 
     override suspend fun setInformedAboutDegradedMLSVerificationFlag(conversationId: QualifiedIDEntity, isInformed: Boolean) {
         withContext(coroutineContext) {
-            conversationQueries.updateInformedAboutDegradedMLSVerification(isInformed, conversationId)
+            conversationMetadataQueries.updateInformedAboutDegradedMLSVerification(isInformed, conversationId)
+        }
+    }
+
+    override suspend fun typeAndProtocolInfo(conversationId: QualifiedIDEntity): ConversationTypeAndProtocolInfo? = withContext(coroutineContext) {
+        conversationMetadataQueries.typeAndProtocolInfo(conversationId).executeAsOneOrNull()?.let {
+            ConversationTypeAndProtocolInfo(
+                type = it.type,
+                isChannel = it.is_channel,
+                protocolInfo = conversationMapper.mapProtocolInfo(
+                    protocol = it.protocol,
+                    mlsGroupId = it.mls_group_id,
+                    mlsGroupState = it.mls_group_state,
+                    mlsEpoch = it.mls_epoch,
+                    mlsLastKeyingMaterialUpdate = it.mls_last_keying_material_update_date,
+                    mlsCipherSuite = it.mls_cipher_suite
+                )
+            )
         }
     }
 }
+
+data class ConversationTypeAndProtocolInfo(
+    val type: ConversationEntity.Type,
+    val isChannel: Boolean,
+    val protocolInfo: ConversationEntity.ProtocolInfo,
+)
