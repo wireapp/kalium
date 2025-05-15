@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -75,6 +76,7 @@ internal class EventProcessorImpl(
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
     private val federationEventReceiver: FederationEventReceiver,
+    private val missedNotificationsEventReceiver: MissedNotificationsEventReceiver,
     private val processingScope: CoroutineScope,
     logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
@@ -117,6 +119,7 @@ internal class EventProcessorImpl(
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
+            is Event.AsyncMissed -> missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
         }.onSuccess {
             // todo (ym) check for errors and decide if lastProcessedEventId should be updated so we can re-ack
             eventRepository.acknowledgeEvent(eventEnvelope)

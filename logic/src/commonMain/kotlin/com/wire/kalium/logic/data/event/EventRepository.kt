@@ -115,6 +115,17 @@ class EventDataSource(
                     }
                 )
             }
+
+            is EventDeliveryInfo.AsyncMissed -> {
+                currentClientId().fold(
+                    { it.left() },
+                    {
+                        // todo(ym) check for errors.
+                        notificationApi.acknowledgeEvents(it.value, EventMapper.FULL_ACKNOWLEDGE_REQUEST)
+                        Unit.right()
+                    }
+                )
+            }
             // Legacy events are not acknowledged
             is EventDeliveryInfo.Legacy -> Unit.right()
         }

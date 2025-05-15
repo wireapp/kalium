@@ -26,10 +26,12 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestEvent.wrapAsyncInEnvelope
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
@@ -49,6 +51,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.Flow
@@ -202,12 +205,27 @@ class EventRepositoryTest {
             .withAcknowledgeEvents()
             .arrange()
 
-        val eventEnvelope = TestEvent.newConversationEvent().wrapInEnvelope(isAsync = true)
+        val eventEnvelope = TestEvent.newConversationEvent().wrapAsyncInEnvelope()
         val result = eventRepository.acknowledgeEvent(eventEnvelope)
 
         result.shouldSucceed()
         coVerify {
-            arrangement.notificationApi.acknowledgeEvents(any(), any())
+            arrangement.notificationApi.acknowledgeEvents(any(), matches { it.type == AcknowledgeType.ACK })
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAcknowledgeEventFull_whenIsAsyncNotifications_thenACK() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .withAcknowledgeEvents()
+            .arrange()
+
+        val eventEnvelope = TestEvent.notificationsMissed().wrapAsyncInEnvelope(isMissedNotifications = true)
+        val result = eventRepository.acknowledgeEvent(eventEnvelope)
+
+        result.shouldSucceed()
+        coVerify {
+            arrangement.notificationApi.acknowledgeEvents(any(), matches { it.type == AcknowledgeType.ACK_FULL_SYNC })
         }.wasInvoked(exactly = once)
     }
 
