@@ -26,4 +26,4 @@ jobs:
         with:
           token: ${{ secrets.NPM_TOKEN }}
           access: public
-          package: "backup/dist/js/productionLibrary/package.json"
+          package: "backup/build/dist/js/productionLibrary/package.json"
