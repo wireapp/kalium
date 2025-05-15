@@ -99,7 +99,7 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone {
         status = if (isSelfMessage) {
             Message.Status.Sent
         } else {
-            Message.Status.Delivered
+            Message.Status.Read(1)
         },
         isSelfMessage = isSelfMessage,
         senderClientId = ClientId(senderClientId),
