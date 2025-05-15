@@ -80,9 +80,6 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
     /**
      * Performs the client capability upgrade to consumable notifications.
      * After updating, it will execute a quick sync to ensure the client has the latest data.
-     * If fails, it will trigger a slow sync.
-     *
-     * The local state of the client will be updated to reflect the new capability as well as the upgrade performed state.
      */
     private suspend fun performClientCapabilityUpgrade() {
         selfClientIdProvider().flatMap { clientId ->
@@ -112,6 +109,10 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
         }
     }
 
+    /**
+     * Finishes the client capability upgrade by setting the consumable notifications capability to true,
+     * clearing the last slow sync completion instant, and requesting a sync.
+     */
     private suspend fun finishClientCapabilityUpgrade(): Either<CoreFailure, Unit> {
         clientRepository.setShouldUpdateClientConsumableNotificationsCapability(false)
         clientRepository.persistClientHasConsumableNotifications(true)
