@@ -39,6 +39,7 @@ import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collectLatest
@@ -108,6 +109,8 @@ internal class CreateMPBackupUseCaseImpl(
                     Failure(CoreFailure.Unknown(null))
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Failure(CoreFailure.Unknown(e))
         }
