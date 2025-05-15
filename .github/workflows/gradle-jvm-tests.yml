@@ -86,8 +86,8 @@ jobs:
           apt-get install -y -qq --no-install-recommends python3-pip python3-venv
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.19.0
-        if: always()
+        uses: EnricoMi/publish-unit-test-result-action/linux@v2
+        if: ${{ always() }}
         with:
           files: |
             **/build/test-results/**/*.xml
