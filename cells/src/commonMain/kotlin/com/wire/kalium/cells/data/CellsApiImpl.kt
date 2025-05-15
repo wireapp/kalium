@@ -29,6 +29,7 @@ import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
 import com.wire.kalium.cells.sdk.kmp.model.RestActionParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateCheckRequest
+import com.wire.kalium.cells.sdk.kmp.model.RestCreateRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestIncomingNode
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupFilter
@@ -89,7 +90,9 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
-                    scope = RestLookupScope(listOf(RestNodeLocator(path = "$path/*"))),
+                    scope = RestLookupScope(
+                        root = RestNodeLocator(path = path),
+                    ),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -177,6 +180,21 @@ internal class CellsApiImpl(
         wrapCellsResponse {
             nodeServiceApi.deletePublicLink(linkUuid)
         }.mapSuccess {}
+
+    override suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO> {
+        return wrapCellsResponse {
+            nodeServiceApi.create(
+                RestCreateRequest(
+                    inputs = listOf(
+                        RestIncomingNode(
+                            locator = RestNodeLocator(path = path),
+                            type = TreeNodeType.COLLECTION,
+                        )
+                    )
+                )
+            )
+        }.mapSuccess { response -> response.toDto() }
+    }
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))
