@@ -754,7 +754,7 @@ class UserSessionScope internal constructor(
         )
 
     private val conversationMetaDataRepository: ConversationMetaDataRepository
-        get () = ConversationMetaDataDataSource(
+        get() = ConversationMetaDataDataSource(
             userStorage.database.conversationMetaDataDAO,
         )
 
@@ -1260,28 +1260,30 @@ class UserSessionScope internal constructor(
         lazy { users.timestampKeyRepository }
     )
 
-    val keyingMaterialsManager: KeyingMaterialsManager get() = KeyingMaterialsManager(
-        featureSupport,
-        syncStateObserver,
-        lazy { clientRepository },
-        lazy { conversations.updateMLSGroupsKeyingMaterials },
-        lazy { users.timestampKeyRepository },
-        this,
-    )
+    val keyingMaterialsManager: KeyingMaterialsManager
+        get() = KeyingMaterialsManager(
+            featureSupport,
+            syncStateObserver,
+            lazy { clientRepository },
+            lazy { conversations.updateMLSGroupsKeyingMaterials },
+            lazy { users.timestampKeyRepository },
+            this,
+        )
 
-    val mlsClientManager: MLSClientManager get() = MLSClientManager(
-        clientIdProvider,
-        isAllowedToRegisterMLSClient,
-        syncStateObserver,
-        lazy { slowSyncRepository },
-        lazy { clientRepository },
-        lazy {
-            RegisterMLSClientUseCaseImpl(
-                mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
-            )
-        },
-        this,
-    )
+    val mlsClientManager: MLSClientManager
+        get() = MLSClientManager(
+            clientIdProvider,
+            isAllowedToRegisterMLSClient,
+            syncStateObserver,
+            lazy { slowSyncRepository },
+            lazy { clientRepository },
+            lazy {
+                RegisterMLSClientUseCaseImpl(
+                    mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
+                )
+            },
+            this,
+        )
 
     private val mlsMigrationWorker
         get() = MLSMigrationWorkerImpl(
@@ -1292,15 +1294,16 @@ class UserSessionScope internal constructor(
             mlsMigrator,
         )
 
-    val mlsMigrationManager: MLSMigrationManager get() = MLSMigrationManager(
-        kaliumConfigs,
-        isMLSEnabled,
-        syncStateObserver,
-        lazy { clientRepository },
-        lazy { users.timestampKeyRepository },
-        lazy { mlsMigrationWorker },
-        this,
-    )
+    val mlsMigrationManager: MLSMigrationManager
+        get() = MLSMigrationManager(
+            kaliumConfigs,
+            isMLSEnabled,
+            syncStateObserver,
+            lazy { clientRepository },
+            lazy { users.timestampKeyRepository },
+            lazy { mlsMigrationWorker },
+            this,
+        )
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository
         get() = MLSPublicKeysRepositoryImpl(

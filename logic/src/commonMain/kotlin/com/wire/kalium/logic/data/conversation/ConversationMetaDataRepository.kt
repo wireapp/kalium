@@ -25,18 +25,20 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 
-
 interface ConversationMetaDataRepository {
-    suspend fun getConversationTypeAndProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Pair<Conversation.Type, Conversation.ProtocolInfo>>
+    suspend fun getConversationTypeAndProtocolInfo(
+        conversationId: ConversationId
+    ): Either<StorageFailure, Pair<Conversation.Type, Conversation.ProtocolInfo>>
 }
 
-internal class ConversationMetaDataDataSource internal  constructor(
+internal class ConversationMetaDataDataSource internal constructor(
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
 ) : ConversationMetaDataRepository {
 
-
-    override suspend fun getConversationTypeAndProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Pair<Conversation.Type, Conversation.ProtocolInfo>> =
+    override suspend fun getConversationTypeAndProtocolInfo(
+        conversationId: ConversationId
+    ): Either<StorageFailure, Pair<Conversation.Type, Conversation.ProtocolInfo>> =
         wrapStorageRequest {
             conversationMetaDataDAO.typeAndProtocolInfo(conversationId.toDao())?.let {
                 Pair(

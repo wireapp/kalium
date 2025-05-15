@@ -18,7 +18,6 @@
 package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.ConversationMetadataQueries
-import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
@@ -28,7 +27,9 @@ class ConversationMetaDataDAOImpl internal constructor(
     private val coroutineContext: CoroutineContext,
     private val conversationMapper: ConversationMapper = ConversationMapper,
 ) : ConversationMetaDataDAO {
-    override suspend fun isInformedAboutDegradedMLSVerification(conversationId: QualifiedIDEntity): Boolean = withContext(coroutineContext) {
+    override suspend fun isInformedAboutDegradedMLSVerification(
+        conversationId: QualifiedIDEntity
+    ): Boolean = withContext(coroutineContext) {
         conversationMetadataQueries.isInformedAboutDegradedMLSVerification(conversationId).executeAsOne()
     }
 
@@ -38,7 +39,9 @@ class ConversationMetaDataDAOImpl internal constructor(
         }
     }
 
-    override suspend fun typeAndProtocolInfo(conversationId: QualifiedIDEntity): ConversationTypeAndProtocolInfo? = withContext(coroutineContext) {
+    override suspend fun typeAndProtocolInfo(
+        conversationId: QualifiedIDEntity
+    ): ConversationTypeAndProtocolInfo? = withContext(coroutineContext) {
         conversationMetadataQueries.typeAndProtocolInfo(conversationId).executeAsOneOrNull()?.let {
             ConversationTypeAndProtocolInfo(
                 type = it.type,

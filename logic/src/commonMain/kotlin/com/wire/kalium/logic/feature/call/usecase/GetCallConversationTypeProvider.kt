@@ -62,7 +62,9 @@ internal class GetCallConversationTypeProviderImpl(
             )
     }
 
-    private fun handleGroupConversation(protocolInfo: Conversation.ProtocolInfo): Either.Right<ConversationTypeCalling> = when (protocolInfo) {
+    private fun handleGroupConversation(
+        protocolInfo: Conversation.ProtocolInfo
+    ): Either.Right<ConversationTypeCalling> = when (protocolInfo) {
         is Conversation.ProtocolInfo.MLS -> ConversationTypeCalling.ConferenceMls
         is Conversation.ProtocolInfo.Proteus,
         is Conversation.ProtocolInfo.Mixed -> ConversationTypeCalling.Conference
