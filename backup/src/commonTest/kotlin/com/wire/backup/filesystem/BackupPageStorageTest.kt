@@ -67,7 +67,9 @@ class BackupPageStorageTest {
 
         val result = entryStorage[entryName]
         assertNotNull(result)
-        assertContentEquals(expectedData, result.data.buffer().readByteArray())
+        result.use {
+            assertContentEquals(expectedData, it.buffer().readByteArray())
+        }
     }
 
     @Test
@@ -93,7 +95,9 @@ class BackupPageStorageTest {
         val result = entryStorage.listEntries()
         assertEquals(1, result.size)
         assertEquals(entryName, result.first().name)
-        assertContentEquals(expectedData, result.first().data.buffer().readByteArray())
+        result.first().use {
+            assertContentEquals(expectedData, it.buffer().readByteArray())
+        }
     }
 
     @Test

@@ -45,7 +45,9 @@ internal class FileBasedBackupPageStorage(
             "File with name ${backupPage.name} already exists!"
         }
         fileSystem.write(workDirectory / backupPage.name) {
-            writeAll(backupPage.data)
+            backupPage.use {
+                writeAll(it)
+            }
         }
     }
 
@@ -53,9 +55,7 @@ internal class FileBasedBackupPageStorage(
         val entryFile = workDirectory / entryName
         return if (fileSystem.exists(entryFile)) {
             withReadonlySource(entryFile) { source ->
-                source.use {
-                    BackupPage(entryName, it)
-                }
+                BackupPage(entryName, source)
             }
         } else {
             null
@@ -65,7 +65,7 @@ internal class FileBasedBackupPageStorage(
     override fun listEntries(): List<BackupPage> =
         fileSystem.list(workDirectory).map { dir ->
             withReadonlySource(dir) { source ->
-                    BackupPage(dir.name, source)
+                BackupPage(dir.name, source)
             }
         }
 

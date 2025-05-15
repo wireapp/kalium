@@ -98,7 +98,7 @@ public abstract class BackupImportDataPager<T> internal constructor(entries: Lis
         val page = pages.removeFirstOrNull()
             ?: throw IllegalStateException("No more pages to consume! Check if there are pages before requesting one")
         nextPageIndex++
-        val bytes = page.data.buffer().readByteArray()
+        val bytes = page.use { it.buffer().readByteArray() }
         return mapPageData(mapper, bytes)
     }
 
@@ -126,4 +126,4 @@ public class MessagePager internal constructor(entries: List<BackupPage>) : Back
     }
 }
 
-internal fun List<BackupPage>.close() = forEach { it.data.close() }
+internal fun List<BackupPage>.close() = forEach { it.close() }
