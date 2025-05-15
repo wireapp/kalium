@@ -22,6 +22,7 @@ import com.wire.backup.ingest.BackupPeekResult
 import com.wire.backup.ingest.isCreatedBySameUser
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toBackupQualifiedId
@@ -62,29 +63,35 @@ internal class VerifyBackupUseCaseImpl(
         compressedBackupFilePath,
         kaliumFileSystem,
         BackupConstants.ACCEPTED_EXTENSIONS
-    ).fold({
-        VerifyBackupResult.Failure.Generic(it)
-    }, { result ->
-        when {
-            result.keys.any { it !in BackupConstants.ACCEPTED_EXTENSIONS } -> VerifyBackupResult.Failure.InvalidBackupFile
+    ).fold(
+        {
+            VerifyBackupResult.Failure.Generic(it)
+        },
+        { result ->
+            when {
+                result.keys.any { it !in BackupConstants.ACCEPTED_EXTENSIONS } -> VerifyBackupResult.Failure.InvalidBackupFile
 
-            result[BackupConstants.BACKUP_ENCRYPTED_EXTENSION] == true ->
-                VerifyBackupResult.AndroidBackup(true)
+                result[BackupConstants.BACKUP_ENCRYPTED_EXTENSION] == true ->
+                    VerifyBackupResult.AndroidBackup(true)
 
-            result[BackupConstants.BACKUP_DB_EXTENSION] == true && result[BackupConstants.BACKUP_METADATA_EXTENSION] == true ->
-                VerifyBackupResult.AndroidBackup(false)
+                result[BackupConstants.BACKUP_DB_EXTENSION] == true && result[BackupConstants.BACKUP_METADATA_EXTENSION] == true ->
+                    VerifyBackupResult.AndroidBackup(false)
 
-            else -> VerifyBackupResult.Failure.InvalidBackupFile
+                else -> VerifyBackupResult.Failure.InvalidBackupFile
+            }
         }
-    })
+    )
 
     private suspend fun verifyMpBackupFile(
         backupFilePath: Path,
     ): VerifyBackupResult {
 
         val mpBackupImporter = backupImporterProvider.providePeekImporter()
+        val peek = mpBackupImporter.peekBackupFile(backupFilePath.toString())
 
-        return when (val peek = mpBackupImporter.peekBackupFile(backupFilePath.toString())) {
+        kaliumLogger.i("Peek result: $peek")
+
+        return when (peek) {
             BackupPeekResult.Failure.UnknownFormat -> VerifyBackupResult.Failure.InvalidBackupFile
             is BackupPeekResult.Failure.UnsupportedVersion -> VerifyBackupResult.Failure.UnsupportedVersion(peek.backupVersion)
             is BackupPeekResult.Success ->

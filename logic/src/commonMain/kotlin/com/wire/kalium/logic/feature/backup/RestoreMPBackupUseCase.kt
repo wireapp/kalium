@@ -35,7 +35,9 @@ import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
+import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.use
@@ -60,41 +62,51 @@ internal class RestoreMPBackupUseCaseImpl(
 ) : RestoreMPBackupUseCase {
 
     override suspend fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult = withContext(dispatchers.io) {
+        try {
+            val backupWorkDir = kaliumFileSystem.tempFilePath("${backupFilePath.name}-restore-workdir")
+            kaliumFileSystem.deleteContents(backupWorkDir)
 
-        val backupWorkDir = kaliumFileSystem.tempFilePath("${backupFilePath.name}-restore-workdir")
-        kaliumFileSystem.deleteContents(backupWorkDir)
+            val importer = backupImporterProvider.provideImporter(
+                pathToWorkDirectory = backupWorkDir.toString(),
+                backupFileUnzipper = { archivePath ->
+                    extractCompressedFile(
+                        inputSource = kaliumFileSystem.source(archivePath.toPath()),
+                        outputRootPath = backupWorkDir,
+                        param = ExtractFilesParam.All,
+                        fileSystem = kaliumFileSystem,
+                    ).fold(
+                        { error("Failed to unzip: $it") },
+                        { backupWorkDir.toString() }
+                    )
+                }
+            )
 
-        val importer = backupImporterProvider.provideImporter(
-            pathToWorkDirectory = backupWorkDir.toString(),
-            backupFileUnzipper = { archivePath ->
-                extractCompressedFile(
-                    inputSource = kaliumFileSystem.source(archivePath.toPath()),
-                    outputRootPath = backupWorkDir,
-                    param = ExtractFilesParam.All,
-                    fileSystem = kaliumFileSystem,
-                ).fold(
-                    { error("Failed to unzip") },
-                    { backupWorkDir.toString() }
+            when (val result = importer.importFromFile(backupFilePath.toString(), password)) {
+                is ImportResult.Success -> {
+                    persistBackupData(result.pager)
+                    RestoreBackupResult.Success
+                }
+                ImportResult.Failure.MissingOrWrongPassphrase -> RestoreBackupResult.Failure(
+                    RestoreBackupResult.BackupRestoreFailure.InvalidPassword
                 )
+                ImportResult.Failure.ParsingFailure -> RestoreBackupResult.Failure(
+                    RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure")
+                )
+                is ImportResult.Failure.UnzippingError -> RestoreBackupResult.Failure(
+                    RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unzipping error")
+                )
+                is ImportResult.Failure.UnknownError -> RestoreBackupResult.Failure(
+                    RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error")
+                )
+            }.also {
+                kaliumFileSystem.deleteContents(backupWorkDir)
             }
-        )
-
-        when (val result = importer.importFromFile(backupFilePath.toString(), password)) {
-            is ImportResult.Success -> {
-                persistBackupData(result.pager)
-                RestoreBackupResult.Success
-            }
-            ImportResult.Failure.MissingOrWrongPassphrase -> RestoreBackupResult.Failure(
-                RestoreBackupResult.BackupRestoreFailure.InvalidPassword
-            )
-            ImportResult.Failure.ParsingFailure -> RestoreBackupResult.Failure(
-                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure")
-            )
-            is ImportResult.Failure.UnzippingError -> RestoreBackupResult.Failure(
-                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unzipping error")
-            )
-            is ImportResult.Failure.UnknownError -> RestoreBackupResult.Failure(
-                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            kaliumLogger.e("IO error during backup restore", e)
+            RestoreBackupResult.Failure(
+                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("IO error: ${e.message}")
             )
         }
     }
