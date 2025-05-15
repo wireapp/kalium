@@ -29,17 +29,12 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 internal interface MissedNotificationsEventReceiver : EventReceiver<Event.AsyncMissed>
 
 internal class MissedNotificationsEventReceiverImpl(
-    private val slowSyncExecutionProvider: suspend () -> Either<CoreFailure, Unit>,
+    private val slowSyncRequester: suspend () -> Either<CoreFailure, Unit>,
     private val slowSyncRepository: SlowSyncRepository
 ) : MissedNotificationsEventReceiver {
 
     override suspend fun onEvent(event: Event.AsyncMissed, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
-        triggerFullSyncCriteria()
-        return slowSyncExecutionProvider()
-    }
-
-    private suspend fun triggerFullSyncCriteria() {
         slowSyncRepository.clearLastSlowSyncCompletionInstant()
-        slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
+        return slowSyncRequester.invoke()
     }
 }

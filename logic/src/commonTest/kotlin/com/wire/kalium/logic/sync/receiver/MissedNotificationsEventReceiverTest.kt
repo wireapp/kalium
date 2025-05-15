@@ -24,7 +24,6 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.coVerify
-import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,7 +43,6 @@ class MissedNotificationsEventReceiverTest {
         coVerify {
             advanceUntilIdle()
             arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
-            arrangement.slowSyncRepository.setNeedsToPersistHistoryLostMessage(eq(true))
             arrangement.slowSyncExecutorProvider.invoke()
         }.wasInvoked(exactly = once)
     }
@@ -60,7 +58,7 @@ class MissedNotificationsEventReceiverTest {
         }
 
         fun arrange() = this to MissedNotificationsEventReceiverImpl(
-            slowSyncExecutionProvider = slowSyncExecutorProvider,
+            slowSyncRequester = slowSyncExecutorProvider,
             slowSyncRepository = slowSyncRepository
         )
     }
