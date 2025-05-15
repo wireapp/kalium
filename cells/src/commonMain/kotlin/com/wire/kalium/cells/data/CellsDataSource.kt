@@ -45,6 +45,7 @@ import okio.FileSystem
 import okio.Path
 import okio.use
 
+@Suppress("TooManyFunctions")
 internal class CellsDataSource internal constructor(
     private val cellsApi: CellsApi,
     private val awsClient: CellsAwsClient,
@@ -174,6 +175,14 @@ internal class CellsDataSource internal constructor(
     override suspend fun deletePublicLink(linkUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.deletePublicLink(linkUuid)
+        }
+    }
+
+    override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.createFolder(folderName)
+        }.map { response ->
+            response.nodes.map { it.toModel() }
         }
     }
 }
