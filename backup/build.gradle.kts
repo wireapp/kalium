@@ -28,7 +28,7 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform { enableJs.set(true) }
+    multiplatform { jsModuleName.set("@wireapp/kalium-backup") }
 }
 
 android {
@@ -57,7 +57,6 @@ kotlin {
         }
     }
     js {
-        browser()
         binaries.library()
         generateTypeScriptDefinitions()
     }
