@@ -1695,6 +1695,8 @@ class UserSessionScope internal constructor(
             clientRemoteRepository = clientRemoteRepository,
             incrementalSyncRepository = incrementalSyncRepository,
             selfServerConfig = users.serverLinks,
+            syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
+            slowSyncRepository = slowSyncRepository,
             kaliumLogger = userScopedLogger
         )
     }
@@ -2370,6 +2372,11 @@ class UserSessionScope internal constructor(
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
         }
+
+        launch {
+            updateSelfClientCapabilityToConsumableNotifications()
+        }
+
         launch {
             clientIdProvider().map {
                 avsSyncStateReporter.execute()

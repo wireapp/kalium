@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import kotlinx.coroutines.flow.filter
 
@@ -48,6 +49,8 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
     private val clientRemoteRepository: ClientRemoteRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val selfServerConfig: SelfServerConfigUseCase,
+    private val syncRequester: suspend () -> Either<CoreFailure, Unit>,
+    private val slowSyncRepository: SlowSyncRepository,
     kaliumLogger: KaliumLogger
 ) : UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
 
@@ -55,38 +58,65 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
 
     override suspend fun invoke(): Either<CoreFailure, Unit> {
         incrementalSyncRepository.incrementalSyncState.filter { it is IncrementalSyncStatus.Live }.collect {
-            val isMigrationDone = clientRepository.shouldUpdateClientConsumableNotificationsCapability()
-            val isEnabledByServer =
-                (selfServerConfig() as SelfServerConfigUseCase.Result.Success).serverLinks.metaData.commonApiVersion.version >=
-                        MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
             val clientHasConsumableNotifications = clientRepository.clientHasConsumableNotifications().getOrElse(false)
-            if (isMigrationDone || !isEnabledByServer || clientHasConsumableNotifications) {
+            val shouldUpdateCapability =
+                clientHasConsumableNotifications.not() && clientRepository.shouldUpdateClientConsumableNotificationsCapability()
+            val isEnabledByServer =
+                (selfServerConfig() as? SelfServerConfigUseCase.Result.Success)?.serverLinks?.metaData?.commonApiVersion?.version
+                    ?.let { serverApiVersion -> serverApiVersion >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS } ?: false
+
+            if (!shouldUpdateCapability || !isEnabledByServer) {
                 logger.d(
-                    "Skipping client migration: isMigrationDone: $isMigrationDone, isEnabledByServer: " +
+                    "Skipping client upgrade: shouldUpdateCapability: $shouldUpdateCapability, isEnabledByServer: " +
                             "$isEnabledByServer, clientHasConsumableNotifications: $clientHasConsumableNotifications"
                 )
                 return@collect
             }
-            selfClientIdProvider().flatMap { clientId ->
-                clientRemoteRepository.updateClientCapabilities(
-                    updateClientCapabilitiesParam = UpdateClientCapabilitiesParam(
-                        capabilities = listOf(
-                            ClientCapability.LegalHoldImplicitConsent,
-                            ClientCapability.ConsumableNotifications
-                        )
-                    ),
-                    clientID = clientId.value
-                ).flatMap {
-                    clientRepository.setShouldUpdateClientConsumableNotificationsCapability(false)
-                    clientRepository.persistClientHasConsumableNotifications(true)
-                }.onFailure {
-                    logger.e("Failed to update client capabilities $it")
+            performClientCapabilityUpgrade()
+        }
+        return Unit.right()
+    }
+
+    /**
+     * Performs the client capability upgrade to consumable notifications.
+     * After updating, it will execute a quick sync to ensure the client has the latest data.
+     * If fails, it will trigger a slow sync.
+     *
+     * The local state of the client will be updated to reflect the new capability as well as the upgrade performed state.
+     */
+    private suspend fun performClientCapabilityUpgrade() {
+        selfClientIdProvider().flatMap { clientId ->
+            clientRemoteRepository.updateClientCapabilities(
+                updateClientCapabilitiesParam = UpdateClientCapabilitiesParam(
+                    capabilities = listOf(
+                        ClientCapability.LegalHoldImplicitConsent,
+                        ClientCapability.ConsumableNotifications
+                    )
+                ),
+                clientID = clientId.value
+            ).flatMap {
+                when (val incrementalSyncResult = syncRequester()) {
+                    is Either.Left -> {
+                        logger.w("Error requesting sync after updating client capabilities, forcing slow sync: $incrementalSyncResult")
+                        finishClientCapabilityUpgrade()
+                    }
+
+                    is Either.Right -> {
+                        logger.d("Successfully requested sync after updating client capabilities")
+                        finishClientCapabilityUpgrade()
+                    }
                 }
             }.onFailure {
                 logger.e("Failed to update client capabilities $it")
             }
         }
-        return Unit.right()
+    }
+
+    private suspend fun finishClientCapabilityUpgrade(): Either<CoreFailure, Unit> {
+        clientRepository.setShouldUpdateClientConsumableNotificationsCapability(false)
+        clientRepository.persistClientHasConsumableNotifications(true)
+        slowSyncRepository.clearLastSlowSyncCompletionInstant()
+        return syncRequester()
     }
 }
 
