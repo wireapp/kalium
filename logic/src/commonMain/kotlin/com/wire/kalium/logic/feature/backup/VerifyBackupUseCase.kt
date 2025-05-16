@@ -32,7 +32,9 @@ import com.wire.kalium.logic.util.checkIfCompressedFileContainsFileTypes
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
+import okio.FileSystem
 import okio.Path
+import okio.SYSTEM
 
 interface VerifyBackupUseCase {
     /**
@@ -46,7 +48,8 @@ interface VerifyBackupUseCase {
 internal class VerifyBackupUseCaseImpl(
     private val userId: UserId,
     private val kaliumFileSystem: KaliumFileSystem,
-    private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(),
+    private val fileSystem: FileSystem = FileSystem.SYSTEM,
+    private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(fileSystem),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : VerifyBackupUseCase {
 
