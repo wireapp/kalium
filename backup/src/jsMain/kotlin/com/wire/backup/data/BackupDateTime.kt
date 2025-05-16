@@ -17,9 +17,11 @@
  */
 package com.wire.backup.data
 
+import kotlinx.serialization.Serializable
 import kotlin.js.Date
 
 @JsExport
+@Serializable(BackupDateTimeSerializer::class)
 public actual data class BackupDateTime(val date: Date) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
