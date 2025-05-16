@@ -49,6 +49,8 @@ import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.MoveNodeUseCase
+import com.wire.kalium.cells.domain.usecase.MoveNodeUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
@@ -191,5 +193,8 @@ public class CellsScope(
 
     public val createFolderUseCase: CreateFolderUseCase by lazy {
         CreateFolderUseCaseImpl(cellsRepository)
+    }
+    public val moveNodeUseCase: MoveNodeUseCase by lazy {
+        MoveNodeUseCaseImpl(cellsRepository)
     }
 }
