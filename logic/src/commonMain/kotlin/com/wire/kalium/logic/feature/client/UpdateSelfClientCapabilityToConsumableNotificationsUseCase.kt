@@ -99,6 +99,7 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
                     is Either.Left -> {
                         logger.w("Error requesting sync after updating client capabilities, forcing slow sync: $incrementalSyncResult")
                         finishClientCapabilityUpgrade()
+                        // todo, verify this case when the incremental sync fails... how do we mark as migrated or not/
                     }
 
                     is Either.Right -> {
