@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.backup.verification
 
-package com.wire.backup.data
-
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlin.js.JsExport
-
-@JsExport
-@Serializable
-public data class BackupMetadata(
-    @SerialName("version")
-    val version: String,
-    @SerialName("userId")
-    val userId: BackupQualifiedId,
-    @SerialName("creationTime")
-    val creationTime: BackupDateTime,
-    @SerialName("clientId")
-    val clientId: String?
-)
+data class BackupId(val id: String)
