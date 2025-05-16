@@ -27,7 +27,7 @@ plugins {
     alias(libs.plugins.skie)
 }
 
-version = "0.0.1"
+version = "0.0.2"
 
 kaliumLibrary {
     multiplatform { jsModuleName.set("@wireapp/kalium-backup") }
