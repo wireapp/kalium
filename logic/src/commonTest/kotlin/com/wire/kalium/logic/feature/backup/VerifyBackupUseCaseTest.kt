@@ -140,11 +140,11 @@ class VerifyBackupUseCaseTest {
             }
         }
 
-        fun arrange() = VerifyBackupUseCaseImpl(userId, fakeKaliumFileSystem)
+        fun arrange() = VerifyBackupUseCaseImpl(userId, fakeKaliumFileSystem, fakeFileSystem)
     }
 
     companion object {
-        var fakeKaliumFileSystem = FakeKaliumFileSystem()
         var fakeFileSystem = FakeFileSystem()
+        var fakeKaliumFileSystem = FakeKaliumFileSystem(fakeFileSystem)
     }
 }
