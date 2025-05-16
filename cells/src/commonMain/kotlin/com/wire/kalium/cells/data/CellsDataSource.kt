@@ -80,12 +80,12 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getFiles(path: String?, query: String, limit: Int, offset: Int) = withContext(dispatchers.io) {
+    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int) = withContext(dispatchers.io) {
         wrapApiRequest {
             if (path == null) {
-                cellsApi.getFiles(query, limit, offset)
+                cellsApi.getNodes(query, limit, offset)
             } else {
-                cellsApi.getFilesForPath(path, limit, offset)
+                cellsApi.getNodesForPath(path, limit, offset)
             }
         }.map { response ->
             PaginatedList(
