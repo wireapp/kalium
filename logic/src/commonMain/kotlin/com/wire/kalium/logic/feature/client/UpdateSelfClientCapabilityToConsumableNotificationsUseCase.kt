@@ -23,7 +23,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
@@ -51,7 +51,6 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
     private val selfServerConfig: SelfServerConfigUseCase,
     private val syncRequester: suspend () -> Either<CoreFailure, Unit>,
     private val slowSyncRepository: SlowSyncRepository,
-    kaliumLogger: KaliumLogger
 ) : UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
 
     private val logger = kaliumLogger.withTextTag("UpdateSelfClientCapabilityToConsumableNotificationsUseCase")
@@ -72,6 +71,10 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
                 )
                 return@collect
             }
+            logger.d(
+                "Starting client upgrade: shouldUpdateCapability: $shouldUpdateCapability, isEnabledByServer: " +
+                        "$isEnabledByServer, clientHasConsumableNotifications: $clientHasConsumableNotifications"
+            )
             performClientCapabilityUpgrade()
         }
         return Unit.right()

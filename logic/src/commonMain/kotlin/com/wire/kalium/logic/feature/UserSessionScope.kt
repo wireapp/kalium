@@ -1697,7 +1697,6 @@ class UserSessionScope internal constructor(
             selfServerConfig = users.serverLinks,
             syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
-            kaliumLogger = userScopedLogger
         )
     }
 
