@@ -35,7 +35,6 @@ public sealed class Node {
         override val conversationName: String? = null,
         override val uuid: String,
         override val lastModified: Long?,
-        val contents: List<Node> // folder can has files and nested folders
     ) : Node()
 
     /**
@@ -80,6 +79,5 @@ internal fun CellNode.toFileModel() = Node.File(
 internal fun CellNode.toFolderModel() = Node.Folder(
     uuid = uuid,
     name = path.substringAfterLast("/"),
-    lastModified = modified?.let { it * 1000 },
-    contents = emptyList(),
+    lastModified = modified?.let { it * 1000 }
 )
