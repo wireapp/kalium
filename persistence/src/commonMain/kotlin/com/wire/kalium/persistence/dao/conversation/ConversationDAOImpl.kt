@@ -133,6 +133,55 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun insertOrIgnoreConversations(conversationEntities: List<ConversationEntity>) = withContext(coroutineContext) {
+        conversationQueries.transaction {
+            for (conversationEntity: ConversationEntity in conversationEntities) {
+                with(conversationEntity) {
+                    conversationQueries.insertConversationOrIgnore(
+                        qualified_id = id,
+                        name = name,
+                        type = type,
+                        team_id = teamId,
+                        mls_group_id = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupId
+                        else null,
+                        mls_group_state = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupState
+                        else ConversationEntity.GroupState.ESTABLISHED,
+                        mls_epoch = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
+                        else MLS_DEFAULT_EPOCH,
+                        protocol = when (protocolInfo) {
+                            is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
+                            is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED
+                            is ConversationEntity.ProtocolInfo.Proteus -> ConversationEntity.Protocol.PROTEUS
+                        },
+                        muted_status = mutedStatus,
+                        muted_time = mutedTime,
+                        creator_id = creatorId,
+                        last_modified_date = lastModifiedDate,
+                        last_notified_date = lastNotificationDate,
+                        access_list = access,
+                        access_role_list = accessRole,
+                        last_read_date = lastReadDate,
+                        mls_last_keying_material_update_date = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable)
+                            protocolInfo.keyingMaterialLastUpdate
+                        else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
+                        mls_cipher_suite = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.cipherSuite
+                        else MLS_DEFAULT_CIPHER_SUITE,
+                        receipt_mode = receiptMode,
+                        message_timer = messageTimer,
+                        user_message_timer = userMessageTimer,
+                        incomplete_metadata = hasIncompleteMetadata,
+                        archived = archived,
+                        archived_date_time = archivedInstant,
+                        is_channel = isChannel,
+                        channel_access = channelAccess,
+                        channel_add_permission = channelAddPermission,
+                        wire_cell = wireCell,
+                    )
+                }
+            }
+        }
+    }
+
     private fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
         with(conversationEntity) {
             conversationQueries.insertConversation(
