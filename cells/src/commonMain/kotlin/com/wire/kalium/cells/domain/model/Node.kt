@@ -34,7 +34,6 @@ public sealed class Node {
         override val uuid: String,
         override val userName: String? = null,
         override val conversationName: String? = null,
-        override val uuid: String,
         override val modifiedTime: Long?,
     ) : Node()
 
