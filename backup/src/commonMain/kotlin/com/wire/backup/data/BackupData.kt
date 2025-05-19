@@ -19,8 +19,6 @@
 
 package com.wire.backup.data
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
@@ -48,11 +46,8 @@ public class BackupData(
 }
 
 @JsExport
-@Serializable
 public data class BackupQualifiedId(
-    @SerialName("id")
     val id: String,
-    @SerialName("domain")
     val domain: String,
 ) {
     override fun toString(): String = "$id@$domain"
