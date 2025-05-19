@@ -210,7 +210,6 @@ import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
-import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCase
 import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -1688,7 +1687,7 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    private val updateSelfClientCapabilityToConsumableNotifications: UpdateSelfClientCapabilityToConsumableNotificationsUseCase by lazy {
+    private val updateSelfClientCapabilityToConsumableNotifications by lazy {
         UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl(
             selfClientIdProvider = clientIdProvider,
             clientRepository = clientRepository,

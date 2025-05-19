@@ -43,6 +43,7 @@ internal interface UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl internal constructor(
     private val selfClientIdProvider: CurrentClientIdProvider,
     private val clientRepository: ClientRepository,
