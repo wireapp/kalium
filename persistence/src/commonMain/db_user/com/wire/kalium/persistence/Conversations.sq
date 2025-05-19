@@ -64,8 +64,8 @@ CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
 CREATE INDEX conversation_verification_status ON Conversation(verification_status);
-CREATE INDEX conversation_archiverd_index ON Conversation(archived);
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
+CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
 
 conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;

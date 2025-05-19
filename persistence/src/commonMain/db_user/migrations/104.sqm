@@ -1,3 +1,11 @@
+CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
+CREATE INDEX unread_event_conv_tyoe ON UnreadEvent(conversation_id, type);
+
+DROP INDEX IF EXISTS conversation_archiverd_index;
+DROP INDEX IF EXISTS unread_event_conversation;
+DROP INDEX IF EXISTS  unread_event_type;
+DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+
 CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
 SELECT
     Conversation.qualified_id AS qualifiedId,
