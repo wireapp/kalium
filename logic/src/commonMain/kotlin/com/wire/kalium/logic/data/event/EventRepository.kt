@@ -145,6 +145,7 @@ class EventDataSource(
             }
         }
 
+    // todo(ym) handle here catching up logic for sync bar.
     private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
         wrapApiRequest { notificationApi.consumeLiveEvents(clientId.value) }.map { webSocketEventFlow ->
             flow {
