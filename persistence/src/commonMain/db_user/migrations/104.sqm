@@ -1,9 +1,59 @@
+PRAGMA foreign_keys = OFF;
+BEGIN TRANSACTION;
+
+CREATE TABLE Call_new (
+    conversation_id   TEXT AS QualifiedIDEntity   NOT NULL,
+    id                TEXT                        NOT NULL,
+    status            TEXT AS CallEntity.Status   NOT NULL,
+    caller_id         TEXT                        NOT NULL,
+    conversation_type TEXT AS ConversationEntity.Type NOT NULL,
+    created_at        TEXT                        NOT NULL,
+    type              TEXT AS CallEntity.Type     NOT NULL DEFAULT 'UNKNOWN',
+    PRIMARY KEY (id, conversation_id)
+);
+INSERT INTO Call_new (conversation_id, id, status, caller_id,
+                      conversation_type, created_at, type)
+SELECT conversation_id, id, status, caller_id,
+       conversation_type, created_at, type
+FROM   Call;
+
+DROP TABLE Call;
+ALTER TABLE Call_new RENAME TO Call;
+
+
+CREATE TABLE LabeledConversation_new (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    folder_id       TEXT                      NOT NULL,
+
+    FOREIGN KEY (folder_id)
+        REFERENCES ConversationFolder(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    PRIMARY KEY (conversation_id, folder_id)
+);
+
+INSERT INTO LabeledConversation_new (conversation_id, folder_id)
+SELECT conversation_id, folder_id
+FROM   LabeledConversation;
+
+DROP TABLE LabeledConversation;
+ALTER TABLE LabeledConversation_new RENAME TO LabeledConversation;
+
+PRAGMA foreign_keys = ON;
+
 CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
 CREATE INDEX unread_event_conv_tyoe ON UnreadEvent(conversation_id, type);
 
 DROP INDEX IF EXISTS conversation_archiverd_index;
 DROP INDEX IF EXISTS unread_event_conversation;
 DROP INDEX IF EXISTS  unread_event_type;
+DROP INDEX IF EXISTS call_conversation_index;
+
+CREATE INDEX Call_idx_conversation_created_at ON Call(conversation_id, created_at DESC);
+CREATE INDEX ConversationFolder_idx_type ON ConversationFolder(folder_type);
+CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
+
 DROP VIEW IF EXISTS ConversationDetailsWithEvents;
 
 CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
