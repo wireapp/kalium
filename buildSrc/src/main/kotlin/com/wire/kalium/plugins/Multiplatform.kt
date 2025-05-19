@@ -30,13 +30,15 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
  *
  * @see commonDokkaConfig
  */
+@Suppress("LongParameterList")
 fun Project.configureDefaultMultiplatform(
     enableApple: Boolean,
     enableJs: Boolean,
     enableJsTests: Boolean,
     includeNativeInterop: Boolean,
     enableIntegrationTests: Boolean,
-    androidNamespaceSuffix: String = this.name
+    androidNamespaceSuffix: String = this.name,
+    jsModuleNameOverride: String? = null,
 ) {
     val kotlinExtension = extensions.findByName("kotlin") as? KotlinMultiplatformExtension
     check(kotlinExtension != null) {
@@ -54,7 +56,7 @@ fun Project.configureDefaultMultiplatform(
         }
 
         if (enableJs) {
-            js { commonJsConfig(enableJsTests) }
+            js { commonJsConfig(jsModuleNameOverride, enableJsTests) }
         }
 
         if (enableApple) {

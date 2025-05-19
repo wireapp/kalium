@@ -47,6 +47,6 @@ actual open class BaseMLSClientTest actual constructor() {
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/mls", isDirectory = true)
         NSFileManager.defaultManager.createDirectoryAtURL(rootDir, true, null, null)
         val keyStore = rootDir.URLByAppendingPathComponent("keystore-$clientId")!!
-        return coreCryptoCentral(keyStore.path!!, "test")
+        return coreCryptoCentral(keyStore.path!!, ByteArray(32) { 0 })
     }
 }
