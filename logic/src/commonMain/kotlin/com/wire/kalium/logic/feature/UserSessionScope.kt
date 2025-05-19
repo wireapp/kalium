@@ -210,6 +210,7 @@ import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -1686,6 +1687,18 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
+    private val updateSelfClientCapabilityToConsumableNotifications by lazy {
+        UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl(
+            selfClientIdProvider = clientIdProvider,
+            clientRepository = clientRepository,
+            clientRemoteRepository = clientRemoteRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            selfServerConfig = users.serverLinks,
+            syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
+            slowSyncRepository = slowSyncRepository,
+        )
+    }
+
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
         get() = FetchLegalHoldForSelfUserFromRemoteUseCaseImpl(
             teamRepository = teamRepository,
@@ -2357,6 +2370,11 @@ class UserSessionScope internal constructor(
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
         }
+
+        launch {
+            updateSelfClientCapabilityToConsumableNotifications()
+        }
+
         launch {
             clientIdProvider().map {
                 avsSyncStateReporter.execute()

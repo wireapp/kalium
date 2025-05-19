@@ -61,19 +61,10 @@ class ClientMapper(
         secondFactorVerificationCode = param.secondFactorVerificationCode,
     )
 
-    /**
-     * Starting V8 the base line for clients capabilities are set to include always these two capabilities:
-     * - ConsumableNotifications
-     * - LegalHoldImplicitConsent
-     */
     fun toUpdateClientCapabilitiesRequest(
         updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
     ): UpdateClientCapabilitiesRequest = UpdateClientCapabilitiesRequest(
-        capabilities = updateClientCapabilitiesParam.capabilities.map { toClientCapabilityDTO(it) }.toMutableSet()
-            .apply {
-                add(ClientCapabilityDTO.ConsumableNotifications)
-                add(ClientCapabilityDTO.LegalHoldImplicitConsent)
-            }.toList(),
+        capabilities = updateClientCapabilitiesParam.capabilities.map { toClientCapabilityDTO(it) },
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information
