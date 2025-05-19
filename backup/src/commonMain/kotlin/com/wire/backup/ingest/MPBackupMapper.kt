@@ -17,7 +17,6 @@
  */
 package com.wire.backup.ingest
 
-import co.touchlab.kermit.Logger
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupData
 import com.wire.backup.data.BackupDateTime
@@ -62,7 +61,6 @@ internal class MPBackupMapper {
             conversationId = it.conversationId.toProtoModel(),
             content = when (val content = it.content) {
                 is BackupMessageContent.Asset -> {
-                    Logger.d("MPBackupMapper") { "Mapping asset message to protobuf: ${content.metaData}" }
                     Content.Asset(
                         ExportedAsset(
                             content.mimeType,
