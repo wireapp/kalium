@@ -18,7 +18,18 @@
 
 package com.wire.kalium.cryptography
 
-import kotlin.jvm.JvmInline
+data class MlsDBSecret(val passphrase: ByteArray) {
 
-@JvmInline
-value class MlsDBSecret(val value: String)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as MlsDBSecret
+
+        return passphrase.contentEquals(other.passphrase)
+    }
+
+    override fun hashCode(): Int {
+        return this::class.hashCode()
+    }
+}
