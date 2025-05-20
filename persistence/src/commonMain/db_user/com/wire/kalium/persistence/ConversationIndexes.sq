@@ -1,0 +1,17 @@
+-- Indexes for Conversation table (improve filtering and sorting in views)
+CREATE INDEX IF NOT EXISTS idx_conversation_type_archived ON Conversation(type, archived, is_channel);
+CREATE INDEX IF NOT EXISTS idx_conversation_protocol_state ON Conversation(protocol, mls_group_state);
+CREATE INDEX IF NOT EXISTS idx_conversation_lastmodified ON Conversation(last_modified_date DESC);
+CREATE INDEX IF NOT EXISTS idx_conversation_name ON Conversation(name COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_conversation_isActive ON Conversation(qualified_id) WHERE archived = 0;
+
+-- Indexes for Member table (improve join performance)
+CREATE INDEX IF NOT EXISTS idx_member_conversation_user ON Member(conversation, user);
+
+-- Indexes for Message tables (improve last message retrieval)
+CREATE INDEX IF NOT EXISTS idx_lastmessage_conversation ON LastMessage(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_message_conversation ON Message(conversation_id, creation_date DESC);
+
+-- Indexes for User table (improve user lookup)
+CREATE INDEX IF NOT EXISTS idx_user_connection_status ON User(connection_status);
+CREATE INDEX IF NOT EXISTS idx_user_preview_asset ON User(preview_asset_id) WHERE preview_asset_id IS NOT NULL;
