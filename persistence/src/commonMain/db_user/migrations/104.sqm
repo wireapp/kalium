@@ -6,34 +6,29 @@ DROP VIEW IF EXISTS ConversationDetailsWithEvents;
 DROP VIEW IF EXISTS ConversationDetails;
 
 CREATE TABLE Call_new (
-    conversation_id   TEXT  NOT NULL,
-    id                TEXT                        NOT NULL,
-    status            TEXT   NOT NULL,
-    caller_id         TEXT                        NOT NULL,
-    conversation_type TEXT NOT NULL,
-    created_at        TEXT                        NOT NULL,
-    type              TEXT     NOT NULL DEFAULT 'UNKNOWN',
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    id TEXT NOT NULL,
+    status TEXT AS CallEntity.Status NOT NULL,
+    caller_id TEXT NOT NULL,
+    conversation_type TEXT AS ConversationEntity.Type NOT NULL,
+    created_at TEXT NOT NULL,
+    type TEXT AS CallEntity.Type NOT NULL DEFAULT 'UNKNOWN',
     PRIMARY KEY (id, conversation_id)
 );
-INSERT INTO Call_new (conversation_id, id, status, caller_id,
-                      conversation_type, created_at, type)
-SELECT conversation_id, id, status, caller_id,
-       conversation_type, created_at, type
+INSERT INTO Call_new (conversation_id, id, status, caller_id, conversation_type, created_at, type)
+SELECT conversation_id, id, status, caller_id, conversation_type, created_at, type
 FROM   Call;
 
 DROP TABLE Call;
 ALTER TABLE Call_new RENAME TO Call;
 
 CREATE TABLE LabeledConversation_new (
-    conversation_id TEXT NOT NULL,
-    folder_id       TEXT                      NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      folder_id TEXT NOT NULL,
 
-    FOREIGN KEY (folder_id)
-        REFERENCES ConversationFolder(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+      FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
-    PRIMARY KEY (conversation_id, folder_id)
+      PRIMARY KEY (conversation_id, folder_id)
 );
 
 INSERT INTO LabeledConversation_new (conversation_id, folder_id)
