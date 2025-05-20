@@ -27,6 +27,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import okio.Path
 
+@Suppress("TooManyFunctions")
 internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
@@ -41,4 +42,5 @@ internal interface CellsRepository {
     suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink>
     suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, String>
     suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit>
+    suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>>
 }
