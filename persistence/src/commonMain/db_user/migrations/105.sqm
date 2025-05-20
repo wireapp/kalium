@@ -6,19 +6,19 @@ DROP VIEW IF EXISTS ConversationDetails;
 
 -- Create optimized indexes for Conversation table
 CREATE INDEX IF NOT EXISTS idx_conversation_protocol_state ON Conversation(protocol, mls_group_state);
-CREATE INDEX IF NOT EXISTS idx_conversation_lastmodified ON Conversation(last_modified_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_lastmodified_desc ON Conversation(last_modified_date DESC);
+DROP INDEX conversation_modified_date_index;
+
 CREATE INDEX IF NOT EXISTS idx_conversation_name ON Conversation(name COLLATE NOCASE);
-CREATE INDEX IF NOT EXISTS idx_conversation_active_type ON Conversation(qualified_id) WHERE archived = 0;
+CREATE INDEX IF NOT EXISTS idx_conversation_isActive ON Conversation(qualified_id) WHERE archived = 0;
 
 -- Create optimized indexes for Message tables
 CREATE INDEX IF NOT EXISTS idx_message_conversation_date ON Message(conversation_id, creation_date DESC);
+DROP INDEX message_conversation_index;
 
 -- Create optimized indexes for User table 
-CREATE INDEX IF NOT EXISTS idx_user_connection_preview ON User(connection_status, preview_asset_id);
 CREATE INDEX IF NOT EXISTS idx_user_deleted_defederated ON User(deleted, defederated);
-
--- Create optimized indexes for LastMessage table
-CREATE INDEX IF NOT EXISTS idx_lastmessage_conv_msg ON LastMessage(conversation_id, message_id);
 
 -- Create optimized indexes for MessageMention table
 CREATE INDEX IF NOT EXISTS idx_messagemention_message_user ON MessageMention(message_id, user_id);

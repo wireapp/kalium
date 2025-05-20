@@ -66,13 +66,13 @@ internal class ConversationExtensionsImpl internal constructor(
             if (searchQuery.isBlank()) {
                 queries.countConversationDetailsWithEvents(
                     fromArchive = fromArchive,
-                    onlyInteractionsEnabled = onlyInteractionEnabled,
+                    onlyInteractionsEnabled = if(onlyInteractionEnabled) 1 else 0,
                     conversationFilter = conversationFilter.name,
                 )
             } else {
                 queries.countConversationDetailsWithEventsFromSearch(
                     fromArchive = fromArchive,
-                    onlyInteractionsEnabled = onlyInteractionEnabled,
+                    onlyInteractionsEnabled = if (onlyInteractionEnabled) 1 else 0,
                     conversationFilter = conversationFilter.name,
                     searchQuery = searchQuery
                 )
@@ -84,9 +84,9 @@ internal class ConversationExtensionsImpl internal constructor(
                 if (searchQuery.isBlank()) {
                     queries.selectConversationDetailsWithEvents(
                         fromArchive = fromArchive,
-                        onlyInteractionsEnabled = onlyInteractionEnabled,
+                        onlyInteractionsEnabled = if (onlyInteractionEnabled) 1 else 0,
                         conversationFilter = conversationFilter.name,
-                        newActivitiesOnTop = newActivitiesOnTop,
+                        newActivitiesOnTop = if (newActivitiesOnTop) 1 else 0,
                         limit = limit,
                         offset = offset,
                         mapper = mapper::fromViewToModel,
@@ -94,10 +94,10 @@ internal class ConversationExtensionsImpl internal constructor(
                 } else {
                     queries.selectConversationDetailsWithEventsFromSearch(
                         fromArchive = fromArchive,
-                        onlyInteractionsEnabled = onlyInteractionEnabled,
+                        onlyInteractionsEnabled = if (onlyInteractionEnabled) 1 else 0,
                         conversationFilter = conversationFilter.name,
                         searchQuery = searchQuery,
-                        newActivitiesOnTop = newActivitiesOnTop,
+                        newActivitiesOnTop = if (newActivitiesOnTop) 1 else 0,
                         limit = limit,
                         offset = offset,
                         mapper = mapper::fromViewToModel,

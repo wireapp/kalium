@@ -236,7 +236,7 @@ internal class ConversationDAOImpl internal constructor(
     ): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
-            onlyInteractionsEnabled = onlyInteractionEnabled,
+            onlyInteractionsEnabled = if (onlyInteractionEnabled) 1 else 0,
             newActivitiesOnTop = newActivitiesOnTop,
             mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()

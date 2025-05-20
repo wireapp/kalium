@@ -59,7 +59,10 @@ CREATE TABLE ConversationLegalHoldStatusChangeNotified (
 );
 
 -- Optimise comparisons and sorting by dates:
-CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date);
+CREATE INDEX idx_conversation_lastmodified_desc ON Conversation(last_modified_date DESC);
+CREATE INDEX IF NOT EXISTS idx_conversation_name ON Conversation(name COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_conversation_isActive ON Conversation(qualified_id) WHERE archived = 0;
+
 CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
@@ -67,6 +70,9 @@ CREATE INDEX conversation_verification_status ON Conversation(verification_statu
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
 CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
 CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
+
+-- CREATE INDEX IF NOT EXISTS idx_conversation_type_archived ON Conversation(type, archived, is_channel);
+CREATE INDEX idx_conversation_protocol_state ON Conversation(protocol, mls_group_state);
 
 conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
