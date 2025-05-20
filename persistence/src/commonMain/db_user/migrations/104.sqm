@@ -268,3 +268,5 @@ WHERE
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
 GROUP BY ConversationDetails.qualifiedId;
+
+PRAGMA optimize;
