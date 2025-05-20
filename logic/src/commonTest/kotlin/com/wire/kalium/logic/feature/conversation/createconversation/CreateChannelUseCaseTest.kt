@@ -36,14 +36,14 @@ class CreateChannelUseCaseTest {
             .withGroupConversationCreator()
             .arrange()
 
-        createChannel.invoke(channelName, emptyList(), ConversationOptions())
+        createChannel.invoke(channelName, emptyList(), CreateConversationParam())
 
         coVerify {
             arrangement.groupConversationCreator(
                 name = channelName,
                 userIdList = emptyList(),
-                options = ConversationOptions().copy(
-                    groupType = ConversationOptions.GroupType.CHANNEL
+                options = CreateConversationParam().copy(
+                    groupType = CreateConversationParam.GroupType.CHANNEL
                 )
             )
         }

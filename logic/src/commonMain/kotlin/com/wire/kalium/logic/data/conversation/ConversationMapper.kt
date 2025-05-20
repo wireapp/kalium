@@ -412,9 +412,9 @@ internal class ConversationMapperImpl(
         name: String?,
         members: List<UserId>,
         teamId: String?,
-        options: ConversationOptions
+        options: CreateConversationParam
     ) = CreateConversationRequest(
-        qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS)
+        qualifiedUsers = if (options.protocol == CreateConversationParam.Protocol.PROTEUS)
             members.map { it.toApi() }
         else
             emptyList(),
@@ -432,9 +432,9 @@ internal class ConversationMapperImpl(
         cellEnabled = options.wireCellEnabled,
     )
 
-    private fun ConversationOptions.GroupType.toApiModel(): GroupConversationType = when (this) {
-        ConversationOptions.GroupType.REGULAR_GROUP -> GroupConversationType.REGULAR_GROUP
-        ConversationOptions.GroupType.CHANNEL -> GroupConversationType.CHANNEL
+    private fun CreateConversationParam.GroupType.toApiModel(): GroupConversationType = when (this) {
+        CreateConversationParam.GroupType.REGULAR_GROUP -> GroupConversationType.REGULAR_GROUP
+        CreateConversationParam.GroupType.CHANNEL -> GroupConversationType.CHANNEL
     }
 
     override fun toApiModel(access: Conversation.Access): ConversationAccessDTO = when (access) {
@@ -453,9 +453,9 @@ internal class ConversationMapperImpl(
         Conversation.AccessRole.EXTERNAL -> ConversationAccessRoleDTO.EXTERNAL
     }
 
-    override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {
-        ConversationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
-        ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
+    override fun toApiModel(protocol: CreateConversationParam.Protocol): ConvProtocol = when (protocol) {
+        CreateConversationParam.Protocol.PROTEUS -> ConvProtocol.PROTEUS
+        CreateConversationParam.Protocol.MLS -> ConvProtocol.MLS
     }
 
     override fun fromMigrationModel(conversation: Conversation): ConversationEntity = with(conversation) {
