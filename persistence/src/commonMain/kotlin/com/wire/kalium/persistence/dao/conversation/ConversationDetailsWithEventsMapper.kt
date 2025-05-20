@@ -33,7 +33,7 @@ import kotlinx.datetime.Instant
 
 data object ConversationDetailsWithEventsMapper {
     // suppressed because the method cannot be shortened and there are unused parameters because sql view returns some duplicated fields
-    @Suppress("LongParameterList", "LongMethod", "UnusedParameter")
+    @Suppress("LongParameterList", "LongMethod", "FunctionParameterNaming")
     fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,

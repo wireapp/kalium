@@ -63,20 +63,20 @@ internal class ConversationExtensionsImpl internal constructor(
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
         QueryPagingSource(
             countQuery =
-            if (searchQuery.isBlank()) {
-                queries.countConversationDetailsWithEvents(
-                    fromArchive = fromArchive,
-                    onlyInteractionsEnabled = if(onlyInteractionEnabled) 1 else 0,
-                    conversationFilter = conversationFilter.name,
-                )
-            } else {
-                queries.countConversationDetailsWithEventsFromSearch(
-                    fromArchive = fromArchive,
-                    onlyInteractionsEnabled = if (onlyInteractionEnabled) 1 else 0,
-                    conversationFilter = conversationFilter.name,
-                    searchQuery = searchQuery
-                )
-            },
+                if (searchQuery.isBlank()) {
+                    queries.countConversationDetailsWithEvents(
+                        fromArchive = fromArchive,
+                        onlyInteractionsEnabled = if (onlyInteractionEnabled) 1 else 0,
+                        conversationFilter = conversationFilter.name,
+                    )
+                } else {
+                    queries.countConversationDetailsWithEventsFromSearch(
+                        fromArchive = fromArchive,
+                        onlyInteractionsEnabled = if (onlyInteractionEnabled) 1 else 0,
+                        conversationFilter = conversationFilter.name,
+                        searchQuery = searchQuery
+                    )
+                },
             transacter = queries,
             context = coroutineContext,
             initialOffset = initialOffset,
