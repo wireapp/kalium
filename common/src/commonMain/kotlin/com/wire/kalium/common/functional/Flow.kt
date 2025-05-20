@@ -74,6 +74,7 @@ fun <T> Flow<T>.executeIfTimeout(timeout: Duration, block: suspend () -> Unit) =
     })
 }.transformLatest { emitExecution ->
     when (emitExecution) {
+        // This is the case when the flow does not emit any value within the timeout.
         is EmitExecution.NoEmit -> {
             delay(timeout)
             block()

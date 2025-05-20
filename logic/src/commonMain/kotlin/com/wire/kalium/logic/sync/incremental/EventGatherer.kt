@@ -105,7 +105,7 @@ internal class EventGathererImpl(
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
     }.executeIfTimeout(timeout = 500.milliseconds) {
-        logger.i("Websocket connection stale, we are live")
+        logger.i("Nothing emitted from the event stream, setting source to LIVE")
         _currentSource.value = EventSource.LIVE
     }
 
