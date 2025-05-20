@@ -67,9 +67,9 @@ fun intervalFlow(periodMs: Long, initialDelayMs: Long = 0L, stopWhen: () -> Bool
  * As it is using transformLatest, it will cancel the block if the flow emits a value.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-fun <T> Flow<T>.executeIfTimeout(timeout: Duration, block: suspend () -> Unit) = flow {
+fun <T> Flow<T>.executeIfNoEmission(timeout: Duration, block: suspend () -> Unit) = flow {
     emit(EmitExecution.NoEmit())
-    emitAll(this@executeIfTimeout.map {
+    emitAll(this@executeIfNoEmission.map {
         EmitExecution.Value(it)
     })
 }.transformLatest { emitExecution ->
@@ -86,6 +86,6 @@ fun <T> Flow<T>.executeIfTimeout(timeout: Duration, block: suspend () -> Unit) =
 }
 
 sealed class EmitExecution<T> {
-    class NoEmit<T> : EmitExecution<T>()
     data class Value<T>(val emitted: T) : EmitExecution<T>()
+    class NoEmit<T> : EmitExecution<T>()
 }

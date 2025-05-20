@@ -21,7 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.executeIfTimeout
+import com.wire.kalium.common.functional.executeIfNoEmission
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -104,7 +104,7 @@ internal class EventGathererImpl(
         }
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
-    }.executeIfTimeout(timeout = 500.milliseconds) {
+    }.executeIfNoEmission(timeout = 500.milliseconds) {
         logger.i("Nothing emitted from the event stream, setting source to LIVE")
         _currentSource.value = EventSource.LIVE
     }
