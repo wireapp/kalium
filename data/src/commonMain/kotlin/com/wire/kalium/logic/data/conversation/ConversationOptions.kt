@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.user.SupportedProtocol
 
-// TODO(qol): rename to CreateConversationParam
 data class CreateConversationParam(
     val access: Set<Conversation.Access>? = null,
     val accessRole: Set<Conversation.AccessRole>? = null,
