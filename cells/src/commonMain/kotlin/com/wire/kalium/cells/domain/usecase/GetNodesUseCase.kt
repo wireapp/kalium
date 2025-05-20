@@ -69,9 +69,9 @@ internal class GetNodesUseCaseImpl(
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
         return cellsRepository.getNodes(conversationId, query, limit, offset)
-            .map { list ->
+            .map { nodes ->
                 PaginatedList(
-                    data = list.data.asSequence()
+                    data = nodes.data.asSequence()
                         .filterNot { it.isDraft }
                         .map { node ->
                             if (node.type == CellNodeType.FOLDER.value) {
@@ -89,7 +89,7 @@ internal class GetNodesUseCaseImpl(
                                 )
                             }
                         }.toList(),
-                    pagination = list.pagination
+                    pagination = nodes.pagination
                 )
             }
     }

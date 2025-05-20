@@ -239,7 +239,9 @@ class NodeUploadManagerTest {
         val fileSystem = FakeFileSystem()
 
         suspend fun withPreCheckFileExists(suggestedName: String) = apply {
-            coEvery { repository.preCheck(any()) }.returns(PreCheckResult.FileExists(suggestedName).right())
+            coEvery { repository.preCheck(any()) }.returns(
+                PreCheckResult.FileExists(suggestedName).right()
+            )
         }
 
         suspend fun withPreCheckSuccess() = apply {
@@ -247,7 +249,11 @@ class NodeUploadManagerTest {
         }
 
         suspend fun withPreCheckFailed() = apply {
-            coEvery { repository.preCheck(any()) }.returns(NetworkFailure.NoNetworkConnection(IllegalStateException("test")).left())
+            coEvery { repository.preCheck(any()) }.returns(
+                NetworkFailure.NoNetworkConnection(
+                    IllegalStateException("test")
+                ).left()
+            )
         }
 
         suspend fun withUploadSuccess() = apply {
@@ -280,20 +286,30 @@ class NodeUploadManagerTest {
 
 private class TestRepository : CellsRepository {
 
-    override suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
+    override suspend fun uploadFile(
+        path: Path,
+        node: CellNode,
+        onProgressUpdate: (Long) -> Unit
+    ): Either<NetworkFailure, Unit> {
         onProgressUpdate(500)
         delay(100)
         return Unit.right()
     }
 
-    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int) = PaginatedList<CellNode>(
-        data = emptyList(),
-        pagination = null
-    ).right()
+    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int) =
+        PaginatedList<CellNode>(
+            data = emptyList(),
+            pagination = null
+        ).right()
 
     override suspend fun deleteFile(nodeUuid: String) = Unit.right()
     override suspend fun preCheck(nodePath: String) = PreCheckResult.Success.right()
-    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) = Unit.right()
+    override suspend fun downloadFile(
+        out: Path,
+        cellPath: String,
+        onProgressUpdate: (Long) -> Unit
+    ) = Unit.right()
+
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String) = Unit.right()
     override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = Unit.right()
     override suspend fun getPreviews(nodeUuid: String) = emptyList<NodePreview>().right()
@@ -304,11 +320,16 @@ private class TestRepository : CellsRepository {
         size = 1000,
     ).right()
 
-    override suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit> = Unit.right()
+    override suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit> =
+        Unit.right()
 
-    override suspend fun createPublicLink(nodeUuid: String, fileName: String) = PublicLink("", "").right()
+    override suspend fun createPublicLink(nodeUuid: String, fileName: String) =
+        PublicLink("", "").right()
 
     override suspend fun getPublicLink(linkUuid: String) = "".right()
 
     override suspend fun deletePublicLink(linkUuid: String) = Unit.right()
+
+    override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> =
+        listOf<CellNode>().right()
 }
