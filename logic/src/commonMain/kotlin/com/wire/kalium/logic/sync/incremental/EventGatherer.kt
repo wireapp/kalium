@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.executeIfTimeout
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -52,6 +53,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.toInstant
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -102,6 +104,9 @@ internal class EventGathererImpl(
         }
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
+    }.executeIfTimeout(timeout = 500.milliseconds) {
+        logger.i("Websocket connection stale, we are live")
+        _currentSource.value = EventSource.LIVE
     }
 
     /**
@@ -113,6 +118,7 @@ internal class EventGathererImpl(
         // in the old system we fetch pending events from the notification stream based on last processed event id
         eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
     }
+
 
     private suspend fun FlowCollector<EventEnvelope>.emitEvents(
         webSocketEventFlow: Flow<WebSocketEvent<EventEnvelope>>
@@ -183,10 +189,10 @@ internal class EventGathererImpl(
                     emit(it)
                 }
             logger.i("Offline events collection finished. Collecting Live events.")
+            _currentSource.value = EventSource.LIVE
         } else {
             logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
         }
-        _currentSource.value = EventSource.LIVE
     }
 
     private suspend fun handleTimeDrift() {

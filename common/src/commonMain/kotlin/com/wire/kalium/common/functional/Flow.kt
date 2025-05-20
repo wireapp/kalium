@@ -18,14 +18,19 @@
 
 package com.wire.kalium.common.functional
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transformLatest
+import kotlin.time.Duration
 
 inline fun <A, B> Collection<A>.flatMapFromIterable(
     crossinline block: suspend (A) -> Flow<B>
@@ -56,3 +61,30 @@ fun intervalFlow(periodMs: Long, initialDelayMs: Long = 0L, stopWhen: () -> Bool
             delay(periodMs)
         }
     }
+
+/**
+ * Executes the block if the flow does not emit any value within the specified timeout.
+ * As it is using transformLatest, it will cancel the block if the flow emits a value.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+fun <T> Flow<T>.executeIfTimeout(timeout: Duration, block: suspend () -> Unit) = flow {
+    emit(EmitExecution.NoEmit())
+    emitAll(this@executeIfTimeout.map {
+        EmitExecution.Value(it)
+    })
+}.transformLatest { emitExecution ->
+    when (emitExecution) {
+        is EmitExecution.NoEmit -> {
+            delay(timeout)
+            block()
+        }
+
+        // This is the case when the flow emits a value before the timeout from the source.
+        is EmitExecution.Value -> emit(emitExecution.emitted)
+    }
+}
+
+sealed class EmitExecution<T> {
+    class NoEmit<T> : EmitExecution<T>()
+    data class Value<T>(val emitted: T) : EmitExecution<T>()
+}
