@@ -38,20 +38,22 @@ FROM   LabeledConversation;
 DROP TABLE LabeledConversation;
 ALTER TABLE LabeledConversation_new RENAME TO LabeledConversation;
 
-PRAGMA foreign_keys = 1;
-
-CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
-CREATE INDEX unread_event_conv_tyoe ON UnreadEvent(conversation_id, type);
+CREATE INDEX IF NOT EXISTS conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
+CREATE INDEX IF NOT EXISTS unread_event_conv_tyoe ON UnreadEvent(conversation_id, type);
 
 DROP INDEX IF EXISTS conversation_archiverd_index;
 DROP INDEX IF EXISTS unread_event_conversation;
 DROP INDEX IF EXISTS unread_event_type;
 DROP INDEX IF EXISTS call_conversation_index;
 
-CREATE INDEX Call_idx_conversation_created_at ON Call(conversation_id, created_at DESC);
-CREATE INDEX ConversationFolder_idx_type ON ConversationFolder(folder_type);
-CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
-CREATE INDEX Member_idx_conversation_user ON Member(conversation, user);
+CREATE INDEX IF NOT EXISTS call_date_index ON Call(created_at);
+CREATE INDEX IF NOT EXISTS call_caller_index ON Call(caller_id);
+CREATE INDEX IF NOT EXISTS call_status ON Call(status);
+CREATE INDEX IF NOT EXISTS Call_idx_conversation_created_at ON Call(conversation_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS ConversationFolder_idx_type ON ConversationFolder(folder_type);
+CREATE INDEX IF NOT EXISTS Conversation_idx_archived_protocol ON Conversation(archived, protocol);
+CREATE INDEX IF NOT EXISTS Member_idx_conversation_user ON Member(conversation, user);
 DROP INDEX member_conversation_index;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
@@ -268,5 +270,6 @@ WHERE
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
 GROUP BY ConversationDetails.qualifiedId;
+PRAGMA foreign_keys = 1;
 
 PRAGMA optimize;
