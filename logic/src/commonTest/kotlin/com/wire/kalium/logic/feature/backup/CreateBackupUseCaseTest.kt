@@ -99,7 +99,7 @@ class CreateBackupUseCaseTest {
 
         // Then
         assertTrue(result is CreateBackupResult.Success)
-        assertTrue(result.backupFilePath.name.contains(".wbu"))
+        assertTrue(result.backupFilePath.name.contains(".zip"))
         coVerify {
             arrangement.clientIdProvider.invoke()
         }.wasInvoked(once)

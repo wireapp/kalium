@@ -82,7 +82,7 @@ internal class CreateBackupUseCaseImpl(
     override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.default) {
         val userHandle = userRepository.getSelfUser().getOrNull()?.handle?.replace(".", "-")
         val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
-        val backupName = createBackupFileName(userHandle, timeStamp)
+        val backupName = createBackupFileName(userHandle, timeStamp, false)
         val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
         deletePreviousBackupFiles(backupFilePath)
 
