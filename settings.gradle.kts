@@ -41,6 +41,16 @@ pluginManagement {
         google()
         mavenCentral()
     }
+
+    // If it is a F-droid release, delete these lines. Deleting `useVersion(...)` should be enough.
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id.contains("io.mockative") && requested.version == "3.0.1") {
+                println("REPLACING MOCKATIVE WITH FIX. This should NOT happen on F-Droid builds!")
+                useVersion("3.0.1-fix")
+            }
+        }
+    }
 }
 
 plugins {
