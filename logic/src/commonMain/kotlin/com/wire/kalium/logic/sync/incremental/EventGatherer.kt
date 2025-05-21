@@ -105,7 +105,7 @@ internal class EventGathererImpl(
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
     }.executeIfNoEmission(timeout = 500.milliseconds) {
-        logger.i("Nothing emitted from the event stream, setting source to LIVE")
+        logger.i("Nothing emitted from the event stream, we are officially LIVE")
         _currentSource.value = EventSource.LIVE
     }
 

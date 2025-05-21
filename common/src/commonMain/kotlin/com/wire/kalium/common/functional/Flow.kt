@@ -70,7 +70,7 @@ fun intervalFlow(periodMs: Long, initialDelayMs: Long = 0L, stopWhen: () -> Bool
 fun <T> Flow<T>.executeIfNoEmission(timeout: Duration, block: suspend () -> Unit) = flow {
     emit(EmitExecution.NoEmit())
     emitAll(this@executeIfNoEmission.map {
-        EmitExecution.Value(it)
+        EmitExecution.Emitted(it)
     })
 }.transformLatest { emitExecution ->
     when (emitExecution) {
@@ -81,11 +81,11 @@ fun <T> Flow<T>.executeIfNoEmission(timeout: Duration, block: suspend () -> Unit
         }
 
         // This is the case when the flow emits a value before the timeout from the source.
-        is EmitExecution.Value -> emit(emitExecution.emitted)
+        is EmitExecution.Emitted -> emit(emitExecution.value)
     }
 }
 
 sealed class EmitExecution<T> {
-    data class Value<T>(val emitted: T) : EmitExecution<T>()
+    data class Emitted<T>(val value: T) : EmitExecution<T>()
     class NoEmit<T> : EmitExecution<T>()
 }
