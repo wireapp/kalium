@@ -51,6 +51,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 
+@Suppress("TooManyFunctions")
 internal class CellsApiImpl(
     private val nodeServiceApi: NodeServiceApi,
 ) : CellsApi {
