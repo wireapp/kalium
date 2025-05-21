@@ -45,8 +45,10 @@ object BackupConstants {
         BACKUP_WEB_CONVERSATIONS_FILE_NAME
     )
 
-    fun createBackupFileName(userHandle: String?, timestampIso: String) = // file names cannot have special characters
-        "$BACKUP_FILE_NAME_PREFIX-$userHandle-${timestampIso.replace(":", "-")}.wbu"
+    fun createBackupFileName(userHandle: String?, timestampIso: String, multiplatform: Boolean = true): String {
+        val extension = if (multiplatform) "wbu" else "zip"
+        return "$BACKUP_FILE_NAME_PREFIX-$userHandle-${timestampIso.replace(":", "-")}.$extension"
+    }
 
     val ACCEPTED_EXTENSIONS = listOf(
         BACKUP_ENCRYPTED_EXTENSION,
