@@ -24,7 +24,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
+    val isFDroidRelease = (project.properties["isFDroidRelease"] as? String)?.toBoolean() ?: false
+    if (isFDroidRelease) {
+        alias(libs.plugins.mockative)
+    } else {
+        alias(libs.plugins.mockativeFix)
+    }
 }
 
 kaliumLibrary {

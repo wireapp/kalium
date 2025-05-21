@@ -17,7 +17,8 @@ okio = "3.9.0"
 ok-http = "4.12.0"
 # 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 uploaded to a temporary repo
 # until mockative releases a new version with a proper fix
-mockative = "3.0.1-fix"
+mockative = "3.0.1"
+mockativeFix = "3.0.1-fix"
 android-work = "2.9.0"
 android-test-runner = "1.6.2"
 android-test-core-ktx = "1.6.1"
@@ -93,6 +94,7 @@ benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" 
 allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }
 mockative = { id = "io.mockative", version.ref = "mockative" }
+mockativeFix = { id = "io.mockative", version.ref = "mockativeFix" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]
@@ -201,6 +203,7 @@ sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerial
 
 # mocks and testing
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
+mockative-runtimeFix = { module = "io.mockative:mockative", version.ref = "mockativeFix" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }

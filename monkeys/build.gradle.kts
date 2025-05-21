@@ -26,7 +26,12 @@ plugins {
     id(libs.plugins.sqldelight.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
+    val isFDroidRelease = (project.properties["isFDroidRelease"] as? String)?.toBoolean() ?: false
+    if (isFDroidRelease) {
+        alias(libs.plugins.mockative)
+    } else {
+        alias(libs.plugins.mockativeFix)
+    }
 }
 val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
 val replayerMainFunctionClassName = "com.wire.kalium.monkeys.ReplayerKt"

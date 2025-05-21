@@ -24,7 +24,12 @@ plugins {
     id(libs.plugins.sqldelight.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
+    val isFDroidRelease = (project.properties["isFDroidRelease"] as? String)?.toBoolean() ?: false
+    if (isFDroidRelease) {
+        alias(libs.plugins.mockative)
+    } else {
+        alias(libs.plugins.mockativeFix)
+    }
 }
 
 kaliumLibrary {
