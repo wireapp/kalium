@@ -22,17 +22,13 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
-public interface MoveNodeToRecycleBinUseCase {
-    public suspend operator fun invoke(uuid: String, path: String): Either<CoreFailure, Unit>
+public interface RestoreNodeFromRecycleBinUseCase {
+    public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
 }
 
-internal class MoveNodeToRecycleBinUseCaseImpl(
+internal class RestoreNodeFromRecycleBinUseCaseImpl(
     private val cellsRepository: CellsRepository,
-) : MoveNodeToRecycleBinUseCase {
-    override suspend fun invoke(uuid: String, path: String): Either<CoreFailure, Unit> =
-        cellsRepository.moveNode(uuid = uuid, path = path, targetPath = uuid + BIN_PATH).map { }
-
-    companion object {
-        const val BIN_PATH = "/recycle_bin"
-    }
+) : RestoreNodeFromRecycleBinUseCase {
+    override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
+        cellsRepository.restoreNode(path = path).map { }
 }

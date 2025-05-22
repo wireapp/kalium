@@ -81,24 +81,25 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) = withContext(dispatchers.io) {
-        wrapApiRequest {
-            if (path == null) {
-                cellsApi.getNodes(query, limit, offset)
-            } else {
-                cellsApi.getNodesForPath(path, limit, offset, onlyDeleted)
+    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                if (path == null) {
+                    cellsApi.getNodes(query, limit, offset)
+                } else {
+                    cellsApi.getNodesForPath(path, limit, offset, onlyDeleted)
+                }
+            }.map { response ->
+                PaginatedList(
+                    data = response.nodes.map { it.toModel() },
+                    pagination = response.pagination?.let {
+                        Pagination(
+                            nextOffset = it.nextOffset,
+                        )
+                    },
+                )
             }
-        }.map { response ->
-            PaginatedList(
-                data = response.nodes.map { it.toModel() },
-                pagination = response.pagination?.let {
-                    Pagination(
-                        nextOffset = it.nextOffset,
-                    )
-                },
-            )
         }
-    }
 
     override suspend fun deleteFile(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
@@ -190,6 +191,13 @@ internal class CellsDataSource internal constructor(
         withContext(dispatchers.io) {
             wrapApiRequest {
                 cellsApi.moveNode(uuid = uuid, path = path, targetPath = targetPath)
+            }
+        }
+
+    override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.restoreNode(path = path)
             }
         }
 }

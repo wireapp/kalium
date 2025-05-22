@@ -37,5 +37,5 @@ internal interface CellsApi {
     suspend fun getNodesForPath(path: String, limit: Int, offset: Int, onlyDeleted: Boolean = false): NetworkResponse<GetNodesResponseDTO>
     suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO>
     suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit>
-    suspend fun restoreNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit>
+    suspend fun restoreNode(path: String): NetworkResponse<Unit>
 }

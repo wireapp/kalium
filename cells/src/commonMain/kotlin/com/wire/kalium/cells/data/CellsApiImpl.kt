@@ -228,17 +228,13 @@ internal class CellsApiImpl(
         )
     }.mapSuccess {}
 
-    override suspend fun restoreNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
+    override suspend fun restoreNode(path: String): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
             name = NodeServiceApi.NamePerformAction.restore,
             parameters = RestActionParameters(
-                nodes = listOf(RestNodeLocator(path, uuid)),
+                nodes = listOf(RestNodeLocator(path)),
                 awaitStatus = JobsTaskStatus.Finished,
-                awaitTimeout = AWAIT_TIMEOUT,
-                copyMoveOptions = RestActionOptionsCopyMove(
-                    targetPath = targetPath,
-                    targetIsParent = true,
-                )
+                awaitTimeout = AWAIT_TIMEOUT
             )
         )
     }.mapSuccess {}
