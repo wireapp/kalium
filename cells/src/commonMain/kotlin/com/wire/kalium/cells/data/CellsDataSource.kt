@@ -81,12 +81,12 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int) = withContext(dispatchers.io) {
+    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) = withContext(dispatchers.io) {
         wrapApiRequest {
             if (path == null) {
                 cellsApi.getNodes(query, limit, offset)
             } else {
-                cellsApi.getNodesForPath(path, limit, offset)
+                cellsApi.getNodesForPath(path, limit, offset, onlyDeleted)
             }
         }.map { response ->
             PaginatedList(

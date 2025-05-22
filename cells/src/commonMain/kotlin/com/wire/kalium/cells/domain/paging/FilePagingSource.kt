@@ -32,6 +32,7 @@ internal class FilePagingSource(
     val conversationId: String?,
     val pageSize: Int,
     val getNodesUseCase: GetNodesUseCase,
+    val onlyDeleted: Boolean = false
 ) : PagingSource<Int, Node>() {
 
     override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node> =
@@ -40,6 +41,7 @@ internal class FilePagingSource(
             query = query,
             limit = pageSize,
             offset = params.key ?: 0,
+            onlyDeleted = onlyDeleted
         ).fold(
             {
                 PagingSourceLoadResultError<Int, Node>(

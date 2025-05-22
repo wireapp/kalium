@@ -26,6 +26,7 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
 import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
 import com.wire.kalium.cells.sdk.kmp.model.RestActionOptionsCopyMove
@@ -42,6 +43,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
+import com.wire.kalium.cells.sdk.kmp.model.StatusFilterDeletedStatus
 import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -87,7 +89,12 @@ internal class CellsApiImpl(
             )
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun getNodesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO> =
+    override suspend fun getNodesForPath(
+        path: String,
+        limit: Int,
+        offset: Int,
+        onlyDeleted: Boolean
+    ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(
@@ -95,6 +102,13 @@ internal class CellsApiImpl(
                     offset = offset.toString(),
                     scope = RestLookupScope(
                         root = RestNodeLocator(path = path),
+                    ),
+                    filters = RestLookupFilter(
+                        status = if (onlyDeleted) {
+                            LookupFilterStatusFilter(deleted = StatusFilterDeletedStatus.Only)
+                        } else {
+                            null
+                        },
                     ),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
@@ -202,6 +216,21 @@ internal class CellsApiImpl(
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
             name = NodeServiceApi.NamePerformAction.move,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path, uuid)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT,
+                copyMoveOptions = RestActionOptionsCopyMove(
+                    targetPath = targetPath,
+                    targetIsParent = true,
+                )
+            )
+        )
+    }.mapSuccess {}
+
+    override suspend fun restoreNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.restore,
             parameters = RestActionParameters(
                 nodes = listOf(RestNodeLocator(path, uuid)),
                 awaitStatus = JobsTaskStatus.Finished,

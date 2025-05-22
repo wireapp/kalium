@@ -17,27 +17,22 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import androidx.paging.PagingData
-import com.wire.kalium.cells.domain.model.Node
-import kotlinx.coroutines.flow.Flow
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 
-public interface GetPaginatedFilesFlowUseCase {
-    public suspend operator fun invoke(
-        conversationId: String?,
-        query: String,
-        onlyDeleted: Boolean = false,
-    ): Flow<PagingData<Node>>
+public interface MoveNodeToRecycleBinUseCase {
+    public suspend operator fun invoke(uuid: String, path: String): Either<CoreFailure, Unit>
 }
 
-internal class GetPaginatedFilesFlowUseCaseImpl(
-    private val getCellFilesUseCase: GetCellFilesPagedUseCase,
-) : GetPaginatedFilesFlowUseCase {
+internal class MoveNodeToRecycleBinUseCaseImpl(
+    private val cellsRepository: CellsRepository,
+) : MoveNodeToRecycleBinUseCase {
+    override suspend fun invoke(uuid: String, path: String): Either<CoreFailure, Unit> =
+        cellsRepository.moveNode(uuid = uuid, path = path, targetPath = uuid + BIN_PATH).map { }
 
-    override suspend operator fun invoke(
-        conversationId: String?,
-        query: String,
-        onlyDeleted: Boolean,
-    ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query, onlyDeleted)
+    companion object {
+        const val BIN_PATH = "/recycle_bin"
     }
 }

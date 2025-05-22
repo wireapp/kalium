@@ -44,7 +44,8 @@ public interface GetNodesUseCase {
         conversationId: String?,
         query: String,
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
+        onlyDeleted: Boolean = false
     ): Either<CoreFailure, PaginatedList<Node>>
 }
 
@@ -59,7 +60,8 @@ internal class GetNodesUseCaseImpl(
         conversationId: String?,
         query: String,
         limit: Int,
-        offset: Int
+        offset: Int,
+        onlyDeleted: Boolean
     ): Either<CoreFailure, PaginatedList<Node>> {
 
         // Collect all data required to show the file/folder
@@ -68,7 +70,7 @@ internal class GetNodesUseCaseImpl(
         val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
-        return cellsRepository.getNodes(conversationId, query, limit, offset)
+        return cellsRepository.getNodes(conversationId, query, limit, offset, onlyDeleted)
             .map { nodes ->
                 PaginatedList(
                     data = nodes.data.asSequence()
