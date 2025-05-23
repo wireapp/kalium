@@ -25,7 +25,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.types.enum
-import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
@@ -36,8 +36,8 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
     private val userSession by requireObject<UserSessionScope>()
     private val name: String by option(help = "Name of the group").prompt()
-    private val protocol: ConversationOptions.Protocol
-            by option(help = "Protocol for sending messages").enum<ConversationOptions.Protocol>().default(ConversationOptions.Protocol.MLS)
+    private val protocol: CreateConversationParam.Protocol
+            by option(help = "Protocol for sending messages").enum<CreateConversationParam.Protocol>().default(CreateConversationParam.Protocol.MLS)
 
     override fun run() = runBlocking {
         val users = userSession.users.getAllKnownUsers().first().let {
@@ -58,7 +58,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val result = userSession.conversations.createRegularGroup(
             name,
             userToAddList,
-            ConversationOptions(protocol = protocol)
+            CreateConversationParam(protocol = protocol)
         )
         when (result) {
             is ConversationCreationResult.Success -> echo("group created successfully")
