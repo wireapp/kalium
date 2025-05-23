@@ -117,7 +117,6 @@ internal class EventGathererImpl(
         eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
     }
 
-
     private suspend fun FlowCollector<EventEnvelope>.emitEvents(
         webSocketEventFlow: Flow<WebSocketEvent<EventEnvelope>>
     ) = webSocketEventFlow
