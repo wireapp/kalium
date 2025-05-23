@@ -45,7 +45,6 @@ public interface GetPaginatedNodesUseCase {
         query: String,
         limit: Int = 100,
         offset: Int = 0,
-        onlyFolders: Boolean = false,
         onlyDeleted: Boolean = false,
     ): Either<CoreFailure, PaginatedList<Node>>
 }
@@ -62,7 +61,6 @@ internal class GetPaginatedNodesUseCaseImpl(
         query: String,
         limit: Int,
         offset: Int,
-        onlyFolders: Boolean,
         onlyDeleted: Boolean
     ): Either<CoreFailure, PaginatedList<Node>> {
 
