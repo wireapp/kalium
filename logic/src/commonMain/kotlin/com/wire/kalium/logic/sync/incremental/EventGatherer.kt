@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -77,6 +78,7 @@ internal class EventGathererImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
+    processingScope: CoroutineScope,
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
@@ -86,6 +88,7 @@ internal class EventGathererImpl(
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val offlineEventBuffer = EventProcessingHistory()
+    private val asyncIncrementalSyncMetadata = AsyncIncrementalSyncMetadata(processingScope)
     private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
@@ -131,7 +134,7 @@ internal class EventGathererImpl(
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) =
+    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) =
         when (val cause = webSocketEvent.cause) {
             null -> logger.i("Websocket closed normally")
             is IOException ->
@@ -139,6 +142,9 @@ internal class EventGathererImpl(
 
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
+        }.also {
+            _currentSource.value = EventSource.PENDING
+            asyncIncrementalSyncMetadata.clear()
         }
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketEventReceived(
@@ -146,6 +152,7 @@ internal class EventGathererImpl(
     ) {
         val envelope = webSocketEvent.payload
         val obfuscatedId = envelope.event.id.obfuscateId()
+        asyncIncrementalSyncMetadata.scheduleNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
         logger.i("Websocket Received payload: ${envelope.event.toLogString()}")
         if (offlineEventBuffer.contains(envelope.event)) {
             if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
@@ -183,10 +190,11 @@ internal class EventGathererImpl(
                     emit(it)
                 }
             logger.i("Offline events collection finished. Collecting Live events.")
+            _currentSource.value = EventSource.LIVE
         } else {
-            logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
+            asyncIncrementalSyncMetadata.createNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
+            logger.i("Offline events collection skipped due to new system available. Catching up now: $asyncIncrementalSyncMetadata")
         }
-        _currentSource.value = EventSource.LIVE
     }
 
     private suspend fun handleTimeDrift() {
