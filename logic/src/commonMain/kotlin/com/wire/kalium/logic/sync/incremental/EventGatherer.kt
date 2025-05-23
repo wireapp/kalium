@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -77,6 +78,7 @@ internal class EventGathererImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
+    private val processingScope: CoroutineScope,
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
@@ -88,7 +90,7 @@ internal class EventGathererImpl(
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val offlineEventBuffer = EventProcessingHistory()
-    private val incrementalSyncMetadata = IncrementalSyncMetadata()
+    private val incrementalSyncMetadata = IncrementalSyncMetadata(processingScope)
     private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {

@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.sync.incremental
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -26,7 +27,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-internal class IncrementalSyncMetadata {
+internal class IncrementalSyncMetadata(private val processingScope: CoroutineScope) {
     private var lastTimeWebsocketOpened: Instant? = null
     private var lastTimeWebsocketEventReceived: Instant? = null
     private var catchingUpJob: Job? = null
@@ -35,10 +36,12 @@ internal class IncrementalSyncMetadata {
     suspend fun createNewCatchingUpJob(interval: Long = CATCHING_UP_JOB_INTERVAL_IN_MS, task: () -> Unit) = mutex.withLock {
         lastTimeWebsocketOpened = Clock.System.now()
         catchingUpJob?.cancel()
-        catchingUpJob = launch {
-            while (isActive) {
-                delay(interval)
-                task()
+        catchingUpJob = processingScope.launch {
+            launch {
+                while (isActive) {
+                    delay(interval)
+                    task()
+                }
             }
         }
     }
@@ -46,7 +49,7 @@ internal class IncrementalSyncMetadata {
     suspend fun scheduleNewCatchingUpJob(interval: Long = CATCHING_UP_JOB_INTERVAL_IN_MS, task: () -> Unit) = mutex.withLock {
         lastTimeWebsocketEventReceived = Clock.System.now()
         catchingUpJob?.cancel()
-        catchingUpJob = launch {
+        catchingUpJob = processingScope.launch {
             while (isActive) {
                 delay(interval)
                 task()
