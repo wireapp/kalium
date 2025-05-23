@@ -55,7 +55,9 @@ public actual class MPBackupExporter(
         val zip = JSZip()
         data.forEach { entry ->
             // TODO: Save memory and improve performance by avoid array duplication!
-            zip.file(entry.name, entry.data.buffer().readByteArray().toUByteArray().toUInt8Array())
+            entry.use { data ->
+                zip.file(entry.name, data.buffer().readByteArray().toUByteArray().toUInt8Array())
+            }
         }
         val result = zip.generateAsync(ZipOptions()).then {
             val buffer = Buffer()

@@ -91,11 +91,11 @@ class CreateObfuscatedCopyUseCase internal constructor(
                 backupFilePath
             ).fold(
                 { error -> CreateBackupResult.Failure(error) },
-                { (backupFilePath, backupSize) ->
+                { path ->
                     if (password != null) {
-                        encryptAndCompressFile(backupFilePath, password)
+                        encryptAndCompressFile(path, password)
                     } else {
-                        CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
+                        CreateBackupResult.Success(path, backupFilePath.name)
                     }
                 }
 
@@ -126,7 +126,7 @@ class CreateObfuscatedCopyUseCase internal constructor(
             deleteTempFiles(backupFilePath, encryptedBackupFilePath)
 
             if (backupEncryptedCompressedDataSize > 0) {
-                CreateBackupResult.Success(finalBackupFilePath, backupEncryptedCompressedDataSize, finalBackupFilePath.name)
+                CreateBackupResult.Success(finalBackupFilePath, finalBackupFilePath.name)
             } else {
                 CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to encrypt backup file")))
             }
@@ -170,7 +170,7 @@ class CreateObfuscatedCopyUseCase internal constructor(
         userId: UserId,
         plainDBPath: Path,
         backupZipFilePath: Path
-    ): Either<CoreFailure, Pair<Path, Long>> {
+    ): Either<CoreFailure, Path> {
         return try {
             val backupSink = kaliumFileSystem.sink(backupZipFilePath)
             val backupMetadataPath = createMetadataFile(userId)
@@ -180,7 +180,7 @@ class CreateObfuscatedCopyUseCase internal constructor(
             )
 
             createCompressedFile(filesList, backupSink).flatMap { compressedFileSize ->
-                Either.Right(backupZipFilePath to compressedFileSize)
+                Either.Right(backupZipFilePath)
             }
         } catch (e: FileNotFoundException) {
             kaliumLogger.e("There was an error when fetching the user db data path", e)

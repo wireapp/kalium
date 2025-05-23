@@ -39,6 +39,7 @@ kotlin {
                 implementation(project(":logger"))
 
                 implementation(libs.coroutines.core)
+                implementation(libs.okio.core)
             }
         }
 

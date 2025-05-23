@@ -23,26 +23,44 @@ import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.decodeFromByteArray
+import okio.Closeable
 import okio.buffer
 import kotlin.js.JsExport
 
 @JsExport
-public class BackupImportPager internal constructor(private val entries: List<BackupPage>) {
+public interface ImportResultPager : Closeable {
+    public val totalPagesCount: Int
+    public val conversationsPager: ImportDataPager<BackupConversation>
+    public val messagesPager: ImportDataPager<BackupMessage>
+    public val usersPager: ImportDataPager<BackupUser>
+}
 
-    public val totalPagesCount: Int = entries.size
+@JsExport
+public class BackupImportPager internal constructor(private val entries: List<BackupPage>) : ImportResultPager {
 
-    public val conversationsPager: ConversationPager by lazy {
+    public override val totalPagesCount: Int = entries.size
+
+    public override val conversationsPager: ConversationPager by lazy {
         ConversationPager(entries.filter { it.name.startsWith(BackupPage.CONVERSATIONS_PREFIX) })
     }
 
-    public val messagesPager: MessagePager by lazy {
+    public override val messagesPager: MessagePager by lazy {
         MessagePager(entries.filter { it.name.startsWith(BackupPage.MESSAGES_PREFIX) })
     }
 
-    public val usersPager: UserPager by lazy {
+    public override val usersPager: UserPager by lazy {
         UserPager(entries.filter { it.name.startsWith(BackupPage.USERS_PREFIX) })
     }
 
+    override fun close() {
+        entries.close()
+    }
+}
+
+@JsExport
+public interface ImportDataPager<T> {
+    public fun hasMorePages(): Boolean
+    public fun nextPage(): Array<T>
 }
 
 // The abstract / implementation are done this way to avoid having GenericClass<Data>, which can be lost on ObjC/Swift interop.
@@ -58,7 +76,7 @@ public class BackupImportPager internal constructor(private val entries: List<Ba
  *                These pages are sorted based on their name, extracting numeric segments for ordering.
  */
 @JsExport
-public abstract class BackupImportDataPager<T> internal constructor(entries: List<BackupPage>) {
+public abstract class BackupImportDataPager<T> internal constructor(entries: List<BackupPage>) : ImportDataPager<T> {
     private var nextPageIndex = 0
     private val pages = entries.sortedBy {
         it.name.filter { char -> char.isDigit() }.toInt()
@@ -69,18 +87,18 @@ public abstract class BackupImportDataPager<T> internal constructor(entries: Lis
     /**
      * @return true if there are more pages to be read through [nextPage]. False otherwise.
      */
-    public fun hasMorePages(): Boolean = nextPageIndex < totalPages
+    public override fun hasMorePages(): Boolean = nextPageIndex < totalPages
 
     /**
      * Gets the data stored in the next page, **consuming** it in the process.
      * @throws IllegalStateException if there are no further available pages.
      * @see hasMorePages
      */
-    public fun nextPage(): Array<T> {
+    public override fun nextPage(): Array<T> {
         val page = pages.removeFirstOrNull()
             ?: throw IllegalStateException("No more pages to consume! Check if there are pages before requesting one")
         nextPageIndex++
-        val bytes = page.data.buffer().readByteArray()
+        val bytes = page.use { it.buffer().readByteArray() }
         return mapPageData(mapper, bytes)
     }
 
@@ -107,3 +125,5 @@ public class MessagePager internal constructor(entries: List<BackupPage>) : Back
         return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).messages
     }
 }
+
+internal fun List<BackupPage>.close() = forEach { it.close() }

@@ -17,11 +17,11 @@
  */
 package com.wire.backup.ingest
 
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.envelope.HashData
 import com.wire.backup.hash.hashUserId
 import kotlin.js.JsExport
+import kotlin.js.JsName
 
 @JsExport
 public sealed class BackupPeekResult {
@@ -41,7 +41,7 @@ public sealed class BackupPeekResult {
     }
 }
 
-@NativeCoroutines
+@JsName("isCreatedBySameUserSUSPEND")
 public suspend fun BackupPeekResult.Success.isCreatedBySameUser(userId: BackupQualifiedId): Boolean {
     val candidateHash = hashUserId(userId, hashData.salt, hashData.hashingMemoryLimit, hashData.operationsLimit)
     val actualHash = hashData.hashedUserId

@@ -19,33 +19,37 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.buffer
+import okio.fakefilesystem.FakeFileSystem
 import okio.use
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+typealias UserId = QualifiedID
+
 @IgnoreIOS // TODO re-enable when backup support is implemented
-@OptIn(ExperimentalCoroutinesApi::class)
 class VerifyBackupUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        fakeFileSystem = FakeKaliumFileSystem()
+        fakeFileSystem = FakeFileSystem()
+        fakeKaliumFileSystem = FakeKaliumFileSystem()
     }
 
     @Test
     fun givenSomeCorrectCompressedEncryptedBackupFile_whenInvoked_thenReturnSuccessEncrypted() = runTest {
         // Given
         val encryptedDataFileName = "encryptedData.cc20"
-        val encryptedDataPath = fakeFileSystem.tempFilePath(encryptedDataFileName)
+        val encryptedDataPath = fakeKaliumFileSystem.tempFilePath(encryptedDataFileName)
         val encryptedData = encryptedDataPath.toString().encodeToByteArray()
-        val compressedBackupFilePath = fakeFileSystem.tempFilePath("compressedEncryptedBackupFile.zip")
+        val compressedBackupFilePath = fakeKaliumFileSystem.tempFilePath("compressedEncryptedBackupFile.zip")
         val verifyBackup = Arrangement()
             .withPreStoredData(listOf(encryptedData to encryptedDataPath), compressedBackupFilePath)
             .arrange()
@@ -54,19 +58,20 @@ class VerifyBackupUseCaseTest {
         val result = verifyBackup(compressedBackupFilePath)
 
         // Then
-        assertTrue(result is VerifyBackupResult.Success.Encrypted)
+        assertTrue(result is VerifyBackupResult.Success)
+        assertTrue(result.isEncrypted)
     }
 
     @Test
     fun givenSomeCorrectCompressedNonEncryptedBackupFile_whenInvoked_thenReturnSuccessNotEncrypted() = runTest {
         // Given
         val dbFileName = "unencryptedData.db"
-        val dbPath = fakeFileSystem.tempFilePath(dbFileName)
+        val dbPath = fakeKaliumFileSystem.tempFilePath(dbFileName)
         val dummyDBData = dbPath.toString().encodeToByteArray()
         val metadataFileName = BackupConstants.BACKUP_METADATA_FILE_NAME
-        val metadataPath = fakeFileSystem.tempFilePath(metadataFileName)
+        val metadataPath = fakeKaliumFileSystem.tempFilePath(metadataFileName)
         val metadataContent = metadataPath.toString().encodeToByteArray()
-        val compressedBackupFilePath = fakeFileSystem.tempFilePath("compressedBackupFile.zip")
+        val compressedBackupFilePath = fakeKaliumFileSystem.tempFilePath("compressedBackupFile.zip")
         val verifyBackup = Arrangement()
             .withPreStoredData(listOf(dummyDBData to dbPath, metadataContent to metadataPath), compressedBackupFilePath)
             .arrange()
@@ -75,13 +80,14 @@ class VerifyBackupUseCaseTest {
         val result = verifyBackup(compressedBackupFilePath)
 
         // Then
-        assertTrue(result is VerifyBackupResult.Success.NotEncrypted)
+        assertTrue(result is VerifyBackupResult.Success)
+        assertFalse(result.isEncrypted)
     }
 
     @Test
     fun givenSomeIncorrectCompressedNonEncryptedBackupFile_whenInvoked_thenReturnFailureInvalidBackupFile() = runTest {
         // Given
-        val wrongBackupFilePath = fakeFileSystem.tempFilePath("compressedBackupFile.weird")
+        val wrongBackupFilePath = fakeKaliumFileSystem.tempFilePath("compressedBackupFile.weird")
         val weirdData = "Some weird data".encodeToByteArray()
         val verifyBackup = Arrangement()
             .withWrongPreStoredData(weirdData, wrongBackupFilePath)
@@ -95,9 +101,12 @@ class VerifyBackupUseCaseTest {
     }
 
     private class Arrangement {
+
+        private var userId = UserId("some-user-id", "some-user-domain")
+
         @Suppress("NestedBlockDepth")
         fun withPreStoredData(data: List<Pair<ByteArray, Path>>, storedPath: Path) = apply {
-            with(fakeFileSystem) {
+            with(fakeKaliumFileSystem) {
                 data.forEach { (rawData, dataPath) ->
                     sink(dataPath).buffer().use {
                         it.write(rawData)
@@ -108,21 +117,34 @@ class VerifyBackupUseCaseTest {
                     source(it.second) to it.second.name
                 }, outputSink)
             }
+            with(fakeFileSystem) {
+                createDirectories(storedPath.parent ?: error("Parent path is null"))
+                sink(storedPath).buffer().use { sink ->
+                    sink.writeUtf8("Test file")
+                }
+            }
         }
 
         fun withWrongPreStoredData(data: ByteArray, storedPath: Path) = apply {
-            with(fakeFileSystem) {
+            with(fakeKaliumFileSystem) {
                 sink(storedPath).buffer().use {
                     it.write(data)
                     it.close()
                 }
             }
+            with(fakeFileSystem) {
+                createDirectories(storedPath.parent ?: error("Parent path is null"))
+                sink(storedPath).buffer().use { sink ->
+                    sink.writeUtf8("Test file")
+                }
+            }
         }
 
-        fun arrange() = VerifyBackupUseCaseImpl(fakeFileSystem)
+        fun arrange() = VerifyBackupUseCaseImpl(userId, fakeKaliumFileSystem, fakeFileSystem)
     }
 
     companion object {
-        var fakeFileSystem = FakeKaliumFileSystem()
+        var fakeFileSystem = FakeFileSystem()
+        var fakeKaliumFileSystem = FakeKaliumFileSystem(fakeFileSystem)
     }
 }
