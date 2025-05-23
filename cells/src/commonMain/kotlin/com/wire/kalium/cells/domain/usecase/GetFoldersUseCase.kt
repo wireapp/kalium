@@ -17,27 +17,25 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import androidx.paging.PagingData
+import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.Node
-import kotlinx.coroutines.flow.Flow
+import com.wire.kalium.cells.domain.model.toFolderModel
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 
-public interface GetPaginatedFilesFlowUseCase {
+public interface GetFoldersUseCase {
     public suspend operator fun invoke(
-        conversationId: String?,
-        query: String,
-        onlyDeleted: Boolean = false,
-    ): Flow<PagingData<Node>>
+        conversationId: String,
+    ): Either<CoreFailure, List<Node.Folder>>
 }
 
-internal class GetPaginatedFilesFlowUseCaseImpl(
-    private val getCellFilesUseCase: GetCellFilesPagedUseCase,
-) : GetPaginatedFilesFlowUseCase {
+internal class GetFoldersUseCaseImpl(
+    private val cellsRepository: CellsRepository
+) : GetFoldersUseCase {
 
-    override suspend operator fun invoke(
-        conversationId: String?,
-        query: String,
-        onlyDeleted: Boolean,
-    ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query, onlyDeleted)
-    }
+    override suspend operator fun invoke(conversationId: String): Either<CoreFailure, List<Node.Folder>> =
+        cellsRepository.getNodesByPath(path = conversationId, onlyFolders = true).map { nodes ->
+            nodes.map { it.toFolderModel() }
+        }
 }
