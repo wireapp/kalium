@@ -23,6 +23,7 @@ import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.network.utils.NetworkResponse
 
+@Suppress("TooManyFunctions")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
     suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
