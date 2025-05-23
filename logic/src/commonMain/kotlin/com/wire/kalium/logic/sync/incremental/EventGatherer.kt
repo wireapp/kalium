@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.executeIfNoEmission
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -53,7 +52,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.toInstant
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -82,12 +80,15 @@ internal class EventGathererImpl(
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
+    // todo maybe launch a task that will trigger when opeining the wss and
+    //  renew everytime receives an event and state is pending and the timeout is not reached
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
 
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val offlineEventBuffer = EventProcessingHistory()
+    private val incrementalSyncMetadata = IncrementalSyncMetadata()
     private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
@@ -104,9 +105,6 @@ internal class EventGathererImpl(
         }
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
-    }.executeIfNoEmission(timeout = 500.milliseconds) {
-        logger.i("Nothing emitted from the event stream, we are officially LIVE")
-        _currentSource.value = EventSource.LIVE
     }
 
     /**
@@ -137,7 +135,7 @@ internal class EventGathererImpl(
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) =
+    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) =
         when (val cause = webSocketEvent.cause) {
             null -> logger.i("Websocket closed normally")
             is IOException ->
@@ -145,6 +143,8 @@ internal class EventGathererImpl(
 
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
+        }.also {
+            incrementalSyncMetadata.clear()
         }
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketEventReceived(
@@ -152,6 +152,7 @@ internal class EventGathererImpl(
     ) {
         val envelope = webSocketEvent.payload
         val obfuscatedId = envelope.event.id.obfuscateId()
+        incrementalSyncMetadata.scheduleNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
         logger.i("Websocket Received payload: ${envelope.event.toLogString()}")
         if (offlineEventBuffer.contains(envelope.event)) {
             if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
@@ -191,7 +192,8 @@ internal class EventGathererImpl(
             logger.i("Offline events collection finished. Collecting Live events.")
             _currentSource.value = EventSource.LIVE
         } else {
-            logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
+            incrementalSyncMetadata.createNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
+            logger.i("Offline events collection skipped due to new system available. Catching up now: $incrementalSyncMetadata")
         }
     }
 

@@ -18,19 +18,16 @@
 
 package com.wire.kalium.common.functional
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.transformLatest
 import kotlin.time.Duration
+import kotlin.time.TimeSource
 
 inline fun <A, B> Collection<A>.flatMapFromIterable(
     crossinline block: suspend (A) -> Flow<B>
@@ -62,30 +59,12 @@ fun intervalFlow(periodMs: Long, initialDelayMs: Long = 0L, stopWhen: () -> Bool
         }
     }
 
-/**
- * Executes the block if the flow does not emit any value within the specified timeout.
- * As it is using transformLatest, it will cancel the block if the flow emits a value.
- */
-@OptIn(ExperimentalCoroutinesApi::class)
-fun <T> Flow<T>.executeIfNoEmission(timeout: Duration, block: suspend () -> Unit) = flow {
-    emit(EmitExecution.NoEmit())
-    emitAll(this@executeIfNoEmission.map {
-        EmitExecution.Emitted(it)
-    })
-}.transformLatest { emitExecution ->
-    when (emitExecution) {
-        // when the flow does not emit any value within the timeout.
-        is EmitExecution.NoEmit -> {
-            delay(timeout)
-            block()
-        }
-
-        // when the source flow emits a value before the timeout.
-        is EmitExecution.Emitted -> emit(emitExecution.value)
+fun <T> Flow<T>.withTimeTracking(): Flow<Pair<T, Duration>> = flow {
+    var lastTime = TimeSource.Monotonic.markNow()
+    collect { value ->
+        val currentTime = TimeSource.Monotonic.markNow()
+        val timeDiff = currentTime - lastTime
+        emit(value to timeDiff)
+        lastTime = currentTime
     }
-}
-
-sealed class EmitExecution<T> {
-    data class Emitted<T>(val value: T) : EmitExecution<T>()
-    class NoEmit<T> : EmitExecution<T>()
 }

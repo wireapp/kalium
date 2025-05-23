@@ -2368,7 +2368,7 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            updateSelfClientCapabilityToLegalHoldConsent()
+//             updateSelfClientCapabilityToLegalHoldConsent()
         }
 
         launch {
