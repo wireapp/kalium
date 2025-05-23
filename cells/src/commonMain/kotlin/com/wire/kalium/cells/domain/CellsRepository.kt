@@ -32,13 +32,18 @@ internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
-    suspend fun getNodes(
+    suspend fun getPaginatedNodes(
         path: String?,
         query: String,
         limit: Int,
         offset: Int,
         onlyDeleted: Boolean = false
     ): Either<NetworkFailure, PaginatedList<CellNode>>
+
+    suspend fun getNodesByPath(
+        path: String,
+        onlyFolders: Boolean
+    ): Either<NetworkFailure, List<CellNode>>
 
     suspend fun deleteFile(nodeUuid: String): Either<NetworkFailure, Unit>
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit>

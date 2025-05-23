@@ -81,7 +81,7 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) =
+    override suspend fun getPaginatedNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) =
         withContext(dispatchers.io) {
             wrapApiRequest {
                 if (path == null) {
@@ -100,6 +100,14 @@ internal class CellsDataSource internal constructor(
                 )
             }
         }
+
+    override suspend fun getNodesByPath(path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.getNodesForPath(path = path, onlyFolders = onlyFolders).mapSuccess { response ->
+                response.nodes.map { it.toModel() }
+            }
+        }
+    }
 
     override suspend fun deleteFile(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {

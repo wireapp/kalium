@@ -91,23 +91,27 @@ internal class CellsApiImpl(
 
     override suspend fun getNodesForPath(
         path: String,
-        limit: Int,
-        offset: Int,
-        onlyDeleted: Boolean
+        limit: Int?,
+        offset: Int?,
+        onlyDeleted: Boolean,
+        onlyFolders: Boolean,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(
-                    limit = limit.toString(),
-                    offset = offset.toString(),
-                    scope = RestLookupScope(
-                        root = RestNodeLocator(path = path),
-                    ),
+                    limit = limit?.toString(),
+                    offset = offset?.toString(),
+                    scope = RestLookupScope(root = RestNodeLocator(path = path)),
                     filters = RestLookupFilter(
                         status = if (onlyDeleted) {
                             LookupFilterStatusFilter(deleted = StatusFilterDeletedStatus.Only)
                         } else {
                             null
+                        },
+                        type = if (onlyFolders) {
+                            TreeNodeType.COLLECTION
+                        } else {
+                            TreeNodeType.UNKNOWN
                         },
                     ),
                     sortField = SORTED_BY,

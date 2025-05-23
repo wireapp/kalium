@@ -33,7 +33,7 @@ public interface GetCellFilesPagedUseCase {
 }
 
 internal class GetCellFilesPagedUseCaseImpl(
-    private val getNodesUseCase: GetNodesUseCase,
+    private val getPaginatedNodesUseCase: GetPaginatedNodesUseCase,
 ) : GetCellFilesPagedUseCase {
 
     private companion object {
@@ -54,7 +54,7 @@ internal class GetCellFilesPagedUseCaseImpl(
                     query = query,
                     pageSize = PAGE_SIZE,
                     conversationId = conversationId,
-                    getNodesUseCase = getNodesUseCase,
+                    getPaginatedNodesUseCase = getPaginatedNodesUseCase,
                     onlyDeleted = onlyDeleted
                 )
             }

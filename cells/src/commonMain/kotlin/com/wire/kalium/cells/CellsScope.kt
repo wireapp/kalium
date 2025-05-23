@@ -47,8 +47,10 @@ import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.GetNodesUseCase
-import com.wire.kalium.cells.domain.usecase.GetNodesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
+import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
+import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.MoveNodeUseCase
 import com.wire.kalium.cells.domain.usecase.MoveNodeUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
@@ -160,8 +162,8 @@ public class CellsScope(
     public val publishAttachments: PublishAttachmentsUseCase
         get() = PublishAttachmentsUseCaseImpl(cellsRepository)
 
-    public val observeFiles: GetNodesUseCase
-        get() = GetNodesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
+    public val observeFiles: GetPaginatedNodesUseCase
+        get() = GetPaginatedNodesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
 
     public val observePagedFiles: GetCellFilesPagedUseCase
         get() = GetCellFilesPagedUseCaseImpl(observeFiles)
@@ -198,6 +200,9 @@ public class CellsScope(
     }
     public val moveNodeUseCase: MoveNodeUseCase by lazy {
         MoveNodeUseCaseImpl(cellsRepository)
+    }
+    public val getFoldersUseCase: GetFoldersUseCase by lazy {
+        GetFoldersUseCaseImpl(cellsRepository)
     }
     public val restoreNodeFromRecycleBin: RestoreNodeFromRecycleBinUseCase by lazy {
         RestoreNodeFromRecycleBinUseCaseImpl(cellsRepository)
