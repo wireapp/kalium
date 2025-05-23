@@ -329,7 +329,6 @@ private class TestRepository : CellsRepository {
     override suspend fun getPublicLink(linkUuid: String) = "".right()
 
     override suspend fun deletePublicLink(linkUuid: String) = Unit.right()
-
-    override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> =
-        listOf<CellNode>().right()
+    override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
+    override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
 }

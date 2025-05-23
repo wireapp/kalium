@@ -185,4 +185,11 @@ internal class CellsDataSource internal constructor(
             response.nodes.map { it.toModel() }
         }
     }
+
+    override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.moveNode(uuid = uuid, path = path, targetPath = targetPath)
+            }
+        }
 }

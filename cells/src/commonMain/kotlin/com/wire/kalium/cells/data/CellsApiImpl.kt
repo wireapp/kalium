@@ -25,8 +25,10 @@ import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
+import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
+import com.wire.kalium.cells.sdk.kmp.model.RestActionOptionsCopyMove
 import com.wire.kalium.cells.sdk.kmp.model.RestActionParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateCheckRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateRequest
@@ -49,6 +51,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 
+@Suppress("TooManyFunctions")
 internal class CellsApiImpl(
     private val nodeServiceApi: NodeServiceApi,
 ) : CellsApi {
@@ -56,6 +59,7 @@ internal class CellsApiImpl(
     private companion object {
         // Sort lookup results by modification time
         private const val SORTED_BY = "mtime"
+        private const val AWAIT_TIMEOUT = "5s"
     }
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
@@ -195,6 +199,21 @@ internal class CellsApiImpl(
             )
         }.mapSuccess { response -> response.toDto() }
     }
+
+    override suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.move,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path, uuid)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT,
+                copyMoveOptions = RestActionOptionsCopyMove(
+                    targetPath = targetPath,
+                    targetIsParent = true,
+                )
+            )
+        )
+    }.mapSuccess {}
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))

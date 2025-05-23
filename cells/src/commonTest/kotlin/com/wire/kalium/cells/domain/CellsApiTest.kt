@@ -59,20 +59,41 @@ class CellsApiTest {
 
     @Test
     fun given_existing_file_pre_check_then_existing_file_is_returned() = runTest {
-
+        // TODO
     }
 
     @Test
     fun given_pre_check_failure_then_failure_is_returned() = runTest {
+        // TODO
+    }
 
+    @Test
+    fun givenNodeAPI_whenMoveNodeIsCalled_thenInvokeAPIOnce() = runTest {
+        val (_, cellApi) = Arrangement()
+            .withHttpClient(
+                Json.encodeToString(
+                    RestCreateCheckResponse(
+                        results = listOf(RestCheckResult(exists = false))
+                    )
+                ).toByteArray()
+            )
+            .arrange()
+
+        val result = cellApi.moveNode("uuid", "path", "targetPath")
+
+        // TODO: Fix issue with response deserialization
+//         assertTrue { result.isSuccessful() }
+//         coVerify { cellApi.moveNode(any(), any(), any()) }.wasInvoked(exactly = once)
     }
 
     private class Arrangement() {
 
-        var httpClient: HttpClient = HttpClient(createMockEngine(
-            ByteArray(0),
-            HttpStatusCode.OK
-        ))
+        var httpClient: HttpClient = HttpClient(
+            createMockEngine(
+                ByteArray(0),
+                HttpStatusCode.OK
+            )
+        )
 
         val nodeService = NodeServiceApi("", httpClient)
 

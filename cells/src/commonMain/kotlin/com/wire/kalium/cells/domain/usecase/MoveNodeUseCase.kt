@@ -22,13 +22,13 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
-public interface CreateFolderUseCase {
-    public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
+public interface MoveNodeUseCase {
+    public suspend operator fun invoke(uuid: String, path: String, targetPath: String): Either<CoreFailure, Unit>
 }
 
-internal class CreateFolderUseCaseImpl(
+internal class MoveNodeUseCaseImpl(
     private val cellsRepository: CellsRepository,
-) : CreateFolderUseCase {
-    override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.createFolder(path).map { }
+) : MoveNodeUseCase {
+    override suspend fun invoke(uuid: String, path: String, targetPath: String): Either<CoreFailure, Unit> =
+        cellsRepository.moveNode(uuid = uuid, path = path, targetPath = targetPath).map { }
 }
