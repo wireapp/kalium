@@ -78,19 +78,17 @@ internal class EventGathererImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
-    private val processingScope: CoroutineScope,
+    processingScope: CoroutineScope,
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
-    // todo maybe launch a task that will trigger when opeining the wss and
-    //  renew everytime receives an event and state is pending and the timeout is not reached
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
 
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val offlineEventBuffer = EventProcessingHistory()
-    private val incrementalSyncMetadata = IncrementalSyncMetadata(processingScope)
+    private val asyncIncrementalSyncMetadata = AsyncIncrementalSyncMetadata(processingScope)
     private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
@@ -146,7 +144,8 @@ internal class EventGathererImpl(
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }.also {
-            incrementalSyncMetadata.clear()
+            _currentSource.value = EventSource.PENDING
+            asyncIncrementalSyncMetadata.clear()
         }
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketEventReceived(
@@ -154,7 +153,7 @@ internal class EventGathererImpl(
     ) {
         val envelope = webSocketEvent.payload
         val obfuscatedId = envelope.event.id.obfuscateId()
-        incrementalSyncMetadata.scheduleNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
+        asyncIncrementalSyncMetadata.scheduleNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
         logger.i("Websocket Received payload: ${envelope.event.toLogString()}")
         if (offlineEventBuffer.contains(envelope.event)) {
             if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
@@ -194,8 +193,8 @@ internal class EventGathererImpl(
             logger.i("Offline events collection finished. Collecting Live events.")
             _currentSource.value = EventSource.LIVE
         } else {
-            incrementalSyncMetadata.createNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
-            logger.i("Offline events collection skipped due to new system available. Catching up now: $incrementalSyncMetadata")
+            asyncIncrementalSyncMetadata.createNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
+            logger.i("Offline events collection skipped due to new system available. Catching up now: $asyncIncrementalSyncMetadata")
         }
     }
 

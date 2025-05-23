@@ -27,25 +27,34 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-internal class IncrementalSyncMetadata(private val processingScope: CoroutineScope) {
+/**
+ * Holds the metadata for the incremental sync process of the new async incremental sync.
+ * Helping to keep track of the last time the websocket was opened and the last time an event was received and Job for stop catching up.
+ */
+internal class AsyncIncrementalSyncMetadata(private val processingScope: CoroutineScope) {
     private var lastTimeWebsocketOpened: Instant? = null
     private var lastTimeWebsocketEventReceived: Instant? = null
     private var catchingUpJob: Job? = null
     private val mutex = Mutex()
 
+    /**
+     * Start the processing of the catching up job.
+     */
     suspend fun createNewCatchingUpJob(interval: Long = CATCHING_UP_JOB_INTERVAL_IN_MS, task: () -> Unit) = mutex.withLock {
         lastTimeWebsocketOpened = Clock.System.now()
         catchingUpJob?.cancel()
         catchingUpJob = processingScope.launch {
-            launch {
-                while (isActive) {
-                    delay(interval)
-                    task()
-                }
+            while (isActive) {
+                delay(interval)
+                task()
             }
         }
     }
 
+    /**
+     * Schedule a new catching up job that will be cancelled if there was already one pending scheduled.
+     * Scheduled to run once with a delay of [CATCHING_UP_JOB_INTERVAL_IN_MS] milliseconds.
+     */
     suspend fun scheduleNewCatchingUpJob(interval: Long = CATCHING_UP_JOB_INTERVAL_IN_MS, task: () -> Unit) = mutex.withLock {
         lastTimeWebsocketEventReceived = Clock.System.now()
         catchingUpJob?.cancel()
@@ -57,6 +66,10 @@ internal class IncrementalSyncMetadata(private val processingScope: CoroutineSco
         }
     }
 
+    /**
+     * Cancel the catching up job and reset the last time the websocket was opened and the last time
+     * an event was received.To be called when the websocket is closed.
+     */
     suspend fun clear() = mutex.withLock {
         catchingUpJob?.cancel()
         catchingUpJob = null
@@ -65,6 +78,9 @@ internal class IncrementalSyncMetadata(private val processingScope: CoroutineSco
     }
 
     companion object {
-        const val CATCHING_UP_JOB_INTERVAL_IN_MS = 5_000L
+        /**
+         * Setting this up to 5 secs. 0.5 is too little, and this only runs once.
+         */
+        const val CATCHING_UP_JOB_INTERVAL_IN_MS = 5000L
     }
 }
