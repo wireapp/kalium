@@ -162,15 +162,6 @@ UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
-isInformedAboutDegradedMLSVerification:
-SELECT mls_degraded_notified FROM Conversation
-WHERE qualified_id = :qualified_id;
-
-updateInformedAboutDegradedMLSVerification:
-UPDATE Conversation
-SET mls_degraded_notified = ?
-WHERE qualified_id = :qualified_id;
-
 updateDegradedConversationNotifiedFlag:
 UPDATE Conversation
 SET degraded_conversation_notified = ?
@@ -227,9 +218,6 @@ SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationIds:
 SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :type AND (:teamId IS NULL OR team_id = :teamId);
-
-getConversationTypeById:
-SELECT type FROM Conversation WHERE qualified_id = ?;
 
 updateConversationMutingStatus:
 UPDATE Conversation
