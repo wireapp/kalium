@@ -132,7 +132,7 @@ class GetPaginatedNodesUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
 
-            coEvery { cellsRepository.getPaginatedNodes(any(), any(), any(), any()) }.returns(
+            coEvery { cellsRepository.getPaginatedNodes(any(), any(), any(), any(), any()) }.returns(
                 PaginatedList(
                     data = testNodes,
                     pagination = null,
