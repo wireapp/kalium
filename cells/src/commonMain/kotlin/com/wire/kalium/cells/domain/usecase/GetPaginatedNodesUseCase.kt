@@ -32,7 +32,7 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.message.CellAssetContent
 
-public interface GetNodesUseCase {
+public interface GetPaginatedNodesUseCase {
     /**
      * Get files and folders from all conversations or search all files with text query.
      * Requests list of nodes from wire cell matching the query (all nodes for empty query)
@@ -44,22 +44,24 @@ public interface GetNodesUseCase {
         conversationId: String?,
         query: String,
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
+        onlyDeleted: Boolean = false,
     ): Either<CoreFailure, PaginatedList<Node>>
 }
 
-internal class GetNodesUseCaseImpl(
+internal class GetPaginatedNodesUseCaseImpl(
     private val cellsRepository: CellsRepository,
     private val conversationRepository: CellConversationRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
     private val usersRepository: CellUsersRepository,
-) : GetNodesUseCase {
+) : GetPaginatedNodesUseCase {
 
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
         limit: Int,
-        offset: Int
+        offset: Int,
+        onlyDeleted: Boolean
     ): Either<CoreFailure, PaginatedList<Node>> {
 
         // Collect all data required to show the file/folder
@@ -68,7 +70,7 @@ internal class GetNodesUseCaseImpl(
         val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
-        return cellsRepository.getNodes(conversationId, query, limit, offset)
+        return cellsRepository.getPaginatedNodes(conversationId, query, limit, offset, onlyDeleted)
             .map { nodes ->
                 PaginatedList(
                     data = nodes.data.asSequence()
@@ -88,7 +90,15 @@ internal class GetNodesUseCaseImpl(
                                     conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
                                 )
                             }
-                        }.toList(),
+                        }.toList()
+                        .sortedWith(
+                            compareBy<Node> { it is Node.File }.thenBy {
+                                when (it) {
+                                    is Node.File -> it.name
+                                    is Node.Folder -> it.name
+                                }
+                            }
+                        ),
                     pagination = nodes.pagination
                 )
             }
