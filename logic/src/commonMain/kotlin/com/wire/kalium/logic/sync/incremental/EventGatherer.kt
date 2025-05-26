@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -88,7 +89,7 @@ internal class EventGathererImpl(
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val offlineEventBuffer = EventProcessingHistory()
-    private val asyncIncrementalSyncMetadata = AsyncIncrementalSyncMetadata(processingScope)
+    private val consumableEventHandler = ConsumableEventHandler(processingScope)
     private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
@@ -134,7 +135,9 @@ internal class EventGathererImpl(
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) =
+    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) {
+        _currentSource.value = EventSource.PENDING
+        consumableEventHandler.clear()
         when (val cause = webSocketEvent.cause) {
             null -> logger.i("Websocket closed normally")
             is IOException ->
@@ -142,18 +145,20 @@ internal class EventGathererImpl(
 
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
-        }.also {
-            _currentSource.value = EventSource.PENDING
-            asyncIncrementalSyncMetadata.clear()
         }
+    }
 
     private suspend fun FlowCollector<EventEnvelope>.onWebSocketEventReceived(
         webSocketEvent: WebSocketEvent.BinaryPayloadReceived<EventEnvelope>
     ) {
         val envelope = webSocketEvent.payload
         val obfuscatedId = envelope.event.id.obfuscateId()
-        asyncIncrementalSyncMetadata.scheduleNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
         logger.i("Websocket Received payload: ${envelope.event.toLogString()}")
+        if (isClientAsyncNotificationsCapableProvider().getOrNull() == true) {
+            logger.d("[ConsumableEvents] Scheduling catching up job for live event: $consumableEventHandler")
+            consumableEventHandler.scheduleNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
+        }
+
         if (offlineEventBuffer.contains(envelope.event)) {
             if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
                 // Really live
@@ -192,8 +197,11 @@ internal class EventGathererImpl(
             logger.i("Offline events collection finished. Collecting Live events.")
             _currentSource.value = EventSource.LIVE
         } else {
-            asyncIncrementalSyncMetadata.createNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
-            logger.i("Offline events collection skipped due to new system available. Catching up now: $asyncIncrementalSyncMetadata")
+            consumableEventHandler.createNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
+            logger.i(
+                "[ConsumableEvents] Offline events collection skipped due to new async notifications capable. " +
+                        "Catching up now: $consumableEventHandler"
+            )
         }
     }
 
