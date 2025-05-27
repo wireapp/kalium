@@ -104,7 +104,7 @@ internal class ConsumableEventHandlerImpl(private val processingScope: Coroutine
 
     companion object {
         /**
-         * Setting this up to 5 secs, as a threshold to wait for the websocket to be opened
+         * Setting this up to 5 secs, as a threshold to wait for the websocket opened time and the first event received.
          */
         val CATCHING_UP_JOB_INITIAL_THRESHOLD = 5.seconds
 
