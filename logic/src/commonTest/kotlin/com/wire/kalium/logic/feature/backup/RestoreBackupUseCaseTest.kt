@@ -238,9 +238,6 @@ class RestoreBackupUseCaseTest {
         val databaseImporter = mock(DatabaseImporter::class)
 
         @Mock
-        val restoreWebBackupUseCase = mock(RestoreWebBackupUseCase::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
@@ -370,7 +367,6 @@ class RestoreBackupUseCaseTest {
             userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             idMapper = idMapper,
-            restoreWebBackup = restoreWebBackupUseCase
         )
     }
 

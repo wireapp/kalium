@@ -33,8 +33,6 @@ import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
-import com.wire.kalium.persistence.dao.MigrationDAO
-import com.wire.kalium.persistence.dao.MigrationDAOImpl
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.PrekeyDAOImpl
 import com.wire.kalium.persistence.dao.SearchDAO
@@ -308,17 +306,6 @@ class UserDatabaseBuilder internal constructor(
 
     val compositeMessageDAO: CompositeMessageDAO
         get() = CompositeMessageDAOImpl(database.buttonContentQueries, queriesContext)
-
-    val migrationDAO: MigrationDAO
-        get() = MigrationDAOImpl(
-            database.migrationQueries,
-            database.messagesQueries,
-            database.messageAttachmentsQueries,
-            database.unreadEventsQueries,
-            database.conversationsQueries,
-            database.buttonContentQueries,
-            userId
-        )
 
     val serviceDAO: ServiceDAO get() = ServiceDAOImpl(database.serviceQueries, queriesContext)
 
