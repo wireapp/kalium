@@ -43,7 +43,7 @@ internal interface ConsumableEventHandler {
      *
      * @param interval The delay after just opening the websocket connection. Default is [CATCHING_UP_JOB_INITIAL_THRESHOLD].
      */
-    suspend fun createNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_INITIAL_THRESHOLD, task: () -> Unit)
+    suspend fun startNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_INITIAL_THRESHOLD, task: () -> Unit)
 
     /**
      * Schedule a new catching up job that will be cancelled if there was already one pending scheduled.
@@ -67,7 +67,7 @@ internal class ConsumableEventHandlerImpl(private val processingScope: Coroutine
     private var catchingUpJob: Job? = null
     private val mutex = Mutex()
 
-    override suspend fun createNewCatchingUpJob(interval: Duration, task: () -> Unit) = mutex.withLock {
+    override suspend fun startNewCatchingUpJob(interval: Duration, task: () -> Unit) = mutex.withLock {
         websocketOpenedAt = Clock.System.now()
         catchingUpJob?.cancel()
         catchingUpJob = processingScope.launch {

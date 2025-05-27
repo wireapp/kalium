@@ -197,7 +197,7 @@ internal class EventGathererImpl(
             logger.i("Offline events collection finished. Collecting Live events.")
             _currentSource.value = EventSource.LIVE
         } else {
-            consumableEventHandler.createNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
+            consumableEventHandler.startNewCatchingUpJob { _currentSource.value = EventSource.LIVE }
             logger.i(
                 "[ConsumableEvents] Offline events collection skipped due to new async notifications capable. " +
                         "Catching up now: $consumableEventHandler"

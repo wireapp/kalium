@@ -42,7 +42,7 @@ class ConsumableEventHandlerTest {
         val task: () -> Unit = { taskChannel.trySend(Unit) }
         val taskFlow = taskChannel.receiveAsFlow()
 
-        handler.createNewCatchingUpJob(1.seconds, task)
+        handler.startNewCatchingUpJob(1.seconds, task)
 
         taskFlow.test {
             advanceTimeBy(1.seconds)
@@ -65,7 +65,7 @@ class ConsumableEventHandlerTest {
         val secondTaskFlow = secondTaskChannel.receiveAsFlow()
 
         // Create first job
-        handler.createNewCatchingUpJob(1.seconds, firstTask)
+        handler.startNewCatchingUpJob(1.seconds, firstTask)
         // advance half of the time to ensure this didn't execute yet
         advanceTimeBy(0.5.seconds)
 
@@ -147,7 +147,7 @@ class ConsumableEventHandlerTest {
         // Launch multiple jobs concurrently
         val jobs = List(10) {
             launch {
-                handler.createNewCatchingUpJob(1.seconds, task)
+                handler.startNewCatchingUpJob(1.seconds, task)
             }
         }
         jobs.forEach { it.join() }

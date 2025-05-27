@@ -86,7 +86,7 @@ class EventGathererTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.consumableEventHandler.createNewCatchingUpJob(any(), any())
+                arrangement.consumableEventHandler.startNewCatchingUpJob(any(), any())
             }.wasNotInvoked()
 
             cancelAndIgnoreRemainingEvents()
@@ -472,7 +472,7 @@ class EventGathererTest {
             }.wasNotInvoked()
 
             coVerify {
-                arrangement.consumableEventHandler.createNewCatchingUpJob(any(), any())
+                arrangement.consumableEventHandler.startNewCatchingUpJob(any(), any())
             }.wasInvoked()
 
             cancelAndIgnoreRemainingEvents()
@@ -519,7 +519,7 @@ class EventGathererTest {
             }.wasNotInvoked()
 
             coVerify {
-                arrangement.consumableEventHandler.createNewCatchingUpJob(any(), any())
+                arrangement.consumableEventHandler.startNewCatchingUpJob(any(), any())
             }.wasInvoked()
 
             coVerify {
