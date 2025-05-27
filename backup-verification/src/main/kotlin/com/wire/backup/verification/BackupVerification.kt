@@ -17,13 +17,17 @@
  */
 package com.wire.backup.verification
 
+import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupUser
 import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.ImportResultPager
 import com.wire.backup.ingest.MPBackupImporter
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Files
@@ -31,38 +35,56 @@ import java.nio.file.Path
 import java.util.zip.ZipInputStream
 import kotlin.io.path.absolutePathString
 
-@OptIn(ExperimentalSerializationApi::class)
-fun main(): Unit = runBlocking {
-    val tempDir = Files.createTempDirectory("wireBackupVerification").toFile()
-    tempDir.deleteOnExit()
-    val android = importBackup(tempDir, "kalium/backup-verification/android.wbu", "")
-    val ios = importBackup(tempDir, "kalium/backup-verification/iOS.wbu", "")
-    val web = importBackup(tempDir, "kalium/backup-verification/web.wbu", "")
-
-    val androidMessages = getAllMessages(android)
-    val webMessages = getAllMessages(web)
-    val iosMessages = getAllMessages(ios)
-    val json = Json { prettyPrint = true; prettyPrintIndent = "  " }
-    File("kalium/android.json").writeText(json.encodeToString(androidMessages))
-    File("kalium/web.json").writeText(json.encodeToString(webMessages))
-    File("kalium/iOS.json").writeText(json.encodeToString(iosMessages))
-}
-
-private fun getAllMessages(android: BackupImportResult.Success): List<BackupMessage> {
-    val pager = android.pager.messagesPager
-    val content = mutableListOf<BackupMessage>()
-    while (pager.hasMorePages()) {
-        val currentPage = pager.nextPage()
-        content.addAll(currentPage)
+suspend fun compareBackupFiles(backupFiles: List<File>): CompleteBackupComparisonResult = coroutineScope {
+    withContext(Dispatchers.IO) {
+        val tempDir = Files.createTempDirectory("wireBackupVerification").toFile()
+        tempDir.deleteOnExit()
+        val imports = backupFiles.map {
+            async {
+                importBackup(tempDir, it.absolutePath, "")
+            }
+        }.awaitAll()
+        compareBackupMessages(imports)
     }
-    return content
 }
 
-private suspend fun importBackup(
+class BackupImport(val backupId: BackupId, private val importResult: ImportResultPager) {
+    val allMessages: List<BackupMessage> by lazy {
+        val pager = importResult.messagesPager
+        val content = mutableListOf<BackupMessage>()
+        while (pager.hasMorePages()) {
+            val currentPage = pager.nextPage()
+            content.addAll(currentPage)
+        }
+        content
+    }
+
+    val allConversations: List<BackupConversation> by lazy {
+        val pager = importResult.conversationsPager
+        val content = mutableListOf<BackupConversation>()
+        while (pager.hasMorePages()) {
+            val currentPage = pager.nextPage()
+            content.addAll(currentPage)
+        }
+        content
+    }
+
+    val allUsers: List<BackupUser> by lazy {
+        val pager = importResult.usersPager
+        val content = mutableListOf<BackupUser>()
+        while (pager.hasMorePages()) {
+            val currentPage = pager.nextPage()
+            content.addAll(currentPage)
+        }
+        content
+    }
+}
+
+internal suspend fun importBackup(
     tempFile: File,
     importFilePath: String,
     importPassword: String
-): BackupImportResult.Success {
+): BackupImport {
     val importFile = File(importFilePath)
     val unzipDir = File(tempFile, "unzipped-${importFile.name}")
     unzipDir.mkdirs()
@@ -86,5 +108,5 @@ private suspend fun importBackup(
     }
     val result = importer.importFromFile(importFile.absolutePath, importPassword)
     require(result is BackupImportResult.Success)
-    return result
+    return BackupImport(BackupId(importFile.nameWithoutExtension), result.pager)
 }

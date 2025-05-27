@@ -29,6 +29,7 @@ java {
 dependencies {
     implementation(project(":backup"))
     implementation(compose.desktop.currentOs)
+    implementation(kotlin("reflect"))
     implementation(libs.compose.fileKit.core)
     implementation(libs.compose.fileKit.compose)
     implementation(libs.coroutines.core)
