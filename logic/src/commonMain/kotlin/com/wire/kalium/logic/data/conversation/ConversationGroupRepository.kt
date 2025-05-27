@@ -116,13 +116,13 @@ internal class ConversationGroupRepositoryImpl(
     override suspend fun createGroupConversation(
         name: String?,
         usersList: List<UserId>,
-        options: ConversationOptions,
+        options: CreateConversationParam,
     ): Either<CoreFailure, Conversation> = createGroupConversation(name, usersList, options, LastUsersAttempt.None)
 
     private suspend fun createGroupConversation(
         name: String?,
         usersList: List<UserId>,
-        options: ConversationOptions,
+        options: CreateConversationParam,
         lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> =
         teamIdProvider().flatMap { selfTeamId ->

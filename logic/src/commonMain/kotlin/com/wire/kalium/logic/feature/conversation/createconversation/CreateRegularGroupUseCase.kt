@@ -17,15 +17,15 @@
  */
 package com.wire.kalium.logic.feature.conversation.createconversation
 
-import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.user.UserId
 
 /**
  * Use case to create a regular group conversation.
- * This is a wrapper around [GroupConversationCreator] that sets the group type to [ConversationOptions.GroupType.REGULAR_GROUP].
+ * This is a wrapper around [GroupConversationCreator] that sets the group type to [CreateConversationParam.GroupType.REGULAR_GROUP].
  */
 interface CreateRegularGroupUseCase {
-    suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): ConversationCreationResult
+    suspend operator fun invoke(name: String, userIdList: List<UserId>, options: CreateConversationParam): ConversationCreationResult
 }
 
 /**
@@ -38,7 +38,7 @@ internal class CreateRegularGroupUseCaseImpl(
     override suspend fun invoke(
         name: String,
         userIdList: List<UserId>,
-        options: ConversationOptions
+        options: CreateConversationParam
     ): ConversationCreationResult =
-        createGroupConversation(name, userIdList, options.copy(groupType = ConversationOptions.GroupType.REGULAR_GROUP))
+        createGroupConversation(name, userIdList, options.copy(groupType = CreateConversationParam.GroupType.REGULAR_GROUP))
 }

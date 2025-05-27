@@ -97,7 +97,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             leadingMessage = "Join-Establish MLS Group Stale",
                             jsonStringKeyValues = mapOf(
                                 "conversationId" to conversation.id.toLogString(),
-                                "protocol" to ConversationOptions.Protocol.MLS.name,
+                                "protocol" to CreateConversationParam.Protocol.MLS.name,
                                 "protocolInfo" to conversation.protocol.toLogMap(),
                                 "errorInfo" to "$failure"
                             )
@@ -152,7 +152,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 jsonStringKeyValues = mapOf(
                                     "conversationId" to conversation.id.toLogString(),
                                     "conversationType" to type,
-                                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                                    "protocol" to CreateConversationParam.Protocol.MLS.name,
                                     "protocolInfo" to conversation.protocol.toLogMap(),
                                     "errorInfo" to "$failure"
                                 )
@@ -165,7 +165,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 jsonStringKeyValues = mapOf(
                                     "conversationId" to conversation.id.toLogString(),
                                     "conversationType" to type,
-                                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                                    "protocol" to CreateConversationParam.Protocol.MLS.name,
                                     "protocolInfo" to conversation.protocol.toLogMap(),
                                     "errorInfo" to "$failure"
                                 )
@@ -180,7 +180,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         jsonStringKeyValues = mapOf(
                             "conversationId" to conversation.id.toLogString(),
                             "conversationType" to type,
-                            "protocol" to ConversationOptions.Protocol.MLS.name,
+                            "protocol" to CreateConversationParam.Protocol.MLS.name,
                             "protocolInfo" to conversation.protocol.toLogMap(),
                         )
                     )
@@ -200,7 +200,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             jsonStringKeyValues = mapOf(
                                 "conversationId" to conversation.id.toLogString(),
                                 "conversationType" to type,
-                                "protocol" to ConversationOptions.Protocol.MLS.name,
+                                "protocol" to CreateConversationParam.Protocol.MLS.name,
                                 "protocolInfo" to conversation.protocol.toLogMap(),
                             )
                         )
@@ -222,7 +222,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         jsonStringKeyValues = mapOf(
                             "conversationId" to conversation.id.toLogString(),
                             "conversationType" to type,
-                            "protocol" to ConversationOptions.Protocol.MLS.name,
+                            "protocol" to CreateConversationParam.Protocol.MLS.name,
                             "protocolInfo" to conversation.protocol.toLogMap(),
                         )
                     )

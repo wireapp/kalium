@@ -36,14 +36,14 @@ class CreateRegularGroupUseCaseTest {
             .withGroupConversationCreator()
             .arrange()
 
-        createRegularGroup.invoke(groupName, emptyList(), ConversationOptions())
+        createRegularGroup.invoke(groupName, emptyList(), CreateConversationParam())
 
         coVerify {
             arrangement.groupConversationCreator(
                 name = groupName,
                 userIdList = emptyList(),
-                options = ConversationOptions().copy(
-                    groupType = ConversationOptions.GroupType.REGULAR_GROUP
+                options = CreateConversationParam().copy(
+                    groupType = CreateConversationParam.GroupType.REGULAR_GROUP
                 )
             )
         }
