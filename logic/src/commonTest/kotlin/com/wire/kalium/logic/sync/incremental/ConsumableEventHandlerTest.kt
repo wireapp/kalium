@@ -45,7 +45,7 @@ class ConsumableEventHandlerTest {
         handler.createNewCatchingUpJob(1.seconds, task)
 
         taskFlow.test {
-            advanceTimeBy(1000)
+            advanceTimeBy(1.seconds)
             assertEquals(Unit, awaitItem(), "Task should have been executed")
             assertFalse(handler.toString().contains("websocketOpenedAt=null"))
             assertTrue(handler.toString().contains("catchingUpJob.isActive=true"))
@@ -99,7 +99,7 @@ class ConsumableEventHandlerTest {
         handler.scheduleNewCatchingUpJob(1.seconds, task)
 
         taskFlow.test {
-            advanceTimeBy(1000)
+            advanceTimeBy(1.seconds)
             assertEquals(Unit, awaitItem(), "Task should have been executed")
             assertFalse(handler.toString().contains("lastEventReceivedAt=null"))
             assertTrue(handler.toString().contains("catchingUpJob.isActive=true"))
@@ -116,7 +116,7 @@ class ConsumableEventHandlerTest {
         val taskFlow = taskChannel.receiveAsFlow()
 
         handler.scheduleNewCatchingUpJob(1.seconds, task)
-        advanceTimeBy(1000)
+        advanceTimeBy(1.seconds)
 
         taskFlow.test {
             assertEquals(Unit, awaitItem(), "Task should have been executed")
@@ -130,7 +130,7 @@ class ConsumableEventHandlerTest {
 
         // Advance time again, task should not execute
         taskFlow.test {
-            advanceTimeBy(1000)
+            advanceTimeBy(1.seconds)
             expectNoEvents() // Task should not execute after clear
             cancelAndIgnoreRemainingEvents()
         }
@@ -157,7 +157,7 @@ class ConsumableEventHandlerTest {
         assertFalse(handler.toString().contains("websocketOpenedAt=null"))
 
         taskFlow.test {
-            advanceTimeBy(1000)
+            advanceTimeBy(1.seconds)
             assertEquals(Unit, awaitItem(), "Task should execute once")
             cancelAndIgnoreRemainingEvents()
         }
