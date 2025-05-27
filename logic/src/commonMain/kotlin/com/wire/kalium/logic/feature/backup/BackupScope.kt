@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
@@ -36,7 +35,6 @@ class BackupScope internal constructor(
     private val userRepository: UserRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userStorage: UserStorage,
-    private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
     val globalPreferences: GlobalPrefProvider,
 ) {
     val create: CreateBackupUseCase
