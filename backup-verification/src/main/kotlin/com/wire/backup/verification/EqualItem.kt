@@ -17,7 +17,6 @@
  */
 package com.wire.backup.verification
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,31 +29,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun MissingItemsTab(result: CompleteBackupComparisonResult) = LazyColumn {
+fun EqualItemsTab(result: CompleteBackupComparisonResult) = LazyColumn {
     item { Text("Conversations", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp)) }
-    items(result.conversations.missingItems) { conversation ->
-        MissingItemRow(conversation, "conversation")
+    items(result.conversations.equalItems) { conversation ->
+        Text("Equal conversation: ${conversation.itemId} in sources: ${conversation.sources.joinToString { it.id }}")
+        Spacer(Modifier.size(8.dp))
     }
     item { Text("Users", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp)) }
-    items(result.users.missingItems) { user ->
-        MissingItemRow(user, "user")
+    items(result.users.equalItems) { user ->
+        Text("Equal user: ${user.itemId} in sources: ${user.sources.joinToString { it.id }}")
+        Spacer(Modifier.size(8.dp))
     }
     item { Text("Messages", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp)) }
-    items(result.messages.missingItems) { message ->
-        MissingItemRow(message, "message")
+    items(result.messages.equalItems) { message ->
+        Text("Equal message: ${message.itemId} in sources: ${message.sources.joinToString { it.id }}")
+        Spacer(Modifier.size(8.dp))
     }
-}
-
-@Composable
-inline fun <reified T : Any> MissingItemRow(
-    item: Comparator.ItemMissing<T>,
-    itemType: String
-) {
-    Column {
-        Text("Missing $itemType: ${item.itemId}")
-        Text("Missing from: ${item.missingFrom.joinToString { it.id }}")
-        Text("Present in other sources: ${item.presentIn.keys.joinToString { it.id }}")
-        compareFieldsRecursively(item.presentIn, 0)
-    }
-    Spacer(Modifier.size(8.dp))
 }

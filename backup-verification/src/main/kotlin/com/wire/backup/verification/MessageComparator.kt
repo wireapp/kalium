@@ -89,7 +89,7 @@ abstract class Comparator<T> {
     /**
      * Checks if all items are equal
      */
-    protected fun areAllItemsEqual(items: List<T>): Boolean {
+    private fun areAllItemsEqual(items: List<T>): Boolean {
         if (items.isEmpty()) return true
         val first = items.first()
         return items.all { it == first }

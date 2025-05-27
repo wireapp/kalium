@@ -1,4 +1,3 @@
-import com.wire.backup.verification.Comparator
 import com.wire.backup.verification.CompleteBackupComparisonResult
 
 /*

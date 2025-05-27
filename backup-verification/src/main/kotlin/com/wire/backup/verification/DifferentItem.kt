@@ -18,11 +18,10 @@
 package com.wire.backup.verification
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,31 +29,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun MissingItemsTab(result: CompleteBackupComparisonResult) = LazyColumn {
+fun DifferentItemsTab(result: CompleteBackupComparisonResult) = LazyColumn {
     item { Text("Conversations", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp)) }
-    items(result.conversations.missingItems) { conversation ->
-        MissingItemRow(conversation, "conversation")
+    items(result.conversations.differentItems) { conversation ->
+        Column {
+            Text("Different conversation: ${conversation.itemId}", fontSize = 20.sp)
+            compareFieldsRecursively(conversation.itemsBySource, 0)
+        }
+        Divider(modifier = Modifier.padding(vertical = 8.dp))
     }
     item { Text("Users", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp)) }
-    items(result.users.missingItems) { user ->
-        MissingItemRow(user, "user")
+    items(result.users.differentItems) { user ->
+        Column {
+            Text("Different user: ${user.itemId}", fontSize = 20.sp)
+            compareFieldsRecursively(user.itemsBySource, 0)
+        }
+        Divider(modifier = Modifier.padding(vertical = 8.dp))
     }
     item { Text("Messages", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp)) }
-    items(result.messages.missingItems) { message ->
-        MissingItemRow(message, "message")
+    items(result.messages.differentItems) { message ->
+        Column {
+            Text("Different message: ${message.itemId}", fontSize = 20.sp)
+            compareFieldsRecursively(message.itemsBySource, 0)
+        }
+        Divider(modifier = Modifier.padding(vertical = 8.dp))
     }
-}
-
-@Composable
-inline fun <reified T : Any> MissingItemRow(
-    item: Comparator.ItemMissing<T>,
-    itemType: String
-) {
-    Column {
-        Text("Missing $itemType: ${item.itemId}")
-        Text("Missing from: ${item.missingFrom.joinToString { it.id }}")
-        Text("Present in other sources: ${item.presentIn.keys.joinToString { it.id }}")
-        compareFieldsRecursively(item.presentIn, 0)
-    }
-    Spacer(Modifier.size(8.dp))
 }

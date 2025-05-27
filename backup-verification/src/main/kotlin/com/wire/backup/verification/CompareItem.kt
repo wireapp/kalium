@@ -25,13 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMembers
 import kotlin.reflect.full.instanceParameter
 
 @Composable
-fun compareFieldsRecursively(clazz: KClass<*>, itemsBySource: Map<BackupId, Any>, level: Int) {
-    val fields = clazz.declaredMembers
+fun <T: Any> compareFieldsRecursively(itemsBySource: Map<BackupId, T>, level: Int) {
+    val firstEntry = itemsBySource.entries.firstOrNull()?.value ?: return
+    val fistEntryClass = firstEntry::class
+    val fields = fistEntryClass.declaredMembers
         .filter { it.name != "id" }
         .filter { field ->
             field.parameters.size == 1 &&
@@ -88,7 +89,6 @@ fun compareFieldsRecursively(clazz: KClass<*>, itemsBySource: Map<BackupId, Any>
             val nonNullValues = fieldValues.filter { it.second != null }
             if (nonNullValues.isNotEmpty()) {
                 compareFieldsRecursively(
-                    firstValue::class,
                     nonNullValues.associate { it.first to it.second!! },
                     level + 1
                 )
@@ -129,7 +129,7 @@ fun compareFieldsRecursively(clazz: KClass<*>, itemsBySource: Map<BackupId, Any>
                                     red = 1f,
                                     green = 0.9f,
                                     blue = 0.9f,
-                                    alpha = 0.8f
+                                    alpha = 0.9f
                                 )
                             )
                     )
