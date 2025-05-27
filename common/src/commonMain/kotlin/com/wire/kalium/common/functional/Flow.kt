@@ -26,8 +26,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Duration
-import kotlin.time.TimeSource
 
 inline fun <A, B> Collection<A>.flatMapFromIterable(
     crossinline block: suspend (A) -> Flow<B>
@@ -58,13 +56,3 @@ fun intervalFlow(periodMs: Long, initialDelayMs: Long = 0L, stopWhen: () -> Bool
             delay(periodMs)
         }
     }
-
-fun <T> Flow<T>.withTimeTracking(): Flow<Pair<T, Duration>> = flow {
-    var lastTime = TimeSource.Monotonic.markNow()
-    collect { value ->
-        val currentTime = TimeSource.Monotonic.markNow()
-        val timeDiff = currentTime - lastTime
-        emit(value to timeDiff)
-        lastTime = currentTime
-    }
-}
