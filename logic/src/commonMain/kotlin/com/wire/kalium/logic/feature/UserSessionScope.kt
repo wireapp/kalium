@@ -901,13 +901,12 @@ class UserSessionScope internal constructor(
 
     val backup: BackupScope
         get() = BackupScope(
-            userId,
-            clientIdProvider,
-            userRepository,
-            kaliumFileSystem,
-            userStorage,
-            restartSlowSyncProcessForRecoveryUseCase,
-            globalPreferences,
+            userId = userId,
+            clientIdProvider = clientIdProvider,
+            userRepository = userRepository,
+            kaliumFileSystem = kaliumFileSystem,
+            userStorage = userStorage,
+            globalPreferences = globalPreferences,
         )
 
     val persistMessage: PersistMessageUseCase
