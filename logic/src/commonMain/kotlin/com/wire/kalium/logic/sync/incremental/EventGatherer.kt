@@ -80,6 +80,7 @@ internal class EventGathererImpl(
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     processingScope: CoroutineScope,
+    private val consumableEventHandler: ConsumableEventHandler = ConsumableEventHandlerImpl(processingScope),
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
@@ -89,7 +90,6 @@ internal class EventGathererImpl(
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val offlineEventBuffer = EventProcessingHistory()
-    private val consumableEventHandler = ConsumableEventHandler(processingScope)
     private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {

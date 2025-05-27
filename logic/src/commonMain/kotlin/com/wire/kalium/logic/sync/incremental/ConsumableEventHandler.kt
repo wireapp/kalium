@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logic.sync.incremental.ConsumableEventHandlerImpl.Companion.CATCHING_UP_JOB_EVENT_INTERVAL
+import com.wire.kalium.logic.sync.incremental.ConsumableEventHandlerImpl.Companion.CATCHING_UP_JOB_INITIAL_THRESHOLD
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,18 +36,38 @@ import kotlin.time.Duration.Companion.seconds
  * It is used to manage the catching up job that processes events when the websocket is opened to mimic the behavior of
  * the old quick sync that was used to fetch pending events from the notification stream.
  */
-internal class ConsumableEventHandler(private val processingScope: CoroutineScope) {
-    private var websocketOpenedAt: Instant? = null
-    private var lastEventReceivedAt: Instant? = null
-    private var catchingUpJob: Job? = null
-    private val mutex = Mutex()
+internal interface ConsumableEventHandler {
 
     /**
      * Start the processing of the catching up job.
      *
      * @param interval The delay after just opening the websocket connection. Default is [CATCHING_UP_JOB_INITIAL_THRESHOLD].
      */
-    suspend fun createNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_INITIAL_THRESHOLD, task: () -> Unit) = mutex.withLock {
+    suspend fun createNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_INITIAL_THRESHOLD, task: () -> Unit)
+
+    /**
+     * Schedule a new catching up job that will be cancelled if there was already one pending scheduled.
+     * Scheduled to run once with a delay of [CATCHING_UP_JOB_EVENT_INTERVAL].
+     *
+     * @param interval The delay between each event processing. Default is [CATCHING_UP_JOB_EVENT_INTERVAL].
+     * @param onTimeReachedTask The task to be executed when the time reached. Used for marking the status of fetching events as LIVE.
+     */
+    suspend fun scheduleNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_EVENT_INTERVAL, onTimeReachedTask: () -> Unit)
+
+    /**
+     * Cancel the catching up job and reset the last time the websocket was opened and the last time
+     * an event was received.To be called when the websocket is closed.
+     */
+    suspend fun clear()
+}
+
+internal class ConsumableEventHandlerImpl(private val processingScope: CoroutineScope) : ConsumableEventHandler {
+    private var websocketOpenedAt: Instant? = null
+    private var lastEventReceivedAt: Instant? = null
+    private var catchingUpJob: Job? = null
+    private val mutex = Mutex()
+
+    override suspend fun createNewCatchingUpJob(interval: Duration, task: () -> Unit) = mutex.withLock {
         websocketOpenedAt = Clock.System.now()
         catchingUpJob?.cancel()
         catchingUpJob = processingScope.launch {
@@ -56,14 +78,7 @@ internal class ConsumableEventHandler(private val processingScope: CoroutineScop
         }
     }
 
-    /**
-     * Schedule a new catching up job that will be cancelled if there was already one pending scheduled.
-     * Scheduled to run once with a delay of [CATCHING_UP_JOB_EVENT_INTERVAL].
-     *
-     * @param interval The delay between each event processing. Default is [CATCHING_UP_JOB_EVENT_INTERVAL].
-     * @param onTimeReachedTask The task to be executed when the time reached. Used for marking the status of fetching events as LIVE.
-     */
-    suspend fun scheduleNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_EVENT_INTERVAL, onTimeReachedTask: () -> Unit) =
+    override suspend fun scheduleNewCatchingUpJob(interval: Duration, onTimeReachedTask: () -> Unit) =
         mutex.withLock {
             lastEventReceivedAt = Clock.System.now()
             catchingUpJob?.cancel()
@@ -75,11 +90,7 @@ internal class ConsumableEventHandler(private val processingScope: CoroutineScop
             }
         }
 
-    /**
-     * Cancel the catching up job and reset the last time the websocket was opened and the last time
-     * an event was received.To be called when the websocket is closed.
-     */
-    suspend fun clear() = mutex.withLock {
+    override suspend fun clear() = mutex.withLock {
         catchingUpJob?.cancel()
         catchingUpJob = null
         websocketOpenedAt = null

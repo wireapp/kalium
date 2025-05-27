@@ -85,6 +85,10 @@ class EventGathererTest {
                 arrangement.eventRepository.pendingEvents()
             }.wasInvoked(exactly = once)
 
+            coVerify {
+                arrangement.consumableEventHandler.createNewCatchingUpJob(any(), any())
+            }.wasNotInvoked()
+
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -229,7 +233,7 @@ class EventGathererTest {
     fun givenWebSocketOpensAndCloses_whenGathering_thenSyncSourceShouldBeResetToPending() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
 
-        val (_, eventGatherer) = Arrangement()
+        val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -467,6 +471,97 @@ class EventGathererTest {
                 arrangement.serverTimeHandler.computeTimeOffset(any())
             }.wasNotInvoked()
 
+            coVerify {
+                arrangement.consumableEventHandler.createNewCatchingUpJob(any(), any())
+            }.wasInvoked()
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenWebSocketEvent_whenReceivedAndAsyncNotificationsCapable_thenShouldScheduleANewCatchingUpJob() = runTest(testScope) {
+        val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
+        val event = TestEvent.memberJoin().wrapInEnvelope()
+        val (arrangement, eventGatherer) = Arrangement()
+            .withIsClientAsyncNotificationsCapableReturning(true)
+            .withPendingEventsReturning(emptyFlow())
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange(this.backgroundScope)
+
+        eventGatherer.gatherEvents().test {
+            coVerify {
+                arrangement.isClientAsyncNotificationsCapableProvider.invoke()
+            }.wasInvoked(exactly = once)
+
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
+
+
+            liveEventsChannel.send(WebSocketEvent.Open(false))
+            liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(event))
+
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.eventRepository.liveEvents()
+            }.wasInvoked(exactly = once)
+
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.serverTimeHandler.computeTimeOffset(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.consumableEventHandler.createNewCatchingUpJob(any(), any())
+            }.wasInvoked()
+
+            coVerify {
+                arrangement.consumableEventHandler.scheduleNewCatchingUpJob(any(), any())
+            }.wasInvoked()
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenWebSocketEventClose_whenReceived_thenShouldClearCatchingUpJob() = runTest(testScope) {
+        val liveEventsChannel = Channel<WebSocketEvent<EventEnvelope>>(capacity = Channel.UNLIMITED)
+        val event = TestEvent.memberJoin().wrapInEnvelope()
+        val (arrangement, eventGatherer) = Arrangement()
+            .withIsClientAsyncNotificationsCapableReturning(true)
+            .withPendingEventsReturning(emptyFlow())
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange(this.backgroundScope)
+
+        eventGatherer.gatherEvents().test {
+            coVerify {
+                arrangement.isClientAsyncNotificationsCapableProvider.invoke()
+            }.wasInvoked(exactly = once)
+
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
+
+
+            liveEventsChannel.send(WebSocketEvent.Open(false))
+            liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(event))
+            liveEventsChannel.send(WebSocketEvent.Close(RuntimeException("WebSocket closed")))
+
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.consumableEventHandler.clear()
+            }.wasInvoked()
+
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -486,6 +581,8 @@ class EventGathererTest {
         @Mock
         val serverTimeHandler = mock(ServerTimeHandler::class)
 
+        @Mock
+        val consumableEventHandler = mock(ConsumableEventHandler::class)
 
         init {
             runBlocking {
@@ -527,7 +624,8 @@ class EventGathererTest {
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
             serverTimeHandler = serverTimeHandler,
-            processingScope = processingScope
+            processingScope = processingScope,
+            consumableEventHandler = consumableEventHandler
         )
     }
 }
