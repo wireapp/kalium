@@ -21,66 +21,85 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.cells.domain.model.CellFile
+import com.wire.kalium.cells.domain.model.CellNodeType
+import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.toFileModel
+import com.wire.kalium.cells.domain.model.toFolderModel
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.message.CellAssetContent
 
-public interface GetCellFilesUseCase {
+public interface GetPaginatedNodesUseCase {
     /**
-     * Get files from all conversations or search all files with text query.
+     * Get files and folders from all conversations or search all files with text query.
      * Requests list of nodes from wire cell matching the query (all nodes for empty query)
      * Combines it with local data (local file name, file owner and conversation names)
      *
-     * @return [List] of [CellFile]
+     * @return [List] of [Node]
      */
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
         limit: Int = 100,
-        offset: Int = 0
-    ): Either<CoreFailure, PaginatedList<CellFile>>
+        offset: Int = 0,
+        onlyDeleted: Boolean = false,
+    ): Either<CoreFailure, PaginatedList<Node>>
 }
 
-internal class GetCellFilesUseCaseImpl(
+internal class GetPaginatedNodesUseCaseImpl(
     private val cellsRepository: CellsRepository,
     private val conversationRepository: CellConversationRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
     private val usersRepository: CellUsersRepository,
-) : GetCellFilesUseCase {
+) : GetPaginatedNodesUseCase {
 
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
         limit: Int,
-        offset: Int
-    ): Either<CoreFailure, PaginatedList<CellFile>> {
+        offset: Int,
+        onlyDeleted: Boolean
+    ): Either<CoreFailure, PaginatedList<Node>> {
 
-        // Collect all data required to show the file
+        // Collect all data required to show the file/folder
         val userNames = usersRepository.getUserNames().getOrElse(emptyList())
         val conversationNames = conversationRepository.getConversationNames().getOrElse(emptyList())
         val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
-        return cellsRepository.getFiles(conversationId, query, limit, offset)
-            .map { list ->
+        return cellsRepository.getPaginatedNodes(conversationId, query, limit, offset, onlyDeleted)
+            .map { nodes ->
                 PaginatedList(
-                    data = list.data.asSequence()
+                    data = nodes.data.asSequence()
                         .filterNot { it.isDraft }
                         .map { node ->
-                            val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
-                            node.toFileModel().copy(
-                                localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
-                                metadata = attachment?.metadata,
-                                userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
-                                conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                            )
-                        }.toList(),
-                    pagination = list.pagination
+                            if (node.type == CellNodeType.FOLDER.value) {
+                                node.toFolderModel().copy(
+                                    userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
+                                    conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                                )
+                            } else {
+                                val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
+                                node.toFileModel().copy(
+                                    localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
+                                    metadata = attachment?.metadata,
+                                    userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
+                                    conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                                )
+                            }
+                        }.toList()
+                        .sortedWith(
+                            compareBy<Node> { it is Node.File }.thenBy {
+                                when (it) {
+                                    is Node.File -> it.name
+                                    is Node.Folder -> it.name
+                                }
+                            }
+                        ),
+                    pagination = nodes.pagination
                 )
             }
     }

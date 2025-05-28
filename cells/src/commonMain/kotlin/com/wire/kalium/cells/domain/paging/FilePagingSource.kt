@@ -23,39 +23,41 @@ import app.cash.paging.PagingSourceLoadResult
 import app.cash.paging.PagingSourceLoadResultError
 import app.cash.paging.PagingSourceLoadResultPage
 import app.cash.paging.PagingState
-import com.wire.kalium.cells.domain.model.CellFile
-import com.wire.kalium.cells.domain.usecase.GetCellFilesUseCase
+import com.wire.kalium.cells.domain.model.Node
+import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
 import com.wire.kalium.common.functional.fold
 
 internal class FilePagingSource(
     val query: String,
     val conversationId: String?,
     val pageSize: Int,
-    val getCellFilesUseCase: GetCellFilesUseCase,
-) : PagingSource<Int, CellFile>() {
+    val getPaginatedNodesUseCase: GetPaginatedNodesUseCase,
+    val onlyDeleted: Boolean = false
+) : PagingSource<Int, Node>() {
 
-    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, CellFile> =
-        getCellFilesUseCase(
+    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node> =
+        getPaginatedNodesUseCase(
             conversationId = conversationId,
             query = query,
             limit = pageSize,
             offset = params.key ?: 0,
+            onlyDeleted = onlyDeleted
         ).fold(
             {
-                PagingSourceLoadResultError<Int, CellFile>(
+                PagingSourceLoadResultError<Int, Node>(
                     throwable = Exception("Failed to load files")
-                ) as PagingSourceLoadResult<Int, CellFile>
+                ) as PagingSourceLoadResult<Int, Node>
             },
             { files ->
                 PagingSourceLoadResultPage(
                     data = files.data,
                     prevKey = null,
                     nextKey = files.pagination?.nextOffset
-                ) as PagingSourceLoadResult<Int, CellFile>
+                ) as PagingSourceLoadResult<Int, Node>
             }
         )
 
-    override fun getRefreshKey(state: PagingState<Int, CellFile>): Int? {
+    override fun getRefreshKey(state: PagingState<Int, Node>): Int? {
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)
             anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
