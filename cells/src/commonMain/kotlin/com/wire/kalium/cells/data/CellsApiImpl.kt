@@ -25,10 +25,14 @@ import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
+import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
+import com.wire.kalium.cells.sdk.kmp.model.RestActionOptionsCopyMove
 import com.wire.kalium.cells.sdk.kmp.model.RestActionParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateCheckRequest
+import com.wire.kalium.cells.sdk.kmp.model.RestCreateRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestIncomingNode
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupFilter
@@ -39,6 +43,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
+import com.wire.kalium.cells.sdk.kmp.model.StatusFilterDeletedStatus
 import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -48,6 +53,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 
+@Suppress("TooManyFunctions")
 internal class CellsApiImpl(
     private val nodeServiceApi: NodeServiceApi,
 ) : CellsApi {
@@ -55,6 +61,7 @@ internal class CellsApiImpl(
     private companion object {
         // Sort lookup results by modification time
         private const val SORTED_BY = "mtime"
+        private const val AWAIT_TIMEOUT = "5s"
     }
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
@@ -83,13 +90,31 @@ internal class CellsApiImpl(
             )
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun getNodesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO> =
+    override suspend fun getNodesForPath(
+        path: String,
+        limit: Int?,
+        offset: Int?,
+        onlyDeleted: Boolean,
+        onlyFolders: Boolean,
+    ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(
-                    limit = limit.toString(),
-                    offset = offset.toString(),
-                    scope = RestLookupScope(listOf(RestNodeLocator(path = "$path/*"))),
+                    limit = limit?.toString(),
+                    offset = offset?.toString(),
+                    scope = RestLookupScope(root = RestNodeLocator(path = path)),
+                    filters = RestLookupFilter(
+                        status = if (onlyDeleted) {
+                            LookupFilterStatusFilter(deleted = StatusFilterDeletedStatus.Only)
+                        } else {
+                            null
+                        },
+                        type = if (onlyFolders) {
+                            TreeNodeType.COLLECTION
+                        } else {
+                            TreeNodeType.UNKNOWN
+                        },
+                    ),
                     sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -177,6 +202,47 @@ internal class CellsApiImpl(
         wrapCellsResponse {
             nodeServiceApi.deletePublicLink(linkUuid)
         }.mapSuccess {}
+
+    override suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO> {
+        return wrapCellsResponse {
+            nodeServiceApi.create(
+                RestCreateRequest(
+                    inputs = listOf(
+                        RestIncomingNode(
+                            locator = RestNodeLocator(path = path),
+                            type = TreeNodeType.COLLECTION,
+                        )
+                    )
+                )
+            )
+        }.mapSuccess { response -> response.toDto() }
+    }
+
+    override suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.move,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path, uuid)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT,
+                copyMoveOptions = RestActionOptionsCopyMove(
+                    targetPath = targetPath,
+                    targetIsParent = true,
+                )
+            )
+        )
+    }.mapSuccess {}
+
+    override suspend fun restoreNode(path: String): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.restore,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT
+            )
+        )
+    }.mapSuccess {}
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))
