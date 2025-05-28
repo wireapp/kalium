@@ -10,7 +10,7 @@ CREATE TABLE Member (
     FOREIGN KEY (user) REFERENCES User(qualified_id) ON DELETE CASCADE
 );
 
-CREATE INDEX member_conversation_index ON Member(conversation);
+CREATE INDEX Member_idx_conversation_user ON Member(conversation, user);
 
 insertMember:
 INSERT OR IGNORE INTO Member(user, conversation, role)

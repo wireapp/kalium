@@ -18,7 +18,17 @@
 
 package com.wire.kalium.cryptography
 
-import kotlin.jvm.JvmInline
+data class ProteusDBSecret(val passphrase: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
 
-@JvmInline
-value class ProteusDBSecret(val value: String)
+        other as ProteusDBSecret
+
+        return passphrase.contentEquals(other.passphrase)
+    }
+
+    override fun hashCode(): Int {
+        return passphrase.contentHashCode()
+    }
+}

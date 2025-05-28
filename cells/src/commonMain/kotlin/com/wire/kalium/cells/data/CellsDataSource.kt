@@ -45,6 +45,7 @@ import okio.FileSystem
 import okio.Path
 import okio.use
 
+@Suppress("TooManyFunctions")
 internal class CellsDataSource internal constructor(
     private val cellsApi: CellsApi,
     private val awsClient: CellsAwsClient,
@@ -80,22 +81,34 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int) = withContext(dispatchers.io) {
-        wrapApiRequest {
-            if (path == null) {
-                cellsApi.getNodes(query, limit, offset)
-            } else {
-                cellsApi.getNodesForPath(path, limit, offset)
+    override suspend fun getPaginatedNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                if (path == null) {
+                    cellsApi.getNodes(query, limit, offset)
+                } else {
+                    cellsApi.getNodesForPath(path, limit, offset, onlyDeleted)
+                }
+            }.map { response ->
+                PaginatedList(
+                    data = response.nodes.map { it.toModel() },
+                    pagination = response.pagination?.let {
+                        Pagination(
+                            nextOffset = it.nextOffset,
+                        )
+                    },
+                )
             }
-        }.map { response ->
-            PaginatedList(
-                data = response.nodes.map { it.toModel() },
-                pagination = response.pagination?.let {
-                    Pagination(
-                        nextOffset = it.nextOffset,
-                    )
-                },
-            )
+        }
+
+    override suspend fun getNodesByPath(
+        path: String,
+        onlyFolders: Boolean
+    ): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.getNodesForPath(path = path, onlyFolders = onlyFolders).mapSuccess { response ->
+                response.nodes.map { it.toModel() }
+            }
         }
     }
 
@@ -176,4 +189,26 @@ internal class CellsDataSource internal constructor(
             cellsApi.deletePublicLink(linkUuid)
         }
     }
+
+    override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.createFolder(folderName)
+        }.map { response ->
+            response.nodes.map { it.toModel() }
+        }
+    }
+
+    override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.moveNode(uuid = uuid, path = path, targetPath = targetPath)
+            }
+        }
+
+    override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.restoreNode(path = path)
+            }
+        }
 }
