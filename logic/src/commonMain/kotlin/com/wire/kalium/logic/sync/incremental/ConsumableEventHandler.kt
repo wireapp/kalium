@@ -22,7 +22,6 @@ import com.wire.kalium.logic.sync.incremental.ConsumableEventHandlerImpl.Compani
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -43,7 +42,7 @@ internal interface ConsumableEventHandler {
      *
      * @param interval The delay after just opening the websocket connection. Default is [CATCHING_UP_JOB_INITIAL_THRESHOLD].
      */
-    suspend fun startNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_INITIAL_THRESHOLD, task: () -> Unit)
+    suspend fun startNewCatchingUpJob(interval: Duration = CATCHING_UP_JOB_INITIAL_THRESHOLD, onTimeReachedTask: () -> Unit)
 
     /**
      * Schedule a new catching up job that will be cancelled if there was already one pending scheduled.
@@ -67,14 +66,12 @@ internal class ConsumableEventHandlerImpl(private val processingScope: Coroutine
     private var catchingUpJob: Job? = null
     private val mutex = Mutex()
 
-    override suspend fun startNewCatchingUpJob(interval: Duration, task: () -> Unit) = mutex.withLock {
+    override suspend fun startNewCatchingUpJob(interval: Duration, onTimeReachedTask: () -> Unit) = mutex.withLock {
         websocketOpenedAt = Clock.System.now()
         catchingUpJob?.cancel()
         catchingUpJob = processingScope.launch {
-            while (isActive) {
-                delay(interval)
-                task()
-            }
+            delay(interval)
+            onTimeReachedTask()
         }
     }
 
@@ -83,10 +80,8 @@ internal class ConsumableEventHandlerImpl(private val processingScope: Coroutine
             lastEventReceivedAt = Clock.System.now()
             catchingUpJob?.cancel()
             catchingUpJob = processingScope.launch {
-                while (isActive) {
-                    delay(interval)
-                    onTimeReachedTask()
-                }
+                delay(interval)
+                onTimeReachedTask()
             }
         }
 

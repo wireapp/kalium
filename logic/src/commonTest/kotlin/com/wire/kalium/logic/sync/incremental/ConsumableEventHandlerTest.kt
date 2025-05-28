@@ -48,7 +48,6 @@ class ConsumableEventHandlerTest {
             advanceTimeBy(1.seconds)
             assertEquals(Unit, awaitItem(), "Task should have been executed")
             assertFalse(handler.toString().contains("websocketOpenedAt=null"))
-            assertTrue(handler.toString().contains("catchingUpJob.isActive=true"))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -83,7 +82,6 @@ class ConsumableEventHandlerTest {
         secondTaskFlow.test {
             // then second task was executed
             assertEquals(Unit, awaitItem(), "Second task should execute")
-            assertTrue(handler.toString().contains("catchingUpJob.isActive=true"))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -102,7 +100,6 @@ class ConsumableEventHandlerTest {
             advanceTimeBy(1.seconds)
             assertEquals(Unit, awaitItem(), "Task should have been executed")
             assertFalse(handler.toString().contains("lastEventReceivedAt=null"))
-            assertTrue(handler.toString().contains("catchingUpJob.isActive=true"))
             cancelAndIgnoreRemainingEvents()
         }
     }
