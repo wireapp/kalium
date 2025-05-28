@@ -277,8 +277,6 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserU
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
-import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCase
-import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -1687,15 +1685,6 @@ class UserSessionScope internal constructor(
     val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
-    private val updateSelfClientCapabilityToLegalHoldConsent: UpdateSelfClientCapabilityToLegalHoldConsentUseCase
-        get() = UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl(
-            clientRemoteRepository = clientRemoteRepository,
-            userConfigRepository = userConfigRepository,
-            selfClientIdProvider = clientIdProvider,
-            incrementalSyncRepository = incrementalSyncRepository,
-            kaliumLogger = userScopedLogger,
-        )
-
     private val updateSelfClientCapabilityToConsumableNotifications by lazy {
         UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl(
             selfClientIdProvider = clientIdProvider,
@@ -2374,10 +2363,6 @@ class UserSessionScope internal constructor(
 
         launch {
             acmeCertificatesSyncWorker.execute()
-        }
-
-        launch {
-            updateSelfClientCapabilityToLegalHoldConsent()
         }
 
         launch {
