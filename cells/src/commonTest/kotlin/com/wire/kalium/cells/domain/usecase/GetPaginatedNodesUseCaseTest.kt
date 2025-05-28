@@ -39,7 +39,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class GetNodesUseCaseTest {
+class GetPaginatedNodesUseCaseTest {
 
     @Test
     fun givenSuccessResponse_whenUseCaseInvoked_thenDraftsAreFiltered() = runTest {
@@ -130,9 +130,9 @@ class GetNodesUseCaseTest {
         @Mock
         val usersRepository = mock(CellUsersRepository::class)
 
-        suspend fun arrange(): Pair<Arrangement, GetNodesUseCase> {
+        suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
 
-            coEvery { cellsRepository.getNodes(any(), any(), any(), any()) }.returns(
+            coEvery { cellsRepository.getPaginatedNodes(any(), any(), any(), any(), any()) }.returns(
                 PaginatedList(
                     data = testNodes,
                     pagination = null,
@@ -147,7 +147,7 @@ class GetNodesUseCaseTest {
 
             coEvery { attachmentsRepository.getStandaloneAssetPaths() }.returns(testAssetPaths.right())
 
-            return this to GetNodesUseCaseImpl(
+            return this to GetPaginatedNodesUseCaseImpl(
                 cellsRepository = cellsRepository,
                 conversationRepository = conversationRepository,
                 attachmentsRepository = attachmentsRepository,

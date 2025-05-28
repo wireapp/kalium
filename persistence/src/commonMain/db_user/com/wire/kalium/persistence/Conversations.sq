@@ -64,8 +64,9 @@ CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
 CREATE INDEX conversation_verification_status ON Conversation(verification_status);
-CREATE INDEX conversation_archiverd_index ON Conversation(archived);
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
+CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
+CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
 
 conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
@@ -161,15 +162,6 @@ UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
-isInformedAboutDegradedMLSVerification:
-SELECT mls_degraded_notified FROM Conversation
-WHERE qualified_id = :qualified_id;
-
-updateInformedAboutDegradedMLSVerification:
-UPDATE Conversation
-SET mls_degraded_notified = ?
-WHERE qualified_id = :qualified_id;
-
 updateDegradedConversationNotifiedFlag:
 UPDATE Conversation
 SET degraded_conversation_notified = ?
@@ -226,9 +218,6 @@ SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationIds:
 SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :type AND (:teamId IS NULL OR team_id = :teamId);
-
-getConversationTypeById:
-SELECT type FROM Conversation WHERE qualified_id = ?;
 
 updateConversationMutingStatus:
 UPDATE Conversation

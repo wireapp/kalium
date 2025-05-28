@@ -22,4 +22,5 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 interface ConversationMetaDataDAO {
     suspend fun isInformedAboutDegradedMLSVerification(conversationId: QualifiedIDEntity): Boolean
     suspend fun setInformedAboutDegradedMLSVerificationFlag(conversationId: QualifiedIDEntity, isInformed: Boolean)
+    suspend fun typeAndProtocolInfo(conversationId: QualifiedIDEntity): ConversationTypeAndProtocolInfo?
 }

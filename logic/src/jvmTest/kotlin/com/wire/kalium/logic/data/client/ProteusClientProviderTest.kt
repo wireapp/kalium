@@ -3,9 +3,11 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.util.SecureRandom
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
@@ -45,7 +47,10 @@ class ProteusClientProviderTest {
         val proteusMigrationRecoveryHandler = mock(ProteusMigrationRecoveryHandler::class)
 
         init {
-            every { passphraseStorage.getPassphrase(any()) }.returns("passphrase")
+            val newKeyBytes = SecureRandom().nextBytes(32)
+            val newKeyBase64 = newKeyBytes.encodeBase64()
+
+            every { passphraseStorage.getPassphrase(any()) }.returns(newKeyBase64)
         }
 
         /**

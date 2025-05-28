@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,9 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cryptography
+package com.wire.kalium.cells.domain.usecase
 
-actual suspend fun coreCryptoCentral(
-    rootDir: String,
-    passphrase: ByteArray
-): CoreCryptoCentral = TODO("Not yet implemented")
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+
+public interface CreateFolderUseCase {
+    public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
+}
+
+internal class CreateFolderUseCaseImpl(
+    private val cellsRepository: CellsRepository,
+) : CreateFolderUseCase {
+    override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
+        cellsRepository.createFolder(path).map { }
+}

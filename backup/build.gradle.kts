@@ -27,8 +27,10 @@ plugins {
     alias(libs.plugins.kotlinNativeCoroutines)
 }
 
+version = "0.0.1"
+
 kaliumLibrary {
-    multiplatform { enableJs.set(true) }
+    multiplatform { jsModuleName.set("@wireapp/kalium-backup") }
 }
 
 android {
@@ -57,7 +59,6 @@ kotlin {
         }
     }
     js {
-        browser()
         binaries.library()
         generateTypeScriptDefinitions()
     }
@@ -70,19 +71,16 @@ kotlin {
         }
         val commonMain by getting {
             dependencies {
-                implementation(project(":data"))
                 implementation(project(":protobuf"))
                 implementation(libs.pbandk.runtime.common)
 
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
-                implementation(libs.ktxSerialization)
 
                 implementation(libs.okio.core)
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
-                api(libs.kermit)
             }
         }
         val commonTest by getting {

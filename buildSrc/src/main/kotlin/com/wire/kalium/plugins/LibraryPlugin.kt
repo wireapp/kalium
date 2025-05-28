@@ -36,6 +36,7 @@ class LibraryPlugin : Plugin<Project> {
         interface MultiplatformConfiguration {
             val enableApple: Property<Boolean>
             val enableJs: Property<Boolean>
+            val jsModuleName: Property<String?>
             val enableJsTests: Property<Boolean>
             val includeNativeInterop: Property<Boolean>
             val enableIntegrationTests: Property<Boolean>
@@ -53,6 +54,7 @@ class LibraryPlugin : Plugin<Project> {
             project.configureDefaultMultiplatform(
                 enableApple = multiplatformConfiguration.enableApple.getOrElse(true),
                 enableJs = multiplatformConfiguration.enableJs.getOrElse(true),
+                jsModuleNameOverride = multiplatformConfiguration.jsModuleName.orNull,
                 enableJsTests = multiplatformConfiguration.enableJsTests.getOrElse(true),
                 includeNativeInterop = multiplatformConfiguration.includeNativeInterop.getOrElse(false),
                 enableIntegrationTests = multiplatformConfiguration.enableIntegrationTests.getOrElse(false)

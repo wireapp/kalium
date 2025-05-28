@@ -28,7 +28,7 @@ interface IsE2EIEnabledUseCase {
     /**
      * @return true if E2EI and MLS is enabled, false otherwise.
      */
-    operator fun invoke(): Boolean
+    suspend operator fun invoke(): Boolean
 }
 
 internal class IsE2EIEnabledUseCaseImpl(
@@ -36,7 +36,7 @@ internal class IsE2EIEnabledUseCaseImpl(
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase
 ) : IsE2EIEnabledUseCase {
 
-    override operator fun invoke(): Boolean =
+    override suspend operator fun invoke(): Boolean =
         userConfigRepository.getE2EISettings().fold({
             false
         }, {

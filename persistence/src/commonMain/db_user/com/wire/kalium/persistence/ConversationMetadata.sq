@@ -1,0 +1,14 @@
+typeAndProtocolInfo:
+SELECT type, is_channel, protocol, mls_group_id, mls_group_state, mls_epoch , mls_last_keying_material_update_date, mls_cipher_suite
+    FROM Conversation
+    WHERE qualified_id = ?;
+
+
+isInformedAboutDegradedMLSVerification:
+SELECT mls_degraded_notified FROM Conversation
+WHERE qualified_id = :qualified_id;
+
+updateInformedAboutDegradedMLSVerification:
+UPDATE Conversation
+SET mls_degraded_notified = ?
+WHERE qualified_id = :qualified_id;

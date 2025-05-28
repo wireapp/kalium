@@ -23,6 +23,7 @@ import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.network.utils.NetworkResponse
 
+@Suppress("TooManyFunctions")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
     suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
@@ -34,5 +35,15 @@ internal interface CellsApi {
     suspend fun delete(paths: List<String>): NetworkResponse<Unit>
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
     suspend fun getPublicLink(linkUuid: String): NetworkResponse<String>
-    suspend fun getNodesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO>
+    suspend fun getNodesForPath(
+        path: String,
+        limit: Int? = null,
+        offset: Int? = null,
+        onlyDeleted: Boolean = false,
+        onlyFolders: Boolean = false
+    ): NetworkResponse<GetNodesResponseDTO>
+
+    suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO>
+    suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit>
+    suspend fun restoreNode(path: String): NetworkResponse<Unit>
 }

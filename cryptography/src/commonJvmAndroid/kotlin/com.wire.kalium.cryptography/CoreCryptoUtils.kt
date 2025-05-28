@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,23 @@
  */
 package com.wire.kalium.cryptography
 
-actual suspend fun coreCryptoCentral(
+import com.wire.crypto.DatabaseKey
+import com.wire.crypto.migrateDatabaseKeyTypeToBytes
+import java.io.File
+
+actual suspend fun migrateDatabaseKey(
     rootDir: String,
+    oldKey: String,
     passphrase: ByteArray
-): CoreCryptoCentral = TODO("Not yet implemented")
+) {
+    val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
+    File(rootDir).mkdirs()
+
+    val databaseKey = DatabaseKey(passphrase)
+
+    migrateDatabaseKeyTypeToBytes(
+        oldKey = oldKey,
+        name = path,
+        newKey = databaseKey
+    )
+}

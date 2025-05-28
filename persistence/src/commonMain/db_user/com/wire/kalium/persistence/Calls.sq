@@ -10,12 +10,13 @@ CREATE TABLE Call (
     conversation_type TEXT AS ConversationEntity.Type NOT NULL,
     created_at TEXT NOT NULL,
     type TEXT AS CallEntity.Type NOT NULL DEFAULT 'UNKNOWN',
-    PRIMARY KEY (conversation_id, id)
+    PRIMARY KEY (id, conversation_id)
 );
+
 CREATE INDEX call_date_index ON Call(created_at);
-CREATE INDEX call_conversation_index ON Call(conversation_id);
 CREATE INDEX call_caller_index ON Call(caller_id);
 CREATE INDEX call_status ON Call(status);
+CREATE INDEX Call_idx_conversation_created_at ON Call(conversation_id, created_at DESC);
 
 insertCall:
 INSERT INTO Call(conversation_id, id, status, caller_id, conversation_type, created_at, type)

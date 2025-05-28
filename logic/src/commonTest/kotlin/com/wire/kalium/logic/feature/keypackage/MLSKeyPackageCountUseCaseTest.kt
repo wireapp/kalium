@@ -132,7 +132,7 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
-        verify {
+         coVerify {
             arrangement.userConfigRepository.isMLSEnabled()
         }.wasInvoked(once)
 

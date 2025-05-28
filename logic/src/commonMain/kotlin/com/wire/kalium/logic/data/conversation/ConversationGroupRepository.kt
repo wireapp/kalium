@@ -221,7 +221,12 @@ internal class ConversationGroupRepositoryImpl(
         options: ConversationOptions,
         lastUsersAttempt: LastUsersAttempt
     ): Either<CoreFailure, Conversation> {
-        val canRetryOnce = apiResult.value.isRetryable && lastUsersAttempt is LastUsersAttempt.None
+        val canRetryOnce = apiResult.value.isRetryable
+                && lastUsersAttempt is LastUsersAttempt.None
+                && apiResult.value !is NetworkFailure.FederatedBackendFailure.ConflictingBackends
+        // For conflicting backends the app needs to show the info to the user right away so that he/she can react and adjust selection,
+        // so for this particular federation failure type it shouldn't attempt to retry automatically with extracting only valid users.
+
         return if (canRetryOnce) {
             extractValidUsersForRetryableError(apiResult.value, usersList)
                 .flatMap { (validUsers, failedUsers, failType) ->
