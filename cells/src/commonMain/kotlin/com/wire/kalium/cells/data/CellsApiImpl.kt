@@ -83,7 +83,6 @@ internal class CellsApiImpl(
                             term = query
                         ),
                     ),
-                    sortField = SORTED_BY,
                     sortDirDesc = true,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -115,7 +114,6 @@ internal class CellsApiImpl(
                             TreeNodeType.UNKNOWN
                         },
                     ),
-                    sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
             )

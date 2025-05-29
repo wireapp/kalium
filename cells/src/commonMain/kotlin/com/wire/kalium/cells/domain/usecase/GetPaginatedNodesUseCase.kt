@@ -90,15 +90,7 @@ internal class GetPaginatedNodesUseCaseImpl(
                                     conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
                                 )
                             }
-                        }.toList()
-                        .sortedWith(
-                            compareBy<Node> { it is Node.File }.thenBy {
-                                when (it) {
-                                    is Node.File -> it.name
-                                    is Node.Folder -> it.name
-                                }
-                            }
-                        ),
+                        }.toList(),
                     pagination = nodes.pagination
                 )
             }
