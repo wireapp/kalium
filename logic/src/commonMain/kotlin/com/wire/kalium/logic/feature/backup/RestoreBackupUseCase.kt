@@ -78,7 +78,6 @@ internal class RestoreBackupUseCaseImpl(
     private val userId: UserId,
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val restoreWebBackup: RestoreWebBackupUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : RestoreBackupUseCase {
@@ -110,15 +109,8 @@ internal class RestoreBackupUseCaseImpl(
         metadata: BackupMetadata,
     ): Either<Failure, Unit> = isValidBackupAuthor(metadata)
         .flatMap { metaData ->
-            if (metaData.isWebBackup()) {
-                return when (val webBackup = restoreWebBackup(extractedBackupRootPath, metaData)) {
-                    is Failure -> Either.Left(webBackup)
-                    RestoreBackupResult.Success -> Either.Right(Unit)
-                }
-            } else {
                 val isFromOtherClient = isFromOtherClient(metaData)
                 return getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
-            }
         }
 
     private suspend fun importEncryptedBackup(

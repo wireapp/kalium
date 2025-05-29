@@ -31,7 +31,6 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @IgnoreIOS // TODO re-enable when backup support is implemented
-@OptIn(ExperimentalCoroutinesApi::class)
 class VerifyBackupUseCaseTest {
 
     @BeforeTest
