@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
+import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCase
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -56,8 +57,9 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
-import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
+import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
+import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -94,6 +96,9 @@ class DebugScope internal constructor(
     private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
     private val userStorage: UserStorage,
+    private val updateSelfClientCapabilityToConsumableNotifications:
+    UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
+    private val selfServerConfig: SelfServerConfigUseCase,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
@@ -233,4 +238,10 @@ class DebugScope internal constructor(
     val observeDatabaseLoggerState get() = ObserveDatabaseLoggerStateUseCase(userStorage)
 
     val optimizeDatabase get(): OptimizeDatabaseUseCase = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
+
+    val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
+        get() = StartUsingAsyncNotificationsUseCaseImpl(selfServerConfig, updateSelfClientCapabilityToConsumableNotifications)
+
+    val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
+        get() = ObserveIsConsumableNotificationsEnabledUseCaseImpl(clientRepository)
 }

@@ -33,13 +33,14 @@ import io.ktor.client.request.setBody
 
 internal open class ClientApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
+    val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
 ) : ClientApiV7(authenticatedNetworkClient) {
 
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
         wrapKaliumResponse {
             httpClient.post(PATH_CLIENTS) {
-                setBody(apiModelMapper.toApiV8(registerClientRequest))
+//                 setBody(apiModelMapper.toApiV8(registerClientRequest)) // uncomment when ready to release
+                setBody(registerClientRequest) // remove when ready to release
             }
         }
 
