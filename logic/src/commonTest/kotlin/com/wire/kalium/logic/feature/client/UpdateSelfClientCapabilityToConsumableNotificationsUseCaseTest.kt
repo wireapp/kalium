@@ -201,8 +201,8 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
 
         suspend fun withClientHasConsumableNotifications(result: Boolean) = apply {
             coEvery {
-                clientRepository.clientHasConsumableNotifications()
-            }.returns(result.right())
+                clientRepository.observeClientHasConsumableNotifications()
+            }.returns(flowOf(result))
         }
 
         suspend fun withShouldUpdateConsumableNotificationsCapabilityResult(result: Boolean) = apply {

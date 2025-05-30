@@ -48,7 +48,6 @@ import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
@@ -73,7 +72,7 @@ interface ClientRepository {
     suspend fun clearClientHasConsumableNotifications(): Either<CoreFailure, Unit>
     suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
     suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean
-    suspend fun clientHasConsumableNotifications(): Either<CoreFailure, Boolean>
+    suspend fun observeClientHasConsumableNotifications(): Flow<Boolean>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun setClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit>
@@ -362,9 +361,7 @@ class ClientDataSource(
         }
     }
 
-    override suspend fun clientHasConsumableNotifications(): Either<CoreFailure, Boolean> {
-        return wrapStorageRequest {
-            clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull() == true
-        }
+    override suspend fun observeClientHasConsumableNotifications(): Flow<Boolean> {
+        return clientRegistrationStorage.observeHasConsumableNotifications()
     }
 }
