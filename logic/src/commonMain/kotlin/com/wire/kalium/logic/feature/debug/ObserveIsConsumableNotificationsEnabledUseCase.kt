@@ -28,7 +28,6 @@ internal class ObserveIsConsumableNotificationsEnabledUseCaseImpl(
     private val clientRepository: ClientRepository
 ) : ObserveIsConsumableNotificationsEnabledUseCase {
     override suspend fun invoke(): Flow<Boolean> {
-        TODO()
+        return clientRepository.observeClientHasConsumableNotifications()
     }
-
 }

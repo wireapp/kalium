@@ -240,4 +240,7 @@ class DebugScope internal constructor(
 
     val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
         get() = StartUsingAsyncNotificationsUseCaseImpl(selfServerConfig, updateSelfClientCapabilityToConsumableNotifications)
+
+    val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
+        get() = ObserveIsConsumableNotificationsEnabledUseCaseImpl(clientRepository)
 }
