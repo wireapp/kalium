@@ -47,6 +47,8 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
+import com.wire.kalium.logic.data.backup.BackupDataSource
+import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
@@ -187,6 +189,7 @@ import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
+import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -912,6 +915,14 @@ class UserSessionScope internal constructor(
             persistMigratedMessage,
             restartSlowSyncProcessForRecoveryUseCase,
             globalPreferences,
+        )
+
+    val multiPlatformBackup: MultiPlatformBackupScope
+        get() = MultiPlatformBackupScope(
+            selfUserId = userId,
+            backupRepository = backupRepository,
+            userRepository = userRepository,
+            kaliumFileSystem = kaliumFileSystem,
         )
 
     val persistMessage: PersistMessageUseCase
@@ -1793,6 +1804,14 @@ class UserSessionScope internal constructor(
         authenticatedNetworkContainer.logoutApi,
         userStorage.database.metadataDAO
     )
+
+    private val backupRepository: BackupRepository
+        get() = BackupDataSource(
+            selfUserId = userId,
+            userDAO = userStorage.database.userDAO,
+            conversationDAO = userStorage.database.conversationDAO,
+            messageDAO = userStorage.database.messageDAO,
+        )
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCaseImpl(syncManager)

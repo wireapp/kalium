@@ -24,10 +24,10 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
-    alias(libs.plugins.kotlinNativeCoroutines)
+    alias(libs.plugins.skie)
 }
 
-version = "0.0.1"
+version = "0.0.4"
 
 kaliumLibrary {
     multiplatform { jsModuleName.set("@wireapp/kalium-backup") }

@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.web.KtxWebSerializer
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.DecodeSequenceMode
 import kotlinx.serialization.json.decodeToSequence
@@ -88,6 +89,7 @@ actual fun extractCompressedFile(
     }
     Either.Right(totalExtractedFilesSize)
 } catch (e: Exception) {
+    kaliumLogger.e("Error extracting compressed backup file", e)
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to extract the provided compressed file", e)))
 }
 

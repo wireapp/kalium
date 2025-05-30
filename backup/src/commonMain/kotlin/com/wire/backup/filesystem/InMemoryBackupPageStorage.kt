@@ -30,7 +30,9 @@ internal class InMemoryBackupPageStorage : BackupPageStorage {
 
     override fun persistEntry(backupPage: BackupPage) {
         check(!entries.containsKey(backupPage.name)) { "Entry with name ${backupPage.name} already exists." }
-        entries[backupPage.name] = backupPage.data.buffer().readByteArray()
+        entries[backupPage.name] = backupPage.use {
+            it.buffer().readByteArray()
+        }
     }
 
     override operator fun get(entryName: String): BackupPage? = entries[entryName]?.let {

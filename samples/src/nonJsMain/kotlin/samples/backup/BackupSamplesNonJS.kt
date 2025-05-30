@@ -31,7 +31,7 @@ object BackupSamplesNonJS : BackupSamples() {
             selfUserId = getSelfUserId(),
             workDirectory = "/path/to/working/directory/",
             outputDirectory = "/path/to/output/directory/",
-            fileZipper = { entries ->
+            fileZipper = { entries, path ->
                 TODO("Zip all entries into a single zip file and return the path to this file")
             }
         )
