@@ -59,8 +59,6 @@ internal class CellsApiImpl(
 ) : CellsApi {
 
     private companion object {
-        // Sort lookup results by modification time
-        private const val SORTED_BY = "mtime"
         private const val AWAIT_TIMEOUT = "5s"
     }
 
