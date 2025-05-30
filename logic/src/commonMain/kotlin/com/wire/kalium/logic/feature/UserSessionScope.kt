@@ -1954,6 +1954,8 @@ class UserSessionScope internal constructor(
             notificationTokenRepository,
             this,
             userStorage,
+            updateSelfClientCapabilityToConsumableNotifications,
+            users.serverLinks,
             userScopedLogger,
         )
     }
