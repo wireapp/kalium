@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
@@ -34,6 +33,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Use case that updates the client capabilities of the current user to include the [ClientCapability.ConsumableNotifications] capability.
@@ -58,7 +58,7 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
 
     override suspend fun invoke(): Either<CoreFailure, Unit> {
         incrementalSyncRepository.incrementalSyncState.filter { it is IncrementalSyncStatus.Live }.collect {
-            val clientHasConsumableNotifications = clientRepository.clientHasConsumableNotifications().getOrElse(false)
+            val clientHasConsumableNotifications = clientRepository.observeClientHasConsumableNotifications().firstOrNull() ?: false
             val shouldUpdateCapability =
                 clientHasConsumableNotifications.not() && clientRepository.shouldUpdateClientConsumableNotificationsCapability()
             val isEnabledByServer =
