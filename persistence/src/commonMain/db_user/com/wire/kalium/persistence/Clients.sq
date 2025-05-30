@@ -20,6 +20,7 @@ CREATE TABLE Client (
     last_active INTEGER AS Instant DEFAULT NULL,
     mls_public_keys TEXT AS Map<String, String> DEFAULT NULL,
     is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
+    is_async_notifications_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
@@ -43,8 +44,8 @@ deleteClientsOfUser:
 DELETE FROM Client WHERE user_id = ?;
 
 insertClient:
-INSERT INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys, is_mls_capable)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys, is_mls_capable, is_async_notifications_capable)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, user_id) DO UPDATE SET
     device_type = coalesce(excluded.device_type, device_type),
     client_type = coalesce(excluded.client_type, client_type),
@@ -54,7 +55,8 @@ ON CONFLICT(id, user_id) DO UPDATE SET
     is_valid = is_valid,
     last_active = coalesce(excluded.last_active, last_active),
     mls_public_keys = excluded.mls_public_keys,
-    is_mls_capable = excluded.is_mls_capable OR is_mls_capable -- it's not possible to remove mls capability once added
+    is_mls_capable = excluded.is_mls_capable OR is_mls_capable, -- it's not possible to remove mls capability once added
+    is_async_notifications_capable = is_async_notifications_capable
 WHERE -- execute the update only if any of the fields changed
     Client.device_type IS NOT coalesce(excluded.device_type, Client.device_type)
     OR Client.client_type IS NOT coalesce(excluded.client_type, Client.client_type)
@@ -63,7 +65,8 @@ WHERE -- execute the update only if any of the fields changed
     OR Client.model IS NOT coalesce(excluded.model, Client.model)
     OR Client.last_active IS NOT coalesce(excluded.last_active, Client.last_active)
     OR Client.mls_public_keys IS NOT excluded.mls_public_keys
-    OR Client.is_mls_capable IS NOT (excluded.is_mls_capable OR Client.is_mls_capable);
+    OR Client.is_mls_capable IS NOT (excluded.is_mls_capable OR Client.is_mls_capable)
+    OR Client.is_async_notifications_capable IS NOT (excluded.is_async_notifications_capable OR Client.is_async_notifications_capable);
 
 selectChanges:
 SELECT changes();

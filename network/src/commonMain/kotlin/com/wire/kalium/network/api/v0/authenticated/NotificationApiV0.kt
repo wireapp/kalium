@@ -21,15 +21,18 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.MINIMUM_QUERY_SIZE
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.MIN_API_VERSION_CONSUMABLE_EVENTS
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_AWAIT
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_LAST
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_NOTIFICATIONS
@@ -112,6 +115,7 @@ internal open class NotificationApiV0 internal constructor(
         }
     }
 
+    @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
     override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>> =
         mostRecentNotification(clientId).mapSuccess {
             flow {
@@ -127,6 +131,13 @@ internal open class NotificationApiV0 internal constructor(
                 emitWebSocketEvents(webSocketSession)
             }
         }
+
+    override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
+        getApiNotSupportedError(::consumeLiveEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
+
+    override suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
+        getApiNotSupportedError(::acknowledgeEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
+    }
 
     private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
         defaultClientWebSocketSession: WebSocketSession
@@ -164,6 +175,7 @@ internal open class NotificationApiV0 internal constructor(
 
     protected object V0 {
         const val PATH_AWAIT = "await"
+        const val PATH_EVENTS = "events"
         const val PATH_NOTIFICATIONS = "notifications"
         const val PATH_LAST = "last"
         const val SIZE_QUERY_KEY = "size"
@@ -175,6 +187,7 @@ internal open class NotificationApiV0 internal constructor(
          * value.
          */
         const val MINIMUM_QUERY_SIZE = 100
+        const val MIN_API_VERSION_CONSUMABLE_EVENTS = 8
     }
 
     internal object Hardcoded {

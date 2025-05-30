@@ -48,7 +48,8 @@ data class Client(
     val label: String?,
     val model: String?,
     val mlsPublicKeys: Map<String, String>?,
-    val isMLSCapable: Boolean
+    val isMLSCapable: Boolean,
+    val isAsyncNotificationsCapable: Boolean
 ) {
     companion object {
         val INACTIVE_DURATION = 28.days

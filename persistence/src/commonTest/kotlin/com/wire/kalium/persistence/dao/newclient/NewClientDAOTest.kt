@@ -99,7 +99,8 @@ class NewClientDAOTest : BaseDatabaseTest() {
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false
         )
         val insertedClient2 = insertedClient1.copy(user.id, "id2", deviceType = null)
 
@@ -130,6 +131,6 @@ private fun InsertClientParam.toClientEntity(): Client =
         lastActive = lastActive,
         label = label,
         mlsPublicKeys = mlsPublicKeys,
-        isMLSCapable = isMLSCapable
-
+        isMLSCapable = isMLSCapable,
+        isAsyncNotificationsCapable = false
     )

@@ -78,7 +78,8 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
             clientType = null,
             model = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false
         )
         val insertClientParam = InsertClientParam(
             client.userId,
@@ -90,7 +91,8 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
             client.lastActive,
             client.model,
             client.mlsPublicKeys,
-            client.isMLSCapable
+            client.isMLSCapable,
+            client.isAsyncNotificationsCapable
         )
     }
 }

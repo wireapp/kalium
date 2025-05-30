@@ -2456,7 +2456,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false,
         )
 
         val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(

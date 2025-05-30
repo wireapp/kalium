@@ -61,10 +61,19 @@ class ClientMapper(
         secondFactorVerificationCode = param.secondFactorVerificationCode,
     )
 
+    /**
+     * Starting V8 the base line for clients capabilities are set to include always these two capabilities:
+     * - ConsumableNotifications
+     * - LegalHoldImplicitConsent
+     */
     fun toUpdateClientCapabilitiesRequest(
         updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
     ): UpdateClientCapabilitiesRequest = UpdateClientCapabilitiesRequest(
-        capabilities = updateClientCapabilitiesParam.capabilities.map { toClientCapabilityDTO(it) },
+        capabilities = updateClientCapabilitiesParam.capabilities.map { toClientCapabilityDTO(it) }.toMutableSet()
+            .apply {
+                add(ClientCapabilityDTO.ConsumableNotifications)
+                add(ClientCapabilityDTO.LegalHoldImplicitConsent)
+            }.toList(),
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information
@@ -79,7 +88,8 @@ class ClientMapper(
         isVerified = false,
         isValid = true,
         mlsPublicKeys = client.mlsPublicKeys,
-        isMLSCapable = client.mlsPublicKeys?.isNotEmpty() ?: false
+        isMLSCapable = client.mlsPublicKeys?.isNotEmpty() ?: false,
+        isAsyncNotificationsCapable = client.capabilities.contains(ClientCapabilityDTO.ConsumableNotifications)
     )
 
     fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
@@ -94,7 +104,8 @@ class ClientMapper(
             isVerified = isProteusVerified,
             isValid = isValid,
             mlsPublicKeys = mlsPublicKeys,
-            isMLSCapable = isMLSCapable
+            isMLSCapable = isMLSCapable,
+            isAsyncNotificationsCapable = isAsyncNotificationsCapable
         )
     }
 
@@ -110,7 +121,8 @@ class ClientMapper(
             isVerified = false,
             isValid = true,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false
         )
     }
 
@@ -127,7 +139,8 @@ class ClientMapper(
                     registrationDate = null,
                     lastActive = null,
                     mlsPublicKeys = null,
-                    isMLSCapable = false
+                    isMLSCapable = false,
+                    isAsyncNotificationsCapable = false
                 )
             }
         }
@@ -144,7 +157,8 @@ class ClientMapper(
                 registrationDate = Instant.parse(registrationTime),
                 lastActive = lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) },
                 mlsPublicKeys = mlsPublicKeys,
-                isMLSCapable = mlsPublicKeys?.isNotEmpty() ?: false
+                isMLSCapable = mlsPublicKeys?.isNotEmpty() ?: false,
+                isAsyncNotificationsCapable = client.capabilities.contains(ClientCapabilityDTO.ConsumableNotifications)
             )
         }
 
@@ -160,7 +174,8 @@ class ClientMapper(
                 registrationDate = null,
                 lastActive = null,
                 mlsPublicKeys = null,
-                isMLSCapable = false
+                isMLSCapable = false,
+                isAsyncNotificationsCapable = false
             )
         }
 
@@ -175,7 +190,8 @@ class ClientMapper(
             registrationDate = event.client.registrationTime,
             lastActive = event.client.lastActive,
             mlsPublicKeys = null,
-            isMLSCapable = event.client.isMLSCapable
+            isMLSCapable = event.client.isMLSCapable,
+            isAsyncNotificationsCapable = event.client.isAsyncNotificationsCapable
         )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {

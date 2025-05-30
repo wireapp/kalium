@@ -18,6 +18,8 @@
 
 package com.wire.kalium.network.api.model
 
+import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
@@ -39,6 +41,11 @@ interface ApiModelMapper {
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
+
+    /**
+     * Forcing to clients using v8+ to have ConsumableNotifications and Implicit Legal hold consent capability.
+     */
+    fun toApiV8(request: RegisterClientRequest): RegisterClientRequest
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
@@ -142,5 +149,22 @@ class ApiModelMapperImpl : ApiModelMapper {
             conversationGroupType = response.conversationGroupType,
             channelAddUserPermissionTypeDTO = response.channelAddUserPermissionTypeDTO,
             cellsState = response.cellsState
+        )
+
+    override fun toApiV8(request: RegisterClientRequest): RegisterClientRequest =
+        RegisterClientRequest(
+            password = request.password,
+            preKeys = request.preKeys,
+            lastKey = request.lastKey,
+            deviceType = request.deviceType,
+            type = request.type,
+            label = request.label,
+            capabilities = request.capabilities?.toMutableSet()?.apply {
+                add(ClientCapabilityDTO.ConsumableNotifications)
+                add(ClientCapabilityDTO.LegalHoldImplicitConsent)
+            }?.toList() ?: listOf(ClientCapabilityDTO.ConsumableNotifications, ClientCapabilityDTO.LegalHoldImplicitConsent),
+            model = request.model,
+            cookieLabel = request.cookieLabel,
+            secondFactorVerificationCode = request.secondFactorVerificationCode
         )
 }
