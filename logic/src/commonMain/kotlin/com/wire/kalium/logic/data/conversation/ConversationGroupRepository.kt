@@ -471,7 +471,7 @@ internal class ConversationGroupRepositoryImpl(
         return if (canRetryOnce) {
             extractValidUsersForRetryableError(apiResult.value, userIdList)
                 .flatMap { (validUsers, failedUsers, failType) ->
-                    when (failedUsers.isNotEmpty()) {
+                    when (failedUsers.isNotEmpty() && validUsers.isNotEmpty()) {
                         true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, LastUsersAttempt.Failed(failedUsers, failType))
                         false -> {
                             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
