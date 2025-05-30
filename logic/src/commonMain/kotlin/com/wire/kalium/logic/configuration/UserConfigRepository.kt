@@ -19,6 +19,13 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.toEntity
@@ -35,13 +42,6 @@ import com.wire.kalium.logic.data.user.toDao
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.isLeft
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.mapRight
-import com.wire.kalium.common.error.wrapFlowStorageRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
@@ -132,8 +132,6 @@ interface UserConfigRepository {
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
-    suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
-    suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLExpirationTime(url: String): ULong?
     suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>>
@@ -493,12 +491,6 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeLegalHoldChangeNotified().wrapStorageRequest()
-
-    override suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigDAO.setShouldUpdateClientLegalHoldCapability(shouldUpdate) }
-
-    override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
-        userConfigDAO.shouldUpdateClientLegalHoldCapability()
 
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
         userConfigDAO.setCRLExpirationTime(url, timestamp)

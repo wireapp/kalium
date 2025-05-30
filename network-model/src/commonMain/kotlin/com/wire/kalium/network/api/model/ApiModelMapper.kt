@@ -43,9 +43,14 @@ interface ApiModelMapper {
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
 
     /**
-     * Forcing to clients using v8+ to have ConsumableNotifications and Implicit Legal hold consent capability.
+     * Forcing new clients using >= v8 to have [consumable-notifications] and [legalhold-implicit-consent] capability.
      */
     fun toApiV8(request: RegisterClientRequest): RegisterClientRequest
+
+    /**
+     * Forcing new clients using < v8 to have [legalhold-implicit-consent] capability.
+     */
+    fun toApiV0ToV7(request: RegisterClientRequest): RegisterClientRequest
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
@@ -150,6 +155,21 @@ class ApiModelMapperImpl : ApiModelMapper {
             channelAddUserPermissionTypeDTO = response.channelAddUserPermissionTypeDTO,
             cellsState = response.cellsState
         )
+
+    override fun toApiV0ToV7(request: RegisterClientRequest): RegisterClientRequest = RegisterClientRequest(
+        password = request.password,
+        preKeys = request.preKeys,
+        lastKey = request.lastKey,
+        deviceType = request.deviceType,
+        type = request.type,
+        label = request.label,
+        capabilities = request.capabilities?.toMutableSet()?.apply {
+            add(ClientCapabilityDTO.LegalHoldImplicitConsent)
+        }?.toList() ?: listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
+        model = request.model,
+        cookieLabel = request.cookieLabel,
+        secondFactorVerificationCode = request.secondFactorVerificationCode
+    )
 
     override fun toApiV8(request: RegisterClientRequest): RegisterClientRequest =
         RegisterClientRequest(

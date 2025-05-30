@@ -21,6 +21,14 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapLeft
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
@@ -31,14 +39,6 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.mapLeft
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -70,6 +70,9 @@ interface ClientRepository {
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun clearClientHasConsumableNotifications(): Either<CoreFailure, Unit>
+    suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
+    suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean
+    suspend fun observeClientHasConsumableNotifications(): Flow<Boolean>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun setClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit>
@@ -147,6 +150,15 @@ class ClientDataSource(
         wrapStorageRequest {
             clientRegistrationStorage.clearClientHasConsumableNotifications()
         }
+
+    override suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate)
+        }
+
+    override suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean {
+        return clientRegistrationStorage.shouldUpdateClientConsumableNotificationsCapability()
+    }
 
     override suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearHasRegisteredMLSClient() }
@@ -347,5 +359,9 @@ class ClientDataSource(
         return wrapStorageRequest {
             clientRegistrationStorage.setHasConsumableNotifications(hasConsumableNotifications)
         }
+    }
+
+    override suspend fun observeClientHasConsumableNotifications(): Flow<Boolean> {
+        return clientRegistrationStorage.observeHasConsumableNotifications()
     }
 }

@@ -212,6 +212,7 @@ import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -276,8 +277,6 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserU
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
-import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCase
-import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -1686,14 +1685,17 @@ class UserSessionScope internal constructor(
     val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
-    private val updateSelfClientCapabilityToLegalHoldConsent: UpdateSelfClientCapabilityToLegalHoldConsentUseCase
-        get() = UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl(
-            clientRemoteRepository = clientRemoteRepository,
-            userConfigRepository = userConfigRepository,
+    private val updateSelfClientCapabilityToConsumableNotifications by lazy {
+        UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl(
             selfClientIdProvider = clientIdProvider,
+            clientRepository = clientRepository,
+            clientRemoteRepository = clientRemoteRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            kaliumLogger = userScopedLogger,
+            selfServerConfig = users.serverLinks,
+            syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
+            slowSyncRepository = slowSyncRepository,
         )
+    }
 
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
         get() = FetchLegalHoldForSelfUserFromRemoteUseCaseImpl(
@@ -2364,8 +2366,9 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            updateSelfClientCapabilityToLegalHoldConsent()
+            updateSelfClientCapabilityToConsumableNotifications()
         }
+
         launch {
             clientIdProvider().map {
                 avsSyncStateReporter.execute()
