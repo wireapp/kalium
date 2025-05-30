@@ -33,7 +33,7 @@ interface StartUsingAsyncNotificationsUseCase {
 
 internal class StartUsingAsyncNotificationsUseCaseImpl(
     private val serverConfig: SelfServerConfigUseCase,
-    private val updateSelfClientCapabilityToConsumableNotifications: UpdateSelfClientCapabilityToConsumableNotificationsUseCase
+    val updateSelfClientCapabilityToConsumableNotifications: UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
 ) : StartUsingAsyncNotificationsUseCase {
 
     override suspend fun invoke(): StartUsingAsyncNotificationsResult {

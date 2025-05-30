@@ -96,7 +96,8 @@ class DebugScope internal constructor(
     private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
     private val userStorage: UserStorage,
-    private val updateSelfClientCapabilityToConsumableNotifications: UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
+    private val updateSelfClientCapabilityToConsumableNotifications:
+    UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
     private val selfServerConfig: SelfServerConfigUseCase,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
