@@ -2368,7 +2368,8 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            updateSelfClientCapabilityToConsumableNotifications()
+            // uncomment when ready to release
+            // updateSelfClientCapabilityToConsumableNotifications()
         }
 
         launch {

@@ -41,7 +41,7 @@ internal class StartUsingAsyncNotificationsUseCaseImpl(
             is SelfServerConfigUseCase.Result.Failure -> StartUsingAsyncNotificationsResult.Failure(result.cause)
             is SelfServerConfigUseCase.Result.Success -> {
                 if (result.serverLinks.links == PRODUCTION) {
-                    StartUsingAsyncNotificationsResult.Failure(CoreFailure.Unknown(RuntimeException("Not supported in Prod")))
+                    StartUsingAsyncNotificationsResult.Failure(CoreFailure.Unknown(RuntimeException("Not ready for Prod")))
                 } else {
                     when (val updatedResult = updateSelfClientCapabilityToConsumableNotifications()) {
                         is Either.Left -> StartUsingAsyncNotificationsResult.Failure(updatedResult.value)
