@@ -34,11 +34,12 @@ import io.ktor.client.request.setBody
 
 internal open class ClientApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl(),
+    private val shouldEnableAsyncNotificationsClientRegistration: Boolean = ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
 ) : ClientApiV7(authenticatedNetworkClient) {
 
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
-        if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION) {
+        if (shouldEnableAsyncNotificationsClientRegistration) {
             wrapKaliumResponse {
                 httpClient.post(PATH_CLIENTS) {
                     setBody(apiModelMapper.toApiV8(registerClientRequest))

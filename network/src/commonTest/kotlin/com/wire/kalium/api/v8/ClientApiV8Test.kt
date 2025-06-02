@@ -46,7 +46,7 @@ internal class ClientApiV8Test : ApiTest() {
                     assertPathEqual(PATH_CLIENTS)
                 }
             )
-            val clientApi: ClientApi = ClientApiV8(networkClient)
+            val clientApi: ClientApi = ClientApiV8(networkClient, shouldEnableAsyncNotificationsClientRegistration = true)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
             assertEquals(VALID_REGISTER_CLIENT_RESPONSE.serializableData, response.value)
@@ -66,7 +66,7 @@ internal class ClientApiV8Test : ApiTest() {
                     assertJsonBodyContent(REGISTER_CLIENT_REQUEST_V8)
                 }
             )
-            val clientApi: ClientApi = ClientApiV8(networkClient)
+            val clientApi: ClientApi = ClientApiV8(networkClient, shouldEnableAsyncNotificationsClientRegistration = true)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
             assertEquals(VALID_REGISTER_CLIENT_RESPONSE.serializableData, response.value)
