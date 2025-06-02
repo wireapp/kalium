@@ -471,6 +471,7 @@ import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.utils.ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.network.utils.MockWebSocketSession
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -2368,8 +2369,9 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            // uncomment when ready to release
-            // updateSelfClientCapabilityToConsumableNotifications()
+            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION) {
+                updateSelfClientCapabilityToConsumableNotifications()
+            }
         }
 
         launch {
