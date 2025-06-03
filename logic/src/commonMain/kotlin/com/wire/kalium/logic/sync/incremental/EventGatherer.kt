@@ -28,6 +28,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -73,12 +74,14 @@ internal interface EventGatherer {
 }
 
 internal class EventGathererImpl(
+    private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
+
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
@@ -88,16 +91,27 @@ internal class EventGathererImpl(
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
-        eventRepository.lastProcessedEventId().flatMap {
-            eventRepository.liveEvents()
-        }.onSuccess { webSocketEventFlow ->
-            emitEvents(webSocketEventFlow)
-        }.onFailure {
-            // throw so it is handled by coroutineExceptionHandler
-            throw KaliumSyncException("Failure when gathering events", it)
+        /**
+         * Fetches and emits live events based on whether the client supports async notifications.
+         * Throws [KaliumSyncException] if event retrieval fails.
+         */
+        isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
+            fetchEventFlow(isAsyncNotifications)
+                .onSuccess { emitEvents(it) }
+                .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
         }
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
+    }
+
+    /**
+     * Retrieves the event flow based on async notification capability.
+     */
+    private suspend fun fetchEventFlow(isAsyncNotifications: Boolean) = if (isAsyncNotifications) {
+        eventRepository.liveEvents()
+    } else {
+        // in the old system we fetch pending events from the notification stream based on last processed event id
+        eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
     }
 
     private suspend fun FlowCollector<EventEnvelope>.emitEvents(
@@ -111,7 +125,7 @@ internal class EventGathererImpl(
     private suspend fun FlowCollector<EventEnvelope>.handleWebsocketEvent(
         webSocketEvent: WebSocketEvent<EventEnvelope>
     ) = when (webSocketEvent) {
-        is WebSocketEvent.Open -> onWebSocketOpen()
+        is WebSocketEvent.Open -> onWebSocketOpen(webSocketEvent.shouldProcessPendingEvents)
         is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
         is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
@@ -150,24 +164,28 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen() {
+    private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen(shouldProcessPendingEvents: Boolean) {
         logger.i("Websocket Open")
         // TODO: Handle time drift in a different way, e.g. the notification api is already called
         //  somewhere else so maybe we can take the time from there ?
 //          handleTimeDrift()
-        eventRepository
-            .pendingEvents()
-            .onEach { result ->
-                result.onFailure(::throwPendingEventException)
-            }
-            .filterIsInstance<Either.Right<EventEnvelope>>()
-            .map { offlineEvent -> offlineEvent.value }
-            .collect {
-                logger.i("Collecting offline event: ${it.event.toLogString()}")
-                offlineEventBuffer.add(it.event)
-                emit(it)
-            }
-        logger.i("Offline events collection finished. Collecting Live events.")
+        if (shouldProcessPendingEvents) {
+            eventRepository
+                .pendingEvents()
+                .onEach { result ->
+                    result.onFailure(::throwPendingEventException)
+                }
+                .filterIsInstance<Either.Right<EventEnvelope>>()
+                .map { offlineEvent -> offlineEvent.value }
+                .collect {
+                    logger.i("Collecting offline event: ${it.event.toLogString()}")
+                    offlineEventBuffer.add(it.event)
+                    emit(it)
+                }
+            logger.i("Offline events collection finished. Collecting Live events.")
+        } else {
+            logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
+        }
         _currentSource.value = EventSource.LIVE
     }
 

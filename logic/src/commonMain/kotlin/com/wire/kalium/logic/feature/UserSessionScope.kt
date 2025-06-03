@@ -60,6 +60,8 @@ import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSTransportProvider
@@ -213,6 +215,7 @@ import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -277,8 +280,6 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserU
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
-import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCase
-import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -398,6 +399,8 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
@@ -471,6 +474,7 @@ import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.utils.ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.network.utils.MockWebSocketSession
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -541,6 +545,9 @@ class UserSessionScope internal constructor(
         get() = MapperProvider.federatedIdMapper(
             userId, qualifiedIdMapper, globalScope.sessionRepository
         )
+
+    private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
+        get() = IsClientAsyncNotificationsCapableProviderImpl(clientRegistrationStorage)
 
     val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
@@ -985,6 +992,7 @@ class UserSessionScope internal constructor(
 
     private val eventGatherer: EventGatherer
         get() = EventGathererImpl(
+            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
             logger = userScopedLogger
         )
@@ -998,6 +1006,7 @@ class UserSessionScope internal constructor(
             featureConfigEventReceiver = featureConfigEventReceiver,
             userPropertiesEventReceiver = userPropertiesEventReceiver,
             federationEventReceiver = federationEventReceiver,
+            missedNotificationsEventReceiver = missedNotificationsEventReceiver,
             processingScope = this@UserSessionScope,
             logger = userScopedLogger,
         )
@@ -1143,6 +1152,7 @@ class UserSessionScope internal constructor(
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
+            isClientAsyncNotificationsCapableProvider,
             eventRepository,
             syncSelfUser,
             syncFeatureConfigsUseCase,
@@ -1248,7 +1258,11 @@ class UserSessionScope internal constructor(
 
     private val eventRepository: EventRepository
         get() = EventDataSource(
-            authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider, userId
+            notificationApi = authenticatedNetworkContainer.notificationApi,
+            metadataDAO = userStorage.database.metadataDAO,
+            currentClientId = clientIdProvider,
+            clientRegistrationStorage = clientRegistrationStorage,
+            selfUserId = userId
         )
 
     private val mlsMigrator: MLSMigrator
@@ -1683,14 +1697,17 @@ class UserSessionScope internal constructor(
     val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
-    private val updateSelfClientCapabilityToLegalHoldConsent: UpdateSelfClientCapabilityToLegalHoldConsentUseCase
-        get() = UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl(
-            clientRemoteRepository = clientRemoteRepository,
-            userConfigRepository = userConfigRepository,
+    private val updateSelfClientCapabilityToConsumableNotifications by lazy {
+        UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl(
             selfClientIdProvider = clientIdProvider,
+            clientRepository = clientRepository,
+            clientRemoteRepository = clientRemoteRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            kaliumLogger = userScopedLogger,
+            selfServerConfig = users.serverLinks,
+            syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
+            slowSyncRepository = slowSyncRepository,
         )
+    }
 
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
         get() = FetchLegalHoldForSelfUserFromRemoteUseCaseImpl(
@@ -1711,6 +1728,13 @@ class UserSessionScope internal constructor(
             legalHoldRequestHandler,
             legalHoldHandler
         )
+
+    private val missedNotificationsEventReceiver: MissedNotificationsEventReceiver by lazy {
+        MissedNotificationsEventReceiverImpl(
+            slowSyncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
+            slowSyncRepository = slowSyncRepository,
+        )
+    }
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
         get() = UserPropertiesEventReceiverImpl(userConfigRepository, conversationFolderRepository)
@@ -1950,6 +1974,8 @@ class UserSessionScope internal constructor(
             notificationTokenRepository,
             this,
             userStorage,
+            updateSelfClientCapabilityToConsumableNotifications,
+            users.serverLinks,
             userScopedLogger,
         )
     }
@@ -2362,8 +2388,11 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            updateSelfClientCapabilityToLegalHoldConsent()
+            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION) {
+                updateSelfClientCapabilityToConsumableNotifications()
+            }
         }
+
         launch {
             clientIdProvider().map {
                 avsSyncStateReporter.execute()

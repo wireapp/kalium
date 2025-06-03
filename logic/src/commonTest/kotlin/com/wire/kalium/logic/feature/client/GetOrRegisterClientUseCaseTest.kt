@@ -21,6 +21,8 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -29,8 +31,6 @@ import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -56,6 +56,7 @@ class GetOrRegisterClientUseCaseTest {
             .withVerifyExistingClientResult(VerifyExistingClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .withPersistClientIdResult(Either.Right(Unit))
+            .withPersistHasConsumableNotifications(false)
             .arrange()
 
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
@@ -83,8 +84,10 @@ class GetOrRegisterClientUseCaseTest {
             .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withClearHasConsumableNotifications(Either.Right(Unit))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .withPersistClientIdResult(Either.Right(Unit))
+            .withPersistHasConsumableNotifications(false)
             .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
             .arrange()
 
@@ -127,6 +130,7 @@ class GetOrRegisterClientUseCaseTest {
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistHasConsumableNotifications(false)
             .withPersistClientIdResult(Either.Right(Unit))
             .arrange()
 
@@ -157,6 +161,7 @@ class GetOrRegisterClientUseCaseTest {
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .withPersistClientIdResult(Either.Right(Unit))
             .withSetClientRegistrationBlockedByE2EISucceed()
+            .withPersistHasConsumableNotifications(false)
             .arrange()
 
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
@@ -246,6 +251,20 @@ class GetOrRegisterClientUseCaseTest {
             coEvery {
                 clientRepository.persistClientId(any())
             }.returns(result)
+        }
+
+        suspend fun withPersistHasConsumableNotifications(hasConsumableNotifications: Boolean) = apply {
+            coEvery {
+                clientRepository.persistClientHasConsumableNotifications(hasConsumableNotifications)
+            }.returns(Either.Right(Unit))
+            return this
+        }
+
+        suspend fun withClearHasConsumableNotifications(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                clientRepository.clearClientHasConsumableNotifications()
+            }.returns(result)
+            return this
         }
 
         suspend fun withSetClientRegistrationBlockedByE2EISucceed() = apply {
