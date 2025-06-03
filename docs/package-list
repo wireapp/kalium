@@ -465,6 +465,7 @@ com.wire.kalium.logic.data.asset
 com.wire.kalium.logic.data.auth
 com.wire.kalium.logic.data.auth.login
 com.wire.kalium.logic.data.auth.verification
+com.wire.kalium.logic.data.backup
 com.wire.kalium.logic.data.call
 com.wire.kalium.logic.data.call.mapper
 com.wire.kalium.logic.data.client
@@ -513,6 +514,8 @@ com.wire.kalium.logic.feature.auth.autoVersioningAuth
 com.wire.kalium.logic.feature.auth.sso
 com.wire.kalium.logic.feature.auth.verification
 com.wire.kalium.logic.feature.backup
+com.wire.kalium.logic.feature.backup.mapper
+com.wire.kalium.logic.feature.backup.provider
 com.wire.kalium.logic.feature.call
 com.wire.kalium.logic.feature.call.scenario
 com.wire.kalium.logic.feature.call.usecase
