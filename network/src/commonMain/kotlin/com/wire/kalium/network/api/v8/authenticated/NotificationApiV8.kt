@@ -129,7 +129,6 @@ internal open class NotificationApiV8 internal constructor(
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
 
                         logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
-                        logger.v("Binary frame content plain: '$jsonString'")
                         val event = KtxSerializer.json.decodeFromString<ConsumableNotificationResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
