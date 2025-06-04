@@ -103,7 +103,9 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone {
         },
         isSelfMessage = isSelfMessage,
         senderClientId = ClientId(senderClientId),
-        editStatus = Message.EditStatus.NotEdited
+        editStatus = lastEditTime?.let {
+            Message.EditStatus.Edited(it.instant)
+        } ?: Message.EditStatus.NotEdited
     )
 }
 

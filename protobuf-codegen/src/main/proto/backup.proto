@@ -64,6 +64,7 @@ message ExportedMessage {
         ExportedLocation location = 8;
     }
     optional int64 web_pk = 9; // WARNING: Only for development. Web-specific for assisting with debugging
+    optional int64 lastEditTime = 10;
 }
 
 message ExportedText {
