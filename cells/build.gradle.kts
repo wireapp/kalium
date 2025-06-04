@@ -28,7 +28,7 @@ kaliumLibrary {
 }
 
 kotlin {
-    explicitApiWarning() // explicitApi() throws errors for ksp-generated mockative classes
+    explicitApi()
     sourceSets {
         val commonMain by getting {
             dependencies {
