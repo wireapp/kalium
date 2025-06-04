@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS Events(
+    id INTEGER NOT NULL PRIMARY KEY,
+    event_id TEXT NOT NULL UNIQUE,
+    is_processed INTEGER NOT NULL,
+    payload TEXT NOT NULL
+);

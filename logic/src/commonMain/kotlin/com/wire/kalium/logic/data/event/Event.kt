@@ -149,7 +149,7 @@ sealed class Event(open val id: String) {
 
     abstract fun toLogMap(): Map<String, Any?>
 
-    data object AsyncMissed : Event("AsyncMissed") {
+    data class AsyncMissed(override val id: String) : Event(id) {
         override fun toLogMap(): Map<String, Any?> = mapOf(
             typeKey to "notifications.missed",
             idKey to id

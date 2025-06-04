@@ -70,7 +70,7 @@ class EventGathererTest {
 
         eventGatherer.gatherEvents().test {
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasNotInvoked()
 
             // Open Websocket should trigger fetching pending events
@@ -79,7 +79,7 @@ class EventGathererTest {
             advanceUntilIdle()
 
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasInvoked(exactly = once)
 
             cancelAndIgnoreRemainingEvents()
@@ -99,7 +99,7 @@ class EventGathererTest {
 
         eventGatherer.gatherEvents().test {
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasNotInvoked()
 
             // when
@@ -108,7 +108,7 @@ class EventGathererTest {
             advanceUntilIdle()
 
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasNotInvoked()
             coVerify {
                 arrangement.serverTimeHandler.computeTimeOffset(any())
@@ -131,7 +131,7 @@ class EventGathererTest {
 
         eventGatherer.gatherEvents().test {
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasNotInvoked()
 
             // Open Websocket should trigger fetching pending events
@@ -140,7 +140,7 @@ class EventGathererTest {
             advanceUntilIdle()
 
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasInvoked(exactly = once)
 
             cancelAndIgnoreRemainingEvents()
@@ -161,7 +161,7 @@ class EventGathererTest {
 
         eventGatherer.gatherEvents().test {
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasNotInvoked()
 
             // Open Websocket should trigger fetching pending events
@@ -445,7 +445,7 @@ class EventGathererTest {
             advanceUntilIdle()
 
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasNotInvoked()
 
             // Open Websocket should trigger fetching pending events
@@ -458,7 +458,7 @@ class EventGathererTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.eventRepository.pendingEvents()
+                arrangement.eventRepository.fetchEvents()
             }.wasNotInvoked()
 
             coVerify {
@@ -508,7 +508,7 @@ class EventGathererTest {
 
         suspend fun withPendingEventsReturning(either: Flow<Either<CoreFailure, EventEnvelope>>) = apply {
             coEvery {
-                eventRepository.pendingEvents()
+                eventRepository.fetchEvents()
             }.returns(either)
         }
 

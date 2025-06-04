@@ -119,10 +119,10 @@ internal class EventProcessorImpl(
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
-            is Event.AsyncMissed -> missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
+            is Event.AsyncMissed -> {
+                missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
+            }
         }.onSuccess {
-            // todo (ym) check for errors and decide if lastProcessedEventId should be updated so we can re-ack
-            eventRepository.acknowledgeEvent(eventEnvelope)
             if (deliveryInfo.shouldUpdateLastProcessedEventId()) {
                 eventRepository.updateLastProcessedEventId(event.id)
                 logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")

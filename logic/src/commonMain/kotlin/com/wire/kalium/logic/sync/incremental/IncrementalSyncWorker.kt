@@ -51,13 +51,18 @@ internal class IncrementalSyncWorkerImpl(
         val sourceJob = launch {
             eventGatherer.currentSource.collect { send(it) }
         }
+
         launch {
-            eventGatherer.gatherEvents().cancellable().collect {
-                // TODO make sure that event process is not cancel in a midway
-                eventProcessor.processEvent(it).onFailure { failure ->
-                    throw KaliumSyncException("Failed to process event. Aborting Sync for a retry", failure)
+            eventGatherer.gatherEvents()
+                .collect { envelope ->
+                    eventProcessor.processEvent(envelope).onFailure {
+                        throw KaliumSyncException("Processing failed", it)
+                    }
                 }
-            }
+        }
+
+        launch {
+            eventGatherer.liveEvents().cancellable().collect {}
             // When events are all consumed, cancel the source job to complete the channelFlow
             sourceJob.cancel()
             logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")

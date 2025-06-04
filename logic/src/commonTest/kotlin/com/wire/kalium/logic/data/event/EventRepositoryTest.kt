@@ -109,7 +109,7 @@ class EventRepositoryTest {
             .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
             .arrange()
 
-        eventRepository.pendingEvents().test {
+        eventRepository.fetchEvents().test {
             awaitItem().shouldSucceed {
                 assertEquals(pendingEvent.id, it.event.id)
             }
