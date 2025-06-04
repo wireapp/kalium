@@ -86,11 +86,9 @@ internal class BackupDataSource(
                 ),
                 offset = offset,
                 pageSize = PAGE_SIZE.toLong(),
-            )
-                .filter { it.expireAfterMs == null }
-                .map {
-                    messageMapper.fromEntityToMessage(it)
-                }
+            ).map {
+                messageMapper.fromEntityToMessage(it)
+            }
 
             emit(page)
 
