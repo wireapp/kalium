@@ -48,6 +48,7 @@ kotlin {
                 api(project(":calling"))
                 implementation(project(":util"))
                 implementation(project(":cells"))
+                implementation(project(":backup"))
 
                 // coroutines
                 implementation(libs.coroutines.core)

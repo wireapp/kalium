@@ -12,7 +12,6 @@ cryptobox4j = "1.4.0"
 cryptobox-android = "1.1.5"
 android-security = "1.1.0-alpha06"
 ktor = "2.3.10"
-kotlinNativeCoroutines = "1.0.0-ALPHA-38"
 okio = "3.9.0"
 ok-http = "4.12.0"
 # 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 uploaded to a temporary repo
@@ -41,7 +40,7 @@ pbandk = "0.15.0"
 turbine = "1.1.0"
 avs = "10.0.40"
 jna = "5.14.0"
-core-crypto = "5.1.0"
+core-crypto = "7.0.0"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "2.1.3"
@@ -58,6 +57,7 @@ apache-tika = "3.1.0"
 mockk = "1.13.13"
 faker = "1.16.0"
 robolectric = "4.12.1"
+skie = "0.10.1"
 stately = "2.0.7"
 micrometer = "1.12.5"
 konsist = "0.15.1"
@@ -82,13 +82,13 @@ moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-kotlinNativeCoroutines = { id = "com.rickclephas.kmp.nativecoroutines", version.ref = "kotlinNativeCoroutines"}
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
+skie = { id = "co.touchlab.skie", version.ref = "skie" }
 benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" }
 allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }

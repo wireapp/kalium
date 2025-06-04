@@ -18,14 +18,15 @@
 package com.wire.kalium.cells.domain.usecase
 
 import androidx.paging.PagingData
-import com.wire.kalium.cells.domain.model.CellFile
+import com.wire.kalium.cells.domain.model.Node
 import kotlinx.coroutines.flow.Flow
 
 public interface GetPaginatedFilesFlowUseCase {
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
-    ): Flow<PagingData<CellFile>>
+        onlyDeleted: Boolean = false,
+    ): Flow<PagingData<Node>>
 }
 
 internal class GetPaginatedFilesFlowUseCaseImpl(
@@ -35,7 +36,8 @@ internal class GetPaginatedFilesFlowUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
-    ): Flow<PagingData<CellFile>> {
-        return getCellFilesUseCase(conversationId, query)
+        onlyDeleted: Boolean,
+    ): Flow<PagingData<Node>> {
+        return getCellFilesUseCase(conversationId, query, onlyDeleted)
     }
 }

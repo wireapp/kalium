@@ -351,7 +351,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false
         )
         clientDAO.insertClient(insertedClient2)
 
@@ -497,7 +498,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false
         )
         val client = insertedClient.toClient()
 
@@ -550,5 +552,6 @@ private fun InsertClientParam.toClient(): Client =
         model = model,
         registrationDate = registrationDate,
         lastActive = lastActive,
-        mlsPublicKeys = null
+        mlsPublicKeys = null,
+        isAsyncNotificationsCapable = false
     )

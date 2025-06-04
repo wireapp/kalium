@@ -20,22 +20,29 @@ package com.wire.kalium.logic.data.event
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestEvent.wrapAsyncInEnvelope
+import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
+import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
@@ -43,8 +50,11 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -55,6 +65,32 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class EventRepositoryTest {
+
+    @Test
+    fun givenLiveEvents_whenGettingLiveEvents_thenReturnFromListenLiveEvents() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .withClientHasConsumableNotifications(hasConsumableNotifications = false)
+            .withLastStoredEventId("someNotificationId")
+            .withListenLiveEventsReturning(NetworkResponse.Success(flowOf(), mapOf(), 200))
+            .arrange()
+
+        eventRepository.liveEvents()
+        coVerify { arrangement.notificationApi.listenToLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenLiveEvents_whenGettingLiveEventsWithConsumableNotifications_thenReturnFromNewApiConsumeLiveEvents() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .withClientHasConsumableNotifications(hasConsumableNotifications = true)
+            .withLastStoredEventId("someNotificationId")
+            .withConsumeLiveEventsReturning(NetworkResponse.Success(flowOf(), mapOf(), 200))
+            .arrange()
+
+        eventRepository.liveEvents()
+        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+            .wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
@@ -148,6 +184,49 @@ class EventRepositoryTest {
         assertNull(result)
     }
 
+    @Test
+    fun givenAcknowledgeEvent_whenIsNotAsyncNotifications_thenSkip() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .arrange()
+
+        val eventEnvelope = TestEvent.newConversationEvent().wrapInEnvelope()
+        val result = eventRepository.acknowledgeEvent(eventEnvelope)
+
+        result.shouldSucceed()
+        coVerify {
+            arrangement.notificationApi.acknowledgeEvents(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenAcknowledgeEvent_whenIsAsyncNotifications_thenACK() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .withAcknowledgeEvents()
+            .arrange()
+
+        val eventEnvelope = TestEvent.newConversationEvent().wrapAsyncInEnvelope()
+        val result = eventRepository.acknowledgeEvent(eventEnvelope)
+
+        result.shouldSucceed()
+        coVerify {
+            arrangement.notificationApi.acknowledgeEvents(any(), matches { it.type == AcknowledgeType.ACK })
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAcknowledgeEventFull_whenIsAsyncNotifications_thenACK() = runTest {
+        val (arrangement, eventRepository) = Arrangement()
+            .withAcknowledgeEvents()
+            .arrange()
+
+        val eventEnvelope = TestEvent.notificationsMissed().wrapAsyncInEnvelope(isMissedNotifications = true)
+        val result = eventRepository.acknowledgeEvent(eventEnvelope)
+
+        result.shouldSucceed()
+        coVerify {
+            arrangement.notificationApi.acknowledgeEvents(any(), matches { it.type == AcknowledgeType.ACK_FULL_SYNC })
+        }.wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
@@ -173,14 +252,28 @@ class EventRepositoryTest {
 
         val notificationApi: NotificationApi = mock(NotificationApi::class)
         val metaDAO = mock(MetadataDAO::class)
+        val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
 
-        private val eventRepository: EventRepository = EventDataSource(notificationApi, metaDAO, clientIdProvider, TestUser.SELF.id)
+        private val eventRepository: EventRepository = EventDataSource(
+            notificationApi,
+            metaDAO,
+            clientIdProvider,
+            TestUser.SELF.id,
+            clientRegistrationStorage
+        )
 
         init {
             runBlocking {
                 withCurrentClientIdReturning(TestClient.CLIENT_ID)
+                withClientHasConsumableNotifications()
             }
+        }
+
+        suspend fun withClientHasConsumableNotifications(hasConsumableNotifications: Boolean = false) = apply {
+            coEvery {
+                clientRegistrationStorage.observeHasConsumableNotifications()
+            }.returns(flowOf(hasConsumableNotifications))
         }
 
         suspend fun withLastStoredEventId(value: String?) = apply {
@@ -211,6 +304,24 @@ class EventRepositoryTest {
             coEvery {
                 clientIdProvider.invoke()
             }.returns(Either.Right(clientId))
+        }
+
+        suspend fun withConsumeLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>) = apply {
+            coEvery {
+                notificationApi.consumeLiveEvents(any())
+            }.returns(result)
+        }
+
+        suspend fun withListenLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<EventResponse>>>) = apply {
+            coEvery {
+                notificationApi.listenToLiveEvents(any())
+            }.returns(result)
+        }
+
+        suspend fun withAcknowledgeEvents() = apply {
+            coEvery {
+                notificationApi.acknowledgeEvents(any(), any())
+            }.returns(Unit)
         }
 
         inline fun arrange(): Pair<Arrangement, EventRepository> {

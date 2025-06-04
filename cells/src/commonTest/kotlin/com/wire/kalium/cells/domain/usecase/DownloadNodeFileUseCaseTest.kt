@@ -36,7 +36,7 @@ import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class DownloadCellFileUseCaseTest {
+class DownloadNodeFileUseCaseTest {
 
     private companion object {
         private const val assetId = "assetid"

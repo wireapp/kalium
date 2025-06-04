@@ -18,8 +18,11 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -27,9 +30,6 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.nullableFold
-import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
 
 /**
@@ -88,18 +88,24 @@ internal class GetOrRegisterClientUseCaseImpl(
                 upgradeCurrentSessionAndPersistClient(result.client.id)
             }
 
-            is RegisterClientResult.Success -> upgradeCurrentSessionAndPersistClient(result.client.id)
+            is RegisterClientResult.Success ->
+                upgradeCurrentSessionAndPersistClient(
+                    result.client.id,
+                    result.client.isAsyncNotificationsCapable
+                )
+
             else -> Unit
         }
 
         return result
     }
 
-    private suspend fun upgradeCurrentSessionAndPersistClient(clientId: ClientId) {
+    private suspend fun upgradeCurrentSessionAndPersistClient(clientId: ClientId, isConsumableNotificationsCapable: Boolean = false) {
         kaliumLogger.i("Upgrade current session for client ${clientId.value.obfuscateId()}")
         upgradeCurrentSessionUseCase(clientId).flatMap {
             kaliumLogger.i("Persist client ${clientId.value.obfuscateId()}")
             clientRepository.persistClientId(clientId)
+            clientRepository.persistClientHasConsumableNotifications(isConsumableNotificationsCapable)
         }
     }
 
@@ -108,6 +114,7 @@ internal class GetOrRegisterClientUseCaseImpl(
         clearClientData()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearRetainedClientId()
+        clientRepository.clearClientHasConsumableNotifications()
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 }

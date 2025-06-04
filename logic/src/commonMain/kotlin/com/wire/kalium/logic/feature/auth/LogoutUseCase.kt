@@ -125,6 +125,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         clearClientDataUseCase()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearRetainedClientId()
+        clientRepository.clearClientHasConsumableNotifications()
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 

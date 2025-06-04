@@ -18,14 +18,21 @@
 
 package com.wire.kalium.network.api.base.authenticated.notification
 
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 sealed class WebSocketEvent<BinaryPayloadType> {
-    class Open<BinaryPayloadType> : WebSocketEvent<BinaryPayloadType>()
+    /**
+     * @property shouldProcessPendingEvents if false, the client should skip pending events, due to new async notifications.
+     * @since API v8
+     */
+    data class Open<BinaryPayloadType>(val shouldProcessPendingEvents: Boolean = true) : WebSocketEvent<BinaryPayloadType>()
 
     data class BinaryPayloadReceived<BinaryPayloadType>(val payload: BinaryPayloadType) : WebSocketEvent<BinaryPayloadType>()
 
@@ -48,7 +55,7 @@ sealed class WebSocketEvent<BinaryPayloadType> {
 }
 
 @Mockable
-interface NotificationApi {
+interface NotificationApi : BaseApi {
     suspend fun mostRecentNotification(queryClient: String): NetworkResponse<EventResponse>
 
     suspend fun notificationsByBatch(querySize: Int, queryClient: String, querySince: String): NetworkResponse<NotificationResponse>
@@ -61,6 +68,10 @@ interface NotificationApi {
     suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
     suspend fun getServerTime(querySize: Int): NetworkResponse<String>
+
+    @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
     suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>>
+    suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
+    suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
 
 }

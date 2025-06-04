@@ -20,6 +20,7 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.cryptography.ProteusDBSecret
+import com.wire.kalium.cryptography.migrateDatabaseKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
@@ -38,8 +39,8 @@ internal interface SecurityHelper {
     fun globalDBSecret(): GlobalDatabaseSecret
     fun userDBSecret(userId: UserId): UserDBSecret
     fun userDBOrSecretNull(userId: UserId): UserDBSecret?
-    fun mlsDBSecret(userId: UserId): MlsDBSecret
-    fun proteusDBSecret(userId: UserId): ProteusDBSecret
+    suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret
+    suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
 }
 
 internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStorage) : SecurityHelper {
@@ -53,11 +54,37 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
     override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
         getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let { UserDBSecret(it) }
 
-    override fun mlsDBSecret(userId: UserId): MlsDBSecret =
-        MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
+    override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
+        val newPassphrase = getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId")
+        val oldPassphrase = getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
 
-    override fun proteusDBSecret(userId: UserId): ProteusDBSecret =
-        ProteusDBSecret(getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId"))
+        if (newPassphrase != null) {
+            return MlsDBSecret(newPassphrase.decodeBase64Bytes())
+        } else {
+            val newKeyBytes = SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH)
+            val newKeyBase64 = newKeyBytes.encodeBase64()
+            migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
+            passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
+            return MlsDBSecret(newKeyBytes)
+        }
+    }
+
+    override suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret {
+        val newPassphrase = getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId")
+        val oldPassphrase = getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
+
+        if (newPassphrase != null) {
+            return ProteusDBSecret(newPassphrase.decodeBase64Bytes())
+        } else {
+            val newKeyBytes = SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH)
+            val newKeyBase64 = newKeyBytes.encodeBase64()
+            migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
+
+            passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
+
+            return ProteusDBSecret(newKeyBytes)
+        }
+    }
 
     private fun getOrGeneratePassPhrase(alias: String): String =
         getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
@@ -91,6 +118,8 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
         const val GLOBAL_DB_PASSPHRASE_ALIAS = "global_db_passphrase_alias"
         const val USER_DB_PASSPHRASE_PREFIX = "user_db_secret_alias"
         const val MLS_DB_PASSPHRASE_PREFIX = "mls_db_secret_alias"
+        const val MLS_DB_PASSPHRASE_PREFIX_V2 = "mls_db_secret_alias_v2"
         const val PROTEUS_DB_PASSPHRASE_PREFIX = "proteus_db_secret_alias"
+        const val PROTEUS_DB_PASSPHRASE_PREFIX_V2 = "proteus_db_secret_alias_v2"
     }
 }

@@ -53,8 +53,6 @@ interface UserConfigDAO {
     fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean)
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
-    suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
-    suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLsPerDomain(url: String): ULong?
     suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
@@ -164,13 +162,6 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(LEGAL_HOLD_CHANGE_NOTIFIED).map { it?.toBoolean() }
 
-    override suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean) {
-        metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)
-    }
-
-    override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
-        metadataDAO.valueByKey(SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)?.toBoolean() ?: true
-
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
         metadataDAO.insertValue(
             key = url,
@@ -246,8 +237,6 @@ internal class UserConfigDAOImpl internal constructor(
         private const val NEXT_TIME_TO_ASK_CALL_FEEDBACK = "next_time_to_ask_for_feedback_about_call"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
-        const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
-            "should_update_client_legal_hold_capability"
         private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
         const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"

@@ -47,6 +47,7 @@ interface ConversationDAO {
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
+    suspend fun insertOrIgnoreConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun updateMlsGroupStateAndCipherSuite(
@@ -70,7 +71,6 @@ interface ConversationDAO {
         protocol: ConversationEntity.Protocol,
         teamId: String? = null
     ): List<QualifiedIDEntity>
-    suspend fun getConversationTypeById(conversationId: QualifiedIDEntity): ConversationEntity.Type?
 
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity>
     suspend fun getOneOnOneConversationIdsWithOtherUser(

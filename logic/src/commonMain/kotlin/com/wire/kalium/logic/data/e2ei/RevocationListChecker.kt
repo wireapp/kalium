@@ -64,7 +64,7 @@ internal class RevocationListCheckerImpl(
         } else Either.Left(E2EIFailure.Disabled)
     }
 
-    private fun getIsE2EIEnabled() = userConfigRepository.getE2EISettings().flatMap { settings ->
+    private suspend fun getIsE2EIEnabled() = userConfigRepository.getE2EISettings().flatMap { settings ->
         userConfigRepository.isMLSEnabled()
             .map {
                 it && settings.isRequired && featureSupport.isMLSSupported

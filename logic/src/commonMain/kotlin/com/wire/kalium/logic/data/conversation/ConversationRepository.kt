@@ -102,7 +102,6 @@ interface ConversationRepository {
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
-    suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type>
 
     // endregion
 
@@ -387,14 +386,6 @@ internal class ConversationDataSource internal constructor(
             conversationMapper.fromDaoModel(it)
         }
     }
-
-    override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
-        wrapStorageRequest {
-            conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
-                val isChannel = conversationDAO.isAChannel(conversationId.toDao())
-                conversationMapper.fromConversationEntityType(it, isChannel)
-            }
-        }
 
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeConversationDetailsById(conversationID.toDao())

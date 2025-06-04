@@ -21,24 +21,28 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
@@ -48,6 +52,10 @@ import kotlin.coroutines.coroutineContext
 @Mockable
 interface EventRepository {
 
+    /**
+     * Performs an acknowledgment of the event. In case a legacy event is received, it will be ignored.
+     */
+    suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit>
     suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>
     suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
@@ -87,20 +95,85 @@ interface EventRepository {
     suspend fun fetchServerTime(): String?
 }
 
+@Suppress("TooManyFunctions")
 class EventDataSource(
     private val notificationApi: NotificationApi,
     private val metadataDAO: MetadataDAO,
     private val currentClientId: CurrentClientIdProvider,
     private val selfUserId: UserId,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId)
+    private val clientRegistrationStorage: ClientRegistrationStorage,
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
 ) : EventRepository {
+
+    override suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> {
+        return when (val deliveryInfo = eventEnvelope.deliveryInfo) {
+            is EventDeliveryInfo.Async -> {
+                currentClientId().fold(
+                    { it.left() },
+                    {
+                        // todo(ym) check for errors.
+                        notificationApi.acknowledgeEvents(it.value, eventMapper.toAcknowledgeRequest(deliveryInfo))
+                        Unit.right()
+                    }
+                )
+            }
+
+            is EventDeliveryInfo.AsyncMissed -> {
+                currentClientId().fold(
+                    { it.left() },
+                    {
+                        // todo(ym) check for errors.
+                        notificationApi.acknowledgeEvents(it.value, EventMapper.FULL_ACKNOWLEDGE_REQUEST)
+                        Unit.right()
+                    }
+                )
+            }
+            // Legacy events are not acknowledged
+            is EventDeliveryInfo.Legacy -> Unit.right()
+        }
+    }
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>> =
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>> =
-        currentClientId().flatMap { clientId -> liveEventsFlow(clientId) }
+        currentClientId().flatMap { clientId ->
+            val hasConsumableNotifications = clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull()
+            if (hasConsumableNotifications == true) {
+                consumeLiveEventsFlow(clientId)
+            } else {
+                liveEventsFlow(clientId)
+            }
+        }
+
+    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
+        wrapApiRequest { notificationApi.consumeLiveEvents(clientId.value) }.map { webSocketEventFlow ->
+            flow {
+                webSocketEventFlow.collect { webSocketEvent ->
+                    when (webSocketEvent) {
+                        is WebSocketEvent.Open -> {
+                            emit(WebSocketEvent.Open(shouldProcessPendingEvents = false))
+                        }
+
+                        is WebSocketEvent.NonBinaryPayloadReceived -> {
+                            emit(WebSocketEvent.NonBinaryPayloadReceived(webSocketEvent.payload))
+                        }
+
+                        is WebSocketEvent.Close -> {
+                            emit(WebSocketEvent.Close(webSocketEvent.cause))
+                        }
+
+                        is WebSocketEvent.BinaryPayloadReceived -> {
+                            val events = eventMapper.fromDTO(webSocketEvent.payload)
+                            events.forEach { eventEnvelope ->
+                                emit(WebSocketEvent.BinaryPayloadReceived(eventEnvelope))
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map { webSocketEventFlow ->

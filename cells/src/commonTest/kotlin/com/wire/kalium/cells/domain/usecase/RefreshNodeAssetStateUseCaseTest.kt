@@ -43,7 +43,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class RefreshCellAssetStateUseCaseTest {
+class RefreshNodeAssetStateUseCaseTest {
 
     private companion object {
 

@@ -37,7 +37,8 @@ data class Client(
     val label: String?,
     val model: String?,
     val mlsPublicKeys: Map<String, String>?,
-    val isMLSCapable: Boolean
+    val isMLSCapable: Boolean,
+    val isAsyncNotificationsCapable: Boolean
 )
 
 data class InsertClientParam(
@@ -50,7 +51,8 @@ data class InsertClientParam(
     val lastActive: Instant?,
     val model: String?,
     val mlsPublicKeys: Map<String, String>?,
-    val isMLSCapable: Boolean
+    val isMLSCapable: Boolean,
+    val isAsyncNotificationsCapable: Boolean
 )
 
 enum class DeviceTypeEntity {

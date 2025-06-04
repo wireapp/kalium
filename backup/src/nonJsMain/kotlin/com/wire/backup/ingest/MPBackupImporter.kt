@@ -17,7 +17,6 @@
  */
 package com.wire.backup.ingest
 
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.data.BackupData
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
@@ -26,6 +25,8 @@ import okio.Path
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.Sink
+import okio.Source
+import okio.use
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
@@ -36,16 +37,29 @@ import kotlin.native.ObjCName
  * @sample samples.backup.BackupSamples.commonImport
  */
 @OptIn(ExperimentalObjCName::class)
-public actual class MPBackupImporter(
-    private val pathToWorkDirectory: String,
-    private val backupFileUnzipper: BackupFileUnzipper
-) : CommonMPBackupImporter() {
+public actual class MPBackupImporter : CommonMPBackupImporter {
 
-    init {
+    private val pathToWorkDirectory: String
+    private val backupFileUnzipper: BackupFileUnzipper
+    private val fileSystem: FileSystem
+
+    public constructor(
+        pathToWorkDirectory: String,
+        backupFileUnzipper: BackupFileUnzipper,
+        fileSystem: FileSystem
+    ) : super() {
+        this.pathToWorkDirectory = pathToWorkDirectory
+        this.backupFileUnzipper = backupFileUnzipper
+        this.fileSystem = fileSystem
         pathToWorkDirectory.toPath().also {
-            if (!FileSystem.SYSTEM.exists(it)) FileSystem.SYSTEM.createDirectories(it)
+            if (!fileSystem.exists(it)) fileSystem.createDirectories(it)
         }
     }
+
+    public constructor(
+        pathToWorkDirectory: String,
+        backupFileUnzipper: BackupFileUnzipper,
+    ) : this(pathToWorkDirectory, backupFileUnzipper, FileSystem.SYSTEM)
 
     /**
      * Peeks into the specified backup file and retrieves metadata about it.
@@ -55,10 +69,9 @@ public actual class MPBackupImporter(
      * such as version, encryption status, etc.
      */
     @ObjCName("peek")
-    @NativeCoroutines
     public suspend fun peekBackupFile(
         pathToBackupFile: String
-    ): BackupPeekResult = peekBackup(FileSystem.SYSTEM.source(pathToBackupFile.toPath()))
+    ): BackupPeekResult = withBackupFile(pathToBackupFile) { peekBackup(it) }
 
     /**
      * Imports a backup from the specified root path.
@@ -66,24 +79,28 @@ public actual class MPBackupImporter(
      * @param multiplatformBackupFilePath the path to the decrypted, unzipped backup data file
      */
     @ObjCName("importFile")
-    @NativeCoroutines
     public suspend fun importFromFile(
         multiplatformBackupFilePath: String,
         passphrase: String?,
-    ): BackupImportResult = importBackup(FileSystem.SYSTEM.source(multiplatformBackupFilePath.toPath()), passphrase)
+    ): BackupImportResult = withBackupFile(multiplatformBackupFilePath) { importBackup(it, passphrase) }
 
     private val archiveZipPath: Path
         get() = pathToWorkDirectory.toPath() / ZIP_FILE_NAME
 
     override fun getUnencryptedArchiveSink(): Sink {
-        FileSystem.SYSTEM.delete(archiveZipPath, mustExist = false)
-        return FileSystem.SYSTEM.sink(archiveZipPath)
+        fileSystem.delete(archiveZipPath, mustExist = false)
+        return fileSystem.sink(archiveZipPath)
     }
 
     override suspend fun unzipAllEntries(): BackupPageStorage {
         val unzipPath = backupFileUnzipper.unzipBackup(archiveZipPath.toString())
-        return FileBasedBackupPageStorage(FileSystem.SYSTEM, unzipPath.toPath(), false)
+        return FileBasedBackupPageStorage(fileSystem, unzipPath.toPath(), false)
     }
+
+    private inline fun <T> withBackupFile(
+        path: String,
+        block: (Source) -> T
+    ): T = fileSystem.source(path.toPath()).use { block(it) }
 
     private companion object {
         const val ZIP_FILE_NAME = "unencryptedArchive.zip"
