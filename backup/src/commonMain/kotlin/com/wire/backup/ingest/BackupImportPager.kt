@@ -27,7 +27,6 @@ import okio.Closeable
 import okio.buffer
 import kotlin.js.JsExport
 
-@Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @JsExport
 public interface ImportResultPager : Closeable {
     public val totalPagesCount: Int
@@ -58,7 +57,6 @@ public class BackupImportPager internal constructor(private val entries: List<Ba
     }
 }
 
-@Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @JsExport
 public interface ImportDataPager<T> {
     public fun hasMorePages(): Boolean

@@ -27,6 +27,7 @@ import io.mockative.Mockable
 import okio.FileSystem
 import okio.SYSTEM
 
+@Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @Mockable(BackupImporter::class, ImportResultPager::class, ImportDataPager::class)
 interface BackupImporter {
     suspend fun peekBackupFile(pathToBackupFile: String): BackupPeekResult
