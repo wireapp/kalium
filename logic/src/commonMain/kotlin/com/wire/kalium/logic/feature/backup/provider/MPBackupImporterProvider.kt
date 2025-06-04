@@ -109,7 +109,7 @@ internal class MPBackupImporterProviderImpl(
 
 @Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @Mockable
-interface ImportDataPagerMockable<T>: ImportDataPager<T>
+interface ImportDataPagerMockable<T> : ImportDataPager<T>
 
 @Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @Mockable
