@@ -64,10 +64,7 @@ jobs:
         run: |
           export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
           ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
-#          Mockative 3 doesn't work with js tests when mockative is used in multiple modules.
-#          https://github.com/mockative/mockative/issues/143
-#          Until it's fixed, we need to disable running js tests.
-#          ./gradlew jsTest
+          ./gradlew jsTest
 
       - name: Archive Test Reports
         if: always()
