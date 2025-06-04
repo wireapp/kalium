@@ -38,7 +38,6 @@ import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -106,16 +105,9 @@ class CreateMPBackupUseCaseTest {
 
     private inner class Arrangement {
 
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val backupRepository = mock(BackupRepository::class)
-
-        @Mock
         val exporter = mock(BackupExporter::class)
-
-        @Mock
         val exporterProvider = mock(MPBackupExporterProvider::class)
 
         suspend fun withUsers(users: List<OtherUser>) = apply {

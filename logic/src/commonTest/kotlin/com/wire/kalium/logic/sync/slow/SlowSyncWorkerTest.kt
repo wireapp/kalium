@@ -508,8 +508,6 @@ class SlowSyncWorkerTest {
         val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase = mock(UpdateSelfUserSupportedProtocolsUseCase::class)
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
-
-        @Mock
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
 
         init {

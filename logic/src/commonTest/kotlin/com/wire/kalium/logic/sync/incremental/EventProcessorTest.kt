@@ -336,8 +336,6 @@ class EventProcessorTest {
         val teamEventReceiver = mock(TeamEventReceiver::class)
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
         val federationEventReceiver = mock(FederationEventReceiver::class)
-
-        @Mock
         val missedNotificationsEventReceiver = mock(MissedNotificationsEventReceiver::class)
 
         init {

@@ -20,11 +20,14 @@ package com.wire.kalium.logic.feature.backup.provider
 import com.wire.backup.ingest.BackupFileUnzipper
 import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.BackupPeekResult
+import com.wire.backup.ingest.ImportDataPager
 import com.wire.backup.ingest.ImportResultPager
 import com.wire.backup.ingest.MPBackupImporter
+import io.mockative.Mockable
 import okio.FileSystem
 import okio.SYSTEM
 
+@Mockable(BackupImporter::class, ImportResultPager::class, ImportDataPager::class)
 interface BackupImporter {
     suspend fun peekBackupFile(pathToBackupFile: String): BackupPeekResult
     suspend fun importFromFile(multiplatformBackupFilePath: String, passphrase: String?): ImportResult
@@ -50,6 +53,7 @@ private fun BackupImportResult.toImportResult() = when (this) {
     }
 }
 
+@Mockable
 interface MPBackupImporterProvider {
     fun provideImporter(
         pathToWorkDirectory: String,

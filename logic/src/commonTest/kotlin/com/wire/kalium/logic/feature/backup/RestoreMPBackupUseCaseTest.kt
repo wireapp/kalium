@@ -39,13 +39,12 @@ import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
+import io.mockative.of
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
@@ -155,25 +154,12 @@ class RestoreMPBackupUseCaseTest {
 
     private inner class Arrangement {
 
-        @Mock
         val backupRepository = mock(BackupRepository::class)
-
-        @Mock
         val importerProvider = mock(MPBackupImporterProvider::class)
-
-        @Mock
         val resultPager = mock(ImportResultPager::class)
-
-        @Mock
-        val usersPager = mock(classOf<ImportDataPager<BackupUser>>())
-
-        @Mock
-        val conversationsPager = mock(classOf<ImportDataPager<BackupConversation>>())
-
-        @Mock
-        val messagesPager = mock(classOf<ImportDataPager<BackupMessage>>())
-
-        @Mock
+        val usersPager = mock(of<ImportDataPager<BackupUser>>())
+        val conversationsPager = mock(of<ImportDataPager<BackupConversation>>())
+        val messagesPager = mock(of<ImportDataPager<BackupMessage>>())
         val importer = mock(BackupImporter::class)
 
         val storedPath = "testPath/backupFile.zip".toPath()

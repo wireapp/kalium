@@ -24,7 +24,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
+import io.mockative.Mockable
 
+@Mockable
 interface ConversationMetaDataRepository {
     suspend fun getConversationTypeAndProtocolInfo(
         conversationId: ConversationId
