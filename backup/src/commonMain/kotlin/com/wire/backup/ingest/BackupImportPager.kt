@@ -15,8 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
-
 package com.wire.backup.ingest
 
 import com.wire.backup.data.BackupConversation
@@ -29,6 +27,7 @@ import okio.Closeable
 import okio.buffer
 import kotlin.js.JsExport
 
+@Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @JsExport
 public interface ImportResultPager : Closeable {
     public val totalPagesCount: Int
@@ -59,6 +58,7 @@ public class BackupImportPager internal constructor(private val entries: List<Ba
     }
 }
 
+@Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @JsExport
 public interface ImportDataPager<T> {
     public fun hasMorePages(): Boolean
