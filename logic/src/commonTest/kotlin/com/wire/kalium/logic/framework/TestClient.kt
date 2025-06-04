@@ -39,7 +39,8 @@ object TestClient {
         isVerified = false,
         isValid = true,
         mlsPublicKeys = null,
-        isMLSCapable = false
+        isMLSCapable = false,
+        isAsyncNotificationsCapable = false
     )
 
     val SELF_USER_ID = UserId("self-user-id", "domain")

@@ -296,11 +296,15 @@ private class TestRepository : CellsRepository {
         return Unit.right()
     }
 
-    override suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int) =
+    override suspend fun getPaginatedNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) =
         PaginatedList<CellNode>(
             data = emptyList(),
             pagination = null
         ).right()
+
+    override suspend fun getNodesByPath(path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun deleteFile(nodeUuid: String) = Unit.right()
     override suspend fun preCheck(nodePath: String) = PreCheckResult.Success.right()
@@ -331,4 +335,5 @@ private class TestRepository : CellsRepository {
     override suspend fun deletePublicLink(linkUuid: String) = Unit.right()
     override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
+    override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> = Unit.right()
 }

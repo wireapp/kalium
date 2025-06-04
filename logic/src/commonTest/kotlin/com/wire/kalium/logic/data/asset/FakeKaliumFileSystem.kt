@@ -30,6 +30,7 @@ import okio.fakefilesystem.FakeFileSystem
 import okio.use
 
 class FakeKaliumFileSystem(
+    private val fakeFileSystem: FakeFileSystem = FakeFileSystem(),
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KaliumFileSystem {
 
@@ -40,8 +41,6 @@ class FakeKaliumFileSystem(
     private val rootCacheSystemPath = CacheFolder("$userHomePath/cache")
 
     private val rootDBSystemPath = DBFolder("$userHomePath/database")
-
-    private val fakeFileSystem = FakeFileSystem()
 
     private val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCacheSystemPath, rootDBSystemPath)
 

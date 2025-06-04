@@ -46,11 +46,6 @@ data class RegisterClientRequest(
 )
 
 @Serializable
-data class Capabilities(
-    @SerialName("capabilities") val capabilities: List<ClientCapabilityDTO>
-)
-
-@Serializable
 enum class ClientTypeDTO {
     @SerialName("temporary")
     Temporary,

@@ -25,6 +25,7 @@ public interface GetPaginatedFilesFlowUseCase {
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
+        onlyDeleted: Boolean = false,
     ): Flow<PagingData<Node>>
 }
 
@@ -35,7 +36,8 @@ internal class GetPaginatedFilesFlowUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
+        onlyDeleted: Boolean,
     ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query)
+        return getCellFilesUseCase(conversationId, query, onlyDeleted)
     }
 }

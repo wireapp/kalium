@@ -26,6 +26,7 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
 import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
 import com.wire.kalium.cells.sdk.kmp.model.RestActionOptionsCopyMove
@@ -42,6 +43,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
+import com.wire.kalium.cells.sdk.kmp.model.StatusFilterDeletedStatus
 import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -57,8 +59,6 @@ internal class CellsApiImpl(
 ) : CellsApi {
 
     private companion object {
-        // Sort lookup results by modification time
-        private const val SORTED_BY = "mtime"
         private const val AWAIT_TIMEOUT = "5s"
     }
 
@@ -81,23 +81,37 @@ internal class CellsApiImpl(
                             term = query
                         ),
                     ),
-                    sortField = SORTED_BY,
                     sortDirDesc = true,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
             )
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun getNodesForPath(path: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO> =
+    override suspend fun getNodesForPath(
+        path: String,
+        limit: Int?,
+        offset: Int?,
+        onlyDeleted: Boolean,
+        onlyFolders: Boolean,
+    ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             nodeServiceApi.lookup(
                 RestLookupRequest(
-                    limit = limit.toString(),
-                    offset = offset.toString(),
-                    scope = RestLookupScope(
-                        root = RestNodeLocator(path = path),
+                    limit = limit?.toString(),
+                    offset = offset?.toString(),
+                    scope = RestLookupScope(root = RestNodeLocator(path = path)),
+                    filters = RestLookupFilter(
+                        status = if (onlyDeleted) {
+                            LookupFilterStatusFilter(deleted = StatusFilterDeletedStatus.Only)
+                        } else {
+                            null
+                        },
+                        type = if (onlyFolders) {
+                            TreeNodeType.COLLECTION
+                        } else {
+                            TreeNodeType.UNKNOWN
+                        },
                     ),
-                    sortField = SORTED_BY,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
             )
@@ -211,6 +225,17 @@ internal class CellsApiImpl(
                     targetPath = targetPath,
                     targetIsParent = true,
                 )
+            )
+        )
+    }.mapSuccess {}
+
+    override suspend fun restoreNode(path: String): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.restore,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT
             )
         )
     }.mapSuccess {}

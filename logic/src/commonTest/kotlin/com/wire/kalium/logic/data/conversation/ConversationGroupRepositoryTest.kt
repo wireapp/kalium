@@ -67,6 +67,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.FederationConflictResponse
 import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -271,6 +272,45 @@ class ConversationGroupRepositoryTest {
             coVerify {
                 conversationApi.createNewConversation(any())
             }.wasInvoked(twice)
+
+            coVerify {
+                conversationDAO.insertConversation(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+            }.wasNotInvoked()
+
+            coVerify {
+                newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
+            }.wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenCreatingAGroupConversation_whenThereIsAConflictingBackendsError_thenDoNotExecuteAutomaticRetry() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(FEDERATION_ERROR_CONFLICTING_BACKENDS, FEDERATION_ERROR_CONFLICTING_BACKENDS))
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .arrange()
+
+        val conflictingUserId = TestUser.USER_ID.copy(domain = "conflictingDomain2.com")
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID, conflictingUserId),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldFail()
+
+        with(arrangement) {
+            coVerify {
+                conversationApi.createNewConversation(any())
+            }.wasInvoked(once)
 
             coVerify {
                 conversationDAO.insertConversation(any())
@@ -1286,6 +1326,47 @@ class ConversationGroupRepositoryTest {
         }
 
     @Test
+    fun givenAConversationFailsWithUnreachableAndNoValidExtractedUsers_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
+        runTest {
+            val failedDomain = "unstableDomain1.com"
+            val conversation = TestConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
+            // given
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(conversation)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                    arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, FEDERATION_ERROR_UNREACHABLE_DOMAINS)
+                )
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .arrange()
+
+            // when
+            val expectedInitialUsers = listOf(
+                TestConversation.USER_1.copy(domain = failedDomain) // only failed domain user so after extracting there are no valid ones
+            )
+            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+
+            // then
+            coVerify {
+                arrangement.conversationApi.addMember(any(), any())
+            }.wasInvoked(exactly = once)
+
+            coVerify {
+                arrangement.memberJoinEventHandler.handle(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
+                    conversationId = conversation.id,
+                    userIdList = expectedInitialUsers,
+                    type = MessageContent.MemberChange.FailedToAdd.Type.Federation
+                )
+            }.wasInvoked(once)
+        }
+
+    @Test
     fun givenAConversationFailsWithUnreachableAndNotFromUsersInRequest_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
         runTest {
             val conversation = TestConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
@@ -2131,6 +2212,17 @@ class ConversationGroupRepositoryTest {
                     listOf(
                         "unstableDomain1.com",
                         "unstableDomain2.com"
+                    )
+                )
+            )
+        )
+
+        val FEDERATION_ERROR_CONFLICTING_BACKENDS = NetworkResponse.Error(
+            KaliumException.FederationConflictException(
+                FederationConflictResponse(
+                    listOf(
+                        "conflictingDomain1.com",
+                        "conflictingDomain2.com"
                     )
                 )
             )

@@ -51,7 +51,7 @@ internal class LocalEventRepositoryImpl : LocalEventRepository {
     )
 
     override fun emitLocalEvent(event: Event) {
-        val eventEnvelope = EventEnvelope(event, EventDeliveryInfo(isTransient = true, EventSource.LIVE))
+        val eventEnvelope = EventEnvelope(event, EventDeliveryInfo.Legacy(isTransient = true, EventSource.LIVE))
         localEventFlow.tryEmit(eventEnvelope)
     }
 

@@ -18,9 +18,18 @@
 
 package com.wire.kalium.logic.sync.slow
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
@@ -33,14 +42,6 @@ import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.isRight
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.nullableFold
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import kotlinx.coroutines.currentCoroutineContext
@@ -60,6 +61,7 @@ internal interface SlowSyncWorker {
 
 @Suppress("LongParameterList")
 internal class SlowSyncWorkerImpl(
+    private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val syncSelfUser: SyncSelfUserUseCase,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
@@ -85,7 +87,13 @@ internal class SlowSyncWorkerImpl(
 
         logger.d("Starting SlowSync")
 
-        val lastProcessedEventIdToSaveOnSuccess = getLastProcessedEventIdToSaveOnSuccess()
+        val lastProcessedEventIdToSaveOnSuccess =
+            isClientAsyncNotificationsCapableProvider().nullableFold({ null }, { isAsyncNotificationsCapable ->
+                when {
+                    !isAsyncNotificationsCapable -> getLastProcessedEventIdToSaveOnSuccess()
+                    else -> null
+                }
+            })
 
         performStep(SlowSyncStep.MIGRATION) {
             migrationSteps.foldToEitherWhileRight(Unit) { step, _ ->

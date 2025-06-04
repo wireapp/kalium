@@ -62,7 +62,6 @@ jobs:
 
       - name: Test with Gradle
         run: |
-          export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
           ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
@@ -121,7 +120,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v4.3.0
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R

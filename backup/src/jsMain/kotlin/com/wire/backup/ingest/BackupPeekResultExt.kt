@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.utils.stubs
+package com.wire.backup.ingest
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.backup.data.BackupQualifiedId
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.promise
+import kotlin.js.Promise
 
-fun insertedClient(userId: QualifiedIDEntity = QualifiedIDEntity("test", "wire.com")) = InsertClientParam(
-    userId = userId,
-    id = "id0",
-    deviceType = null,
-    clientType = null,
-    label = null,
-    model = null,
-    registrationDate = null,
-    lastActive = null,
-    mlsPublicKeys = null,
-    isMLSCapable = false
-)
+@JsExport
+@JsName("isCreatedBySameUser")
+public fun BackupPeekResult.Success.isFromSameUser(backupQualifiedId: BackupQualifiedId): Promise<Boolean> = GlobalScope.promise {
+    isCreatedBySameUser(backupQualifiedId)
+}

@@ -65,7 +65,7 @@ class FakeZip(fakeZipWorkRootPath: Path) : BackupFileUnzipper, FileZipper {
         return fs.canonicalize(target).toString()
     }
 
-    override fun zip(entries: List<String>): String {
+    override fun zip(entries: List<String>, outputDirectory: Path): String {
         val fakeZipDirectoryName = "zipFile_" + Random.nextUInt()
         val fakeZipDirectoryPath = workDirPath / fakeZipDirectoryName
         fs.createDirectories(fakeZipDirectoryPath)
