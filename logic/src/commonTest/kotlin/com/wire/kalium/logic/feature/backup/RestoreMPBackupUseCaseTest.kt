@@ -20,8 +20,6 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupUser
-import com.wire.backup.ingest.ImportDataPager
-import com.wire.backup.ingest.ImportResultPager
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
@@ -34,7 +32,9 @@ import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupImporter
+import com.wire.kalium.logic.feature.backup.provider.ImportDataPagerMockable
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
+import com.wire.kalium.logic.feature.backup.provider.ImportResultPagerMockable
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -156,10 +156,10 @@ class RestoreMPBackupUseCaseTest {
 
         val backupRepository = mock(BackupRepository::class)
         val importerProvider = mock(MPBackupImporterProvider::class)
-        val resultPager = mock(ImportResultPager::class)
-        val usersPager = mock(of<ImportDataPager<BackupUser>>())
-        val conversationsPager = mock(of<ImportDataPager<BackupConversation>>())
-        val messagesPager = mock(of<ImportDataPager<BackupMessage>>())
+        val resultPager = mock(ImportResultPagerMockable::class)
+        val usersPager = mock(of<ImportDataPagerMockable<BackupUser>>())
+        val conversationsPager = mock(of<ImportDataPagerMockable<BackupConversation>>())
+        val messagesPager = mock(of<ImportDataPagerMockable<BackupMessage>>())
         val importer = mock(BackupImporter::class)
 
         val storedPath = "testPath/backupFile.zip".toPath()
