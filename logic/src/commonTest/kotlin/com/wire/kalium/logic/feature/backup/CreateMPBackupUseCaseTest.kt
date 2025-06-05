@@ -124,6 +124,9 @@ class CreateMPBackupUseCaseTest {
             override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
         }
 
+        val exporter = mock(BackupExporter::class)
+        val exporterProvider = mock(MPBackupExporterProvider::class)
+
         fun withMessages(messages: List<Message.Standalone>) = apply {
             backupMessages = messages
         }
