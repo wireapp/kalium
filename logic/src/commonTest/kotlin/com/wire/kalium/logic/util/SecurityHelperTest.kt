@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.doesNothing
 import io.mockative.eq
@@ -39,8 +38,7 @@ import kotlin.test.assertTrue
 
 class SecurityHelperTest {
 
-    @Mock
-    private val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
+        private val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
 
     private lateinit var securityHelper: SecurityHelper
 

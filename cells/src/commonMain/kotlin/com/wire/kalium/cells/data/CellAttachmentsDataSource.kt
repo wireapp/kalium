@@ -114,7 +114,7 @@ internal class CellAttachmentsDataSource(
     override suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<Pair<String, String>>> = withContext(dispatchers.io) {
         wrapStorageRequest {
             assetsDao.getAssets().map {
-                it.key to it.data_path
+                it.key to it.dataPath
             }
         }
     }

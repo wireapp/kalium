@@ -24,7 +24,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import io.mockative.Mockable
 
+@Mockable
 internal interface MessageDraftRepository {
 
     suspend fun getMessageDraft(conversationId: ConversationId): MessageDraft?

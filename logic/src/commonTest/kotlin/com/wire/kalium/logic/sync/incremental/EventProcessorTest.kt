@@ -34,7 +34,6 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -331,25 +330,12 @@ class EventProcessorTest {
         val processingScope: CoroutineScope
     ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
 
-        @Mock
         val eventRepository = mock(EventRepository::class)
-
-        @Mock
         val conversationEventReceiver = mock(ConversationEventReceiver::class)
-
-        @Mock
         val userEventReceiver = mock(UserEventReceiver::class)
-
-        @Mock
         val teamEventReceiver = mock(TeamEventReceiver::class)
-
-        @Mock
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
-
-        @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
-
-        @Mock
         val missedNotificationsEventReceiver = mock(MissedNotificationsEventReceiver::class)
 
         init {
@@ -402,7 +388,7 @@ class EventProcessorTest {
             }.returns(result)
         }
 
-        suspend fun withUserPropertiesEventReceiverInvoking(invocation: () -> Either<CoreFailure, Unit>) = apply {
+        suspend fun withUserPropertiesEventReceiverInvoking(invocation: (args: Array<Any?>) -> Either<CoreFailure, Unit>) = apply {
             coEvery {
                 userPropertiesEventReceiver.onEvent(any(), any())
             }.invokes(invocation)

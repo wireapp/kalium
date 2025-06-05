@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -41,7 +40,7 @@ internal interface EventRepositoryArrangement {
 }
 
 internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
-    @Mock
+
     override val eventRepository = mock(EventRepository::class)
 
     override suspend fun withOldestEventIdReturning(result: Either<CoreFailure, String>) {

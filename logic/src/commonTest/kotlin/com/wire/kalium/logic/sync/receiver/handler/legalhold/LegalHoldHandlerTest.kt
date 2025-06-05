@@ -46,7 +46,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -923,29 +922,13 @@ class LegalHoldHandlerTest {
         }
 
     private class Arrangement {
-
-        @Mock
         val fetchUsersClientsFromRemote = mock(FetchUsersClientsFromRemoteUseCase::class)
-
-        @Mock
         val fetchSelfClientsFromRemote = mock(FetchSelfClientsFromRemoteUseCase::class)
-
-        @Mock
         val observeLegalHoldStateForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
-
-        @Mock
         val membersHavingLegalHoldClient = mock(MembersHavingLegalHoldClientUseCase::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val legalHoldSystemMessagesHandler = mock(LegalHoldSystemMessagesHandler::class)
-
-        @Mock
         val observeSyncState = mock(ObserveSyncStateUseCase::class)
 
         init {

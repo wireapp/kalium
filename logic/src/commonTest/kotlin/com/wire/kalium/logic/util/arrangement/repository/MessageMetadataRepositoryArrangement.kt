@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -32,7 +31,7 @@ import io.mockative.matches
 import io.mockative.mock
 
 interface MessageMetadataRepositoryArrangement {
-    @Mock
+
     val messageMetadataRepository: MessageMetadataRepository
 
     suspend fun withMessageOriginalSender(
@@ -43,8 +42,7 @@ interface MessageMetadataRepositoryArrangement {
 }
 
 class MessageMetadataRepositoryArrangementImpl : MessageMetadataRepositoryArrangement {
-    @Mock
-    override val messageMetadataRepository: MessageMetadataRepository = mock(MessageMetadataRepository::class)
+        override val messageMetadataRepository: MessageMetadataRepository = mock(MessageMetadataRepository::class)
 
     override suspend fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,

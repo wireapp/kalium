@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cryptography
 
+import io.mockative.Mockable
+
 typealias JsonRawData = ByteArray
 typealias DpopToken = String
 
@@ -44,6 +46,7 @@ data class NewAcmeAuthz(
 )
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface E2EIClient {
     suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory
     suspend fun getNewAccountRequest(previousNonce: String): JsonRawData

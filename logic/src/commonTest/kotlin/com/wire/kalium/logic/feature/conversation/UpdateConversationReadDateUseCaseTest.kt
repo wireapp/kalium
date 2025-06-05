@@ -33,7 +33,6 @@ import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangem
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -171,8 +170,6 @@ class UpdateConversationReadDateUseCaseTest {
         var currentClientId = TestClient.CLIENT_ID
         var selfUserID = TestUser.SELF.id
         var selfConversationId = TestConversation.SELF().id.copy("SELF")
-
-        @Mock
         val sendConfirmation = mock(SendConfirmationUseCase::class)
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()

@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.feature.call.CallManager
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -35,8 +34,7 @@ import kotlin.test.Test
 
 class SetTestRemoteVideoStatesUseCaseTest {
 
-    @Mock
-    private val callManager = mock(CallManager::class)
+        private val callManager = mock(CallManager::class)
 
     private lateinit var setTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase
 

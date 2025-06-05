@@ -23,7 +23,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import io.mockative.Mockable
 
+@Mockable
 interface ClearConversationAssetsLocallyUseCase {
     /**
      * Clear all conversation assets from local storage

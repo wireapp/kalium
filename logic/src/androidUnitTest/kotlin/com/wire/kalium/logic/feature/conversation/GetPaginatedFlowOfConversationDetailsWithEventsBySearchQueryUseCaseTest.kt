@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryExtensions
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -55,10 +54,7 @@ class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCaseTest {
     }
 
     inner class Arrangement {
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
+                val conversationRepository = mock(ConversationRepository::class)
         val conversationRepositoryExtensions = mock(ConversationRepositoryExtensions::class)
 
         val queryConfig = ConversationQueryConfig("search")

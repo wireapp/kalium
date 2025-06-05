@@ -29,8 +29,10 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 
+@Mockable
 interface DeletedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.DeletedConversation)
 }

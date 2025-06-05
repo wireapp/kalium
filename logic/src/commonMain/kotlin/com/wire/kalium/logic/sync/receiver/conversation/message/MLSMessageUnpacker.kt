@@ -42,9 +42,11 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.sync.KaliumSyncException
 import io.ktor.util.decodeBase64Bytes
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
+@Mockable
 internal interface MLSMessageUnpacker {
     suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>>
     suspend fun unpackMlsBundle(

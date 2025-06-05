@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.common.functional.flatMapRight
 import com.wire.kalium.common.functional.mapToRightOr
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.flowOn
 /**
  * This gets and observes the list of valid accounts, and it's associated team.
  */
+@Mockable
 interface ObserveValidAccountsUseCase {
 
     /**

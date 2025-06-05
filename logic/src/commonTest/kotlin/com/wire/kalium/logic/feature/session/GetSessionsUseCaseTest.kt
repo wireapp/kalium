@@ -22,7 +22,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -73,7 +72,6 @@ class GetSessionsUseCaseTest {
 
     class Arrangement {
 
-        @Mock
         private val sessionRepository = mock(SessionRepository::class)
         private val useCase: GetSessionsUseCase by lazy {
             GetSessionsUseCase(sessionRepository)

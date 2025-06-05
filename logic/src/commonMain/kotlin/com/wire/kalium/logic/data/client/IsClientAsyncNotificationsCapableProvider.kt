@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 
 /**
@@ -41,6 +42,7 @@ internal class IsClientAsyncNotificationsCapableProviderImpl(
 
 }
 
+@Mockable
 internal fun interface IsClientAsyncNotificationsCapableProvider {
     suspend operator fun invoke(): Either<CoreFailure, Boolean>
 }

@@ -18,8 +18,10 @@
 
 package com.wire.kalium.util
 
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineDispatcher
 
+@Mockable
 interface KaliumDispatcher {
     val default: CoroutineDispatcher
     val main: CoroutineDispatcher

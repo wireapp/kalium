@@ -21,7 +21,9 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
+import io.mockative.Mockable
 
+@Mockable
 internal interface SyncMigrationStepsProvider {
     fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep>
 }

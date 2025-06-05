@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -157,10 +156,7 @@ class EndCallOnConversationChangeUseCaseTest {
         CallRepositoryArrangement by CallRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        @Mock
         val endCall = mock(EndCallUseCase::class)
-
-        @Mock
         val endCallDialogManager = mock(EndCallResultListener::class)
 
         suspend fun arrange() = run {

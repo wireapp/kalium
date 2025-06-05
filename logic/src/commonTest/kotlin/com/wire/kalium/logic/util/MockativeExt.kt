@@ -17,15 +17,15 @@
  */
 package com.wire.kalium.logic.util
 
-import io.mockative.AnyResultBuilder
-import io.mockative.AnySuspendResultBuilder
+import io.mockative.ResultBuilder
+import io.mockative.SuspendResultBuilder
 
 /**
  * Sets up the mock to return the given results sequentially. That is,
  * the first call to the mock will return the first value provided in [results], the second
  * call will return the second value, and so on.
  */
-fun <R> AnyResultBuilder<R>.thenReturnSequentially(vararg results: R) {
+fun <R> ResultBuilder<R>.thenReturnSequentially(vararg results: R) {
     var index = -1
     return invokes {
         index += 1
@@ -41,7 +41,7 @@ fun <R> AnyResultBuilder<R>.thenReturnSequentially(vararg results: R) {
  * the first call to the mock will return the first value provided in [results], the second
  * call will return the second value, and so on.
  */
-fun <R> AnySuspendResultBuilder<R>.thenReturnSequentially(vararg results: R) {
+fun <R> SuspendResultBuilder<R>.thenReturnSequentially(vararg results: R) {
     var index = -1
     return invokes {
         index += 1

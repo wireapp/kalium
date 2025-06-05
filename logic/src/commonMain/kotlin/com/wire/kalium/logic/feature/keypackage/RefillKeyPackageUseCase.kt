@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import io.mockative.Mockable
 
 sealed class RefillKeyPackagesResult {
 
@@ -42,6 +43,7 @@ sealed class RefillKeyPackagesResult {
  * This use case will check if the number of key packages is below the minimum threshold and will
  * upload new key packages if needed.
  */
+@Mockable
 interface RefillKeyPackagesUseCase {
 
     suspend operator fun invoke(): RefillKeyPackagesResult
