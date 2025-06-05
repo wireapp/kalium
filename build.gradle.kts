@@ -142,6 +142,7 @@ tasks.dokkaHtmlMultiModule.configure {}
 moduleGraphConfig {
     readmePath.set("./README.md")
     heading.set("#### Dependency Graph")
+    nestingEnabled.set(true)
 }
 
 tasks.register("runAllUnitTests") {
