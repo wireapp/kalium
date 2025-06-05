@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import kotlinx.coroutines.flow.first
 
 /**
  * Internal event receiver for missed notifications, will trigger a full sync.
@@ -38,7 +37,6 @@ internal class MissedNotificationsEventReceiverImpl(
 ) : MissedNotificationsEventReceiver {
 
     override suspend fun onEvent(event: Event.AsyncMissed, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
-        slowSyncRepository.slowSyncStatus.first()
         slowSyncRepository.clearLastSlowSyncCompletionInstant()
         return slowSyncRequester.invoke()
             .flatMap {

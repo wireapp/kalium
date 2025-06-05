@@ -290,7 +290,7 @@ object TestEvent {
         }
     )
 
-    fun notificationsMissed() = Event.AsyncMissed
+    fun notificationsMissed(eventId: String = "eventId") = Event.AsyncMissed(eventId)
 
     val liveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.LIVE)
     val nonLiveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.PENDING)

@@ -19,10 +19,12 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
@@ -36,7 +38,9 @@ class MissedNotificationsEventReceiverTest {
 
     @Test
     fun givenAMissedNotificationsEventsReceived_thenShouldTriggerFullSync() = runTest(TestKaliumDispatcher.default) {
-        val (arrangement, receiver) = Arrangement().arrange()
+        val (arrangement, receiver) = Arrangement()
+            .withAcknowledgeMissedEvent()
+            .arrange()
 
         receiver.onEvent(event = TestEvent.notificationsMissed(), deliveryInfo = TestEvent.liveDeliveryInfo)
 
@@ -44,6 +48,7 @@ class MissedNotificationsEventReceiverTest {
             advanceUntilIdle()
             arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
             arrangement.slowSyncExecutorProvider.invoke()
+            arrangement.eventRepository.acknowledgeMissedEvent()
         }.wasInvoked(exactly = once)
     }
 
@@ -53,13 +58,21 @@ class MissedNotificationsEventReceiverTest {
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
+        val eventRepository = mock(EventRepository::class)
+
+        @Mock
         val slowSyncExecutorProvider: suspend () -> Either.Right<Unit> = {
             Unit.right()
         }
 
+        suspend fun withAcknowledgeMissedEvent() = apply {
+            coEvery { eventRepository.acknowledgeMissedEvent() }.returns(Either.Right(Unit))
+        }
+
         fun arrange() = this to MissedNotificationsEventReceiverImpl(
             slowSyncRequester = slowSyncExecutorProvider,
-            slowSyncRepository = slowSyncRepository
+            slowSyncRepository = slowSyncRepository,
+            eventRepository = eventRepository
         )
     }
 }

@@ -46,7 +46,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -121,7 +120,6 @@ internal class EventGathererImpl(
         webSocketEventFlow: Flow<WebSocketEvent<Unit>>
     ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
-        .distinctUntilChanged()
         .cancellable()
         .collect { handleWebsocketEvent(it) }
 

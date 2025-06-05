@@ -172,7 +172,7 @@ class EventDataSource(
             }
         }
 
-    private fun handleEvents(
+    private suspend fun handleEvents(
         flowCollector: FlowCollector<WebSocketEvent<Unit>>,
     ): suspend (value: WebSocketEvent<ConsumableNotificationResponse>) -> Unit =
         { webSocketEvent ->
@@ -211,6 +211,7 @@ class EventDataSource(
                                     event.data.deliveryTag?.let {
                                         ackEvent(it)
                                     }
+                                    flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(Unit))
                                 }
                             }
                         }
