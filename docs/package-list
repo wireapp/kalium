@@ -685,3 +685,7 @@ com.wire.kalium.persistence.model
 com.wire.kalium.persistence.util
 module:protobuf
 com.wire.kalium.protobuf
+com.wire.kalium.protobuf.backup
+com.wire.kalium.protobuf.messages
+com.wire.kalium.protobuf.mls
+com.wire.kalium.protobuf.otr

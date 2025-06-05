@@ -33,10 +33,13 @@
     <div id="leftToggler"><span class="icon-toggler"></span></div>
     <div class="library-name">
 <a href="../../../index.html">
-<span>Kalium</span>            </a>    </div>
+<span>kalium</span>            </a>    </div>
     <div>
     </div>
     <div class="pull-right d-flex">
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":protobuf:dokkaHtmlPartial/commonMain">common</button>
+        </div>
         <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
         <div id="searchBar"></div>
     </div>
@@ -46,350 +49,356 @@
         <div id="sideMenu"></div>
     </div>
     <div id="main">
-<div class="main-content" id="content" pageids="protobuf::com.wire.kalium.protobuf.messages/Asset///PointingToDeclaration//-622385496">
+<div class="main-content" data-page-type="classlike" id="content" pageids="protobuf::com.wire.kalium.protobuf.messages/Asset///PointingToDeclaration//-622385496">
   <div class="breadcrumbs"><a href="../../index.html">protobuf</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.protobuf.messages</a><span class="delimiter">/</span><span class="current">Asset</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Asset</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">Asset</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>original<span class="token operator">: </span><a href="-original/index.html">Asset.Original</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>preview<span class="token operator">: </span><a href="-preview/index.html">Asset.Preview</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>expectsReadConfirmation<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>legalHoldStatus<span class="token operator">: </span><a href="../-legal-hold-status/index.html">LegalHoldStatus</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>status<span class="token operator">: </span><a href="-status/index.html">Asset.Status</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">Asset</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>original<span class="token operator">: </span><a href="-original/index.html">Asset.Original</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>preview<span class="token operator">: </span><a href="-preview/index.html">Asset.Preview</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>expectsReadConfirmation<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>legalHoldStatus<span class="token operator">: </span><a href="../-legal-hold-status/index.html">LegalHoldStatus</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>status<span class="token operator">: </span><a href="-status/index.html">Asset.Status</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Types">Types</button><button class="section-tab" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Properties">Properties</button><button class="section-tab" data-togglable="Extensions">Extensions</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION,EXTENSION_PROPERTY,EXTENSION_FUNCTION">Members &amp; Extensions</button></div>
     <div class="tabs-section-body">
-      <h2 class="tabbedcontent">Constructors</h2>
-      <div class="table" data-togglable="Constructors"><a data-name="1700035427%2FConstructors%2F-622385496" anchor-label="Asset" id="1700035427%2FConstructors%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue TabbedContent">
-            <div class=""><span class="inline-flex">
-                <div><a href="-asset.html"><span><span>Asset</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1700035427%2FConstructors%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="-asset.html"><span class="token function">Asset</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">original<span class="token operator">: </span><a href="-original/index.html">Asset.Original</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">preview<span class="token operator">: </span><a href="-preview/index.html">Asset.Preview</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">expectsReadConfirmation<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">legalHoldStatus<span class="token operator">: </span><a href="../-legal-hold-status/index.html">LegalHoldStatus</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">status<span class="token operator">: </span><a href="-status/index.html">Asset.Status</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-1391705871%2FConstructors%2F-622385496" anchor-label="Asset" id="-1391705871%2FConstructors%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-asset.html"><span><span>Asset</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1391705871%2FConstructors%2F-622385496"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">original<span class="token operator">: </span><a href="-original/index.html">Asset.Original</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">preview<span class="token operator">: </span><a href="-preview/index.html">Asset.Preview</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">expectsReadConfirmation<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">legalHoldStatus<span class="token operator">: </span><a href="../-legal-hold-status/index.html">LegalHoldStatus</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">status<span class="token operator">: </span><a href="-status/index.html">Asset.Status</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Types</h2>
-      <div class="table" data-togglable="Types"><a data-name="1439805009%2FClasslikes%2F-622385496" anchor-label="AudioMetaData" id="1439805009%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-audio-meta-data/index.html"><span>Audio</span><wbr><span>Meta</span><wbr><span><span>Data</span></span></a></div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="1439805009%2FClasslikes%2F-622385496" anchor-label="AudioMetaData" id="1439805009%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-audio-meta-data/index.html"><span>Audio</span><wbr><span>Meta</span><wbr><span><span>Data</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1439805009%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-audio-meta-data/index.html">AudioMetaData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>durationInMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>normalizedLoudness<span class="token operator">: </span><span data-unresolved-link="pbandk/ByteArr///PointingToDeclaration/">ByteArr</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-audio-meta-data/index.html">AudioMetaData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>durationInMillis<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>normalizedLoudness<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1606806762%2FClasslikes%2F-622385496" anchor-label="Companion" id="1606806762%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1606806762%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a> : <span data-unresolved-link="pbandk/Message.Companion///PointingToDeclaration/">Message.Companion</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="index.html">Asset</a><span class="token operator">&gt; </span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="897262956%2FClasslikes%2F-622385496" anchor-label="ImageMetaData" id="897262956%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-image-meta-data/index.html"><span>Image</span><wbr><span>Meta</span><wbr><span><span>Data</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-image-meta-data/index.html"><span>Image</span><wbr><span>Meta</span><wbr><span><span>Data</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="897262956%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-image-meta-data/index.html">ImageMetaData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>width<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>height<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>tag<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-image-meta-data/index.html">ImageMetaData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>width<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>height<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1014339139%2FClasslikes%2F-622385496" anchor-label="NotUploaded" id="1014339139%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-not-uploaded/index.html"><span>Not</span><wbr><span><span>Uploaded</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-not-uploaded/index.html"><span>Not</span><wbr><span><span>Uploaded</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1014339139%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-not-uploaded/index.html">NotUploaded</a> : <span data-unresolved-link="pbandk/Message.Enum///PointingToDeclaration/">Message.Enum</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-not-uploaded/index.html">NotUploaded</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1007257445%2FClasslikes%2F-622385496" anchor-label="Original" id="-1007257445%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-original/index.html"><span><span>Original</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-original/index.html"><span><span>Original</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1007257445%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-original/index.html">Original</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>mimeType<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>size<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>name<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>source<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>caption<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>metaData<span class="token operator">: </span><a href="-original/-meta-data/index.html">Asset.Original.MetaData</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-original/index.html">Original</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>mimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>size<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>name<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>source<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>caption<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>metaData<span class="token operator">: </span><a href="-original/-meta-data/index.html">Asset.Original.MetaData</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-207993618%2FClasslikes%2F-622385496" anchor-label="Preview" id="-207993618%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-preview/index.html"><span><span>Preview</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-preview/index.html"><span><span>Preview</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-207993618%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-preview/index.html">Preview</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>mimeType<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>size<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>remote<span class="token operator">: </span><a href="-remote-data/index.html">Asset.RemoteData</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>metaData<span class="token operator">: </span><a href="-preview/-meta-data/index.html">Asset.Preview.MetaData</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-preview/index.html">Preview</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>mimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>size<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>remote<span class="token operator">: </span><a href="-remote-data/index.html">Asset.RemoteData</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>metaData<span class="token operator">: </span><a href="-preview/-meta-data/index.html">Asset.Preview.MetaData</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1228944252%2FClasslikes%2F-622385496" anchor-label="RemoteData" id="1228944252%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-remote-data/index.html"><span>Remote</span><wbr><span><span>Data</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-remote-data/index.html"><span>Remote</span><wbr><span><span>Data</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1228944252%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-remote-data/index.html">RemoteData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>otrKey<span class="token operator">: </span><span data-unresolved-link="pbandk/ByteArr///PointingToDeclaration/">ByteArr</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>sha256<span class="token operator">: </span><span data-unresolved-link="pbandk/ByteArr///PointingToDeclaration/">ByteArr</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>assetId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>assetToken<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>assetDomain<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>encryption<span class="token operator">: </span><a href="../-encryption-algorithm/index.html">EncryptionAlgorithm</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-remote-data/index.html">RemoteData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>otrKey<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>sha256<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>assetId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>assetToken<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>assetDomain<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>encryption<span class="token operator">: </span><a href="../-encryption-algorithm/index.html">EncryptionAlgorithm</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-306138022%2FClasslikes%2F-622385496" anchor-label="Status" id="-306138022%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-status/index.html"><span><span>Status</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-status/index.html"><span><span>Status</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-306138022%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-status/index.html">Status</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-status/index.html">V</a><span class="token operator">&gt;</span> : <span data-unresolved-link="pbandk/Message.OneOf///PointingToDeclaration/">Message.OneOf</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-status/index.html">V</a><span class="token operator">&gt; </span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-status/index.html">Status</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-status/index.html">V</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-900227508%2FClasslikes%2F-622385496" anchor-label="VideoMetaData" id="-900227508%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-video-meta-data/index.html"><span>Video</span><wbr><span>Meta</span><wbr><span><span>Data</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-video-meta-data/index.html"><span>Video</span><wbr><span>Meta</span><wbr><span><span>Data</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-900227508%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-video-meta-data/index.html">VideoMetaData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>width<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>height<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>durationInMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-video-meta-data/index.html">VideoMetaData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>width<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>height<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>durationInMillis<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Functions</h2>
-      <div class="table" data-togglable="Functions"><a data-name="362995493%2FFunctions%2F-622385496" anchor-label="plus" id="362995493%2FFunctions%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="plus.html"><span><span>plus</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="362995493%2FFunctions%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">operator override </span><span class="token keyword">fun </span><a href="plus.html"><span class="token function">plus</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">other<span class="token operator">: </span><span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">Asset</a></div></div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <h2 class="">Properties</h2>
-      <div class="table" data-togglable="Properties"><a data-name="-1938898936%2FProperties%2F-622385496" anchor-label="descriptor" id="-1938898936%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="descriptor.html"><span><span>descriptor</span></span></a></div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-1938898936%2FProperties%2F-622385496" anchor-label="descriptor" id="-1938898936%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="descriptor.html"><span><span>descriptor</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1938898936%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1938898936%2FProperties%2F-622385496" anchor-label="descriptor" id="-1938898936%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="descriptor.html">descriptor</a><span class="token operator">: </span><span data-unresolved-link="pbandk/MessageDescriptor///PointingToDeclaration/">MessageDescriptor</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="index.html">Asset</a><span class="token operator">&gt;</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword"></span><span class="token keyword">val </span><a href="descriptor.html">descriptor</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="index.html">Asset</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1889402754%2FProperties%2F-622385496" anchor-label="expectsReadConfirmation" id="-1889402754%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="expects-read-confirmation.html"><span>expects</span><wbr><span>Read</span><wbr><span><span>Confirmation</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="expects-read-confirmation.html"><span>expects</span><wbr><span>Read</span><wbr><span><span>Confirmation</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1889402754%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1889402754%2FProperties%2F-622385496" anchor-label="expectsReadConfirmation" id="-1889402754%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="expects-read-confirmation.html">expectsReadConfirmation</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="expects-read-confirmation.html">expectsReadConfirmation</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="409536825%2FProperties%2F-622385496" anchor-label="legalHoldStatus" id="409536825%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="legal-hold-status.html"><span>legal</span><wbr><span>Hold</span><wbr><span><span>Status</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="legal-hold-status.html"><span>legal</span><wbr><span>Hold</span><wbr><span><span>Status</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="409536825%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="409536825%2FProperties%2F-622385496" anchor-label="legalHoldStatus" id="409536825%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="legal-hold-status.html">legalHoldStatus</a><span class="token operator">: </span><a href="../-legal-hold-status/index.html">LegalHoldStatus</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="legal-hold-status.html">legalHoldStatus</a><span class="token operator">: </span><a href="../-legal-hold-status/index.html">LegalHoldStatus</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="133284656%2FProperties%2F-622385496" anchor-label="notUploaded" id="133284656%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="not-uploaded.html"><span>not</span><wbr><span><span>Uploaded</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="not-uploaded.html"><span>not</span><wbr><span><span>Uploaded</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="133284656%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="133284656%2FProperties%2F-622385496" anchor-label="notUploaded" id="133284656%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="not-uploaded.html">notUploaded</a><span class="token operator">: </span><a href="-not-uploaded/index.html">Asset.NotUploaded</a><span class="token operator">?</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="not-uploaded.html">notUploaded</a><span class="token operator">: </span><a href="-not-uploaded/index.html">Asset.NotUploaded</a><span class="token operator">?</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-335869338%2FProperties%2F-622385496" anchor-label="original" id="-335869338%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="original.html"><span><span>original</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="original.html"><span><span>original</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-335869338%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-335869338%2FProperties%2F-622385496" anchor-label="original" id="-335869338%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="original.html">original</a><span class="token operator">: </span><a href="-original/index.html">Asset.Original</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="original.html">original</a><span class="token operator">: </span><a href="-original/index.html">Asset.Original</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1486402981%2FProperties%2F-622385496" anchor-label="preview" id="-1486402981%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="preview.html"><span><span>preview</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="preview.html"><span><span>preview</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1486402981%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1486402981%2FProperties%2F-622385496" anchor-label="preview" id="-1486402981%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="preview.html">preview</a><span class="token operator">: </span><a href="-preview/index.html">Asset.Preview</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="preview.html">preview</a><span class="token operator">: </span><a href="-preview/index.html">Asset.Preview</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1501012550%2FProperties%2F-622385496" anchor-label="protoSize" id="-1501012550%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="proto-size.html"><span>proto</span><wbr><span><span>Size</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proto-size.html"><span>proto</span><wbr><span><span>Size</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1501012550%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1501012550%2FProperties%2F-622385496" anchor-label="protoSize" id="-1501012550%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="proto-size.html">protoSize</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword"></span><span class="token keyword">val </span><a href="proto-size.html">protoSize</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1123502565%2FProperties%2F-622385496" anchor-label="status" id="1123502565%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="status.html"><span><span>status</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="status.html"><span><span>status</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1123502565%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="1123502565%2FProperties%2F-622385496" anchor-label="status" id="1123502565%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="status.html">status</a><span class="token operator">: </span><a href="-status/index.html">Asset.Status</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="status.html">status</a><span class="token operator">: </span><a href="-status/index.html">Asset.Status</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1525789088%2FProperties%2F-622385496" anchor-label="unknownFields" id="-1525789088%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="unknown-fields.html"><span>unknown</span><wbr><span><span>Fields</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="unknown-fields.html"><span>unknown</span><wbr><span><span>Fields</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1525789088%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1525789088%2FProperties%2F-622385496" anchor-label="unknownFields" id="-1525789088%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="unknown-fields.html">unknownFields</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword"></span><span class="token keyword">val </span><a href="unknown-fields.html">unknownFields</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="915989687%2FProperties%2F-622385496" anchor-label="uploaded" id="915989687%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="uploaded.html"><span><span>uploaded</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="uploaded.html"><span><span>uploaded</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="915989687%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="915989687%2FProperties%2F-622385496" anchor-label="uploaded" id="915989687%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="uploaded.html">uploaded</a><span class="token operator">: </span><a href="-remote-data/index.html">Asset.RemoteData</a><span class="token operator">?</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="uploaded.html">uploaded</a><span class="token operator">: </span><a href="-remote-data/index.html">Asset.RemoteData</a><span class="token operator">?</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="tabbedcontent">Extensions</h2>
-      <div class="table" data-togglable="Extensions"><a data-name="-692314980%2FExtensions%2F-622385496" anchor-label="orDefault" id="-692314980%2FExtensions%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="../or-default.html"><span>or</span><wbr><span><span>Default</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-692314980%2FExtensions%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="index.html">Asset</a><span class="token operator">?</span><span class="token punctuation">.</span><a href="../or-default.html"><span class="token function">orDefault</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">Asset</a></div></div></div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-692314980%2FFunctions%2F-622385496" anchor-label="orDefault" id="-692314980%2FFunctions%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../or-default.html"><span>or</span><wbr><span><span>Default</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-692314980%2FFunctions%2F-622385496"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="index.html">Asset</a><span class="token operator">?</span><span class="token punctuation">.</span><a href="../or-default.html"><span class="token function">orDefault</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">Asset</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1979451939%2FFunctions%2F-622385496" anchor-label="plus" id="1979451939%2FFunctions%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="plus.html"><span><span>plus</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1979451939%2FFunctions%2F-622385496"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">operator </span><span class="token keyword">fun </span><a href="plus.html"><span class="token function">plus</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">other<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">Asset</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
@@ -399,10 +408,10 @@
   </div>
 </div>
       <div class="footer">
-        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2023 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2025 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
       </div>
     </div>
 </div>
-
-</body></html>
+</body>
+</html>
 

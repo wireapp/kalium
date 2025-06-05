@@ -33,10 +33,13 @@
     <div id="leftToggler"><span class="icon-toggler"></span></div>
     <div class="library-name">
 <a href="../../../index.html">
-<span>Kalium</span>            </a>    </div>
+<span>kalium</span>            </a>    </div>
     <div>
     </div>
     <div class="pull-right d-flex">
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":protobuf:dokkaHtmlPartial/commonMain">common</button>
+        </div>
         <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
         <div id="searchBar"></div>
     </div>
@@ -46,288 +49,296 @@
         <div id="sideMenu"></div>
     </div>
     <div id="main">
-<div class="main-content" id="content" pageids="protobuf::com.wire.kalium.protobuf.otr/QualifiedNewOtrMessage///PointingToDeclaration//-622385496">
+<div class="main-content" data-page-type="classlike" id="content" pageids="protobuf::com.wire.kalium.protobuf.otr/QualifiedNewOtrMessage///PointingToDeclaration//-622385496">
   <div class="breadcrumbs"><a href="../../index.html">protobuf</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.protobuf.otr</a><span class="delimiter">/</span><span class="current">QualifiedNewOtrMessage</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Qualified</span><wbr><span>New</span><wbr><span>Otr</span><wbr><span><span>Message</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">QualifiedNewOtrMessage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>sender<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>recipients<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-qualified-user-entry/index.html">QualifiedUserEntry</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyList()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nativePush<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>blob<span class="token operator">: </span><span data-unresolved-link="pbandk/ByteArr///PointingToDeclaration/">ByteArr</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nativePriority<span class="token operator">: </span><a href="../-priority/index.html">Priority</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>transient<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>clientMismatchStrategy<span class="token operator">: </span><a href="-client-mismatch-strategy/index.html">QualifiedNewOtrMessage.ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">QualifiedNewOtrMessage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>sender<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>recipients<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-qualified-user-entry/index.html">QualifiedUserEntry</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyList()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nativePush<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>blob<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>nativePriority<span class="token operator">: </span><a href="../-priority/index.html">Priority</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>transient<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>clientMismatchStrategy<span class="token operator">: </span><a href="-client-mismatch-strategy/index.html">QualifiedNewOtrMessage.ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Types">Types</button><button class="section-tab" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
-      <h2 class="tabbedcontent">Constructors</h2>
-      <div class="table" data-togglable="Constructors"><a data-name="1155437778%2FConstructors%2F-622385496" anchor-label="QualifiedNewOtrMessage" id="1155437778%2FConstructors%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue TabbedContent">
-            <div class=""><span class="inline-flex">
-                <div><a href="-qualified-new-otr-message.html"><span>Qualified</span><wbr><span>New</span><wbr><span>Otr</span><wbr><span><span>Message</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1155437778%2FConstructors%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="-qualified-new-otr-message.html"><span class="token function">QualifiedNewOtrMessage</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sender<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token punctuation">, </span></span><span class="parameter ">recipients<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-qualified-user-entry/index.html">QualifiedUserEntry</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyList()<span class="token punctuation">, </span></span><span class="parameter ">nativePush<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">blob<span class="token operator">: </span><span data-unresolved-link="pbandk/ByteArr///PointingToDeclaration/">ByteArr</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">nativePriority<span class="token operator">: </span><a href="../-priority/index.html">Priority</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">transient<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">clientMismatchStrategy<span class="token operator">: </span><a href="-client-mismatch-strategy/index.html">QualifiedNewOtrMessage.ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">unknownFields<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-1661176378%2FConstructors%2F-622385496" anchor-label="QualifiedNewOtrMessage" id="-1661176378%2FConstructors%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-qualified-new-otr-message.html"><span>Qualified</span><wbr><span>New</span><wbr><span>Otr</span><wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1661176378%2FConstructors%2F-622385496"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sender<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token punctuation">, </span></span><span class="parameter ">recipients<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-qualified-user-entry/index.html">QualifiedUserEntry</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyList()<span class="token punctuation">, </span></span><span class="parameter ">nativePush<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">blob<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">nativePriority<span class="token operator">: </span><a href="../-priority/index.html">Priority</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">transient<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">clientMismatchStrategy<span class="token operator">: </span><a href="-client-mismatch-strategy/index.html">QualifiedNewOtrMessage.ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">unknownFields<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Types</h2>
-      <div class="table" data-togglable="Types"><a data-name="75614675%2FClasslikes%2F-622385496" anchor-label="ClientMismatchStrategy" id="75614675%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-client-mismatch-strategy/index.html"><span>Client</span><wbr><span>Mismatch</span><wbr><span><span>Strategy</span></span></a></div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="75614675%2FClasslikes%2F-622385496" anchor-label="ClientMismatchStrategy" id="75614675%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-client-mismatch-strategy/index.html"><span>Client</span><wbr><span>Mismatch</span><wbr><span><span>Strategy</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="75614675%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-client-mismatch-strategy/index.html">ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-client-mismatch-strategy/index.html">V</a><span class="token operator">&gt;</span> : <span data-unresolved-link="pbandk/Message.OneOf///PointingToDeclaration/">Message.OneOf</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-client-mismatch-strategy/index.html">V</a><span class="token operator">&gt; </span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-client-mismatch-strategy/index.html">ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="-client-mismatch-strategy/index.html">V</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1766954377%2FClasslikes%2F-622385496" anchor-label="Companion" id="-1766954377%2FClasslikes%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1766954377%2FClasslikes%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a> : <span data-unresolved-link="pbandk/Message.Companion///PointingToDeclaration/">Message.Companion</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="index.html">QualifiedNewOtrMessage</a><span class="token operator">&gt; </span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Functions</h2>
-      <div class="table" data-togglable="Functions"><a data-name="2009698418%2FFunctions%2F-622385496" anchor-label="plus" id="2009698418%2FFunctions%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="plus.html"><span><span>plus</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2009698418%2FFunctions%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">operator override </span><span class="token keyword">fun </span><a href="plus.html"><span class="token function">plus</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">other<span class="token operator">: </span><span data-unresolved-link="pbandk/Message///PointingToDeclaration/">Message</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">QualifiedNewOtrMessage</a></div></div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <h2 class="">Properties</h2>
-      <div class="table" data-togglable="Properties"><a data-name="224230765%2FProperties%2F-622385496" anchor-label="blob" id="224230765%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="blob.html"><span><span>blob</span></span></a></div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="224230765%2FProperties%2F-622385496" anchor-label="blob" id="224230765%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="blob.html"><span><span>blob</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="224230765%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="224230765%2FProperties%2F-622385496" anchor-label="blob" id="224230765%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="blob.html">blob</a><span class="token operator">: </span><span data-unresolved-link="pbandk/ByteArr///PointingToDeclaration/">ByteArr</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="blob.html">blob</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="494829918%2FProperties%2F-622385496" anchor-label="clientMismatchStrategy" id="494829918%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="client-mismatch-strategy.html"><span>client</span><wbr><span>Mismatch</span><wbr><span><span>Strategy</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="client-mismatch-strategy.html"><span>client</span><wbr><span>Mismatch</span><wbr><span><span>Strategy</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="494829918%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="494829918%2FProperties%2F-622385496" anchor-label="clientMismatchStrategy" id="494829918%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="client-mismatch-strategy.html">clientMismatchStrategy</a><span class="token operator">: </span><a href="-client-mismatch-strategy/index.html">QualifiedNewOtrMessage.ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="client-mismatch-strategy.html">clientMismatchStrategy</a><span class="token operator">: </span><a href="-client-mismatch-strategy/index.html">QualifiedNewOtrMessage.ClientMismatchStrategy</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="848688155%2FProperties%2F-622385496" anchor-label="descriptor" id="848688155%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="descriptor.html"><span><span>descriptor</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="descriptor.html"><span><span>descriptor</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="848688155%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="848688155%2FProperties%2F-622385496" anchor-label="descriptor" id="848688155%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="descriptor.html">descriptor</a><span class="token operator">: </span><span data-unresolved-link="pbandk/MessageDescriptor///PointingToDeclaration/">MessageDescriptor</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="index.html">QualifiedNewOtrMessage</a><span class="token operator">&gt;</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword"></span><span class="token keyword">val </span><a href="descriptor.html">descriptor</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="index.html">QualifiedNewOtrMessage</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="202279329%2FProperties%2F-622385496" anchor-label="ignoreAll" id="202279329%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="ignore-all.html"><span>ignore</span><wbr><span><span>All</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="ignore-all.html"><span>ignore</span><wbr><span><span>All</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="202279329%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="202279329%2FProperties%2F-622385496" anchor-label="ignoreAll" id="202279329%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="ignore-all.html">ignoreAll</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-ignore-all/index.html">ClientMismatchStrategy.IgnoreAll</a><span class="token operator">?</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="ignore-all.html">ignoreAll</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-ignore-all/index.html">ClientMismatchStrategy.IgnoreAll</a><span class="token operator">?</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="37114316%2FProperties%2F-622385496" anchor-label="ignoreOnly" id="37114316%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="ignore-only.html"><span>ignore</span><wbr><span><span>Only</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="ignore-only.html"><span>ignore</span><wbr><span><span>Only</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="37114316%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="37114316%2FProperties%2F-622385496" anchor-label="ignoreOnly" id="37114316%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="ignore-only.html">ignoreOnly</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-ignore-only/index.html">ClientMismatchStrategy.IgnoreOnly</a><span class="token operator">?</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="ignore-only.html">ignoreOnly</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-ignore-only/index.html">ClientMismatchStrategy.IgnoreOnly</a><span class="token operator">?</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1848519761%2FProperties%2F-622385496" anchor-label="nativePriority" id="-1848519761%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="native-priority.html"><span>native</span><wbr><span><span>Priority</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="native-priority.html"><span>native</span><wbr><span><span>Priority</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1848519761%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1848519761%2FProperties%2F-622385496" anchor-label="nativePriority" id="-1848519761%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="native-priority.html">nativePriority</a><span class="token operator">: </span><a href="../-priority/index.html">Priority</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="native-priority.html">nativePriority</a><span class="token operator">: </span><a href="../-priority/index.html">Priority</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-602699271%2FProperties%2F-622385496" anchor-label="nativePush" id="-602699271%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="native-push.html"><span>native</span><wbr><span><span>Push</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="native-push.html"><span>native</span><wbr><span><span>Push</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-602699271%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-602699271%2FProperties%2F-622385496" anchor-label="nativePush" id="-602699271%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="native-push.html">nativePush</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="native-push.html">nativePush</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-579806393%2FProperties%2F-622385496" anchor-label="protoSize" id="-579806393%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="proto-size.html"><span>proto</span><wbr><span><span>Size</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proto-size.html"><span>proto</span><wbr><span><span>Size</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-579806393%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-579806393%2FProperties%2F-622385496" anchor-label="protoSize" id="-579806393%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="proto-size.html">protoSize</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword"></span><span class="token keyword">val </span><a href="proto-size.html">protoSize</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1319221136%2FProperties%2F-622385496" anchor-label="recipients" id="-1319221136%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="recipients.html"><span><span>recipients</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="recipients.html"><span><span>recipients</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1319221136%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1319221136%2FProperties%2F-622385496" anchor-label="recipients" id="-1319221136%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="recipients.html">recipients</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-qualified-user-entry/index.html">QualifiedUserEntry</a><span class="token operator">&gt;</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="recipients.html">recipients</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-qualified-user-entry/index.html">QualifiedUserEntry</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1299457533%2FProperties%2F-622385496" anchor-label="reportAll" id="-1299457533%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="report-all.html"><span>report</span><wbr><span><span>All</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="report-all.html"><span>report</span><wbr><span><span>All</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1299457533%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-1299457533%2FProperties%2F-622385496" anchor-label="reportAll" id="-1299457533%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="report-all.html">reportAll</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-report-all/index.html">ClientMismatchStrategy.ReportAll</a><span class="token operator">?</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="report-all.html">reportAll</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-report-all/index.html">ClientMismatchStrategy.ReportAll</a><span class="token operator">?</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="727911850%2FProperties%2F-622385496" anchor-label="reportOnly" id="727911850%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="report-only.html"><span>report</span><wbr><span><span>Only</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="report-only.html"><span>report</span><wbr><span><span>Only</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="727911850%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="727911850%2FProperties%2F-622385496" anchor-label="reportOnly" id="727911850%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="report-only.html">reportOnly</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-report-only/index.html">ClientMismatchStrategy.ReportOnly</a><span class="token operator">?</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="report-only.html">reportOnly</a><span class="token operator">: </span><a href="../-client-mismatch-strategy/-report-only/index.html">ClientMismatchStrategy.ReportOnly</a><span class="token operator">?</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-903924075%2FProperties%2F-622385496" anchor-label="sender" id="-903924075%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="sender.html"><span><span>sender</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="sender.html"><span><span>sender</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-903924075%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="-903924075%2FProperties%2F-622385496" anchor-label="sender" id="-903924075%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="sender.html">sender</a><span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="sender.html">sender</a><span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="437454310%2FProperties%2F-622385496" anchor-label="transient" id="437454310%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="transient.html"><span><span>transient</span></span></a></div>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="transient.html"><span><span>transient</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="437454310%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="437454310%2FProperties%2F-622385496" anchor-label="transient" id="437454310%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="transient.html">transient</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="transient.html">transient</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="288570733%2FProperties%2F-622385496" anchor-label="unknownFields" id="288570733%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="unknown-fields.html"><span>unknown</span><wbr><span><span>Fields</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="288570733%2FProperties%2F-622385496"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword"></span><span class="token keyword">val </span><a href="unknown-fields.html">unknownFields</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-<a data-name="288570733%2FProperties%2F-622385496" anchor-label="unknownFields" id="288570733%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="unknown-fields.html"><span>unknown</span><wbr><span><span>Fields</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="288570733%2FProperties%2F-622385496"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><a data-name="288570733%2FProperties%2F-622385496" anchor-label="unknownFields" id="288570733%2FProperties%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="unknown-fields.html">unknownFields</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="pbandk/UnknownField///PointingToDeclaration/">UnknownField</span><span class="token operator">&gt;</span></div></div></div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1704450000%2FFunctions%2F-622385496" anchor-label="plus" id="-1704450000%2FFunctions%2F-622385496" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":protobuf:dokkaHtmlPartial/commonMain" data-filterable-set=":protobuf:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="plus.html"><span><span>plus</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1704450000%2FFunctions%2F-622385496"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":protobuf:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">operator </span><span class="token keyword">fun </span><a href="plus.html"><span class="token function">plus</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">other<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">QualifiedNewOtrMessage</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
@@ -337,10 +348,10 @@
   </div>
 </div>
       <div class="footer">
-        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2023 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2025 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
       </div>
     </div>
 </div>
-
-</body></html>
+</body>
+</html>
 
