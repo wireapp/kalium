@@ -22,12 +22,12 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatten
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
@@ -47,7 +47,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -72,6 +71,8 @@ internal interface EventGatherer {
      */
     suspend fun gatherEvents(): Flow<EventEnvelope>
 
+    suspend fun liveEvents(): Flow<Unit>
+
     val currentSource: StateFlow<EventSource>
 }
 
@@ -87,11 +88,12 @@ internal class EventGathererImpl(
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
-    private val offlineEventBuffer = EventProcessingHistory()
     private val logger = logger.withFeatureId(SYNC)
 
-    override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
-        offlineEventBuffer.clear()
+    // TODO handle multiple events at once
+    override suspend fun gatherEvents(): Flow<EventEnvelope> = eventRepository.observeEvents().flatten()
+
+    override suspend fun liveEvents(): Flow<Unit> = flow {
         _currentSource.value = EventSource.PENDING
         /**
          * Fetches and emits live events based on whether the client supports async notifications.
@@ -116,24 +118,23 @@ internal class EventGathererImpl(
         eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
     }
 
-    private suspend fun FlowCollector<EventEnvelope>.emitEvents(
-        webSocketEventFlow: Flow<WebSocketEvent<EventEnvelope>>
+    private suspend fun FlowCollector<Unit>.emitEvents(
+        webSocketEventFlow: Flow<WebSocketEvent<Unit>>
     ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
-        .distinctUntilChanged()
         .cancellable()
         .collect { handleWebsocketEvent(it) }
 
-    private suspend fun FlowCollector<EventEnvelope>.handleWebsocketEvent(
-        webSocketEvent: WebSocketEvent<EventEnvelope>
+    private suspend fun FlowCollector<Unit>.handleWebsocketEvent(
+        webSocketEvent: WebSocketEvent<Unit>
     ) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen(webSocketEvent.shouldProcessPendingEvents)
-        is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
+        is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived()
         is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) =
+    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Unit>) =
         when (val cause = webSocketEvent.cause) {
             null -> logger.i("Websocket closed normally")
             is IOException ->
@@ -143,37 +144,19 @@ internal class EventGathererImpl(
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }
 
-    private suspend fun FlowCollector<EventEnvelope>.onWebSocketEventReceived(
-        webSocketEvent: WebSocketEvent.BinaryPayloadReceived<EventEnvelope>
-    ) {
-        val envelope = webSocketEvent.payload
-        val obfuscatedId = envelope.event.id.obfuscateId()
-        logger.i("Websocket Received payload: ${envelope.event.toLogString()}")
-        if (offlineEventBuffer.contains(envelope.event)) {
-            if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
-                // Really live
-                logger.d("Removed most recent event from offlineEventBuffer: '$obfuscatedId'")
-            } else {
-                // Really live
-                logger.d("Removing event from offlineEventBuffer: $obfuscatedId")
-                offlineEventBuffer.remove(envelope.event)
-            }
-            logger
-                .d("Skipping emit of event from WebSocket because already emitted as offline event $obfuscatedId")
-        } else {
-            logger.d("Event never seen before $obfuscatedId - We are live")
-            emit(envelope)
-        }
+    private suspend fun FlowCollector<Unit>.onWebSocketEventReceived() {
+        logger.i("Websocket Binary payload received")
+        emit(Unit)
     }
 
-    private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen(shouldProcessPendingEvents: Boolean) {
+    private suspend fun FlowCollector<Unit>.onWebSocketOpen(shouldProcessPendingEvents: Boolean) {
         logger.i("Websocket Open")
         // TODO: Handle time drift in a different way, e.g. the notification api is already called
         //  somewhere else so maybe we can take the time from there ?
 //          handleTimeDrift()
         if (shouldProcessPendingEvents) {
             eventRepository
-                .pendingEvents()
+                .fetchEvents()
                 .onEach { result ->
                     result.onFailure(::throwPendingEventException)
                 }
@@ -181,8 +164,7 @@ internal class EventGathererImpl(
                 .map { offlineEvent -> offlineEvent.value }
                 .collect {
                     logger.i("Collecting offline event: ${it.event.toLogString()}")
-                    offlineEventBuffer.add(it.event)
-                    emit(it)
+                    emit(Unit)
                 }
             logger.i("Offline events collection finished. Collecting Live events.")
         } else {

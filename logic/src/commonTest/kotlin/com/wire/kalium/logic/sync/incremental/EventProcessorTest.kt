@@ -304,27 +304,6 @@ class EventProcessorTest {
         }.wasNotInvoked()
     }
 
-    @Test
-    fun givenAnEvent_whenProcessingEvent_thenAcknowledgeIsCalled() = runTest {
-        // Given
-        val event = TestEvent.newConnection().wrapInEnvelope(isTransient = false)
-
-        val (arrangement, eventProcessor) = Arrangement(this).arrange() {
-            withUpdateLastProcessedEventId(event.event.id, Either.Right(Unit))
-        }
-
-        // When
-        eventProcessor.processEvent(event)
-
-        // Then
-        coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.eventRepository.acknowledgeEvent(eq(event))
-        }.wasInvoked(exactly = once)
-    }
 
     private class Arrangement(
         val processingScope: CoroutineScope
@@ -337,12 +316,6 @@ class EventProcessorTest {
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
         val federationEventReceiver = mock(FederationEventReceiver::class)
         val missedNotificationsEventReceiver = mock(MissedNotificationsEventReceiver::class)
-
-        init {
-            runBlocking {
-                withAcknowledgeEventReceiverReturning(Unit.right())
-            }
-        }
 
         suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
             coEvery {
@@ -399,12 +372,6 @@ class EventProcessorTest {
         suspend fun withUserPropertiesEventReceiverFailingWith(failure: CoreFailure) = withUserPropertiesEventReceiverReturning(
             Either.Left(failure)
         )
-
-        suspend fun withAcknowledgeEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                eventRepository.acknowledgeEvent(any())
-            }.returns(result)
-        }
 
         suspend fun withMissedNotificationsEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {

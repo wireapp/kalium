@@ -1261,6 +1261,7 @@ class UserSessionScope internal constructor(
         get() = EventDataSource(
             notificationApi = authenticatedNetworkContainer.notificationApi,
             metadataDAO = userStorage.database.metadataDAO,
+            eventDAO = userStorage.database.eventDAO,
             currentClientId = clientIdProvider,
             clientRegistrationStorage = clientRegistrationStorage,
             selfUserId = userId
@@ -1734,6 +1735,7 @@ class UserSessionScope internal constructor(
         MissedNotificationsEventReceiverImpl(
             slowSyncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
+            eventRepository = eventRepository,
         )
     }
 

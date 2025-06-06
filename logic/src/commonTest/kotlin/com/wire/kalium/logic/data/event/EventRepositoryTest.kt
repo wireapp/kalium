@@ -21,19 +21,23 @@ package com.wire.kalium.logic.data.event
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapAsyncInEnvelope
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
@@ -41,9 +45,12 @@ import com.wire.kalium.network.api.base.authenticated.notification.NotificationA
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.event.EventDAO
+import com.wire.kalium.persistence.dao.event.EventEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.any
@@ -54,10 +61,12 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -90,30 +99,6 @@ class EventRepositoryTest {
         eventRepository.liveEvents()
         coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value)) }
             .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
-        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = UserId("value", "domain"),
-            time = Instant.UNIX_FIRST_DATE,
-            data = MessageEventData("text", "senderId", "recipient")
-        )
-        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
-        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
-
-        val (arrangement, eventRepository) = Arrangement()
-            .withLastStoredEventId("someNotificationId")
-            .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
-            .arrange()
-
-        eventRepository.pendingEvents().test {
-            awaitItem().shouldSucceed {
-                assertEquals(pendingEvent.id, it.event.id)
-            }
-            awaitComplete()
-        }
     }
 
     @Test
@@ -185,47 +170,56 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenAcknowledgeEvent_whenIsNotAsyncNotifications_thenSkip() = runTest {
-        val (arrangement, eventRepository) = Arrangement()
-            .arrange()
+    fun givenLiveEvent_whenReceived_thenShouldAcknowledgeWithACK() = runTest {
+        val eventId = "event-id"
+        val testEventResponse = EventResponse(
+            id = eventId,
+            payload = listOf(MEMBER_JOIN_EVENT)
+        )
+        val deliveryTag = 987654UL
 
-        val eventEnvelope = TestEvent.newConversationEvent().wrapInEnvelope()
-        val result = eventRepository.acknowledgeEvent(eventEnvelope)
-
-        result.shouldSucceed()
-        coVerify {
-            arrangement.notificationApi.acknowledgeEvents(any(), any())
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenAcknowledgeEvent_whenIsAsyncNotifications_thenACK() = runTest {
-        val (arrangement, eventRepository) = Arrangement()
+        val (arrangement, repository) = Arrangement()
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withClientHasConsumableNotifications(true)
+            .withClearProcessedEvents(eventId)
+            .withConsumeLiveEventsReturning(
+                NetworkResponse.Success(
+                    value = flowOf(
+                        WebSocketEvent.BinaryPayloadReceived(
+                            ConsumableNotificationResponse.EventNotification(
+                                EventDataDTO(
+                                    deliveryTag = deliveryTag,
+                                    event = testEventResponse
+                                )
+                            )
+                        )
+                    ),
+                    headers = mapOf(),
+                    httpCode = 200
+                )
+            )
             .withAcknowledgeEvents()
             .arrange()
 
-        val eventEnvelope = TestEvent.newConversationEvent().wrapAsyncInEnvelope()
-        val result = eventRepository.acknowledgeEvent(eventEnvelope)
+        val result = repository.liveEvents()
+        result.shouldSucceed {}
 
-        result.shouldSucceed()
-        coVerify {
-            arrangement.notificationApi.acknowledgeEvents(any(), matches { it.type == AcknowledgeType.ACK })
-        }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAcknowledgeEventFull_whenIsAsyncNotifications_thenACK() = runTest {
-        val (arrangement, eventRepository) = Arrangement()
-            .withAcknowledgeEvents()
-            .arrange()
-
-        val eventEnvelope = TestEvent.notificationsMissed().wrapAsyncInEnvelope(isMissedNotifications = true)
-        val result = eventRepository.acknowledgeEvent(eventEnvelope)
-
-        result.shouldSucceed()
-        coVerify {
-            arrangement.notificationApi.acknowledgeEvents(any(), matches { it.type == AcknowledgeType.ACK_FULL_SYNC })
-        }.wasInvoked(exactly = once)
+        result.fold({}, { flow ->
+            flow.test {
+                awaitItem()
+                awaitComplete()
+                coVerify {
+                    arrangement.notificationApi.acknowledgeEvents(
+                        eq(TestClient.CLIENT_ID.value),
+                        matches {
+                            it.type == AcknowledgeType.ACK &&
+                                    it.data?.deliveryTag == deliveryTag
+                                    it.data?.multiple == false
+                        }
+                    )
+                }.wasInvoked(exactly = once)
+            }
+        })
     }
 
     @Test
@@ -244,8 +238,44 @@ class EventRepositoryTest {
         assertNotNull(time)
     }
 
+    @Test
+    fun givenUnprocessedEventsInDAO_whenObservingEvents_thenShouldEmitMappedEvents() = runTest {
+        val testEvent = EventResponse(
+            id = "test-event-id",
+            payload = listOf(EventContentDTO.AsyncMissedNotification)
+        )
+        val testPayload = KtxSerializer.json.encodeToString(testEvent)
+
+        val testEventEntity = EventEntity(
+            id = 1L,
+            eventId = testEvent.id,
+            isProcessed = false,
+            payload = testPayload
+        )
+
+        val (_, repository) = Arrangement()
+            .withLastStoredEventId(null)
+            .withUnprocessedEvents(listOf(testEventEntity))
+            .arrange()
+
+        repository.observeEvents().test {
+            val emitted = awaitItem()
+            assertEquals(1, emitted.size)
+            assertEquals(testEvent.id, emitted.first().event.id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+
     private companion object {
         const val LAST_PROCESSED_EVENT_ID_KEY = "last_processed_event_id"
+        val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
+            TestConversation.NETWORK_ID,
+            TestConversation.NETWORK_USER_ID1,
+            Instant.UNIX_FIRST_DATE,
+            ConversationMembers(emptyList(), emptyList()),
+            TestConversation.NETWORK_USER_ID1.value
+        )
     }
 
     private class Arrangement {
@@ -254,10 +284,12 @@ class EventRepositoryTest {
         val metaDAO = mock(MetadataDAO::class)
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
+        val eventDAO: EventDAO = mock(EventDAO::class)
 
         private val eventRepository: EventRepository = EventDataSource(
             notificationApi,
             metaDAO,
+            eventDAO,
             clientIdProvider,
             TestUser.SELF.id,
             clientRegistrationStorage
@@ -322,6 +354,26 @@ class EventRepositoryTest {
             coEvery {
                 notificationApi.acknowledgeEvents(any(), any())
             }.returns(Unit)
+        }
+
+        suspend fun withUnprocessedEvents(events: List<EventEntity>) = apply {
+            coEvery {
+                eventDAO.observeUnprocessedEvents()
+            }.returns(flowOf(events))
+        }
+
+        suspend fun withClearProcessedEvents(eventId: String, id: Long = 1L) = apply {
+            coEvery { eventDAO.getEventById(eq(eventId)) }.returns(
+                EventEntity(
+                    id = id,
+                    eventId = eventId,
+                    isProcessed = false,
+                    payload = ""
+                )
+            )
+
+            coEvery { eventDAO.deleteProcessedEventsBefore(id) }.returns(Unit)
+            coEvery { eventDAO.deleteAllProcessedEvents() }.returns(Unit)
         }
 
         inline fun arrange(): Pair<Arrangement, EventRepository> {

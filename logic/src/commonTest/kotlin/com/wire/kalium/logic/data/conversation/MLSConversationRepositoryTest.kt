@@ -1743,13 +1743,6 @@ class MLSConversationRepositoryTest {
                 identity = null,
                 crlNewDistributionPoints = null
             )
-            val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
-                TestConversation.NETWORK_ID,
-                TestConversation.NETWORK_USER_ID1,
-                Instant.UNIX_FIRST_DATE,
-                ConversationMembers(emptyList(), emptyList()),
-                TestConversation.NETWORK_USER_ID1.value
-            )
             val MEMBER_LEAVE_EVENT = EventContentDTO.Conversation.MemberLeaveDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
