@@ -667,6 +667,7 @@ com.wire.kalium.persistence.dao.call
 com.wire.kalium.persistence.dao.client
 com.wire.kalium.persistence.dao.conversation
 com.wire.kalium.persistence.dao.conversation.folder
+com.wire.kalium.persistence.dao.event
 com.wire.kalium.persistence.dao.member
 com.wire.kalium.persistence.dao.message
 com.wire.kalium.persistence.dao.message.attachment
