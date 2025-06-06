@@ -17,12 +17,13 @@
  */
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * This provider checks if the client is capable of async notifications.
@@ -31,18 +32,25 @@ import kotlinx.coroutines.flow.firstOrNull
  * At some point Legacy notifications will be deprecated and removed from the codebase.
  */
 internal class IsClientAsyncNotificationsCapableProviderImpl(
-    private val clientRegistrationStorage: ClientRegistrationStorage
+    private val clientRegistrationStorage: ClientRegistrationStorage,
+    coroutineScope: CoroutineScope
 ) : IsClientAsyncNotificationsCapableProvider {
 
-    override suspend fun invoke(): Either<CoreFailure, Boolean> {
-        return wrapStorageRequest {
-            clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull() == true
+    private val _lastValue = MutableStateFlow(false)
+    override val isClientAsyncNotificationsCapableFlow: Flow<Boolean> = _lastValue.asStateFlow()
+    override fun isClientAsyncNotificationsCapable(): Boolean = _lastValue.value
+
+    init {
+        coroutineScope.launch {
+            clientRegistrationStorage.observeHasConsumableNotifications().collect {
+                _lastValue.value = it
+            }
         }
     }
-
 }
 
 @Mockable
-internal fun interface IsClientAsyncNotificationsCapableProvider {
-    suspend operator fun invoke(): Either<CoreFailure, Boolean>
+internal interface IsClientAsyncNotificationsCapableProvider {
+    val isClientAsyncNotificationsCapableFlow: Flow<Boolean>
+    fun isClientAsyncNotificationsCapable(): Boolean
 }

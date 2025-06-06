@@ -97,11 +97,11 @@ internal class EventGathererImpl(
          * Fetches and emits live events based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
          */
-        isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
-            fetchEventFlow(isAsyncNotifications)
-                .onSuccess { emitEvents(it) }
-                .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
-        }
+        val isAsyncNotifications = isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
+        fetchEventFlow(isAsyncNotifications)
+            .onSuccess { emitEvents(it) }
+            .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
+
         // When it ends, reset source back to PENDING
         _currentSource.value = EventSource.PENDING
     }
