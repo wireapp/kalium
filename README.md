@@ -134,53 +134,149 @@ You can run locally in your terminal:
 }%%
 
 graph LR
+  :logic["logic"]
+  :cryptography["cryptography"]
+  :util["util"]
+  :network["network"]
+  :network-util["network-util"]
+  :persistence["persistence"]
+  :logger["logger"]
+  :calling["calling"]
+  :protobuf["protobuf"]
+  :persistence["persistence"]
+  :logger["logger"]
+  :util["util"]
+  :backup["backup"]
+  :protobuf["protobuf"]
+  :persistence-test["persistence-test"]
+  :persistence["persistence"]
+  :network["network"]
+  :network-model["network-model"]
+  :network-util["network-util"]
+  :logic["logic"]
+  :common["common"]
+  :data["data"]
+  :calling["calling"]
+  :network["network"]
+  :cryptography["cryptography"]
+  :cells["cells"]
+  :backup["backup"]
+  :persistence-test["persistence-test"]
+  :cryptography["cryptography"]
+  :android["android"]
+  :network["network"]
+  :cryptography["cryptography"]
+  :logic["logic"]
+  :mocks["mocks"]
+  :network-model["network-model"]
+  :samples["samples"]
+  :logic["logic"]
+  :calling["calling"]
+  :backup["backup"]
+  :cryptography["cryptography"]
+  :protobuf["protobuf"]
+  :logger["logger"]
+  :network["network"]
+  :persistence["persistence"]
+  :network-util["network-util"]
+  :tango-tests["tango-tests"]
+  :network["network"]
+  :logic["logic"]
+  :persistence["persistence"]
+  :cryptography["cryptography"]
+  :monkeys["monkeys"]
+  :util["util"]
+  :cells["cells"]
+  :network-model["network-model"]
+  :testservice["testservice"]
+  :data["data"]
+  :benchmarks["benchmarks"]
+  :persistence["persistence"]
+  :logic["logic"]
+  :cli["cli"]
+  :network["network"]
+  :util["util"]
+  :common["common"]
 
-  persistence --> logger
-  persistence --> util
-  samples --> logic
-  samples --> calling
-  samples --> network
-  samples --> cryptography
-  samples --> persistence
-  samples --> protobuf
-  samples --> logger
-  tango-tests --> network
-  tango-tests --> logic
-  tango-tests --> persistence
-  persistence-test --> persistence
-  testservice --> network
-  testservice --> cryptography
-  testservice --> logic
-  network --> logger
-  network --> protobuf
-  network --> util
-  network --> network-util
-  cryptography --> logger
-  monkeys --> network
-  monkeys --> cryptography
-  monkeys --> logic
-  monkeys --> util
-  android --> network
-  android --> cryptography
-  android --> logic
-  logic --> network-util
-  logic --> logger
-  logic --> calling
-  logic --> network
-  logic --> cryptography
-  logic --> persistence
-  logic --> protobuf
-  logic --> util
-  logic --> persistence-test
-  cli --> network
-  cli --> cryptography
-  cli --> logic
-  cli --> util
-  network-util --> logger
+  : --> :logic
+  : --> :cryptography
+  : --> :util
+  : --> :network
+  : --> :network-util
+  : --> :persistence
+  : --> :logger
+  : --> :calling
+  : --> :protobuf
+  :persistence --> :logger
+  :persistence --> :util
+  :backup --> :protobuf
+  :persistence-test --> :persistence
+  :network --> :network-model
+  :network --> :logger
+  :network --> :protobuf
+  :network --> :util
+  :network --> :network-util
+  :logic --> :common
+  :logic --> :data
+  :logic --> :network-util
+  :logic --> :logger
+  :logic --> :calling
+  :logic --> :network
+  :logic --> :cryptography
+  :logic --> :persistence
+  :logic --> :protobuf
+  :logic --> :util
+  :logic --> :cells
+  :logic --> :backup
+  :logic --> :persistence-test
+  :cryptography --> :logger
+  :android --> :network
+  :android --> :cryptography
+  :android --> :logic
+  :mocks --> :network-model
+  :samples --> :logic
+  :samples --> :calling
+  :samples --> :backup
+  :samples --> :cryptography
+  :samples --> :protobuf
+  :samples --> :logger
+  :samples --> :network
+  :samples --> :persistence
+  :network-util --> :logger
+  :tango-tests --> :network
+  :tango-tests --> :logic
+  :tango-tests --> :persistence
+  :tango-tests --> :cryptography
+  :monkeys --> :network
+  :monkeys --> :cryptography
+  :monkeys --> :logic
+  :monkeys --> :util
+  :cells --> :common
+  :cells --> :network
+  :cells --> :data
+  :cells --> :util
+  :cells --> :persistence
+  :network-model --> :logger
+  :network-model --> :util
+  :testservice --> :network
+  :testservice --> :cryptography
+  :testservice --> :logic
+  :data --> :network-model
+  :data --> :util
+  :benchmarks --> :persistence
+  :benchmarks --> :logic
+  :cli --> :network
+  :cli --> :cryptography
+  :cli --> :logic
+  :cli --> :util
+  :common --> :data
+  :common --> :logger
+  :common --> :util
+  :common --> :persistence
+  :common --> :network
+  :common --> :network-util
+  :common --> :cryptography
 ```
-
-This graph is generated using `./gradlew createModuleGraph`. More about it [here](https://github.com/iurysza/module-graph).
-
 #### Logo
 
 The logo is adapted from [OpenMoji](https://openmoji.org/) – the open-source emoji and icon project. License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
