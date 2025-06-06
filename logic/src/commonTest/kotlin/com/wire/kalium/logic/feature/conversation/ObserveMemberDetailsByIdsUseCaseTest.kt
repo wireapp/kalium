@@ -22,7 +22,6 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -37,8 +36,7 @@ import kotlin.test.assertEquals
 
 class ObserveMemberDetailsByIdsUseCaseTest {
 
-    @Mock
-    private val userRepository = mock(UserRepository::class)
+        private val userRepository = mock(UserRepository::class)
 
     private lateinit var observeMemberDetailsByIds: ObserveUserListByIdUseCase
 

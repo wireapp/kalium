@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 data class TeamEntity(
@@ -26,6 +27,7 @@ data class TeamEntity(
     val icon: String
 )
 
+@Mockable
 interface TeamDAO {
     suspend fun insertTeam(team: TeamEntity)
     suspend fun insertTeams(teams: List<TeamEntity>)

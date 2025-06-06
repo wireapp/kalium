@@ -23,7 +23,9 @@ import com.wire.kalium.network.api.authenticated.connection.ConnectionResponse
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface ConnectionApi {
     suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse>
     suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO>

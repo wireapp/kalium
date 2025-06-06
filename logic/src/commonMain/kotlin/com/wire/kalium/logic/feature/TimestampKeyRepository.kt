@@ -26,10 +26,12 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
+@Mockable
 interface TimestampKeyRepository {
     suspend fun hasPassed(key: TimestampKeys, duration: Duration): Either<StorageFailure, Boolean>
     suspend fun reset(key: TimestampKeys): Either<StorageFailure, Unit>

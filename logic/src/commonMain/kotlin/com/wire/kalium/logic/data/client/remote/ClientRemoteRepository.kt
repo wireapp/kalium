@@ -40,8 +40,10 @@ import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest
 import com.wire.kalium.network.api.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
+import io.mockative.Mockable
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
+@Mockable
 interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(

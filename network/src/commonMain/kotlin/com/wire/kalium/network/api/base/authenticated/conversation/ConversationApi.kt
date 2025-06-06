@@ -51,8 +51,10 @@ import com.wire.kalium.network.api.model.SubconversationId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface ConversationApi : BaseApi {
 
     /**

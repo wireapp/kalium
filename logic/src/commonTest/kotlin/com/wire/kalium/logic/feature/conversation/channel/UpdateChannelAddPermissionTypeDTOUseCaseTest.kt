@@ -22,7 +22,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -61,7 +60,7 @@ class UpdateChannelAddPermissionTypeDTOUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationRepository = mock(ConversationRepository::class)
 
         private val updateChannelAddPermission = UpdateChannelAddPermissionUseCaseImpl(conversationRepository)

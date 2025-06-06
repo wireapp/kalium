@@ -23,7 +23,6 @@ import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -77,8 +76,7 @@ class StoreServerConfigUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val customServerConfigRepository = mock(CustomServerConfigRepository::class)
+                val customServerConfigRepository = mock(CustomServerConfigRepository::class)
         private val useCase = StoreServerConfigUseCaseImpl(customServerConfigRepository)
 
         suspend fun withStoreConfig(

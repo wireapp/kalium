@@ -24,19 +24,19 @@ import kotlinx.coroutines.flow.Flow
 actual class MediaManagerServiceImpl(
     platformContext: PlatformContext
 ) : MediaManagerService {
-    override suspend fun turnLoudSpeakerOn() {
+    actual override suspend fun turnLoudSpeakerOn() {
         TODO("Not yet implemented")
     }
 
-    override suspend fun turnLoudSpeakerOff() {
+    actual override suspend fun turnLoudSpeakerOff() {
         TODO("Not yet implemented")
     }
 
-    override fun observeSpeaker(): Flow<Boolean> {
+    actual override fun observeSpeaker(): Flow<Boolean> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun startMediaManager() {
+    actual override suspend fun startMediaManager() {
         TODO("Not yet implemented")
     }
 }

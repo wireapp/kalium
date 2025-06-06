@@ -38,7 +38,9 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import io.mockative.Mockable
 
+@Mockable
 interface MessageSendFailureHandler {
     /**
      * Handle a failure when attempting to send a message

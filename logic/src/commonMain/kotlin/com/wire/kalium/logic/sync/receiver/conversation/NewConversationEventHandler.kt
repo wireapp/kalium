@@ -38,7 +38,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 
+@Mockable
 interface NewConversationEventHandler {
     suspend fun handle(event: Event.Conversation.NewConversation)
 }

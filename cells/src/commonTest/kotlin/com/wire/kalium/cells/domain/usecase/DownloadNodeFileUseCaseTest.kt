@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -186,10 +185,7 @@ class DownloadNodeFileUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val cellsRepository = mock(CellsRepository::class)
-
-        @Mock
         val attachmentsRepository = mock(CellAttachmentsRepository::class)
 
         suspend fun withAssetPath() = apply {

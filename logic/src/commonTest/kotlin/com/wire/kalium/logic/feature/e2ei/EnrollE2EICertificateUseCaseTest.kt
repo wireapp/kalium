@@ -42,8 +42,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
-import io.mockative.AnySuspendResultBuilder
-import io.mockative.Mock
+import io.mockative.SuspendResultBuilder
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1088,16 +1087,13 @@ class EnrollE2EICertificateUseCaseTest {
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
-        @Mock
         val e2EIRepository = mock(E2EIRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
         private var selfUserFetched: Boolean = false
 
         // to ensure that at the moment of the given call, the user is already fetched
-        private fun <R> AnySuspendResultBuilder<R>.ensuresSelfUserFetchedAndReturns(value: R, methodName: String) = this.invokes {
+        private fun <R> SuspendResultBuilder<R>.ensuresSelfUserFetchedAndReturns(value: R, methodName: String) = this.invokes {
             require(selfUserFetched) { "Self user should be fetched before calling $methodName" }
             value
         }

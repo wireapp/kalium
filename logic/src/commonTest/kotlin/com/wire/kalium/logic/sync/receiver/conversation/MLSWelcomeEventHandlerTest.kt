@@ -43,7 +43,6 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.ktor.util.encodeBase64
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -256,22 +255,11 @@ class MLSWelcomeEventHandlerTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
-        @Mock
-        val mlsClient: MLSClient = mock(MLSClient::class)
-
-        @Mock
+                val mlsClient: MLSClient = mock(MLSClient::class)
         val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
-
-        @Mock
         val checkRevocationList: RevocationListChecker = mock(RevocationListChecker::class)
-
-        @Mock
         val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-
-        @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         suspend fun withMLSClientProviderReturningMLSClient() = apply {

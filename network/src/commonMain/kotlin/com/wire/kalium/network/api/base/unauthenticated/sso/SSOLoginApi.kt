@@ -22,7 +22,9 @@ import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface SSOLoginApi {
 
     suspend fun initiate(param: InitiateParam): NetworkResponse<String>

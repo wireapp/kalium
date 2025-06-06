@@ -46,7 +46,6 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -250,16 +249,10 @@ class EventRepositoryTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val notificationApi: NotificationApi = mock(NotificationApi::class)
-
-        @Mock
         val metaDAO = mock(MetadataDAO::class)
-
-        @Mock
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
-
-        @Mock
         val clientIdProvider = mock(CurrentClientIdProvider::class)
 
         private val eventRepository: EventRepository = EventDataSource(
