@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.prekey
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
@@ -35,8 +34,7 @@ import kotlin.test.assertEquals
 
 class PreKeyListMapperTest {
 
-    @Mock
-    private val preKeyMapper = mock(PreKeyMapper::class)
+        private val preKeyMapper = mock(PreKeyMapper::class)
 
     private lateinit var subject: PreKeyListMapper
 

@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -68,8 +67,7 @@ class SendTypingEventUseCaseTest {
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-        @Mock
-        val typingIndicatorRepository: TypingIndicatorOutgoingRepository = mock(TypingIndicatorOutgoingRepository::class)
+                val typingIndicatorRepository: TypingIndicatorOutgoingRepository = mock(TypingIndicatorOutgoingRepository::class)
 
         suspend fun withTypingIndicatorStatusAndResult(
             typingMode: Conversation.TypingIndicatorMode,

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -81,7 +80,6 @@ class ObserveLegalHoldStateForUserUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val clientRepository: ClientRepository = mock(ClientRepository::class)
 
         val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase =

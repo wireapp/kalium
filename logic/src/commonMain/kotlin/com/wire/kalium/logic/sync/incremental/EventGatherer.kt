@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
+import io.mockative.Mockable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -56,6 +57,7 @@ import kotlinx.datetime.toInstant
  * Responsible for fetching events from a remote source, orchestrating between events missed since
  * the last time we gathered events and new events being received in real time.
  */
+@Mockable
 internal interface EventGatherer {
 
     /**

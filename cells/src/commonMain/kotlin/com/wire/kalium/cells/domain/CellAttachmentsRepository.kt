@@ -22,7 +22,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageAttachment
+import io.mockative.Mockable
 
+@Mockable
 internal interface CellAttachmentsRepository {
     suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?>
     suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>

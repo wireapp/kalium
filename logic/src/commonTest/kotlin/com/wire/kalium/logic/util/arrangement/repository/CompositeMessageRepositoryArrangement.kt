@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -32,7 +31,7 @@ import io.mockative.matches
 import io.mockative.mock
 
 interface CompositeMessageRepositoryArrangement {
-    @Mock
+
     val compositeMessageRepository: CompositeMessageRepository
 
     suspend fun withMarkSelected(
@@ -50,7 +49,7 @@ interface CompositeMessageRepositoryArrangement {
 }
 
 class CompositeMessageRepositoryArrangementImpl : CompositeMessageRepositoryArrangement {
-    @Mock
+
     override val compositeMessageRepository: CompositeMessageRepository = mock(CompositeMessageRepository::class)
 
     override suspend fun withMarkSelected(

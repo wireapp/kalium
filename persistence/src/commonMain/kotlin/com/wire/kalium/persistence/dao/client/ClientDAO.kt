@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao.client
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -69,6 +70,7 @@ enum class ClientTypeEntity {
 }
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface ClientDAO {
     suspend fun insertClient(client: InsertClientParam)
     suspend fun insertClients(clients: List<InsertClientParam>)

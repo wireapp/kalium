@@ -28,7 +28,6 @@ import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -44,11 +43,9 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 class SSOLoginRepositoryTest {
 
-    @Mock
-    val ssoLogin = mock(SSOLoginApi::class)
+        val ssoLogin = mock(SSOLoginApi::class)
 
-    @Mock
-    val domainLookup = mock(DomainLookupApi::class)
+        val domainLookup = mock(DomainLookupApi::class)
 
     private lateinit var ssoLoginRepository: SSOLoginRepository
 

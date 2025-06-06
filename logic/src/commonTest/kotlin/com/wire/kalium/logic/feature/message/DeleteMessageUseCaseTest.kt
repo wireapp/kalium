@@ -43,7 +43,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -241,28 +240,13 @@ class DeleteMessageUseCaseTest {
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
-        @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
-
-        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
-
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val messageSender: MessageSender = mock(MessageSender::class)
-
-        @Mock
         val assetRepository: AssetRepository = mock(AssetRepository::class)
-
-        @Mock
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
-
-        @Mock
         val deleteCellAssets: DeleteMessageAttachmentsUseCase = mock(DeleteMessageAttachmentsUseCase::class)
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()

@@ -26,6 +26,7 @@ plugins {
     id(libs.plugins.sqldelight.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
 val replayerMainFunctionClassName = "com.wire.kalium.monkeys.ReplayerKt"
@@ -118,7 +119,6 @@ sourceSets {
             implementation(libs.turbine)
 
             // mocking
-            implementation(libs.mockative.runtime)
             implementation(libs.okio.test)
             implementation(libs.settings.kmpTest)
             implementation(libs.mockk)

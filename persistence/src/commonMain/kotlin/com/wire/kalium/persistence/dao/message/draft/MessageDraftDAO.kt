@@ -18,8 +18,10 @@
 package com.wire.kalium.persistence.dao.message.draft
 
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
+@Mockable
 interface MessageDraftDAO {
 
     suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity)

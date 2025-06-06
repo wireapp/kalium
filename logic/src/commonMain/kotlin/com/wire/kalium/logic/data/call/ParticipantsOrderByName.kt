@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.data.call
 
+import io.mockative.Mockable
+
+@Mockable
 interface ParticipantsOrderByName {
     fun sortItems(participants: List<Participant>): List<Participant>
 }

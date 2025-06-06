@@ -42,7 +42,6 @@ import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangem
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
 import com.wire.kalium.logic.util.stubs.MigrationCrashStep
 import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -499,38 +498,16 @@ class SlowSyncWorkerTest {
     }
 
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl() {
-
-        @Mock
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
-
-        @Mock
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
-
-        @Mock
         val syncConversations: SyncConversationsUseCase = mock(SyncConversationsUseCase::class)
-
-        @Mock
         val syncConnections: SyncConnectionsUseCase = mock(SyncConnectionsUseCase::class)
-
-        @Mock
         val syncSelfTeam: SyncSelfTeamUseCase = mock(SyncSelfTeamUseCase::class)
-
-        @Mock
         val syncContacts: SyncContactsUseCase = mock(SyncContactsUseCase::class)
-
-        @Mock
         val joinMLSConversations: JoinExistingMLSConversationsUseCase = mock(JoinExistingMLSConversationsUseCase::class)
-
-        @Mock
         val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase = mock(UpdateSelfUserSupportedProtocolsUseCase::class)
-
-        @Mock
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
-
-        @Mock
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
-
-        @Mock
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
 
         init {

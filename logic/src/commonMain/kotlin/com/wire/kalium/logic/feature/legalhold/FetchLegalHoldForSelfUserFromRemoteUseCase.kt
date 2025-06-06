@@ -23,10 +23,12 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import io.mockative.Mockable
 
 /**
  * Use case that allows to fetch and persist the legal hold state for the self user.
  */
+@Mockable
 interface FetchLegalHoldForSelfUserFromRemoteUseCase {
     suspend operator fun invoke(): Either<CoreFailure, LegalHoldStatus>
 }

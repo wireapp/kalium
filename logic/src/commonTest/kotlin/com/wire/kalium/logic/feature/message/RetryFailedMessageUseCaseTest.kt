@@ -46,7 +46,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import io.mockative.Mock
 import io.mockative.any
 
 import io.mockative.coEvery
@@ -370,34 +369,15 @@ class RetryFailedMessageUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val messageRepository = mock(MessageRepository::class)
-
-        @Mock
         val assetRepository = mock(AssetRepository::class)
-
-        @Mock
         val attachmentsRepository = mock(MessageAttachmentDraftRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
-
-        @Mock
         val getAssetMessageTransferStatus = mock(GetAssetMessageTransferStatusUseCase::class)
-
-        @Mock
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
-
-        @Mock
         val publishAttachments = mock(PublishAttachmentsUseCase::class)
 
         private val testScope = TestScope(testDispatcher.default)

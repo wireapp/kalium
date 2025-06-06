@@ -18,8 +18,10 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
+@Mockable
 internal interface ServerTimeHandler {
     fun computeTimeOffset(serverTime: Long)
     fun toServerTimestamp(localTimestamp: Long = Clock.System.now().epochSeconds): Long

@@ -21,7 +21,9 @@ import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface GetDomainRegistrationApi : BaseApi {
     suspend fun getDomainRegistration(email: String): NetworkResponse<DomainRegistrationDTO>
     suspend fun customBackendConfig(backendUrl: String): NetworkResponse<DomainLookupResponse>

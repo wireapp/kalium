@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import io.mockative.Mockable
 import kotlin.jvm.JvmInline
 import kotlin.time.Duration
 
@@ -145,6 +146,7 @@ data class CrlRegistration(
 )
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface MLSClient {
     /**
      * Get the default ciphersuite for the client.

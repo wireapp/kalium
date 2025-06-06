@@ -24,9 +24,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.message.LocalId
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
+@Mockable
 internal interface SystemMessageInserter {
     suspend fun insertProtocolChangedSystemMessage(
         conversationId: ConversationId,

@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.logic.data.user.UserId
+import io.mockative.Mockable
 
+@Mockable
 interface QualifiedIdMapper {
     fun fromStringToQualifiedID(id: String): QualifiedID
 }

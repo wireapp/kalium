@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -54,13 +53,10 @@ class MissedNotificationsEventReceiverTest {
 
     private class Arrangement {
 
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
-        @Mock
         val eventRepository = mock(EventRepository::class)
 
-        @Mock
         val slowSyncExecutorProvider: suspend () -> Either.Right<Unit> = {
             Unit.right()
         }

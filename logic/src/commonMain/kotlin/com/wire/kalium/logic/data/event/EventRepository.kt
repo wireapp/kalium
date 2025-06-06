@@ -50,6 +50,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.mockative.Mockable
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.NewEventEntity
 import kotlinx.coroutines.flow.Flow
@@ -66,6 +67,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 
+@Mockable
 interface EventRepository {
 
     /**
@@ -243,16 +245,16 @@ class EventDataSource(
         return currentClientId().fold(
             { it.left() },
             { clientId ->
-                    notificationApi.acknowledgeEvents(
-                        clientId.value,
-                        EventAcknowledgeRequest(
-                            type = AcknowledgeType.ACK,
-                            data = AcknowledgeData(
-                                deliveryTag = deliveryTag,
-                                multiple = false // TODO when use multiple?
-                            )
+                notificationApi.acknowledgeEvents(
+                    clientId.value,
+                    EventAcknowledgeRequest(
+                        type = AcknowledgeType.ACK,
+                        data = AcknowledgeData(
+                            deliveryTag = deliveryTag,
+                            multiple = false // TODO when use multiple?
                         )
                     )
+                )
                 // todo(ym) check for errors.
                 Unit.right()
             }

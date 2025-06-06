@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.client.InsertClientParam
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -65,7 +64,7 @@ internal interface ClientRepositoryArrangement {
 }
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {
-    @Mock
+
     override val clientRepository: ClientRepository = mock(ClientRepository::class)
 
     override suspend fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>) = apply {

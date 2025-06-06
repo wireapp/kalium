@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -333,8 +332,6 @@ class OneOnOneMigratorTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
-
-        @Mock
         val currentInstantProvider: CurrentInstantProvider = mock(CurrentInstantProvider::class)
 
         fun withCurrentInstant(currentInstant: Instant) {
