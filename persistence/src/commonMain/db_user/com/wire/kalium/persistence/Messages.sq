@@ -364,7 +364,6 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 insertOrIgnoreBulkSystemMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP');
--- TODO: check if conversation type have an index
 
 insertMessageLinkPreview:
 INSERT OR IGNORE INTO MessageLinkPreview(message_id, conversation_id, url, url_offset, permanent_url, title, summary)
