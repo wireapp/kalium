@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.persistence.dao.event
 
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
+@Mockable
 interface EventDAO {
     suspend fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>>
     suspend fun insertEvents(events: List<NewEventEntity>)

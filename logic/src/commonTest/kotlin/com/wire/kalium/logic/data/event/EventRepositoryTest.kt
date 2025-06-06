@@ -284,8 +284,6 @@ class EventRepositoryTest {
         val metaDAO = mock(MetadataDAO::class)
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val eventDAO: EventDAO = mock(EventDAO::class)
 
         private val eventRepository: EventRepository = EventDataSource(
