@@ -117,7 +117,7 @@ data class RotateBundle(
 data class DecryptedBatch(
     val messages: List<DecryptedMessageBundle>,
     val groupId: MLSGroupId,
-    val failedMessage: FailedMessage?,
+    val failedMessages: List<FailedMessage>,
 )
 
 data class FailedMessage(
@@ -129,7 +129,6 @@ data class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
-    val hasEpochChanged: Boolean,
     val identity: WireIdentity?,
     val crlNewDistributionPoints: List<String>?,
     val messageInstant: Instant,
@@ -146,7 +145,6 @@ data class DecryptedMessageBundle(
         } else if (other.message != null) return false
         if (commitDelay != other.commitDelay) return false
         if (senderClientId != other.senderClientId) return false
-        if (hasEpochChanged != other.hasEpochChanged) return false
         if (identity != other.identity) return false
         return crlNewDistributionPoints == other.crlNewDistributionPoints
     }
@@ -155,7 +153,6 @@ data class DecryptedMessageBundle(
         var result = message?.contentHashCode() ?: 0
         result = 31 * result + (commitDelay?.hashCode() ?: 0)
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
-        result = 31 * result + hasEpochChanged.hashCode()
         result = 31 * result + (identity?.hashCode() ?: 0)
         result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
         return result
@@ -331,8 +328,9 @@ interface MLSClient {
      */
     suspend fun decryptMessages(
         groupId: MLSGroupId,
-        messages: List<EncryptedMessage>
-    ): DecryptedBatch
+        messages: List<EncryptedMessage>,
+        onDecryption: (suspend (DecryptedBatch) -> Unit)
+    )
 
     /**
      * Current members of the group.

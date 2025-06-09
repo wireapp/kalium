@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.ProteusFailure
@@ -33,8 +34,10 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.util.EventProcessingLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
@@ -103,146 +106,128 @@ internal class NewMessageEventHandlerImpl(
         }
     }
 
-//     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
-//         var eventLogger = logger.createEventProcessingLogger(event)
-//         mlsMessageUnpacker.unpackMlsMessage(event)
-//             .onFailure {
-//                 when (MLSMessageFailureHandler.handleFailure(it)) {
-//                     is MLSMessageFailureResolution.Ignore -> {
-//                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
-//                     }
-//
-//                     is MLSMessageFailureResolution.InformUser -> {
-//                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-//                         // messages from subconversations should not send a system message
-//                         if (event.subconversationId == null) {
-//                             applicationMessageHandler.handleDecryptionError(
-//                                 eventId = event.id,
-//                                 conversationId = event.conversationId,
-//                                 messageInstant = event.messageInstant,
-//                                 senderUserId = event.senderUserId,
-//                                 senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-//                                 content = MessageContent.FailedDecryption(
-//                                     isDecryptionResolved = false,
-//                                     senderUserId = event.senderUserId
-//                                 )
-//                             )
-//                         }
-//                     }
-//
-//                     is MLSMessageFailureResolution.OutOfSync -> {
-//                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-//                         staleEpochVerifier.verifyEpoch(
-//                             event.conversationId,
-//                             event.subconversationId,
-//                             event.messageInstant
-//                         )
-//                     }
-//                 }
-//             }.onSuccess { batchResult ->
-//                 batchResult.forEach { message ->
-//                     if (message is MessageUnpackResult.ApplicationMessage) {
-//                         processApplicationMessage(message, deliveryInfo)
-//                     }
-//                     eventLogger.logSuccess(
-//                         "protocol" to "MLS",
-//                         "isPartOfMLSBatch" to (batchResult.size > 1),
-//                         "messageType" to message.messageTypeDescription
-//                     )
-//                     // reset the time for next messages, if this is a batch
-//                     eventLogger = logger.createEventProcessingLogger(event)
-//                 }
-//             }
-//     }
-
     override suspend fun handleNewMLSBatch(event: Event.Conversation.MLSGroupMessages, deliveryInfo: EventDeliveryInfo) {
         var eventLogger = logger.createEventProcessingLogger(event)
 
         mlsMessageUnpacker.unpackMlsGroupMessages(event)
             .onFailure {
-                when (MLSMessageFailureHandler.handleFailure(it)) {
-                    is MLSMessageFailureResolution.Ignore -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
-                    }
-
-                    is MLSMessageFailureResolution.InformUser -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-//                             applicationMessageHandler.handleDecryptionError(
-//                                 eventId = event.id,
-//                                 conversationId = event.conversationId,
-//                                 messageInstant = event.messageInstant,
-//                                 senderUserId = event.senderUserId,
-//                                 senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-//                                 content = MessageContent.FailedDecryption(
-//                                     isDecryptionResolved = false,
-//                                     senderUserId = event.senderUserId
-//                                 )
-//                             )
-                    }
-
-                    is MLSMessageFailureResolution.OutOfSync -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-                        staleEpochVerifier.verifyEpoch(
-                            event.conversationId,
-                            null,
-                            event.messages.first().messageInstant
-                        )
-                    }
-                }
+                handleMLSFailure(
+                    eventLogger,
+                    it,
+                    event.conversationId,
+                    null
+                )
             }.onSuccess { batchResult ->
-                batchResult.forEach { message ->
-                    if (message is MessageUnpackResult.ApplicationMessage) {
-                        processApplicationMessage(message, deliveryInfo)
-                    }
-                    eventLogger.logSuccess(
-                        "protocol" to "MLS",
-                        "isPartOfMLSBatch" to (batchResult.size > 1),
-                        "messageType" to message.messageTypeDescription
-                    )
-                    // reset the time for next messages, if this is a batch
-                    eventLogger = logger.createEventProcessingLogger(event)
-                }
+                // TODO KBX
+//                 batchResult.forEach { unpackResult ->
+//                     when (unpackResult) {
+//                         is MessageUnpackResult.ApplicationMessage -> {
+//                             processApplicationMessage(unpackResult, deliveryInfo)
+//                         }
+//
+//                         is MessageUnpackResult.FailedMessage -> {
+//                             when (MLSMessageFailureHandler.handleFailure(unpackResult.error)) {
+//                                 is MLSMessageFailureResolution.Ignore -> {
+//                                     eventLogger.logFailure(unpackResult.error, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+//                                 }
+//
+//                                 is MLSMessageFailureResolution.InformUser -> {
+//                                     eventLogger.logFailure(unpackResult.error, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+//                                     event.messages.firstOrNull { it.id == unpackResult.eventId }?.let { mlsMessage ->
+//                                         applicationMessageHandler.handleDecryptionError(
+//                                             eventId = mlsMessage.id,
+//                                             conversationId = event.conversationId,
+//                                             messageInstant = mlsMessage.messageInstant,
+//                                             senderUserId = mlsMessage.senderUserId,
+//                                             senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+//                                             content = MessageContent.FailedDecryption(
+//                                                 isDecryptionResolved = false,
+//                                                 senderUserId = mlsMessage.senderUserId
+//                                             )
+//                                         )
+//                                     }
+//                                 }
+//
+//                                 is MLSMessageFailureResolution.OutOfSync -> {
+//                                     eventLogger.logFailure(unpackResult.error, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+//                                     staleEpochVerifier.verifyEpoch(
+//                                         event.conversationId,
+//                                         null,
+//                                     )
+//                                 }
+//                             }
+//                         }
+//
+//                         MessageUnpackResult.HandshakeMessage -> {}
+//                     }
+//
+//                     if (unpackResult !is MessageUnpackResult.FailedMessage) {
+//                         eventLogger.logSuccess(
+//                             "protocol" to "MLS",
+//                             "isPartOfMLSBatch" to (batchResult.size > 1),
+//                             "messageType" to unpackResult.messageTypeDescription
+//                         )
+//                     }
+//
+//                     // reset the time for next messages, if this is a batch
+//                     eventLogger = logger.createEventProcessingLogger(event)
+//                 }
             }
     }
 
     override suspend fun handleNewMLSSubGroupBatch(event: Event.Conversation.MLSSubGroupMessages, deliveryInfo: EventDeliveryInfo) {
-        var eventLogger = logger.createEventProcessingLogger(event)
+        var eventLogger: EventProcessingLogger = logger.createEventProcessingLogger(event)
 
         mlsMessageUnpacker.unpackMlsSubGroupMessages(event)
             .onFailure {
-                when (MLSMessageFailureHandler.handleFailure(it)) {
-                    is MLSMessageFailureResolution.Ignore -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
-                    }
-
-                    is MLSMessageFailureResolution.InformUser -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-                        // messages from subconversations should not send a system message
-                    }
-
-                    is MLSMessageFailureResolution.OutOfSync -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-                        staleEpochVerifier.verifyEpoch(
-                            event.conversationId,
-                            event.subConversationId,
-                            event.messages.first().messageInstant // TODO we need to return proper timestamp
-                        )
-                    }
-                }
+                handleMLSFailure(
+                    eventLogger,
+                    it,
+                    event.conversationId,
+                    event.subConversationId
+                )
             }.onSuccess { batchResult ->
-                batchResult.forEach { message ->
-                    if (message is MessageUnpackResult.ApplicationMessage) {
-                        processApplicationMessage(message, deliveryInfo)
-                    }
-                    eventLogger.logSuccess(
-                        "protocol" to "MLS",
-                        "isPartOfMLSBatch" to (batchResult.size > 1),
-                        "messageType" to message.messageTypeDescription
-                    )
-                    // reset the time for next messages, if this is a batch
-                    eventLogger = logger.createEventProcessingLogger(event)
-                }
+                // TODO KBX
+//                 batchResult.forEach { unpackResult ->
+//                     if (unpackResult is MessageUnpackResult.ApplicationMessage) {
+//                         processApplicationMessage(unpackResult, deliveryInfo)
+//                     }
+//                     if (unpackResult !is MessageUnpackResult.FailedMessage) {
+//                         eventLogger.logSuccess(
+//                             "protocol" to "MLS",
+//                             "isPartOfMLSBatch" to (batchResult.size > 1),
+//                             "messageType" to unpackResult.messageTypeDescription
+//                         )
+//                     }
+//                     // reset the time for next messages, if this is a batch
+//                     eventLogger = logger.createEventProcessingLogger(event)
+//                 }
             }
+    }
+
+    private suspend fun handleMLSFailure(
+        eventLogger: EventProcessingLogger,
+        failure: CoreFailure,
+        conversationId: ConversationId,
+        subConversationId: SubconversationId?
+    ) {
+        when (MLSMessageFailureHandler.handleFailure(failure)) {
+            is MLSMessageFailureResolution.Ignore -> {
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+            }
+
+            is MLSMessageFailureResolution.InformUser -> {
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+            }
+
+            is MLSMessageFailureResolution.OutOfSync -> {
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                staleEpochVerifier.verifyEpoch(
+                    conversationId,
+                    subConversationId,
+                )
+            }
+        }
     }
 
     private suspend fun processApplicationMessage(
@@ -257,10 +242,10 @@ internal class NewMessageEventHandlerImpl(
     }
 
     private val MessageUnpackResult.messageTypeDescription
-        get() = if (this is MessageUnpackResult.ApplicationMessage) {
-            content.messageContent.typeDescription()
-        } else {
-            "Handshake"
+        get() = when (this) {
+            is MessageUnpackResult.ApplicationMessage -> content.messageContent.typeDescription()
+            is MessageUnpackResult.FailedMessage -> "Failed message"
+            MessageUnpackResult.HandshakeMessage -> "Handshake message"
         }
 
     private suspend fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {

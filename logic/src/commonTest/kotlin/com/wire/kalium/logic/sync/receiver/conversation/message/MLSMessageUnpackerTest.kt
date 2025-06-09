@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.cryptography.DecryptedBatch
 import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -29,6 +28,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.mls.MLSBatchResult
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
@@ -78,7 +79,7 @@ class MLSMessageUnpackerTest {
             .withGetConversationProtocolInfoSuccessful(TestConversation.MIXED_PROTOCOL_INFO)
             .withDecryptMessageReturning(
                 Either.Right(
-                    DECRYPTED_BATCH.copy(
+                    MLS_BATCH_RESULT.copy(
                         messages = listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))
                     )
                 )
@@ -102,7 +103,7 @@ class MLSMessageUnpackerTest {
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
             .withDecryptMessageReturning(
                 Either.Right(
-                    DECRYPTED_BATCH.copy(
+                    MLS_BATCH_RESULT.copy(
                         messages = listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))
                     )
                 )
@@ -126,7 +127,7 @@ class MLSMessageUnpackerTest {
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
             .withDecryptMessageReturning(
                 Either.Right(
-                    DECRYPTED_BATCH.copy(
+                    MLS_BATCH_RESULT.copy(
                         messages = listOf(DECRYPTED_MESSAGE_BUNDLE
                             .copy(
                                 messageInstant = eventTimestamp,
@@ -151,7 +152,7 @@ class MLSMessageUnpackerTest {
         val (arrangement, mlsUnpacker) = Arrangement()
             .withMLSClientProviderReturningClient()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
-            .withDecryptMessageReturning(Either.Right(DECRYPTED_BATCH))
+            .withDecryptMessageReturning(Either.Right(MLS_BATCH_RESULT))
             .arrange()
 
         val messageEvent = TestEvent.newMLSMessageBatchEvent(eventTimestamp)
@@ -199,7 +200,7 @@ class MLSMessageUnpackerTest {
             }.returns(Either.Right(mlsClient))
         }
 
-        suspend fun withDecryptMessageReturning(result: Either<CoreFailure, DecryptedBatch>) = apply {
+        suspend fun withDecryptMessageReturning(result: Either<CoreFailure, MLSBatchResult>) = apply {
             coEvery {
                 mlsConversationRepository.decryptMessages(any(), any())
             }.returns(result)
@@ -222,7 +223,7 @@ class MLSMessageUnpackerTest {
 
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
-        val TIME = Instant.DISTANT_PAST
+        private val TIME = Instant.DISTANT_PAST
 
         val DECRYPTED_MESSAGE_BUNDLE = DecryptedMessageBundle(
             message = null,
@@ -234,9 +235,9 @@ class MLSMessageUnpackerTest {
             messageInstant = TIME
         )
 
-        val DECRYPTED_BATCH = DecryptedBatch(
+        val MLS_BATCH_RESULT = MLSBatchResult(
             listOf(DECRYPTED_MESSAGE_BUNDLE),
-            "mlsGroupId",
+            GroupID("mlsGroupId"),
             null
         )
     }

@@ -60,7 +60,6 @@ actual suspend fun coreCryptoCentral(
 
 private object CoreCryptoLoggerImpl : CoreCryptoLogger {
     override fun log(level: CoreCryptoLogLevel, message: String, context: String?) {
-        println("$level: $message. $context")
         when (level) {
             CoreCryptoLogLevel.TRACE -> kaliumLogger.v("$message. $context")
             CoreCryptoLogLevel.DEBUG -> kaliumLogger.d("$message. $context")

@@ -509,7 +509,6 @@ class MLSClientTest : BaseMLSClientTest() {
         val bobClient = bobArrangement.mlsClient
         val groupId = MLS_CONVERSATION_ID
 
-        // Bob tworzy grupę i dodaje Alice
         bobClient.createConversation(groupId, externalSenderKey)
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         bobClient.addMember(groupId, listOf(aliceKeyPackage))

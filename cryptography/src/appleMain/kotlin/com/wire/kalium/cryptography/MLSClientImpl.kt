@@ -126,17 +126,23 @@ class MLSClientImpl(
         )
     }
 
-    override suspend fun decryptMessages(groupId: MLSGroupId, messages: List<EncryptedMessage>): DecryptedBatch {
+    override suspend fun decryptMessages(
+        groupId: MLSGroupId,
+        messages: List<EncryptedMessage>,
+        onDecryption: suspend (DecryptedBatch) -> Unit
+    ) {
         val decryptedMessages = messages.map {
             toDecryptedMessageBundle(
                 coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(it.content)),
                 it.messageInstant
             )
         }
-        return DecryptedBatch(
-            groupId = groupId,
-            messages = decryptedMessages,
-            failedMessage = null,
+        onDecryption(
+            DecryptedBatch(
+                groupId = groupId,
+                messages = decryptedMessages,
+                failedMessages = listOf()
+            )
         )
     }
 
@@ -265,7 +271,6 @@ class MLSClientImpl(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
-            value.hasEpochChanged,
             identity = null,
             crlNewDistributionPoints = null,
             messageInstant = messageInstant

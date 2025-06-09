@@ -178,7 +178,7 @@ class MLSClientImpl(
 
         val mainMessageBundle = listOf(decryptedMessage!!.toBundle(messageInstant))
         val bufferedBundles = decryptedMessage!!.bufferedMessages
-            ?.map { it.toBundle(messageInstant) }
+            ?.map { bufferedMessage ->  bufferedMessage.toBundle(messageInstant) }
             ?: emptyList()
 
         return mainMessageBundle + bufferedBundles
@@ -187,13 +187,16 @@ class MLSClientImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun decryptMessages(
         groupId: MLSGroupId,
-        messages: List<EncryptedMessage>
-    ): DecryptedBatch {
-        val results = mutableListOf<DecryptedMessageBundle>()
-        var lastHandledEventId: String? = null
+        messages: List<EncryptedMessage>,
+        onDecryption: (suspend (DecryptedBatch) -> Unit)
+        // TODO KBX
+        // should we have separate function for errors?
+    ) {
 
         coreCrypto.transaction { context ->
-            messages.forEach { message ->
+            val results = mutableListOf<DecryptedMessageBundle>()
+
+            for (message in messages) {
                 try {
                     val decrypted = context.decryptMessage(
                         com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
@@ -203,9 +206,8 @@ class MLSClientImpl(
                     decrypted.let { dec ->
                         results += dec.toBundle(message.messageInstant)
                         results += dec.bufferedMessages?.map { buf -> buf.toBundle(message.messageInstant) }.orEmpty()
-
-                        lastHandledEventId = message.eventId
                     }
+                    onDecryption(DecryptedBatch(results, groupId, listOf()))
 
                 } catch (throwable: Throwable) {
                     if (throwable is CoreCryptoException.Mls) {
@@ -213,28 +215,38 @@ class MLSClientImpl(
                             is MlsException.BufferedFutureMessage,
                             is MlsException.BufferedCommit,
                             is MlsException.DuplicateMessage -> {
-                                // IGNORE
+                                // ignore errors and continue decrypting
+                                continue
                             }
+
                             else -> {
-                                throw throwable
+                                onDecryption(
+                                    DecryptedBatch(
+                                        messages = emptyList(),
+                                        groupId = groupId,
+                                        failedMessages = listOf(
+                                            FailedMessage(
+                                                eventId = message.eventId,
+                                                error = throwable
+                                            )
+                                        )
+                                    )
+                                )
+                                return@transaction FailedMessage(
+                                    eventId = message.eventId,
+                                    error = throwable
+                                )
                             }
                         }
                     } else {
-                        throw throwable
+                        return@transaction FailedMessage(
+                            eventId = message.eventId,
+                            error = throwable
+                        )
                     }
                 }
             }
-
-            lastHandledEventId?.let { id ->
-                context.setData(id.encodeToByteArray())
-            }
         }
-
-        return DecryptedBatch(
-            messages = results,
-            groupId = groupId,
-            failedMessage = null
-        )
     }
 
     override suspend fun commitPendingProposals(groupId: MLSGroupId) {

@@ -267,6 +267,21 @@ sealed class EventContentDTO {
         ) : Conversation()
 
         @Serializable
+        @SerialName("conversation.decrypted-mls-message")
+        data class DecryptedMLSBatchDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val decryptedMessages: List<DecryptedMLSMessageDTO>,
+            @SerialName("subconv") val subconversation: String?,
+        ) : Conversation()
+
+        @Serializable
+        data class DecryptedMLSMessageDTO(
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant,
+            @SerialName("data") val decryptedContent: String,
+        )
+
+        @Serializable
         @SerialName("conversation.mls-welcome")
         data class MLSWelcomeDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,

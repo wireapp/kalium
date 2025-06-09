@@ -33,13 +33,11 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 
 interface StaleEpochVerifier {
     suspend fun verifyEpoch(
         conversationId: ConversationId,
         subConversationId: SubconversationId? = null,
-        timestamp: Instant? = null
     ): Either<CoreFailure, Unit>
 }
 
@@ -54,8 +52,7 @@ internal class StaleEpochVerifierImpl(
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
     override suspend fun verifyEpoch(
         conversationId: ConversationId,
-        subConversationId: SubconversationId?,
-        timestamp: Instant?
+        subConversationId: SubconversationId?
     ): Either<CoreFailure, Unit> {
         return if (subConversationId != null) {
             verifySubConversationEpoch(conversationId, subConversationId)

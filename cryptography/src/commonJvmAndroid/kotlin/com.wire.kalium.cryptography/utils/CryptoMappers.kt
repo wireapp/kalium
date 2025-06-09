@@ -149,7 +149,6 @@ fun DecryptedMessage.toBundle(messageInstant: Instant) = DecryptedMessageBundle(
     message,
     commitDelay,
     senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
-    hasEpochChanged,
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() },
     messageInstant
@@ -159,7 +158,6 @@ fun BufferedDecryptedMessage.toBundle(messageInstant: Instant) = DecryptedMessag
     message,
     commitDelay,
     senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
-    hasEpochChanged,
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() },
     messageInstant

@@ -116,6 +116,7 @@ class ProteusClientCoreCryptoImpl private constructor(
     ): T {
 
         return wrapException {
+            // TODO KBX handle multiple messages on next PR
             coreCrypto.transaction("decrypt") {
                 handleDecryptedMessage(it.proteusDecrypt(message, sessionId.value))
             }

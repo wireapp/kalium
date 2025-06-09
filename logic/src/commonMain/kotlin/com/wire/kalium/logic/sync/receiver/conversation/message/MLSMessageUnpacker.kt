@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
-import com.wire.kalium.cryptography.DecryptedBatch
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -32,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.mls.MLSBatchResult
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -47,8 +47,8 @@ import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
 internal interface MLSMessageUnpacker {
-    suspend fun unpackMlsGroupMessages(event: Event.Conversation.MLSGroupMessages): Either<CoreFailure, List<MessageUnpackResult>>
-    suspend fun unpackMlsSubGroupMessages(event: Event.Conversation.MLSSubGroupMessages): Either<CoreFailure, List<MessageUnpackResult>>
+    suspend fun unpackMlsGroupMessages(event: Event.Conversation.MLSGroupMessages): Either<CoreFailure, Unit>
+    suspend fun unpackMlsSubGroupMessages(event: Event.Conversation.MLSSubGroupMessages): Either<CoreFailure, Unit>
 
 }
 
@@ -66,26 +66,41 @@ internal class MLSMessageUnpackerImpl(
 
     override suspend fun unpackMlsGroupMessages(
         event: Event.Conversation.MLSGroupMessages
-    ): Either<CoreFailure, List<MessageUnpackResult>> {
-        return messagesFromMLSGroupMessages(event).map { batch ->
-            if (batch.messages.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
-
-            batch.messages.map { bundle ->
-                unpackMlsBundle(bundle.toModel(GroupID(batch.groupId)), event.conversationId)
-            }
-        }
+    ): Either<CoreFailure, Unit>
+//             List<MessageUnpackResult>>
+    {
+        // TODO KBX
+        return Either.Right(Unit)
+//         return messagesFromMLSGroupMessages(event).map { batch ->
+//             if (batch.messages.isEmpty() && batch.failedMessage == null) return@map listOf(MessageUnpackResult.HandshakeMessage)
+//
+//             var results = batch.messages.map { bundle ->
+//                 unpackMlsBundle(bundle.toModel(batch.groupId), event.conversationId)
+//             }
+//
+//             batch.failedMessage?.let { failedMessage ->
+//                 val failedResult = MessageUnpackResult.FailedMessage(
+//                     failedMessage.eventId,
+//                     failedMessage.error,
+//                 )
+//                 results = results + failedResult
+//             }
+//
+//             results
+//         }
     }
 
     override suspend fun unpackMlsSubGroupMessages(
         event: Event.Conversation.MLSSubGroupMessages
-    ): Either<CoreFailure, List<MessageUnpackResult>> {
-        return messagesFromMLSSubGroupMessages(event).map { batch ->
-            if (batch == null || batch.messages.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
-
-            batch.messages.map { bundle ->
-                unpackMlsBundle(bundle.toModel(GroupID(batch.groupId)), event.conversationId)
-            }
-        }
+    ): Either<CoreFailure, Unit> {
+        return Either.Right(Unit)
+//         return messagesFromMLSSubGroupMessages(event).map { batch ->
+//             if (batch == null || batch.messages.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
+//
+//             batch.messages.map { bundle ->
+//                 unpackMlsBundle(bundle.toModel(batch.groupId), event.conversationId)
+//             }
+//         }
     }
 
     private suspend fun unpackMlsBundle(
@@ -131,7 +146,7 @@ internal class MLSMessageUnpackerImpl(
 
     private suspend fun messagesFromMLSGroupMessages(
         event: Event.Conversation.MLSGroupMessages
-    ): Either<CoreFailure, DecryptedBatch> = conversationRepository.getConversationProtocolInfo(event.conversationId)
+    ): Either<CoreFailure, Unit> = conversationRepository.getConversationProtocolInfo(event.conversationId)
         .flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.logStructuredJson(
@@ -154,7 +169,7 @@ internal class MLSMessageUnpackerImpl(
 
     private suspend fun messagesFromMLSSubGroupMessages(
         event: Event.Conversation.MLSSubGroupMessages
-    ): Either<CoreFailure, DecryptedBatch?> =
+    ): Either<CoreFailure, Unit?> =
         subconversationRepository.getSubconversationInfo(event.conversationId, event.subConversationId)
             ?.let { groupID ->
                 logger.logStructuredJson(
@@ -167,5 +182,5 @@ internal class MLSMessageUnpackerImpl(
                     )
                 )
                 mlsConversationRepository.decryptMessages(event.messages, groupID)
-            } ?: Either.Right(null) // TODO can we handle it
+            } ?: Either.Right(null)
 }
