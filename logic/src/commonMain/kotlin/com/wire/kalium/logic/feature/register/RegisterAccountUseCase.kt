@@ -21,13 +21,13 @@ package com.wire.kalium.logic.feature.register
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
@@ -37,35 +37,53 @@ import com.wire.kalium.network.exceptions.isKeyExists
 import com.wire.kalium.network.exceptions.isTooManyMembers
 import com.wire.kalium.network.exceptions.isUserCreationRestricted
 
+
 sealed class RegisterParam(
-    firstName: String,
-    lastName: String,
+    open val name: String,
     val email: String,
     val password: String,
+    val emailActivationCode: String,
     val cookieLabel: String?
 ) {
-    val name: String = "$firstName $lastName"
 
+    @Deprecated("This belongs to the old flow, it is overridden by [PersonalAccount]")
     class PrivateAccount(
-        firstName: String,
-        lastName: String,
+        val firstName: String,
+        val lastName: String,
         email: String,
         password: String,
-        val emailActivationCode: String,
+        emailActivationCode: String,
         cookieLabel: String? = uuid4().toString(),
-    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
+    ) : RegisterParam("$firstName $lastName", email, password, emailActivationCode, cookieLabel) {
 
+        override val name: String
+            get() = "$firstName $lastName"
+    }
+
+    @Deprecated("This belongs to the old flow, it will be overridden by when implementing new native Team flow")
     @Suppress("LongParameterList")
     class Team(
-        firstName: String,
-        lastName: String,
+        val firstName: String,
+        val lastName: String,
         email: String,
         password: String,
-        val emailActivationCode: String,
+        emailActivationCode: String,
         val teamName: String,
         val teamIcon: String,
         cookieLabel: String? = uuid4().toString()
-    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
+    ) : RegisterParam("$firstName $lastName", email, password, emailActivationCode, cookieLabel) {
+
+        override val name: String
+            get() = "$firstName $lastName"
+    }
+
+    class PersonalAccount(
+        override val name: String,
+        email: String,
+        password: String,
+        emailActivationCode: String,
+        cookieLabel: String? = uuid4().toString(),
+    ) : RegisterParam(name, email, password, emailActivationCode, cookieLabel)
 }
 
 /**
@@ -85,6 +103,7 @@ class RegisterAccountUseCase internal constructor(
     suspend operator fun invoke(
         param: RegisterParam
     ): RegisterResult = when (param) {
+        is RegisterParam.PersonalAccount,
         is RegisterParam.PrivateAccount -> {
             with(param) {
                 registerAccountRepository.registerPersonalAccountWithEmail(
