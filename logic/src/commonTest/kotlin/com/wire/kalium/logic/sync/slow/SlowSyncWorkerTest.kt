@@ -387,7 +387,7 @@ class SlowSyncWorkerTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasNotInvoked()
     }
 
@@ -404,7 +404,7 @@ class SlowSyncWorkerTest {
         }
 
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasNotInvoked()
     }
 
@@ -431,7 +431,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(eq(fetchedEventId))
+            arrangement.eventRepository.setEventAsProcessed(eq(fetchedEventId))
         }.wasInvoked(exactly = once)
     }
 
