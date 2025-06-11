@@ -129,6 +129,4 @@ internal class EventProcessorImpl(
             logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")
         }
     }
-
-    private fun EventDeliveryInfo.shouldUpdateLastProcessedEventId(): Boolean = !isTransient
 }
