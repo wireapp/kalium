@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
@@ -46,7 +45,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
@@ -72,7 +70,7 @@ class EventProcessorTest {
 
         // Then
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(eq(event.id))
+            arrangement.eventRepository.setEventAsProcessed(eq(event.id))
         }.wasInvoked(exactly = once)
     }
 
@@ -111,7 +109,7 @@ class EventProcessorTest {
 
         // Then
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasNotInvoked()
     }
 
@@ -150,7 +148,7 @@ class EventProcessorTest {
 
         // Then
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasNotInvoked()
     }
 
@@ -168,24 +166,8 @@ class EventProcessorTest {
 
         // Then
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(eq(envelope.event.id))
+            arrangement.eventRepository.setEventAsProcessed(eq(envelope.event.id))
         }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
-        // Given
-        val event = TestEvent.newConnection().wrapInEnvelope(isTransient = true)
-
-        val (arrangement, eventProcessor) = Arrangement(this).arrange()
-
-        // When
-        eventProcessor.processEvent(event)
-
-        // Then
-        coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
-        }.wasNotInvoked()
     }
 
     @Test
@@ -221,7 +203,7 @@ class EventProcessorTest {
 
         // Then
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasNotInvoked()
     }
 
@@ -249,7 +231,7 @@ class EventProcessorTest {
             arrangement.userPropertiesEventReceiver.onEvent(any(), any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -276,7 +258,7 @@ class EventProcessorTest {
             arrangement.userPropertiesEventReceiver.onEvent(any(), any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -300,7 +282,7 @@ class EventProcessorTest {
             arrangement.userPropertiesEventReceiver.onEvent(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.eventRepository.updateLastProcessedEventId(any())
+            arrangement.eventRepository.setEventAsProcessed(any())
         }.wasNotInvoked()
     }
 
@@ -319,7 +301,7 @@ class EventProcessorTest {
 
         suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
             coEvery {
-                eventRepository.updateLastProcessedEventId(eq(eventId))
+                eventRepository.setEventAsProcessed(eq(eventId))
             }.returns(result)
         }
 

@@ -76,7 +76,7 @@ interface EventRepository {
     suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit>
     suspend fun fetchEvents(): Flow<Either<CoreFailure, EventEnvelope>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Unit>>>
-    suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
+    suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit>
 
     /**
      * Parse events from an external JSON payload
@@ -174,6 +174,7 @@ class EventDataSource(
             }
         }
 
+    @Suppress("LongMethod")
     private suspend fun handleEvents(
         flowCollector: FlowCollector<WebSocketEvent<Unit>>,
     ): suspend (value: WebSocketEvent<ConsumableNotificationResponse>) -> Unit =
@@ -181,7 +182,7 @@ class EventDataSource(
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
-                    flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = false))
+                    flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
 
                 is WebSocketEvent.NonBinaryPayloadReceived -> {
@@ -312,7 +313,7 @@ class EventDataSource(
     ) = flow<Either<CoreFailure, EventEnvelope>> {
 
         var hasMore = true
-        var lastFetchedNotificationId: String? = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
+        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
 
         while (coroutineContext.isActive && hasMore) {
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
@@ -369,7 +370,7 @@ class EventDataSource(
         return wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_SAVED_EVENT_ID_KEY) }
     }
 
-    override suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit> {
+    override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> {
         return wrapStorageRequest {
             eventDAO.markEventAsProcessed(eventId)
         }

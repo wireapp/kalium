@@ -123,7 +123,7 @@ internal class SlowSyncWorkerImpl(
     private suspend fun saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess: String?) =
         if (lastProcessedEventIdToSaveOnSuccess != null) {
             logger.i("Saving last processed event ID to complete SlowSync: $lastProcessedEventIdToSaveOnSuccess")
-            eventRepository.updateLastProcessedEventId(lastProcessedEventIdToSaveOnSuccess)
+            eventRepository.setEventAsProcessed(lastProcessedEventIdToSaveOnSuccess)
         } else {
             logger.i("Skipping saving last processed event ID to complete SlowSync")
             Either.Right(Unit)
