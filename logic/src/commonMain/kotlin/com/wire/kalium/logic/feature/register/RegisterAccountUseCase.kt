@@ -37,7 +37,6 @@ import com.wire.kalium.network.exceptions.isKeyExists
 import com.wire.kalium.network.exceptions.isTooManyMembers
 import com.wire.kalium.network.exceptions.isUserCreationRestricted
 
-
 sealed class RegisterParam(
     open val name: String,
     val email: String,
