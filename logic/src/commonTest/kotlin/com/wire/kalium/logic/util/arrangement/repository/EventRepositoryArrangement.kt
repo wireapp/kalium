@@ -69,7 +69,7 @@ internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
 
     override suspend fun withUpdateLastProcessedEventIdReturning(result: Either<StorageFailure, Unit>) {
         coEvery {
-            eventRepository.updateLastProcessedEventId(any())
+            eventRepository.setEventAsProcessed(any())
         }.returns(result)
     }
 }
