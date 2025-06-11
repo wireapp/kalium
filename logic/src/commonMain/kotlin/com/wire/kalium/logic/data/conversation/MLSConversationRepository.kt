@@ -70,6 +70,7 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.NewEventEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -91,6 +92,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import io.mockative.Mockable
 
 data class ApplicationMessage(
     val message: ByteArray,
@@ -127,6 +129,7 @@ data class DecryptedMessageBundle(
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
+@Mockable
 interface MLSConversationRepository {
     suspend fun decryptMessages(messages: List<MLSMessage>, groupID: GroupID, conversationId: ConversationId): Either<CoreFailure, Unit>
 
@@ -237,6 +240,7 @@ internal class MLSConversationDataSource(
     private val mlsClientProvider: MLSClientProvider,
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
+    private val eventDAO: EventDAO,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
@@ -292,32 +296,35 @@ internal class MLSConversationDataSource(
                         idMapper.toCryptoModel(groupID),
                         messages.map { EncryptedMessage(it.id, it.content.decodeBase64Bytes(), it.messageInstant) },
                         onDecryption = { decryptedBatch ->
-                            val localEventId =  uuid4().toString()
+                            val localEventId = uuid4().toString()
                             eventDAO.insertEvents(
-                                    listOf(NewEventEntity(
+                                listOf(
+                                    NewEventEntity(
                                         localEventId,
-                                        true,
-                                        KtxSerializer.json.encodeToString(EventResponse(
-                                           localEventId,
-                                            listOf(
-                                                EventContentDTO.Conversation.DecryptedMLSBatchDTO(
-                                                    conversationId.toApi(),
-                                                    decryptedBatch.messages.map {
-                                                        EventContentDTO.Conversation.DecryptedMLSMessageDTO(
-                                                            it.senderClientId!!.userId.toModel().toApi(),
-                                                            it.messageInstant,
-                                                            it.message!!.encodeBase64(), // TODO
-                                                        )
-                                                    },
-                                                    subconversation = null
+                                        null, // TODO check if needed
+                                        KtxSerializer.json.encodeToString(
+                                            EventResponse(
+                                                localEventId,
+                                                listOf(
+                                                    EventContentDTO.Conversation.DecryptedMLSBatchDTO(
+                                                        conversationId.toApi(),
+                                                        decryptedBatch.messages.map {
+                                                            EventContentDTO.Conversation.DecryptedMLSMessageDTO(
+                                                                it.senderClientId!!.userId.toModel().toApi(),
+                                                                it.messageInstant,
+                                                                it.message!!.encodeBase64(), // TODO
+                                                            )
+                                                        },
+                                                        subconversation = null
 
-                                                )
-                                            ),
-                                            true,
-                                        ))
+                                                    )
+                                                ),
+                                                true,
+                                            )
+                                        )
 
                                     )
-                                    )
+                                )
                             )
                             decryptedBatch.messages.map {
                                 it.crlNewDistributionPoints?.let { newDistributionPoints ->

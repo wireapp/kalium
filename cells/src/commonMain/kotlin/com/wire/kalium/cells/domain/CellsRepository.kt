@@ -25,13 +25,28 @@ import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import io.mockative.Mockable
 import okio.Path
 
+@Suppress("TooManyFunctions")
+@Mockable
 internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
-    suspend fun getNodes(path: String?, query: String, limit: Int, offset: Int): Either<NetworkFailure, PaginatedList<CellNode>>
+    suspend fun getPaginatedNodes(
+        path: String?,
+        query: String,
+        limit: Int,
+        offset: Int,
+        onlyDeleted: Boolean = false
+    ): Either<NetworkFailure, PaginatedList<CellNode>>
+
+    suspend fun getNodesByPath(
+        path: String,
+        onlyFolders: Boolean
+    ): Either<NetworkFailure, List<CellNode>>
+
     suspend fun deleteFile(nodeUuid: String): Either<NetworkFailure, Unit>
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit>
     suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit>
@@ -41,4 +56,7 @@ internal interface CellsRepository {
     suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink>
     suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, String>
     suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit>
+    suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>>
+    suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
+    suspend fun restoreNode(path: String): Either<NetworkFailure, Unit>
 }

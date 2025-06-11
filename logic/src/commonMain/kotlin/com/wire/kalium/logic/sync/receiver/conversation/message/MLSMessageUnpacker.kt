@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
@@ -31,8 +30,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
-import com.wire.kalium.logic.data.conversation.mls.MLSBatchResult
-import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -43,9 +40,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
+@Mockable
 internal interface MLSMessageUnpacker {
     suspend fun unpackMlsGroupMessages(event: Event.Conversation.MLSGroupMessages): Either<CoreFailure, Unit>
     suspend fun unpackMlsSubGroupMessages(event: Event.Conversation.MLSSubGroupMessages): Either<CoreFailure, Unit>
@@ -66,9 +65,8 @@ internal class MLSMessageUnpackerImpl(
 
     override suspend fun unpackMlsGroupMessages(
         event: Event.Conversation.MLSGroupMessages
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Unit> {
 //             List<MessageUnpackResult>>
-    {
         // TODO KBX
         return Either.Right(Unit)
 //         return messagesFromMLSGroupMessages(event).map { batch ->
@@ -160,7 +158,8 @@ internal class MLSMessageUnpackerImpl(
                 )
                 mlsConversationRepository.decryptMessages(
                     event.messages,
-                    protocolInfo.groupId
+                    protocolInfo.groupId,
+                    event.conversationId
                 )
             } else {
                 Either.Left(CoreFailure.NotSupportedByProteus)
@@ -181,6 +180,6 @@ internal class MLSMessageUnpackerImpl(
                         "groupID" to groupID.toLogString()
                     )
                 )
-                mlsConversationRepository.decryptMessages(event.messages, groupID)
+                mlsConversationRepository.decryptMessages(event.messages, groupID, event.conversationId)
             } ?: Either.Right(null)
 }

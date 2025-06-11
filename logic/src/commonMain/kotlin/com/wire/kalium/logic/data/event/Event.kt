@@ -84,14 +84,42 @@ data class EventEnvelope(
  * @property source The source of the event.
  * @see EventSource
  */
-data class EventDeliveryInfo(
-    val isTransient: Boolean,
-    val source: EventSource,
+sealed class EventDeliveryInfo(
+    open val isTransient: Boolean,
+    open val source: EventSource
 ) {
+
     fun toLogMap(): Map<String, Any?> = mapOf(
         "isTransient" to isTransient,
         "source" to source.name
     )
+
+    /**
+     * Async event delivery info, represents events that needs to be ACK'ed in the new system.
+     */
+    data class Async(
+        val deliveryTag: ULong,
+        override val source: EventSource
+    ) : EventDeliveryInfo(
+        isTransient = false, // in async events, everything needs to be ACK'ed so they are not transient
+        source = source
+    )
+
+    /**
+     * Async event delivery info, represents full sync needed, which is a special case of async event and also needs to be ACK'ed.
+     */
+    data object AsyncMissed : EventDeliveryInfo(
+        isTransient = false,
+        source = EventSource.LIVE
+    )
+
+    /**
+     * Event from the old quick sync system, not needing ACK.
+     */
+    data class Legacy(
+        override val isTransient: Boolean,
+        override val source: EventSource,
+    ) : EventDeliveryInfo(isTransient, source)
 }
 
 /**
@@ -124,6 +152,13 @@ sealed class Event(open val id: String) {
     }
 
     abstract fun toLogMap(): Map<String, Any?>
+
+    data class AsyncMissed(override val id: String) : Event(id) {
+        override fun toLogMap(): Map<String, Any?> = mapOf(
+            typeKey to "notifications.missed",
+            idKey to id
+        )
+    }
 
     sealed class Conversation(
         id: String,

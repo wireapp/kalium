@@ -20,19 +20,20 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -45,6 +46,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
@@ -302,27 +304,18 @@ class EventProcessorTest {
         }.wasNotInvoked()
     }
 
+
     private class Arrangement(
         val processingScope: CoroutineScope
     ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
 
-        @Mock
         val eventRepository = mock(EventRepository::class)
-
-        @Mock
         val conversationEventReceiver = mock(ConversationEventReceiver::class)
-
-        @Mock
         val userEventReceiver = mock(UserEventReceiver::class)
-
-        @Mock
         val teamEventReceiver = mock(TeamEventReceiver::class)
-
-        @Mock
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
-
-        @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
+        val missedNotificationsEventReceiver = mock(MissedNotificationsEventReceiver::class)
 
         suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
             coEvery {
@@ -368,7 +361,7 @@ class EventProcessorTest {
             }.returns(result)
         }
 
-        suspend fun withUserPropertiesEventReceiverInvoking(invocation: () -> Either<CoreFailure, Unit>) = apply {
+        suspend fun withUserPropertiesEventReceiverInvoking(invocation: (args: Array<Any?>) -> Either<CoreFailure, Unit>) = apply {
             coEvery {
                 userPropertiesEventReceiver.onEvent(any(), any())
             }.invokes(invocation)
@@ -379,6 +372,12 @@ class EventProcessorTest {
         suspend fun withUserPropertiesEventReceiverFailingWith(failure: CoreFailure) = withUserPropertiesEventReceiverReturning(
             Either.Left(failure)
         )
+
+        suspend fun withMissedNotificationsEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                missedNotificationsEventReceiver.onEvent(any(), any())
+            }.returns(result)
+        }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
             withConversationEventReceiverSucceeding()
@@ -394,6 +393,7 @@ class EventProcessorTest {
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver,
+                missedNotificationsEventReceiver,
                 processingScope
             )
         }

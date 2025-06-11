@@ -32,7 +32,9 @@ import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.persistence.dao.message.LocalId
+import io.mockative.Mockable
 
+@Mockable
 interface MLSTransportProvider : MLSTransporter
 
 internal class MLSTransportProviderImpl(

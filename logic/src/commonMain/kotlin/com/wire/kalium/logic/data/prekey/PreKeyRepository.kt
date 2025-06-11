@@ -45,11 +45,13 @@ import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface PreKeyRepository {
     /**
      * Fetches the IDs of the prekeys currently available on the backend.

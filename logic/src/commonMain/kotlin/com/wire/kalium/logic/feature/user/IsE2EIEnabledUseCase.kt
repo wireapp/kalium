@@ -20,15 +20,17 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.fold
+import io.mockative.Mockable
 
 /**
  * Checks if the current user's team has enabled E2EI and MLS.
  */
+@Mockable
 interface IsE2EIEnabledUseCase {
     /**
      * @return true if E2EI and MLS is enabled, false otherwise.
      */
-    operator fun invoke(): Boolean
+    suspend operator fun invoke(): Boolean
 }
 
 internal class IsE2EIEnabledUseCaseImpl(
@@ -36,7 +38,7 @@ internal class IsE2EIEnabledUseCaseImpl(
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase
 ) : IsE2EIEnabledUseCase {
 
-    override operator fun invoke(): Boolean =
+    override suspend operator fun invoke(): Boolean =
         userConfigRepository.getE2EISettings().fold({
             false
         }, {

@@ -18,9 +18,11 @@
 package com.wire.kalium.cryptography
 
 import kotlinx.coroutines.CoroutineScope
+import io.mockative.Mockable
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
+@Mockable
 interface CoreCryptoCentral {
     suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
@@ -80,5 +82,5 @@ interface CoreCryptoCentral {
 
 expect suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    passphrase: ByteArray,
 ): CoreCryptoCentral

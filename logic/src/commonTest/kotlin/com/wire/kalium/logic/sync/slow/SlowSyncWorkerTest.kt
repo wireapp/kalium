@@ -19,6 +19,9 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.user.LegalHoldStatus
@@ -31,7 +34,6 @@ import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -40,7 +42,6 @@ import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangem
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
 import com.wire.kalium.logic.util.stubs.MigrationCrashStep
 import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -354,6 +355,23 @@ class SlowSyncWorkerTest {
     }
 
     @Test
+    fun givenNoExistingLastProcessedId_whenWorkingAndAsyncNotifications_thenShouldNotFetchMostRecentEvent() = runTest {
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withIsClientAsyncNotificationsCapableReturning(true)
+            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+        }.withSyncSelfUserFailure()
+            .arrange()
+
+        assertFails {
+            slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
+        }
+
+        coVerify {
+            arrangement.eventRepository.fetchMostRecentEventId()
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenAlreadyExistingLastProcessedId_whenWorking_thenShouldNotFetchMostRecentEvent() = runTest {
         val (arrangement, slowSyncWorker) = Arrangement().apply {
             withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
@@ -480,40 +498,22 @@ class SlowSyncWorkerTest {
     }
 
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl() {
-
-        @Mock
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
-
-        @Mock
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
-
-        @Mock
         val syncConversations: SyncConversationsUseCase = mock(SyncConversationsUseCase::class)
-
-        @Mock
         val syncConnections: SyncConnectionsUseCase = mock(SyncConnectionsUseCase::class)
-
-        @Mock
         val syncSelfTeam: SyncSelfTeamUseCase = mock(SyncSelfTeamUseCase::class)
-
-        @Mock
         val syncContacts: SyncContactsUseCase = mock(SyncContactsUseCase::class)
-
-        @Mock
         val joinMLSConversations: JoinExistingMLSConversationsUseCase = mock(JoinExistingMLSConversationsUseCase::class)
-
-        @Mock
         val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase = mock(UpdateSelfUserSupportedProtocolsUseCase::class)
-
-        @Mock
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
-
-        @Mock
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
+        val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
 
         init {
             runBlocking {
                 withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+                withIsClientAsyncNotificationsCapableReturning(false)
             }
         }
 
@@ -528,7 +528,8 @@ class SlowSyncWorkerTest {
             joinMLSConversations = joinMLSConversations,
             updateSupportedProtocols = updateSupportedProtocols,
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
-            oneOnOneResolver = oneOnOneResolver
+            oneOnOneResolver = oneOnOneResolver,
+            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider
         )
 
         suspend fun withSyncSelfUserFailure() = apply {
@@ -643,6 +644,12 @@ class SlowSyncWorkerTest {
             coEvery {
                 oneOnOneResolver.resolveAllOneOnOneConversations(any())
             }.returns(success)
+        }
+
+        suspend fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
+            coEvery {
+                isClientAsyncNotificationsCapableProvider.invoke()
+            }.returns(value.right())
         }
     }
 

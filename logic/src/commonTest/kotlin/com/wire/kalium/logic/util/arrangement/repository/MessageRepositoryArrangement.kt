@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -35,10 +34,8 @@ import io.mockative.matches
 import io.mockative.mock
 
 internal interface MessageRepositoryArrangement {
-    @Mock
-    val messageRepository: MessageRepository
 
-    @Mock
+    val messageRepository: MessageRepository
     val systemMessageInserter: SystemMessageInserter
 
     suspend fun withGetMessageById(
@@ -69,9 +66,8 @@ internal interface MessageRepositoryArrangement {
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
-    @Mock
-    override val messageRepository: MessageRepository = mock(MessageRepository::class)
 
+    override val messageRepository: MessageRepository = mock(MessageRepository::class)
     override val systemMessageInserter = mock(SystemMessageInserter::class)
 
     override suspend fun withGetMessageById(

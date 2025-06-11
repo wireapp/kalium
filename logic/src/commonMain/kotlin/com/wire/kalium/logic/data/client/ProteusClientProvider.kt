@@ -37,10 +37,12 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+@Mockable
 interface ProteusClientProvider {
     suspend fun clearLocalFiles()
 
@@ -101,9 +103,11 @@ class ProteusClientProviderImpl(
     private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
             val central = try {
+
+                val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
                 coreCryptoCentral(
                     rootDir = rootProteusPath,
-                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value,
+                    passphrase = dbSecret.passphrase,
                 )
             } catch (e: Exception) {
                 val logMap = mapOf(

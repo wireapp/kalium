@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -39,7 +38,7 @@ internal interface UserConfigRepositoryArrangement {
     fun withSetDefaultProtocolSuccessful()
     fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
     fun withSetMLSEnabledSuccessful()
-    fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>)
+    suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>)
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
@@ -56,7 +55,7 @@ internal interface UserConfigRepositoryArrangement {
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
-    @Mock
+
     override val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
     override suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>) {
@@ -87,8 +86,8 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         }.returns(Either.Right(Unit))
     }
 
-    override fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
-        every {
+    override suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
+        coEvery {
             userConfigRepository.isMLSEnabled()
         }.returns(result)
     }

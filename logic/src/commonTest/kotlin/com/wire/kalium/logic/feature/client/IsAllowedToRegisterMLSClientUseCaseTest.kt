@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
@@ -116,13 +115,9 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
 
 
     private class Arrangement {
-        @Mock
+
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withMlsFeatureFlag(enabled: Boolean) = apply {
@@ -131,14 +126,14 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
             }.returns(enabled)
         }
 
-        fun withUserConfigMlsEnabled(enabled: Boolean) = apply {
-            every {
+        suspend fun withUserConfigMlsEnabled(enabled: Boolean) = apply {
+            coEvery {
                 userConfigRepository.isMLSEnabled()
             }.returns(Either.Right(enabled))
         }
 
-        fun withUserConfigDataNotFound() = apply {
-            every {
+        suspend fun withUserConfigDataNotFound() = apply {
+            coEvery {
                 userConfigRepository.isMLSEnabled()
             }.returns(Either.Left(StorageFailure.DataNotFound))
         }

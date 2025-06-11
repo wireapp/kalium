@@ -20,7 +20,10 @@ package com.wire.kalium.plugins
 
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsTargetDsl
 
-fun KotlinJsTargetDsl.commonJsConfig(enableJsTests: Boolean) {
+fun KotlinJsTargetDsl.commonJsConfig(jsModuleNameOverride: String?, enableJsTests: Boolean) {
+    if (jsModuleNameOverride != null) {
+        moduleName = jsModuleNameOverride
+    }
     browser {
 //                     // Not needed for now, but if we include UI with CSS in the future, we can enable it
 //                     commonWebpackConfig {

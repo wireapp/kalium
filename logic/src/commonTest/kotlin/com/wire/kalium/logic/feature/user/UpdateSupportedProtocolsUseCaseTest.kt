@@ -38,7 +38,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -340,16 +339,9 @@ class UpdateSupportedProtocolsUseCaseTest {
     }
 
     private class Arrangement : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
-        @Mock
-        val clientRepository = mock(ClientRepository::class)
-
-        @Mock
+                val clientRepository = mock(ClientRepository::class)
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val featureSupport = mock(FeatureSupport::class)
 
         private var kaliumLogger = KaliumLogger.disabled()

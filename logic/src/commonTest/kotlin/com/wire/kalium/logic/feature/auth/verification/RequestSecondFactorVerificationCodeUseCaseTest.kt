@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -85,8 +84,6 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val secondFactorVerificationRepository = mock(SecondFactorVerificationRepository::class)
 
         suspend fun withRepositoryReturning(result: Either<NetworkFailure, Unit>) = apply {

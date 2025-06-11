@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -57,6 +56,7 @@ class IncrementalSyncWorkerTest {
         val (arrangement, worker) = Arrangement()
             .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
             .withEventGathererReturning(flowOf(envelope))
+            .withLiveEventsReturning(flowOf(Unit))
             .arrange()
 
         // When
@@ -74,6 +74,7 @@ class IncrementalSyncWorkerTest {
             // Given
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
+                .withLiveEventsReturning(flowOf(Unit))
                 .withEventGathererReturning(flowOf(event))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
                 .arrange()
@@ -92,6 +93,7 @@ class IncrementalSyncWorkerTest {
             // Given
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
+                .withLiveEventsReturning(flowOf(Unit))
                 .withEventGathererReturning(flowOf(event))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
                 .arrange()
@@ -139,11 +141,7 @@ class IncrementalSyncWorkerTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
-
-        @Mock
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
 
         init {
@@ -155,6 +153,12 @@ class IncrementalSyncWorkerTest {
         suspend fun withEventGathererReturning(eventFlow: Flow<EventEnvelope>) = apply {
             coEvery {
                 eventGatherer.gatherEvents()
+            }.returns(eventFlow)
+        }
+
+        suspend fun withLiveEventsReturning(eventFlow: Flow<Unit>) = apply {
+            coEvery {
+                eventGatherer.liveEvents()
             }.returns(eventFlow)
         }
 

@@ -22,9 +22,11 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Mockable
 interface PushTokenRepository {
     /**
      * Method responsible to observe the flag indicating if the firebase token should be registered via the ClientRepository.registerToken

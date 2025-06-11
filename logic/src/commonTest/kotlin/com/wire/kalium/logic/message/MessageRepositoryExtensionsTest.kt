@@ -32,7 +32,6 @@ import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageExtensions
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
@@ -84,14 +83,8 @@ class MessageRepositoryExtensionsTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class)
-
-        @Mock
         private val messageDAO: MessageDAO = mock(MessageDAO::class)
-
-        @Mock
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
 
         init {

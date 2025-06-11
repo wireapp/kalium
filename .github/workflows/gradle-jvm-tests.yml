@@ -62,7 +62,6 @@ jobs:
 
       - name: Test with Gradle
         run: |
-          export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
           ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
@@ -86,8 +85,8 @@ jobs:
           apt-get install -y -qq --no-install-recommends python3-pip python3-venv
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.19.0
-        if: always()
+        uses: EnricoMi/publish-unit-test-result-action/linux@v2
+        if: ${{ always() }}
         with:
           files: |
             **/build/test-results/**/*.xml
@@ -121,7 +120,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v4.3.0
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R

@@ -31,8 +31,10 @@ import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIA
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageInsertExtension
 import com.wire.kalium.persistence.dao.message.MessageInsertExtensionImpl
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
+@Mockable
 interface MigrationDAO {
     suspend fun insertConversation(conversationList: List<ConversationEntity>)
 

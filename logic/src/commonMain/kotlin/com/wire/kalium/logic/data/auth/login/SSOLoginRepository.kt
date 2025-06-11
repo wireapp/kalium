@@ -27,7 +27,9 @@ import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLooku
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
+import io.mockative.Mockable
 
+@Mockable
 interface SSOLoginRepository {
 
     suspend fun initiate(

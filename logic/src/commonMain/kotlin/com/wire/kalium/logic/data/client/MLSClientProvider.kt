@@ -52,12 +52,14 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
+@Mockable
 interface MLSClientProvider {
     suspend fun isMLSClientInitialised(): Boolean
 
@@ -169,14 +171,15 @@ class MLSClientProviderImpl(
                 // TODO: migrate to okio solution once assert refactor is merged
                 FileUtil.mkDirs(it)
             }
-            val passphrase = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId).value
+            val rootDir = "$location/$KEYSTORE_NAME"
+            val dbSecret = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId, rootDir)
             return@withContext coreCryptoCentral?.let {
                 Either.Right(it)
             } ?: run {
                 val cc = try {
                     coreCryptoCentral(
-                        rootDir = "$location/$KEYSTORE_NAME",
-                        databaseKey = passphrase,
+                        rootDir = rootDir,
+                        passphrase = dbSecret.passphrase,
                     )
                 } catch (e: CancellationException) {
                     throw e

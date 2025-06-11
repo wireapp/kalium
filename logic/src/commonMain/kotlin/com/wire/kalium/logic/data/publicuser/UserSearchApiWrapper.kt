@@ -29,8 +29,10 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.authenticated.search.UserSearchRequest
 import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 
+@Mockable
 internal interface UserSearchApiWrapper {
     /*
      * Searches for users that match given the [searchQuery] using the API.

@@ -18,20 +18,15 @@
 package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.SyncStateObserver
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -40,18 +35,10 @@ import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.yield
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class MLSMigrationManagerTest {
@@ -133,21 +120,12 @@ class MLSMigrationManagerTest {
         }
 
     private class Arrangement {
-        @Mock
+
         val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
-
         val kaliumConfigs = KaliumConfigs()
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val isMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
-
-        @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
-
-        @Mock
         val mlsMigrationWorker = mock(MLSMigrationWorker::class)
 
         suspend fun withRunMigrationSucceeds() = apply {
@@ -168,8 +146,8 @@ class MLSMigrationManagerTest {
             }.returns(Either.Right(Unit))
         }
 
-        fun withIsMLSSupported(supported: Boolean) = apply {
-            every {
+        suspend fun withIsMLSSupported(supported: Boolean) = apply {
+            coEvery {
                 isMLSEnabledUseCase()
             }.returns(supported)
 

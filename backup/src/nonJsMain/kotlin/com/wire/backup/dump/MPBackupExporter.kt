@@ -17,7 +17,6 @@
  */
 package com.wire.backup.dump
 
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
@@ -30,35 +29,54 @@ import com.wire.kalium.protobuf.backup.BackupData
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.Source
+import okio.use
 
 /**
  * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
  * into a cross-platform [BackupData] format.
  * @sample samples.backup.BackupSamplesNonJS.exportBackup
  */
-public actual class MPBackupExporter(
-    selfUserId: BackupQualifiedId,
-    workDirectory: String,
-    private val outputDirectory: String,
+public actual class MPBackupExporter : CommonMPBackupExporter {
+    private val outputDirectory: String
     private val fileZipper: FileZipper
-) : CommonMPBackupExporter(selfUserId) {
+    private val fileSystem: FileSystem
 
-    private val workDirectoryPath = workDirectory.toPath() / "backupDump"
+    public constructor(
+        selfUserId: BackupQualifiedId,
+        workDirectory: String,
+        outputDirectory: String,
+        fileZipper: FileZipper,
+        fileSystem: FileSystem
+    ) : super(selfUserId) {
+        this.outputDirectory = outputDirectory
+        this.fileZipper = fileZipper
+        this.fileSystem = fileSystem
+        this.workDirectoryPath = workDirectory.toPath() / "backupDump"
+        this.storage = FileBasedBackupPageStorage(
+            fileSystem = fileSystem,
+            workDirectory = workDirectoryPath,
+            shouldBeCleared = true
+        )
+    }
 
-    private val fileSystem = FileSystem.SYSTEM
+    public constructor(
+        selfUserId: BackupQualifiedId,
+        workDirectory: String,
+        outputDirectory: String,
+        fileZipper: FileZipper
+    ) : this(selfUserId, workDirectory, outputDirectory, fileZipper, FileSystem.SYSTEM)
 
-    override val storage: BackupPageStorage = FileBasedBackupPageStorage(
-        fileSystem = fileSystem,
-        workDirectory = workDirectoryPath,
-        shouldBeCleared = true
-    )
+    private val workDirectoryPath: Path
+
+    override val storage: BackupPageStorage
 
     override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
-        val pathToZippedArchive = fileZipper.zip(entries).toPath()
+        val pathToZippedArchive = fileZipper.zip(entries, workDirectoryPath).toPath()
         return CompletableDeferred(
             fileSystem.source(pathToZippedArchive)
                 .also { fileSystem.delete(pathToZippedArchive) }
@@ -70,20 +88,22 @@ public actual class MPBackupExporter(
      * This method should be called after all the data was added.
      * @param password optional password for the encryption. Can be an empty string, to export an unencrypted backup.
      */
-    @NativeCoroutines
     @Suppress("TooGenericExceptionCaught")
     public suspend fun finalize(password: String): BackupExportResult = try {
         val fileName = getBackupFileName()
         val path = outputDirectory.toPath() / fileName
         fileSystem.delete(path)
         fileSystem.createDirectories(path.parent!!)
-        val fileHandle = fileSystem.openReadWrite(path)
-        when (val result = finalize(password, fileHandle.sink())) {
-            is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
-            is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
-            ExportResult.Success -> BackupExportResult.Success(path.toString())
+        fileSystem.openReadWrite(path).use { fileHandle ->
+            when (val result = finalize(password, fileHandle.sink())) {
+                is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
+                is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
+                ExportResult.Success -> BackupExportResult.Success(path.toString())
+            }
         }
     } catch (io: Throwable) {
         BackupExportResult.Failure.IOError(io.message ?: "Unknown IO error.")
+    } finally {
+        fileSystem.deleteRecursively(workDirectoryPath)
     }
 }

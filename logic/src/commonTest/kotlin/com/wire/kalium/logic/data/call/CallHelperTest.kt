@@ -25,8 +25,8 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.of
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -109,16 +109,15 @@ class CallHelperTest {
 
     private class Arrangement {
 
-        @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(of<UserConfigRepository>())
 
         private val mLSCallHelper: CallHelper = CallHelperImpl()
 
         fun arrange() = this to mLSCallHelper
 
-        fun withShouldUseSFTForOneOnOneCallsReturning(result: Either<StorageFailure, Boolean>) =
+        suspend fun withShouldUseSFTForOneOnOneCallsReturning(result: Either<StorageFailure, Boolean>) =
             apply {
-                every { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(result)
+                coEvery { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(result)
             }
     }
 

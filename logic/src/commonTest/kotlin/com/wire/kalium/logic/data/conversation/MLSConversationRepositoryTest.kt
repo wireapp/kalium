@@ -85,7 +85,6 @@ import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEn
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1367,37 +1366,16 @@ class MLSConversationRepositoryTest {
 
     private class Arrangement {
 
-        @Mock
         val keyPackageRepository = mock(KeyPackageRepository::class)
-
-        @Mock
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val conversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         val clientApi = mock(ClientApi::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         val e2eiClient = mock(E2EIClient::class)
-
-        @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-
-        @Mock
         val checkRevocationList = mock(RevocationListChecker::class)
-
-        @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-
-        @Mock
         val epochChangesObserver = mock(EpochChangesObserver::class)
 
         val epochsFlow = MutableSharedFlow<GroupID>()

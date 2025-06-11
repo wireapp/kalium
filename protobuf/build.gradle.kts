@@ -17,8 +17,7 @@
  */
 
 import com.google.protobuf.gradle.GenerateProtoTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -82,7 +81,7 @@ kotlin {
     }
 }
 
-val compileTasks = tasks.matching { it is KotlinCompile || it is KotlinNativeCompile }
+val compileTasks = tasks.matching { it is KotlinCompileTool }
 
 codegenProject.tasks
     .matching { it.name == "generateProto" }

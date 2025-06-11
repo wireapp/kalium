@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -42,6 +43,7 @@ import kotlinx.coroutines.launch
 /**
  * Logs out the user from the current session
  */
+@Mockable
 interface LogoutUseCase {
     /**
      * @param reason the reason for the logout performed
@@ -123,6 +125,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         clearClientDataUseCase()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearRetainedClientId()
+        clientRepository.clearClientHasConsumableNotifications()
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 

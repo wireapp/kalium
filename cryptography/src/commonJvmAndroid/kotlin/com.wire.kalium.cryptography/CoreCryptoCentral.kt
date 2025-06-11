@@ -25,6 +25,7 @@ import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
+import com.wire.crypto.DatabaseKey
 import com.wire.crypto.EpochObserver
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportResponse
@@ -40,10 +41,13 @@ import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    passphrase: ByteArray
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
+
+    val databaseKey = DatabaseKey(passphrase)
+
     val coreCrypto = CoreCrypto(
         keystore = path,
         databaseKey = databaseKey

@@ -20,7 +20,9 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformView
+import io.mockative.Mockable
 
+@Mockable
 interface FlowManagerService {
     suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
     suspend fun flipToFrontCamera(conversationId: ConversationId)
@@ -34,4 +36,10 @@ interface FlowManagerService {
     suspend fun startFlowManager()
 }
 
-expect class FlowManagerServiceImpl : FlowManagerService
+expect class FlowManagerServiceImpl : FlowManagerService {
+    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
+    override suspend fun flipToFrontCamera(conversationId: ConversationId)
+    override suspend fun flipToBackCamera(conversationId: ConversationId)
+    override suspend fun setUIRotation(rotation: Int)
+    override suspend fun startFlowManager()
+}

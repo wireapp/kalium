@@ -44,6 +44,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
@@ -74,19 +77,16 @@ class EventMapper(
     @Suppress("CyclomaticComplexMethod")
     fun fromBatch(
         batch: List<EventResponse>,
-        isLive: Boolean
     ): List<EventEnvelope> {
-        val source = if (isLive) EventSource.LIVE else EventSource.PENDING
 
-        val allEvents: List<Triple<String, EventContentDTO, Boolean>> = batch.flatMap { response ->
+        val allEvents: List<Pair<String, EventContentDTO>> = batch.flatMap { response ->
             val id = response.id
-            val isTransient = response.transient
             response.payload.orEmpty().map { payload ->
-                Triple(id, payload, isTransient)
+                Pair(id, payload)
             }
         }
 
-        val groupedByConversation = allEvents.groupBy { (_, dto, _) ->
+        val groupedByConversation = allEvents.groupBy { (_, dto) ->
             when (dto) {
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> dto.qualifiedConversation
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> dto.qualifiedConversation
@@ -115,25 +115,31 @@ class EventMapper(
             val result = mutableListOf<EventEnvelope>()
 
             // 1. Welcome
-            result += welcomes.map { (id, dto, isTransient) ->
-                EventEnvelope(fromEventContentDTO(id, dto), EventDeliveryInfo(isTransient, source))
+            result += welcomes.map { (id, dto) ->
+                EventEnvelope(fromEventContentDTO(id, dto),
+                    EventDeliveryInfo.Legacy(false, EventSource.PENDING)
+                )
             }
 
             // 2. MLS messages
             if (mlsMessages.isNotEmpty()) {
                 val grouped = groupMLSMessages(
-                    mlsMessages.map { (id, dto, _) ->
+                    mlsMessages.map { (id, dto) ->
                         id to (dto as EventContentDTO.Conversation.NewMLSMessageDTO)
                     }
                 )
                 result += grouped.map { event ->
-                    EventEnvelope(event, EventDeliveryInfo(isTransient = false, source = source))
+                    EventEnvelope(event,
+                        EventDeliveryInfo.Legacy(false, EventSource.PENDING)
+                    )
                 }
             }
 
             // 3. Others
-            result += remainingOthers.map { (id, dto, isTransient) ->
-                EventEnvelope(fromEventContentDTO(id, dto), EventDeliveryInfo(isTransient, source))
+            result += remainingOthers.map { (id, dto) ->
+                EventEnvelope(fromEventContentDTO(id, dto),
+                 EventDeliveryInfo.Legacy(false, EventSource.PENDING)
+                )
             }
 
             result
@@ -175,7 +181,19 @@ class EventMapper(
             }
     }
 
-    fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
+//     fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
+//         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
+//         val id = eventResponse.id
+//         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
+//         return eventResponse.payload?.map { eventContentDTO ->
+//             EventEnvelope(
+//                 fromEventContentDTO(id, eventContentDTO),
+// //                 EventDeliveryInfo.Legacy(eventResponse.transient, source)
+//             )
+//         } ?: listOf()
+//     }
+
+    fun fromDTOv2(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
         val id = eventResponse.id
         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
 
@@ -189,12 +207,41 @@ class EventMapper(
         )
 
         val otherEnvelopes = otherEvents.map {
-            EventEnvelope(fromEventContentDTO(id, it), EventDeliveryInfo(eventResponse.transient, source))
+            EventEnvelope(fromEventContentDTO(id, it),
+                EventDeliveryInfo.Legacy(eventResponse.transient, source)
+            )
         }
 
         return groupedMlsEvents.map {
-            EventEnvelope(it, EventDeliveryInfo(eventResponse.transient, source))
+            EventEnvelope(it,
+                EventDeliveryInfo.Legacy(eventResponse.transient, source)
+            )
         } + otherEnvelopes
+    }
+
+    /**
+     * Converts a single processed event to an acknowledge request.
+     * Note: we can extend this when we want to implement multiple ack at once.
+     */
+    fun toAcknowledgeRequest(
+        eventDeliveryInfo: EventDeliveryInfo.Async,
+        multiple: Boolean = false
+    ): EventAcknowledgeRequest {
+        return EventAcknowledgeRequest(
+            type = AcknowledgeType.ACK,
+            data = AcknowledgeData(
+                deliveryTag = eventDeliveryInfo.deliveryTag,
+                multiple = multiple
+            )
+        )
+    }
+
+    internal companion object {
+        /**
+         * Full sync acknowledge request for notifications missed.
+         */
+        val FULL_ACKNOWLEDGE_REQUEST: EventAcknowledgeRequest =
+            EventAcknowledgeRequest(type = AcknowledgeType.ACK_FULL_SYNC)
     }
 
     @Suppress("ComplexMethod")
@@ -231,6 +278,8 @@ class EventMapper(
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
+            EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
+            is EventContentDTO.Conversation.DecryptedMLSBatchDTO -> TODO()
         }
 
     private fun groupMLSMessageEvents(
@@ -343,7 +392,6 @@ class EventMapper(
         protocol = eventContentDTO.data.protocol.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
-
     private fun conversationChannelPermissionUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ChannelAddPermissionUpdate,
@@ -466,6 +514,18 @@ class EventMapper(
             EncryptedData(Base64.decodeFromBase64(it.toByteArray(Charsets.UTF_8)))
         }
     )
+
+//     private fun newMLSMessage(
+//         id: String,
+//         eventContentDTO: EventContentDTO.Conversation.NewMLSMessageDTO,
+//     ) = Event.Conversation.NewMLSMessage(
+//         id = id,
+//         conversationId = eventContentDTO.qualifiedConversation.toModel(),
+//         subconversationId = eventContentDTO.subconversation?.let { SubconversationId(it) },
+//         senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+//         messageInstant = eventContentDTO.time,
+//         content = eventContentDTO.message
+//     )
 
     private fun connectionUpdate(
         id: String,

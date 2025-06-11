@@ -38,7 +38,6 @@ import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -132,7 +131,7 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
-        verify {
+         coVerify {
             arrangement.userConfigRepository.isMLSEnabled()
         }.wasInvoked(once)
 
@@ -143,19 +142,11 @@ class MLSKeyPackageCountUseCaseTest {
     }
 
     private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
-        @Mock
+
         val keyPackageRepository = mock(KeyPackageRepository::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
 
         suspend fun withClientId(result: Either<CoreFailure, ClientId>) = apply {

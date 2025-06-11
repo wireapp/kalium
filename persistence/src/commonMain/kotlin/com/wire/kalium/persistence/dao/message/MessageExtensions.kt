@@ -26,8 +26,10 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.kaliumLogger
+import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
 
+@Mockable
 interface MessageExtensions {
     fun getPagerForConversation(
         conversationId: ConversationIDEntity,

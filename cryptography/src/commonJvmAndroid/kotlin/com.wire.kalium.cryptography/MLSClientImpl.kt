@@ -178,7 +178,7 @@ class MLSClientImpl(
 
         val mainMessageBundle = listOf(decryptedMessage!!.toBundle(messageInstant))
         val bufferedBundles = decryptedMessage!!.bufferedMessages
-            ?.map { bufferedMessage ->  bufferedMessage.toBundle(messageInstant) }
+            ?.map { bufferedMessage -> bufferedMessage.toBundle(messageInstant) }
             ?: emptyList()
 
         return mainMessageBundle + bufferedBundles

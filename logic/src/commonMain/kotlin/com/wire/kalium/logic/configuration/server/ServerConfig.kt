@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
+import io.mockative.Mockable
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -155,6 +156,7 @@ data class ServerConfig(
     }
 }
 
+@Mockable
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
@@ -373,6 +375,7 @@ class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
     override fun deserialize(decoder: Decoder): CommonApiVersionType = decoder.decodeInt().toCommonApiVersionType()
 }
 
+@Mockable
 interface ApiVersionMapper {
     fun fromDTO(apiVersionDTO: ApiVersionDTO): CommonApiVersionType
     fun toDTO(commonApiVersion: CommonApiVersionType): ApiVersionDTO

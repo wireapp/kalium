@@ -19,5 +19,5 @@ package com.wire.kalium.cryptography
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String
+    passphrase: ByteArray
 ): CoreCryptoCentral = TODO("Not yet implemented")

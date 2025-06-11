@@ -1,0 +1,3 @@
+import kotlin.Boolean;
+
+ALTER TABLE Client ADD COLUMN  is_async_notifications_capable INTEGER AS Boolean NOT NULL DEFAULT 0;

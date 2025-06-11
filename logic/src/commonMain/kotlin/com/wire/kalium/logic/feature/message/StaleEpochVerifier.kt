@@ -32,8 +32,10 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
+@Mockable
 interface StaleEpochVerifier {
     suspend fun verifyEpoch(
         conversationId: ConversationId,
