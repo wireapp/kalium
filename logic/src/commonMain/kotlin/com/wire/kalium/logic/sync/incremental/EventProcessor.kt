@@ -62,7 +62,7 @@ internal interface EventProcessor {
      * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
      * @see EventRepository.lastProcessedEventId
      * @see EventDeliveryInfo.isTransient
-     * @see EventRepository.updateLastProcessedEventId
+     * @see EventRepository.setEventAsProcessed
      * @see EventDeliveryInfo
      * @see Event
      */
@@ -125,14 +125,8 @@ internal class EventProcessorImpl(
                 missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
             }
         }.onSuccess {
-            if (deliveryInfo.shouldUpdateLastProcessedEventId()) {
-                eventRepository.updateLastProcessedEventId(event.id)
-                logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")
-            } else {
-                logger.i("Skipping update of lastProcessedEventId: ${eventEnvelope.toLogString()}")
-            }
+            eventRepository.setEventAsProcessed(event.id)
+            logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")
         }
     }
-
-    private fun EventDeliveryInfo.shouldUpdateLastProcessedEventId(): Boolean = !isTransient
 }

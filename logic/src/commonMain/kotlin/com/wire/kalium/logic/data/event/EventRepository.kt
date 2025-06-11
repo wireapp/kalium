@@ -76,7 +76,7 @@ interface EventRepository {
     suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit>
     suspend fun fetchEvents(): Flow<Either<CoreFailure, EventEnvelope>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Unit>>>
-    suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
+    suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit>
 
     /**
      * Parse events from an external JSON payload
@@ -174,6 +174,7 @@ class EventDataSource(
             }
         }
 
+    @Suppress("LongMethod")
     private suspend fun handleEvents(
         flowCollector: FlowCollector<WebSocketEvent<Unit>>,
     ): suspend (value: WebSocketEvent<ConsumableNotificationResponse>) -> Unit =
@@ -181,7 +182,7 @@ class EventDataSource(
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
-                    flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = false))
+                    flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
 
                 is WebSocketEvent.NonBinaryPayloadReceived -> {
@@ -212,6 +213,9 @@ class EventDataSource(
                                 }.onSuccess {
                                     event.data.deliveryTag?.let {
                                         ackEvent(it)
+                                    }
+                                    if (!event.data.event.transient) {
+                                        updateLastSavedEventId(event.data.event.id)
                                     }
                                     flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(Unit))
                                 }
@@ -309,7 +313,7 @@ class EventDataSource(
     ) = flow<Either<CoreFailure, EventEnvelope>> {
 
         var hasMore = true
-        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
 
         while (coroutineContext.isActive && hasMore) {
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
@@ -326,8 +330,13 @@ class EventDataSource(
                         )
                     }
                 }
-
-                eventDAO.insertEvents(entities)
+                wrapStorageRequest {
+                    eventDAO.insertEvents(entities)
+                }.onSuccess {
+                    notificationsPageResult.value.notifications.lastOrNull { !it.transient }?.let {
+                        updateLastSavedEventId(it.id)
+                    }
+                }
             } else {
                 hasMore = false
                 emit(Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException)))
@@ -343,11 +352,11 @@ class EventDataSource(
     }
 
     override suspend fun lastProcessedEventId(): Either<StorageFailure, String> = wrapStorageRequest {
-        metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+        metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
     }
 
     override suspend fun clearLastProcessedEventId(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        metadataDAO.deleteValue(LAST_PROCESSED_EVENT_ID_KEY)
+        metadataDAO.deleteValue(LAST_SAVED_EVENT_ID_KEY)
     }
 
     override suspend fun fetchMostRecentEventId(): Either<CoreFailure, String> =
@@ -357,11 +366,13 @@ class EventDataSource(
                     .map { it.id }
             }
 
-    override suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit> {
-        return wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_PROCESSED_EVENT_ID_KEY) }.flatMap {
-            wrapStorageRequest {
-                eventDAO.markEventAsProcessed(eventId)
-            }
+    private suspend fun updateLastSavedEventId(eventId: String): Either<StorageFailure, Unit> {
+        return wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_SAVED_EVENT_ID_KEY) }
+    }
+
+    override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> {
+        return wrapStorageRequest {
+            eventDAO.markEventAsProcessed(eventId)
         }
     }
 
@@ -390,6 +401,6 @@ class EventDataSource(
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
-        const val LAST_PROCESSED_EVENT_ID_KEY = "last_processed_event_id"
+        const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
     }
 }

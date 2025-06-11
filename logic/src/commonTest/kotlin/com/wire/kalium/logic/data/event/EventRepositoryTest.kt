@@ -26,10 +26,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
-import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestEvent.wrapAsyncInEnvelope
-import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -40,10 +36,8 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
-import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
@@ -61,7 +55,6 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -268,7 +261,7 @@ class EventRepositoryTest {
 
 
     private companion object {
-        const val LAST_PROCESSED_EVENT_ID_KEY = "last_processed_event_id"
+        const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
         val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
             TestConversation.NETWORK_ID,
             TestConversation.NETWORK_USER_ID1,
@@ -310,7 +303,7 @@ class EventRepositoryTest {
 
         suspend fun withLastStoredEventId(value: String?) = apply {
             coEvery {
-                metaDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+                metaDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
             }.returns(value)
         }
 
