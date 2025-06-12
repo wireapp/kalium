@@ -159,6 +159,7 @@ class MLSClientProviderTest {
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
         val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
         val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+        val coreCryptoMigrationRecoveryHandler = mock(CoreCryptoMigrationRecoveryHandler::class)
 
         fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {
             this to MLSClientProviderImpl(
@@ -171,6 +172,7 @@ class MLSClientProviderTest {
                 mlsTransportProvider = mlsTransportProvider,
                 epochObserver = epochChangesObserver,
                 processingScope = processingScope,
+                coreCryptoMigrationRecoveryHandler = coreCryptoMigrationRecoveryHandler,
             )
         }
     }

@@ -89,6 +89,7 @@ class MLSClientProviderImpl(
     private val epochObserver: MLSEpochObserver,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val processingScope: CoroutineScope,
+    private val coreCryptoMigrationRecoveryHandler: CoreCryptoMigrationRecoveryHandler,
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
@@ -172,7 +173,10 @@ class MLSClientProviderImpl(
                 FileUtil.mkDirs(it)
             }
             val rootDir = "$location/$KEYSTORE_NAME"
-            val dbSecret = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId, rootDir)
+            val dbSecret = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId, rootDir) ?: run {
+                coreCryptoMigrationRecoveryHandler.clearClientData { clearLocalFiles() }
+                return@withContext Either.Left(CoreFailure.Unknown(null))
+            }
             return@withContext coreCryptoCentral?.let {
                 Either.Right(it)
             } ?: run {

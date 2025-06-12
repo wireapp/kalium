@@ -68,7 +68,7 @@ import com.wire.kalium.logic.data.client.MLSTransportProvider
 import com.wire.kalium.logic.data.client.MLSTransportProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
-import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
+import com.wire.kalium.logic.data.client.CoreCryptoMigrationRecoveryHandler
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
@@ -212,7 +212,7 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseIm
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
-import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
+import com.wire.kalium.logic.feature.client.CoreCryptoMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl
@@ -660,8 +660,8 @@ class UserSessionScope internal constructor(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
 
-    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
-        ProteusMigrationRecoveryHandlerImpl(lazy { logout })
+    private val coreCryptoMigrationRecoveryHandler: CoreCryptoMigrationRecoveryHandler by lazy {
+        CoreCryptoMigrationRecoveryHandlerImpl(lazy { logout })
     }
 
     val proteusClientProvider: ProteusClientProvider by lazy {
@@ -670,7 +670,7 @@ class UserSessionScope internal constructor(
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
             kaliumConfigs = kaliumConfigs,
-            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
+            coreCryptoMigrationRecoveryHandler = coreCryptoMigrationRecoveryHandler
         )
     }
 
@@ -694,7 +694,8 @@ class UserSessionScope internal constructor(
             featureConfigRepository = featureConfigRepository,
             mlsTransportProvider = mlsTransportProvider,
             epochObserver = epochChangesObserver,
-            processingScope = this@UserSessionScope
+            processingScope = this@UserSessionScope,
+            coreCryptoMigrationRecoveryHandler = coreCryptoMigrationRecoveryHandler,
         )
     }
 

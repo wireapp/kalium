@@ -18,6 +18,11 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapProteusRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral
@@ -25,14 +30,9 @@ import com.wire.kalium.cryptography.cryptoboxProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
-import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -63,7 +63,7 @@ class ProteusClientProviderImpl(
     private val passphraseStorage: PassphraseStorage,
     private val kaliumConfigs: KaliumConfigs,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
+    private val coreCryptoMigrationRecoveryHandler: CoreCryptoMigrationRecoveryHandler,
 ) : ProteusClientProvider {
 
     private var _proteusClient: ProteusClient? = null
@@ -104,7 +104,11 @@ class ProteusClientProviderImpl(
         return if (kaliumConfigs.encryptProteusStorage) {
             val central = try {
 
-                val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
+                val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath) ?: run {
+                    coreCryptoMigrationRecoveryHandler.clearClientData { removeLocalFiles() }
+                    error("Failed to get DB secret")
+                }
+
                 coreCryptoCentral(
                     rootDir = rootProteusPath,
                     passphrase = dbSecret.passphrase,
@@ -133,7 +137,7 @@ class ProteusClientProviderImpl(
         return try {
             central.proteusClient()
         } catch (exception: ProteusStorageMigrationException) {
-            proteusMigrationRecoveryHandler.clearClientData { removeLocalFiles() }
+            coreCryptoMigrationRecoveryHandler.clearClientData { removeLocalFiles() }
             val logMap = mapOf(
                 "userId" to userId.value.obfuscateId(),
                 "exception" to exception,

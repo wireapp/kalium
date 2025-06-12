@@ -105,8 +105,8 @@ class SecurityHelperTest {
         setupSequencedGetPassphrase("mls_db_secret_alias_v2_$userId", listOf(oldKeyBytes.encodeBase64(), oldKeyBytes.encodeBase64()))
         setupSequencedGetPassphrase("mls_db_secret_alias_$userId", listOf(null, "oldKeyBase64"))
 
-        val secret1 = securityHelper.mlsDBSecret(userId, rootPath)
-        val secret2 = securityHelper.mlsDBSecret(userId, rootPath)
+        val secret1 = securityHelper.mlsDBSecret(userId, rootPath) ?: error("Failed to get DB secret")
+        val secret2 = securityHelper.mlsDBSecret(userId, rootPath) ?: error("Failed to get DB secret")
 
         assertTrue(secret1.passphrase.contentEquals(secret2.passphrase))
 
@@ -123,7 +123,7 @@ class SecurityHelperTest {
 
         every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
 
-        val secret = securityHelper.mlsDBSecret(userId, rootPath)
+        val secret = securityHelper.mlsDBSecret(userId, rootPath) ?: error("Failed to get DB secret")
 
         assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
         verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
@@ -138,7 +138,7 @@ class SecurityHelperTest {
         setupSequencedGetPassphrase(v1Alias, listOf(null, "generatedOldB64"))
         setupSequencedSetPassphrase(v1Alias, captured)
 
-        val secret = securityHelper.mlsDBSecret(userId, rootPath)
+        val secret = securityHelper.mlsDBSecret(userId, rootPath) ?: error("Failed to get DB secret")
 
         assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
         assertEquals(1, captured.size)
