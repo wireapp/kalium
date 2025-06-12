@@ -203,60 +203,49 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpens_whenGathering_thenSyncSourceIsUpdatedToLive() = runTest {
-        val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
+    fun givenEventsWithPendingSource_whenGathering_thenCurrentSourceIsPending() = runTest {
+        val event = TestEvent.memberJoin()
+            .wrapInEnvelope(source = EventSource.PENDING)
+
+        val webSocketEventFlow = channelFlow<List<EventEnvelope>> {
+            send(listOf(event))
+            awaitCancellation()
+        }
 
         val (_, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withPendingEventsReturning(emptyFlow())
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .withLocalEventsReturning(emptyFlow())
-            .withFetchServerTimeReturning(null)
+            .withLocalEventsReturning(webSocketEventFlow)
+            .withLiveEventsReturning(Either.Right(emptyFlow()))
             .arrange()
 
-        eventGatherer.liveEvents().test {
-            // Open Websocket should trigger fetching pending events
-            liveEventsChannel.send(WebSocketEvent.Open())
-            advanceUntilIdle()
-
-            eventGatherer.currentSource.test {
-                assertEquals(EventSource.LIVE, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
+        eventGatherer.gatherEvents().test {
+            awaitItem()
             cancelAndIgnoreRemainingEvents()
         }
+
+        assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
     }
 
     @Test
-    fun givenWebSocketOpensAndCloses_whenGathering_thenSyncSourceShouldBeResetToPending() = runTest {
-        val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
+    fun givenEventsWithLiveSource_whenGathering_thenCurrentSourceIsLive() = runTest {
+        val event = TestEvent.memberJoin()
+            .wrapInEnvelope(source = EventSource.LIVE)
+
+        val webSocketEventFlow = channelFlow<List<EventEnvelope>> {
+            send(listOf(event))
+            awaitCancellation()
+        }
 
         val (_, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withPendingEventsReturning(emptyFlow())
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .withLocalEventsReturning(emptyFlow())
-            .withFetchServerTimeReturning(null)
+            .withLocalEventsReturning(webSocketEventFlow)
+            .withLiveEventsReturning(Either.Right(emptyFlow()))
             .arrange()
 
-        eventGatherer.liveEvents().test {
-            // Open Websocket should trigger fetching pending events
-            eventGatherer.currentSource.test {
-                liveEventsChannel.send(WebSocketEvent.Open())
-                advanceUntilIdle()
-                assertEquals(EventSource.PENDING, awaitItem())
-                assertEquals(EventSource.LIVE, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
+        eventGatherer.gatherEvents().test {
+            awaitItem()
             cancelAndIgnoreRemainingEvents()
         }
-        eventGatherer.liveEvents().test {
-            eventGatherer.currentSource.test {
-                assertEquals(EventSource.PENDING, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
-            cancelAndIgnoreRemainingEvents()
-        }
+
+        assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
     }
 
     @Test

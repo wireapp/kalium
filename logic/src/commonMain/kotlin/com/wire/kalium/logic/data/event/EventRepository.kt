@@ -134,11 +134,9 @@ class EventDataSource(
             // control flow of by websocket new push concat map?
             .distinctUntilChanged()
             .collect { batch ->
-                val events = batch.map { entity ->
-                    KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                }
-                events.forEach {
-                    emit(eventMapper.fromDTO(it, isLive = false))
+                batch.forEach { entity ->
+                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
+                    emit(eventMapper.fromDTO(payload, isLive = entity.isLive))
                 }
             }
     }
@@ -182,6 +180,7 @@ class EventDataSource(
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
+                    setAllUnprocessedEventsAsPending()
                     flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
 
@@ -206,7 +205,8 @@ class EventDataSource(
                                         listOf(
                                             NewEventEntity(
                                                 eventId = eventResponse.id,
-                                                payload = KtxSerializer.json.encodeToString(eventResponse)
+                                                payload = KtxSerializer.json.encodeToString(eventResponse),
+                                                isLive = true // TODO Yamil we need to decide when set it as false for async notificaitons
                                             )
                                         )
                                     )
@@ -234,7 +234,8 @@ class EventDataSource(
                                                     eventId,
                                                     payload = listOf(EventContentDTO.AsyncMissedNotification)
                                                 )
-                                            )
+                                            ),
+                                            isLive = true
                                         )
                                     )
                                 )
@@ -278,6 +279,10 @@ class EventDataSource(
                     eventDAO.deleteProcessedEventsBefore(eventEntity.id)
                 }
             }
+    }
+
+    private suspend fun setAllUnprocessedEventsAsPending(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        eventDAO.setAllUnprocessedEventsAsPending()
     }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Unit>>> =
@@ -326,7 +331,8 @@ class EventDataSource(
                     event.payload?.let {
                         NewEventEntity(
                             eventId = event.id,
-                            payload = KtxSerializer.json.encodeToString(event)
+                            payload = KtxSerializer.json.encodeToString(event),
+                            isLive = false
                         )
                     }
                 }

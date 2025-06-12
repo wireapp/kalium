@@ -91,10 +91,15 @@ internal class EventGathererImpl(
     private val logger = logger.withFeatureId(SYNC)
 
     // TODO handle multiple events at once
-    override suspend fun gatherEvents(): Flow<EventEnvelope> = eventRepository.observeEvents().flatten()
+    override suspend fun gatherEvents(): Flow<EventEnvelope> = eventRepository.observeEvents()
+        .onEach {
+            it.firstOrNull()?.let { lastEvent ->
+                _currentSource.value = lastEvent.deliveryInfo.source
+            }
+        }
+        .flatten()
 
     override suspend fun liveEvents(): Flow<Unit> = flow {
-        _currentSource.value = EventSource.PENDING
         /**
          * Fetches and emits live events based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
@@ -104,8 +109,6 @@ internal class EventGathererImpl(
                 .onSuccess { emitEvents(it) }
                 .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
         }
-        // When it ends, reset source back to PENDING
-        _currentSource.value = EventSource.PENDING
     }
 
     /**
@@ -170,7 +173,6 @@ internal class EventGathererImpl(
         } else {
             logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
         }
-        _currentSource.value = EventSource.LIVE
     }
 
     private suspend fun handleTimeDrift() {
