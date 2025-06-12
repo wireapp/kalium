@@ -17,17 +17,17 @@
  */
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
+import com.wire.kalium.logic.data.client.CoreCryptoMigrationRecoveryHandler
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.common.logger.kaliumLogger
 
-internal class ProteusMigrationRecoveryHandlerImpl(
+internal class CoreCryptoMigrationRecoveryHandlerImpl(
     private val logoutUseCase: Lazy<LogoutUseCase>
-) : ProteusMigrationRecoveryHandler {
+) : CoreCryptoMigrationRecoveryHandler {
 
     /**
-     * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
+     * Handles the migration error of a CoreCrypto client storage from CryptoBox to CoreCrypto.
      * It will perform a logout, using [LogoutReason.MIGRATION_TO_CC_FAILED] as the reason.
      *
      * This achieves that the client data is cleared and the user is logged out without losing content.
@@ -35,18 +35,18 @@ internal class ProteusMigrationRecoveryHandlerImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun clearClientData(clearLocalFiles: suspend () -> Unit) {
         try {
-            kaliumLogger.withTextTag(TAG).i("Starting the recovery from failed Proteus storage migration")
+            kaliumLogger.withTextTag(TAG).i("Starting the recovery from failed CoreCrypto storage migration")
             clearLocalFiles()
             logoutUseCase.value(LogoutReason.MIGRATION_TO_CC_FAILED, true)
         } catch (e: Exception) {
             kaliumLogger.withTextTag(TAG).e("Fatal, error while clearing client data: $e")
             throw e
         } finally {
-            kaliumLogger.withTextTag(TAG).i("Finished the recovery from failed Proteus storage migration")
+            kaliumLogger.withTextTag(TAG).i("Finished the recovery from failed core crypto storage migration")
         }
     }
 
     private companion object {
-        const val TAG = "ProteusMigrationRecoveryHandler"
+        const val TAG = "CoreCryptoMigrationRecoveryHandler"
     }
 }
