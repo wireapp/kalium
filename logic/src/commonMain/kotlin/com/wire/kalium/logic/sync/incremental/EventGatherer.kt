@@ -116,7 +116,7 @@ internal class EventGathererImpl(
     private suspend fun fetchEventFlow(isAsyncNotifications: Boolean) = if (isAsyncNotifications) {
         eventRepository.liveEvents()
     } else {
-        // in the old system we fetch pending events from the notification stream based on last processed event id
+        // in the old system we fetch pending events from the notification stream based on last saved event id
         eventRepository.lastSavedEventId()
             .flatMap {
                 eventRepository.liveEvents()
