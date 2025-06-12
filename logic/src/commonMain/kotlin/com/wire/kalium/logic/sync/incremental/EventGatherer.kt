@@ -128,6 +128,7 @@ internal class EventGathererImpl(
                 when (it) {
                     is StorageFailure.DataNotFound -> // last saved event ID not found, perform slow sync again to get it
                         CoreFailure.SyncEventOrClientNotFound
+
                     else -> it
                 }
             }
@@ -185,6 +186,7 @@ internal class EventGathererImpl(
         } else {
             logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
         }
+        _currentSource.value = EventSource.LIVE
     }
 
     private suspend fun handleTimeDrift() {
