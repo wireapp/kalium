@@ -20,9 +20,11 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatten
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -115,7 +117,17 @@ internal class EventGathererImpl(
         eventRepository.liveEvents()
     } else {
         // in the old system we fetch pending events from the notification stream based on last processed event id
-        eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
+        eventRepository.lastSavedEventId()
+            .flatMap {
+                eventRepository.liveEvents()
+            }
+            .mapLeft {
+                when (it) {
+                    is StorageFailure.DataNotFound -> // last saved event ID not found, perform slow sync again to get it
+                        CoreFailure.SyncEventOrClientNotFound
+                    else -> it
+                }
+            }
     }
 
     private suspend fun FlowCollector<Unit>.emitEvents(

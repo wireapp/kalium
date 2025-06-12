@@ -62,7 +62,7 @@ internal class IncrementalSyncRecoveryHandlerImpl(
         logger.i("$TAG Checking if we can recover from the failure: $failure")
         if (shouldDiscardEventsAndRestartSlowSync(failure)) {
             logger.i("$TAG Discarding all events and restarting the slow sync process")
-            eventRepository.clearLastProcessedEventId().onSuccess {
+            eventRepository.clearLastSavedEventId().onSuccess {
                 restartSlowSyncProcessForRecoveryUseCase()
             }
         }
