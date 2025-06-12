@@ -39,6 +39,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -55,6 +56,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EventGathererTest {
 
     @Test
@@ -444,6 +446,23 @@ class EventGathererTest {
         }
     }
 
+    @Test
+    fun givenNoLastSavedEventId_whenGettingLiveEventsWithoutAsyncNotifications_thenReturnSyncEventOrClientNotFoundToRecover() = runTest {
+        val (_, eventGatherer) = Arrangement()
+            .withIsClientAsyncNotificationsCapableReturning(false)
+            .withLastEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        eventGatherer.liveEvents().test {
+            advanceUntilIdle()
+            awaitError().let {
+                assertIs<KaliumSyncException>(it).also {
+                    assertIs<CoreFailure.SyncEventOrClientNotFound>(it.coreFailureCause)
+                }
+            }
+        }
+    }
+
     private class Arrangement {
 
         val eventRepository = mock(EventRepository::class)
@@ -490,7 +509,7 @@ class EventGathererTest {
 
         suspend fun withLastEventIdReturning(either: Either<StorageFailure, String>) = apply {
             coEvery {
-                eventRepository.lastProcessedEventId()
+                eventRepository.lastSavedEventId()
             }.returns(either)
         }
 
