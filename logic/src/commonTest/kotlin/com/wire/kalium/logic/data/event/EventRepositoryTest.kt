@@ -95,14 +95,14 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenASavedLastProcessedId_whenGettingLastEventId_thenShouldReturnIt() = runTest {
+    fun givenASavedLastSavedId_whenGettingLastEventId_thenShouldReturnIt() = runTest {
         val eventId = "dh817h2e"
 
         val (arrangement, eventRepository) = Arrangement()
             .withLastStoredEventId(eventId)
             .arrange()
 
-        val result = eventRepository.lastProcessedEventId()
+        val result = eventRepository.lastSavedEventId()
         result.shouldSucceed { assertEquals(eventId, it) }
     }
 

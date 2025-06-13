@@ -60,7 +60,6 @@ internal interface EventProcessor {
      * is not transient (see [EventDeliveryInfo.isTransient]).
      * If the processing fails, the last processed event ID will not be updated.
      * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
-     * @see EventRepository.lastProcessedEventId
      * @see EventDeliveryInfo.isTransient
      * @see EventRepository.setEventAsProcessed
      * @see EventDeliveryInfo
@@ -126,7 +125,7 @@ internal class EventProcessorImpl(
             }
         }.onSuccess {
             eventRepository.setEventAsProcessed(event.id)
-            logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")
+            logger.i("Event set as processed: ${eventEnvelope.toLogString()}")
         }
     }
 }

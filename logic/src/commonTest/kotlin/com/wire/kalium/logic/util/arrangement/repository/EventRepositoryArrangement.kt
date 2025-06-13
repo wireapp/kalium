@@ -34,7 +34,9 @@ internal interface EventRepositoryArrangement {
 
     suspend fun withFetchMostRecentEventReturning(result: Either<CoreFailure, String>)
 
-    suspend fun withLastProcessedEventIdReturning(result: Either<StorageFailure, String>)
+    suspend fun withLastSavedEventIdReturning(result: Either<StorageFailure, String>)
+
+    suspend fun withUpdateLastSavedEventIdReturning(result: Either<StorageFailure, Unit>)
 
     suspend fun withUpdateLastProcessedEventIdReturning(result: Either<StorageFailure, Unit>)
 }
@@ -51,7 +53,7 @@ internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
 
     override suspend fun withClearLastEventIdReturning(result: Either<StorageFailure, Unit>) {
         coEvery {
-            eventRepository.clearLastProcessedEventId()
+            eventRepository.clearLastSavedEventId()
         }.returns(result)
     }
 
@@ -61,9 +63,15 @@ internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
         }.returns(result)
     }
 
-    override suspend fun withLastProcessedEventIdReturning(result: Either<StorageFailure, String>) {
+    override suspend fun withLastSavedEventIdReturning(result: Either<StorageFailure, String>) {
         coEvery {
-            eventRepository.lastProcessedEventId()
+            eventRepository.lastSavedEventId()
+        }.returns(result)
+    }
+
+    override suspend fun withUpdateLastSavedEventIdReturning(result: Either<StorageFailure, Unit>) {
+        coEvery {
+            eventRepository.updateLastSavedEventId(any())
         }.returns(result)
     }
 

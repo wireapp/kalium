@@ -340,7 +340,7 @@ class SlowSyncWorkerTest {
     @Test
     fun givenNoExistingLastProcessedId_whenWorking_thenShouldFetchMostRecentEvent() = runTest {
         val (arrangement, slowSyncWorker) = Arrangement().apply {
-            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withLastSavedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
             withFetchMostRecentEventReturning(Either.Right("mostRecentEventId"))
         }.withSyncSelfUserFailure()
             .arrange()
@@ -358,7 +358,7 @@ class SlowSyncWorkerTest {
     fun givenNoExistingLastProcessedId_whenWorkingAndAsyncNotifications_thenShouldNotFetchMostRecentEvent() = runTest {
         val (arrangement, slowSyncWorker) = Arrangement().apply {
             withIsClientAsyncNotificationsCapableReturning(true)
-            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withLastSavedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
         }.withSyncSelfUserFailure()
             .arrange()
 
@@ -374,7 +374,7 @@ class SlowSyncWorkerTest {
     @Test
     fun givenAlreadyExistingLastProcessedId_whenWorking_thenShouldNotFetchMostRecentEvent() = runTest {
         val (arrangement, slowSyncWorker) = Arrangement().apply {
-            withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+            withLastSavedEventIdReturning(Either.Right("LastSavedEventId"))
         }.withSyncSelfUserFailure()
             .arrange()
 
@@ -387,14 +387,14 @@ class SlowSyncWorkerTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.eventRepository.setEventAsProcessed(any())
+            arrangement.eventRepository.updateLastSavedEventId(any())
         }.wasNotInvoked()
     }
 
     @Test
-    fun givenFetchedEventIdAndSomethingFails_whenWorking_thenShouldNotUpdateLastProcessedEventId() = runTest {
+    fun givenFetchedEventIdAndSomethingFails_whenWorking_thenShouldNotUpdateLastSavedEventId() = runTest {
         val (arrangement, slowSyncWorker) = Arrangement().apply {
-            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withLastSavedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
             withFetchMostRecentEventReturning(Either.Right("mostRecentEventId"))
         }.withSyncSelfUserFailure()
             .arrange()
@@ -404,17 +404,17 @@ class SlowSyncWorkerTest {
         }
 
         coVerify {
-            arrangement.eventRepository.setEventAsProcessed(any())
+            arrangement.eventRepository.updateLastSavedEventId(any())
         }.wasNotInvoked()
     }
 
     @Test
-    fun givenFetchedEventIdAndEverythingSucceeds_whenWorking_thenShouldUpdateLastProcessedEventId() = runTest {
+    fun givenFetchedEventIdAndEverythingSucceeds_whenWorking_thenShouldUpdateLastSavedEventId() = runTest {
         val fetchedEventId = "aTestEventId"
         val (arrangement, slowSyncWorker) = Arrangement().apply {
-            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withLastSavedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
             withFetchMostRecentEventReturning(Either.Right(fetchedEventId))
-            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
         }.withSyncSelfUserSuccess()
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
@@ -431,7 +431,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         coVerify {
-            arrangement.eventRepository.setEventAsProcessed(eq(fetchedEventId))
+            arrangement.eventRepository.updateLastSavedEventId(eq(fetchedEventId))
         }.wasInvoked(exactly = once)
     }
 
@@ -512,7 +512,7 @@ class SlowSyncWorkerTest {
 
         init {
             runBlocking {
-                withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+                withLastSavedEventIdReturning(Either.Right("LastSavedEventId"))
                 withIsClientAsyncNotificationsCapableReturning(false)
             }
         }
