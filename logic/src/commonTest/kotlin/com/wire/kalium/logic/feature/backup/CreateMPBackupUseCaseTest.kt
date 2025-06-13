@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.dump.BackupExportResult
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
@@ -46,7 +48,6 @@ import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -76,8 +77,6 @@ class CreateMPBackupUseCaseTest {
 
         val (arrangement, useCase) = Arrangement()
             .withExporter()
-            .withUsers(listOf(testUser))
-            .withConversations(listOf(TestConversation.CONVERSATION))
             .withMessages(listOf(TEXT_MESSAGE))
             .arrange()
 
@@ -94,8 +93,6 @@ class CreateMPBackupUseCaseTest {
 
         val (_, useCase) = Arrangement()
             .withErrorExporter()
-            .withUsers(listOf(testUser))
-            .withConversations(listOf(TestConversation.CONVERSATION))
             .withMessages(listOf(TEXT_MESSAGE))
             .arrange()
 
@@ -109,8 +106,23 @@ class CreateMPBackupUseCaseTest {
         @Mock
         val userRepository = mock(UserRepository::class)
 
-        @Mock
-        val backupRepository = mock(BackupRepository::class)
+        var backupMessages: List<Message.Standalone> = emptyList()
+
+        val backupRepository = object : BackupRepository {
+            override suspend fun getUsers(): List<OtherUser> = listOf(testUser)
+
+            override suspend fun getConversations(): List<Conversation> = listOf(TestConversation.CONVERSATION)
+
+            override fun getMessages(onPage: (List<Message.Standalone>) -> Unit) {
+                onPage(backupMessages)
+            }
+
+            override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
+        }
 
         @Mock
         val exporter = mock(BackupExporter::class)
@@ -118,16 +130,8 @@ class CreateMPBackupUseCaseTest {
         @Mock
         val exporterProvider = mock(MPBackupExporterProvider::class)
 
-        suspend fun withUsers(users: List<OtherUser>) = apply {
-            coEvery { backupRepository.getUsers() }.returns(users)
-        }
-
-        suspend fun withConversations(conversations: List<Conversation>) = apply {
-            coEvery { backupRepository.getConversations() }.returns(conversations)
-        }
-
         fun withMessages(messages: List<Message.Standalone>) = apply {
-            every { backupRepository.getMessages() }.returns(flowOf(messages))
+            backupMessages = messages
         }
 
         suspend fun withExporter() = apply {

@@ -42,7 +42,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
@@ -90,7 +89,7 @@ internal class CreateMPBackupUseCaseImpl(
                         }
                     },
                     async {
-                        getMessages().collectLatest { page ->
+                        getMessages { page ->
                             page.mapNotNull(Message::toBackupMessage)
                                 .forEach { mpBackupExporter.add(it) }
                         }
