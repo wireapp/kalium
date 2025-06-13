@@ -21,12 +21,12 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import io.mockative.Mockable
 
 /**
- * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
+ * Handles the migration error of a CoreCrypto client storage from CryptoBox to CoreCrypto.
  * It will perform a logout, using [LogoutReason.MIGRATION_TO_CC_FAILED] as the reason.
  *
  * This achieves that the client data is cleared and the user is logged out without losing content.
  */
 @Mockable
-interface ProteusMigrationRecoveryHandler {
+interface CoreCryptoMigrationRecoveryHandler {
     suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
 }

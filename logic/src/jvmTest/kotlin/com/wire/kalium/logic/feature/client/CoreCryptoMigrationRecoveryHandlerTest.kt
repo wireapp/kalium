@@ -8,16 +8,16 @@ import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-class ProteusMigrationRecoveryHandlerTest {
+class CoreCryptoMigrationRecoveryHandlerTest {
 
     @Test
-    fun givenGettingOrCreatingAProteusClient_whenMigrationPerformedAndFails_thenCatchErrorAndStartRecovery() = runTest {
+    fun givenGettingOrCreatingClient_whenMigrationPerformedAndFails_thenCatchErrorAndStartRecovery() = runTest {
         // given
-        val (arrangement, proteusMigrationRecoveryHandler) = Arrangement().arrange()
+        val (arrangement, migrationRecoveryHandler) = Arrangement().arrange()
 
         // when
         val clearLocalFiles: suspend () -> Unit = { }
-        proteusMigrationRecoveryHandler.clearClientData(clearLocalFiles)
+        migrationRecoveryHandler.clearClientData(clearLocalFiles)
 
         // then
         coVerify { arrangement.logoutUseCase(LogoutReason.MIGRATION_TO_CC_FAILED, true) }.wasInvoked(once)
@@ -27,7 +27,7 @@ class ProteusMigrationRecoveryHandlerTest {
 
         val logoutUseCase = mock(LogoutUseCase::class)
 
-        fun arrange() = this to ProteusMigrationRecoveryHandlerImpl(
+        fun arrange() = this to CoreCryptoMigrationRecoveryHandlerImpl(
             lazy { logoutUseCase }
         )
     }
