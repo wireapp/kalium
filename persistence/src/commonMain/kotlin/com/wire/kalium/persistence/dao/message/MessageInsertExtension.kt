@@ -44,7 +44,7 @@ internal interface MessageInsertExtension {
     fun isValidAssetMessageUpdate(message: MessageEntity): Boolean
     fun updateAssetMessage(message: MessageEntity)
     fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType
-    fun insertMessageOrIgnore(message: MessageEntity)
+    fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean = true)
 }
 
 internal class MessageInsertExtensionImpl(
@@ -94,11 +94,13 @@ internal class MessageInsertExtensionImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun insertMessageOrIgnore(message: MessageEntity) {
+    override fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean) {
         try {
             insertBaseMessageOrError(message)
             insertMessageContent(message)
-            insertUnreadEvent(message)
+            if (withUnreadEvents) {
+                insertUnreadEvent(message)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

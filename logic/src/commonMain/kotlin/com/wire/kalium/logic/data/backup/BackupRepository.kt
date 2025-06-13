@@ -108,6 +108,9 @@ internal class BackupDataSource(
     }
 
     override suspend fun insertMessages(messages: List<Message.Standalone>) = wrapStorageRequest {
-        messageDAO.insertOrIgnoreMessages(messages.map { messageMapper.fromMessageToEntity(it) })
+        messageDAO.insertOrIgnoreMessages(
+            messages = messages.map { messageMapper.fromMessageToEntity(it) },
+            withUnreadEvents = false
+        )
     }
 }
