@@ -39,13 +39,13 @@ import com.wire.kalium.network.exceptions.isUserCreationRestricted
 
 sealed class RegisterParam(
     open val name: String,
-    val email: String,
-    val password: String,
-    val emailActivationCode: String,
-    val cookieLabel: String?
+    open val email: String,
+    open val password: String,
+    open val emailActivationCode: String,
+    open val cookieLabel: String?
 ) {
 
-    @Deprecated("This belongs to the old flow, it is overridden by [PersonalAccount]")
+    @Deprecated("This belongs to the old flow, it is overridden by [PersonalAccount] it will be deleted when enabling the new flow")
     class PrivateAccount(
         val firstName: String,
         val lastName: String,
@@ -59,7 +59,7 @@ sealed class RegisterParam(
             get() = "$firstName $lastName"
     }
 
-    @Deprecated("This belongs to the old flow, it will be overridden by when implementing new native Team flow")
+    @Deprecated("This belongs to the old flow, it will be deleted when enabling the new flow")
     @Suppress("LongParameterList")
     class Team(
         val firstName: String,
@@ -76,12 +76,12 @@ sealed class RegisterParam(
             get() = "$firstName $lastName"
     }
 
-    class PersonalAccount(
+    data class PersonalAccount(
         override val name: String,
-        email: String,
-        password: String,
-        emailActivationCode: String,
-        cookieLabel: String? = uuid4().toString(),
+        override val email: String,
+        override val password: String,
+        override val emailActivationCode: String,
+        override val cookieLabel: String? = uuid4().toString(),
     ) : RegisterParam(name, email, password, emailActivationCode, cookieLabel)
 }
 
