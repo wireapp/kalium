@@ -50,7 +50,8 @@ class EventDAOImpl(
                 eventsQueries.insertOrIgnoreEvent(
                     event.eventId,
                     0,
-                    event.payload
+                    event.payload,
+                    if (event.isLive) 1L else 0L
                 )
             }
         }
@@ -83,17 +84,25 @@ class EventDAOImpl(
         }
     }
 
+    override suspend fun setAllUnprocessedEventsAsPending() {
+        withContext(queriesContext) {
+            eventsQueries.setAllUnprocessedEventsAsPending()
+        }
+    }
+
     private fun mapEvent(
         id: Long,
-        event: String,
+        eventId: String,
         isProcessed: Long,
-        payload: String
+        payload: String,
+        isLive: Long
     ): EventEntity {
         return EventEntity(
             id = id,
-            eventId = event,
+            eventId = eventId,
             isProcessed = isProcessed != 0L,
-            payload = payload
+            payload = payload,
+            isLive = isLive != 0L
         )
     }
 }

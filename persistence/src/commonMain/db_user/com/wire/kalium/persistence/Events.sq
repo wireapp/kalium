@@ -2,12 +2,13 @@ CREATE TABLE Events (
     id INTEGER NOT NULL PRIMARY KEY,
     event_id TEXT NOT NULL UNIQUE,
     is_processed INTEGER NOT NULL,
-    payload TEXT NOT NULL
+    payload TEXT NOT NULL,
+    is_live INTEGER NOT NULL DEFAULT 0
 );
 
 insertOrIgnoreEvent:
-INSERT OR IGNORE INTO Events(event_id, is_processed, payload)
-VALUES (?, ?, ?);
+INSERT OR IGNORE INTO Events(event_id, is_processed, payload, is_live)
+VALUES (?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM Events;
@@ -32,6 +33,11 @@ markEventAsProcessed:
 UPDATE Events
 SET is_processed = 1
 WHERE event_id = ?;
+
+setAllUnprocessedEventsAsPending:
+UPDATE Events
+SET is_live = 0
+WHERE is_processed = 0;
 
 selectUnprocessedEvents:
 SELECT * FROM Events

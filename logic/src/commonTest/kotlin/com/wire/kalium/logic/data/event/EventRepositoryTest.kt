@@ -243,7 +243,8 @@ class EventRepositoryTest {
             id = 1L,
             eventId = testEvent.id,
             isProcessed = false,
-            payload = testPayload
+            payload = testPayload,
+            isLive = true
         )
 
         val (_, repository) = Arrangement()
@@ -361,7 +362,8 @@ class EventRepositoryTest {
                     id = id,
                     eventId = eventId,
                     isProcessed = false,
-                    payload = ""
+                    payload = "",
+                    isLive = true
                 )
             )
 
