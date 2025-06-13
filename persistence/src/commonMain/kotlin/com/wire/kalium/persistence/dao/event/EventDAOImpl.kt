@@ -84,9 +84,12 @@ class EventDAOImpl(
         }
     }
 
-    override suspend fun setAllUnprocessedEventsAsPending() {
-        withContext(queriesContext) {
-            eventsQueries.setAllUnprocessedEventsAsPending()
+    override suspend fun setAllUnprocessedEventsAsPending(): Long {
+        return withContext(queriesContext) {
+            eventsQueries.transactionWithResult {
+                eventsQueries.setAllUnprocessedEventsAsPending()
+                eventsQueries.selectChanges().executeAsOne()
+            }
         }
     }
 

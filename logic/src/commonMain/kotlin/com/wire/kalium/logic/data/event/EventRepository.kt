@@ -203,7 +203,7 @@ class EventDataSource(
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
-                    setAllUnprocessedEventsAsPending()
+                    setAllUnprocessedEventsAsPending().onSuccess { unprocessedCount -> pendingEventsCount.addAndGet(unprocessedCount) }
                     flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
 
@@ -268,7 +268,7 @@ class EventDataSource(
                         }
 
                         is ConsumableNotificationResponse.MessageCount -> {
-                            pendingEventsCount.set(event.data.count.toLong())
+                            pendingEventsCount.addAndGet(event.data.count.toLong())
                             acknowledgeMessageCount()
                         }
                     }
@@ -311,7 +311,7 @@ class EventDataSource(
             }
     }
 
-    private suspend fun setAllUnprocessedEventsAsPending(): Either<CoreFailure, Unit> = wrapStorageRequest {
+    private suspend fun setAllUnprocessedEventsAsPending(): Either<CoreFailure, Long> = wrapStorageRequest {
         eventDAO.setAllUnprocessedEventsAsPending()
     }
 

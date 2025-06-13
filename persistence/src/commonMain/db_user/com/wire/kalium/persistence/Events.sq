@@ -44,4 +44,5 @@ SELECT * FROM Events
 WHERE is_processed = 0
 ORDER BY id ASC;
 
-
+selectChanges:
+SELECT changes();
