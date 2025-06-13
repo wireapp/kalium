@@ -86,21 +86,31 @@ interface EventRepository {
     fun parseExternalEvents(data: String): List<EventEnvelope>
 
     /**
-     * Retrieves the last processed event ID from the storage.
+     * Retrieves the last saved event ID from the storage.
      *
      * @return an [Either] object representing either a [StorageFailure] or a [String].
-     *         - If the retrieval is successful, returns [Either.Right] with the last processed event ID as a [String].
+     *         - If the retrieval is successful, returns [Either.Right] with the last saved event ID as a [String].
      *         - If there is a failure during retrieval, returns [Either.Left] with a [StorageFailure] object.
      */
-    suspend fun lastProcessedEventId(): Either<StorageFailure, String>
+    suspend fun lastSavedEventId(): Either<StorageFailure, String>
 
     /**
-     * Clears the last processed event ID.
+     * Clears the last saved event ID.
      *
      * @return An [Either] object representing the result of the operation.
      * The [Either] object contains either a [StorageFailure] if the operation fails, or [Unit] if the operation succeeds.
      */
-    suspend fun clearLastProcessedEventId(): Either<StorageFailure, Unit>
+    suspend fun clearLastSavedEventId(): Either<StorageFailure, Unit>
+
+    /**
+     * Updates the last saved event ID.
+     *
+     * @param eventId The ID of the event to be set as the last saved event ID.
+     *
+     * @return An [Either] object representing the result of the operation.
+     * The [Either] object contains either a [StorageFailure] if the operation fails, or [Unit] if the operation succeeds.
+     */
+    suspend fun updateLastSavedEventId(eventId: String): Either<StorageFailure, Unit>
 
     suspend fun fetchMostRecentEventId(): Either<CoreFailure, String>
 
@@ -134,11 +144,9 @@ class EventDataSource(
             // control flow of by websocket new push concat map?
             .distinctUntilChanged()
             .collect { batch ->
-                val events = batch.map { entity ->
-                    KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                }
-                events.forEach {
-                    emit(eventMapper.fromDTO(it, isLive = false))
+                batch.forEach { entity ->
+                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
+                    emit(eventMapper.fromDTO(payload, isLive = entity.isLive))
                 }
             }
     }
@@ -182,6 +190,7 @@ class EventDataSource(
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
+                    setAllUnprocessedEventsAsPending()
                     flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
 
@@ -206,7 +215,8 @@ class EventDataSource(
                                         listOf(
                                             NewEventEntity(
                                                 eventId = eventResponse.id,
-                                                payload = KtxSerializer.json.encodeToString(eventResponse)
+                                                payload = KtxSerializer.json.encodeToString(eventResponse),
+                                                isLive = true // TODO Yamil we need to decide when set it as false for async notificaitons
                                             )
                                         )
                                     )
@@ -234,7 +244,8 @@ class EventDataSource(
                                                     eventId,
                                                     payload = listOf(EventContentDTO.AsyncMissedNotification)
                                                 )
-                                            )
+                                            ),
+                                            isLive = true
                                         )
                                     )
                                 )
@@ -278,6 +289,10 @@ class EventDataSource(
                     eventDAO.deleteProcessedEventsBefore(eventEntity.id)
                 }
             }
+    }
+
+    private suspend fun setAllUnprocessedEventsAsPending(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        eventDAO.setAllUnprocessedEventsAsPending()
     }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Unit>>> =
@@ -326,7 +341,8 @@ class EventDataSource(
                     event.payload?.let {
                         NewEventEntity(
                             eventId = event.id,
-                            payload = KtxSerializer.json.encodeToString(event)
+                            payload = KtxSerializer.json.encodeToString(event),
+                            isLive = false
                         )
                     }
                 }
@@ -351,11 +367,11 @@ class EventDataSource(
         }
     }
 
-    override suspend fun lastProcessedEventId(): Either<StorageFailure, String> = wrapStorageRequest {
+    override suspend fun lastSavedEventId(): Either<StorageFailure, String> = wrapStorageRequest {
         metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
     }
 
-    override suspend fun clearLastProcessedEventId(): Either<StorageFailure, Unit> = wrapStorageRequest {
+    override suspend fun clearLastSavedEventId(): Either<StorageFailure, Unit> = wrapStorageRequest {
         metadataDAO.deleteValue(LAST_SAVED_EVENT_ID_KEY)
     }
 
@@ -366,8 +382,8 @@ class EventDataSource(
                     .map { it.id }
             }
 
-    private suspend fun updateLastSavedEventId(eventId: String): Either<StorageFailure, Unit> {
-        return wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_SAVED_EVENT_ID_KEY) }
+    override suspend fun updateLastSavedEventId(eventId: String): Either<StorageFailure, Unit> = wrapStorageRequest {
+        metadataDAO.insertValue(eventId, LAST_SAVED_EVENT_ID_KEY)
     }
 
     override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> {
