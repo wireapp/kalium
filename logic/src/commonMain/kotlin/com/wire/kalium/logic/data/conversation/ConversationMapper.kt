@@ -86,8 +86,8 @@ interface ConversationMapper {
     fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
-    fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
-    fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    fun toApiModel(protocol: CreateConversationParam.Protocol): ConvProtocol
+    fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: CreateConversationParam): CreateConversationRequest
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
     fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity

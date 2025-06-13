@@ -24,8 +24,8 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
-import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
@@ -52,7 +52,7 @@ interface GroupConversationCreator {
     suspend operator fun invoke(
         name: String,
         userIdList: List<UserId>,
-        options: ConversationOptions
+        options: CreateConversationParam
     ): ConversationCreationResult
 }
 
@@ -71,7 +71,7 @@ internal class GroupConversationCreatorImpl(
     override suspend fun invoke(
         name: String,
         userIdList: List<UserId>,
-        options: ConversationOptions
+        options: CreateConversationParam
     ): ConversationCreationResult =
         syncManager.waitUntilLiveOrFailure().flatMap {
             currentClientIdProvider()

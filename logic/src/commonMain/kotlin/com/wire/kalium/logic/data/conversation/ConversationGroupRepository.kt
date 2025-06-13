@@ -68,7 +68,7 @@ interface ConversationGroupRepository {
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
-        options: ConversationOptions = ConversationOptions(),
+        options: CreateConversationParam = CreateConversationParam(),
     ): Either<CoreFailure, Conversation>
 
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -218,7 +218,7 @@ internal class ConversationGroupRepositoryImpl(
         apiResult: Either.Left<NetworkFailure>,
         usersList: List<UserId>,
         name: String?,
-        options: ConversationOptions,
+        options: CreateConversationParam,
         lastUsersAttempt: LastUsersAttempt
     ): Either<CoreFailure, Conversation> {
         val canRetryOnce = apiResult.value.isRetryable && lastUsersAttempt is LastUsersAttempt.None
