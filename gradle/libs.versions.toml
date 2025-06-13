@@ -34,7 +34,7 @@ multiplatform-settings = "1.1.1"
 moduleGraph = "0.12.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the workaround in the dev.mk file
-sqldelight = "2.0.1"
+sqldelight = "2.1.0"
 sqlcipher-android = "4.5.6"
 pbandk = "0.15.0"
 turbine = "1.1.0"
