@@ -50,7 +50,7 @@ fun Project.commonDokkaConfig() {
     rootProject.mkdir("build/$DOKKA_CACHE_DIR") // creating cache dir
 
     tasks.withType(AbstractDokkaLeafTask::class.java).configureEach {
-        cacheRoot.set(rootProject.buildDir.resolve(DOKKA_CACHE_DIR))  // set cache config dir to rootProject/buildDir
+        cacheRoot.set(layout.buildDirectory.asFile.get().resolve(DOKKA_CACHE_DIR))  // set cache config dir to rootProject/buildDir
         offlineMode.set(true) // offline, since we don't do online package-list
 
         dokkaSourceSets.configureEach {
