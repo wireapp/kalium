@@ -203,6 +203,7 @@ class EventDataSource(
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
+                    // todo. ask kubaz, should we add these pending to count ? how we clear them?
                     setAllUnprocessedEventsAsPending().onSuccess { unprocessedCount -> pendingEventsCount.addAndGet(unprocessedCount) }
                     flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
