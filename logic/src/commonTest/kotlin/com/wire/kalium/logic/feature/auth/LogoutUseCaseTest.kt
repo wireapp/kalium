@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.call.Call
@@ -40,9 +41,7 @@ import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -72,6 +71,7 @@ class LogoutUseCaseTest {
                 .withClearCurrentClientIdResult(Either.Right(Unit))
                 .withClearRetainedClientIdResult(Either.Right(Unit))
                 .withClearHasRegisteredMLSClientResult(Either.Right(Unit))
+                .withClearHasConsumableNotifications(Either.Right(Unit))
                 .withUserSessionScopeGetResult(null)
                 .withFirebaseTokenUpdate()
                 .withNoOngoingCalls()
@@ -352,6 +352,7 @@ class LogoutUseCaseTest {
             .withClearCurrentClientIdResult(Either.Right(Unit))
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
+            .withClearHasConsumableNotifications(Either.Right(Unit))
             .withFirebaseTokenUpdate()
             .withNoOngoingCalls()
             .arrange()
@@ -375,43 +376,18 @@ class LogoutUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val logoutRepository = mock(LogoutRepository::class)
-
-        @Mock
+                val logoutRepository = mock(LogoutRepository::class)
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val deregisterTokenUseCase = mock(DeregisterTokenUseCase::class)
-
-        @Mock
         val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
-
-        @Mock
         val clearUserDataUseCase = mock(ClearUserDataUseCase::class)
-
-        @Mock
         val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
-
-        @Mock
         val pushTokenRepository = mock(PushTokenRepository::class)
-
-        @Mock
         val userSessionWorkScheduler = mock(UserSessionWorkScheduler::class)
-
-        @Mock
         val observeEstablishedCallsUseCase = mock(ObserveEstablishedCallsUseCase::class)
-
-        @Mock
         val endCall = mock(EndCallUseCase::class)
-
-        @Mock
         val logoutCallback = mock(LogoutCallback::class)
 
         var kaliumConfigs = KaliumConfigs()
@@ -483,6 +459,13 @@ class LogoutUseCaseTest {
         suspend fun withClearHasRegisteredMLSClientResult(result: Either<StorageFailure, Unit>): Arrangement {
             coEvery {
                 clientRepository.clearHasRegisteredMLSClient()
+            }.returns(result)
+            return this
+        }
+
+        suspend fun withClearHasConsumableNotifications(result: Either<StorageFailure, Unit>): Arrangement {
+            coEvery {
+                clientRepository.clearClientHasConsumableNotifications()
             }.returns(result)
             return this
         }

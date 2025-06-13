@@ -5,7 +5,7 @@ import java.io.File
 
 actual class RootDetectorImpl actual constructor() : RootDetector {
 
-    override fun isSystemRooted(): Boolean {
+    actual override fun isSystemRooted(): Boolean {
         // Lambdas so they can be executed lazily
         val releaseTagsExist = {
             // Fallback to true in case of failure

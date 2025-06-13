@@ -19,31 +19,39 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
+import io.mockative.Mockable
 
 /**
  * This use case is responsible for retrieving the current user's server configuration.
  */
-class SelfServerConfigUseCase internal constructor(
-    private val selfUserId: UserId,
-    private val serverConfigRepository: ServerConfigRepository
-) {
+@Mockable
+interface SelfServerConfigUseCase {
     /**
      * @return [ServerConfig] or [CoreFailure]
      */
-    suspend operator fun invoke(): Result =
-        serverConfigRepository.configForUser(selfUserId).fold({
-            Result.Failure(it)
-        }, {
-            Result.Success(it)
-        })
+    suspend operator fun invoke(): Result
 
     sealed class Result {
         // TODO: rename serverLinks to serverConfig
         data class Success(val serverLinks: ServerConfig) : Result()
         data class Failure(val cause: CoreFailure) : Result()
+    }
+}
+
+@Suppress("FunctionNaming")
+internal fun SelfServerConfigUseCase(
+    selfUserId: UserId,
+    serverConfigRepository: ServerConfigRepository
+): SelfServerConfigUseCase = object : SelfServerConfigUseCase {
+    override suspend fun invoke(): SelfServerConfigUseCase.Result {
+        return serverConfigRepository.configForUser(selfUserId).fold({
+            SelfServerConfigUseCase.Result.Failure(it)
+        }, {
+            SelfServerConfigUseCase.Result.Success(it)
+        })
     }
 }

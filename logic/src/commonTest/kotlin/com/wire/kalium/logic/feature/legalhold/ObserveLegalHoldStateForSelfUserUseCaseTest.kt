@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.framework.TestUser
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -82,11 +81,7 @@ class ObserveLegalHoldStateForSelfUserUseCaseTest {
         )
 
     class Arrangement {
-
-        @Mock
         val observeLegalHoldStateForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
-
-        @Mock
         val observeLegalHoldRequestUseCase = mock(ObserveLegalHoldRequestUseCase::class)
 
         private val observeLegalHoldForSelfUser: ObserveLegalHoldStateForSelfUserUseCase =

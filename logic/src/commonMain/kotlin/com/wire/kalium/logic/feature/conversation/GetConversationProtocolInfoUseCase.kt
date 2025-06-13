@@ -25,12 +25,14 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 /**
  * This use case that get Conversation.ProtocolInfo for a specific conversation.
  * @see Conversation.ProtocolInfo
  */
+@Mockable
 interface GetConversationProtocolInfoUseCase {
     sealed class Result {
         data class Success(val protocolInfo: Conversation.ProtocolInfo) : Result()

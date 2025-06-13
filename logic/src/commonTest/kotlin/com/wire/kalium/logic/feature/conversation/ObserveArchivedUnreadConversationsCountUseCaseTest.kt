@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -33,8 +32,7 @@ import kotlin.test.assertEquals
 
 class ObserveArchivedUnreadConversationsCountUseCaseTest {
 
-    @Mock
-    private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     private lateinit var observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
 

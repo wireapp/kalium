@@ -159,4 +159,3 @@ LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedCont
 LEFT JOIN MessageFederationTerminatedContent AS FederationTerminatedContent ON Message.id = FederationTerminatedContent.message_id AND Message.conversation_id = FederationTerminatedContent.conversation_id
 LEFT JOIN MessageConversationProtocolChangedContent AS ConversationProtocolChangedContent ON Message.id = ConversationProtocolChangedContent.message_id AND Message.conversation_id = ConversationProtocolChangedContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull

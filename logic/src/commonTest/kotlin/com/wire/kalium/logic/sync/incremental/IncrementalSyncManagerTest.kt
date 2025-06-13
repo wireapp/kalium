@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -270,20 +269,11 @@ class IncrementalSyncManagerTest {
 
     private class Arrangement {
 
-        @Mock
         val incrementalSyncWorker = mock(IncrementalSyncWorker::class)
-
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
-
-        @Mock
         val incrementalSyncRecoveryHandler = mock(IncrementalSyncRecoveryHandler::class)
-
-        @Mock
         val networkStateObserver: NetworkStateObserver = mock(NetworkStateObserver::class)
-
-        @Mock
-        val exponentialDurationHelper: ExponentialDurationHelper =
-            mock(ExponentialDurationHelper::class)
+        val exponentialDurationHelper: ExponentialDurationHelper = mock(ExponentialDurationHelper::class)
 
         init {
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))

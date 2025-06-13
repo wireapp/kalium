@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -30,6 +31,7 @@ data class ProposalTimerEntity(
 )
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface ConversationDAO {
     val platformExtensions: ConversationExtensions
     //region Get/Observe by ID
@@ -45,6 +47,7 @@ interface ConversationDAO {
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
+    suspend fun insertOrIgnoreConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun updateMlsGroupStateAndCipherSuite(

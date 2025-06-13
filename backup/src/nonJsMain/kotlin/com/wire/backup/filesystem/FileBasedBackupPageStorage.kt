@@ -19,6 +19,8 @@ package com.wire.backup.filesystem
 
 import okio.FileSystem
 import okio.Path
+import okio.Source
+import okio.use
 
 internal class FileBasedBackupPageStorage(
     private val fileSystem: FileSystem,
@@ -43,22 +45,33 @@ internal class FileBasedBackupPageStorage(
             "File with name ${backupPage.name} already exists!"
         }
         fileSystem.write(workDirectory / backupPage.name) {
-            writeAll(backupPage.data)
+            backupPage.use {
+                writeAll(it)
+            }
         }
     }
 
     override operator fun get(entryName: String): BackupPage? {
         val entryFile = workDirectory / entryName
         return if (fileSystem.exists(entryFile)) {
-            BackupPage(entryName, fileSystem.openReadOnly(entryFile).source())
+            withReadonlySource(entryFile) { source ->
+                BackupPage(entryName, source)
+            }
         } else {
             null
         }
     }
 
     override fun listEntries(): List<BackupPage> =
-        fileSystem.list(workDirectory).map {
-            BackupPage(it.name, fileSystem.openReadOnly(it).source())
+        fileSystem.list(workDirectory).map { dir ->
+            withReadonlySource(dir) { source ->
+                BackupPage(dir.name, source)
+            }
+        }
+
+    private inline fun <T> withReadonlySource(path: Path, block: (Source) -> T): T =
+        fileSystem.openReadOnly(path).use { file ->
+            block(file.source())
         }
 
     override fun clear() {

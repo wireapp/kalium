@@ -26,7 +26,6 @@ import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -68,7 +67,7 @@ class UnblockUserUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
         val unblockUser = UnblockUserUseCaseImpl(connectionRepository)

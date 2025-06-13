@@ -23,8 +23,10 @@ import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
+import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
 
+@Mockable
 interface ConversationExtensions {
     fun getPagerForConversationDetailsWithEventsSearch(
         queryConfig: QueryConfig,

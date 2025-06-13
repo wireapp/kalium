@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
@@ -26,7 +25,6 @@ class ProteusMigrationRecoveryHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val logoutUseCase = mock(LogoutUseCase::class)
 
         fun arrange() = this to ProteusMigrationRecoveryHandlerImpl(

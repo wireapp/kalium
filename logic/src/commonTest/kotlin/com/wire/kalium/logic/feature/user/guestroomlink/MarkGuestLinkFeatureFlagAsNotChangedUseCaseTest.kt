@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
@@ -34,7 +33,6 @@ import kotlin.test.Test
 
 class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
 
-    @Mock
     val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
     lateinit var markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase

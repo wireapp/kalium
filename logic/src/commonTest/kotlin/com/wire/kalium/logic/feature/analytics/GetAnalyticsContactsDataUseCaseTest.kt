@@ -22,21 +22,15 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -327,10 +321,7 @@ class GetAnalyticsContactsDataUseCaseTest {
     private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
         AnalyticsRepositoryArrangement by AnalyticsRepositoryArrangementImpl() {
 
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-
 
         private val useCase: GetAnalyticsContactsDataUseCase = GetAnalyticsContactsDataUseCase(
             selfTeamIdProvider = selfTeamIdProvider,

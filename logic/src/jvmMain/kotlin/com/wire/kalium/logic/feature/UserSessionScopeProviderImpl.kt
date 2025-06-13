@@ -53,7 +53,7 @@ internal actual class UserSessionScopeProviderImpl(
     private val logoutCallback: LogoutCallback,
     userAgent: String,
     private val useInMemoryDatabase: Boolean
-) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
+) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent), UserSessionScopeProvider {
 
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)

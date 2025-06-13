@@ -28,7 +28,9 @@ import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlin.coroutines.cancellation.CancellationException
+import io.mockative.Mockable
 
+@Mockable
 interface DatabaseExporter {
 
     /**

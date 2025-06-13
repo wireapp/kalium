@@ -23,6 +23,7 @@ import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -30,7 +31,7 @@ import kotlinx.coroutines.flow.map
  * This use case is to get a flow of  file sharing status of the team settings from the local storage
  * so we can use it to show and hide things on the screen
  */
-
+@Mockable
 interface ObserveFileSharingStatusUseCase {
     operator fun invoke(): Flow<FileSharingStatus>
 }

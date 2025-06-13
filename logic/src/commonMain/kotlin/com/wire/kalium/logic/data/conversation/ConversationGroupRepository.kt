@@ -61,9 +61,11 @@ import com.wire.kalium.network.exceptions.isConversationHasNoCode
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Mockable
 interface ConversationGroupRepository {
     suspend fun createGroupConversation(
         name: String? = null,
@@ -471,7 +473,7 @@ internal class ConversationGroupRepositoryImpl(
         return if (canRetryOnce) {
             extractValidUsersForRetryableError(apiResult.value, userIdList)
                 .flatMap { (validUsers, failedUsers, failType) ->
-                    when (failedUsers.isNotEmpty()) {
+                    when (failedUsers.isNotEmpty() && validUsers.isNotEmpty()) {
                         true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, LastUsersAttempt.Failed(failedUsers, failType))
                         false -> {
                             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(

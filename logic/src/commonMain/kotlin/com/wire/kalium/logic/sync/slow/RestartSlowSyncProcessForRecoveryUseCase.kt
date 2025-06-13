@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import io.mockative.Mockable
 
 /**
  * Restart slowSync process for recovery.
  */
+@Mockable
 interface RestartSlowSyncProcessForRecoveryUseCase {
     suspend operator fun invoke()
 }

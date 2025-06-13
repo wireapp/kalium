@@ -27,10 +27,12 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
+@Mockable
 interface ReactionRepository {
     suspend fun persistReaction(
         originalMessageId: String,

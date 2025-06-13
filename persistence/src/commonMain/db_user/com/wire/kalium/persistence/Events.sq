@@ -1,0 +1,41 @@
+CREATE TABLE Events (
+    id INTEGER NOT NULL PRIMARY KEY,
+    event_id TEXT NOT NULL UNIQUE,
+    is_processed INTEGER NOT NULL,
+    payload TEXT NOT NULL
+);
+
+insertOrIgnoreEvent:
+INSERT OR IGNORE INTO Events(event_id, is_processed, payload)
+VALUES (?, ?, ?);
+
+selectAll:
+SELECT * FROM Events;
+
+getById:
+SELECT * FROM Events WHERE event_id = ?;
+
+markEventsAsProcessedUpTo:
+UPDATE Events
+SET is_processed = 1
+WHERE id <= ?;
+
+deleteProcessedEventsBefore:
+DELETE FROM Events
+WHERE id < ? AND is_processed = 1;
+
+deleteAllProcessedEvents:
+DELETE FROM Events
+WHERE is_processed = 1;
+
+markEventAsProcessed:
+UPDATE Events
+SET is_processed = 1
+WHERE event_id = ?;
+
+selectUnprocessedEvents:
+SELECT * FROM Events
+WHERE is_processed = 0
+ORDER BY id ASC;
+
+

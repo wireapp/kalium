@@ -40,7 +40,6 @@ import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -356,25 +355,12 @@ class UserEventReceiverTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
-        @Mock
-        val connectionRepository = mock(ConnectionRepository::class)
-
-        @Mock
+                val connectionRepository = mock(ConnectionRepository::class)
         val logoutUseCase = mock(LogoutUseCase::class)
-
-        @Mock
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
-
-        @Mock
         val legalHoldRequestHandler = mock(LegalHoldRequestHandler::class)
-
-        @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
