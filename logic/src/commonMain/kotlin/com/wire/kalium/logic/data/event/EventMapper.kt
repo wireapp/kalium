@@ -107,6 +107,11 @@ class EventMapper(
          */
         val FULL_ACKNOWLEDGE_REQUEST: EventAcknowledgeRequest =
             EventAcknowledgeRequest(type = AcknowledgeType.ACK_FULL_SYNC)
+
+        /**
+         * Acknowledge request for message count.
+         */
+        val MESSAGE_COUNT_ACKNOWLEDGE_REQUEST: EventAcknowledgeRequest = EventAcknowledgeRequest(type = AcknowledgeType.ACK_MESSAGE_COUNT)
     }
 
     @Suppress("ComplexMethod")

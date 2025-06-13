@@ -36,13 +36,17 @@ data class AcknowledgeData(
     val multiple: Boolean = false
 )
 
+
 @Serializable
 enum class AcknowledgeType {
     @SerialName("ack")
     ACK,
 
     @SerialName("ack_full_sync")
-    ACK_FULL_SYNC;
+    ACK_FULL_SYNC,
+
+    @SerialName("ack_message_count")
+    ACK_MESSAGE_COUNT;
 
     override fun toString(): String {
         return this.name.lowercase()

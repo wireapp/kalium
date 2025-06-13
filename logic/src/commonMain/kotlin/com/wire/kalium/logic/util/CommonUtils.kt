@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.util
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import co.touchlab.stately.concurrency.AtomicLong
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.time.Duration
@@ -96,4 +97,12 @@ fun <K, V> ConcurrentMutableMap<K, MutableSet<V>>.safeComputeAndMutateSetValue(k
         this[key] = values
         return@block values
     }
+}
+
+/**
+ * Convenience function to decrement a Long only until Zero is reached, otherwise just get.
+ */
+fun AtomicLong.decrementUntilZeroAndGet(): Long {
+    return if (this.get() == 0L) this.get()
+    else this.decrementAndGet()
 }

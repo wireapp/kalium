@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.event
 
+import co.touchlab.stately.concurrency.AtomicLong
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -35,6 +36,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.util.decrementUntilZeroAndGet
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -50,9 +52,9 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.mockative.Mockable
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.NewEventEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,6 +76,7 @@ interface EventRepository {
      * Performs an acknowledgment of the missed event after performing a slow sync.
      */
     suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit>
+    suspend fun acknowledgeMessageCount(): Either<CoreFailure, Unit>
     suspend fun fetchEvents(): Flow<Either<CoreFailure, EventEnvelope>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Unit>>>
     suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit>
@@ -136,6 +139,7 @@ class EventDataSource(
 ) : EventRepository {
 
     private val clearOnFirstWSMessage = MutableStateFlow(false)
+    private val pendingEventsCount = AtomicLong(0)
 
     override suspend fun observeEvents(): Flow<List<EventEnvelope>> = flow {
         eventDAO.observeUnprocessedEvents()
@@ -150,6 +154,15 @@ class EventDataSource(
                 }
             }
     }
+
+    override suspend fun acknowledgeMessageCount(): Either<CoreFailure, Unit> =
+        currentClientId().fold(
+            { it.left() },
+            {
+                notificationApi.acknowledgeEvents(it.value, EventMapper.MESSAGE_COUNT_ACKNOWLEDGE_REQUEST)
+                Unit.right()
+            }
+        )
 
     override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> =
         currentClientId().fold(
@@ -216,13 +229,15 @@ class EventDataSource(
                                             NewEventEntity(
                                                 eventId = eventResponse.id,
                                                 payload = KtxSerializer.json.encodeToString(eventResponse),
-                                                isLive = true // TODO Yamil we need to decide when set it as false for async notificaitons
+                                                isLive = pendingEventsCount.get() == 0L
                                             )
                                         )
                                     )
                                 }.onSuccess {
                                     event.data.deliveryTag?.let {
                                         ackEvent(it)
+                                        pendingEventsCount.decrementUntilZeroAndGet()
+                                        println("YM. Processing pending events count: ${pendingEventsCount.get()}")
                                     }
                                     if (!event.data.event.transient) {
                                         updateLastSavedEventId(event.data.event.id)
@@ -250,6 +265,11 @@ class EventDataSource(
                                     )
                                 )
                             }
+                        }
+
+                        is ConsumableNotificationResponse.MessageCount -> {
+                            pendingEventsCount.set(event.data.count.toLong())
+                            acknowledgeMessageCount()
                         }
                     }
                 }
