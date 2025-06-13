@@ -1,259 +1,275 @@
-/*
- * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see http://www.gnu.org/licenses/.
- */
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.call.ConversationTypeForCall
-import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.every
+import io.mockative.coVerify
 import io.mockative.mock
+import io.mockative.once
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class GetCallConversationTypeProviderTest {
 
     @Test
-    fun givenShouldUseSFTForOneOnOneCallsAndMLSEnabled_whenRunningUseCase_thenReturnConferenceMls() =
-        runTest {
-            val conversationId = TestConversation.ID
-            val groupId = GroupID("groupid")
-
-            val (arrangement, getCallConversationType) = Arrangement()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.OneOnOne)
-                .withGetConversationProtocolInfoSuccess(
-                    conversationId,
-                    Conversation.ProtocolInfo.MLS(
-                        groupId,
-                        Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                        1UL,
-                        Clock.System.now(),
-                        CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-                    )
+    fun givenGroupConversationWithMLSProtocol_whenGettingCallType_thenReturnConferenceMls() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.Group.Regular,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
+                    groupId = GroupID("groupId"),
+                    groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 1.toULong(),
+                    cipherSuite = CipherSuite.Companion.fromTag(1),
+                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
                 )
-                .withMlsConferenceCallMapping()
-                .withShouldUseSFTForOneOnOneCalls()
-                .withMLSEnabled()
-                .arrange()
-
-            val result = getCallConversationType.invoke(conversationId)
-
-            assertEquals(ConversationTypeCalling.ConferenceMls, result)
+            )
         }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(ConversationTypeCalling.ConferenceMls, result)
+        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+    }
 
     @Test
-    fun givenShouldUseSFTForOneOnOneCallsAndMLSDisabled_whenRunningUseCase_thenReturnConference() =
-        runTest {
-            val conversationId = TestConversation.ID
-
-            val (_, getCallConversationType) = Arrangement()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.Group.Regular)
-                .withGetConversationProtocolInfoSuccess(
-                    conversationId,
-                    Conversation.ProtocolInfo.Proteus
-                )
-                .withConferenceCallMapping()
-                .withShouldUseSFTForOneOnOneCalls()
-                .withMLSDisabled()
-                .arrange()
-
-            val result = getCallConversationType(conversationId)
-
-            assertEquals(ConversationTypeCalling.Conference, result)
+    fun givenOneOnOneConversationWithSFTDisabled_whenGettingCallType_thenReturnOneOnOne() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.OneOnOne,
+                protocolInfo = Conversation.ProtocolInfo.Proteus
+            )
+            withShouldNotUseSFTForOneOnOneCalls()
         }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(ConversationTypeCalling.OneOnOne, result)
+        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasInvoked(exactly = once)
+    }
 
     @Test
-    fun givenShouldNotUseSFTForOneOnOneCallsAndOneOnOneConversation_whenRunningUseCase_thenReturnOneOnOneType() =
-        runTest {
-            val conversationId = TestConversation.ID
-
-            val (_, getCallConversationType) = Arrangement()
-                .withShouldNotUseSFTForOneOnOneCalls()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.OneOnOne)
-                .withGetConversationProtocolInfoSuccess(
-                    conversationId,
-                    Conversation.ProtocolInfo.Proteus
-                )
-                .withOneOnOneCallMapping()
-                .arrange()
-
-            val result = getCallConversationType.invoke(conversationId)
-
-            assertEquals(ConversationTypeCalling.OneOnOne, result)
+    fun givenProteusOneOnOneConversationWithSFTEnabled_whenGettingCallType_thenReturnConference() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.OneOnOne,
+                protocolInfo = Conversation.ProtocolInfo.Proteus
+            )
+            withShouldUseSFTForOneOnOneCalls()
         }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(ConversationTypeCalling.Conference, result)
+        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasInvoked(exactly = once)
+    }
 
     @Test
-    fun givenUserConfigRepositoryReturnsFailure_whenRunningUseCase_thenReturnConversationType() =
-        runTest {
-            val conversationId = TestConversation.ID
-
-            val (_, getCallConversationType) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsFailure()
-                .withGetConversationTypeByIdSuccess(conversationId, Conversation.Type.Group.Regular)
-                .withGetConversationProtocolInfoSuccess(
-                    conversationId,
-                    Conversation.ProtocolInfo.Proteus
-                )
-                .withConferenceCallMapping()
-                .arrange()
-
-            val result = getCallConversationType.invoke(conversationId)
-
-            assertEquals(ConversationTypeCalling.Conference, result)
+    fun givenSelfConversation_whenGettingCallType_thenReturnUnknown() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.Self,
+                protocolInfo = Conversation.ProtocolInfo.Proteus
+            )
         }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(ConversationTypeCalling.Unknown, result)
+        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+    }
 
     @Test
-    fun givenShouldNotUseSFTAndConversationRepositoryFailure_whenRunningUseCase_thenReturnUnknown() =
-        runTest {
-            val conversationId = TestConversation.ID
-
-            val (_, getCallConversationType) = Arrangement()
-                .withShouldNotUseSFTForOneOnOneCalls()
-                .withGetConversationTypeByIdFailure(conversationId)
-                .withUnknownCallMapping()
-                .arrange()
-
-            val result = getCallConversationType.invoke(conversationId)
-
-            assertEquals(ConversationTypeCalling.Unknown, result)
+    fun givenOneOnOneConversationWithSFTEnabledButSFTCheckFails_whenGettingCallType_thenReturnUnknown() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.OneOnOne,
+                protocolInfo = Conversation.ProtocolInfo.Proteus
+            )
+            withSFTCheckFailure()
         }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(ConversationTypeCalling.Unknown, result)
+        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenConnectionPendingConversation_whenGettingCallType_thenReturnUnknown() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.ConnectionPending,
+                protocolInfo = Conversation.ProtocolInfo.Proteus
+            )
+        }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(ConversationTypeCalling.Unknown, result)
+        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenGroupConversationWithMixedProtocol_whenGettingCallType_thenReturnConference() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.Group.Regular,
+                protocolInfo = Conversation.ProtocolInfo.Mixed(
+                    groupId = GroupID("groupId"),
+                    groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 1.toULong(),
+                    cipherSuite = CipherSuite.Companion.fromTag(1),
+                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
+                )
+            )
+        }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(ConversationTypeCalling.Conference, result)
+        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenGroupConversationWithProteusProtocol_whenGettingCallType_thenReturnConference() = runTest {
+        val (arrangement, getCallConversationType) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.Group.Regular,
+                protocolInfo = Conversation.ProtocolInfo.Proteus
+            )
+        }
+
+        val result = getCallConversationType(ConversationId("some-id", "some-domain"))
+
+        assertEquals(ConversationTypeCalling.Conference, result)
+    }
+
+    @Test
+    fun givenChannelWithProteusProtocol_whenGettingCallType_thenReturnConference() = runTest {
+        val (arrangement, getCallConversationType) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.Group.Channel,
+                protocolInfo = Conversation.ProtocolInfo.Proteus
+            )
+        }
+
+        val result = getCallConversationType(ConversationId("some-id", "some-domain"))
+
+        assertEquals(ConversationTypeCalling.Conference, result)
+    }
+
+    @Test
+    fun givenOneOnOneMLSConversationWithSFTEnabled_whenGettingCallType_thenReturnConferenceMls() = runTest {
+        val (arrangement, getCallConversationType) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.OneOnOne,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
+                    groupId = GroupID("groupId"),
+                    groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 1.toULong(),
+                    cipherSuite = CipherSuite.Companion.fromTag(1),
+                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
+                )
+            )
+            withShouldUseSFTForOneOnOneCalls()
+        }
+
+        val result = getCallConversationType(ConversationId("some-id", "some-domain"))
+
+        assertEquals(ConversationTypeCalling.ConferenceMls, result)
+    }
+
+    @Test
+    fun givenGetConversationTypeAndProtocolInfoFails_whenGettingCallType_thenReturnUnknown() = runTest {
+        val (arrangement, getCallConversationType) = arrange {
+            withGetConversationTypeAndProtocolInfoFailure(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        val result = getCallConversationType(ConversationId("some-id", "some-domain"))
+
+        assertEquals(ConversationTypeCalling.Unknown, result)
+    }
 
     private class Arrangement {
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
-        val callMapper = mock(CallMapper::class)
+        val conversationMetaDataRepository = mock(ConversationMetaDataRepository::class)
 
         private val getCallConversationType = GetCallConversationTypeProviderImpl(
             userConfigRepository = userConfigRepository,
-            conversationRepository = conversationRepository,
-            callMapper = callMapper
+            conversationMetaDataRepository = conversationMetaDataRepository
         )
 
+        suspend fun withShouldUseSFTForOneOnOneCalls() = apply {
+            coEvery { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(Either.Right(true))
+        }
+
+        suspend fun withShouldNotUseSFTForOneOnOneCalls() = apply {
+            coEvery { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(Either.Right(false))
+        }
+
+        suspend fun withGetConversationTypeAndProtocolInfoSuccess(
+            type: Conversation.Type,
+            protocolInfo: Conversation.ProtocolInfo
+        ) = apply {
+            coEvery {
+                conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any())
+            }.returns(Either.Right(Pair(type, protocolInfo)))
+        }
+
+        suspend fun withSFTCheckFailure() = apply {
+            coEvery {
+                userConfigRepository.shouldUseSFTForOneOnOneCalls()
+            }.returns(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        suspend fun withGetConversationTypeAndProtocolInfoFailure(result: Either.Left<StorageFailure>) {
+            coEvery {
+                conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any())
+            }.returns(result)
+        }
+
+
         fun arrange() = this to getCallConversationType
-
-        fun withMLSEnabled() = apply {
-            every {
-                userConfigRepository.isMLSEnabled()
-            }.returns(Either.Right(true))
-        }
-
-        fun withMLSDisabled() = apply {
-            every {
-                userConfigRepository.isMLSEnabled()
-            }.returns(Either.Right(false))
-        }
-
-        fun withShouldUseSFTForOneOnOneCalls() = apply {
-            every {
-                userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(Either.Right(true))
-        }
-
-        fun withShouldNotUseSFTForOneOnOneCalls() = apply {
-            every {
-                userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(Either.Right(false))
-        }
-
-        fun withShouldUseSFTForOneOnOneCallsFailure() = apply {
-            every {
-                userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(Either.Left(StorageFailure.DataNotFound))
-        }
-
-        suspend fun withGetConversationTypeByIdSuccess(
-            conversationId: ConversationId,
-            result: Conversation.Type
-        ) = apply {
-            coEvery {
-                conversationRepository.getConversationTypeById(eq(conversationId))
-            }.returns(Either.Right(result))
-        }
-
-        suspend fun withGetConversationTypeByIdFailure(conversationId: ConversationId) = apply {
-            coEvery {
-                conversationRepository.getConversationTypeById(eq(conversationId))
-            }.returns(Either.Left(StorageFailure.DataNotFound))
-        }
-
-        suspend fun withGetConversationProtocolInfoSuccess(
-            conversationId: ConversationId,
-            protocolResult: Conversation.ProtocolInfo
-        ) = apply {
-            coEvery {
-                conversationRepository.getConversationProtocolInfo(eq(conversationId))
-            }.returns(Either.Right(protocolResult))
-        }
-
-        fun withOneOnOneCallMapping() = apply {
-            every {
-                callMapper.fromConversationTypeToConversationTypeForCall(any(), any())
-            }.returns(ConversationTypeForCall.OneOnOne)
-
-            every {
-                callMapper.toConversationTypeCalling(any())
-            }.returns(ConversationTypeCalling.OneOnOne)
-        }
-
-        fun withConferenceCallMapping() = apply {
-            every {
-                callMapper.fromConversationTypeToConversationTypeForCall(any(), any())
-            }.returns(ConversationTypeForCall.Conference)
-
-            every {
-                callMapper.toConversationTypeCalling(any())
-            }.returns(ConversationTypeCalling.Conference)
-        }
-
-        fun withMlsConferenceCallMapping() = apply {
-            every {
-                callMapper.fromConversationTypeToConversationTypeForCall(any(), any())
-            }.returns(ConversationTypeForCall.ConferenceMls)
-
-            every {
-                callMapper.toConversationTypeCalling(any())
-            }.returns(ConversationTypeCalling.ConferenceMls)
-        }
-
-        fun withUnknownCallMapping() = apply {
-            every {
-                callMapper.toConversationTypeCalling(eq(ConversationTypeForCall.Unknown))
-            }.returns(ConversationTypeCalling.Unknown)
-        }
     }
+
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement().apply { runBlocking { block() } }.arrange()
 }

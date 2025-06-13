@@ -23,7 +23,9 @@ import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface UserDetailsApi {
     suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<ListUsersDTO>
     suspend fun getUserInfo(userId: UserId): NetworkResponse<UserProfileDTO>

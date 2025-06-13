@@ -34,6 +34,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isOperationDenied
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 
 /**
  * Creates a conversation.
@@ -42,6 +43,7 @@ import com.wire.kalium.util.DateTimeUtil
  * and return one [ConversationCreationResult].
  */
 @Suppress("LongParameterList")
+@Mockable
 interface GroupConversationCreator {
 
     /**

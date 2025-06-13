@@ -18,7 +18,7 @@
 
 package com.wire.kalium.persistence.dao.asset
 
-import com.wire.kalium.persistence.Asset
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 data class AssetEntity(
@@ -30,11 +30,12 @@ data class AssetEntity(
     val downloadedDate: Long?
 )
 
+@Mockable
 interface AssetDAO {
     suspend fun insertAsset(assetEntity: AssetEntity)
     suspend fun insertAssets(assetsEntity: List<AssetEntity>)
     suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?>
     suspend fun updateAsset(assetEntity: AssetEntity)
     suspend fun deleteAsset(key: String)
-    suspend fun getAssets(): List<Asset>
+    suspend fun getAssets(): List<AssetEntity>
 }

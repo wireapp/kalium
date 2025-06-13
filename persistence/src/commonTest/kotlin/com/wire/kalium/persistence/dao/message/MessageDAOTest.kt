@@ -256,6 +256,48 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMessagesAreDeleted_whenGettingMessagesById_thenShouldHaveContentRemoved() = runTest {
+        insertInitialData()
+        val userInQuestion = userEntity1
+
+        val deleteMessageConversationId = conversationEntity1.id
+        val textMessage = newRegularMessageEntity(
+            id = "1",
+            content = MessageEntityContent.Text("Howdy"),
+            conversationId = deleteMessageConversationId,
+            senderUserId = userInQuestion.id,
+            // Different status
+            status = MessageEntity.Status.SENT
+        )
+        val assetMessage = textMessage.copy(
+            id = "2",
+            content = MessageEntityContent.Asset(
+                42L,
+                assetMimeType = "",
+                assetOtrKey = byteArrayOf(),
+                assetId = "a",
+                assetSha256Key = byteArrayOf(),
+                assetEncryptionAlgorithm = "",
+            ),
+        )
+        val locationMessage = textMessage.copy(
+            id = "3",
+            content = MessageEntityContent.Location(latitude = 42f, longitude = 34f),
+        )
+
+        val messages = listOf(textMessage, assetMessage, locationMessage)
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        messages.forEach { message ->
+            messageDAO.markMessageAsDeleted(message.id, message.conversationId)
+            val result = messageDAO.getMessageById(message.id, message.conversationId)
+            assertNotNull(result)
+            val content = result.content
+            assertIs<MessageEntityContent.Unknown>(content)
+        }
+    }
+
+    @Test
     fun givenMessagesBySameMessageIdDifferentConvId_WhenMarkMessageAsDeleted_OnlyTheMessageWithCorrectConIdVisibilityIsDeleted() = runTest {
         insertInitialData()
         val userInQuestion = userEntity1

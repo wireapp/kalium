@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.doesNothing
@@ -41,11 +40,9 @@ import kotlin.test.Test
 
 class MuteCallUseCaseTest {
 
-    @Mock
-    private val callManager = mock(CallManager::class)
+        private val callManager = mock(CallManager::class)
 
-    @Mock
-    private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock(CallRepository::class)
 
     private lateinit var muteCall: MuteCallUseCase
 

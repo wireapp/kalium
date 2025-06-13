@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.connection
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.user.ConnectionState
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -38,6 +39,7 @@ typealias ObserveConnectionListUseCase = ObservePendingConnectionRequestsUseCase
  *
  * @see ConnectionState
  */
+@Mockable
 fun interface ObservePendingConnectionRequestsUseCase {
     /**
      * Use case [ObservePendingConnectionRequestsUseCase] operation

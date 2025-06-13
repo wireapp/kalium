@@ -63,11 +63,13 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
+@Mockable
 interface ConversationMapper {
     fun fromApiModelToDaoModel(
         apiModel: ConversationResponse,
@@ -618,7 +620,7 @@ fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = whe
     ConversationEntity.ChannelAccess.PUBLIC -> ChannelAccess.PUBLIC
 }
 
-private fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation.Type = when (this) {
+fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation.Type = when (this) {
     ConversationEntity.Type.SELF -> Conversation.Type.Self
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.OneOnOne
     ConversationEntity.Type.GROUP -> {

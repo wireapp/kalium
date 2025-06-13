@@ -28,6 +28,8 @@ import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.authenticated.client.UpdateClientCapabilitiesRequest
 import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest
 import com.wire.kalium.network.api.authenticated.teams.PasswordRequest
+import com.wire.kalium.network.api.model.ApiModelMapper
+import com.wire.kalium.network.api.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.model.PushTokenBody
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.UserId
@@ -41,7 +43,8 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 internal open class ClientApiV0 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
 ) : ClientApi {
 
     protected val httpClient get() = authenticatedNetworkClient.httpClient
@@ -49,7 +52,7 @@ internal open class ClientApiV0 internal constructor(
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
         wrapKaliumResponse {
             httpClient.post(PATH_CLIENTS) {
-                setBody(registerClientRequest)
+                setBody(apiModelMapper.toApiV0ToV7(registerClientRequest))
             }
         }
 

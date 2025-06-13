@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -138,16 +137,9 @@ class NeedsToRegisterClientUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
+                val currentClientIdProvider = mock(CurrentClientIdProvider::class)
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val proteusClientProvider = mock(ProteusClientProvider::class)
-
-        @Mock
         private val proteusClient = mock(ProteusClient::class)
 
         private var needsToRegisterClientUseCase: NeedsToRegisterClientUseCase =

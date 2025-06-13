@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -124,7 +123,7 @@ class ObserveUserFoldersUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationFolderRepository = mock(ConversationFolderRepository::class)
 
         private val observeUserFoldersUseCase = ObserveUserFoldersUseCaseImpl(

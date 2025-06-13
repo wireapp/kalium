@@ -31,7 +31,6 @@ import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -416,23 +415,11 @@ class SlowSyncManagerTest {
     }
 
     private class Arrangement : SyncMigrationStepsProviderArrangement by SyncMigrationStepsProviderArrangementImpl() {
-
-        @Mock
         val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock(SlowSyncCriteriaProvider::class)
-
-        @Mock
         val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val slowSyncWorker: SlowSyncWorker = mock(SlowSyncWorker::class)
-
-        @Mock
         val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock(SlowSyncRecoveryHandler::class)
-
-        @Mock
         val networkStateObserver: NetworkStateObserver = mock(NetworkStateObserver::class)
-
-        @Mock
         val exponentialDurationHelper: ExponentialDurationHelper =
             mock(ExponentialDurationHelper::class)
 

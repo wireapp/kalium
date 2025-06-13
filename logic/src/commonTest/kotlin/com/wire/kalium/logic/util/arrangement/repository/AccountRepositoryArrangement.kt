@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -40,7 +39,6 @@ internal interface AccountRepositoryArrangement {
 
 internal class AccountRepositoryArrangementImpl : AccountRepositoryArrangement {
 
-    @Mock
     override val accountRepository: AccountRepository = mock(AccountRepository::class)
 
     override suspend fun withUpdateSelfUserAvailabilityStatus(

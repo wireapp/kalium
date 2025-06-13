@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.user.typingIndicator
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -76,7 +75,7 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val userPropertyRepository = mock(UserPropertyRepository::class)
 
         val persistTypingIndicatorStatusConfig = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository)

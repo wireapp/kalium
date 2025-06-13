@@ -24,7 +24,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -37,10 +36,7 @@ import kotlin.test.Test
 
 class PendingMessagesSenderWorkerTest {
 
-    @Mock
     private val messageRepository = mock(MessageRepository::class)
-
-    @Mock
     private val messageSender = mock(MessageSender::class)
 
     private lateinit var pendingMessagesSenderWorker: PendingMessagesSenderWorker

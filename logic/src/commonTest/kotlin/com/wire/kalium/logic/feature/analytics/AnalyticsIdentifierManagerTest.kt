@@ -33,7 +33,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderAr
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -113,7 +112,6 @@ class AnalyticsIdentifierManagerTest {
         CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
         SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl() {
 
-        @Mock
         val syncManager = mock(SyncManager::class)
 
         private val useCase: AnalyticsIdentifierManager = AnalyticsIdentifierManager(

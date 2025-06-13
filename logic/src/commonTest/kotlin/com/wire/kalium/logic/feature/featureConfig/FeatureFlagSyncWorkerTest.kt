@@ -22,7 +22,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -77,7 +76,6 @@ class FeatureFlagSyncWorkerTest {
         private val configure: Arrangement.() -> Unit
     ) : IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
 
-        @Mock
         val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
 
         suspend fun arrange(): Pair<Arrangement, FeatureFlagSyncWorkerImpl> = run {

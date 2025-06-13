@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -152,20 +151,10 @@ class JoinExistingMLSConversationsUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         fun arrange() = this to JoinExistingMLSConversationsUseCaseImpl(

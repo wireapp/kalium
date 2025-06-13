@@ -18,6 +18,7 @@
 package com.wire.backup.filesystem
 
 import okio.Source
+import okio.use
 
 /**
  * Storage used during export/import of backups.
@@ -31,8 +32,17 @@ internal interface BackupPageStorage {
 
 internal data class BackupPage(
     val name: String,
-    val data: Source,
+    private val data: Source,
 ) {
+
+    fun close() {
+        data.close()
+    }
+
+    fun <T> use(useFunction: (Source) -> T): T = data.use {
+        useFunction(it)
+    }
+
     internal companion object {
         const val CONVERSATIONS_PREFIX = "conversations_"
         const val MESSAGES_PREFIX = "messages_"

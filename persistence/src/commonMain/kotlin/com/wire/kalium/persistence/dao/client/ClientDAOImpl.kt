@@ -45,7 +45,8 @@ internal object ClientMapper {
         model: String?,
         lastActive: Instant?,
         mls_public_keys: Map<String, String>?,
-        is_mls_capable: Boolean
+        is_mls_capable: Boolean,
+        is_async_notifications_capable: Boolean
     ): Client = Client(
         userId = user_id,
         id = id,
@@ -59,6 +60,7 @@ internal object ClientMapper {
         model = model,
         lastActive = lastActive,
         mlsPublicKeys = mls_public_keys,
+        isAsyncNotificationsCapable = is_async_notifications_capable
     )
 }
 
@@ -98,7 +100,8 @@ internal class ClientDAOImpl internal constructor(
             last_active = lastActive,
             model = model,
             label = label,
-            mls_public_keys = mlsPublicKeys
+            mls_public_keys = mlsPublicKeys,
+            is_async_notifications_capable = isAsyncNotificationsCapable
         )
         clientsQueries.selectChanges().executeAsOne() > 0
     }

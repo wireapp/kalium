@@ -6,6 +6,7 @@ CREATE TABLE ConversationFolder (
     name TEXT NOT NULL,
     folder_type TEXT AS ConversationFolderTypeEntity NOT NULL
 );
+CREATE INDEX ConversationFolder_idx_type ON ConversationFolder(folder_type);
 
 CREATE TABLE LabeledConversation (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -13,7 +14,7 @@ CREATE TABLE LabeledConversation (
 
       FOREIGN KEY (folder_id) REFERENCES ConversationFolder(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
-      PRIMARY KEY (folder_id, conversation_id)
+      PRIMARY KEY (conversation_id, folder_id)
 );
 
 getFolders:

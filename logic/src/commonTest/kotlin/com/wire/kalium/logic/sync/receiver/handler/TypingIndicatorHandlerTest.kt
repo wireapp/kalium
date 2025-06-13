@@ -24,7 +24,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -93,8 +92,7 @@ class TypingIndicatorHandlerTest {
     }
 
     private class Arrangement {
-        @Mock
-        val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(TypingIndicatorIncomingRepository::class)
+                val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(TypingIndicatorIncomingRepository::class)
 
         suspend fun withTypingIndicatorObserve(usersId: Set<UserId>) = apply {
             coEvery {

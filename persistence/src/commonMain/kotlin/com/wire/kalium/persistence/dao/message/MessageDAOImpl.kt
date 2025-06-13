@@ -530,6 +530,19 @@ internal class MessageDAOImpl internal constructor(
             queries.selectNextAudioMessage(conversationId, prevMessageId).executeAsOneOrNull()
         }
 
+    override suspend fun getMessagesPage(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        offset: Long,
+        pageSize: Long,
+    ) = withContext(coroutineContext) {
+            queries.selectForBackup(
+                contentType = contentTypes,
+                limit = pageSize,
+                offset = offset,
+                mapper::toEntityMessageFromView
+            ).executeAsList()
+        }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 
 }

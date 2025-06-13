@@ -62,7 +62,6 @@ jobs:
 
       - name: Test with Gradle
         run: |
-          export GRADLE_OPTS="-Dorg.gradle.logging.level=debug"
           ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
@@ -86,8 +85,8 @@ jobs:
           apt-get install -y -qq --no-install-recommends python3-pip python3-venv
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.19.0
-        if: always()
+        uses: EnricoMi/publish-unit-test-result-action/linux@v2
+        if: ${{ always() }}
         with:
           files: |
             **/build/test-results/**/*.xml
@@ -96,7 +95,7 @@ jobs:
         run: apt-get update && apt-get install -y -qq git
 
       - name: Upload test report to codecov
-        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: "build/reports/kover/report.xml"
@@ -121,7 +120,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v4.3.0
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R

@@ -35,7 +35,7 @@ import java.io.File
 open class OnlyAffectedTestTask : DefaultTask() {
 
     @Input
-    lateinit var targetTestTask: String
+    lateinit var configuration: TestTaskConfiguration
 
     @Input
     var ignoredModules: List<String> = emptyList()
@@ -73,8 +73,11 @@ open class OnlyAffectedTestTask : DefaultTask() {
             .filter { computeModulesPredicate(hasToRunAllTests, affectedModules.contains(it.name) && !ignoredModules.contains(it.name)) }
             .forEach { childProject ->
                 tasksName.addAll(childProject.tasks
-                    .filter { it.name.equals(targetTestTask, true) }
-                    .map { task -> "${childProject.name}:${task.name}" }.toList()
+                    .filter { it.name.equals(configuration.testTarget, true) }
+                    .map { task ->
+                        println("Adding task: ${childProject.name}:${task.name}")
+                        "${childProject.name}:${task.name}"
+                    }.toList()
                 )
             }
 

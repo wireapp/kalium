@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.feature.call.CallManager
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -31,7 +30,7 @@ interface CallManagerArrangement {
 }
 
 internal class CallManagerArrangementImpl : CallManagerArrangement {
-    @Mock
+
     override val callManager = mock(CallManager::class)
 
     override suspend fun withEndCall() {

@@ -19,12 +19,14 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import io.mockative.Mockable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filter
 
+@Mockable
 internal interface InCallReactionsRepository {
     suspend fun addInCallReaction(conversationId: ConversationId, senderUserId: UserId, emojis: Set<String>)
     fun observeInCallReactions(conversationId: ConversationId): Flow<InCallReactionMessage>

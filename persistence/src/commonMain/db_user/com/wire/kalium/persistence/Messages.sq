@@ -340,8 +340,6 @@ markMessageAsDeleted {
    DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageConversationLocationContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
-   -- deleted messages will not have a quote 100%
-   -- TODO: why inserting a NULL here? Shouldn't we just not insert anything?
    INSERT INTO MessageTextContent(message_id, conversation_id, text_body, is_quoting_self) VALUES(:message_id, :conversation_id, NULL, 0);
 }
 
@@ -364,7 +362,6 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 insertOrIgnoreBulkSystemMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP');
--- TODO: check if conversation type have an index
 
 insertMessageLinkPreview:
 INSERT OR IGNORE INTO MessageLinkPreview(message_id, conversation_id, url, url_offset, permanent_url, title, summary)
@@ -499,6 +496,9 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER
 
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+
+selectForBackup:
+SELECT * FROM MessageDetailsView WHERE visibility = "VISIBLE" AND contentType IN :contentType ORDER BY date ASC LIMIT :limit OFFSET :offset;
 
 selectLastMessagesByConversationIds:
 SELECT MessageDetailsView.*

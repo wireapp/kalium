@@ -47,7 +47,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import io.ktor.utils.io.errors.IOException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -409,8 +408,6 @@ class RegisterClientUseCaseTest {
             secondFactorVerificationCode = SECOND_FACTOR_CODE
         )
         val CLIENT = TestClient.CLIENT
-
-        @Mock
         val MLS_CLIENT = mock(MLSClient::class)
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
@@ -419,26 +416,12 @@ class RegisterClientUseCaseTest {
 
     @OptIn(DelicateKaliumApi::class)
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-
-        @Mock
         val isAllowedToRegisterMLSClient = mock(IsAllowedToRegisterMLSClientUseCase::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val preKeyRepository = mock(PreKeyRepository::class)
-
-        @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val registerMLSClient = mock(RegisterMLSClientUseCase::class)
 
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()

@@ -19,7 +19,9 @@ package com.wire.kalium.cells.domain
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import io.mockative.Mockable
 
+@Mockable
 internal interface CellUsersRepository {
     suspend fun getUserNames(): Either<StorageFailure, List<Pair<String, String>>>
 }

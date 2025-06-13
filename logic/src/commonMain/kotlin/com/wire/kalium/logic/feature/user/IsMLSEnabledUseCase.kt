@@ -21,15 +21,17 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.fold
+import io.mockative.Mockable
 
 /**
  * Checks if the current user has enabled MLS support.
  */
+@Mockable
 interface IsMLSEnabledUseCase {
     /**
      * @return true if MLS is enabled, false otherwise.
      */
-    operator fun invoke(): Boolean
+    suspend operator fun invoke(): Boolean
 }
 
 internal class IsMLSEnabledUseCaseImpl(
@@ -37,7 +39,7 @@ internal class IsMLSEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsMLSEnabledUseCase {
 
-    override operator fun invoke(): Boolean =
+    override suspend operator fun invoke(): Boolean =
         userConfigRepository.isMLSEnabled().fold({
             false
         }, {

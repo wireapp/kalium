@@ -23,7 +23,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
@@ -41,7 +40,7 @@ class IncrementalSyncRecoveryHandlerTest {
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right(oldestEventId))
             withClearLastEventIdReturning(Either.Right(Unit))
-            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
         }
 
         var wasInvoked = false
@@ -53,7 +52,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // then
         with(arrangement) {
             coVerify {
-                eventRepository.clearLastProcessedEventId()
+                eventRepository.clearLastSavedEventId()
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -68,7 +67,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // given
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right("oldestEventId"))
-            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
         }
 
         var wasInvoked = false
@@ -88,12 +87,12 @@ class IncrementalSyncRecoveryHandlerTest {
     }
 
     @Test
-    fun givenUnknownFailure_whenRecovering_thenShouldNotClearLastProcessedEventId() = runTest {
+    fun givenUnknownFailure_whenRecovering_thenShouldNotClearLastSavedEventId() = runTest {
         // given
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right("oldestEventId"))
             withClearLastEventIdReturning(Either.Right(Unit))
-            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
         }
 
         // when
@@ -102,15 +101,13 @@ class IncrementalSyncRecoveryHandlerTest {
         // then
         with(arrangement) {
             coVerify {
-                eventRepository.clearLastProcessedEventId()
+                eventRepository.clearLastSavedEventId()
             }.wasNotInvoked()
         }
     }
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         EventRepositoryArrangement by EventRepositoryArrangementImpl() {
-
-        @Mock
         val restartSlowSyncProcessForRecoveryUseCase = mock(RestartSlowSyncProcessForRecoveryUseCase::class)
 
         private val incrementalSyncRecoveryHandler by lazy {

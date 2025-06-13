@@ -37,7 +37,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
+import io.mockative.Mockable
 
+@Mockable
 interface MemberJoinEventHandler {
     suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit>
 }

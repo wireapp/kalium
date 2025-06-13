@@ -30,7 +30,9 @@ import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.persistence.dao.UserDAO
+import io.mockative.Mockable
 
+@Mockable
 internal interface AccountRepository {
     suspend fun deleteAccount(password: String?): Either<NetworkFailure, Unit>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
