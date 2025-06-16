@@ -40,7 +40,6 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTyp
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import io.ktor.http.HttpStatusCode
 import io.ktor.util.reflect.instanceOf
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -314,11 +313,8 @@ class ConversationFolderRepositoryTest {
 
 
     private class Arrangement {
-
-        @Mock
+        
         val conversationFolderDAO = mock(ConversationFolderDAO::class)
-
-        @Mock
         val userPropertiesApi = mock(PropertiesApi::class)
 
         private val selfUserId = TestUser.SELF.id

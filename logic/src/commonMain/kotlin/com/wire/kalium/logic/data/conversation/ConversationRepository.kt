@@ -81,6 +81,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -92,6 +93,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface ConversationRepository {
     val extensions: ConversationRepositoryExtensions
 

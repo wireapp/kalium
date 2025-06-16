@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -138,10 +137,7 @@ class ApproveLegalHoldRequestUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         val useCase: ApproveLegalHoldRequestUseCase by lazy { ApproveLegalHoldRequestUseCaseImpl(teamRepository, selfTeamIdProvider) }

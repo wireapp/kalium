@@ -21,14 +21,12 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import io.mockative.Matchers
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.matches
 import io.mockative.mock
 
 interface MessageMetadataDAOArrangement {
-    @Mock
-    val messageMetaDataDAO: MessageMetadataDAO
+        val messageMetaDataDAO: MessageMetadataDAO
 
     suspend fun withMessageOriginalSender(
         result: UserIDEntity?,
@@ -38,8 +36,7 @@ interface MessageMetadataDAOArrangement {
 }
 
 class MessageMetadataDAOArrangementImpl : MessageMetadataDAOArrangement {
-    @Mock
-    override val messageMetaDataDAO: MessageMetadataDAO = mock(MessageMetadataDAO::class)
+        override val messageMetaDataDAO: MessageMetadataDAO = mock(MessageMetadataDAO::class)
 
     override suspend fun withMessageOriginalSender(
         result: UserIDEntity?,

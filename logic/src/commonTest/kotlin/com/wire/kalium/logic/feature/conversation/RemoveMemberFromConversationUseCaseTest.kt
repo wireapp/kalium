@@ -23,7 +23,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -66,7 +65,7 @@ class RemoveMemberFromConversationUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(

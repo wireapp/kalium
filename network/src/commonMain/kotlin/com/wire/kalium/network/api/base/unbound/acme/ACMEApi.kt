@@ -48,8 +48,10 @@ import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
+import io.mockative.Mockable
 import okio.IOException
 
+@Mockable
 interface ACMEApi {
     suspend fun getTrustAnchors(discoveryUrl: String): NetworkResponse<ByteArray>
     suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse>

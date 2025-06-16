@@ -53,7 +53,6 @@ import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -495,19 +494,10 @@ class ClientRepositoryTest {
 
     private class Arrangement {
 
-        @Mock
         val clientApi = mock(ClientApi::class)
-
-        @Mock
         val clientRemoteRepository = mock(ClientRemoteRepository::class)
-
-        @Mock
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
-
-        @Mock
         val clientDAO = mock(ClientDAO::class)
-
-        @Mock
         val newClientDAO = mock(NewClientDAO::class)
 
         val clientMapper = MapperProvider.clientMapper()

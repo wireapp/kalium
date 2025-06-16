@@ -31,12 +31,12 @@ import platform.Foundation.NSProcessInfo
 import platform.darwin.sysctlbyname
 
 actual class ClientConfigImpl : ClientConfig {
-    override fun deviceType(): DeviceType {
+    actual override fun deviceType(): DeviceType {
         // TODO: Figure out the actual darwin device type
         return DeviceType.Desktop
     }
 
-    override fun deviceModelName(): String {
+    actual override fun deviceModelName(): String {
         // TODO map to human readable device model names
         return hardwareModel() ?: "N/A"
     }
@@ -58,11 +58,11 @@ actual class ClientConfigImpl : ClientConfig {
             }
         }
 
-    override fun deviceName(): String {
+    actual override fun deviceName(): String {
         return NSProcessInfo.processInfo.hostName
     }
 
-    override fun clientType(): ClientType {
+    actual override fun clientType(): ClientType {
         return ClientType.Temporary
     }
 }

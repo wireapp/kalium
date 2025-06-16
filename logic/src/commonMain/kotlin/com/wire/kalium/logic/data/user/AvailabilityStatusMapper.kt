@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.protobuf.messages.Availability
+import io.mockative.Mockable
 
+@Mockable
 interface AvailabilityStatusMapper {
     fun fromDaoAvailabilityStatusToModel(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus
     fun fromModelAvailabilityStatusToDao(status: UserAvailabilityStatus): UserAvailabilityStatusEntity

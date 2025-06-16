@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.user.e2ei
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -43,8 +42,6 @@ class MarkNotifyForRevokedCertificateAsNotifiedUseCaseTest {
         }
 
     internal class Arrangement {
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() = this to MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(

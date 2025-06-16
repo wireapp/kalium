@@ -26,7 +26,6 @@ import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -140,13 +139,8 @@ class RemoveAttachmentDraftUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val attachmentsRepository = mock(MessageAttachmentDraftRepository::class)
-
-        @Mock
         val cellsRepository = mock(CellsRepository::class)
-
-        @Mock
         val uploadManager = mock(CellUploadManager::class)
 
         suspend fun withRepository() = apply {

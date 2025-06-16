@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
+import io.mockative.Mockable
 
+@Mockable
 interface PreKeyMapper {
     fun fromPreKeyDTO(preyKeyDTO: PreKeyDTO): PreKeyCrypto
     fun toPreKeyDTO(preKey: PreKeyCrypto): PreKeyDTO

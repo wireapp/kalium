@@ -32,7 +32,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -125,13 +124,11 @@ class DeleteClientUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private inline val block: suspend Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
-        @Mock
-        val clientRepository = mock(ClientRepository::class)
 
-        @Mock
+        val clientRepository = mock(ClientRepository::class)
         val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
 
         suspend fun withDeleteClient(result: Either<NetworkFailure, Unit>) {
@@ -146,7 +143,7 @@ class DeleteClientUseCaseTest {
             }.returns(result)
         }
 
-        suspend fun arrange() = run {
+        suspend inline fun arrange() = run {
             block()
             this@Arrangement to DeleteClientUseCaseImpl(
                 clientRepository = clientRepository,

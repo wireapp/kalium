@@ -36,8 +36,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.util.InternalAPI
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
+import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
 
+@Mockable
 interface SessionManager {
     suspend fun session(): SessionDTO?
     fun serverConfig(): ServerConfigDTO

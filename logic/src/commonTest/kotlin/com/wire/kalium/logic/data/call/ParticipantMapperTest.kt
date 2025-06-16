@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
@@ -34,14 +33,11 @@ import kotlin.test.assertEquals
 
 class ParticipantMapperTest {
 
-    @Mock
-    private val videoStateChecker = mock(VideoStateChecker::class)
+        private val videoStateChecker = mock(VideoStateChecker::class)
 
-    @Mock
-    private val callMapper = mock(CallMapper::class)
+        private val callMapper = mock(CallMapper::class)
 
-    @Mock
-    private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+        private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
     private val participantMapperImpl = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper)
 

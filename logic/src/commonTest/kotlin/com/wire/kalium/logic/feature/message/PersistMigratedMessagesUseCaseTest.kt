@@ -28,7 +28,6 @@ import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -54,8 +53,6 @@ class PersistMigratedMessagesUseCaseTest {
 
     private class Arrangement {
         val selfUserId: UserId = SELF_USER_ID
-
-        @Mock
         val migrationDAO: MigrationDAO = mock(MigrationDAO::class)
 
         val genericMessage = GenericMessage(

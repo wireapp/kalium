@@ -22,8 +22,9 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {
@@ -82,7 +83,6 @@ kotlin {
                 implementation(libs.turbine)
 
                 // mocking
-                implementation(libs.mockative.runtime)
                 implementation(libs.okio.test)
                 implementation(libs.settings.kmpTest)
             }
@@ -131,14 +131,6 @@ kotlin {
 
 android {
     testOptions.unitTests.isIncludeAndroidResources = true
-}
-
-dependencies {
-    configurations
-        .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
-        .forEach {
-            add(it.name, libs.mockative.processor)
-        }
 }
 
 android {

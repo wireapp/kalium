@@ -23,6 +23,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.sqldelight.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {

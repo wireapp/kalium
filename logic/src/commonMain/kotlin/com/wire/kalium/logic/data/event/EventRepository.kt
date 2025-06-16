@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.event
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -28,35 +29,54 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.mockative.Mockable
+import com.wire.kalium.persistence.dao.event.EventDAO
+import com.wire.kalium.persistence.dao.event.NewEventEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 
+@Mockable
 interface EventRepository {
 
     /**
-     * Performs an acknowledgment of the event. In case a legacy event is received, it will be ignored.
+     * Performs an acknowledgment of the missed event after performing a slow sync.
      */
-    suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit>
-    suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>>
-    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>
-    suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
+    suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit>
+    suspend fun fetchEvents(): Flow<Either<CoreFailure, EventEnvelope>>
+    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Unit>>>
+    suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit>
 
     /**
      * Parse events from an external JSON payload
@@ -66,21 +86,31 @@ interface EventRepository {
     fun parseExternalEvents(data: String): List<EventEnvelope>
 
     /**
-     * Retrieves the last processed event ID from the storage.
+     * Retrieves the last saved event ID from the storage.
      *
      * @return an [Either] object representing either a [StorageFailure] or a [String].
-     *         - If the retrieval is successful, returns [Either.Right] with the last processed event ID as a [String].
+     *         - If the retrieval is successful, returns [Either.Right] with the last saved event ID as a [String].
      *         - If there is a failure during retrieval, returns [Either.Left] with a [StorageFailure] object.
      */
-    suspend fun lastProcessedEventId(): Either<StorageFailure, String>
+    suspend fun lastSavedEventId(): Either<StorageFailure, String>
 
     /**
-     * Clears the last processed event ID.
+     * Clears the last saved event ID.
      *
      * @return An [Either] object representing the result of the operation.
      * The [Either] object contains either a [StorageFailure] if the operation fails, or [Unit] if the operation succeeds.
      */
-    suspend fun clearLastProcessedEventId(): Either<StorageFailure, Unit>
+    suspend fun clearLastSavedEventId(): Either<StorageFailure, Unit>
+
+    /**
+     * Updates the last saved event ID.
+     *
+     * @param eventId The ID of the event to be set as the last saved event ID.
+     *
+     * @return An [Either] object representing the result of the operation.
+     * The [Either] object contains either a [StorageFailure] if the operation fails, or [Unit] if the operation succeeds.
+     */
+    suspend fun updateLastSavedEventId(eventId: String): Either<StorageFailure, Unit>
 
     suspend fun fetchMostRecentEventId(): Either<CoreFailure, String>
 
@@ -91,51 +121,51 @@ interface EventRepository {
      */
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
     suspend fun fetchServerTime(): String?
+    suspend fun observeEvents(): Flow<List<EventEnvelope>>
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class EventDataSource(
     private val notificationApi: NotificationApi,
     private val metadataDAO: MetadataDAO,
+    private val eventDAO: EventDAO,
     private val currentClientId: CurrentClientIdProvider,
     private val selfUserId: UserId,
     private val clientRegistrationStorage: ClientRegistrationStorage,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId)
 ) : EventRepository {
 
-    override suspend fun acknowledgeEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> {
-        return when (val deliveryInfo = eventEnvelope.deliveryInfo) {
-            is EventDeliveryInfo.Async -> {
-                currentClientId().fold(
-                    { it.left() },
-                    {
-                        // todo(ym) check for errors.
-                        notificationApi.acknowledgeEvents(it.value, eventMapper.toAcknowledgeRequest(deliveryInfo))
-                        Unit.right()
-                    }
-                )
-            }
+    private val clearOnFirstWSMessage = MutableStateFlow(false)
 
-            is EventDeliveryInfo.AsyncMissed -> {
-                currentClientId().fold(
-                    { it.left() },
-                    {
-                        // todo(ym) check for errors.
-                        notificationApi.acknowledgeEvents(it.value, EventMapper.FULL_ACKNOWLEDGE_REQUEST)
-                        Unit.right()
-                    }
-                )
+    override suspend fun observeEvents(): Flow<List<EventEnvelope>> = flow {
+        eventDAO.observeUnprocessedEvents()
+            .conflate()
+            // add limit of 200, think about making it dynamic depending on device ram
+            // control flow of by websocket new push concat map?
+            .distinctUntilChanged()
+            .collect { batch ->
+                batch.forEach { entity ->
+                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
+                    emit(eventMapper.fromDTO(payload, isLive = entity.isLive))
+                }
             }
-            // Legacy events are not acknowledged
-            is EventDeliveryInfo.Legacy -> Unit.right()
-        }
     }
 
+    override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> =
+        currentClientId().fold(
+            { it.left() },
+            {
+                // todo(ym) check for errors.
+                notificationApi.acknowledgeEvents(it.value, EventMapper.FULL_ACKNOWLEDGE_REQUEST)
+                Unit.right()
+            }
+        )
+
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
-    override suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>> =
+    override suspend fun fetchEvents(): Flow<Either<CoreFailure, EventEnvelope>> =
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>> =
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Unit>>> =
         currentClientId().flatMap { clientId ->
             val hasConsumableNotifications = clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull()
             if (hasConsumableNotifications == true) {
@@ -145,27 +175,80 @@ class EventDataSource(
             }
         }
 
-    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
+    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Unit>>> =
         wrapApiRequest { notificationApi.consumeLiveEvents(clientId.value) }.map { webSocketEventFlow ->
             flow {
-                webSocketEventFlow.collect { webSocketEvent ->
-                    when (webSocketEvent) {
-                        is WebSocketEvent.Open -> {
-                            emit(WebSocketEvent.Open(shouldProcessPendingEvents = false))
+                webSocketEventFlow.collect(handleEvents(this))
+            }
+        }
+
+    @Suppress("LongMethod")
+    private suspend fun handleEvents(
+        flowCollector: FlowCollector<WebSocketEvent<Unit>>,
+    ): suspend (value: WebSocketEvent<ConsumableNotificationResponse>) -> Unit =
+        { webSocketEvent ->
+            when (webSocketEvent) {
+                is WebSocketEvent.Open -> {
+                    clearOnFirstWSMessage.emit(true)
+                    setAllUnprocessedEventsAsPending()
+                    flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
+                }
+
+                is WebSocketEvent.NonBinaryPayloadReceived -> {
+                    flowCollector.emit(WebSocketEvent.NonBinaryPayloadReceived(webSocketEvent.payload))
+                }
+
+                is WebSocketEvent.Close -> {
+                    flowCollector.emit(WebSocketEvent.Close(webSocketEvent.cause))
+                }
+
+                is WebSocketEvent.BinaryPayloadReceived -> {
+                    when (val event: ConsumableNotificationResponse = webSocketEvent.payload) {
+                        is ConsumableNotificationResponse.EventNotification -> {
+                            if (clearOnFirstWSMessage.value) {
+                                clearOnFirstWSMessage.emit(false)
+                                clearProcessedEvents(event.data.event.id)
+                            }
+                            event.data.event.let { eventResponse ->
+                                wrapStorageRequest {
+                                    eventDAO.insertEvents(
+                                        listOf(
+                                            NewEventEntity(
+                                                eventId = eventResponse.id,
+                                                payload = KtxSerializer.json.encodeToString(eventResponse),
+                                                isLive = true // TODO Yamil we need to decide when set it as false for async notificaitons
+                                            )
+                                        )
+                                    )
+                                }.onSuccess {
+                                    event.data.deliveryTag?.let {
+                                        ackEvent(it)
+                                    }
+                                    if (!event.data.event.transient) {
+                                        updateLastSavedEventId(event.data.event.id)
+                                    }
+                                    flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(Unit))
+                                }
+                            }
                         }
 
-                        is WebSocketEvent.NonBinaryPayloadReceived -> {
-                            emit(WebSocketEvent.NonBinaryPayloadReceived(webSocketEvent.payload))
-                        }
-
-                        is WebSocketEvent.Close -> {
-                            emit(WebSocketEvent.Close(webSocketEvent.cause))
-                        }
-
-                        is WebSocketEvent.BinaryPayloadReceived -> {
-                            val events = eventMapper.fromDTO(webSocketEvent.payload)
-                            events.forEach { eventEnvelope ->
-                                emit(WebSocketEvent.BinaryPayloadReceived(eventEnvelope))
+                        ConsumableNotificationResponse.MissedNotification -> {
+                            wrapStorageRequest {
+                                val eventId = uuid4().toString()
+                                eventDAO.insertEvents(
+                                    listOf(
+                                        NewEventEntity(
+                                            eventId = eventId,
+                                            payload = KtxSerializer.json.encodeToString(
+                                                EventResponse(
+                                                    eventId,
+                                                    payload = listOf(EventContentDTO.AsyncMissedNotification)
+                                                )
+                                            ),
+                                            isLive = true
+                                        )
+                                    )
+                                )
                             }
                         }
                     }
@@ -173,40 +256,79 @@ class EventDataSource(
             }
         }
 
-    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
-        wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map { webSocketEventFlow ->
-            flow {
-                webSocketEventFlow.collect { webSocketEvent ->
-                    when (webSocketEvent) {
-                        is WebSocketEvent.Open -> {
-                            emit(WebSocketEvent.Open())
-                        }
+    private suspend fun ackEvent(deliveryTag: ULong): Either<CoreFailure, Unit> {
+        return currentClientId().fold(
+            { it.left() },
+            { clientId ->
+                notificationApi.acknowledgeEvents(
+                    clientId.value,
+                    EventAcknowledgeRequest(
+                        type = AcknowledgeType.ACK,
+                        data = AcknowledgeData(
+                            deliveryTag = deliveryTag,
+                            multiple = false // TODO when use multiple?
+                        )
+                    )
+                )
+                // todo(ym) check for errors.
+                Unit.right()
+            }
+        )
+    }
 
-                        is WebSocketEvent.NonBinaryPayloadReceived -> {
-                            emit(WebSocketEvent.NonBinaryPayloadReceived(webSocketEvent.payload))
-                        }
-
-                        is WebSocketEvent.Close -> {
-                            emit(WebSocketEvent.Close(webSocketEvent.cause))
-                        }
-
-                        is WebSocketEvent.BinaryPayloadReceived -> {
-                            val events = eventMapper.fromDTO(webSocketEvent.payload, true)
-                            events.forEach { eventEnvelope ->
-                                emit(WebSocketEvent.BinaryPayloadReceived(eventEnvelope))
-                            }
-                        }
-                    }
+    private suspend fun clearProcessedEvents(eventId: String): Either<StorageFailure, Unit> {
+        return wrapStorageRequest {
+            eventDAO.getEventById(eventId)
+        }
+            .fold({
+                wrapStorageRequest {
+                    eventDAO.deleteAllProcessedEvents()
+                }
+            }) { eventEntity ->
+                wrapStorageRequest {
+                    eventDAO.deleteProcessedEventsBefore(eventEntity.id)
                 }
             }
-        }
+    }
+
+    private suspend fun setAllUnprocessedEventsAsPending(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        eventDAO.setAllUnprocessedEventsAsPending()
+    }
+
+    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Unit>>> =
+        wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }
+            .map { webSocketEventFlow ->
+                flow {
+                    webSocketEventFlow
+                        .map {
+                            when (it) {
+                                is WebSocketEvent.BinaryPayloadReceived<EventResponse> ->
+                                    WebSocketEvent.BinaryPayloadReceived<ConsumableNotificationResponse>(
+                                        ConsumableNotificationResponse.EventNotification(
+                                            EventDataDTO(
+                                                null,
+                                                it.payload
+                                            )
+                                        )
+                                    )
+
+                                is WebSocketEvent.Close<EventResponse> -> WebSocketEvent.Close(it.cause)
+                                is WebSocketEvent.NonBinaryPayloadReceived<EventResponse> ->
+                                    WebSocketEvent.NonBinaryPayloadReceived(it.payload)
+
+                                is WebSocketEvent.Open<EventResponse> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
+                            }
+                        }
+                        .collect(handleEvents(this))
+                }
+            }
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId
     ) = flow<Either<CoreFailure, EventEnvelope>> {
 
         var hasMore = true
-        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
 
         while (coroutineContext.isActive && hasMore) {
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
@@ -215,13 +337,21 @@ class EventDataSource(
                 hasMore = notificationsPageResult.value.hasMore
                 lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
 
-                notificationsPageResult.value.notifications.flatMap {
-                    eventMapper.fromDTO(it, isLive = false)
-                }.forEach { event ->
-                    if (!coroutineContext.isActive) {
-                        return@flow
+                val entities = notificationsPageResult.value.notifications.mapNotNull { event ->
+                    event.payload?.let {
+                        NewEventEntity(
+                            eventId = event.id,
+                            payload = KtxSerializer.json.encodeToString(event),
+                            isLive = false
+                        )
                     }
-                    emit(Either.Right(event))
+                }
+                wrapStorageRequest {
+                    eventDAO.insertEvents(entities)
+                }.onSuccess {
+                    notificationsPageResult.value.notifications.lastOrNull { !it.transient }?.let {
+                        updateLastSavedEventId(it.id)
+                    }
                 }
             } else {
                 hasMore = false
@@ -237,12 +367,12 @@ class EventDataSource(
         }
     }
 
-    override suspend fun lastProcessedEventId(): Either<StorageFailure, String> = wrapStorageRequest {
-        metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+    override suspend fun lastSavedEventId(): Either<StorageFailure, String> = wrapStorageRequest {
+        metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
     }
 
-    override suspend fun clearLastProcessedEventId(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        metadataDAO.deleteValue(LAST_PROCESSED_EVENT_ID_KEY)
+    override suspend fun clearLastSavedEventId(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        metadataDAO.deleteValue(LAST_SAVED_EVENT_ID_KEY)
     }
 
     override suspend fun fetchMostRecentEventId(): Either<CoreFailure, String> =
@@ -252,8 +382,15 @@ class EventDataSource(
                     .map { it.id }
             }
 
-    override suspend fun updateLastProcessedEventId(eventId: String) =
-        wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_PROCESSED_EVENT_ID_KEY) }
+    override suspend fun updateLastSavedEventId(eventId: String): Either<StorageFailure, Unit> = wrapStorageRequest {
+        metadataDAO.insertValue(eventId, LAST_SAVED_EVENT_ID_KEY)
+    }
+
+    override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> {
+        return wrapStorageRequest {
+            eventDAO.markEventAsProcessed(eventId)
+        }
+    }
 
     private suspend fun getNextPendingEventsPage(
         lastFetchedNotificationId: String?,
@@ -280,6 +417,6 @@ class EventDataSource(
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
-        const val LAST_PROCESSED_EVENT_ID_KEY = "last_processed_event_id"
+        const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
     }
 }

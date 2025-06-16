@@ -25,7 +25,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -92,10 +91,7 @@ class RetryAttachmentUploadUseCaseTest {
 
     private class Arrangement(val uploadScope: CoroutineScope) {
 
-        @Mock
         val uploadManager = mock(CellUploadManager::class)
-
-        @Mock
         val repository = mock(MessageAttachmentDraftRepository::class)
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()

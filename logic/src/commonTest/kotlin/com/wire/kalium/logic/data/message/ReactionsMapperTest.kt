@@ -34,7 +34,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionEntity
-import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.every
@@ -141,17 +140,9 @@ class ReactionsMapperTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val idMapper = mock(IdMapper::class)
-
-        @Mock
         val availabilityStatusMapper = mock(AvailabilityStatusMapper::class)
-
-        @Mock
         val connectionStateMapper = mock(ConnectionStateMapper::class)
-
-        @Mock
         val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
 
         fun withDomainUserTypeStandard() = apply {

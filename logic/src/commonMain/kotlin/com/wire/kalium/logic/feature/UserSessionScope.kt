@@ -482,6 +482,7 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -1260,6 +1261,7 @@ class UserSessionScope internal constructor(
         get() = EventDataSource(
             notificationApi = authenticatedNetworkContainer.notificationApi,
             metadataDAO = userStorage.database.metadataDAO,
+            eventDAO = userStorage.database.eventDAO,
             currentClientId = clientIdProvider,
             clientRegistrationStorage = clientRegistrationStorage,
             selfUserId = userId
@@ -1733,6 +1735,7 @@ class UserSessionScope internal constructor(
         MissedNotificationsEventReceiverImpl(
             slowSyncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
+            eventRepository = eventRepository,
         )
     }
 
@@ -2410,6 +2413,7 @@ class UserSessionScope internal constructor(
     }
 }
 
+@Mockable
 fun interface CachedClientIdClearer {
     operator fun invoke()
 }

@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
@@ -76,16 +75,10 @@ class SessionRepositoryTest {
     private class Arrangement {
 
         val sessionMapper = MapperProvider.sessionMapper()
-
-        @Mock
         val accountsDAO: AccountsDAO = mock(AccountsDAO::class)
-
-        @Mock
         val authTokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
 
         val kaliumConfigs: KaliumConfigs = KaliumConfigs()
-
-        @Mock
         val serverConfigurationDAO: ServerConfigurationDAO = mock(ServerConfigurationDAO::class)
 
         private val sessionRepository =

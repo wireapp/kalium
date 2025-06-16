@@ -24,17 +24,17 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import io.mockative.Mock
+import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
-import okio.FileSystem
 import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DeleteNodeAssetUseCaseTest {
@@ -73,14 +73,14 @@ class DeleteNodeAssetUseCaseTest {
     @Test
     fun given_LocalPath_when_DeleteSuccess_thenLocalFileRemoved() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withLocalFileAvailable()
             .withSuccessDelete()
             .arrange()
+        assertTrue { arrangement.fileSystem.exists(localPath.toPath()) }
 
         useCase(assetId, localPath)
 
-        coVerify {
-            arrangement.fileSystem.delete(localPath.toPath())
-        }.wasInvoked(once)
+        assertFalse { arrangement.fileSystem.exists(localPath.toPath()) }
     }
 
     @Test
@@ -96,14 +96,9 @@ class DeleteNodeAssetUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val cellsRepository = mock(CellsRepository::class)
-
-        @Mock
         val attachmentsRepository = mock(CellAttachmentsRepository::class)
-
-        @Mock
-        val fileSystem = mock(FileSystem::class)
+        val fileSystem = FakeFileSystem()
 
         suspend fun withSuccessDelete() = apply {
             coEvery { cellsRepository.deleteFile(any()) }.returns(Unit.right())
@@ -115,13 +110,15 @@ class DeleteNodeAssetUseCaseTest {
             )
         }
 
+        fun withLocalFileAvailable() = apply {
+            fileSystem.write(localPath.toPath()) { "".toByteArray()}
+        }
+
         suspend fun arrange(): Pair<Arrangement, DeleteCellAssetUseCaseImpl> {
 
             coEvery { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
 
             coEvery { attachmentsRepository.deleteStandaloneAsset(any()) }.returns(Unit.right())
-
-            every { fileSystem.delete(any(), any()) }.returns(Unit)
 
             return this to DeleteCellAssetUseCaseImpl(
                 cellsRepository = cellsRepository,

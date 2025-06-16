@@ -20,11 +20,14 @@ package com.wire.kalium.logic.feature.backup.provider
 import com.wire.backup.ingest.BackupFileUnzipper
 import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.BackupPeekResult
+import com.wire.backup.ingest.ImportDataPager
 import com.wire.backup.ingest.ImportResultPager
 import com.wire.backup.ingest.MPBackupImporter
+import io.mockative.Mockable
 import okio.FileSystem
 import okio.SYSTEM
 
+@Mockable
 interface BackupImporter {
     suspend fun peekBackupFile(pathToBackupFile: String): BackupPeekResult
     suspend fun importFromFile(multiplatformBackupFilePath: String, passphrase: String?): ImportResult
@@ -50,6 +53,7 @@ private fun BackupImportResult.toImportResult() = when (this) {
     }
 }
 
+@Mockable
 interface MPBackupImporterProvider {
     fun provideImporter(
         pathToWorkDirectory: String,
@@ -94,3 +98,19 @@ internal class MPBackupImporterProviderImpl(
         }
     }
 }
+
+/*
+ * SKIE plugin doesn't work together with Mockable plugin resulting in: "Cannot change dependencies of dependency configuration
+ * ':backup:jvmMainImplementation' after it has been included in dependency resolution.".
+ * Also, these interfaces use annotation that is @OptionalExpectation and mockative cannot generate mocks properly in that case,
+ * resulting in "Declaration annotated with '@OptionalExpectation' can only be used in common module sources.",
+ * so this is the only way to allow mocking of these interfaces in tests in this module.
+ */
+
+@Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
+@Mockable
+interface ImportDataPagerMockable<T> : ImportDataPager<T>
+
+@Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
+@Mockable
+interface ImportResultPagerMockable : ImportResultPager

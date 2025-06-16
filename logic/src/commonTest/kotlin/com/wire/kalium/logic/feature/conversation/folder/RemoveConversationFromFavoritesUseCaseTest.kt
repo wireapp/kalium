@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestFolder
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -100,7 +99,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationFolderRepository = mock(ConversationFolderRepository::class)
 
         private val removeConversationUseCase = RemoveConversationFromFavoritesUseCaseImpl(

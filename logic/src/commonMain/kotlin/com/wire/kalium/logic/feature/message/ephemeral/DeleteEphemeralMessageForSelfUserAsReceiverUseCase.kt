@@ -38,6 +38,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
 /**
@@ -46,6 +47,7 @@ import kotlinx.datetime.Clock
  * for the self-deleting message, before the receiver does it on the sender side, the message is simply marked as deleted
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl]
  **/
+@Mockable
 internal interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
     /**
      * @param conversationId the conversation id that contains the self-deleting message

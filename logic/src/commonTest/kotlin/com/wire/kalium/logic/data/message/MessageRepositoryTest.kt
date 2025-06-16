@@ -57,7 +57,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -598,23 +597,11 @@ class MessageRepositoryTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val messageApi = mock(MessageApi::class)
-
-        @Mock
         val mlsMessageApi = mock(MLSMessageApi::class)
-
-        @Mock
         val messageDAO = mock(MessageDAO::class)
-
-        @Mock
         val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
-
-        @Mock
         val sendMessagePartialFailureMapper = mock(SendMessagePartialFailureMapper::class)
-
-        @Mock
         val messageMapper = mock(MessageMapper::class)
         suspend fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
             coEvery {

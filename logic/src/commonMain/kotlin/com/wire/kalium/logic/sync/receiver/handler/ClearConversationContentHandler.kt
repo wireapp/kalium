@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
 import com.wire.kalium.common.functional.fold
+import io.mockative.Mockable
 
+@Mockable
 internal interface ClearConversationContentHandler {
     suspend fun handle(
         message: Message.Signaling,
