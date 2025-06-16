@@ -1,0 +1,324 @@
+-- Add has_new_activities column to Conversation table for optimized sorting
+ALTER TABLE Conversation 
+ADD COLUMN has_new_activities INTEGER NOT NULL DEFAULT 0;
+
+-- Create composite index for efficient sorting
+CREATE INDEX conversation_activities_sort ON Conversation(archived, has_new_activities, last_modified_date);
+
+-- Populate initial values based on current logic
+UPDATE Conversation
+SET has_new_activities = CASE
+    -- Check if there's an ongoing call in a group conversation
+    WHEN EXISTS (
+        SELECT 1 FROM Call 
+        WHERE Call.conversation_id = Conversation.qualified_id 
+        AND Call.status = 'STILL_ONGOING' 
+        AND Conversation.type = 'GROUP'
+    ) THEN 1
+    -- Check muted status and unread events
+    WHEN Conversation.muted_status = 'ALL_ALLOWED' THEN
+        CASE
+            -- Check if there are any unread events
+            WHEN EXISTS (
+                SELECT 1 FROM UnreadEvent 
+                WHERE UnreadEvent.conversation_id = Conversation.qualified_id
+            ) THEN 1
+            -- Check if it's a pending connection request
+            WHEN Conversation.type = 'CONNECTION_PENDING' AND EXISTS (
+                SELECT 1 FROM Connection 
+                WHERE Connection.qualified_conversation = Conversation.qualified_id 
+                AND Connection.status = 'PENDING'
+            ) THEN 1
+            ELSE 0
+        END
+    WHEN Conversation.muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+        CASE
+            -- Check only for mentions and replies
+            WHEN EXISTS (
+                SELECT 1 FROM UnreadEvent 
+                WHERE UnreadEvent.conversation_id = Conversation.qualified_id
+                AND UnreadEvent.type IN ('MENTION', 'REPLY')
+            ) THEN 1
+            -- Check if it's a pending connection request
+            WHEN Conversation.type = 'CONNECTION_PENDING' AND EXISTS (
+                SELECT 1 FROM Connection 
+                WHERE Connection.qualified_conversation = Conversation.qualified_id 
+                AND Connection.status = 'PENDING'
+            ) THEN 1
+            ELSE 0
+        END
+    ELSE 0
+END;
+
+-- Trigger to update has_new_activities when UnreadEvent is inserted
+CREATE TRIGGER updateHasNewActivitiesOnUnreadEventInsert
+AFTER INSERT ON UnreadEvent
+BEGIN
+    UPDATE Conversation
+    SET has_new_activities = CASE
+        WHEN Conversation.muted_status = 'ALL_ALLOWED' THEN 1
+        WHEN Conversation.muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' 
+            AND new.type IN ('MENTION', 'REPLY') THEN 1
+        ELSE has_new_activities
+    END
+    WHERE qualified_id = new.conversation_id
+    AND has_new_activities = 0;
+END;
+
+-- Trigger to update has_new_activities when UnreadEvent is deleted
+CREATE TRIGGER updateHasNewActivitiesOnUnreadEventDelete
+AFTER DELETE ON UnreadEvent
+BEGIN
+    UPDATE Conversation
+    SET has_new_activities = CASE
+        -- Check if there's an ongoing call in a group conversation
+        WHEN EXISTS (
+            SELECT 1 FROM Call 
+            WHERE Call.conversation_id = Conversation.qualified_id 
+            AND Call.status = 'STILL_ONGOING' 
+            AND Conversation.type = 'GROUP'
+        ) THEN 1
+        -- Check muted status and remaining unread events
+        WHEN Conversation.muted_status = 'ALL_ALLOWED' THEN
+            CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM UnreadEvent 
+                    WHERE UnreadEvent.conversation_id = old.conversation_id
+                ) THEN 1
+                WHEN Conversation.type = 'CONNECTION_PENDING' AND EXISTS (
+                    SELECT 1 FROM Connection 
+                    WHERE Connection.qualified_conversation = old.conversation_id 
+                    AND Connection.status = 'PENDING'
+                ) THEN 1
+                ELSE 0
+            END
+        WHEN Conversation.muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM UnreadEvent 
+                    WHERE UnreadEvent.conversation_id = old.conversation_id
+                    AND UnreadEvent.type IN ('MENTION', 'REPLY')
+                ) THEN 1
+                WHEN Conversation.type = 'CONNECTION_PENDING' AND EXISTS (
+                    SELECT 1 FROM Connection 
+                    WHERE Connection.qualified_conversation = old.conversation_id 
+                    AND Connection.status = 'PENDING'
+                ) THEN 1
+                ELSE 0
+            END
+        ELSE 0
+    END
+    WHERE qualified_id = old.conversation_id;
+END;
+
+-- Trigger to update has_new_activities when Conversation muted_status changes
+CREATE TRIGGER updateHasNewActivitiesOnMutedStatusChange
+AFTER UPDATE OF muted_status ON Conversation
+BEGIN
+    UPDATE Conversation
+    SET has_new_activities = CASE
+        -- Check if there's an ongoing call in a group conversation
+        WHEN EXISTS (
+            SELECT 1 FROM Call 
+            WHERE Call.conversation_id = new.qualified_id 
+            AND Call.status = 'STILL_ONGOING' 
+            AND new.type = 'GROUP'
+        ) THEN 1
+        -- Check new muted status and unread events
+        WHEN new.muted_status = 'ALL_ALLOWED' THEN
+            CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM UnreadEvent 
+                    WHERE UnreadEvent.conversation_id = new.qualified_id
+                ) THEN 1
+                WHEN new.type = 'CONNECTION_PENDING' AND EXISTS (
+                    SELECT 1 FROM Connection 
+                    WHERE Connection.qualified_conversation = new.qualified_id 
+                    AND Connection.status = 'PENDING'
+                ) THEN 1
+                ELSE 0
+            END
+        WHEN new.muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM UnreadEvent 
+                    WHERE UnreadEvent.conversation_id = new.qualified_id
+                    AND UnreadEvent.type IN ('MENTION', 'REPLY')
+                ) THEN 1
+                WHEN new.type = 'CONNECTION_PENDING' AND EXISTS (
+                    SELECT 1 FROM Connection 
+                    WHERE Connection.qualified_conversation = new.qualified_id 
+                    AND Connection.status = 'PENDING'
+                ) THEN 1
+                ELSE 0
+            END
+        ELSE 0
+    END
+    WHERE qualified_id = new.qualified_id;
+END;
+
+-- Trigger to update has_new_activities when Call status changes
+CREATE TRIGGER updateHasNewActivitiesOnCallStatusChange
+AFTER UPDATE OF status ON Call
+BEGIN
+    UPDATE Conversation
+    SET has_new_activities = CASE
+        WHEN new.status = 'STILL_ONGOING' AND Conversation.type = 'GROUP' THEN 1
+        WHEN old.status = 'STILL_ONGOING' AND new.status != 'STILL_ONGOING' THEN
+            -- Recalculate based on other conditions
+            CASE
+                WHEN Conversation.muted_status = 'ALL_ALLOWED' THEN
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM UnreadEvent 
+                            WHERE UnreadEvent.conversation_id = new.conversation_id
+                        ) THEN 1
+                        WHEN Conversation.type = 'CONNECTION_PENDING' AND EXISTS (
+                            SELECT 1 FROM Connection 
+                            WHERE Connection.qualified_conversation = new.conversation_id 
+                            AND Connection.status = 'PENDING'
+                        ) THEN 1
+                        ELSE 0
+                    END
+                WHEN Conversation.muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM UnreadEvent 
+                            WHERE UnreadEvent.conversation_id = new.conversation_id
+                            AND UnreadEvent.type IN ('MENTION', 'REPLY')
+                        ) THEN 1
+                        WHEN Conversation.type = 'CONNECTION_PENDING' AND EXISTS (
+                            SELECT 1 FROM Connection 
+                            WHERE Connection.qualified_conversation = new.conversation_id 
+                            AND Connection.status = 'PENDING'
+                        ) THEN 1
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ELSE has_new_activities
+    END
+    WHERE qualified_id = new.conversation_id;
+END;
+
+-- Trigger to update has_new_activities when Call is inserted
+CREATE TRIGGER updateHasNewActivitiesOnCallInsert
+AFTER INSERT ON Call
+WHEN new.status = 'STILL_ONGOING'
+BEGIN
+    UPDATE Conversation
+    SET has_new_activities = 1
+    WHERE qualified_id = new.conversation_id
+    AND type = 'GROUP'
+    AND has_new_activities = 0;
+END;
+
+-- Trigger to update has_new_activities when Connection status changes
+CREATE TRIGGER updateHasNewActivitiesOnConnectionStatusChange
+AFTER UPDATE OF status ON Connection
+BEGIN
+    UPDATE Conversation
+    SET has_new_activities = CASE
+        WHEN new.status = 'PENDING' AND Conversation.type = 'CONNECTION_PENDING' THEN 1
+        WHEN old.status = 'PENDING' AND new.status != 'PENDING' AND Conversation.type = 'CONNECTION_PENDING' THEN
+            -- Recalculate based on other conditions
+            CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM Call 
+                    WHERE Call.conversation_id = new.qualified_conversation 
+                    AND Call.status = 'STILL_ONGOING' 
+                    AND Conversation.type = 'GROUP'
+                ) THEN 1
+                WHEN Conversation.muted_status = 'ALL_ALLOWED' THEN
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM UnreadEvent 
+                            WHERE UnreadEvent.conversation_id = new.qualified_conversation
+                        ) THEN 1
+                        ELSE 0
+                    END
+                WHEN Conversation.muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM UnreadEvent 
+                            WHERE UnreadEvent.conversation_id = new.qualified_conversation
+                            AND UnreadEvent.type IN ('MENTION', 'REPLY')
+                        ) THEN 1
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ELSE has_new_activities
+    END
+    WHERE qualified_id = new.qualified_conversation;
+END;
+
+-- Drop and recreate the view to use the new column
+DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+
+CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
+SELECT
+    ConversationDetails.*,
+    -- unread events
+    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
+    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
+    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
+    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
+    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
+    -- Use the materialized column instead of complex CASE statement
+    ConversationDetails.has_new_activities AS hasNewActivitiesToShow,
+    -- draft message
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.mention_list AS messageDraftMentionList,
+    -- last message
+    Message.id AS lastMessageId,
+    Message.content_type AS lastMessageContentType,
+    Message.creation_date AS lastMessageDate,
+    Message.visibility AS lastMessageVisibility,
+    Message.sender_user_id AS lastMessageSenderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
+    User.name AS lastMessageSenderName,
+    User.connection_status AS lastMessageSenderConnectionStatus,
+    User.deleted AS lastMessageSenderIsDeleted,
+    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
+    MemberChangeContent.member_change_list AS lastMessageMemberChangeList,
+    MemberChangeContent.member_change_type AS lastMessageMemberChangeType,
+    ConversationNameChangedContent.conversation_name AS lastMessageUpdateConversationName,
+    COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
+    TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
+    TextContent.text_body AS lastMessageText,
+    AssetContent.asset_mime_type AS lastMessageAssetMimeType
+FROM ConversationDetails
+LEFT JOIN UnreadEventCountsGrouped
+    ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
+LEFT JOIN MessageDraft
+    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0
+LEFT JOIN LastMessage
+    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0
+LEFT JOIN Message
+    ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
+LEFT JOIN User
+    ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
+    ON LastMessage.message_id = MemberChangeContent.message_id AND LastMessage.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention
+    ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
+    ON LastMessage.message_id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent
+    ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+WHERE
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL))
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1)
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL)
+    )
+    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
+    AND ConversationDetails.isActive
+GROUP BY ConversationDetails.qualifiedId;

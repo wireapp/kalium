@@ -91,6 +91,7 @@ Conversation.legal_hold_status,
 Conversation.is_channel,
 Conversation.channel_access,
 Conversation.channel_add_permission,
+Conversation.has_new_activities,
 SelfUser.id AS selfUserId,
 CASE
     WHEN Conversation.type = 'GROUP' THEN

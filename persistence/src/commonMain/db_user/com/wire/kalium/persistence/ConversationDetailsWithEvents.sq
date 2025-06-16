@@ -7,22 +7,8 @@ SELECT
     UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
     UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
     UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
-    CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
-        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
-           CASE
-                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
-                ELSE 0
-            END
-        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
-            CASE
-                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
-                ELSE 0
-            END
-        ELSE 0
-    END AS hasNewActivitiesToShow,
+    -- Use the materialized column from ConversationDetails
+    ConversationDetails.has_new_activities AS hasNewActivitiesToShow,
     -- draft message
     MessageDraft.text AS messageDraftText,
     MessageDraft.edit_message_id AS messageDraftEditMessageId,

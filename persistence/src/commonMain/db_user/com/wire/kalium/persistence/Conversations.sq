@@ -48,6 +48,7 @@ CREATE TABLE Conversation (
     is_channel INTEGER AS Boolean NOT NULL DEFAULT 0,
     channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
     channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
+    has_new_activities INTEGER NOT NULL DEFAULT 0,
     wire_cell TEXT
 );
 
