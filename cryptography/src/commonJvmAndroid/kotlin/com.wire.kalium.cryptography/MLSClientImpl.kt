@@ -188,11 +188,10 @@ class MLSClientImpl(
     override suspend fun decryptMessages(
         groupId: MLSGroupId,
         messages: List<EncryptedMessage>,
-        onDecryption: (suspend (DecryptedBatch) -> Unit)
-        // TODO KBX
+        onDecryption: (suspend (batch: DecryptedBatch, eventId: String) -> Unit),
+        onIgnoreError: (suspend (eventId: String) -> Unit)
         // should we have separate function for errors?
-    ) {
-
+    ): FailedMessage? {
         coreCrypto.transaction { context ->
             val results = mutableListOf<DecryptedMessageBundle>()
 
@@ -207,7 +206,7 @@ class MLSClientImpl(
                         results += dec.toBundle(message.messageInstant)
                         results += dec.bufferedMessages?.map { buf -> buf.toBundle(message.messageInstant) }.orEmpty()
                     }
-                    onDecryption(DecryptedBatch(results, groupId, listOf()))
+                    onDecryption(DecryptedBatch(results, groupId), message.eventId)
 
                 } catch (throwable: Throwable) {
                     if (throwable is CoreCryptoException.Mls) {
@@ -215,23 +214,12 @@ class MLSClientImpl(
                             is MlsException.BufferedFutureMessage,
                             is MlsException.BufferedCommit,
                             is MlsException.DuplicateMessage -> {
+                                onIgnoreError(message.eventId)
                                 // ignore errors and continue decrypting
                                 continue
                             }
 
                             else -> {
-                                onDecryption(
-                                    DecryptedBatch(
-                                        messages = emptyList(),
-                                        groupId = groupId,
-                                        failedMessages = listOf(
-                                            FailedMessage(
-                                                eventId = message.eventId,
-                                                error = throwable
-                                            )
-                                        )
-                                    )
-                                )
                                 return@transaction FailedMessage(
                                     eventId = message.eventId,
                                     error = throwable
@@ -247,6 +235,7 @@ class MLSClientImpl(
                 }
             }
         }
+        return null
     }
 
     override suspend fun commitPendingProposals(groupId: MLSGroupId) {

@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -47,11 +46,6 @@ internal sealed interface MessageUnpackResult {
         val senderUserId: UserId,
         val senderClientId: ClientId,
         val content: ProtoContent.Readable
-    ) : MessageUnpackResult
-
-    data class FailedMessage(
-        val eventId: String,
-        val error: MLSFailure,
     ) : MessageUnpackResult
 
 }

@@ -34,6 +34,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSBatchHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
@@ -48,6 +49,7 @@ internal interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 @Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 internal class ConversationEventReceiverImpl(
     private val newMessageHandler: NewMessageEventHandler,
+    private val mlsBatchHandler: MLSBatchHandler,
     private val newConversationHandler: NewConversationEventHandler,
     private val deletedConversationHandler: DeletedConversationEventHandler,
     private val memberJoinHandler: MemberJoinEventHandler,
@@ -75,12 +77,17 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
+            is Event.Conversation.DecryptedMLSBatch -> {
+                newMessageHandler.handleNewMLSMessage(event, deliveryInfo)
+                Either.Right(Unit)
+            }
+
             is Event.Conversation.MLSGroupMessages -> {
-                newMessageHandler.handleNewMLSBatch(event, deliveryInfo)
+                mlsBatchHandler.handleNewMLSBatch(event, deliveryInfo)
                 Either.Right(Unit)
             }
             is Event.Conversation.MLSSubGroupMessages -> {
-                newMessageHandler.handleNewMLSSubGroupBatch(event, deliveryInfo)
+                mlsBatchHandler.handleNewMLSSubGroupBatch(event, deliveryInfo)
                 Either.Right(Unit)
             }
 

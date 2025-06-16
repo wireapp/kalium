@@ -275,14 +275,17 @@ sealed class EventContentDTO {
         data class DecryptedMLSBatchDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("data") val decryptedMessages: List<DecryptedMLSMessageDTO>,
+            @SerialName("groupId") val groupId: String,
             @SerialName("subconv") val subconversation: String?,
         ) : Conversation()
 
         @Serializable
         data class DecryptedMLSMessageDTO(
             @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("sender_client_id") val senderClientId: String,
             @SerialName("time") val time: Instant,
             @SerialName("data") val decryptedContent: String,
+            @SerialName("commit_delay") val commitDelay: Long?,
         )
 
         @Serializable

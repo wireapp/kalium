@@ -117,8 +117,7 @@ data class RotateBundle(
 
 data class DecryptedBatch(
     val messages: List<DecryptedMessageBundle>,
-    val groupId: MLSGroupId,
-    val failedMessages: List<FailedMessage>,
+    val groupId: MLSGroupId
 )
 
 data class FailedMessage(
@@ -331,8 +330,9 @@ interface MLSClient {
     suspend fun decryptMessages(
         groupId: MLSGroupId,
         messages: List<EncryptedMessage>,
-        onDecryption: (suspend (DecryptedBatch) -> Unit)
-    )
+        onDecryption: (suspend (batch: DecryptedBatch, eventId: String) -> Unit),
+        onIgnoreError: (suspend (eventId: String) -> Unit)
+    ): FailedMessage?
 
     /**
      * Current members of the group.

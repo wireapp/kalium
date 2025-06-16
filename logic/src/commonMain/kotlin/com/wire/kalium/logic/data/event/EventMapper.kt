@@ -33,10 +33,12 @@ import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.LastPreKey
+import com.wire.kalium.logic.data.message.mls.DecryptedMLSMessage
 import com.wire.kalium.logic.data.message.mls.MLSMessage
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
@@ -109,6 +111,9 @@ class EventMapper(
         }
 
         return groupedByConversation.flatMap { (_, events) ->
+            // TODO robic map na jednej liscie
+            // TODO problem kolejnosci przy migracji proteus do mls
+            // TODO bezpieczniej brac wiadomosci mls po sobie by zrobic batch to decrypt
             val (mlsMessages, others) = events.partition { it.second is EventContentDTO.Conversation.NewMLSMessageDTO }
             val (welcomes, remainingOthers) = others.partition { it.second is EventContentDTO.Conversation.MLSWelcomeDTO }
 
@@ -279,8 +284,30 @@ class EventMapper(
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
             EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
-            is EventContentDTO.Conversation.DecryptedMLSBatchDTO -> TODO()
+            is EventContentDTO.Conversation.DecryptedMLSBatchDTO -> decryptedMLSBatch(id, eventContentDTO)
         }
+
+    private fun decryptedMLSBatch(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.DecryptedMLSBatchDTO
+    ): Event.Conversation.DecryptedMLSBatch {
+        return Event.Conversation.DecryptedMLSBatch(
+            id = id,
+            conversationId = eventContentDTO.qualifiedConversation.toModel(),
+            groupID = GroupID(eventContentDTO.groupId),
+            subconversationId = eventContentDTO.subconversation?.let { SubconversationId(it) },
+            messages = eventContentDTO.decryptedMessages.map { mlsMessage ->
+                DecryptedMLSMessage(
+                    id = id,
+                    senderUserId = mlsMessage.qualifiedFrom.toModel(),
+                    messageInstant = mlsMessage.time,
+                    protoContent = mlsMessage.decryptedContent,
+                    senderClientId = ClientId(mlsMessage.senderClientId),
+                    commitDelay = mlsMessage.commitDelay,
+                )
+            }
+        )
+    }
 
     private fun groupMLSMessageEvents(
         id: String,

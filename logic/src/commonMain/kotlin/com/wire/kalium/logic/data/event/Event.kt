@@ -41,8 +41,10 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
+import com.wire.kalium.logic.data.message.mls.DecryptedMLSMessage
 import com.wire.kalium.logic.data.message.mls.MLSMessage
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
@@ -197,6 +199,30 @@ sealed class Event(open val id: String) {
                 senderUserIdKey to senderUserId.toLogString(),
                 "senderClientId" to senderClientId.value.obfuscateId(),
                 timestampIsoKey to messageInstant
+            )
+        }
+
+        data class DecryptedMLSBatch(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val groupID: GroupID,
+            val subconversationId: SubconversationId?,
+            val messages: List<DecryptedMLSMessage>
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.DecryptedMLSBatch",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                subconversationIdKey to subconversationId?.toLogString(),
+                messagesCountKey to messages.size,
+                messagesKey to messages.map {
+                    mapOf(
+                        idKey to it.id.obfuscateId(),
+                        senderUserIdKey to it.senderUserId.toLogString(),
+                        timestampIsoKey to it.messageInstant.toIsoDateTimeString()
+                    )
+                },
             )
         }
 

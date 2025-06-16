@@ -434,6 +434,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEvent
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSBatchHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSBatchHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
@@ -1404,9 +1406,6 @@ class UserSessionScope internal constructor(
 
     private val mlsUnpacker: MLSMessageUnpacker
         get() = MLSMessageUnpackerImpl(
-            conversationRepository = conversationRepository,
-            subconversationRepository = subconversationRepository,
-            mlsConversationRepository = mlsConversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
             selfUserId = userId
         )
@@ -1504,7 +1503,15 @@ class UserSessionScope internal constructor(
             { conversationId, messageId ->
                 messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
             },
-            userId,
+            userId
+        )
+
+    private val mlsBatchHandler: MLSBatchHandler
+        get() = MLSBatchHandlerImpl(
+            mlsConversationRepository,
+            conversationRepository,
+            subconversationRepository,
+            applicationMessageHandler,
             staleEpochVerifier
         )
 
@@ -1619,6 +1626,7 @@ class UserSessionScope internal constructor(
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
+            mlsBatchHandler,
             newConversationHandler,
             deletedConversationHandler,
             memberJoinHandler,

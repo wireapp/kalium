@@ -26,6 +26,5 @@ data class EventEntity(
 
 data class NewEventEntity(
     val eventId: String,
-    val ackTag: String? = null,
     val payload: String
 )

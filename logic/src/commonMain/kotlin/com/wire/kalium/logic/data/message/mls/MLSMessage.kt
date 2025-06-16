@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.message.mls
 
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
 
@@ -25,4 +26,13 @@ data class MLSMessage(
     val senderUserId: UserId,
     val messageInstant: Instant,
     val content: String
+)
+
+data class DecryptedMLSMessage(
+    val id: String,
+    val senderUserId: UserId,
+    val senderClientId: ClientId,
+    val messageInstant: Instant,
+    val protoContent: String,
+    val commitDelay: Long?,
 )

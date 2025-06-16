@@ -123,6 +123,19 @@ inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     }
 }
 
+inline fun wrapMLSException(e: Throwable): MLSFailure {
+    return if(e is Exception) {
+        kaliumLogger.e(
+            """{ "MLSException": "${e.message},"
+                |"cause": ${e.cause} }",
+                |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
+        )
+        mapMLSException(e)
+    } else {
+        throw e
+    }
+}
+
 inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailure, T> {
     return try {
         Either.Right(e2eiRequest())
