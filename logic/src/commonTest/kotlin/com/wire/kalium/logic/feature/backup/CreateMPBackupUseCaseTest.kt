@@ -79,7 +79,7 @@ class CreateMPBackupUseCaseTest {
             .withMessages(listOf(TEXT_MESSAGE))
             .arrange()
 
-        val result = useCase("test_password")
+        val result = useCase("test_password") {}
 
         assertTrue(result is CreateBackupResult.Success)
         coVerify { arrangement.exporter.add(testUser.toBackupUser()) }.wasInvoked(1)
@@ -95,7 +95,7 @@ class CreateMPBackupUseCaseTest {
             .withMessages(listOf(TEXT_MESSAGE))
             .arrange()
 
-        val result = useCase("test_password")
+        val result = useCase("test_password") {}
 
         assertTrue(result is CreateBackupResult.Failure)
     }
@@ -113,8 +113,8 @@ class CreateMPBackupUseCaseTest {
 
             override suspend fun getConversations(): List<Conversation> = listOf(TestConversation.CONVERSATION)
 
-            override fun getMessages(onPage: (List<Message.Standalone>) -> Unit) {
-                onPage(backupMessages)
+            override fun getMessages(onPage: (Int, List<Message.Standalone>) -> Unit) {
+                onPage(1, backupMessages)
             }
 
             override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> = Unit.right()
