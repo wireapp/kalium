@@ -38,7 +38,6 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -175,15 +174,10 @@ class SessionManagerTest {
     }
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
-
-        @Mock
         private val sessionRepository = mock(SessionRepository::class)
 
         // Unused, but necessary when updating tokens
-        @Mock
-        val accessTokenApi = mock(AccessTokenApi::class)
-
-        @Mock
+                val accessTokenApi = mock(AccessTokenApi::class)
         val accessTokenRefresher = mock(AccessTokenRefresher::class)
         private val accessTokenRefresherFactory = object : AccessTokenRefresherFactory {
             override fun create(accessTokenApi: AccessTokenApi): AccessTokenRefresher {
@@ -191,13 +185,9 @@ class SessionManagerTest {
             }
         }
         private val userId = TestUser.USER_ID
-
-        @Mock
         private val tokenStorage = mock(AuthTokenStorage::class)
 
         private val logout = { _: LogoutReason -> }
-
-        @Mock
         private val serverConfigMapper = mock(ServerConfigMapper::class)
 
         private val sessionMapper = MapperProvider.sessionMapper()
@@ -229,7 +219,7 @@ class SessionManagerTest {
             withCurrentTokenReturning { result }
         }
 
-        fun withCurrentTokenReturning(block: () -> AuthTokenEntity) = apply {
+        fun withCurrentTokenReturning(block: (args: Array<Any?>) -> AuthTokenEntity) = apply {
             every {
                 tokenStorage.getToken(any())
             }.invokes(block)

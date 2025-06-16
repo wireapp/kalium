@@ -81,6 +81,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import io.mockative.Mockable
 
 data class ApplicationMessage(
     val message: ByteArray,
@@ -116,6 +117,7 @@ data class DecryptedMessageBundle(
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
+@Mockable
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
 

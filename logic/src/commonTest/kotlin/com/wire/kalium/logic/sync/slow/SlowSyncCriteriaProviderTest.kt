@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.framework.TestClient
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.channels.Channel
@@ -168,11 +167,7 @@ class SlowSyncCriteriaProviderTest {
     }
 
     private class Arrangement {
-
-        @Mock
         private val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         private val logoutRepository = mock(LogoutRepository::class)
 
         private val syncCriteriaProvider = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)

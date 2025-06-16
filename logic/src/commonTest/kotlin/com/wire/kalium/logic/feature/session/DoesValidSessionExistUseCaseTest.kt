@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -81,7 +80,6 @@ class DoesValidSessionExistUseCaseTest {
 
     class Arrangement {
 
-        @Mock
         private val sessionRepository = mock(SessionRepository::class)
         private val doesValidSessionExistUseCase: DoesValidSessionExistUseCase by lazy {
             DoesValidSessionExistUseCase(sessionRepository)

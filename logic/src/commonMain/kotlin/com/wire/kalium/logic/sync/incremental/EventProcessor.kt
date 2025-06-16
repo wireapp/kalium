@@ -37,6 +37,7 @@ import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -46,6 +47,7 @@ import kotlinx.coroutines.withContext
  * Handles incoming events from remote.
  * @see [Event]
  */
+@Mockable
 internal interface EventProcessor {
 
     /**
@@ -58,9 +60,8 @@ internal interface EventProcessor {
      * is not transient (see [EventDeliveryInfo.isTransient]).
      * If the processing fails, the last processed event ID will not be updated.
      * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
-     * @see EventRepository.lastProcessedEventId
      * @see EventDeliveryInfo.isTransient
-     * @see EventRepository.updateLastProcessedEventId
+     * @see EventRepository.setEventAsProcessed
      * @see EventDeliveryInfo
      * @see Event
      */
@@ -119,18 +120,12 @@ internal class EventProcessorImpl(
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
-            is Event.AsyncMissed -> missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
-        }.onSuccess {
-            // todo (ym) check for errors and decide if lastProcessedEventId should be updated so we can re-ack
-            eventRepository.acknowledgeEvent(eventEnvelope)
-            if (deliveryInfo.shouldUpdateLastProcessedEventId()) {
-                eventRepository.updateLastProcessedEventId(event.id)
-                logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")
-            } else {
-                logger.i("Skipping update of lastProcessedEventId: ${eventEnvelope.toLogString()}")
+            is Event.AsyncMissed -> {
+                missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
             }
+        }.onSuccess {
+            eventRepository.setEventAsProcessed(event.id)
+            logger.i("Event set as processed: ${eventEnvelope.toLogString()}")
         }
     }
-
-    private fun EventDeliveryInfo.shouldUpdateLastProcessedEventId(): Boolean = !isTransient
 }

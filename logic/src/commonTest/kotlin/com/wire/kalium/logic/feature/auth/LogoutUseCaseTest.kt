@@ -42,7 +42,6 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -377,43 +376,18 @@ class LogoutUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
-        val logoutRepository = mock(LogoutRepository::class)
-
-        @Mock
+                val logoutRepository = mock(LogoutRepository::class)
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val deregisterTokenUseCase = mock(DeregisterTokenUseCase::class)
-
-        @Mock
         val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
-
-        @Mock
         val clearUserDataUseCase = mock(ClearUserDataUseCase::class)
-
-        @Mock
         val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
-
-        @Mock
         val pushTokenRepository = mock(PushTokenRepository::class)
-
-        @Mock
         val userSessionWorkScheduler = mock(UserSessionWorkScheduler::class)
-
-        @Mock
         val observeEstablishedCallsUseCase = mock(ObserveEstablishedCallsUseCase::class)
-
-        @Mock
         val endCall = mock(EndCallUseCase::class)
-
-        @Mock
         val logoutCallback = mock(LogoutCallback::class)
 
         var kaliumConfigs = KaliumConfigs()

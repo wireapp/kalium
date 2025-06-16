@@ -36,7 +36,9 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 
+@Mockable
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
 @Suppress("LongParameterList")

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestFolder
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -101,7 +100,7 @@ class AddConversationToFavoritesUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+        
         val conversationFolderRepository = mock(ConversationFolderRepository::class)
 
         private val addConversationToFavoritesUseCase = AddConversationToFavoritesUseCaseImpl(

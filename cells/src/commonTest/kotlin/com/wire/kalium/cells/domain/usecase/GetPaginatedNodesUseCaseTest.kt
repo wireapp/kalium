@@ -30,7 +30,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -118,16 +117,9 @@ class GetPaginatedNodesUseCaseTest {
 
     private inner class Arrangement {
 
-        @Mock
         val cellsRepository = mock(CellsRepository::class)
-
-        @Mock
         val conversationRepository = mock(CellConversationRepository::class)
-
-        @Mock
         val attachmentsRepository = mock(CellAttachmentsRepository::class)
-
-        @Mock
         val usersRepository = mock(CellUsersRepository::class)
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {

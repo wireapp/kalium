@@ -41,7 +41,6 @@ import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -299,22 +298,11 @@ class NewConversationEventHandlerTest {
         }
 
     private class Arrangement {
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
+                val conversationRepository = mock(ConversationRepository::class)
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
-
-        @Mock
         private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
-
-        @Mock
         val oneOnOneResolver = mock(OneOnOneResolver::class)
 
 

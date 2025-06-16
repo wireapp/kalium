@@ -17,23 +17,32 @@
  */
 package com.wire.kalium.network.api.authenticated.notification
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
-data class ConsumableNotificationResponse(
-    @SerialName("type")
-    val type: EventType,
-    @SerialName("data")
-    val data: EventDataDTO?
-)
+@JsonClassDiscriminator("type")
+sealed class ConsumableNotificationResponse {
+    @Serializable
+    @SerialName("event")
+    data class EventNotification(
+        @SerialName("data") val data: EventDataDTO
+    ) : ConsumableNotificationResponse()
+
+    @Serializable
+    @SerialName("notifications.missed")
+    data object MissedNotification : ConsumableNotificationResponse()
+}
 
 @Serializable
 data class EventDataDTO(
     @SerialName("delivery_tag")
-    val deliveryTag: ULong,
+    val deliveryTag: ULong?,
     @SerialName("event")
-    val event: ConsumableEventDTO
+    val event: EventResponse
 )
 
 @Serializable
@@ -51,11 +60,3 @@ enum class EventType {
         }
     }
 }
-
-@Serializable
-data class ConsumableEventDTO(
-    @SerialName("id")
-    val id: String,
-    @SerialName("payload")
-    val payload: List<EventContentDTO>
-)

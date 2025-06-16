@@ -45,11 +45,9 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
-import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
-import com.wire.kalium.network.api.authenticated.notification.EventType
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_RECEIPT_MODE
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
@@ -84,30 +82,6 @@ class EventMapper(
                 EventDeliveryInfo.Legacy(eventResponse.transient, source)
             )
         } ?: listOf()
-    }
-
-    fun fromDTO(consumableNotificationResponse: ConsumableNotificationResponse): List<EventEnvelope> {
-        val deliveryTag = consumableNotificationResponse.data?.deliveryTag ?: ULong.MIN_VALUE
-        when (consumableNotificationResponse.type) {
-            EventType.MISSED -> {
-                return listOf(
-                    EventEnvelope(
-                        event = Event.AsyncMissed,
-                        deliveryInfo = EventDeliveryInfo.AsyncMissed
-                    )
-                )
-            }
-
-            EventType.EVENT -> {
-                val event = consumableNotificationResponse.data?.event
-                return event?.payload?.map { eventContentDTO ->
-                    EventEnvelope(
-                        event = fromEventContentDTO(id = event.id, eventContentDTO = eventContentDTO),
-                        deliveryInfo = EventDeliveryInfo.Async(deliveryTag = deliveryTag, source = EventSource.LIVE)
-                    )
-                } ?: listOf()
-            }
-        }
     }
 
     /**
@@ -169,6 +143,7 @@ class EventMapper(
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
+            EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
         }
 
     private fun conversationTyping(

@@ -23,7 +23,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
@@ -37,11 +36,9 @@ import kotlin.test.assertIs
 
 class SSOInitiateLoginUseCaseTest {
 
-    @Mock
-    private val ssoLoginRepository = mock(SSOLoginRepository::class)
+        private val ssoLoginRepository = mock(SSOLoginRepository::class)
 
-    @Mock
-    private val validateUUIDUseCase = mock(ValidateSSOCodeUseCase::class)
+        private val validateUUIDUseCase = mock(ValidateSSOCodeUseCase::class)
 
     private val serverConfig = newServerConfig(1)
 

@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -80,10 +79,7 @@ class AccessUpdateHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val conversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         val conversationMapper = mock(ConversationMapper::class)
 
         init {

@@ -37,7 +37,9 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
+import io.mockative.Mockable
 
+@Mockable
 interface OneOnOneMigrator {
     /**
      * Migrates the user's one-on-one Proteus. Without creating a new one since MLS is the default, marking it as active.
@@ -166,6 +168,7 @@ internal class OneOnOneMigratorImpl(
     }
 }
 
+@Mockable
 fun interface CurrentInstantProvider {
     operator fun invoke(): Instant
 }

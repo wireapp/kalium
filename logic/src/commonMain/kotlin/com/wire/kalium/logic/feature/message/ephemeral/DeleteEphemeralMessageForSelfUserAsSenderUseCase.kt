@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 
 /**
  * When the self user is the sender of the self deletion message, we only mark it as deleted (but we delete asset files locally),
@@ -36,6 +37,7 @@ import com.wire.kalium.common.logger.kaliumLogger
  * that is when the message has expired for one of the conversation members of GROUP or ONE_TO_ONE type
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl] for details
  **/
+@Mockable
 internal interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
     /**
      * @param conversationId the conversation id that contains the self-deleting message

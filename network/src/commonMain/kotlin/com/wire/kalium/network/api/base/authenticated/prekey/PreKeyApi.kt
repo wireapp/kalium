@@ -21,9 +21,11 @@ package com.wire.kalium.network.api.base.authenticated.prekey
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Mockable
 interface PreKeyApi {
     /**
      * @param users a map of domain to (map of user IDs to client IDs)

@@ -61,6 +61,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
+import com.wire.kalium.persistence.dao.event.EventDAO
+import com.wire.kalium.persistence.dao.event.EventDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -194,6 +196,12 @@ class UserDatabaseBuilder internal constructor(
         get() = ConnectionDAOImpl(
             database.connectionsQueries,
             database.conversationsQueries,
+            queriesContext
+        )
+
+    val eventDAO: EventDAO
+        get() = EventDAOImpl(
+            database.eventsQueries,
             queriesContext
         )
 

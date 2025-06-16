@@ -30,11 +30,13 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
+import io.mockative.Mockable
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
  * but has not yet joined the corresponding MLS group.
  */
+@Mockable
 internal interface JoinExistingMLSConversationsUseCase {
     suspend operator fun invoke(keepRetryingOnFailure: Boolean = true): Either<CoreFailure, Unit>
 }

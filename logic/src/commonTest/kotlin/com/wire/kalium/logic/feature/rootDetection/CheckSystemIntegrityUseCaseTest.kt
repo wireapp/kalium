@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -97,10 +96,7 @@ class CheckSystemIntegrityUseCaseTest {
 
         var kaliumConfigs = KaliumConfigs()
 
-        @Mock
         val rootDetector = mock(RootDetector::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
 
         fun arrange() = this to CheckSystemIntegrityUseCaseImpl(

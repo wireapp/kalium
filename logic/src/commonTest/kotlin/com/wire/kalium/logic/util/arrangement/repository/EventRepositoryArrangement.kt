@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -35,13 +34,15 @@ internal interface EventRepositoryArrangement {
 
     suspend fun withFetchMostRecentEventReturning(result: Either<CoreFailure, String>)
 
-    suspend fun withLastProcessedEventIdReturning(result: Either<StorageFailure, String>)
+    suspend fun withLastSavedEventIdReturning(result: Either<StorageFailure, String>)
+
+    suspend fun withUpdateLastSavedEventIdReturning(result: Either<StorageFailure, Unit>)
 
     suspend fun withUpdateLastProcessedEventIdReturning(result: Either<StorageFailure, Unit>)
 }
 
 internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
-    @Mock
+
     override val eventRepository = mock(EventRepository::class)
 
     override suspend fun withOldestEventIdReturning(result: Either<CoreFailure, String>) {
@@ -52,7 +53,7 @@ internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
 
     override suspend fun withClearLastEventIdReturning(result: Either<StorageFailure, Unit>) {
         coEvery {
-            eventRepository.clearLastProcessedEventId()
+            eventRepository.clearLastSavedEventId()
         }.returns(result)
     }
 
@@ -62,15 +63,21 @@ internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
         }.returns(result)
     }
 
-    override suspend fun withLastProcessedEventIdReturning(result: Either<StorageFailure, String>) {
+    override suspend fun withLastSavedEventIdReturning(result: Either<StorageFailure, String>) {
         coEvery {
-            eventRepository.lastProcessedEventId()
+            eventRepository.lastSavedEventId()
+        }.returns(result)
+    }
+
+    override suspend fun withUpdateLastSavedEventIdReturning(result: Either<StorageFailure, Unit>) {
+        coEvery {
+            eventRepository.updateLastSavedEventId(any())
         }.returns(result)
     }
 
     override suspend fun withUpdateLastProcessedEventIdReturning(result: Either<StorageFailure, Unit>) {
         coEvery {
-            eventRepository.updateLastProcessedEventId(any())
+            eventRepository.setEventAsProcessed(any())
         }.returns(result)
     }
 }

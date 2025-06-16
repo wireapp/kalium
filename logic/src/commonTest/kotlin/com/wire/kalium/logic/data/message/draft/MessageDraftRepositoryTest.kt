@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -92,8 +91,6 @@ class MessageDraftRepositoryTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val messageDraftDAO = mock(MessageDraftDAO::class)
 
         suspend fun withRemoveMessageDraftSucceeding() = apply {

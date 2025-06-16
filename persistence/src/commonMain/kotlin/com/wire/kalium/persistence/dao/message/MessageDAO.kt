@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -34,6 +35,7 @@ enum class InsertMessageResult {
 }
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun updateAssetTransferStatus(transferStatus: AssetTransferStatusEntity, id: String, conversationId: QualifiedIDEntity)
