@@ -40,7 +40,7 @@ class IncrementalSyncRecoveryHandlerTest {
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right(oldestEventId))
             withClearLastEventIdReturning(Either.Right(Unit))
-            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
         }
 
         var wasInvoked = false
@@ -52,7 +52,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // then
         with(arrangement) {
             coVerify {
-                eventRepository.clearLastProcessedEventId()
+                eventRepository.clearLastSavedEventId()
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -67,7 +67,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // given
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right("oldestEventId"))
-            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
         }
 
         var wasInvoked = false
@@ -87,12 +87,12 @@ class IncrementalSyncRecoveryHandlerTest {
     }
 
     @Test
-    fun givenUnknownFailure_whenRecovering_thenShouldNotClearLastProcessedEventId() = runTest {
+    fun givenUnknownFailure_whenRecovering_thenShouldNotClearLastSavedEventId() = runTest {
         // given
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right("oldestEventId"))
             withClearLastEventIdReturning(Either.Right(Unit))
-            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
         }
 
         // when
@@ -101,7 +101,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // then
         with(arrangement) {
             coVerify {
-                eventRepository.clearLastProcessedEventId()
+                eventRepository.clearLastSavedEventId()
             }.wasNotInvoked()
         }
     }
