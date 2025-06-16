@@ -86,6 +86,7 @@ public data class BackupMessage(
     val content: BackupMessageContent,
     @Deprecated("Used only by the Webteam in order to simplify debugging", ReplaceWith(""))
     val webPrimaryKey: Int? = null,
+    val lastEditTime: BackupDateTime? = null,
 )
 
 public expect class BackupDateTime
