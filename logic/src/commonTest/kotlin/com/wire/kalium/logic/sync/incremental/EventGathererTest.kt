@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -202,31 +203,6 @@ class EventGathererTest {
         eventGatherer.liveEvents().test {
             repeat(repeatValue) { value ->
                 awaitItem()
-            }
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun givenWebSocketOpens_whenGathering_thenSyncSourceIsUpdatedToLive() = runTest(testScope) {
-        val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
-
-        val (_, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withPendingEventsReturning(emptyFlow())
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .withLocalEventsReturning(emptyFlow())
-            .withFetchServerTimeReturning(null)
-            .arrange(this.backgroundScope)
-
-        eventGatherer.liveEvents().test {
-            // Open Websocket should trigger fetching pending events
-            liveEventsChannel.send(WebSocketEvent.Open())
-            advanceUntilIdle()
-
-            eventGatherer.currentSource.test {
-                assertEquals(EventSource.LIVE, awaitItem())
-                cancelAndIgnoreRemainingEvents()
             }
             cancelAndIgnoreRemainingEvents()
         }
@@ -482,50 +458,61 @@ class EventGathererTest {
         }
 
     @Test
-    fun givenPendingEventThenWebSocketOpen_whenGathering_thenCurrentSourceUpdatesTwice() = runTest(testScope) {
-        val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
-
-        val event = TestEvent.memberJoin()
+    fun givenOnlyPendingEvent_whenNoMoreEventsEmitted_thenCurrentSourceIsSetToLiveAfterDelay() = runTest {
+        val pendingEvent = TestEvent.memberJoin()
             .wrapInEnvelope(source = EventSource.PENDING)
 
+        val localEventsFlow = flowOf(listOf(pendingEvent))
+
         val (_, eventGatherer) = Arrangement()
-            .withLastEventIdReturning("lastEventId".right())
-            .withPendingEventsReturning(flowOf(Either.Right(event)))
-            .withLocalEventsReturning(flowOf(listOf(event)))
-            .withLiveEventsReturning(liveEventsChannel.consumeAsFlow().right())
-            .arrange(this.backgroundScope)
+            .withLocalEventsReturning(localEventsFlow)
+            .withLiveEventsReturning(Either.Right(emptyFlow()))
+            .arrange(backgroundScope)
 
         eventGatherer.gatherEvents().test {
             awaitItem()
-            awaitComplete()
-        }
-
-        eventGatherer.currentSource.test {
-            assertEquals(EventSource.PENDING, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
 
-        eventGatherer.liveEvents().test {
-            liveEventsChannel.send(WebSocketEvent.Open())
-            advanceUntilIdle()
-            cancelAndIgnoreRemainingEvents()
+        assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
 
-            eventGatherer.currentSource.test {
-                assertEquals(EventSource.LIVE, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
+        advanceTimeBy(1000)
 
-            cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
     }
+
+    @Test
+    fun givenFirstEventPendingThenLive_whenGathering_thenCurrentSourceUpdatesOnlyAfterDelay() = runTest {
+        val event1 = TestEvent.memberJoin().wrapInEnvelope(source = EventSource.PENDING)
+        val event2 = TestEvent.memberJoin().wrapInEnvelope(source = EventSource.LIVE)
+
+        val localEventsFlow = flowOf(listOf(event1, event2))
+
+        val (_, eventGatherer) = Arrangement()
+            .withLocalEventsReturning(localEventsFlow)
+            .withLiveEventsReturning(Either.Right(emptyFlow()))
+            .arrange(backgroundScope)
+
+        eventGatherer.gatherEvents().test {
+            awaitItem()
+            awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
+
+        advanceTimeBy(1000)
+
+        assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
+    }
+
+
 
     private class Arrangement {
 
         companion object {
             val testScope = TestKaliumDispatcher.main
         }
-
-        val liveSourceChangeHandler = mock(LiveSourceChangeHandler::class)
 
         val eventRepository = mock(EventRepository::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
