@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -293,7 +292,6 @@ class MLSPublicKeysSyncWorkerTest {
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
 
-        @Mock
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
         var minIntervalBetweenRefills: Duration = 1.days
         var lastFetchInstantFlow = MutableStateFlow(Instant.DISTANT_PAST)

@@ -27,7 +27,6 @@ import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.decodeBase64Bytes
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -187,10 +186,7 @@ class MLSPublicKeysRepositoryTest {
     }
 
     inner class Arrangement(private val initialPublicKeys: MLSPublicKeys? = null) {
-        @Mock
         internal val mlsPublicKeyApi: MLSPublicKeyApi = mock(MLSPublicKeyApi::class)
-
-        @Mock
         internal val mlsPublicKeysMapper: MLSPublicKeysMapper = mock(MLSPublicKeysMapper::class)
 
         internal suspend fun withGetMLSPublicKeysApiReturning(result: NetworkResponse<MLSPublicKeysDTO>) = apply {

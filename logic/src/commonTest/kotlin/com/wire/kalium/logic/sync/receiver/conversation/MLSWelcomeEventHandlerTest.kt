@@ -262,9 +262,6 @@ class MLSWelcomeEventHandlerTest {
         val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
-        @Mock
-        val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
-
         suspend fun withMLSClientProviderReturningMLSClient() = apply {
             coEvery {
                 mlsClientProvider.getMLSClient(any())
