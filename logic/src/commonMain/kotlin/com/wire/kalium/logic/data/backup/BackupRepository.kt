@@ -33,16 +33,14 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
 interface BackupRepository {
     suspend fun getUsers(): List<OtherUser>
     suspend fun getConversations(): List<Conversation>
-    fun getMessages(): Flow<List<Message.Standalone>>
+    fun getMessages(onPage: (List<Message.Standalone>) -> Unit)
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
@@ -74,29 +72,21 @@ internal class BackupDataSource(
             .map { it.map(conversationMapper::fromDaoModel) }
             .firstOrNull() ?: emptyList()
 
-    override fun getMessages(): Flow<List<Message.Standalone>> = flow {
-
-        var offset = 0L
-        var page: List<Message.Standalone>
-
-        do {
-            page = messageDAO.getMessagesPage(
-                contentTypes = listOf(
-                    MessageEntity.ContentType.TEXT,
-                    MessageEntity.ContentType.ASSET,
-                    MessageEntity.ContentType.LOCATION,
-                ),
-                offset = offset,
-                pageSize = PAGE_SIZE.toLong(),
-            ).map {
-                messageMapper.fromEntityToMessage(it)
-            }
-
-            emit(page)
-
-            offset += PAGE_SIZE
-
-        } while (page.size == PAGE_SIZE)
+    override fun getMessages(onPage: (List<Message.Standalone>) -> Unit) {
+        messageDAO.getMessagesPaged(
+            contentTypes = listOf(
+                MessageEntity.ContentType.TEXT,
+                MessageEntity.ContentType.ASSET,
+                MessageEntity.ContentType.LOCATION,
+            ),
+            pageSize = PAGE_SIZE,
+        ) { page ->
+            onPage(
+                page.map {
+                    messageMapper.fromEntityToMessage(it)
+                }
+            )
+        }
     }
 
     override suspend fun insertUsers(users: List<OtherUser>) = wrapStorageRequest {
