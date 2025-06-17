@@ -100,6 +100,9 @@ internal class EventGathererImpl(
         .onEach {
             it.firstOrNull()?.let { lastEvent ->
                 _currentSource.value = lastEvent.deliveryInfo.source
+                liveSourceChangeHandler.scheduleNewCatchingUpJob(
+                    onEventIntervalGapReached = { _currentSource.value = EventSource.LIVE }
+                )
             }
         }
         .flatten()
@@ -167,9 +170,6 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<Unit>.onWebSocketEventReceived() {
         logger.i("Websocket Binary payload received")
-        liveSourceChangeHandler.scheduleNewCatchingUpJob(
-            onEventIntervalGapReached = { _currentSource.value = EventSource.LIVE }
-        )
         emit(Unit)
     }
 
