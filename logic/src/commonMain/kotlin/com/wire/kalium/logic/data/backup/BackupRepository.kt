@@ -40,7 +40,7 @@ import kotlinx.coroutines.flow.map
 interface BackupRepository {
     suspend fun getUsers(): List<OtherUser>
     suspend fun getConversations(): List<Conversation>
-    fun getMessages(onPage: (List<Message.Standalone>) -> Unit)
+    fun getMessages(onPage: (Int, List<Message.Standalone>) -> Unit)
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
@@ -58,7 +58,7 @@ internal class BackupDataSource(
 ) : BackupRepository {
 
     private companion object {
-        const val PAGE_SIZE = 100
+        const val PAGE_SIZE = 1_000
     }
 
     override suspend fun getUsers(): List<OtherUser> =
@@ -72,7 +72,17 @@ internal class BackupDataSource(
             .map { it.map(conversationMapper::fromDaoModel) }
             .firstOrNull() ?: emptyList()
 
-    override fun getMessages(onPage: (List<Message.Standalone>) -> Unit) {
+    override fun getMessages(onPage: (Int, List<Message.Standalone>) -> Unit) {
+
+        val contentTypes = listOf(
+            MessageEntity.ContentType.TEXT,
+            MessageEntity.ContentType.ASSET,
+            MessageEntity.ContentType.LOCATION,
+        )
+
+        val totalMessages = messageDAO.countMessagesForBackup(contentTypes).toInt()
+        val totalPages = (totalMessages / PAGE_SIZE).coerceAtLeast(1)
+
         messageDAO.getMessagesPaged(
             contentTypes = listOf(
                 MessageEntity.ContentType.TEXT,
@@ -82,6 +92,7 @@ internal class BackupDataSource(
             pageSize = PAGE_SIZE,
         ) { page ->
             onPage(
+                totalPages,
                 page.map {
                     messageMapper.fromEntityToMessage(it)
                 }

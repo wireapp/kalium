@@ -79,7 +79,7 @@ class RestoreMPBackupUseCaseTest {
             .withSuccessImport()
             .arrange()
 
-        useCase(arrangement.storedPath, null)
+        useCase(arrangement.storedPath, null) {}
 
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
@@ -93,7 +93,7 @@ class RestoreMPBackupUseCaseTest {
             .withSuccessImport()
             .arrange()
 
-        useCase(arrangement.storedPath, "test_password")
+        useCase(arrangement.storedPath, "test_password") {}
 
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
@@ -107,7 +107,7 @@ class RestoreMPBackupUseCaseTest {
             .withInvalidPassword()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.InvalidPassword, result.failure)
@@ -120,7 +120,7 @@ class RestoreMPBackupUseCaseTest {
             .withParsingFailure()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure"), result.failure)
@@ -133,7 +133,7 @@ class RestoreMPBackupUseCaseTest {
             .withUnzipFailure()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unzipping error"), result.failure)
@@ -146,7 +146,7 @@ class RestoreMPBackupUseCaseTest {
             .withOtherFailure()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error"), result.failure)
@@ -216,6 +216,7 @@ class RestoreMPBackupUseCaseTest {
             every { resultPager.usersPager }.returns(usersPager)
             every { resultPager.conversationsPager }.returns(conversationsPager)
             every { resultPager.messagesPager }.returns(messagesPager)
+            every { resultPager.totalPagesCount }.returns(1)
 
             return this to RestoreMPBackupUseCaseImpl(
                 selfUserId = selfUserId,

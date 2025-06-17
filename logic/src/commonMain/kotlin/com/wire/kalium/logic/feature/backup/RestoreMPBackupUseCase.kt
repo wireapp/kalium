@@ -50,7 +50,7 @@ interface RestoreMPBackupUseCase {
      * @param password the password used to encrypt the original backup file. Null if the file was not encrypted.
      * @return A [RestoreBackupResult] indicating the success or failure of the operation.
      */
-    suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult
+    suspend operator fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult
 }
 
 internal class RestoreMPBackupUseCaseImpl(
@@ -61,7 +61,11 @@ internal class RestoreMPBackupUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : RestoreMPBackupUseCase {
 
-    override suspend fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult = withContext(dispatchers.io) {
+    override suspend fun invoke(
+        backupFilePath: Path,
+        password: String?,
+        onProgress: (Float) -> Unit
+    ): RestoreBackupResult = withContext(dispatchers.io) {
         try {
             val backupWorkDir = kaliumFileSystem.tempFilePath("${backupFilePath.name}-restore-workdir")
             kaliumFileSystem.deleteContents(backupWorkDir)
@@ -83,18 +87,24 @@ internal class RestoreMPBackupUseCaseImpl(
 
             when (val result = importer.importFromFile(backupFilePath.toString(), password)) {
                 is ImportResult.Success -> {
-                    persistBackupData(result.pager)
+                    persistBackupData(result.pager) { currentPage, totalPages ->
+                        onProgress(currentPage.toFloat() / totalPages)
+                    }
                     RestoreBackupResult.Success
                 }
+
                 ImportResult.Failure.MissingOrWrongPassphrase -> RestoreBackupResult.Failure(
                     RestoreBackupResult.BackupRestoreFailure.InvalidPassword
                 )
+
                 ImportResult.Failure.ParsingFailure -> RestoreBackupResult.Failure(
                     RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure")
                 )
+
                 is ImportResult.Failure.UnzippingError -> RestoreBackupResult.Failure(
                     RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unzipping error")
                 )
+
                 is ImportResult.Failure.UnknownError -> RestoreBackupResult.Failure(
                     RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error")
                 )
@@ -111,25 +121,32 @@ internal class RestoreMPBackupUseCaseImpl(
         }
     }
 
-    private suspend fun persistBackupData(resultData: ImportResultPager) {
+    private suspend fun persistBackupData(resultData: ImportResultPager, onProgress: (Int, Int) -> Unit) {
         resultData.use { pager ->
+
+            val total = pager.totalPagesCount
+            var pageIndex = 0
+
             pager.usersPager.pages().forEach { page ->
                 backupRepository.insertUsers(page.map { it.toUser() })
                     .onFailure { error ->
                         kaliumLogger.e("Restore users error: $error")
                     }
+                onProgress(pageIndex++, total)
             }
             pager.conversationsPager.pages().forEach { page ->
                 backupRepository.insertConversations(page.map { it.toConversation() })
                     .onFailure { error ->
                         kaliumLogger.e("Restore conversations error: $error")
                     }
+                onProgress(pageIndex++, total)
             }
             pager.messagesPager.pages().forEach { page ->
                 backupRepository.insertMessages(page.map { it.toMessage(selfUserId) })
                     .onFailure { error ->
                         kaliumLogger.e("Restore messages error: $error")
                     }
+                onProgress(pageIndex++, total)
             }
         }
     }
