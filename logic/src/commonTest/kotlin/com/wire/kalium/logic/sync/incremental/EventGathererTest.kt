@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.incremental.EventGathererTest.Arrangement.Companion.testScope
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -39,6 +41,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
@@ -49,6 +52,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -60,7 +64,7 @@ import kotlin.test.assertIs
 class EventGathererTest {
 
     @Test
-    fun givenWebSocketOpens_whenGathering_thenShouldStartFetchPendingEvents() = runTest {
+    fun givenWebSocketOpens_whenGathering_thenShouldStartFetchPendingEvents() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val (arrangement, eventGatherer) = Arrangement()
@@ -68,7 +72,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning("2022-03-30T15:36:00.000Z")
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             coVerify {
@@ -89,7 +93,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpens_whenGatheringFromNewAsyncNotifications_thenShouldSkipFetchPendingEvents() = runTest {
+    fun givenWebSocketOpens_whenGatheringFromNewAsyncNotifications_thenShouldSkipFetchPendingEvents() = runTest(testScope) {
         // given
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
         val (arrangement, eventGatherer) = Arrangement()
@@ -98,7 +102,7 @@ class EventGathererTest {
             .withLiveEventsReturning(liveEventsChannel.consumeAsFlow().right())
             .withLocalEventsReturning(emptyFlow())
             .withFetchServerTimeReturning("2022-03-30T15:36:00.000Z")
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.gatherEvents().test {
             coVerify {
@@ -122,7 +126,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpensAndDisconnectPolicy_whenGathering_thenShouldStartFetchPendingEvents() = runTest {
+    fun givenWebSocketOpensAndDisconnectPolicy_whenGathering_thenShouldStartFetchPendingEvents() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val (arrangement, eventGatherer) = Arrangement()
@@ -131,7 +135,7 @@ class EventGathererTest {
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withLocalEventsReturning(emptyFlow())
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             coVerify {
@@ -152,7 +156,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenPendingEventAndDisconnectPolicy_whenGathering_thenShouldEmitEvent() = runTest {
+    fun givenPendingEventAndDisconnectPolicy_whenGathering_thenShouldEmitEvent() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val pendingEvent = TestEvent.newConnection().wrapInEnvelope()
@@ -162,7 +166,7 @@ class EventGathererTest {
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withLocalEventsReturning(emptyFlow())
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             coVerify {
@@ -179,7 +183,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenLocalThousandsEventsAndKeepAlivePolicy_whenGathering_thenShouldEmitAllEvents() = runTest {
+    fun givenLocalThousandsEventsAndKeepAlivePolicy_whenGathering_thenShouldEmitAllEvents() = runTest(testScope) {
         val repeatValue = 10_000
         val webSocketEventFlow = channelFlow<WebSocketEvent<Unit>> {
             send(WebSocketEvent.Open())
@@ -194,7 +198,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withLiveEventsReturning(Either.Right(webSocketEventFlow))
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             repeat(repeatValue) { value ->
@@ -205,7 +209,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpens_whenGathering_thenSyncSourceIsUpdatedToLive() = runTest {
+    fun givenWebSocketOpens_whenGathering_thenSyncSourceIsUpdatedToLive() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val (_, eventGatherer) = Arrangement()
@@ -214,7 +218,7 @@ class EventGathererTest {
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withLocalEventsReturning(emptyFlow())
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             // Open Websocket should trigger fetching pending events
@@ -230,7 +234,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenEventsWithPendingSource_whenGathering_thenCurrentSourceIsPending() = runTest {
+    fun givenEventsWithPendingSource_whenGathering_thenCurrentSourceIsPending() = runTest(testScope) {
         val event = TestEvent.memberJoin()
             .wrapInEnvelope(source = EventSource.PENDING)
 
@@ -242,7 +246,7 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLocalEventsReturning(webSocketEventFlow)
             .withLiveEventsReturning(Either.Right(emptyFlow()))
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.gatherEvents().test {
             awaitItem()
@@ -253,7 +257,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenEventsWithLiveSource_whenGathering_thenCurrentSourceIsLive() = runTest {
+    fun givenEventsWithLiveSource_whenGathering_thenCurrentSourceIsLive() = runTest(testScope) {
         val event = TestEvent.memberJoin()
             .wrapInEnvelope(source = EventSource.LIVE)
 
@@ -265,7 +269,7 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLocalEventsReturning(webSocketEventFlow)
             .withLiveEventsReturning(Either.Right(emptyFlow()))
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.gatherEvents().test {
             awaitItem()
@@ -276,7 +280,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpensAndFetchingPendingEventsFail_whenGathering_thenGatheringShouldFailWithSyncException() = runTest {
+    fun givenWebSocketOpensAndFetchingPendingEventsFail_whenGathering_thenGatheringShouldFailWithSyncException() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val failureCause = NetworkFailure.ServerMiscommunication(IOException())
@@ -285,7 +289,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             // Open Websocket should trigger fetching pending events
@@ -300,7 +304,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketReceivesEventsAndFetchingPendingEventsFail_whenGathering_thenEventsShouldNotBeEmitted() = runTest {
+    fun givenWebSocketReceivesEventsAndFetchingPendingEventsFail_whenGathering_thenEventsShouldNotBeEmitted() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val failureCause = NetworkFailure.ServerMiscommunication(IOException())
@@ -309,7 +313,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.receiveAsFlow()))
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             // Open Websocket should trigger fetching pending events
@@ -324,14 +328,14 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenNoEvents_whenGathering_thenSyncSourceDefaultsToPending() = runTest {
+    fun givenNoEvents_whenGathering_thenSyncSourceDefaultsToPending() = runTest(testScope) {
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(emptyFlow())
             .withLiveEventsReturning(Either.Right(emptyFlow()))
             .withLocalEventsReturning(emptyFlow())
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             eventGatherer.currentSource.test {
@@ -343,7 +347,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenAnEventIsInOnPendingSource_whenGathering_theEventIsEmitted() = runTest {
+    fun givenAnEventIsInOnPendingSource_whenGathering_theEventIsEmitted() = runTest(testScope) {
         val event = TestEvent.memberJoin().wrapInEnvelope()
 
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
@@ -353,7 +357,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Right(event)))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         // Open Websocket should trigger fetching pending events
         liveEventsChannel.send(WebSocketEvent.Open())
@@ -365,7 +369,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenAnEventIsInOnLiveSource_whenGathering_theEventIsEmitted() = runTest {
+    fun givenAnEventIsInOnLiveSource_whenGathering_theEventIsEmitted() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val (_, eventGatherer) = Arrangement()
@@ -373,7 +377,7 @@ class EventGathererTest {
             .withPendingEventsReturning(emptyFlow())
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         // Open Websocket should trigger fetching pending events
         liveEventsChannel.send(WebSocketEvent.Open())
@@ -387,7 +391,7 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenPendingEventsFailWith404_whenGathering_thenShouldThrowExceptionWithEventNotFoundCause() = runTest {
+    fun givenPendingEventsFailWith404_whenGathering_thenShouldThrowExceptionWithEventNotFoundCause() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val failureCause = NetworkFailure.ServerMiscommunication(
@@ -404,7 +408,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             // Open Websocket should trigger fetching pending events
@@ -419,14 +423,14 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpens_whenGatheringAndAsyncNotificationsCapable_thenShouldNotFetchPendingEventsNorLastEvent() = runTest {
+    fun givenWebSocketOpens_whenGatheringAndAsyncNotificationsCapable_thenShouldNotFetchPendingEventsNorLastEvent() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val (arrangement, eventGatherer) = Arrangement()
             .withIsClientAsyncNotificationsCapableReturning(true)
             .withPendingEventsReturning(emptyFlow())
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.liveEvents().test {
             coVerify {
@@ -461,24 +465,25 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenNoLastSavedEventId_whenGettingLiveEventsWithoutAsyncNotifications_thenReturnSyncEventOrClientNotFoundToRecover() = runTest {
-        val (_, eventGatherer) = Arrangement()
-            .withIsClientAsyncNotificationsCapableReturning(false)
-            .withLastEventIdReturning(Either.Left(StorageFailure.DataNotFound))
-            .arrange()
+    fun givenNoLastSavedEventId_whenGettingLiveEventsWithoutAsyncNotifications_thenReturnSyncEventOrClientNotFoundToRecover() =
+        runTest(testScope) {
+            val (_, eventGatherer) = Arrangement()
+                .withIsClientAsyncNotificationsCapableReturning(false)
+                .withLastEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+                .arrange(this.backgroundScope)
 
-        eventGatherer.liveEvents().test {
-            advanceUntilIdle()
-            awaitError().let {
-                assertIs<KaliumSyncException>(it).also {
-                    assertIs<CoreFailure.SyncEventOrClientNotFound>(it.coreFailureCause)
+            eventGatherer.liveEvents().test {
+                advanceUntilIdle()
+                awaitError().let {
+                    assertIs<KaliumSyncException>(it).also {
+                        assertIs<CoreFailure.SyncEventOrClientNotFound>(it.coreFailureCause)
+                    }
                 }
             }
         }
-    }
 
     @Test
-    fun givenPendingEventThenWebSocketOpen_whenGathering_thenCurrentSourceUpdatesTwice() = runTest {
+    fun givenPendingEventThenWebSocketOpen_whenGathering_thenCurrentSourceUpdatesTwice() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<Unit>>(capacity = Channel.UNLIMITED)
 
         val event = TestEvent.memberJoin()
@@ -489,7 +494,7 @@ class EventGathererTest {
             .withPendingEventsReturning(flowOf(Either.Right(event)))
             .withLocalEventsReturning(flowOf(listOf(event)))
             .withLiveEventsReturning(liveEventsChannel.consumeAsFlow().right())
-            .arrange()
+            .arrange(this.backgroundScope)
 
         eventGatherer.gatherEvents().test {
             awaitItem()
@@ -504,6 +509,7 @@ class EventGathererTest {
         eventGatherer.liveEvents().test {
             liveEventsChannel.send(WebSocketEvent.Open())
             advanceUntilIdle()
+            cancelAndIgnoreRemainingEvents()
 
             eventGatherer.currentSource.test {
                 assertEquals(EventSource.LIVE, awaitItem())
@@ -516,11 +522,15 @@ class EventGathererTest {
 
     private class Arrangement {
 
+        companion object {
+            val testScope = TestKaliumDispatcher.main
+        }
+
+        val liveSourceChangeHandler = mock(LiveSourceChangeHandler::class)
+
         val eventRepository = mock(EventRepository::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
         val serverTimeHandler = mock(ServerTimeHandler::class)
-
-        val eventGatherer: EventGatherer = EventGathererImpl(isClientAsyncNotificationsCapableProvider, eventRepository, serverTimeHandler)
 
         init {
             runBlocking {
@@ -564,6 +574,12 @@ class EventGathererTest {
             }.returns(either)
         }
 
-        fun arrange() = this to eventGatherer
+        fun arrange(processingScope: CoroutineScope) = this to EventGathererImpl(
+            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
+            eventRepository = eventRepository,
+            processingScope = processingScope,
+            liveSourceChangeHandler = liveSourceChangeHandler,
+            serverTimeHandler = serverTimeHandler
+        )
     }
 }
