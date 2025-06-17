@@ -21,10 +21,12 @@ data class EventEntity(
     val id: Long,
     val eventId: String,
     val isProcessed: Boolean,
-    val payload: String
+    val payload: String,
+    val isLive: Boolean
 )
 
 data class NewEventEntity(
     val eventId: String,
-    val payload: String
+    val payload: String,
+    val isLive: Boolean
 )

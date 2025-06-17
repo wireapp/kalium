@@ -20,9 +20,11 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatten
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -91,10 +93,15 @@ internal class EventGathererImpl(
     private val logger = logger.withFeatureId(SYNC)
 
     // TODO handle multiple events at once
-    override suspend fun gatherEvents(): Flow<EventEnvelope> = eventRepository.observeEvents().flatten()
+    override suspend fun gatherEvents(): Flow<EventEnvelope> = eventRepository.observeEvents()
+        .onEach {
+            it.firstOrNull()?.let { lastEvent ->
+                _currentSource.value = lastEvent.deliveryInfo.source
+            }
+        }
+        .flatten()
 
     override suspend fun liveEvents(): Flow<Unit> = flow {
-        _currentSource.value = EventSource.PENDING
         /**
          * Fetches and emits live events based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
@@ -104,8 +111,6 @@ internal class EventGathererImpl(
                 .onSuccess { emitEvents(it) }
                 .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
         }
-        // When it ends, reset source back to PENDING
-        _currentSource.value = EventSource.PENDING
     }
 
     /**
@@ -114,8 +119,19 @@ internal class EventGathererImpl(
     private suspend fun fetchEventFlow(isAsyncNotifications: Boolean) = if (isAsyncNotifications) {
         eventRepository.liveEvents()
     } else {
-        // in the old system we fetch pending events from the notification stream based on last processed event id
-        eventRepository.lastProcessedEventId().flatMap { eventRepository.liveEvents() }
+        // in the old system we fetch pending events from the notification stream based on last saved event id
+        eventRepository.lastSavedEventId()
+            .flatMap {
+                eventRepository.liveEvents()
+            }
+            .mapLeft {
+                when (it) {
+                    is StorageFailure.DataNotFound -> // last saved event ID not found, perform slow sync again to get it
+                        CoreFailure.SyncEventOrClientNotFound
+
+                    else -> it
+                }
+            }
     }
 
     private suspend fun FlowCollector<Unit>.emitEvents(
