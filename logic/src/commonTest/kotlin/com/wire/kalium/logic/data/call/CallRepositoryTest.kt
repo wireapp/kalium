@@ -54,6 +54,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -63,7 +64,6 @@ import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.reflect.instanceOf
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -142,7 +142,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -172,7 +172,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             false,
                             isSelfUserMember = true,
@@ -210,7 +210,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -263,7 +263,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -305,7 +305,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -361,7 +361,7 @@ class CallRepositoryTest {
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
                     Either.Right(
-                        ConversationDetails.Group(
+                        ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
@@ -902,7 +902,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -942,7 +942,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -987,7 +987,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1041,7 +1041,7 @@ class CallRepositoryTest {
         val metadata = createCallMetadata().copy(
             isMuted = false,
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername",
             callerTeamName = "team_1"
         )
@@ -1104,7 +1104,7 @@ class CallRepositoryTest {
                     Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
-                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        conversationType = Conversation.Type.OneOnOne,
                         callerName = "otherUsername",
                         callerTeamName = "team_1"
                     )
@@ -1215,7 +1215,7 @@ class CallRepositoryTest {
     @Test
     fun givenEpochChange_whenJoinMlsConference_thenInvokeOnEpochChange() = runTest(TestKaliumDispatcher.default) {
 
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (_, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1235,11 +1235,11 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.groupId)
+        epochFlow.emit(Arrangement.groupWithEpoch)
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.subconversationGroupId)
+        epochFlow.emit(Arrangement.subconversationGroupWithEpoch)
         yield()
         advanceUntilIdle()
 
@@ -1248,7 +1248,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenLeaveMlsConference_thenEpochObservingStops() = runTest(TestKaliumDispatcher.default) {
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (_, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1273,7 +1273,7 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        epochFlow.emit(Arrangement.subconversationGroupId)
+        epochFlow.emit(Arrangement.subconversationGroupWithEpoch)
         yield()
         advanceUntilIdle()
 
@@ -1282,7 +1282,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenMlsConferenceCall_whenLeaveMlsConference_thenLeaveSubconversation() = runTest(TestKaliumDispatcher.default) {
-        val epochFlow = MutableSharedFlow<GroupID>()
+        val epochFlow = MutableSharedFlow<GroupWithEpoch>()
 
         val (arrangement, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
@@ -1677,7 +1677,7 @@ class CallRepositoryTest {
         isCbrEnabled = false,
         maxParticipants = 0,
         conversationName = "ONE_ON_ONE Name",
-        conversationType = Conversation.Type.ONE_ON_ONE,
+        conversationType = Conversation.Type.OneOnOne,
         callerName = "otherUsername",
         callerTeamName = "team_1"
     )
@@ -1700,7 +1700,7 @@ class CallRepositoryTest {
         isCameraOn = false,
         isCbrEnabled = false,
         conversationName = null,
-        conversationType = Conversation.Type.GROUP,
+        conversationType = Conversation.Type.Group.Regular,
         callerName = null,
         callerTeamName = null,
         callStatus = CallStatus.ESTABLISHED,
@@ -1710,49 +1710,20 @@ class CallRepositoryTest {
 
     private class Arrangement {
 
-        @Mock
         val callApi = mock(CallApi::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val teamRepository = mock(TeamRepository::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
-
-        @Mock
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         val joinSubconversationUseCase = mock(JoinSubconversationUseCase::class)
-
-        @Mock
         val leaveSubconversationUseCase = mock(LeaveSubconversationUseCase::class)
-
-        @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val epochChangesObserver = mock(EpochChangesObserver::class)
-
-        @Mock
         val callDAO = mock(CallDAO::class)
 
         private val callMapper = CallMapperImpl(qualifiedIdMapper)
@@ -1897,7 +1868,7 @@ class CallRepositoryTest {
             }.returns(Either.Right(Unit))
         }
 
-        fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
+        fun givenObserveEpochChangesReturns(flow: Flow<GroupWithEpoch>) = apply {
             every {
                 epochChangesObserver.observe()
             }.returns(flow)
@@ -1950,7 +1921,9 @@ class CallRepositoryTest {
             val randomConversationId = ConversationId("value", "domain")
 
             val groupId = GroupID("groupid")
+            val groupWithEpoch = GroupWithEpoch(groupId, 1UL)
             val subconversationGroupId = GroupID("subconversation_groupid")
+            val subconversationGroupWithEpoch = GroupWithEpoch(subconversationGroupId, 1UL)
             val conversationId = ConversationId(value = "convId", domain = "domainId")
             val groupConversation = TestConversation.GROUP().copy(id = conversationId)
             val oneOnOneConversation = TestConversation.one_on_one(conversationId)

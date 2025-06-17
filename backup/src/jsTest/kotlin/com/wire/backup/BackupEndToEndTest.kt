@@ -22,21 +22,42 @@ import com.wire.backup.dump.BackupExportResult
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.BackupPeekResult
 import com.wire.backup.ingest.MPBackupImporter
 import kotlinx.coroutines.await
+import org.khronos.webgl.Uint8Array
 
 
 actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubjectProvider {
     override suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,
-        passphrase: String?,
+        passphrase: String,
         export: CommonMPBackupExporter.() -> Unit,
     ): BackupImportResult {
+        val artifactData = createBackup(selfUserId, export, passphrase)
+        val importer = MPBackupImporter()
+        return importer.importFromFileData(artifactData, passphrase).await()
+    }
+
+    override suspend fun exportPeekTest(
+        selfUserId: BackupQualifiedId,
+        passphrase: String,
+        export: CommonMPBackupExporter.() -> Unit,
+    ): BackupPeekResult {
+        val artifactData = createBackup(selfUserId, export, passphrase)
+        val importer = MPBackupImporter()
+        return importer.peekFileData(artifactData).await()
+    }
+
+    private suspend fun createBackup(
+        selfUserId: BackupQualifiedId,
+        export: CommonMPBackupExporter.() -> Unit,
+        passphrase: String
+    ): Uint8Array {
         val exporter = MPBackupExporter(selfUserId)
         exporter.export()
         val artifactPath = exporter.finalize(passphrase)
         val artifactData = (artifactPath.await() as BackupExportResult.Success).bytes
-        val importer = MPBackupImporter()
-        return importer.importFromFileData(artifactData, passphrase).await()
+        return artifactData
     }
 }

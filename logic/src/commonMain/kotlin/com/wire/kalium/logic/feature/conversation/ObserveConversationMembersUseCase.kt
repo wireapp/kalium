@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserRepository
+import io.mockative.Mockable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.map
 /**
  * This use case will observe and return the list of members of a given conversation.
  */
+@Mockable
 interface ObserveConversationMembersUseCase {
     /**
      * @param conversationId the id of the conversation to observe

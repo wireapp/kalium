@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorTest.Arrangement.Companion.otherMembersIds
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -28,15 +29,12 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -164,7 +162,9 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .withIsASelfTeamMember()
             .arrange()
 
-        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION.copy(type = Conversation.Type.GROUP))
+        val result = sysMessageCreator.conversationReadReceiptStatus(
+            TestConversation.CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+        )
 
         result.shouldSucceed()
 
@@ -342,13 +342,8 @@ class NewGroupConversationSystemMessagesCreatorTest {
     }
 
     private class Arrangement {
-        @Mock
-        val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
+                val persistMessage = mock(PersistMessageUseCase::class)
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
         init {

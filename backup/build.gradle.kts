@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 /*
@@ -23,11 +24,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
-    alias(libs.plugins.kotlinNativeCoroutines)
+    alias(libs.plugins.skie)
 }
 
+version = "0.0.4"
+
 kaliumLibrary {
-    multiplatform { enableJs.set(true) }
+    multiplatform { jsModuleName.set("@wireapp/kalium-backup") }
 }
 
 android {
@@ -42,16 +45,20 @@ kotlin {
     // Useful for a library that will be called by other clients
     // This way we need to think before putting "public" in things, and we can be reminded by the compiler to use "internal" more often
     explicitApi()
-    val xcf = XCFramework()
+    val xcf = XCFramework("KaliumBackup")
     val appleTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64(), macosArm64(), macosX64())
     appleTargets.forEach {
         it.binaries.framework {
-            baseName = "backup"
+            baseName = "KaliumBackup"
             xcf.add(this)
         }
     }
+    targets.withType<KotlinNativeTarget> {
+        compilations.all {
+            kotlinOptions.freeCompilerArgs += "-Xexport-kdoc"
+        }
+    }
     js {
-        browser()
         binaries.library()
         generateTypeScriptDefinitions()
     }
@@ -64,19 +71,16 @@ kotlin {
         }
         val commonMain by getting {
             dependencies {
-                implementation(project(":data"))
                 implementation(project(":protobuf"))
                 implementation(libs.pbandk.runtime.common)
 
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
-                implementation(libs.ktxSerialization)
 
                 implementation(libs.okio.core)
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
-                api(libs.kermit)
             }
         }
         val commonTest by getting {

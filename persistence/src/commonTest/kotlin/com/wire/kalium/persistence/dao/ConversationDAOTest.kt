@@ -2241,7 +2241,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationMembers_whenCallingSelectGroupStatusMembersNamesAndHandles_thenRerturn() = runTest {
+    fun givenConversationMembers_whenCallingSelectGroupStatusMembersNamesAndHandles_thenReturn() = runTest {
         // given
         val conversationId = QualifiedIDEntity("conversationId", "domain")
         val groupId = "groupId"
@@ -2303,6 +2303,65 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun givenChannelInserted_whenGettingConversationById_thenItShouldBeChannel() = runTest(dispatcher) {
+        val conversation = conversationEntity1.copy(type = ConversationEntity.Type.GROUP, isChannel = true)
+        conversationDAO.insertConversation(conversation)
+        val result = conversationDAO.observeConversationById(conversation.id).first()!!
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertTrue(result.isChannel)
+    }
+
+    @Test
+    fun givenChannelInserted_whenGettingConversationDetailsById_thenItShouldBeChannel() = runTest(dispatcher) {
+        val conversation = conversationEntity1.copy(type = ConversationEntity.Type.GROUP, isChannel = true)
+        conversationDAO.insertConversation(conversation)
+        val result = conversationDAO.getConversationDetailsById(conversation.id)!!
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertTrue(result.isChannel)
+    }
+
+    @Test
+    fun givenChannelInserted_whenGettingAllFilteringByChannels_thenItShouldReturnChannel() = runTest(dispatcher) {
+        val conversation = conversationEntity1.copy(type = ConversationEntity.Type.GROUP, isChannel = true)
+        conversationDAO.insertConversation(conversation)
+
+        val result = conversationDAO.getAllConversationDetails(false, ConversationFilterEntity.CHANNELS).first()
+        val ids = result.map { it.id }
+
+        assertContentEquals(listOf(conversation.id), ids)
+    }
+
+    @Test
+    fun givenMultipleConversationsInserted_whenGettingAllFilteringByChannels_thenItShouldReturnChannels() = runTest(dispatcher) {
+        val channel = conversationEntity1.copy(
+            id = QualifiedIDEntity("CHANNEL", "test"),
+            type = ConversationEntity.Type.GROUP,
+            isChannel = true
+        )
+        val request = conversationEntity1.copy(
+            id = QualifiedIDEntity("CONNECTION_PENDING", "test"),
+            type = ConversationEntity.Type.CONNECTION_PENDING,
+            isChannel = false
+        )
+        val group = conversationEntity1.copy(
+            id = QualifiedIDEntity("GROUP", "test"),
+            type = ConversationEntity.Type.GROUP,
+            isChannel = false
+        )
+        val oneOnOne = conversationEntity1.copy(
+            id = QualifiedIDEntity("ONE_ON_ONE", "test"),
+            type = ConversationEntity.Type.ONE_ON_ONE,
+            isChannel = false
+        )
+        conversationDAO.insertConversations(listOf(channel, request, group, oneOnOne))
+
+        val result = conversationDAO.getAllConversationDetails(false, ConversationFilterEntity.CHANNELS).first()
+        val ids = result.map { it.id }
+
+        assertContentEquals(listOf(channel.id), ids)
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
@@ -2371,7 +2430,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accentId = 1,
             isFavorite = false,
             folderName = null,
-            folderId = null
+            folderId = null,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
     }
 
@@ -2393,7 +2456,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false,
         )
 
         val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
@@ -2433,7 +2497,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -2455,7 +2523,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -2480,7 +2552,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -2511,7 +2587,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
         val conversationEntity5 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
@@ -2533,7 +2613,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
         val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("6", "wire.com"),
@@ -2563,7 +2647,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

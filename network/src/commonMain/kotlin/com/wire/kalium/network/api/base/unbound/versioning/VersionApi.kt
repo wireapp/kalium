@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.base.unbound.versioning
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.network.utils.NetworkResponse
@@ -31,7 +32,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
+import io.mockative.Mockable
 
+@Mockable
 interface VersionApi {
     suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<ServerConfigDTO.MetaData>
 }
@@ -41,6 +44,11 @@ class VersionApiImpl internal constructor(
     private val developmentApiEnabled: Boolean,
     private val util: BackendMetaDataUtil = BackendMetaDataUtilImpl
 ) : VersionApi {
+
+    internal constructor(unboundNetworkClient: UnboundNetworkClient, developmentApiEnabled: Boolean) : this(
+        httpClient = unboundNetworkClient.httpClient,
+        developmentApiEnabled = developmentApiEnabled
+    )
 
     internal constructor(unauthenticatedNetworkClient: UnauthenticatedNetworkClient, developmentApiEnabled: Boolean) : this(
         unauthenticatedNetworkClient.httpClient,

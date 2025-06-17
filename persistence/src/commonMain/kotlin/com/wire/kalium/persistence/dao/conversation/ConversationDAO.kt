@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -30,6 +31,7 @@ data class ProposalTimerEntity(
 )
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface ConversationDAO {
     val platformExtensions: ConversationExtensions
     //region Get/Observe by ID
@@ -38,13 +40,14 @@ interface ConversationDAO {
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
-
+    suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
     //endregion
 
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
+    suspend fun insertOrIgnoreConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun updateMlsGroupStateAndCipherSuite(
@@ -68,7 +71,6 @@ interface ConversationDAO {
         protocol: ConversationEntity.Protocol,
         teamId: String? = null
     ): List<QualifiedIDEntity>
-    suspend fun getConversationTypeById(conversationId: QualifiedIDEntity): ConversationEntity.Type?
 
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity>
     suspend fun getOneOnOneConversationIdsWithOtherUser(
@@ -122,6 +124,10 @@ interface ConversationDAO {
         link: String,
         isPasswordProtected: Boolean
     )
+    suspend fun updateChannelAddPermission(
+        conversationId: QualifiedIDEntity,
+        channelAddPermission: ConversationEntity.ChannelAddPermission
+    )
 
     suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity)
 
@@ -145,6 +151,9 @@ interface ConversationDAO {
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
     suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
+
+    suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?)
+    suspend fun getCellName(conversationId: QualifiedIDEntity): String?
 }
 
 data class NameAndHandleEntity(

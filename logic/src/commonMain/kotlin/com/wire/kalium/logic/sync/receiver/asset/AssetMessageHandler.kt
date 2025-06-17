@@ -30,7 +30,9 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
+import io.mockative.Mockable
 
+@Mockable
 internal interface AssetMessageHandler {
     suspend fun handle(message: Message.Regular)
 }
@@ -155,6 +157,7 @@ internal class AssetMessageHandlerImpl(
             is MessageContent.Location,
             is MessageContent.Composite,
             is MessageContent.Text,
+            is MessageContent.Multipart,
             is MessageContent.Unknown -> error("Invalid asset message content type ${persistedMessage.content.getType()}")
         }
         // The message was previously received with just metadata info, so let's update it with the raw data info

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.toInstant
@@ -34,6 +35,7 @@ import kotlinx.datetime.toInstant
 /**
  * This use case is responsible for ending a call.
  */
+@Mockable
 interface EndCallUseCase {
 
     /**
@@ -66,7 +68,7 @@ internal class EndCallUseCaseImpl(
                 CallStatus.ESTABLISHED
             )
         }?.let {
-            if (it.conversationType == Conversation.Type.GROUP) {
+            if (it.conversationType is Conversation.Type.Group) {
                 callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
                 callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
             } else {

@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -36,8 +35,7 @@ import kotlin.test.assertEquals
 
 class ObserveOngoingCallsUseCaseTest {
 
-    @Mock
-    val callRepository = mock(CallRepository::class)
+        val callRepository = mock(CallRepository::class)
 
     private lateinit var observeOngoingCalls: ObserveOngoingCallsUseCase
 
@@ -88,7 +86,7 @@ class ObserveOngoingCallsUseCaseTest {
             isCbrEnabled = false,
             callerId = TestCall.CALLER_ID,
             conversationName = null,
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.Group.Regular,
             callerName = null,
             callerTeamName = null
         )

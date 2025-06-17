@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -44,11 +43,9 @@ import kotlin.test.assertContentEquals
 
 class ObserveConversationMembersUseCaseTest {
 
-    @Mock
-    private val conversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository = mock(ConversationRepository::class)
 
-    @Mock
-    private val userRepository = mock(UserRepository::class)
+        private val userRepository = mock(UserRepository::class)
 
     private lateinit var observeConversationMembers: ObserveConversationMembersUseCase
 

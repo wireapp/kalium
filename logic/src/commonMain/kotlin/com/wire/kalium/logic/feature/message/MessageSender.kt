@@ -60,6 +60,7 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -74,6 +75,7 @@ import kotlin.math.max
  *
  * @see MessageSenderImpl
  */
+@Mockable
 interface MessageSender {
     /**
      * Given the [ConversationId] and UUID of a message that
@@ -330,7 +332,7 @@ internal class MessageSenderImpl internal constructor(
     ): Either<CoreFailure, Instant> {
         return mlsConversationRepository.commitPendingProposals(protocolInfo.groupId).flatMap {
             mlsMessageCreator.createOutgoingMLSMessage(protocolInfo.groupId, message).flatMap { mlsMessage ->
-                messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
+                messageRepository.sendMLSMessage(mlsMessage).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         if ((it.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
                             logger.logStructuredJson(

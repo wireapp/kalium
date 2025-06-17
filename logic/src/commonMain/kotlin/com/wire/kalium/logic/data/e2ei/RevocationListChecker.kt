@@ -28,10 +28,12 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 
 /**
  * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.
  */
+@Mockable
 internal interface RevocationListChecker {
     suspend fun check(url: String): Either<CoreFailure, ULong?>
 }
@@ -62,7 +64,7 @@ internal class RevocationListCheckerImpl(
         } else Either.Left(E2EIFailure.Disabled)
     }
 
-    private fun getIsE2EIEnabled() = userConfigRepository.getE2EISettings().flatMap { settings ->
+    private suspend fun getIsE2EIEnabled() = userConfigRepository.getE2EISettings().flatMap { settings ->
         userConfigRepository.isMLSEnabled()
             .map {
                 it && settings.isRequired && featureSupport.isMLSSupported

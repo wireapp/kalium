@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
@@ -82,14 +83,42 @@ data class EventEnvelope(
  * @property source The source of the event.
  * @see EventSource
  */
-data class EventDeliveryInfo(
-    val isTransient: Boolean,
-    val source: EventSource,
+sealed class EventDeliveryInfo(
+    open val isTransient: Boolean,
+    open val source: EventSource
 ) {
+
     fun toLogMap(): Map<String, Any?> = mapOf(
         "isTransient" to isTransient,
         "source" to source.name
     )
+
+    /**
+     * Async event delivery info, represents events that needs to be ACK'ed in the new system.
+     */
+    data class Async(
+        val deliveryTag: ULong,
+        override val source: EventSource
+    ) : EventDeliveryInfo(
+        isTransient = false, // in async events, everything needs to be ACK'ed so they are not transient
+        source = source
+    )
+
+    /**
+     * Async event delivery info, represents full sync needed, which is a special case of async event and also needs to be ACK'ed.
+     */
+    data object AsyncMissed : EventDeliveryInfo(
+        isTransient = false,
+        source = EventSource.LIVE
+    )
+
+    /**
+     * Event from the old quick sync system, not needing ACK.
+     */
+    data class Legacy(
+        override val isTransient: Boolean,
+        override val source: EventSource,
+    ) : EventDeliveryInfo(isTransient, source)
 }
 
 /**
@@ -119,6 +148,13 @@ sealed class Event(open val id: String) {
     }
 
     abstract fun toLogMap(): Map<String, Any?>
+
+    data class AsyncMissed(override val id: String) : Event(id) {
+        override fun toLogMap(): Map<String, Any?> = mapOf(
+            typeKey to "notifications.missed",
+            idKey to id
+        )
+    }
 
     sealed class Conversation(
         id: String,
@@ -391,16 +427,20 @@ sealed class Event(open val id: String) {
             val uri: String?,
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> =
-                mapOf(typeKey to "Conversation.CodeUpdated")
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
+                typeKey to "Conversation.CodeUpdated"
+            )
         }
 
         data class CodeDeleted(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
-            override fun toLogMap(): Map<String, Any?> =
-                mapOf(typeKey to "Conversation.CodeDeleted")
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
+                typeKey to "Conversation.CodeDeleted"
+            )
         }
 
         data class TypingIndicator(
@@ -411,6 +451,7 @@ sealed class Event(open val id: String) {
             val typingIndicatorMode: TypingIndicatorMode,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id.obfuscateId(),
                 typeKey to "Conversation.TypingIndicator",
                 conversationIdKey to conversationId.toLogString(),
                 "typingIndicatorMode" to typingIndicatorMode.name,
@@ -430,6 +471,21 @@ sealed class Event(open val id: String) {
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
                 "protocol" to protocol.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+
+        data class ConversationChannelAddPermission(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val channelAddPermission: ChannelAddPermission,
+            val senderUserId: UserId
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ChannelAddPermission",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                "channelAddPermission" to channelAddPermission.name,
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }

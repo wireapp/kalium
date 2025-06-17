@@ -18,11 +18,15 @@
 
 package com.wire.kalium.network.api.model
 
+import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV8
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV3
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV8
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequestV3
 
@@ -32,9 +36,21 @@ import com.wire.kalium.network.api.authenticated.conversation.UpdateConversation
 interface ApiModelMapper {
 
     fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3
+    fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
+    fun fromApiV8(response: ConversationResponseV8): ConversationResponse
+
+    /**
+     * Forcing new clients using >= v8 to have [consumable-notifications] and [legalhold-implicit-consent] capability.
+     */
+    fun toApiV8(request: RegisterClientRequest): RegisterClientRequest
+
+    /**
+     * Forcing new clients using < v8 to have [legalhold-implicit-consent] capability.
+     */
+    fun toApiV0ToV7(request: RegisterClientRequest): RegisterClientRequest
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
@@ -45,12 +61,30 @@ class ApiModelMapperImpl : ApiModelMapper {
             request.name,
             request.access,
             request.accessRole,
+            request.groupConversationType,
             request.convTeamInfo,
             request.messageTimer,
             request.receiptMode,
             request.conversationRole,
             request.protocol,
             request.creatorClient
+        )
+
+    override fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8 =
+        CreateConversationRequestV8(
+            qualifiedUsers = request.qualifiedUsers,
+            name = request.name,
+            access = request.access,
+            accessRole = request.accessRole,
+            groupConversationType = request.groupConversationType,
+            channelAddPermissionTypeDTO = request.channelAddPermissionTypeDTO,
+            convTeamInfo = request.convTeamInfo,
+            messageTimer = request.messageTimer,
+            receiptMode = request.receiptMode,
+            conversationRole = request.conversationRole,
+            protocol = request.protocol,
+            creatorClient = request.creatorClient,
+            cellEnabled = request.cellEnabled
         )
 
     override fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3 =
@@ -95,6 +129,62 @@ class ApiModelMapperImpl : ApiModelMapper {
             access = response.conversation.access,
             accessRole = response.conversation.accessRole,
             receiptMode = response.conversation.receiptMode,
-            publicKeys = response.publicKeys
+            publicKeys = response.publicKeys,
+            conversationGroupType = response.conversation.conversationGroupType
+        )
+
+    override fun fromApiV8(response: ConversationResponseV8): ConversationResponse =
+        ConversationResponse(
+            creator = response.creator,
+            members = response.members,
+            name = response.name,
+            id = response.id,
+            groupId = response.groupId,
+            epoch = response.epoch,
+            type = response.type,
+            messageTimer = response.messageTimer,
+            teamId = response.teamId,
+            protocol = response.protocol,
+            lastEventTime = response.lastEventTime,
+            mlsCipherSuiteTag = response.mlsCipherSuiteTag,
+            access = response.access,
+            accessRole = response.accessRole,
+            receiptMode = response.receiptMode,
+            publicKeys = response.publicKeys,
+            conversationGroupType = response.conversationGroupType,
+            channelAddUserPermissionTypeDTO = response.channelAddUserPermissionTypeDTO,
+            cellsState = response.cellsState
+        )
+
+    override fun toApiV0ToV7(request: RegisterClientRequest): RegisterClientRequest = RegisterClientRequest(
+        password = request.password,
+        preKeys = request.preKeys,
+        lastKey = request.lastKey,
+        deviceType = request.deviceType,
+        type = request.type,
+        label = request.label,
+        capabilities = request.capabilities?.toMutableSet()?.apply {
+            add(ClientCapabilityDTO.LegalHoldImplicitConsent)
+        }?.toList() ?: listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
+        model = request.model,
+        cookieLabel = request.cookieLabel,
+        secondFactorVerificationCode = request.secondFactorVerificationCode
+    )
+
+    override fun toApiV8(request: RegisterClientRequest): RegisterClientRequest =
+        RegisterClientRequest(
+            password = request.password,
+            preKeys = request.preKeys,
+            lastKey = request.lastKey,
+            deviceType = request.deviceType,
+            type = request.type,
+            label = request.label,
+            capabilities = request.capabilities?.toMutableSet()?.apply {
+                add(ClientCapabilityDTO.ConsumableNotifications)
+                add(ClientCapabilityDTO.LegalHoldImplicitConsent)
+            }?.toList() ?: listOf(ClientCapabilityDTO.ConsumableNotifications, ClientCapabilityDTO.LegalHoldImplicitConsent),
+            model = request.model,
+            cookieLabel = request.cookieLabel,
+            secondFactorVerificationCode = request.secondFactorVerificationCode
         )
 }

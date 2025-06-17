@@ -45,9 +45,11 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
+@Mockable
 internal interface UserEventReceiver : EventReceiver<Event.User>
 
 @Suppress("LongParameterList")

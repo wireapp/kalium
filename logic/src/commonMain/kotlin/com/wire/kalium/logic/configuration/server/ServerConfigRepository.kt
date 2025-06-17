@@ -18,28 +18,25 @@
 
 package com.wire.kalium.logic.configuration.server
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.failure.ServerConfigFailure
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi.Companion.MIN_API_VERSION
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
-import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.http.Url
 import kotlinx.coroutines.withContext
+import io.mockative.Mockable
 
+@Mockable
 interface ServerConfigRepository {
     val minimumApiVersionForPersonalToTeamAccountMigration: Int
 
@@ -71,16 +68,20 @@ interface ServerConfigRepository {
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ServerConfigDataSource(
-    private val dao: ServerConfigurationDAO,
-    private val versionApi: VersionApi,
-    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
+    override val serverConfigurationDAO: ServerConfigurationDAO,
+    override val versionApi: VersionApi,
+    override val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) : ServerConfigRepository {
+) : ServerConfigRepository, ServerConfigRepositoryExtension(
+    versionApi = versionApi,
+    serverConfigurationDAO = serverConfigurationDAO,
+    serverConfigMapper = serverConfigMapper
+) {
 
     override val minimumApiVersionForPersonalToTeamAccountMigration = MIN_API_VERSION
 
     override suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
-        wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(serverLinks)) }.fold({
+        wrapStorageRequest { serverConfigurationDAO.configByLinks(serverConfigMapper.toEntity(serverLinks)) }.fold({
             fetchApiVersionAndStore(serverLinks)
         }, {
             Either.Right(serverConfigMapper.fromEntity(it))
@@ -88,60 +89,14 @@ internal class ServerConfigDataSource(
 
     override suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
         withContext(dispatchers.io) {
-            wrapStorageRequest {
-                // check if such config is already inserted
-                val storedConfigId = dao.configByLinks(serverConfigMapper.toEntity(links))?.id
-                if (storedConfigId != null) {
-                    // if already exists then just update it
-                    dao.updateServerMetaData(
-                        id = storedConfigId,
-                        federation = metadata.federation,
-                        commonApiVersion = metadata.commonApiVersion.version
-                    )
-                    if (metadata.federation) dao.setFederationToTrue(storedConfigId)
-                    storedConfigId
-                } else {
-                    // otherwise insert new config
-                    val newId = uuid4().toString()
-                    dao.insert(
-                        ServerConfigurationDAO.InsertData(
-                            id = newId,
-                            apiBaseUrl = links.api,
-                            accountBaseUrl = links.accounts,
-                            webSocketBaseUrl = links.webSocket,
-                            blackListUrl = links.blackList,
-                            teamsUrl = links.teams,
-                            websiteUrl = links.website,
-                            isOnPremises = links.isOnPremises,
-                            title = links.title,
-                            federation = metadata.federation,
-                            domain = metadata.domain,
-                            commonApiVersion = metadata.commonApiVersion.version,
-                            apiProxyHost = links.apiProxy?.host,
-                            apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
-                            apiProxyPort = links.apiProxy?.port
-                        )
-                    )
-                    newId
-                }
-            }.flatMap { storedConfigId ->
-                wrapStorageRequest { dao.configById(storedConfigId) }
-            }.map {
-                serverConfigMapper.fromEntity(it)
-            }
+            storeServerLinksAndMetadata(links, metadata)
         }
-
-    override suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
-        fetchMetadata(links)
-            .flatMap { metaData ->
-                storeConfig(links, metaData)
-            }
 
     override suspend fun updateConfigMetaData(serverConfig: ServerConfig): Either<CoreFailure, Unit> =
         fetchMetadata(serverConfig.links)
             .flatMap { newMetaData ->
                 wrapStorageRequest {
-                    dao.updateServerMetaData(
+                    serverConfigurationDAO.updateServerMetaData(
                         id = serverConfig.id,
                         federation = newMetaData.federation,
                         commonApiVersion = newMetaData.commonApiVersion.version
@@ -150,22 +105,12 @@ internal class ServerConfigDataSource(
             }
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest { dao.configForUser(userId.toDao()) }
+        wrapStorageRequest { serverConfigurationDAO.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int> = wrapStorageRequest {
-        dao.getCommonApiVersion(domain)
+        serverConfigurationDAO.getCommonApiVersion(domain)
     }
 
-    private suspend fun fetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig.MetaData> =
-        wrapApiRequest { versionApi.fetchApiVersion(Url(serverLinks.api)) }
-            .flatMap {
-                when (it.commonApiVersion) {
-                    ApiVersionDTO.Invalid.New -> Either.Left(ServerConfigFailure.NewServerVersion)
-                    ApiVersionDTO.Invalid.Unknown -> Either.Left(ServerConfigFailure.UnknownServerVersion)
-                    is ApiVersionDTO.Valid -> Either.Right(it)
-                }
-            }.map { serverConfigMapper.fromDTO(it) }
-
-    override suspend fun getTeamUrlForUser(userId: UserId): String? = dao.teamUrlForUser(userId.toDao())
+    override suspend fun getTeamUrlForUser(userId: UserId): String? = serverConfigurationDAO.teamUrlForUser(userId.toDao())
 }

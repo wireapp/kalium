@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newTestServer
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -486,15 +485,73 @@ class LoginUseCaseTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenAccountSuspended_whenLoggingIn_thenReturnAccountSuspendedFailure() = runTest {
+        val invalidAuthCodeFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.accountSuspended)
+
+        val (arrangement, loginUseCase) = Arrangement()
+            .withLoginUsingEmailResulting(Either.Left(invalidAuthCodeFailure))
+            .withLoginUsingHandleResulting(Either.Left(invalidAuthCodeFailure))
+            .arrange()
+
+        // email
+        val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountSuspended, loginEmailResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
+        }.wasNotInvoked()
+
+        // user handle
+        val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountSuspended, loginHandleResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenAccountPendingActivation_whenLoggingIn_thenReturnAccountPendingActivationFailure() = runTest {
+        val invalidAuthCodeFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.accountPendingActivation)
+
+        val (arrangement, loginUseCase) = Arrangement()
+            .withLoginUsingEmailResulting(Either.Left(invalidAuthCodeFailure))
+            .withLoginUsingHandleResulting(Either.Left(invalidAuthCodeFailure))
+            .arrange()
+
+        // email
+        val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountPendingActivation, loginEmailResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
+        }.wasNotInvoked()
+
+        // user handle
+        val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        assertEquals(AuthenticationResult.Failure.AccountPendingActivation, loginHandleResult)
+
+        coVerify {
+            arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement {
-
-        @Mock
         val loginRepository = mock(LoginRepository::class)
-
-        @Mock
         val validateEmailUseCase = mock(ValidateEmailUseCase::class)
-
-        @Mock
         val validateUserHandleUseCase = mock(ValidateUserHandleUseCase::class)
 
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()

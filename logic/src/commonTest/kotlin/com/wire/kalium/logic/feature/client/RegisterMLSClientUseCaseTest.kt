@@ -32,9 +32,10 @@ import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrange
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.MLS_CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.MLSCiphersuite
+import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -73,7 +74,7 @@ class RegisterMLSClientUseCaseTest {
                 arrangement.clientRepository.registerMLSClient(
                     eq(TestClient.CLIENT_ID),
                     eq(Arrangement.MLS_PUBLIC_KEY),
-                    eq(CipherSuite.Companion.fromTag(MLS_CIPHER_SUITE))
+                    eq(MLS_CIPHER_SUITE.toModel())
                 )
             }.wasInvoked(exactly = once)
 
@@ -110,7 +111,7 @@ class RegisterMLSClientUseCaseTest {
                 arrangement.clientRepository.registerMLSClient(
                     eq(TestClient.CLIENT_ID),
                     eq(Arrangement.MLS_PUBLIC_KEY),
-                    eq(CipherSuite.Companion.fromTag(MLS_CIPHER_SUITE))
+                    eq(MLS_CIPHER_SUITE.toModel())
                 )
             }.wasNotInvoked()
 
@@ -142,7 +143,7 @@ class RegisterMLSClientUseCaseTest {
                 arrangement.clientRepository.registerMLSClient(
                     eq(TestClient.CLIENT_ID),
                     eq(Arrangement.MLS_PUBLIC_KEY),
-                    eq(CipherSuite.Companion.fromTag(MLS_CIPHER_SUITE))
+                    eq(MLS_CIPHER_SUITE.toModel())
                 )
             }.wasInvoked(exactly = once)
 
@@ -154,23 +155,11 @@ class RegisterMLSClientUseCaseTest {
         }
 
     private class Arrangement {
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         var mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val keyPackageRepository = mock(KeyPackageRepository::class)
-
-        @Mock
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
@@ -209,7 +198,7 @@ class RegisterMLSClientUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withGetPublicKey(publicKey: ByteArray, cipherSuite: UShort) = apply {
+        suspend fun withGetPublicKey(publicKey: ByteArray, cipherSuite: MLSCiphersuite) = apply {
             coEvery {
                 mlsClient.getPublicKey()
             }.returns(publicKey to cipherSuite)
@@ -231,7 +220,7 @@ class RegisterMLSClientUseCaseTest {
 
         companion object {
             val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
-            val MLS_CIPHER_SUITE = 1.toUShort()
+            val MLS_CIPHER_SUITE = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             const val REFILL_AMOUNT = 100
             val RANDOM_URL = "https://random.rn"
             val E2EI_TEAM_SETTINGS = E2EISettings(

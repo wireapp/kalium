@@ -52,7 +52,7 @@ class BackupScope internal constructor(
         )
 
     val verify: VerifyBackupUseCase
-        get() = VerifyBackupUseCaseImpl(kaliumFileSystem)
+        get() = VerifyBackupUseCaseImpl(userId, kaliumFileSystem)
 
     private val restoreWeb: RestoreWebBackupUseCase
         get() = RestoreWebBackupUseCaseImpl(

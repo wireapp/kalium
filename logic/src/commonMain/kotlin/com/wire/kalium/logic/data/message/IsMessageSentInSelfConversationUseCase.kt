@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.common.functional.getOrElse
+import io.mockative.Mockable
 
+@Mockable
 internal interface IsMessageSentInSelfConversationUseCase {
     suspend operator fun invoke(message: Message): Boolean
 }

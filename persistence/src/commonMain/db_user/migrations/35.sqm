@@ -124,4 +124,3 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.messag
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull

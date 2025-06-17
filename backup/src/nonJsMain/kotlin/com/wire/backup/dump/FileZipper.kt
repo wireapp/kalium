@@ -17,10 +17,13 @@
  */
 package com.wire.backup.dump
 
+import okio.Path
+
 public fun interface FileZipper {
     /**
      * Joins all file entries into a single zip archive.
      * Returns the path to the zipped archived.
      */
-    public fun zip(entries: List<String>): String
+    @Throws(Throwable::class)
+    public fun zip(entries: List<String>, outputDirectory: Path): String
 }

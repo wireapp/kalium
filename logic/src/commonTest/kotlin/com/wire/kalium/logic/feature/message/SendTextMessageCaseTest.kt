@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -40,7 +41,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -286,29 +286,13 @@ class SendTextMessageCaseTest {
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val assetRepository = mock(AssetRepository::class)
-
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         val userPropertyRepository = mock(UserPropertyRepository::class)
-
-        @Mock
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
-
-        @Mock
         val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
         suspend fun withSendMessageSuccess() = apply {

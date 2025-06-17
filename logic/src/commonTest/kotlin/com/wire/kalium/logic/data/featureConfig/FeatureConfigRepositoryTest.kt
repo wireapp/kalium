@@ -37,7 +37,6 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMess
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -88,7 +87,8 @@ class FeatureConfigRepositoryTest {
                 Instant.DISTANT_FUTURE,
                 Instant.DISTANT_FUTURE,
                 Status.ENABLED
-            )
+            ),
+            ChannelFeatureConfiguration.Disabled
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -171,10 +171,10 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.MLSMigration(
                 MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
-            )
+            ),
+            FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED)
         )
 
-        @Mock
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)
 
         var featureConfigRepository = FeatureConfigDataSource(featureConfigApi)

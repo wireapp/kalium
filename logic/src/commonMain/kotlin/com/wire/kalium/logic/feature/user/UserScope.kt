@@ -141,6 +141,7 @@ class UserScope internal constructor(
             e2EIRepository = e2EIRepository,
             userRepository = userRepository,
             coroutineScope = userCoroutineScope,
+            conversationRepository = conversationRepository,
         )
     val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 

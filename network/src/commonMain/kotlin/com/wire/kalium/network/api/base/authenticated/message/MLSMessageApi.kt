@@ -20,8 +20,10 @@ package com.wire.kalium.network.api.base.authenticated.message
 
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 import kotlin.jvm.JvmInline
 
+@Mockable
 interface MLSMessageApi {
 
     /**
@@ -50,7 +52,7 @@ interface MLSMessageApi {
      *
      * @param message MLS Message
      */
-    suspend fun sendMessage(message: Message): NetworkResponse<SendMLSMessageResponse>
+    suspend fun sendMessage(message: ByteArray): NetworkResponse<SendMLSMessageResponse>
 
     /**
      * Send an MLS commit bundle to a MLS group. The destination group is encoded into the message itself.

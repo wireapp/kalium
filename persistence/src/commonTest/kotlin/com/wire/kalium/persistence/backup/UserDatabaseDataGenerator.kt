@@ -277,7 +277,11 @@ class UserDatabaseDataGenerator(
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                    isChannel = false,
+                    channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+                    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                    wireCell = null,
                 )
             )
 
@@ -324,7 +328,11 @@ class UserDatabaseDataGenerator(
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -395,7 +403,11 @@ class UserDatabaseDataGenerator(
                 archivedInstant = null,
                 mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+                legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                isChannel = false,
+                channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+                channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                wireCell = null,
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -465,7 +477,11 @@ class UserDatabaseDataGenerator(
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                    isChannel = false,
+                    channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+                    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                    wireCell = null,
                 )
             )
 
@@ -513,7 +529,11 @@ class UserDatabaseDataGenerator(
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                     proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+                    isChannel = false,
+                    channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+                    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+                    wireCell = null,
                 )
             )
 
@@ -583,67 +603,6 @@ class UserDatabaseDataGenerator(
 
         return generatedAssets
     }
-
-    @Suppress("StringTemplate")
-    suspend fun generateAndInsertMessageAssetContent(
-        conversationAmount: Int,
-        assetAmountPerConversation: Int
-    ): List<ConversationEntity> {
-        val conversationPrefix = "${databasePrefix}Conversation${generatedConversationsCount}"
-
-        for (index in generatedConversationsCount + 1..conversationAmount) {
-            val conversationId = QualifiedIDEntity(
-                "${conversationPrefix}Value$index",
-                "${conversationPrefix}Domain$index"
-            )
-
-            val conversationType = ConversationEntity.Type.values()[index % ConversationEntity.Type.values().size]
-
-            val sanitizedConversationType =
-                if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
-                    ConversationEntity.Type.values()[(index + 1) % ConversationEntity.Type.values().size]
-                else conversationType
-
-            userDatabaseBuilder.conversationDAO.insertConversation(
-                ConversationEntity(
-                    id = conversationId,
-                    name = "${conversationPrefix}Name$index",
-                    type = sanitizedConversationType,
-                    teamId = null,
-                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                    mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
-                    mutedTime = 0,
-                    removedBy = null,
-                    creatorId = "${conversationPrefix}CreatorId$index",
-                    lastNotificationDate = DEFAULT_DATE,
-                    lastModifiedDate = DEFAULT_DATE,
-                    lastReadDate = DEFAULT_DATE,
-                    access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-                    receiptMode = DEFAULT_RECEIPT_MODE,
-                    messageTimer = null,
-                    userMessageTimer = null,
-                    archived = false,
-                    archivedInstant = null,
-                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
-                )
-            )
-
-            generatedConversationsCount += 1
-
-            userDatabaseBuilder.messageDAO.insertOrIgnoreMessages(
-                generateAssetMessages(
-                    amount = assetAmountPerConversation,
-                    conversationIDEntity = conversationId
-                )
-            )
-        }
-
-        return userDatabaseBuilder.conversationDAO.getAllConversations().first()
-    }
-
 }
 
 enum class MessageType {

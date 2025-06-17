@@ -18,9 +18,11 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCaseResult
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
+@Mockable
 interface EndCallResultListener {
     suspend fun observeCallEndedResult(): Flow<EndCallResult>
     suspend fun onCallEndedBecauseOfVerificationDegraded()

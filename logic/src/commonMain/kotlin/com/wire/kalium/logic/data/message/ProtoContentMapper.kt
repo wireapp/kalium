@@ -18,8 +18,12 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.toModel
+import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -29,14 +33,15 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.Attachment
 import com.wire.kalium.protobuf.messages.Button
 import com.wire.kalium.protobuf.messages.ButtonAction
 import com.wire.kalium.protobuf.messages.ButtonActionConfirmation
 import com.wire.kalium.protobuf.messages.Calling
+import com.wire.kalium.protobuf.messages.CellAsset
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
 import com.wire.kalium.protobuf.messages.Composite
@@ -54,14 +59,18 @@ import com.wire.kalium.protobuf.messages.Location
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
+import com.wire.kalium.protobuf.messages.Multipart
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
+import pbandk.Message
 
+@Mockable
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
@@ -148,7 +157,60 @@ class ProtoContentMapperImpl(
 
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
             is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
+            is MessageContent.Multipart -> packMultipart(readableContent, expectsReadConfirmation, legalHoldStatus)
         }
+    }
+
+    private fun packMultipart(
+        readableContent: MessageContent.Multipart,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Multipart {
+        val linkPreview = readableContent.linkPreviews.map { linkPreviewMapper.fromModelToProto(it) }
+        val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
+        val quote = readableContent.quotedMessageReference?.let {
+            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+        }
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
+        val attachments = readableContent.attachments.map { attachment ->
+            when (attachment) {
+                is AssetContent ->
+                    Attachment(
+                        content = Attachment.Content.Asset(
+                            asset = assetMapper.fromAssetContentToProtoAssetMessage(
+                                messageContent = MessageContent.Asset(value = attachment),
+                                expectsReadConfirmation = expectsReadConfirmation,
+                                legalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus),
+                            )
+                        )
+                    )
+                is CellAssetContent ->
+                    Attachment(
+                        content = Attachment.Content.CellAsset(
+                            cellAsset = CellAsset(
+                                uuid = attachment.id,
+                                contentType = attachment.mimeType,
+                                initialName = attachment.assetPath,
+                                initialSize = attachment.assetSize,
+                                initialMetaData = attachment.metadata?.toProto()
+                            )
+                        )
+                    )
+            }
+        }
+        return GenericMessage.Content.Multipart(
+            Multipart(
+                text = Text(
+                    content = readableContent.value ?: "",
+                    linkPreview = linkPreview,
+                    mentions = mentions,
+                    quote = quote,
+                ),
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = protoLegalHoldStatus,
+                attachments = attachments,
+            )
+        )
     }
 
     private fun packLocation(
@@ -269,7 +331,8 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited,
             is MessageContent.DataTransfer,
-            is MessageContent.InCallEmoji -> throw IllegalArgumentException(
+            is MessageContent.InCallEmoji,
+            is MessageContent.Multipart -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
         }
@@ -337,7 +400,7 @@ class ProtoContentMapperImpl(
         genericMessage: GenericMessage,
         encodedContent: PlainMessageBlob
     ): MessageContent.FromProto {
-        val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
+        val typeName = genericMessage.content?.value?.let { it as? Message }?.descriptor?.name
 
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent.value)
@@ -397,9 +460,42 @@ class ProtoContentMapperImpl(
             }
 
             is GenericMessage.Content.InCallHandRaise -> MessageContent.Ignored
+            is GenericMessage.Content.Multipart -> unpackMultipart(protoContent.value)
         }
         return readableContent
     }
+
+    private fun unpackMultipart(
+        protoContent: Multipart
+    ): MessageContent.FromProto = MessageContent.Multipart(
+        value = protoContent.text?.content,
+        linkPreviews = protoContent.text?.linkPreview?.mapNotNull { linkPreviewMapper.fromProtoToModel(it) } ?: emptyList(),
+        mentions = protoContent.text?.mentions?.mapNotNull { messageMentionMapper.fromProtoToModel(it) } ?: emptyList(),
+        quotedMessageReference = protoContent.text?.quote?.let {
+            MessageContent.QuoteReference(
+                quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
+            )
+        },
+        quotedMessageDetails = null,
+        attachments = protoContent.attachments.mapNotNull { attachment ->
+            when (val content = attachment.content) {
+                is Attachment.Content.Asset -> {
+                    // TODO: implement support for regular assets WPB-16590
+                    return MessageContent.Ignored
+                }
+                is Attachment.Content.CellAsset -> CellAssetContent(
+                    id = content.value.uuid,
+                    versionId = "",
+                    mimeType = content.value.contentType,
+                    assetPath = content.value.initialName,
+                    assetSize = content.value.initialSize,
+                    metadata = content.value.initialMetaData?.toModel(),
+                    transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
+                )
+                null -> null
+            }
+        },
+    )
 
     private fun unpackLocation(
         protoContent: GenericMessage.Content.Location

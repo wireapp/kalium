@@ -61,6 +61,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
+import com.wire.kalium.persistence.dao.event.EventDAO
+import com.wire.kalium.persistence.dao.event.EventDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -70,7 +72,11 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -165,7 +171,9 @@ class UserDatabaseBuilder internal constructor(
         MessageDraftAdapter = TableMapper.messageDraftsAdapter,
         LastMessageAdapter = TableMapper.lastMessageAdapter,
         LabeledConversationAdapter = TableMapper.labeledConversationAdapter,
-        ConversationFolderAdapter = TableMapper.conversationFolderAdapter
+        ConversationFolderAdapter = TableMapper.conversationFolderAdapter,
+        MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
+        MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
     )
 
     init {
@@ -188,6 +196,12 @@ class UserDatabaseBuilder internal constructor(
         get() = ConnectionDAOImpl(
             database.connectionsQueries,
             database.conversationsQueries,
+            queriesContext
+        )
+
+    val eventDAO: EventDAO
+        get() = EventDAOImpl(
+            database.eventsQueries,
             queriesContext
         )
 
@@ -264,6 +278,7 @@ class UserDatabaseBuilder internal constructor(
     val messageDAO: MessageDAO
         get() = MessageDAOImpl(
             database.messagesQueries,
+            database.messageAttachmentsQueries,
             database.messageAssetViewQueries,
             database.notificationQueries,
             database.conversationsQueries,
@@ -306,6 +321,7 @@ class UserDatabaseBuilder internal constructor(
         get() = MigrationDAOImpl(
             database.migrationQueries,
             database.messagesQueries,
+            database.messageAttachmentsQueries,
             database.unreadEventsQueries,
             database.conversationsQueries,
             database.buttonContentQueries,
@@ -317,9 +333,15 @@ class UserDatabaseBuilder internal constructor(
     val searchDAO: SearchDAO get() = SearchDAOImpl(database.searchQueries, queriesContext)
     val conversationMetaDataDAO: ConversationMetaDataDAO
         get() = ConversationMetaDataDAOImpl(
-            database.conversationsQueries,
+            database.conversationMetadataQueries,
             queriesContext
         )
+
+    val messageAttachmentDraftDao: MessageAttachmentDraftDao
+        get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries)
+
+    val messageAttachments: MessageAttachmentsDao
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

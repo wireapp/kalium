@@ -36,8 +36,10 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
+@Mockable
 interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>
@@ -58,7 +60,8 @@ internal class MLSMigratorImpl(
         selfTeamIdProvider().flatMap {
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
-            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.PROTEUS, teamId)
+            // TODO: Add support for channels here. Although... channels should always be MLS
+            conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.PROTEUS, teamId)
                 .flatMap {
                     it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         migrate(conversationId)
@@ -70,7 +73,8 @@ internal class MLSMigratorImpl(
         selfTeamIdProvider().flatMap {
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
-            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.MIXED, teamId)
+            // TODO: Add support for channels here. Although... channels should always be MLS
+            conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.MIXED, teamId)
                 .flatMap {
                     it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         finalise(conversationId)

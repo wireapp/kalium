@@ -34,7 +34,6 @@ buildscript {
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
-        classpath("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
         classpath("io.github.leandroborgesferreira:dag-command:${libs.versions.dagCommand.get()}")
     }
 }
@@ -43,6 +42,7 @@ repositories {
     wireDetektRulesRepo()
     google()
     mavenCentral()
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 plugins {
@@ -52,6 +52,7 @@ plugins {
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
     alias(libs.plugins.completeKotlin)
+    alias(libs.plugins.compose.compiler) apply false
 }
 
 dependencies {
@@ -66,6 +67,9 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        // temporary repo containing mockative 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 is uploaded
+        // until mockative releases a new version with a proper fix
+        maven(url = "https://raw.githubusercontent.com/saleniuk/mockative/fix/duplicates-while-merging-dex-archives-mvn/release")
         google()
         mavenCentral()
     }
@@ -142,6 +146,7 @@ tasks.dokkaHtmlMultiModule.configure {}
 moduleGraphConfig {
     readmePath.set("./README.md")
     heading.set("#### Dependency Graph")
+    nestingEnabled.set(true)
 }
 
 tasks.register("runAllUnitTests") {

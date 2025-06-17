@@ -1,0 +1,74 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlin.Float;
+import kotlin.Int;
+import kotlin.String;
+import kotlin.collections.List;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE MessageAttachments (
+      asset_id TEXT NOT NULL,
+      asset_version_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      cell_asset INTEGER AS Boolean NOT NULL,
+      local_path TEXT,
+      content_url TEXT,
+      preview_url TEXT,
+      asset_mime_type TEXT NOT NULL,
+      asset_size INTEGER,
+      asset_path TEXT,
+
+      content_hash TEXT,
+
+      -- metadata fields
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
+
+      asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id, asset_id)
+);
+
+insertCellAttachment:
+INSERT INTO MessageAttachments (
+    asset_id,
+    asset_version_id,
+    message_id,
+    conversation_id,
+    cell_asset,
+    asset_mime_type,
+    local_path,
+    asset_path,
+    asset_size,
+    asset_width,
+    asset_height,
+    asset_duration_ms,
+    asset_transfer_status
+) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+getAttachment:
+SELECT * FROM MessageAttachments WHERE asset_id = ?;
+
+setPreviewUrl:
+UPDATE MessageAttachments SET preview_url = ? WHERE asset_id = ?;
+
+setLocalPath:
+UPDATE MessageAttachments SET local_path = ? WHERE asset_id = ?;
+
+getAssetPath:
+SELECT asset_path FROM MessageAttachments WHERE asset_id = ?;
+
+setTransferStatus:
+UPDATE MessageAttachments SET asset_transfer_status = ? WHERE asset_id = ?;
+
+updateAttachment:
+UPDATE MessageAttachments SET content_url = ?, content_hash = ?, asset_path = ? WHERE asset_id = ?;
+
+getAttachments:
+SELECT * FROM MessageAttachments WHERE message_id = ? AND conversation_id = ?;
+
+getAllAttachments:
+SELECT * FROM MessageAttachments;

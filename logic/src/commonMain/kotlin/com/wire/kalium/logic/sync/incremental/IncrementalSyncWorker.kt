@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 /**
  * Gathers and processes IncrementalSync events.
  */
+@Mockable
 interface IncrementalSyncWorker {
     /**
      * Upon collection, will start collecting and processing events,
@@ -51,13 +53,18 @@ internal class IncrementalSyncWorkerImpl(
         val sourceJob = launch {
             eventGatherer.currentSource.collect { send(it) }
         }
+
         launch {
-            eventGatherer.gatherEvents().cancellable().collect {
-                // TODO make sure that event process is not cancel in a midway
-                eventProcessor.processEvent(it).onFailure { failure ->
-                    throw KaliumSyncException("Failed to process event. Aborting Sync for a retry", failure)
+            eventGatherer.gatherEvents()
+                .collect { envelope ->
+                    eventProcessor.processEvent(envelope).onFailure {
+                        throw KaliumSyncException("Processing failed", it)
+                    }
                 }
-            }
+        }
+
+        launch {
+            eventGatherer.liveEvents().cancellable().collect {}
             // When events are all consumed, cancel the source job to complete the channelFlow
             sourceJob.cancel()
             logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")

@@ -19,11 +19,12 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -42,7 +43,6 @@ import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArr
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -375,43 +375,19 @@ class ConversationEventReceiverTest {
         CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
         CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl() {
 
-        @Mock
         val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
-
-        @Mock
         val receiptModeUpdateEventHandler = mock(ReceiptModeUpdateEventHandler::class)
-
-        @Mock
         val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
-
-        @Mock
         val mlsWelcomeEventHandler = mock(MLSWelcomeEventHandler::class)
-
-        @Mock
         val memberChangeEventHandler = mock(MemberChangeEventHandler::class)
-
-        @Mock
         val memberLeaveEventHandler = mock(MemberLeaveEventHandler::class)
-
-        @Mock
         val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
-
-        @Mock
         val newMessageEventHandler = mock(NewMessageEventHandler::class)
-
-        @Mock
         val newConversationEventHandler = mock(NewConversationEventHandler::class)
-
-        @Mock
         val deletedConversationEventHandler = mock(DeletedConversationEventHandler::class)
-
-        @Mock
         val typingIndicatorHandler = mock(TypingIndicatorHandler::class)
-
-        @Mock
         val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
-
-        @Mock
+        val channelAddPermissionUpdateEventHandler = mock(ChannelAddPermissionUpdateEventHandler::class)
         val accessUpdateEventHandler = mock(AccessUpdateEventHandler::class)
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
@@ -429,6 +405,7 @@ class ConversationEventReceiverTest {
             codeDeletedHandler = codeDeletedHandler,
             typingIndicatorHandler = typingIndicatorHandler,
             protocolUpdateEventHandler = protocolUpdateEventHandler,
+            channelAddPermissionUpdateEventHandler = channelAddPermissionUpdateEventHandler,
             accessUpdateEventHandler = accessUpdateEventHandler
         )
 

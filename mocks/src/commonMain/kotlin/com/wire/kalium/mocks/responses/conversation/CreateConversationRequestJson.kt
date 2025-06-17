@@ -23,6 +23,7 @@ import com.wire.kalium.mocks.responses.samples.QualifiedIDSamples
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -39,7 +40,9 @@ object CreateConversationRequestJson {
         receiptMode = ReceiptMode.DISABLED,
         conversationRole = "WIRE_MEMBER",
         protocol = ConvProtocol.PROTEUS,
-        creatorClient = null
+        creatorClient = null,
+        groupConversationType = GroupConversationType.CHANNEL,
+        cellEnabled = null
     )
 
     val v0 = ValidJsonProvider(
@@ -57,6 +60,8 @@ object CreateConversationRequestJson {
         |   "message_timer": ${it.messageTimer},
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
+        |   "group_conv_type": "channel",
+        |   "add_permission": "admins",
         |   "qualified_users": [
         |       {
         |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",
@@ -70,7 +75,7 @@ object CreateConversationRequestJson {
         |   }
         |}
         """.trimMargin()
-        }
+    }
 
     fun v3(accessRole: List<ConversationAccessRoleDTO>? = null) = ValidJsonProvider(
         createConversationRequest.copy(
@@ -89,6 +94,7 @@ object CreateConversationRequestJson {
         |   "message_timer": ${it.messageTimer},
         |   "name": "${it.name}",
         |   "protocol": "${it.protocol}",
+        |   "group_conv_type": "channel",
         |   "qualified_users": [
         |       {
         |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",
@@ -104,4 +110,33 @@ object CreateConversationRequestJson {
         """.trimMargin()
     }
 
+    fun v8() = ValidJsonProvider(createConversationRequest) {
+        """
+        |{
+        |   "qualified_users": [
+        |       {
+        |           "id": "${it.qualifiedUsers?.get(0)?.value}",
+        |           "domain": "${it.qualifiedUsers?.get(0)?.domain}"
+        |       }
+        |   ],
+        |   "name": "${it.name}",
+        |   "access": [
+        |       "${it.access?.get(0)}"
+        |   ],
+        |   "access_role": [
+        |       "${it.accessRole?.get(0)}"
+        |   ],
+        |   "group_conv_type": "${it.groupConversationType?.name?.lowercase()}",
+        |   "team": {
+        |       "managed": false,
+        |       "teamid": "${it.convTeamInfo?.teamId}"
+        |   },
+        |   "message_timer": ${it.messageTimer},
+        |   "protocol": "${it.protocol}",
+        |   "add_permission": "${it.channelAddPermissionTypeDTO.name.lowercase()}",
+        |   "receipt_mode": ${it.receiptMode.value},
+        |   "conversation_role": "${it.conversationRole}"
+        |}
+        """.trimMargin()
+    }
 }

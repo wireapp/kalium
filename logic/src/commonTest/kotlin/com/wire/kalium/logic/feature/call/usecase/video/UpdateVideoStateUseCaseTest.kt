@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.doesNothing
@@ -40,8 +39,7 @@ import kotlin.test.Test
 
 class UpdateVideoStateUseCaseTest {
 
-    @Mock
-    private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock(CallRepository::class)
 
     private lateinit var updateVideoStateUseCase: UpdateVideoStateUseCase
 
@@ -62,7 +60,7 @@ class UpdateVideoStateUseCaseTest {
             isCbrEnabled = false,
             callerId = TestCall.CALLER_ID,
             conversationName = "",
-            Conversation.Type.ONE_ON_ONE,
+            Conversation.Type.OneOnOne,
             null,
             null
         )

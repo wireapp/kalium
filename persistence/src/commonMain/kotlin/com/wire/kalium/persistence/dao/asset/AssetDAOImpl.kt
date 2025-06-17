@@ -95,4 +95,8 @@ class AssetDAOImpl internal constructor(
     override suspend fun deleteAsset(key: String) = withContext(queriesContext) {
         queries.deleteAsset(key)
     }
+
+    override suspend fun getAssets(): List<AssetEntity> = withContext(queriesContext) {
+        queries.getAssets(mapper::fromAssets).executeAsList()
+    }
 }

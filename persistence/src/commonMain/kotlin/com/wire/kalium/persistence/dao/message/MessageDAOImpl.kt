@@ -22,6 +22,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
@@ -53,6 +54,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class MessageDAOImpl internal constructor(
     private val queries: MessagesQueries,
+    private val attachmentsQueries: MessageAttachmentsQueries,
     private val assetViewQueries: MessageAssetViewQueries,
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -67,6 +69,7 @@ internal class MessageDAOImpl internal constructor(
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
+        attachmentsQueries,
         unreadEventsQueries,
         conversationsQueries,
         buttonContentQueries,
@@ -119,10 +122,14 @@ internal class MessageDAOImpl internal constructor(
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsList().firstOrNull() == 1L
 
-    @Deprecated("For test only!")
-    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
+    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>, withUnreadEvents: Boolean) = withContext(coroutineContext) {
         queries.transaction {
-            messages.forEach { insertInDB(it) }
+            messages.forEach {
+                insertInDB(
+                    message = it,
+                    withUnreadEvents = withUnreadEvents
+                )
+            }
         }
     }
 
@@ -142,14 +149,14 @@ internal class MessageDAOImpl internal constructor(
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
-    private fun insertInDB(message: MessageEntity) {
+    private fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true) {
         // do not add withContext
         if (!updateIdIfAlreadyExists(message)) {
             if (isValidAssetMessageUpdate(message)) {
                 updateAssetMessage(message)
                 return
             } else {
-                insertMessageOrIgnore(message)
+                insertMessageOrIgnore(message, withUnreadEvents)
             }
         }
     }
@@ -526,6 +533,34 @@ internal class MessageDAOImpl internal constructor(
         withContext(coroutineContext) {
             queries.selectNextAudioMessage(conversationId, prevMessageId).executeAsOneOrNull()
         }
+
+    override fun getMessagesPaged(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        pageSize: Int,
+        onPage: (List<MessageEntity>) -> Unit,
+    ) {
+        queries.transaction {
+            var currentOffset = 0L
+            var page: List<MessageEntity>
+
+            do {
+                page = getMessagesPage(contentTypes, currentOffset, pageSize.toLong())
+                onPage(page)
+                currentOffset += pageSize
+            } while (page.size == pageSize)
+        }
+    }
+
+    private fun getMessagesPage(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        offset: Long,
+        pageSize: Long,
+    ) = queries.selectForBackup(
+        contentType = contentTypes,
+        limit = pageSize,
+        offset = offset,
+        mapper::toEntityMessageFromView
+    ).executeAsList()
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 

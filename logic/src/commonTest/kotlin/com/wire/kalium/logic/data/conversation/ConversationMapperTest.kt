@@ -46,7 +46,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
@@ -55,32 +54,19 @@ import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class ConversationMapperTest {
 
-    @Mock
     val idMapper = mock(IdMapper::class)
-
-    @Mock
     val protocolInfoMapper = mock(ProtocolInfoMapper::class)
-
-    @Mock
     val conversationStatusMapper = mock(ConversationStatusMapper::class)
-
-    @Mock
     val userAvailabilityStatusMapper = mock(AvailabilityStatusMapper::class)
-
-    @Mock
     val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
-
-    @Mock
     val connectionStatusMapper = mock(ConnectionStatusMapper::class)
-
-    @Mock
     val conversationMemberMapper = mock(ConversationRoleMapper::class)
-
-    @Mock
     val messageMapper = mock(MessageMapper::class)
 
     private lateinit var conversationMapper: ConversationMapper
@@ -157,6 +143,68 @@ class ConversationMapperTest {
         verify {
             idMapper.fromApiToDao(originalConversationId)
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAChannelConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldBeAChannel() {
+        val response = CONVERSATION_RESPONSE.copy(
+            conversationGroupType = ConversationResponse.GroupType.CHANNEL,
+            type = ConversationResponse.Type.GROUP
+        )
+
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            QualifiedIDEntity("transformed", "tDomain")
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertTrue(result.isChannel)
+    }
+
+    @Test
+    fun givenARegularGroupConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldBeARegularGroup() {
+        val response = CONVERSATION_RESPONSE.copy(
+            conversationGroupType = ConversationResponse.GroupType.REGULAR_GROUP,
+            type = ConversationResponse.Type.GROUP
+        )
+
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            QualifiedIDEntity("transformed", "tDomain")
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertFalse(result.isChannel)
     }
 
     @Test
@@ -361,6 +409,7 @@ class ConversationMapperTest {
         isSelfMessage = false,
         senderUserId = TestUser.OTHER.id,
     )
+
     private fun testConversationLastMessage(
         lastMessage: MessagePreviewEntity? = null,
         messageDraft: MessageDraftEntity? = null,

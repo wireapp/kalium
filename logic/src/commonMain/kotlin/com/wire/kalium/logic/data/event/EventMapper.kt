@@ -43,6 +43,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
+import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
@@ -74,8 +77,36 @@ class EventMapper(
         val id = eventResponse.id
         val source = if (isLive) EventSource.LIVE else EventSource.PENDING
         return eventResponse.payload?.map { eventContentDTO ->
-            EventEnvelope(fromEventContentDTO(id, eventContentDTO), EventDeliveryInfo(eventResponse.transient, source))
+            EventEnvelope(
+                fromEventContentDTO(id, eventContentDTO),
+                EventDeliveryInfo.Legacy(eventResponse.transient, source)
+            )
         } ?: listOf()
+    }
+
+    /**
+     * Converts a single processed event to an acknowledge request.
+     * Note: we can extend this when we want to implement multiple ack at once.
+     */
+    fun toAcknowledgeRequest(
+        eventDeliveryInfo: EventDeliveryInfo.Async,
+        multiple: Boolean = false
+    ): EventAcknowledgeRequest {
+        return EventAcknowledgeRequest(
+            type = AcknowledgeType.ACK,
+            data = AcknowledgeData(
+                deliveryTag = eventDeliveryInfo.deliveryTag,
+                multiple = multiple
+            )
+        )
+    }
+
+    internal companion object {
+        /**
+         * Full sync acknowledge request for notifications missed.
+         */
+        val FULL_ACKNOWLEDGE_REQUEST: EventAcknowledgeRequest =
+            EventAcknowledgeRequest(type = AcknowledgeType.ACK_FULL_SYNC)
     }
 
     @Suppress("ComplexMethod")
@@ -111,6 +142,8 @@ class EventMapper(
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
+            EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
         }
 
     private fun conversationTyping(
@@ -183,6 +216,16 @@ class EventMapper(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         protocol = eventContentDTO.data.protocol.toModel(),
+        senderUserId = eventContentDTO.qualifiedFrom.toModel()
+    )
+
+    private fun conversationChannelPermissionUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ChannelAddPermissionUpdate,
+    ): Event = Event.Conversation.ConversationChannelAddPermission(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        channelAddPermission = eventContentDTO.data.channelAddPermissionTypeDTO.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
 
@@ -513,6 +556,8 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AppLock)
         )
 
+        // These features are NOT received through events. As FeatureConfig Events are deprecated
+        is FeatureConfigData.Channels,
         is FeatureConfigData.DigitalSignatures,
         is FeatureConfigData.Legalhold,
         is FeatureConfigData.SSO,

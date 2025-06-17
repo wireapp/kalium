@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
@@ -36,11 +35,9 @@ import kotlin.test.assertEquals
 
 class IsEligibleToStartCallUseCaseTest {
 
-    @Mock
-    val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock(UserConfigRepository::class)
 
-    @Mock
-    val callRepository = mock(CallRepository::class)
+        val callRepository = mock(CallRepository::class)
 
     private lateinit var isEligibleToStartCall: IsEligibleToStartCallUseCase
 
@@ -68,7 +65,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then
@@ -90,7 +87,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.ONE_ON_ONE
+                Conversation.Type.OneOnOne
             )
 
             // then
@@ -112,7 +109,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then
@@ -134,7 +131,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then
@@ -156,7 +153,7 @@ class IsEligibleToStartCallUseCaseTest {
             // when
             val result = isEligibleToStartCall(
                 conversationId,
-                Conversation.Type.GROUP
+                Conversation.Type.Group.Regular
             )
 
             // then

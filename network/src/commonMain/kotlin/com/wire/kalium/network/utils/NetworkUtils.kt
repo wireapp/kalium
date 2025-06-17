@@ -121,7 +121,7 @@ internal fun String.splitSetCookieHeader(): List<String> {
  * @return A new [NetworkResponse.Success] with the mapped result,
  * or [NetworkResponse.Error] if it was never a success to begin with
  */
-internal inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
+inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
     if (isSuccessful()) {
         NetworkResponse.Success(mapping(this.value), this.headers, this.httpCode)
     } else {

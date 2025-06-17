@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import io.mockative.Mockable
 
+@Mockable
 internal interface SyncConversationsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
@@ -39,7 +41,7 @@ internal class SyncConversationsUseCaseImpl(
     private val systemMessageInserter: SystemMessageInserter
 ) : SyncConversationsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
-        conversationRepository.getConversationIds(Conversation.Type.GROUP, Conversation.Protocol.PROTEUS)
+        conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Conversation.Protocol.PROTEUS)
             .flatMap { proteusConversationIds ->
                 conversationRepository.fetchConversations()
                     .flatMap {
@@ -50,7 +52,7 @@ internal class SyncConversationsUseCaseImpl(
     private suspend fun reportConversationsWithPotentialHistoryLoss(
         proteusConversationIds: List<ConversationId>
     ): Either<StorageFailure, Unit> =
-        conversationRepository.getConversationIds(Conversation.Type.GROUP, Conversation.Protocol.MLS)
+        conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Conversation.Protocol.MLS)
             .flatMap { mlsConversationIds ->
                 val conversationsWithUpgradedProtocol = mlsConversationIds.intersect(proteusConversationIds)
                 for (conversationId in conversationsWithUpgradedProtocol) {

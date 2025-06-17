@@ -64,11 +64,13 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
+@Mockable
 internal interface MessageRepository {
     /**
      * this fun should never be used directly, use PersistMessageUseCase() instead
@@ -153,10 +155,7 @@ internal interface MessageRepository {
         messageOption: BroadcastMessageOption
     ): Either<CoreFailure, Instant>
 
-    suspend fun sendMLSMessage(
-        conversationId: ConversationId,
-        message: MLSMessageApi.Message
-    ): Either<CoreFailure, MessageSent>
+    suspend fun sendMLSMessage(message: MLSMessageApi.Message): Either<CoreFailure, MessageSent>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
@@ -514,11 +513,10 @@ internal class MessageDataSource internal constructor(
     }
 
     override suspend fun sendMLSMessage(
-        conversationId: ConversationId,
         message: MLSMessageApi.Message
     ): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
-            mlsMessageApi.sendMessage(message)
+            mlsMessageApi.sendMessage(message.value)
         }.flatMap { response ->
             Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
         }

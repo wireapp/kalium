@@ -32,10 +32,12 @@ import com.wire.kalium.network.api.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.UpdateChannelAddPermissionResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -49,8 +51,10 @@ import com.wire.kalium.network.api.model.SubconversationId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface ConversationApi : BaseApi {
 
     /**
@@ -173,10 +177,16 @@ interface ConversationApi : BaseApi {
         conversationId: ConversationId,
         typingIndicatorMode: TypingIndicatorStatusDTO
     ): NetworkResponse<Unit>
+
     suspend fun updateProtocol(
         conversationId: ConversationId,
         protocol: ConvProtocol
     ): NetworkResponse<UpdateConversationProtocolResponse>
+
+    suspend fun updateChannelAddPermission(
+        conversationId: ConversationId,
+        channelAddPermission: ChannelAddPermissionDTO
+    ): NetworkResponse<UpdateChannelAddPermissionResponse>
 
     suspend fun guestLinkInfo(
         conversationId: ConversationId

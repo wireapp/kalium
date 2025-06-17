@@ -17,7 +17,6 @@
  */
 package com.wire.backup.ingest
 
-import co.touchlab.kermit.Logger
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupData
 import com.wire.backup.data.BackupDateTime
@@ -62,7 +61,6 @@ internal class MPBackupMapper {
             conversationId = it.conversationId.toProtoModel(),
             content = when (val content = it.content) {
                 is BackupMessageContent.Asset -> {
-                    Logger.d("MPBackupMapper") { "Mapping asset message to protobuf: ${content.metaData}" }
                     Content.Asset(
                         ExportedAsset(
                             content.mimeType,
@@ -126,7 +124,8 @@ internal class MPBackupMapper {
                     )
                 )
             },
-            webPk = it.webPrimaryKey?.toLong()
+            webPk = it.webPrimaryKey?.toLong(),
+            lastEditTime = it.lastEditTime?.toLongMilliseconds(),
         )
     }
 
@@ -154,7 +153,7 @@ internal class MPBackupMapper {
         )
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun fromMessageProtoToBackupModel(message: ExportedMessage): BackupMessage {
         val content = when (val protoContent = message.content) {
             is Content.Text -> {
@@ -219,7 +218,8 @@ internal class MPBackupMapper {
             senderClientId = message.senderClientId,
             creationDate = BackupDateTime(message.timeIso),
             content = content,
-            webPrimaryKey = message.webPk?.toInt()
+            webPrimaryKey = message.webPk?.toInt(),
+            lastEditTime = message.lastEditTime?.let { BackupDateTime(it) },
         )
     }
 

@@ -66,7 +66,6 @@ import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -346,7 +345,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_CONVERSATION_ID), eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
             }.wasInvoked(twice)
         }
     }
@@ -1006,37 +1005,16 @@ class MessageSenderTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         StaleEpochVerifierArrangement by StaleEpochVerifierArrangementImpl() {
-        @Mock
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
-
-        @Mock
+                val messageRepository: MessageRepository = mock(MessageRepository::class)
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
-
-        @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val sessionEstablisher = mock(SessionEstablisher::class)
-
-        @Mock
         val messageEnvelopeCreator: MessageEnvelopeCreator = mock(MessageEnvelopeCreator::class)
-
-        @Mock
         val mlsMessageCreator: MLSMessageCreator = mock(MLSMessageCreator::class)
-
-        @Mock
         val syncManager = mock(SyncManager::class)
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
-
-        @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
         val testScope = TestScope()
@@ -1159,7 +1137,7 @@ class MessageSenderTest {
         ) = apply {
             var invocationCounter = 0
             coEvery {
-                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times }, any())
+                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times })
             }.returns(result)
         }
 

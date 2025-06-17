@@ -49,10 +49,12 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
+@Mockable
 internal interface ApplicationMessageHandler {
 
     suspend fun handleContent(
@@ -116,6 +118,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                     is MessageContent.Composite -> Message.Visibility.VISIBLE
                     is MessageContent.Location -> Message.Visibility.VISIBLE
+                    is MessageContent.Multipart -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -244,7 +247,24 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.Composite -> persistMessage(message)
             is MessageContent.Location -> persistMessage(message)
+            is MessageContent.Multipart -> handleMultipartMessage(message, content)
         }
+    }
+
+    private suspend fun handleMultipartMessage(
+        message: Message.Regular,
+        messageContent: MessageContent.Multipart
+    ) {
+        val quotedReference = messageContent.quotedMessageReference
+        val adjustedQuoteReference = if (quotedReference != null) {
+            verifyMessageQuote(quotedReference, message)
+        } else {
+            messageContent.quotedMessageReference
+        }
+        val adjustedMessage = message.copy(
+            content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
+        )
+        persistMessage(adjustedMessage)
     }
 
     private suspend fun handleTextMessage(

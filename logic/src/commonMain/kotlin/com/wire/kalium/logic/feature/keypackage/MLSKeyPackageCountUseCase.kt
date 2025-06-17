@@ -26,14 +26,16 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.client.toModel
+import io.mockative.Mockable
 
 /**
  * This use case will return the current number of key packages.
  */
+@Mockable
 interface MLSKeyPackageCountUseCase {
     suspend operator fun invoke(fromAPI: Boolean = true): MLSKeyPackageCountResult
 }
@@ -61,7 +63,7 @@ internal class MLSKeyPackageCountUseCaseImpl(
             return MLSKeyPackageCountResult.Failure.NotEnabled
         }
 
-        val cipherSuite = mlsClientProvider.getMLSClient().map { CipherSuite.fromTag(it.getDefaultCipherSuite()) }
+        val cipherSuite = mlsClientProvider.getMLSClient().map { it.getDefaultCipherSuite().toModel() }
             .getOrElse { return MLSKeyPackageCountResult.Failure.Generic(it) }
 
         return keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite).fold(

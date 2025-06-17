@@ -18,24 +18,26 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -45,6 +47,7 @@ import kotlinx.coroutines.withContext
  * Handles incoming events from remote.
  * @see [Event]
  */
+@Mockable
 internal interface EventProcessor {
 
     /**
@@ -57,9 +60,8 @@ internal interface EventProcessor {
      * is not transient (see [EventDeliveryInfo.isTransient]).
      * If the processing fails, the last processed event ID will not be updated.
      * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
-     * @see EventRepository.lastProcessedEventId
      * @see EventDeliveryInfo.isTransient
-     * @see EventRepository.updateLastProcessedEventId
+     * @see EventRepository.setEventAsProcessed
      * @see EventDeliveryInfo
      * @see Event
      */
@@ -75,6 +77,7 @@ internal class EventProcessorImpl(
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
     private val federationEventReceiver: FederationEventReceiver,
+    private val missedNotificationsEventReceiver: MissedNotificationsEventReceiver,
     private val processingScope: CoroutineScope,
     logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
@@ -91,6 +94,7 @@ internal class EventProcessorImpl(
             logger.w("Skipping processing of ${event.toLogString()} due to debug option")
             Either.Right(Unit)
         } else {
+            logger.i("Starting processing of event: ${event.toLogString()}")
             withContext(NonCancellable) {
                 doProcess(event, deliveryInfo, eventEnvelope)
             }
@@ -116,15 +120,12 @@ internal class EventProcessorImpl(
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
-        }.onSuccess {
-            if (deliveryInfo.shouldUpdateLastProcessedEventId()) {
-                eventRepository.updateLastProcessedEventId(event.id)
-                logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")
-            } else {
-                logger.i("Skipping update of lastProcessedEventId: ${eventEnvelope.toLogString()}")
+            is Event.AsyncMissed -> {
+                missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
             }
+        }.onSuccess {
+            eventRepository.setEventAsProcessed(event.id)
+            logger.i("Event set as processed: ${eventEnvelope.toLogString()}")
         }
     }
-
-    private fun EventDeliveryInfo.shouldUpdateLastProcessedEventId(): Boolean = !isTransient
 }

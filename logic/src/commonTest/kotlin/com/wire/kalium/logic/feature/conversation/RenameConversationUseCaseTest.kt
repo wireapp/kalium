@@ -30,7 +30,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEvent
 import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -79,13 +78,9 @@ class RenameConversationUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
 
         val selfUserId = USER_ID

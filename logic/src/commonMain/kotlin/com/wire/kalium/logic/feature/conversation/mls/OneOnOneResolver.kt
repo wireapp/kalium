@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
@@ -38,6 +39,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -47,6 +49,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
+@Mockable
 interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(synchronizeUsers: Boolean = false): Either<CoreFailure, Unit>
     suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration = Duration.ZERO): Job
@@ -111,7 +114,8 @@ internal class OneOnOneResolverImpl(
         is CoreFailure.MissingKeyPackages,
         is NetworkFailure.ServerMiscommunication,
         is NetworkFailure.FederatedBackendFailure,
-        is CoreFailure.NoCommonProtocolFound
+        is CoreFailure.NoCommonProtocolFound,
+        is MLSFailure.MessageRejected
         -> {
             kaliumLogger.e("Resolving one-on-one failed $it, skipping")
             Either.Right(Unit)

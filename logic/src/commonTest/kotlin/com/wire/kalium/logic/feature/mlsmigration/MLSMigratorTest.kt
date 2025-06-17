@@ -44,7 +44,6 @@ import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -61,7 +60,7 @@ class MLSMigratorTest {
     @Test
     fun givenTeamConversation_whenMigrating_thenProtocolIsUpdatedToMixedAndGroupIsEstablished() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -103,7 +102,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnOngoingCall_whenMigrating_thenInsertSystemMessages() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -153,7 +152,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnError_whenMigrating_thenStillConsiderItASuccess() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -175,7 +174,7 @@ class MLSMigratorTest {
     @Test
     fun givenTeamConversation_whenFinalising_thenKnownUsersAreFetchedAndProtocolIsUpdatedToMls() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -201,7 +200,7 @@ class MLSMigratorTest {
     @Test
     fun givenAnError_whenFinalising_thenStillConsiderItASuccess() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
+            type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
 
@@ -216,23 +215,11 @@ class MLSMigratorTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val systemMessageInserter = mock(SystemMessageInserter::class)
-
-        @Mock
         val callRepository = mock(CallRepository::class)
 
         suspend fun withFetchAllOtherUsersSucceeding() = apply {
@@ -244,7 +231,7 @@ class MLSMigratorTest {
         suspend fun withGetProteusTeamConversationsReturning(conversationsIds: List<ConversationId>) = apply {
             coEvery {
                 conversationRepository.getConversationIds(
-                    Conversation.Type.GROUP,
+                    Conversation.Type.Group.Regular,
                     Conversation.Protocol.PROTEUS,
                     TeamId(value = "Some-team")
                 )

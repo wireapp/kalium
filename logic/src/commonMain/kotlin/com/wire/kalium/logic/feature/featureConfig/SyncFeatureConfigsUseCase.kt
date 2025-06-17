@@ -35,13 +35,16 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
+import io.mockative.Mockable
 
 /**
  * This use case is to get the file sharing status of the team management settings from the server and
  * save it in the local storage (in Android case is shared preference)
  */
+@Mockable
 internal interface SyncFeatureConfigsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
@@ -58,14 +61,15 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
     private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
     private val e2EIConfigHandler: E2EIConfigHandler,
-    private val appLockConfigHandler: AppLockConfigHandler
+    private val appLockConfigHandler: AppLockConfigHandler,
+    private val channelsConfigHandler: ChannelsFeatureConfigurationHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             guestRoomConfigHandler.handle(it.guestRoomLinkModel)
             fileSharingConfigHandler.handle(it.fileSharingModel)
-             mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
+            mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
             it.mlsMigrationModel?.let { mlsMigrationConfigHandler.handle(it, duringSlowSync = true) }
             classifiedDomainsConfigHandler.handle(it.classifiedDomainsModel)
             conferenceCallingConfigHandler.handle(it.conferenceCallingModel)
@@ -73,6 +77,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             selfDeletingMessagesConfigHandler.handle(it.selfDeletingMessagesModel)
             it.e2EIModel.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
             appLockConfigHandler.handle(it.appLockModel)
+            channelsConfigHandler.handle(it.channelsModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (

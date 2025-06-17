@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -47,8 +46,6 @@ class ObserveOutgoingCallUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val callRepository = mock(CallRepository::class)
 
         val observeOutgoingCall = ObserveOutgoingCallUseCaseImpl(callRepository)
@@ -76,7 +73,7 @@ class ObserveOutgoingCallUseCaseTest {
             isCbrEnabled = false,
             maxParticipants = 0,
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername",
             callerTeamName = "team_1"
         )

@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -139,6 +138,10 @@ class OneOnOneMigratorTest {
         }.wasNotInvoked()
 
         coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
+        }.wasNotInvoked()
+
+        coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasNotInvoked()
     }
@@ -179,6 +182,10 @@ class OneOnOneMigratorTest {
 
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
         }.wasNotInvoked()
 
         coVerify {
@@ -231,6 +238,10 @@ class OneOnOneMigratorTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.wasInvoked(exactly = once)
     }
@@ -256,6 +267,10 @@ class OneOnOneMigratorTest {
 
         coVerify {
             arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(eq(resolvedConversationId))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -317,8 +332,6 @@ class OneOnOneMigratorTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
-
-        @Mock
         val currentInstantProvider: CurrentInstantProvider = mock(CurrentInstantProvider::class)
 
         fun withCurrentInstant(currentInstant: Instant) {

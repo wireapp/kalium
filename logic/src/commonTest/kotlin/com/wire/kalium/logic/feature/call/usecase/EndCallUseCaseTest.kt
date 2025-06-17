@@ -30,7 +30,6 @@ import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -80,7 +79,7 @@ class EndCallUseCaseTest {
     fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STILL_ONGOING,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -113,7 +112,7 @@ class EndCallUseCaseTest {
     fun givenStartedOutgoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STARTED,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -146,7 +145,7 @@ class EndCallUseCaseTest {
     fun givenIncomingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.INCOMING,
-            conversationType = Conversation.Type.GROUP
+            conversationType = Conversation.Type.Group.Regular
         )
         val (arrangement, endCall) = Arrangement().arrange {
             withEndCall()
@@ -210,10 +209,7 @@ class EndCallUseCaseTest {
     private class Arrangement : CallRepositoryArrangement by CallRepositoryArrangementImpl(),
         CallManagerArrangement by CallManagerArrangementImpl() {
 
-        @Mock
         val endCallResultListener = mock(EndCallResultListener::class)
-
-        @Mock
         val shouldAskCallFeedback = mock(ShouldAskCallFeedbackUseCase::class)
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, EndCallUseCase> {
@@ -252,7 +248,7 @@ class EndCallUseCaseTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = null,
             callerTeamName = null,
             establishedTime = null

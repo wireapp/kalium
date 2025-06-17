@@ -28,7 +28,6 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -141,20 +140,10 @@ class KeyPackageManagerTests {
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
-
-        @Mock
         val clientRepository = mock(ClientRepository::class)
-
-        @Mock
         val featureSupport = mock(FeatureSupport::class)
-
-        @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
-
-        @Mock
         val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
-
-        @Mock
         val keyPackageCountUseCase = mock(MLSKeyPackageCountUseCase::class)
 
         suspend fun withLastKeyPackageCountCheck(hasPassed: Boolean) = apply {

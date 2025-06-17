@@ -84,213 +84,32 @@ object RegisterClientRequestJson {
         jsonProvider
     )
 
-    val missingDeviceType = FaultyJsonProvider(
-        """
+    val validV8 = """
         |{
-        |  "label": "label",
-        |  "lastkey": {
-        |       "key": "last_prekey",
-        |       "id": 9999
-        |  },
-        |  "password": "password",
-        |  "prekeys": [
-        |       {
-        |           "id": 1,
-        |           "key": "prekey_1"
-        |       },
-        |       {
-        |           "id": 2,
-        |           "key": "prekey_2""
-        |       }
-        |  ],
-        |  "type": "permanent",
-        |  "capabilities": [
-        |    "legalhold-implicit-consent"
-        |    ],
-        |  "model": "model"
+        |   "password":"password",
+        |   "prekeys":[
+        |      {
+        |         "id":1,
+        |         "key":"preykey_1"
+        |      },
+        |      {
+        |         "id":2,
+        |         "key":"prekey_2"
+        |      }
+        |   ],
+        |   "lastkey":{
+        |      "id":999,
+        |      "key":"last_prekey"
+        |   },
+        |   "class":"desktop",
+        |   "type":"permanent",
+        |   "label":"label",
+        |   "capabilities":[
+        |      "legalhold-implicit-consent", "consumable-notifications"
+        |   ],
+        |   "model":"model",
+        |   "cookie":"cookie label",
+        |   "verification_code":"123456"
         |}
         """.trimMargin()
-    )
-
-    val missingLabel = FaultyJsonProvider(
-        """
-        |{
-        |  "class": "desktop",
-        |  "lastkey": {
-        |       "key": "last_prekey",
-        |       "id": 9999
-        |  },
-        |  "password": "password",
-        |  "prekeys": [
-        |       {
-        |           "id": 1,
-        |           "key": "prekey_1"
-        |       },
-        |       {
-        |           "id": 2,
-        |           "key": "prekey_2""
-        |       }
-        |  ],
-        |  "type": "desktop",
-        |  "capabilities": [
-        |    "legalhold-implicit-consent"
-        |    ],
-        |  "model": "model"
-        |}
-        """.trimMargin()
-    )
-
-    val missingPassword = FaultyJsonProvider(
-        """
-        |{
-        |  "class": "desktop",
-        |  "label": "label",
-        |  "lastkey": {
-        |       "key": "last_prekey",
-        |       "id": 9999
-        |  },
-        |  "prekeys": [
-        |       {
-        |           "id": 1,
-        |           "key": "prekey_1"
-        |       },
-        |       {
-        |           "id": 2,
-        |           "key": "prekey_2""
-        |       }
-        |  ],
-        |  "type": "desktop",
-        |  "capabilities": [
-        |    "legalhold-implicit-consent"
-        |    ],
-        |  "model": "model"
-        |}
-        """.trimMargin()
-    )
-
-    val missingTye = FaultyJsonProvider(
-        """
-        |{
-        |  "class": "desktop",
-        |  "label": "label",
-        |  "lastkey": {
-        |       "key": "last_prekey",
-        |       "id": 9999
-        |  },
-        |  "password": "password",
-        |  "prekeys": [
-        |       {
-        |           "id": 1,
-        |           "key": "prekey_1"
-        |       },
-        |       {
-        |           "id": 2,
-        |           "key": "prekey_2""
-        |       }
-        |  ],
-        |  "capabilities": [
-        |    "legalhold-implicit-consent"
-        |    ],
-        |  "model": "model"
-        |}
-        """.trimMargin()
-    )
-
-    val missingPreKeys = FaultyJsonProvider(
-        """
-        |{
-        |  "class": "desktop",
-        |  "label": "label",
-        |  "lastkey": {
-        |       "key": "last_prekey",
-        |       "id": 9999
-        |  },
-        |  "password": "password",
-        |   "type": "desktop",
-        |  "capabilities": [
-        |    "legalhold-implicit-consent"
-        |    ],
-        |  "model": "model"
-        |}
-        """.trimMargin()
-    )
-
-    val missingLastKey = FaultyJsonProvider(
-        """
-        |{
-        |  "class": "desktop",
-        |  "label": "label",
-        |  "password": "password",
-        |  "prekeys": [
-        |       {
-        |           "id": 1,
-        |           "key": "prekey_1"
-        |       },
-        |       {
-        |           "id": 2,
-        |           "key": "prekey_2""
-        |       }
-        |  ],
-        |  "type": "desktop",
-        |  "capabilities": [
-        |    "legalhold-implicit-consent"
-        |    ],
-        |  "model": "model"
-        |}
-        """.trimMargin()
-    )
-
-    val missingCapabilities = FaultyJsonProvider(
-        """
-        |{
-        |  "class": "desktop",
-        |  "label": "label",
-        |  "lastkey": {
-        |       "key": "last_prekey",
-        |       "id": 9999
-        |  },
-        |  "password": "password",
-        |  "prekeys": [
-        |       {
-        |           "id": 1,
-        |           "key": "prekey_1"
-        |       },
-        |       {
-        |           "id": 2,
-        |           "key": "prekey_2""
-        |       }
-        |  ],
-        |  "type": "permanent",
-        |  "model": "model"
-        |}
-        """.trimMargin()
-    )
-
-    val missingModel = FaultyJsonProvider(
-        """
-        |{
-        |  "class": "desktop",
-        |  "label": "label",
-        |  "lastkey": {
-        |       "key": "last_prekey",
-        |       "id": 9999
-        |  },
-        |  "password": "password",
-        |  "prekeys": [
-        |       {
-        |           "id": 1,
-        |           "key": "prekey_1"
-        |       },
-        |       {
-        |           "id": 2,
-        |           "key": "prekey_2""
-        |       }
-        |  ],
-        |  "type": "permanent",
-        |  "capabilities": [
-        |    "legalhold-implicit-consent"
-        |    ]
-        |}
-        """.trimMargin()
-    )
 }

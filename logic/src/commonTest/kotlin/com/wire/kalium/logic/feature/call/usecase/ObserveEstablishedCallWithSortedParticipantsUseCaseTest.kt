@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -37,11 +36,9 @@ import kotlin.test.assertEquals
 
 class ObserveEstablishedCallWithSortedParticipantsUseCaseTest {
 
-    @Mock
-    private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock(CallRepository::class)
 
-    @Mock
-    private val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
+        private val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
 
     private lateinit var observeEstablishedCallWithSortedParticipantsUseCase: ObserveEstablishedCallWithSortedParticipantsUseCase
 
@@ -82,7 +79,7 @@ class ObserveEstablishedCallWithSortedParticipantsUseCaseTest {
             isCbrEnabled = false,
             callerId = UserId("called-id", "domain"),
             conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.ONE_ON_ONE,
+            conversationType = Conversation.Type.OneOnOne,
             callerName = "otherUsername2",
             callerTeamName = "team2"
         )

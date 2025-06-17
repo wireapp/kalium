@@ -27,7 +27,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -40,13 +39,8 @@ import kotlin.test.Test
 
 class AnswerCallUseCaseTest {
 
-    @Mock
     private val observeOngoingAndIncomingCalls = mock(ObserveOngoingAndIncomingCallsUseCase::class)
-
-    @Mock
     private val muteCall = mock(MuteCallUseCase::class)
-
-    @Mock
     private val callManager = mock(CallManager::class)
 
     private val answerCall = AnswerCallUseCaseImpl(
@@ -120,7 +114,7 @@ class AnswerCallUseCaseTest {
             isCbrEnabled = false,
             callerId = TestCall.CALLER_ID,
             conversationName = "caller-name",
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.Group.Regular,
             callerName = "Name",
             callerTeamName = "group",
             establishedTime = null

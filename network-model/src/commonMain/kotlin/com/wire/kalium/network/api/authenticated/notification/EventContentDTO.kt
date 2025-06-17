@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUp
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.channel.ChannelAddPermissionDTO
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -134,6 +135,10 @@ object JsonCorrectingSerializer :
 
 @Serializable
 sealed class EventContentDTO {
+
+    @Serializable
+    @SerialName("async.missed")
+    data object AsyncMissedNotification : EventContentDTO()
 
     @Serializable
     sealed class Conversation : EventContentDTO() {
@@ -282,6 +287,16 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 
+        @Serializable
+        @SerialName("conversation.add-permission-update")
+        data class ChannelAddPermissionUpdate(
+            @SerialName("conversation") val conversation: String,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ChannelAddPermissionDTO,
+            @SerialName("from") val from: String,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant
+        ) : Conversation()
     }
 
     @Serializable

@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsFo
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -143,20 +142,10 @@ class SendKnockUserCaseTest {
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
         ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl() {
-
-        @Mock
         private val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         private val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        @Mock
         val messageSender = mock(MessageSender::class)
-
-        @Mock
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         suspend fun withSendMessageSuccess() = apply {

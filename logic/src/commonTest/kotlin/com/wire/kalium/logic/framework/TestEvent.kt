@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -36,8 +37,6 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
-import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
@@ -255,6 +254,13 @@ object TestEvent {
         senderUserId = TestUser.OTHER_USER_ID
     )
 
+    fun newConversationChannelAddPermissionEvent() = Event.Conversation.ConversationChannelAddPermission(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        channelAddPermission = ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS,
+        senderUserId = TestUser.OTHER_USER_ID
+    )
+
     fun newFeatureConfigEvent() = Event.FeatureConfig.AppLockUpdated(
         id = "eventId",
         model = AppLockModel(
@@ -270,10 +276,23 @@ object TestEvent {
     fun Event.wrapInEnvelope(
         isTransient: Boolean = false,
         source: EventSource = EventSource.LIVE
-    ): EventEnvelope {
-        return EventEnvelope(this, EventDeliveryInfo(isTransient, source))
-    }
+    ): EventEnvelope = EventEnvelope(this, EventDeliveryInfo.Legacy(isTransient, source))
 
-    val liveDeliveryInfo = EventDeliveryInfo(false, EventSource.LIVE)
-    val nonLiveDeliveryInfo = EventDeliveryInfo(false, EventSource.PENDING)
+    fun Event.wrapAsyncInEnvelope(
+        source: EventSource = EventSource.LIVE,
+        isMissedNotifications: Boolean = false
+    ): EventEnvelope = EventEnvelope(
+        event = this,
+        deliveryInfo = if (isMissedNotifications) {
+            EventDeliveryInfo.AsyncMissed
+        } else {
+            EventDeliveryInfo.Async(ULong.MAX_VALUE, source)
+        }
+    )
+
+    fun notificationsMissed(eventId: String = "eventId") = Event.AsyncMissed(eventId)
+
+    val liveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.LIVE)
+    val nonLiveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.PENDING)
+
 }

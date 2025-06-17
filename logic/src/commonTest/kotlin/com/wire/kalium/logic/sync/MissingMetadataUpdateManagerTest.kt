@@ -25,7 +25,6 @@ import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMet
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -90,14 +89,8 @@ class MissingMetadataUpdateManagerTest {
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
-
-        @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
-
-        @Mock
         val refreshConversationsWithoutMetadataUseCase = mock(RefreshConversationsWithoutMetadataUseCase::class)
-
-        @Mock
         val refreshUsersWithoutMetadataUseCase = mock(RefreshUsersWithoutMetadataUseCase::class)
 
         suspend fun withLastMetadataSyncKeyCheck(hasPassed: Boolean) = apply {

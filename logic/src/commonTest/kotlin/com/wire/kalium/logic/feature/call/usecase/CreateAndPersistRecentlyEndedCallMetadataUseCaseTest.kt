@@ -33,7 +33,6 @@ import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_MINIMIZED
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -150,13 +149,9 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
     }
 
     private class Arrangement {
-        @Mock
+        
         val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
-
-        @Mock
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val callRepository = mock(CallRepository::class)
 
         fun withOutgoingCall() = apply {
@@ -261,7 +256,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                         hasEstablishedAudio = true
                     )
                 ),
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 callerName = "User Name",
                 callerTeamName = null,
                 callStatus = CallStatus.ESTABLISHED,
@@ -288,7 +283,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                 callVideoEnabled = false
             ),
             conversationDetails = RecentlyEndedCallMetadata.ConversationDetails(
-                conversationType = Conversation.Type.ONE_ON_ONE,
+                conversationType = Conversation.Type.OneOnOne,
                 conversationSize = 2,
                 conversationGuests = 0,
                 conversationGuestsPro = 0

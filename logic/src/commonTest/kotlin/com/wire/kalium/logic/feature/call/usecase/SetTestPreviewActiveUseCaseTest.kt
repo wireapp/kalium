@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.call.CallManager
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -31,8 +30,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 class SetTestPreviewActiveUseCaseTest {
 
-    @Mock
-    private val callManager = mock(CallManager::class)
+        private val callManager = mock(CallManager::class)
 
     private lateinit var setTestPreviewActive: SetTestPreviewActiveUseCase
 

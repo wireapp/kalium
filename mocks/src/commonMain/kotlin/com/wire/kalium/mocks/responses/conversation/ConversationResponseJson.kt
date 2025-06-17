@@ -20,11 +20,14 @@ package com.wire.kalium.mocks.responses.conversation
 
 import com.wire.kalium.mocks.responses.ValidJsonProvider
 import com.wire.kalium.mocks.responses.samples.QualifiedIDSamples
+import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse.GroupType
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV8
 import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.authenticated.conversation.ServiceReferenceDTO
@@ -43,7 +46,7 @@ import kotlinx.serialization.json.putJsonObject
 
 object ConversationResponseJson {
 
-    val conversationResponseSerializerV6 = { it: ConversationResponseV6 ->
+    private val conversationResponseSerializerV6 = { it: ConversationResponseV6 ->
         buildConversationResponseV6(it).toString()
     }
 
@@ -51,7 +54,11 @@ object ConversationResponseJson {
         buildConversationResponseV3(it).toString()
     }
 
-    val conversationResponseSerializerWithDeprecatedAccessRole = { it: ConversationResponse ->
+    private val conversationResponseSerializerV8 = { it: ConversationResponseV8 ->
+        buildConversationResponseV8(it).toString()
+    }
+
+    private val conversationResponseSerializerWithDeprecatedAccessRole = { it: ConversationResponse ->
         buildConversationResponseV3(it, useDeprecatedAccessRole = true).toString()
     }
 
@@ -96,6 +103,46 @@ object ConversationResponseJson {
         )
     )
 
+    private val conversationResponseV8 = ConversationResponseV8(
+        "fdf23116-42a5-472c-8316-e10655f5d11e",
+        ConversationMembersResponse(
+            ConversationMemberDTO.Self(
+                QualifiedIDSamples.one,
+                "wire_admin",
+                otrMutedRef = "2022-04-11T14:15:48.044Z",
+                otrMutedStatus = MutedStatus.fromOrdinal(0)
+            ),
+            listOf(
+                ConversationMemberDTO.Other(
+                    id = QualifiedIDSamples.two,
+                    conversationRole = "wire_member"
+                )
+            )
+        ),
+        "group name",
+        QualifiedIDSamples.one,
+        "groupID",
+        0UL,
+        ConversationResponse.Type.GROUP,
+        null,
+        "teamID",
+        ConvProtocol.PROTEUS,
+        lastEventTime = "2022-03-30T15:36:00.000Z",
+        access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+        accessRole = setOf(
+            ConversationAccessRoleDTO.GUEST,
+            ConversationAccessRoleDTO.TEAM_MEMBER,
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER
+        ),
+        mlsCipherSuiteTag = null,
+        receiptMode = ReceiptMode.DISABLED,
+        conversationGroupType = GroupType.REGULAR_GROUP,
+        channelAddUserPermissionTypeDTO = ChannelAddPermissionTypeDTO.ADMINS,
+        publicKeys = MLSPublicKeysDTO(
+            removal = mapOf("ecdsa_secp256r1_sha256" to "string", "ed25519" to "string")
+        )
+    )
+
     val v6 = ValidJsonProvider(
         conversationResponseV6,
         conversationResponseSerializerV6
@@ -104,6 +151,11 @@ object ConversationResponseJson {
     val v3 = ValidJsonProvider(
         conversationResponseV6.conversation,
         conversationResponseSerializerV3
+    )
+
+    val v8 = ValidJsonProvider(
+        conversationResponseV8,
+        conversationResponseSerializerV8
     )
 
     fun v0(accessRole: Set<ConversationAccessRoleDTO>? = null) = ValidJsonProvider(
@@ -136,6 +188,13 @@ fun buildConversationResponseV3(
     putConversation(conversationResponse, useDeprecatedAccessRole)
 }
 
+fun buildConversationResponseV8(
+    conversationResponseV8: ConversationResponseV8,
+    useDeprecatedAccessRole: Boolean = false
+): JsonObject = buildJsonObject {
+    putConversationV8(conversationResponseV8, useDeprecatedAccessRole)
+}
+
 private fun JsonObjectBuilder.putConversation(
     conversationResponse: ConversationResponse,
     useDeprecatedAccessRole: Boolean
@@ -166,6 +225,40 @@ private fun JsonObjectBuilder.putConversation(
     conversationResponse.name?.let { put("name", it) }
     conversationResponse.teamId?.let { put("team", it) }
     conversationResponse.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
+}
+
+private fun JsonObjectBuilder.putConversationV8(
+    conversationResponse: ConversationResponseV8,
+    useDeprecatedAccessRole: Boolean
+) {
+    put("creator", conversationResponse.creator)
+    putQualifiedId(conversationResponse.id)
+    conversationResponse.groupId?.let { put("group_id", it) }
+    putJsonObject("members") {
+        putSelfMember(conversationResponse.members.self)
+        putJsonArray("others") {
+            conversationResponse.members.otherMembers.forEach { otherMember ->
+                addJsonObject {
+                    putOtherMember(otherMember)
+                }
+            }
+        }
+    }
+    put("type", conversationResponse.type.ordinal)
+    put("protocol", conversationResponse.protocol.toString())
+    put("last_event_time", conversationResponse.lastEventTime)
+    putAccessSet(conversationResponse.access)
+    if (useDeprecatedAccessRole) {
+        conversationResponse.accessRole?.let { putDeprecatedAccessRoleSet(it) }
+    } else {
+        conversationResponse.accessRole?.let { putAccessRoleSet(it) }
+    }
+    conversationResponse.messageTimer?.let { put("message_timer", it) }
+    conversationResponse.name?.let { put("name", it) }
+    conversationResponse.teamId?.let { put("team", it) }
+    conversationResponse.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
+    conversationResponse.conversationGroupType?.let { put("group_conv_type", it.toString()) }
+    conversationResponse.channelAddUserPermissionTypeDTO?.let { put("add_permission", it.toString()) }
 }
 
 fun JsonObjectBuilder.putAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) =

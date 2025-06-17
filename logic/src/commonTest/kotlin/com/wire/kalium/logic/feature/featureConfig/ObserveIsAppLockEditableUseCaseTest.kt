@@ -28,7 +28,6 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.coEvery
@@ -100,10 +99,7 @@ class ObserveIsAppLockEditableUseCaseTest {
 
     class Arrangement {
 
-        @Mock
         val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
-
-        @Mock
         val sessionRepository = mock(SessionRepository::class)
 
         private val useCase by lazy {
@@ -114,7 +110,7 @@ class ObserveIsAppLockEditableUseCaseTest {
         }
 
         fun arrange() = this to useCase
-        suspend fun withAllValidSessionsFlow(result: Flow<List<AccountInfo>>) = apply {
+        suspend fun withAllValidSessionsFlow(result: Flow<List<AccountInfo.Valid>>) = apply {
             coEvery {
                 sessionRepository.allValidSessionsFlow()
             }.returns(result.map { Either.Right(it) })

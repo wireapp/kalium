@@ -38,7 +38,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 
+@Mockable
 interface NewConversationEventHandler {
     suspend fun handle(event: Event.Conversation.NewConversation)
 }
@@ -105,6 +107,10 @@ internal class NewConversationEventHandlerImpl(
         event: Event.Conversation.NewConversation
     ) {
         if (isNewUnhandledConversation) {
+            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                event.conversation.id.toModel(),
+                event.dateTime
+            )
             newGroupConversationSystemMessagesCreator.conversationStarted(
                 event.senderUserId,
                 event.conversation,
@@ -117,10 +123,6 @@ internal class NewConversationEventHandlerImpl(
             )
             newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
                 event.conversation,
-                event.dateTime
-            )
-            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                event.conversation.id.toModel(),
                 event.dateTime
             )
         }

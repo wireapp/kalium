@@ -351,7 +351,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false
         )
         clientDAO.insertClient(insertedClient2)
 
@@ -497,7 +498,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
-            isMLSCapable = false
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false
         )
         val client = insertedClient.toClient()
 
@@ -528,7 +530,11 @@ class ClientDAOTest : BaseDatabaseTest() {
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            isChannel = false,
+            channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+            channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+            wireCell = null,
         )
     }
 }
@@ -546,5 +552,6 @@ private fun InsertClientParam.toClient(): Client =
         model = model,
         registrationDate = registrationDate,
         lastActive = lastActive,
-        mlsPublicKeys = null
+        mlsPublicKeys = null,
+        isAsyncNotificationsCapable = false
     )

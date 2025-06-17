@@ -88,6 +88,9 @@ Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
+Conversation.is_channel,
+Conversation.channel_access,
+Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
     WHEN Conversation.type = 'GROUP' THEN
@@ -107,7 +110,8 @@ CASE
 END AS interactionEnabled,
 LabeledConversation.folder_id IS NOT NULL AS isFavorite,
 CurrentFolder.id AS folderId,
-CurrentFolder.name AS folderName
+CurrentFolder.name AS folderName,
+Conversation.wire_cell AS wireCell
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -145,9 +149,11 @@ WHERE
             -- When filter is ALL, do not apply additional filters on conversation type
             WHEN :conversationFilter = 'ALL' THEN 1 = 1
             -- When filter is GROUPS, filter only group conversations
-            WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+            WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP' AND is_channel = 0
             -- When filter is ONE_ON_ONE, filter only one-on-one conversations
             WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+            -- When filter is CHANNELS (future implementation)
+            WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
             -- When filter is FAVORITES (future implementation)
             ELSE 1 = 0
         END

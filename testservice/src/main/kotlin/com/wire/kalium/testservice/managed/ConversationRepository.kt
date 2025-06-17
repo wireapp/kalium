@@ -19,27 +19,27 @@
 package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.mention.MessageMention
-import com.wire.kalium.logic.data.message.receipt.ReceiptType
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
-import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
-import com.wire.kalium.logic.feature.debug.BrokenState
-import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
+import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
+import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
+import com.wire.kalium.logic.feature.debug.BrokenState
+import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.LinkPreview
 import com.wire.kalium.testservice.models.SendTextResponse
@@ -121,12 +121,12 @@ sealed class ConversationRepository {
                         log.info("Instance ${instance.instanceId}: Create conversation \"$name\" with ${
                                     userIds.joinToString { user -> user.value + "@" + user.domain }
                                 }")
-                        when (val result = conversations.createGroupConversation(
+                        when (val result = conversations.createRegularGroup(
                             name,
                             userIds,
                             ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
                         )) {
-                            is CreateGroupConversationUseCase.Result.Success -> {
+                            is ConversationCreationResult.Success -> {
                                 Response.status(Response.Status.OK).build()
                             }
 

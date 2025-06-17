@@ -27,11 +27,13 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
+import io.mockative.Mockable
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
  */
+@Mockable
 interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
@@ -127,6 +129,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.DataTransfer -> false
             is MessageContent.InCallEmoji -> false
+            is MessageContent.Multipart -> true
         }
 
     @Suppress("ComplexMethod")
@@ -137,7 +140,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Knock,
             is MessageContent.RestrictedAsset,
             is MessageContent.MissedCall,
-            is MessageContent.Location -> true
+            is MessageContent.Location,
+            is MessageContent.Multipart -> true
 
             is MessageContent.MemberChange.Added,
             is MessageContent.MemberChange.Removed,

@@ -164,4 +164,3 @@ LEFT JOIN MessageConversationProtocolChangedContent AS ConversationProtocolChang
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN MessageLegalHoldContent AS LegalHoldContent ON Message.id = LegalHoldContent.message_id AND Message.conversation_id = LegalHoldContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull

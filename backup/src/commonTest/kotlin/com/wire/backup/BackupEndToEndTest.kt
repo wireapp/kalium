@@ -23,6 +23,7 @@ import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
+import com.wire.backup.ingest.BackupPeekResult
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -48,6 +49,11 @@ class BackupEndToEndTest {
     @Test
     fun givenBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
         shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!"))
+    }
+
+    @Test
+    fun givenEncryptedBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
+        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!"), "somePassword")
     }
 
     @Test
@@ -82,7 +88,43 @@ class BackupEndToEndTest {
         shouldBackupAndRestoreSameContent(content)
     }
 
-    private suspend fun shouldBackupAndRestoreSameContent(content: BackupMessageContent, password: String? = null) {
+    @Test
+    fun givenBackupWithPassword_whenPeeking_thenShouldBeEncrypted() = runTest {
+        val result = subject.exportPeekTest(BackupQualifiedId("userId", "domain"), "password") {
+            add(
+                BackupMessage(
+                    id = "id",
+                    conversationId = BackupQualifiedId("convId", "domain"),
+                    senderUserId = BackupQualifiedId("senderId", "domain"),
+                    senderClientId = "clientId",
+                    creationDate = BackupDateTime(0L),
+                    content = BackupMessageContent.Text("test")
+                )
+            )
+        }
+        assertIs<BackupPeekResult.Success>(result)
+        assertEquals(true, result.isEncrypted)
+    }
+
+    @Test
+    fun givenBackupWithoutPassword_whenPeeking_thenShouldNotBeEncrypted() = runTest {
+        val result = subject.exportPeekTest(BackupQualifiedId("userId", "domain"), "") {
+            add(
+                BackupMessage(
+                    id = "id",
+                    conversationId = BackupQualifiedId("convId", "domain"),
+                    senderUserId = BackupQualifiedId("senderId", "domain"),
+                    senderClientId = "clientId",
+                    creationDate = BackupDateTime(0L),
+                    content = BackupMessageContent.Text("test")
+                )
+            )
+        }
+        assertIs<BackupPeekResult.Success>(result)
+        assertEquals(false, result.isEncrypted)
+    }
+
+    private suspend fun shouldBackupAndRestoreSameContent(content: BackupMessageContent, password: String = "") {
         val expectedMessage = BackupMessage(
             id = "messageId",
             conversationId = BackupQualifiedId("value", "domain"),
@@ -121,7 +163,13 @@ interface CommonBackupEndToEndTestSubjectProvider {
 
     suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,
-        passphrase: String?,
+        passphrase: String,
         export: CommonMPBackupExporter.() -> Unit,
     ): BackupImportResult
+
+    suspend fun exportPeekTest(
+        selfUserId: BackupQualifiedId,
+        passphrase: String,
+        export: CommonMPBackupExporter.() -> Unit,
+    ): BackupPeekResult
 }

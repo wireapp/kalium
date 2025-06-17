@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -157,10 +156,7 @@ class EndCallOnConversationChangeUseCaseTest {
         CallRepositoryArrangement by CallRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        @Mock
         val endCall = mock(EndCallUseCase::class)
-
-        @Mock
         val endCallDialogManager = mock(EndCallResultListener::class)
 
         suspend fun arrange() = run {
@@ -195,7 +191,7 @@ class EndCallOnConversationChangeUseCaseTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.Group.Regular,
             callerName = null,
             callerTeamName = null,
             establishedTime = null
@@ -204,7 +200,7 @@ class EndCallOnConversationChangeUseCaseTest {
         val conversation = Conversation(
             id = conversationId,
             name = "Conv Name",
-            type = Conversation.Type.ONE_ON_ONE,
+            type = Conversation.Type.OneOnOne,
             teamId = TeamId("team_id"),
             protocol = Conversation.ProtocolInfo.Proteus,
             mutedStatus = MutedConversationStatus.AllAllowed,
@@ -245,7 +241,7 @@ class EndCallOnConversationChangeUseCaseTest {
             supportedProtocols = setOf(SupportedProtocol.PROTEUS)
         )
 
-        private val groupConversationDetail = ConversationDetails.Group(
+        private val groupConversationDetail = ConversationDetails.Group.Regular(
             conversation = conversation,
             hasOngoingCall = true,
             isSelfUserMember = false,

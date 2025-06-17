@@ -1,0 +1,36 @@
+name: "Database Tests"
+
+on:
+  merge_group:
+  pull_request:
+    types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  detekt:
+    uses: ./.github/workflows/codestyle.yml
+  gradle-run-tests:
+    needs: [detekt]
+    runs-on: ubuntu-22.04
+    # When new version of sqldelight will be available
+    # try to use a latest Ubuntu machine with JDK 17 and caching
+    container: wirebot/cryptobox:1.4.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify DB Migrations
+        run: |
+          make db/verify-all-migrations
+
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties

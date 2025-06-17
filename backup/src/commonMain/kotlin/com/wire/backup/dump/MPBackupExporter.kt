@@ -30,6 +30,7 @@ import com.wire.backup.envelope.HashData
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.ingest.MPBackupMapper
+import com.wire.backup.ingest.close
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportUser
@@ -146,31 +147,40 @@ public abstract class CommonMPBackupExporter(
         return buffer.write(this.encodeToByteArray())
     }
 
+    /**
+     * Finalize the export and write the data to the given output.
+     * This method should be called after all the data was added.
+     */
     @Suppress("TooGenericExceptionCaught")
-    internal suspend fun finalize(password: String?, output: Sink): ExportResult {
+    internal suspend fun finalize(password: String, output: Sink): ExportResult {
         flushAll()
-        val zippedData = try {
-            zipEntries(storage.listEntries()).await()
+        return try {
+            val entries = storage.listEntries()
+            try {
+                zipEntries(entries).await().use { source ->
+                    writeBackupArtifact(output, password, source)
+                }
+            } finally {
+                entries.close()
+            }
         } catch (t: Throwable) {
-            return ExportResult.Failure.ZipError(t.message ?: "Unknown ZIP error.")
+            ExportResult.Failure.ZipError(t.message ?: "Unknown ZIP error.")
         }
-        return writeBackupArtifact(output, password, zippedData)
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun writeBackupArtifact(output: Sink, password: String?, zippedData: Source): ExportResult = try {
-        val salt = XChaChaPoly1305AuthenticationData.newSalt()
-
+    private suspend fun writeBackupArtifact(output: Sink, password: String, zippedData: Source): ExportResult = try {
+        val isEncrypted = password.isNotBlank()
         val header = BackupHeader(
             BackupHeaderSerializer.Default.CURRENT_HEADER_VERSION,
-            false,
+            isEncrypted,
             HashData.defaultFromUserId(selfUserId)
         )
         val headerBytes = BackupHeaderSerializer.Default.headerToBytes(header)
         output.buffer().use { bufferedOutput ->
             bufferedOutput.write(headerBytes)
             bufferedOutput.flush()
-            if (password.isNullOrBlank()) {
+            if (!isEncrypted) {
                 // We should skip the encryption headers, leaving empty/zeroed bytes
                 val skip = ByteArray(EncryptedStream.XCHACHA_20_POLY_1305_HEADER_LENGTH) { 0x00 }
                 bufferedOutput.write(skip)
@@ -181,7 +191,7 @@ public abstract class CommonMPBackupExporter(
                     bufferedOutput,
                     XChaChaPoly1305AuthenticationData(
                         password,
-                        salt,
+                        header.hashData.salt,
                         headerBytes.toUByteArray(),
                         header.hashData.operationsLimit,
                         header.hashData.hashingMemoryLimit
