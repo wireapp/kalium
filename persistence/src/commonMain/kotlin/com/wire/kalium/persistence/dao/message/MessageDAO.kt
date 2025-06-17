@@ -171,4 +171,5 @@ interface MessageDAO {
         pageSize: Int,
         onPage: (List<MessageEntity>) -> Unit,
     )
+    fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
 }

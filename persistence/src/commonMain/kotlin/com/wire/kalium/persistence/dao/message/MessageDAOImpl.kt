@@ -534,6 +534,9 @@ internal class MessageDAOImpl internal constructor(
             queries.selectNextAudioMessage(conversationId, prevMessageId).executeAsOneOrNull()
         }
 
+    override fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =
+        queries.countBackupMessages(contentTypes).executeAsOne()
+
     override fun getMessagesPaged(
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
