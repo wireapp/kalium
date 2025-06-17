@@ -37,11 +37,8 @@ import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.typeDescription
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.EventProcessingLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
@@ -66,7 +63,7 @@ internal class MLSBatchHandlerImpl(
 
     override suspend fun handleNewMLSBatch(event: Event.Conversation.MLSGroupMessages, deliveryInfo: EventDeliveryInfo) {
         var eventLogger = logger.createEventProcessingLogger(event)
-        messagesFromMLSGroupMessages(event)
+        messagesFromMLSGroupMessages(event, deliveryInfo.source == EventSource.LIVE)
             .onFailure {
                 handleMLSFailure(
                     eventLogger,
@@ -109,8 +106,7 @@ internal class MLSBatchHandlerImpl(
                 } ?: {
                     eventLogger.logSuccess(
                         "protocol" to "MLS",
-                        "isPartOfMLSBatch" to (event.messages.size > 1),
-
+                        "isPartOfMLSBatch" to (event.messages.size > 1)
                         )
                 }
                 // reset the time for next messages, if this is a batch
@@ -121,7 +117,7 @@ internal class MLSBatchHandlerImpl(
     override suspend fun handleNewMLSSubGroupBatch(event: Event.Conversation.MLSSubGroupMessages, deliveryInfo: EventDeliveryInfo) {
         var eventLogger: EventProcessingLogger = logger.createEventProcessingLogger(event)
 
-        messagesFromMLSSubGroupMessages(event)
+        messagesFromMLSSubGroupMessages(event, deliveryInfo.source == EventSource.LIVE)
             .onFailure {
                 handleMLSFailure(
                     eventLogger,
@@ -161,16 +157,9 @@ private suspend fun handleMLSFailure(
     }
 }
 
-
-private val MessageUnpackResult.messageTypeDescription
-    get() = when (this) {
-        is MessageUnpackResult.ApplicationMessage -> content.messageContent.typeDescription()
-        MessageUnpackResult.HandshakeMessage -> "Handshake message"
-    }
-
-
 private suspend fun messagesFromMLSGroupMessages(
-    event: Event.Conversation.MLSGroupMessages
+    event: Event.Conversation.MLSGroupMessages,
+    isLive: Boolean
 ): Either<CoreFailure, FailedMLSMessage?> = conversationRepository.getConversationProtocolInfo(event.conversationId)
     .flatMap { protocolInfo ->
         if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
@@ -184,10 +173,12 @@ private suspend fun messagesFromMLSGroupMessages(
                 )
             )
             mlsConversationRepository.decryptMessages(
-                event.messages,
-                protocolInfo.groupId,
-                event.conversationId,
-                null
+                messages = event.messages,
+                groupID = protocolInfo.groupId,
+                conversationId = event.conversationId,
+                subConversationId = null,
+                isLive = isLive
+
             )
         } else {
             Either.Left(CoreFailure.NotSupportedByProteus)
@@ -195,7 +186,8 @@ private suspend fun messagesFromMLSGroupMessages(
     }
 
 private suspend fun messagesFromMLSSubGroupMessages(
-    event: Event.Conversation.MLSSubGroupMessages
+    event: Event.Conversation.MLSSubGroupMessages,
+    isLive: Boolean
 ): Either<CoreFailure, FailedMLSMessage?> =
     subconversationRepository.getSubconversationInfo(event.conversationId, event.subConversationId)
         ?.let { groupID ->
@@ -208,6 +200,12 @@ private suspend fun messagesFromMLSSubGroupMessages(
                     "groupID" to groupID.toLogString()
                 )
             )
-            mlsConversationRepository.decryptMessages(event.messages, groupID, event.conversationId, event.subConversationId)
+            mlsConversationRepository.decryptMessages(
+                messages = event.messages,
+                groupID = groupID,
+                conversationId = event.conversationId,
+                subConversationId = event.subConversationId,
+                isLive = isLive
+            )
         } ?: Either.Right(null)
 }

@@ -25,7 +25,14 @@ import app.cash.sqldelight.coroutines.mapToOneNotNull
 import app.cash.sqldelight.coroutines.mapToOneOrDefault
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlin.time.Duration
 
 // TODO(refactor): Remove these and force DAOs to use another Dispatcher
 //                 This is added to keep compatibility in
@@ -41,3 +48,35 @@ fun <T : Any> Flow<Query<T>>.mapToOneOrNull(): Flow<T?> = mapToOneOrNull(Dispatc
 fun <T : Any> Flow<Query<T>>.mapToOneNotNull(): Flow<T> = mapToOneNotNull(Dispatchers.Default)
 
 fun <T : Any> Flow<Query<T>>.mapToList(): Flow<List<T>> = mapToList(Dispatchers.Default)
+
+fun <T> Flow<T>.throttleLatest(duration: Duration): Flow<T> = callbackFlow {
+    var lastEmitTime: Instant? = null
+    var lastValue: T? = null
+    var isEmitting = false
+
+    val upstream = launch {
+        collect { value ->
+            val now = Clock.System.now()
+            if (!isEmitting || lastEmitTime == null || now - lastEmitTime!! >= duration) {
+                trySend(value)
+                lastEmitTime = now
+                isEmitting = true
+            } else {
+                lastValue = value
+            }
+
+            launch {
+                delay(duration)
+                lastValue?.let {
+                    trySend(it)
+                    lastEmitTime = Clock.System.now()
+                    lastValue = null
+                }
+            }
+        }
+    }
+
+    awaitClose {
+        upstream.cancel()
+    }
+}

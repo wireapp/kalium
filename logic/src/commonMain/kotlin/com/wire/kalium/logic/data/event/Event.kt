@@ -62,7 +62,7 @@ import kotlinx.serialization.json.JsonNull
  */
 data class EventEnvelope(
     val event: Event,
-    val deliveryInfo: EventDeliveryInfo
+    val deliveryInfo: EventDeliveryInfo // TODO change to isLive
 ) {
     override fun toString(): String {
         return super.toString()

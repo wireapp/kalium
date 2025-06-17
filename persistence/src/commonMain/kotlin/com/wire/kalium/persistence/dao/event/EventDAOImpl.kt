@@ -20,10 +20,12 @@ package com.wire.kalium.persistence.dao.event
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.EventsQueries
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.throttleLatest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.seconds
 
 class EventDAOImpl(
     private val eventsQueries: EventsQueries,
@@ -41,6 +43,7 @@ class EventDAOImpl(
         return eventsQueries.selectUnprocessedEvents(::mapEvent)
             .asFlow()
             .flowOn(queriesContext)
+            .throttleLatest(2.seconds) // Throttle to avoid too frequent updates
             .mapToList()
     }
 

@@ -143,11 +143,17 @@ class EventDataSource(
             // add limit of 200, think about making it dynamic depending on device ram
             // control flow of by websocket new push concat map?
             .distinctUntilChanged()
-            .collect { batch ->
-                batch.forEach { entity ->
-                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                    emit(eventMapper.fromDTOv2(payload, isLive = entity.isLive))
-                }
+            .collect { eventEntities ->
+                emit(
+                    eventMapper.fromBatch(
+                        eventEntities.map {
+                            LocalEvent(
+                                KtxSerializer.json.decodeFromString<EventResponse>(it.payload),
+                                it.isLive
+                            )
+                        }
+                    )
+                )
             }
     }
 

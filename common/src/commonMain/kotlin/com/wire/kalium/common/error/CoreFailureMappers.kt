@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.kalium.common.error
 
 import com.wire.kalium.common.functional.Either
@@ -124,7 +125,7 @@ inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
 }
 
 inline fun wrapMLSException(e: Throwable): MLSFailure {
-    return if(e is Exception) {
+    return if (e is Exception) {
         kaliumLogger.e(
             """{ "MLSException": "${e.message},"
                 |"cause": ${e.cause} }",

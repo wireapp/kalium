@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSException
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
@@ -123,18 +124,15 @@ data class ApplicationMessage(
 
 data class FailedMLSMessage(
     val eventId: String,
-    val error: MLSFailure,
-    // TODO KBX probably need some timestamp here?
+    val error: MLSFailure
 )
 
 data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?,
-//     val identity: WireIdentity?, // TODO KBX do we need this?
-    val messageInstant: Instant,
+    val messageInstant: Instant
 )
-
 
 @Suppress("TooManyFunctions", "LongParameterList")
 @Mockable
@@ -143,7 +141,8 @@ interface MLSConversationRepository {
         messages: List<MLSMessage>,
         groupID: GroupID,
         conversationId: ConversationId,
-        subConversationId: SubconversationId?
+        subConversationId: SubconversationId?,
+        isLive: Boolean
     ): Either<CoreFailure, FailedMLSMessage?>
 
     /**
@@ -296,11 +295,13 @@ internal class MLSConversationDataSource(
         asyncLockWork.await()
     }
 
+    @Suppress("LongMethod")
     override suspend fun decryptMessages(
         messages: List<MLSMessage>,
         groupID: GroupID,
         conversationId: ConversationId,
-        subConversationId: SubconversationId?
+        subConversationId: SubconversationId?,
+        isLive: Boolean
     ): Either<CoreFailure, FailedMLSMessage?> {
         logger.d("Decrypting message for group ${groupID.toLogString()}")
         return mutex.withLock("decryptMessage") {
@@ -316,43 +317,48 @@ internal class MLSConversationDataSource(
                         },
                         onDecryption = { decryptedBatch, eventId ->
                             val localEventId = uuid4().toString()
-                            wrapStorageRequest {
-                                eventDAO.insertEvents(
-                                    listOf(
-                                        NewEventEntity(
-                                            localEventId,
-                                            KtxSerializer.json.encodeToString(
-                                                EventResponse(
-                                                    localEventId,
-                                                    listOf(
-                                                        EventContentDTO.Conversation.DecryptedMLSBatchDTO(
-                                                            conversationId.toApi(),
-                                                            decryptedBatch.messages.map {
-                                                                // TODO KBX make null safety
-                                                                EventContentDTO.Conversation.DecryptedMLSMessageDTO(
-                                                                    it.senderClientId!!.userId.toModel().toApi(),
-                                                                    it.senderClientId!!.value,
-                                                                    it.messageInstant,
-                                                                    it.message!!.encodeBase64(), // TODO KBX
-                                                                    it.commitDelay
-                                                                )
-                                                            },
-                                                            groupId = groupID.value,
-                                                            subconversation = subConversationId?.value
-                                                        )
-                                                    ),
-                                                    false,
-                                                )
+                            val decryptedMessages = decryptedBatch.messages.mapNotNull {
+                                it.message?.let { message ->
+                                    EventContentDTO.Conversation.DecryptedMLSMessageDTO(
+                                        it.senderClientId!!.userId.toModel().toApi(),
+                                        it.senderClientId!!.value,
+                                        it.messageInstant,
+                                        message.encodeBase64(),
+                                        it.commitDelay
+                                    )
+                                }
+                            }
+                            if (decryptedMessages.isNotEmpty()) {
+                                wrapStorageRequest {
+                                    eventDAO.insertEvents(
+                                        listOf(
+                                            NewEventEntity(
+                                                localEventId,
+                                                KtxSerializer.json.encodeToString(
+                                                    EventResponse(
+                                                        localEventId,
+                                                        listOf(
+                                                            EventContentDTO.Conversation.DecryptedMLSBatchDTO(
+                                                                conversationId.toApi(),
+                                                                decryptedMessages,
+                                                                groupId = groupID.value,
+                                                                subconversation = subConversationId?.value
+                                                            )
+                                                        ),
+                                                        false,
+                                                    )
+                                                ),
+                                                isLive = isLive
                                             )
                                         )
                                     )
-                                )
-                            }.onSuccess {
-                                wrapStorageRequest {
-                                    eventDAO.markEventAsProcessed(
-                                        eventId
-                                    )
                                 }
+                            }
+
+                            wrapStorageRequest {
+                                eventDAO.markEventAsProcessed(
+                                    eventId
+                                )
                             }
                             // TODO KBX should it be here?
                             decryptedBatch.messages.map {
@@ -365,7 +371,7 @@ internal class MLSConversationDataSource(
                     )?.let {
                         FailedMLSMessage(
                             eventId = it.eventId,
-                            error = MLSFailure.MessageRejected.MlsStaleMessage
+                            error = wrapMLSException(it.error)
                         )
                     }
                 }

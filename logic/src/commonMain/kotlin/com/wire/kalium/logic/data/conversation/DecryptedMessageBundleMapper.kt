@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import io.ktor.util.decodeBase64Bytes
 
 fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID): DecryptedMessageBundle =
@@ -36,7 +35,6 @@ fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID
             )
         },
         commitDelay,
-//         identity, // TODO KBX do we need this?
         messageInstant
     )
 
