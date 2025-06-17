@@ -25,6 +25,8 @@ import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
@@ -32,6 +34,7 @@ import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.datetime.Instant
 
 object EventContentDTOJson {
@@ -281,4 +284,20 @@ object EventContentDTOJson {
         |   "unreachable_backends": ["foma.wire.link"]
         |}
         """.trimMargin()
+
+    private val jsonProviderFeatureConfigUpdated = { serializable: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO ->
+        """
+        |{
+        |  "type":"feature-config.update",
+        |  "data":${KtxSerializer.json.encodeToString(FeatureConfigData.serializer(), serializable.data)}
+        |}
+        """.trimMargin()
+    }
+
+    val validFeatureConfigUpdated = ValidJsonProvider(
+        EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
+            data = FeatureConfigData.FileSharing(status = FeatureFlagStatusDTO.ENABLED)
+        ),
+        jsonProviderFeatureConfigUpdated
+    )
 }

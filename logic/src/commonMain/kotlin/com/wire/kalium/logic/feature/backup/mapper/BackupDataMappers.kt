@@ -56,6 +56,7 @@ internal fun Message.toBackupMessage() =
             senderClientId = sender?.id.toString(),
             creationDate = BackupDateTime(date.toEpochMilliseconds()),
             content = content,
+            lastEditTime = lastEditTime(),
         )
     }
 
@@ -94,6 +95,18 @@ private fun Message.backupMessageContent(): BackupMessageContent? = when (this) 
     is Message.Signaling -> null
     is Message.System -> null
 }
+
+private fun Message.lastEditTime(): BackupDateTime? =
+    when (this) {
+        is Message.Regular -> {
+            when (val status = editStatus) {
+                is Message.EditStatus.Edited -> BackupDateTime(status.lastEditInstant)
+                Message.EditStatus.NotEdited -> null
+            }
+        }
+
+        else -> null
+    }
 
 private fun MessageEncryptionAlgorithm.toBackupModel() = when (this) {
     MessageEncryptionAlgorithm.AES_CBC -> BackupMessageContent.Asset.EncryptionAlgorithm.AES_CBC

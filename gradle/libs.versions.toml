@@ -27,7 +27,7 @@ androidx-test-orchestrator = "1.5.1"
 androidx-sqlite = "2.4.0"
 benasher-uuid = "0.8.4"
 ktx-datetime = { strictly = "0.5.0" }
-ktx-serialization = "1.6.3"
+ktx-serialization = "1.8.1"
 ktx-atomicfu = "0.26.1"
 kover = "0.7.6"
 multiplatform-settings = "1.1.1"
