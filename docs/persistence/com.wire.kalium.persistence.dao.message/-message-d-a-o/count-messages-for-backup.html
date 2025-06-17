@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-    <title>getMessages</title>
+    <title>countMessagesForBackup</title>
 <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>    <script>const storage = localStorage.getItem("dokka-dark-mode")
     if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -38,7 +38,7 @@
     </div>
     <div class="pull-right d-flex">
         <div class="filter-section" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":persistence:dokkaHtmlPartial/commonMain">common</button>
         </div>
         <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
         <div id="searchBar"></div>
@@ -49,12 +49,12 @@
         <div id="sideMenu"></div>
     </div>
     <div id="main">
-<div class="main-content" data-page-type="member" id="content" pageids="logic::com.wire.kalium.logic.data.backup/BackupDataSource/getMessages/#kotlin.Function2[kotlin.Int,kotlin.collections.List[[Error type: Unresolved type for Message.Standalone]],kotlin.Unit]/PointingToDeclaration//867774983">
-  <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.data.backup</a><span class="delimiter">/</span><a href="index.html">BackupDataSource</a><span class="delimiter">/</span><span class="current">getMessages</span></div>
+<div class="main-content" data-page-type="member" id="content" pageids="persistence::com.wire.kalium.persistence.dao.message/MessageDAO/countMessagesForBackup/#kotlin.collections.Collection[com.wire.kalium.persistence.dao.message.MessageEntity.ContentType]/PointingToDeclaration//-1479438426">
+  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.dao.message</a><span class="delimiter">/</span><a href="index.html">MessageDAO</a><span class="delimiter">/</span><span class="current">countMessagesForBackup</span></div>
   <div class="cover ">
-    <h1 class="cover"><span>get</span><wbr><span><span>Messages</span></span></h1>
+    <h1 class="cover"><span>count</span><wbr><span>Messages</span><wbr><span>For</span><wbr><span><span>Backup</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="get-messages.html"><span class="token function">getMessages</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">onPage<span class="token operator">: </span><span class="token punctuation">(</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span><span class="token keyword"></span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span class="token keyword"></span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span></span></span><span class="token punctuation">)</span></div></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="count-messages-for-backup.html"><span class="token function">countMessagesForBackup</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">contentTypes<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Collection///PointingToDeclaration/">Collection</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-message-entity/-content-type/index.html">MessageEntity.ContentType</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></div></div></div>
 </div>
       <div class="footer">
         <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2025 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
