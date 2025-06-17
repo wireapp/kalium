@@ -59,6 +59,7 @@ import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventGathererTest {
@@ -476,7 +477,7 @@ class EventGathererTest {
 
         assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
 
-        advanceTimeBy(1000)
+        advanceTimeBy(1.seconds)
 
         assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
     }
@@ -501,11 +502,10 @@ class EventGathererTest {
 
         assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
 
-        advanceTimeBy(1000)
+        advanceTimeBy(1.seconds)
 
         assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
     }
-
 
 
     private class Arrangement {

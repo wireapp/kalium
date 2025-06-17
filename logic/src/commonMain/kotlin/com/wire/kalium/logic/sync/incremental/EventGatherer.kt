@@ -114,10 +114,7 @@ internal class EventGathererImpl(
          */
         isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
             fetchEventFlow(isAsyncNotifications)
-                .onSuccess {
-                println("KBX emit items $it")
-                    emitEvents(it)
-                }
+                .onSuccess { emitEvents(it) }
                 .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
         }
     }
