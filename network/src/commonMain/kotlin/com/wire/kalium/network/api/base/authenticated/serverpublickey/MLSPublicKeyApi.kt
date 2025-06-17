@@ -20,7 +20,9 @@ package com.wire.kalium.network.api.base.authenticated.serverpublickey
 
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
+@Mockable
 interface MLSPublicKeyApi {
     /**
      * @return server public keys to consume as external-senders-keys in MLS conversations.
