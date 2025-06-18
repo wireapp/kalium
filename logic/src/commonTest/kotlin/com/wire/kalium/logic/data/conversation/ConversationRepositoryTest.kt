@@ -713,29 +713,9 @@ class ConversationRepositoryTest {
             .arrange()
         val conversationId = ConversationId("conv_id", "conv_domain")
 
-        conversationRepository.deleteConversation(conversationId).shouldSucceed()
+        conversationRepository.deleteConversationLocally(conversationId).shouldSucceed()
 
         with(arrangement) {
-            coVerify {
-                conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
-            }.wasInvoked(once)
-        }
-    }
-
-    @Test
-    fun givenMlsConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withGetConversationProtocolInfoReturns(MLS_PROTOCOL_INFO)
-            .withSuccessfulConversationDeletion()
-            .arrange()
-        val conversationId = ConversationId("conv_id", "conv_domain")
-
-        conversationRepository.deleteConversation(conversationId).shouldSucceed()
-
-        with(arrangement) {
-            coVerify {
-                mlsClient.wipeConversation(eq(GROUP_ID.toCrypto()))
-            }.wasInvoked(once)
             coVerify {
                 conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
             }.wasInvoked(once)
