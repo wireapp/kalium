@@ -995,6 +995,7 @@ class UserSessionScope internal constructor(
         get() = EventGathererImpl(
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
+            processingScope = this@UserSessionScope,
             logger = userScopedLogger
         )
 
