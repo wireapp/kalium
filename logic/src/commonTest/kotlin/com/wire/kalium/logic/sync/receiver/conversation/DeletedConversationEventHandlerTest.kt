@@ -26,8 +26,10 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -53,7 +55,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             coVerify {
-                conversationRepository.deleteConversation(eq(TestConversation.ID))
+                deleteConversation(eq(TestConversation.ID))
             }.wasNotInvoked()
         }
     }
@@ -73,7 +75,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             coVerify {
-                conversationRepository.deleteConversation(eq(TestConversation.ID))
+                deleteConversation(eq(TestConversation.ID))
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -116,6 +118,7 @@ class DeletedConversationEventHandlerTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        DeleteConversationArrangement by DeleteConversationArrangementImpl(),
         NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
         fun arrange() = run {
@@ -123,7 +126,8 @@ class DeletedConversationEventHandlerTest {
             this@Arrangement to DeletedConversationEventHandlerImpl(
                 conversationRepository = conversationRepository,
                 userRepository = userRepository,
-                notificationEventsManager = notificationEventsManager
+                notificationEventsManager = notificationEventsManager,
+                deleteConversation = deleteConversation
             )
         }
     }

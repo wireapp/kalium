@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
@@ -25,7 +26,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
-import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import io.mockative.Mockable
 
 @Mockable
@@ -40,7 +41,8 @@ internal class ClearConversationContentHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
-    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase
+    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
+    private val deleteConversation: DeleteConversationUseCase,
 ) : ClearConversationContentHandler {
 
     override suspend fun handle(
@@ -67,7 +69,7 @@ internal class ClearConversationContentHandlerImpl(
                     // In that case we couldn't delete it and should wait for user leave and delete after that.
                     conversationRepository.addConversationToDeleteQueue(conversationId)
                 } else {
-                    conversationRepository.deleteConversation(conversationId)
+                    deleteConversation(conversationId)
                 }
             }
     }

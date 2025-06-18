@@ -17,27 +17,46 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.GroupWithEpoch
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import io.mockative.coEvery
+import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface MLSConversationRepositoryArrangement {
     val epochChangesObserver: EpochChangesObserver
+    val mlsConversationRepository: MLSConversationRepository
 
     fun withObserveEpochChanges(result: Flow<GroupWithEpoch>)
+    suspend fun withSuccessfulLeaveGroup(groupId: GroupID = GroupID("mls_group_id"))
+    suspend fun withFailedLeaveGroup(groupId: GroupID = GroupID("mls_group_id"))
 }
 
 internal open class MLSConversationRepositoryArrangementImpl :
     MLSConversationRepositoryArrangement {
 
-        override val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+    override val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+    override val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+
 
     override fun withObserveEpochChanges(result: Flow<GroupWithEpoch>) {
         every {
             epochChangesObserver.observe()
         }.returns(result)
     }
+
+    override suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
+        coEvery { mlsConversationRepository.leaveGroup(eq(groupId)) }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withFailedLeaveGroup(groupId: GroupID) {
+        coEvery { mlsConversationRepository.leaveGroup(eq(groupId)) }.returns(Either.Left(CoreFailure.Unknown(null)))
+    }
+
 }
