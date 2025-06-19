@@ -22,12 +22,14 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -35,6 +37,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 @Mockable
 interface BackupRepository {
@@ -44,6 +47,7 @@ interface BackupRepository {
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
+    suspend fun updateConversationLastModifiedDate(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -112,6 +116,16 @@ internal class BackupDataSource(
         messageDAO.insertOrIgnoreMessages(
             messages = messages.map { messageMapper.fromMessageToEntity(it) },
             withUnreadEvents = false
+        )
+    }
+
+    override suspend fun updateConversationLastModifiedDate(
+        conversationId: ConversationId,
+        instant: Instant
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.setLastModifiedIfNotSet(
+            conversationId = QualifiedIDEntity(conversationId.value, conversationId.domain),
+            lastModifiedDate = instant
         )
     }
 }

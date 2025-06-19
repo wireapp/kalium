@@ -584,4 +584,11 @@ internal class ConversationDAOImpl internal constructor(
     ) = withContext(coroutineContext) {
         conversationQueries.updateChannelAddPermission(channelAddPermission, conversationId)
     }
+
+    override suspend fun setLastModifiedIfNotSet(
+        conversationId: QualifiedIDEntity,
+        lastModifiedDate: Instant
+    ) = withContext(coroutineContext) {
+        conversationQueries.setLastModifiedDateIfNotSet(lastModifiedDate, conversationId)
+    }
 }

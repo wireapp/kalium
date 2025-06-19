@@ -154,6 +154,8 @@ interface ConversationDAO {
 
     suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?)
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
+
+    suspend fun setLastModifiedIfNotSet(conversationId: QualifiedIDEntity, lastModifiedDate: Instant)
 }
 
 data class NameAndHandleEntity(
