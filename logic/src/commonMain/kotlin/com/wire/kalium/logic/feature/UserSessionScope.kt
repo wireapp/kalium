@@ -2059,6 +2059,7 @@ class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userScopedLogger,
             getTeamUrlUseCase,
+            isMLSEnabled,
             this,
         )
     }
