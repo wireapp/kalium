@@ -105,7 +105,7 @@ internal class BackupDataSource(
     }
 
     override suspend fun insertConversations(conversations: List<Conversation>) = wrapStorageRequest {
-        conversationDAO.insertOrIgnoreConversations(conversations.map { conversationMapper.fromMigrationModel(it) })
+        conversationDAO.insertOrUpdateLastModified(conversations.map { conversationMapper.fromMigrationModel(it) })
     }
 
     override suspend fun insertMessages(messages: List<Message.Standalone>) = wrapStorageRequest {

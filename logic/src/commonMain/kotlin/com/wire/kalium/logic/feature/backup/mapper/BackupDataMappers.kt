@@ -45,6 +45,7 @@ internal fun OtherUser.toBackupUser() = BackupUser(
 internal fun Conversation.toBackupConversation() = BackupConversation(
     id = id.toBackupQualifiedId(),
     name = name ?: "",
+    lastModifiedTime = lastModifiedDate?.let { BackupDateTime(it) }
 )
 
 internal fun Message.toBackupMessage() =

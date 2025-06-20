@@ -124,30 +124,44 @@ internal class RestoreMPBackupUseCaseImpl(
     private suspend fun persistBackupData(resultData: ImportResultPager, onProgress: (Int, Int) -> Unit) {
         resultData.use { pager ->
 
-            val total = pager.totalPagesCount
-            var pageIndex = 0
+            var processedPageCount = 0
 
-            pager.usersPager.pages().forEach { page ->
-                backupRepository.insertUsers(page.map { it.toUser() })
-                    .onFailure { error ->
-                        kaliumLogger.e("Restore users error: $error")
-                    }
-                onProgress(pageIndex++, total)
-            }
-            pager.conversationsPager.pages().forEach { page ->
-                backupRepository.insertConversations(page.map { it.toConversation() })
-                    .onFailure { error ->
-                        kaliumLogger.e("Restore conversations error: $error")
-                    }
-                onProgress(pageIndex++, total)
-            }
-            pager.messagesPager.pages().forEach { page ->
-                backupRepository.insertMessages(page.map { it.toMessage(selfUserId) })
-                    .onFailure { error ->
-                        kaliumLogger.e("Restore messages error: $error")
-                    }
-                onProgress(pageIndex++, total)
-            }
+            pager.persistUsers { onProgress(processedPageCount++, pager.totalPagesCount) }
+            pager.persistConversations { onProgress(processedPageCount++, pager.totalPagesCount) }
+            pager.persistMessages { onProgress(processedPageCount++, pager.totalPagesCount) }
+        }
+    }
+
+    private suspend fun ImportResultPager.persistUsers(onPageProcessed: () -> Unit) {
+        usersPager.pages().forEach { page ->
+            backupRepository.insertUsers(page.map { it.toUser() })
+                .onFailure { error ->
+                    kaliumLogger.e("Restore users error: $error")
+                }
+            onPageProcessed()
+        }
+    }
+
+    private suspend fun ImportResultPager.persistConversations(onPageProcessed: () -> Unit) {
+        conversationsPager.pages().forEach { page ->
+            val conversations = page.map { it.toConversation() }
+
+            backupRepository.insertConversations(conversations)
+                .onFailure { error ->
+                    kaliumLogger.e("Restore conversations error: $error")
+                }
+
+            onPageProcessed()
+        }
+    }
+
+    private suspend fun ImportResultPager.persistMessages(onPageProcessed: () -> Unit) {
+        messagesPager.pages().forEach { page ->
+            backupRepository.insertMessages(page.map { it.toMessage(selfUserId) })
+                .onFailure { error ->
+                    kaliumLogger.e("Restore messages error: $error")
+                }
+            onPageProcessed()
         }
     }
 }

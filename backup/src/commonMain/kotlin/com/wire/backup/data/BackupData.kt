@@ -74,6 +74,7 @@ public data class BackupUser(
 public data class BackupConversation(
     val id: BackupQualifiedId,
     val name: String,
+    val lastModifiedTime: BackupDateTime? = null,
 )
 
 @JsExport
