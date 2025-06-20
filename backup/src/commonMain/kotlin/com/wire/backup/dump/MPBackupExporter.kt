@@ -75,6 +75,7 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addUser")
     public fun add(user: BackupUser) {
+        user.validate()
         usersChunk.add(mapper.mapUserToProtobuf(user))
         if (usersChunk.size > ITEMS_CHUNK_SIZE) {
             flushUsers()
@@ -96,6 +97,7 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addConversation")
     public fun add(conversation: BackupConversation) {
+        conversation.validate()
         conversationsChunk.add(mapper.mapConversationToProtobuf(conversation))
         if (conversationsChunk.size > ITEMS_CHUNK_SIZE) {
             flushConversations()
@@ -117,6 +119,7 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addMessage")
     public fun add(message: BackupMessage) {
+        message.validate()
         messagesChunk.add(mapper.mapMessageToProtobuf(message))
         if (messagesChunk.size > ITEMS_CHUNK_SIZE) {
             flushMessages()

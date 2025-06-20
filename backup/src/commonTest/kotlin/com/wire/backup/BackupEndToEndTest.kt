@@ -126,9 +126,9 @@ class BackupEndToEndTest {
 
     private suspend fun shouldBackupAndRestoreSameContent(content: BackupMessageContent, password: String = "") {
         val expectedMessage = BackupMessage(
-            id = "messageId",
+            id = "message_id",
             conversationId = BackupQualifiedId("value", "domain"),
-            senderUserId = BackupQualifiedId("senderID", "senderDomain"),
+            senderUserId = BackupQualifiedId("sender_id", "sender_domain"),
             senderClientId = "senderClientId",
             creationDate = BackupDateTime(0L),
             content = content,
