@@ -60,8 +60,8 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetUserMlsClientIdentitiesUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.GetUserMlsClientIdentitiesUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
@@ -123,6 +123,7 @@ class UserScope internal constructor(
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger,
     private val teamUrlUseCase: GetTeamUrlUseCase,
+    private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
     private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -158,10 +159,10 @@ class UserScope internal constructor(
             isE2EIEnabledUseCase = isE2EIEnabledUseCase,
             userRepository = userRepository
         )
-    val getUserE2eiCertificates: GetUserE2eiCertificatesUseCase
-        get() = GetUserE2eiCertificatesUseCaseImpl(
+    val getUserMlsClientIdentities: GetUserMlsClientIdentitiesUseCase
+        get() = GetUserMlsClientIdentitiesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            isE2EIEnabledUseCase = isE2EIEnabledUseCase
+            isMlsEnabledUseCase = isMLSEnabledUseCase,
         )
     val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
         get() = GetMembersE2EICertificateStatusesUseCaseImpl(
