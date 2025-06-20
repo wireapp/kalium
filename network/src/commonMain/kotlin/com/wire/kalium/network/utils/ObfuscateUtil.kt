@@ -86,23 +86,22 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
     }
 
 fun obfuscatePath(url: Url): String {
+
     var requestToLog = url.host
-    if (url.pathSegments.isNotEmpty()) {
-        url.pathSegments.map {
-            requestToLog += "/${it.obfuscateUrlPath()}"
-        }
+
+    requestToLog += url.pathSegments.joinToString("/") {
+        it.obfuscateUrlPath()
     }
 
     if (url.parameters.entries().isNotEmpty()) {
         requestToLog += "?"
-        url.parameters.entries().map {
-            if (it.value.isNotEmpty()) {
-                requestToLog += "${it.key}=${it.value[0].obfuscateUrlPath()}&"
+        requestToLog += url.parameters.entries()
+            .filter { it.value.isNotEmpty() }.joinToString("&") { (key, value) ->
+                "$key=${value[0].obfuscateUrlPath()}"
             }
-        }
     }
 
-    return requestToLog.trimEnd('&')
+    return requestToLog
 }
 
 fun deleteSensitiveItemsFromJson(text: String): String {
