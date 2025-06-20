@@ -231,7 +231,7 @@ class NodeUploadManagerTest {
     }
 
     private class Arrangement(val uploadScope: CoroutineScope) {
-        
+
         val repository = mock(CellsRepository::class)
 
         val fileSystem = FakeFileSystem()
@@ -332,6 +332,8 @@ private class TestRepository : CellsRepository {
 
     override suspend fun deletePublicLink(linkUuid: String) = Unit.right()
     override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
-    override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
+    override suspend fun moveNode(uuid: String, path: String, targetPath: String, targetIsParent: Boolean): Either<NetworkFailure, Unit> =
+        Unit.right()
+
     override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> = Unit.right()
 }

@@ -214,7 +214,12 @@ internal class CellsApiImpl(
         }.mapSuccess { response -> response.toDto() }
     }
 
-    override suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
+    override suspend fun moveNode(
+        uuid: String,
+        path: String,
+        targetPath: String,
+        targetIsParent: Boolean
+    ): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
             name = NodeServiceApi.NamePerformAction.move,
             parameters = RestActionParameters(
@@ -223,7 +228,7 @@ internal class CellsApiImpl(
                 awaitTimeout = AWAIT_TIMEOUT,
                 copyMoveOptions = RestActionOptionsCopyMove(
                     targetPath = targetPath,
-                    targetIsParent = true,
+                    targetIsParent = targetIsParent,
                 )
             )
         )

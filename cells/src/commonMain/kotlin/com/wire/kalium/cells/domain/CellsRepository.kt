@@ -57,6 +57,6 @@ internal interface CellsRepository {
     suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, String>
     suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit>
     suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>>
-    suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
+    suspend fun moveNode(uuid: String, path: String, targetPath: String, targetIsParent: Boolean = true): Either<NetworkFailure, Unit>
     suspend fun restoreNode(path: String): Either<NetworkFailure, Unit>
 }

@@ -198,10 +198,10 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> =
+    override suspend fun moveNode(uuid: String, path: String, targetPath: String, targetIsParent: Boolean): Either<NetworkFailure, Unit> =
         withContext(dispatchers.io) {
             wrapApiRequest {
-                cellsApi.moveNode(uuid = uuid, path = path, targetPath = targetPath)
+                cellsApi.moveNode(uuid = uuid, path = path, targetPath = targetPath, targetIsParent = targetIsParent)
             }
         }
 
