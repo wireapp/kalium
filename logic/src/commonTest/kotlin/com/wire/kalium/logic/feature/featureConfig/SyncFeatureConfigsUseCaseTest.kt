@@ -60,7 +60,6 @@ import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -696,8 +695,6 @@ class SyncFeatureConfigsUseCaseTest {
         private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
         val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
         var kaliumConfigs = KaliumConfigs()
-
-        @Mock
         val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
 
         var userConfigRepository: UserConfigRepository = UserConfigDataSource(
@@ -706,11 +703,7 @@ class SyncFeatureConfigsUseCaseTest {
             kaliumConfigs
         )
             private set
-
-        @Mock
         val featureConfigRepository = mock(FeatureConfigRepository::class)
-
-        @Mock
         val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
 
         private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase

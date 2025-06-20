@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -70,7 +69,6 @@ class ChannelAddPermissionTypeDTOUpdateEventHandlerTest {
 
     private class Arrangement {
 
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
         private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler by lazy {

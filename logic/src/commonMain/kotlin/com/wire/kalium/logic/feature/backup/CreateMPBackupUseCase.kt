@@ -42,7 +42,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
@@ -56,7 +55,7 @@ interface CreateMPBackupUseCase {
      * with the provided password if password is not empty.
      * @param password The password to encrypt the backup file with. If empty, the file will be unencrypted.
      */
-    suspend operator fun invoke(password: String): CreateBackupResult
+    suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult
 }
 
 internal class CreateMPBackupUseCaseImpl(
@@ -69,13 +68,14 @@ internal class CreateMPBackupUseCaseImpl(
 ) : CreateMPBackupUseCase {
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun invoke(password: String): CreateBackupResult = withContext(dispatchers.io) {
+    override suspend fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult = withContext(dispatchers.io) {
         try {
 
             val selfUser = userRepository.getSelfUser().getOrNull() ?: error("Self user not found")
             val backupFileName = createBackupFileName(selfUser)
             val backupWorkDir = kaliumFileSystem.tempFilePath("$backupFileName-create-workdir")
             val mpBackupExporter = createBackupExporter(selfUser, backupFileName, backupWorkDir.toString())
+            var pageIndex = 0
 
             with(backupRepository) {
                 awaitAll(
@@ -90,9 +90,10 @@ internal class CreateMPBackupUseCaseImpl(
                         }
                     },
                     async {
-                        getMessages().collectLatest { page ->
+                        getMessages { totalPages, page ->
                             page.mapNotNull(Message::toBackupMessage)
                                 .forEach { mpBackupExporter.add(it) }
+                            onProgress(pageIndex++.toFloat() / totalPages)
                         }
                     }
                 )

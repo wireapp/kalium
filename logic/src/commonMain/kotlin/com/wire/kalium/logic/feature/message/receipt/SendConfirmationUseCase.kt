@@ -42,6 +42,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.serialization.toJsonElement
+import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
@@ -53,6 +54,7 @@ import kotlinx.serialization.json.Json
  * - For 1:1 we take into consideration [UserPropertyRepository.getReadReceiptsStatus]
  * - For group conversations we have to look for each group conversation configuration.
  */
+@Mockable
 internal interface SendConfirmationUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,

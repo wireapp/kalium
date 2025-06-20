@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.framework.TestConversation
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -51,7 +50,6 @@ class CreateChannelUseCaseTest {
 
     private class Arrangement {
 
-        @Mock
         val groupConversationCreator = mock(GroupConversationCreator::class)
 
         private val createChannel = CreateChannelUseCase(groupConversationCreator)

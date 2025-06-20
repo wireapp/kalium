@@ -19,15 +19,15 @@
 package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
-import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -45,8 +45,10 @@ class DeleteTeamConversationUseCaseTest {
         val (arrangement, deleteTeamConversation) = Arrangement()
             .withGetSelfTeam()
             .withSuccessApiDeletingConversation()
-            .withSuccessDeletingConversationLocally()
-            .arrange()
+//             .withSuccessDeletingConversationLocally()
+            .arrange {
+                withDeletingConversationSucceeding()
+            }
 
         val result = deleteTeamConversation(TestConversation.ID)
 
@@ -58,7 +60,7 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
         }.wasInvoked(once)
         coVerify {
-            arrangement.conversationRepository.deleteConversation(eq(TestConversation.ID))
+            arrangement.deleteConversation(eq(TestConversation.ID))
         }.wasInvoked(once)
     }
 
@@ -67,7 +69,9 @@ class DeleteTeamConversationUseCaseTest {
         val (arrangement, deleteTeamConversation) = Arrangement()
             .withGetSelfTeam()
             .withApiErrorDeletingConversation()
-            .arrange()
+            .arrange {
+                withDeletingConversationSucceeding()
+            }
 
         val result = deleteTeamConversation(TestConversation.ID)
 
@@ -79,7 +83,7 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
         }.wasInvoked(once)
         coVerify {
-            arrangement.conversationRepository.deleteConversation(eq(TestConversation.ID))
+            arrangement.deleteConversation(eq(TestConversation.ID))
         }.wasNotInvoked()
     }
 
@@ -88,7 +92,9 @@ class DeleteTeamConversationUseCaseTest {
         val (arrangement, deleteTeamConversation) = Arrangement()
             .withGetSelfTeam(null)
             .withApiErrorDeletingConversation()
-            .arrange()
+            .arrange {
+                withDeletingConversationSucceeding()
+            }
 
         val result = deleteTeamConversation(TestConversation.ID)
 
@@ -100,26 +106,14 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TestTeam.TEAM_ID))
         }.wasNotInvoked()
         coVerify {
-            arrangement.conversationRepository.deleteConversation(eq(TestConversation.ID))
+            arrangement.deleteConversation(eq(TestConversation.ID))
         }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl() {
 
-        var deleteTeamConversation: DeleteTeamConversationUseCase
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
-
-        @Mock
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-        init {
-            deleteTeamConversation = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
-        }
 
         suspend fun withGetSelfTeam(team: Team? = TestTeam.TEAM) = apply {
             val result = team?.id?.let {
@@ -142,13 +136,11 @@ class DeleteTeamConversationUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withSuccessDeletingConversationLocally() = apply {
-            coEvery {
-                conversationRepository.deleteConversation(any())
-            }.returns(Either.Right(Unit))
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteTeamConversationUseCase> = run {
+            val useCase = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, deleteConversation)
+            block()
+            this to useCase
         }
-
-        fun arrange() = this to deleteTeamConversation
     }
 
 }

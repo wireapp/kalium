@@ -34,7 +34,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import com.wire.kalium.logic.framework.TestClient.CLIENT
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -161,22 +160,11 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
         }
 
     private class Arrangement {
-        @Mock
         val clientRepository: ClientRepository = mock(ClientRepository::class)
-
-        @Mock
         val clientRemoteRepository: ClientRemoteRepository = mock(ClientRemoteRepository::class)
-
-        @Mock
         val selfClientIdProvider = mock(CurrentClientIdProvider::class)
-
-        @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
-
-        @Mock
         val selfServerConfigUseCase = mock(SelfServerConfigUseCase::class)
-
-        @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
         init {

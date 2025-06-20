@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import io.mockative.Mockable
 
+@Mockable
 interface ConnectionStateMapper {
     fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
     fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State

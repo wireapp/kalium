@@ -25,12 +25,14 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
+import io.mockative.Mockable
 
 /**
  * Represents a handler for recovering from incremental sync.
  *
  * @see IncrementalSyncRecoveryHandlerImpl
  */
+@Mockable
 internal interface IncrementalSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback)
 }
@@ -60,7 +62,7 @@ internal class IncrementalSyncRecoveryHandlerImpl(
         logger.i("$TAG Checking if we can recover from the failure: $failure")
         if (shouldDiscardEventsAndRestartSlowSync(failure)) {
             logger.i("$TAG Discarding all events and restarting the slow sync process")
-            eventRepository.clearLastProcessedEventId().onSuccess {
+            eventRepository.clearLastSavedEventId().onSuccess {
                 restartSlowSyncProcessForRecoveryUseCase()
             }
         }

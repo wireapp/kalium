@@ -19,6 +19,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,8 +29,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -53,8 +52,8 @@ internal interface ConversationRepositoryArrangement {
         domain: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
-    suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
     suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
     suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement
@@ -120,7 +119,6 @@ internal interface ConversationRepositoryArrangement {
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
 
-    @Mock
     override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     override suspend fun withGetGroupConversationsWithMembersWithBothDomains(
@@ -147,15 +145,15 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId>) {
+    override suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId>) {
         coEvery {
-            conversationRepository.deleteConversation(matches { conversationId.matches(it) })
+            conversationRepository.deleteConversationLocally(matches { conversationId.matches(it) })
         }.returns(Either.Right(Unit))
     }
 
-    override suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId>) {
+    override suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId>) {
         coEvery {
-            conversationRepository.deleteConversation(matches { conversationId.matches(it) })
+            conversationRepository.deleteConversationLocally(matches { conversationId.matches(it) })
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 

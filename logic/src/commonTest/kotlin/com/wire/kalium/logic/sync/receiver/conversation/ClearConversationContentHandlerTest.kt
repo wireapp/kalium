@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
@@ -25,12 +26,12 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -62,7 +63,7 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
             coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
 
@@ -86,7 +87,7 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
             coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
         }
 
@@ -110,7 +111,7 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
             coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
 
@@ -133,7 +134,7 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
     }
 
@@ -157,7 +158,7 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasInvoked(exactly = once)
     }
@@ -182,7 +183,7 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.deleteConversation(any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasNotInvoked()
     }
@@ -206,16 +207,16 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
     }
 
 
-    private class Arrangement : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
-        @Mock
-        val isMessageSentInSelfConversationUseCase = mock(IsMessageSentInSelfConversationUseCase::class)
+    private class Arrangement :
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        DeleteConversationArrangement by DeleteConversationArrangementImpl() {
 
-        @Mock
+        val isMessageSentInSelfConversationUseCase = mock(IsMessageSentInSelfConversationUseCase::class)
         val clearConversationAssetsLocally = mock(ClearConversationAssetsLocallyUseCase::class)
 
         suspend fun withMessageSentInSelfConversation(isSentInSelfConv: Boolean) = apply {
@@ -227,7 +228,8 @@ class ClearConversationContentHandlerTest {
                 conversationRepository = conversationRepository,
                 selfUserId = TestUser.USER_ID,
                 isMessageSentInSelfConversation = isMessageSentInSelfConversationUseCase,
-                clearLocalConversationAssets = clearConversationAssetsLocally
+                clearLocalConversationAssets = clearConversationAssetsLocally,
+                deleteConversation = deleteConversation
             )
             withDeletingConversationSucceeding()
             withClearContentSucceeding()

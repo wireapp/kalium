@@ -8,7 +8,6 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.encodeBase64
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.every
@@ -40,10 +39,7 @@ class ProteusClientProviderTest {
 
     private class Arrangement {
 
-        @Mock
         val passphraseStorage = mock(PassphraseStorage::class)
-
-        @Mock
         val proteusMigrationRecoveryHandler = mock(ProteusMigrationRecoveryHandler::class)
 
         init {

@@ -51,7 +51,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
@@ -81,6 +80,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -92,6 +92,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
+@Mockable
 interface ConversationRepository {
     val extensions: ConversationRepositoryExtensions
 
@@ -236,7 +237,15 @@ interface ConversationRepository {
         channelAddPermission: ChannelAddPermission
     ): Either<CoreFailure, Unit>
 
-    suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+    /**
+     * this fun should never be used directly, use DeleteConversationUseCase() instead
+     * @see DeleteConversationUseCase
+     */
+    @DelicateKaliumApi(
+        message = "Calling this function directly does not support MLS conversations",
+        replaceWith = ReplaceWith("com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase")
+    )
+    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
@@ -900,26 +909,9 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun deleteConversation(conversationId: ConversationId) =
-        getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
-            when (protocolInfo) {
-                is Conversation.ProtocolInfo.MLSCapable -> {
-                    wrapStorageRequest {
-                        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
-                    }.onSuccess {
-                        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                            wrapMLSRequest {
-                                mlsClient.wipeConversation(protocolInfo.groupId.toCrypto())
-                            }
-                        }
-                    }
-                }
-
-                is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
-                    conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
-                }
-            }
-        }
+    override suspend fun deleteConversationLocally(conversationId: ConversationId) = wrapStorageRequest {
+        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+    }
 
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {

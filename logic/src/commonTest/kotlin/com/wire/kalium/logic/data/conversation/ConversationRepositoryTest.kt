@@ -103,7 +103,6 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -714,29 +713,9 @@ class ConversationRepositoryTest {
             .arrange()
         val conversationId = ConversationId("conv_id", "conv_domain")
 
-        conversationRepository.deleteConversation(conversationId).shouldSucceed()
+        conversationRepository.deleteConversationLocally(conversationId).shouldSucceed()
 
         with(arrangement) {
-            coVerify {
-                conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
-            }.wasInvoked(once)
-        }
-    }
-
-    @Test
-    fun givenMlsConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withGetConversationProtocolInfoReturns(MLS_PROTOCOL_INFO)
-            .withSuccessfulConversationDeletion()
-            .arrange()
-        val conversationId = ConversationId("conv_id", "conv_domain")
-
-        conversationRepository.deleteConversation(conversationId).shouldSucceed()
-
-        with(arrangement) {
-            coVerify {
-                mlsClient.wipeConversation(eq(GROUP_ID.toCrypto()))
-            }.wasInvoked(once)
             coVerify {
                 conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
             }.wasInvoked(once)
@@ -1516,45 +1495,19 @@ class ConversationRepositoryTest {
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
-        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
-
-        @Mock
         val mlsClient: MLSClient = mock(MLSClient::class)
-
-        @Mock
         val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-
-        @Mock
         val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-
-        @Mock
         val conversationApi: ConversationApi = mock(ConversationApi::class)
-
-        @Mock
         val clientDao: ClientDAO = mock(ClientDAO::class)
-
-        @Mock
         private val clientApi = mock(ClientApi::class)
-
-        @Mock
         private val messageDAO = mock(MessageDAO::class)
-
-        @Mock
         private val messageDraftDAO = mock(MessageDraftDAO::class)
-
-        @Mock
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
-
-        @Mock
         val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
-
-        @Mock
-        val renamedConversationEventHandler =
-            mock(RenamedConversationEventHandler::class)
+        val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
 
         val conversationRepository =
             ConversationDataSource(

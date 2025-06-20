@@ -34,7 +34,6 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -127,17 +126,9 @@ class OnParticipantListChangedTest {
 
 
     internal class Arrangement {
-
-        @Mock
         val callRepository = mock(CallRepository::class)
-
-        @Mock
         val participantMapper = mock(ParticipantMapper::class)
-
-        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
-
-        @Mock
         val callHelper = mock(CallHelper::class)
 
         var isEndCallInvoked = false

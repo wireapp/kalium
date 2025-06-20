@@ -36,7 +36,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -141,23 +140,11 @@ class MLSMessageUnpackerTest {
     }
 
     private class Arrangement {
-
-        @Mock
         val mlsClient = mock(MLSClient::class)
-
-        @Mock
         val mlsClientProvider = mock(MLSClientProvider::class)
-
-        @Mock
         val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
         val pendingProposalScheduler = mock(PendingProposalScheduler::class)
-
-        @Mock
         val subconversationRepository = mock(SubconversationRepository::class)
 
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(

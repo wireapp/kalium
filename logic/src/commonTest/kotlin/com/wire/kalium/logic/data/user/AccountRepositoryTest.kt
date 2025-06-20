@@ -26,7 +26,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.UserDAO
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -129,10 +128,8 @@ class AccountRepositoryTest {
     }
 
     private class Arrangement {
-        @Mock
-        val userDAO = mock(UserDAO::class)
 
-        @Mock
+        val userDAO = mock(UserDAO::class)
         val selfApi = mock(SelfApi::class)
 
         val selfUserId = TestUser.SELF.id

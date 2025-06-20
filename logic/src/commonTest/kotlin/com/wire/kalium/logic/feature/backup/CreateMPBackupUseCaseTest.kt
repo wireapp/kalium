@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.dump.BackupExportResult
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
@@ -38,7 +40,6 @@ import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -46,7 +47,6 @@ import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -76,12 +76,10 @@ class CreateMPBackupUseCaseTest {
 
         val (arrangement, useCase) = Arrangement()
             .withExporter()
-            .withUsers(listOf(testUser))
-            .withConversations(listOf(TestConversation.CONVERSATION))
             .withMessages(listOf(TEXT_MESSAGE))
             .arrange()
 
-        val result = useCase("test_password")
+        val result = useCase("test_password") {}
 
         assertTrue(result is CreateBackupResult.Success)
         coVerify { arrangement.exporter.add(testUser.toBackupUser()) }.wasInvoked(1)
@@ -94,40 +92,40 @@ class CreateMPBackupUseCaseTest {
 
         val (_, useCase) = Arrangement()
             .withErrorExporter()
-            .withUsers(listOf(testUser))
-            .withConversations(listOf(TestConversation.CONVERSATION))
             .withMessages(listOf(TEXT_MESSAGE))
             .arrange()
 
-        val result = useCase("test_password")
+        val result = useCase("test_password") {}
 
         assertTrue(result is CreateBackupResult.Failure)
     }
 
     private inner class Arrangement {
 
-        @Mock
         val userRepository = mock(UserRepository::class)
-
-        @Mock
-        val backupRepository = mock(BackupRepository::class)
-
-        @Mock
         val exporter = mock(BackupExporter::class)
-
-        @Mock
         val exporterProvider = mock(MPBackupExporterProvider::class)
 
-        suspend fun withUsers(users: List<OtherUser>) = apply {
-            coEvery { backupRepository.getUsers() }.returns(users)
-        }
+        var backupMessages: List<Message.Standalone> = emptyList()
 
-        suspend fun withConversations(conversations: List<Conversation>) = apply {
-            coEvery { backupRepository.getConversations() }.returns(conversations)
+        val backupRepository = object : BackupRepository {
+            override suspend fun getUsers(): List<OtherUser> = listOf(testUser)
+
+            override suspend fun getConversations(): List<Conversation> = listOf(TestConversation.CONVERSATION)
+
+            override fun getMessages(onPage: (Int, List<Message.Standalone>) -> Unit) {
+                onPage(1, backupMessages)
+            }
+
+            override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
         }
 
         fun withMessages(messages: List<Message.Standalone>) = apply {
-            every { backupRepository.getMessages() }.returns(flowOf(messages))
+            backupMessages = messages
         }
 
         suspend fun withExporter() = apply {

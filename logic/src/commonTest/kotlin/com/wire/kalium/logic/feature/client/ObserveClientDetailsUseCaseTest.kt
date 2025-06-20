@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -42,11 +41,9 @@ import kotlin.test.assertIs
 
 class ObserveClientDetailsUseCaseTest {
 
-    @Mock
-    private val clientRepository = mock(ClientRepository::class)
+        private val clientRepository = mock(ClientRepository::class)
 
-    @Mock
-    private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
     private lateinit var observeClientDetailsUseCase: ObserveClientDetailsUseCase
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 

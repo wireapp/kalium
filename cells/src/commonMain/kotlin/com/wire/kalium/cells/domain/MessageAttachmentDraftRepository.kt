@@ -25,8 +25,10 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
+@Mockable
 public interface MessageAttachmentDraftRepository {
     @Suppress("LongParameterList")
     public suspend fun add(

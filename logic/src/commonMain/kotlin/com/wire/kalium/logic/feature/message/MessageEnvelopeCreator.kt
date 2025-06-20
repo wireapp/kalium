@@ -50,8 +50,10 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.error.wrapProteusRequest
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
+@Mockable
 interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(

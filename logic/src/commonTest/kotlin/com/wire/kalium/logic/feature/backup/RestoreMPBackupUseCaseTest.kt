@@ -20,8 +20,6 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupUser
-import com.wire.backup.ingest.ImportDataPager
-import com.wire.backup.ingest.ImportResultPager
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
@@ -34,18 +32,19 @@ import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupImporter
+import com.wire.kalium.logic.feature.backup.provider.ImportDataPagerMockable
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
+import com.wire.kalium.logic.feature.backup.provider.ImportResultPagerMockable
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
+import io.mockative.of
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
@@ -80,7 +79,7 @@ class RestoreMPBackupUseCaseTest {
             .withSuccessImport()
             .arrange()
 
-        useCase(arrangement.storedPath, null)
+        useCase(arrangement.storedPath, null) {}
 
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
@@ -94,7 +93,7 @@ class RestoreMPBackupUseCaseTest {
             .withSuccessImport()
             .arrange()
 
-        useCase(arrangement.storedPath, "test_password")
+        useCase(arrangement.storedPath, "test_password") {}
 
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
@@ -108,7 +107,7 @@ class RestoreMPBackupUseCaseTest {
             .withInvalidPassword()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.InvalidPassword, result.failure)
@@ -121,7 +120,7 @@ class RestoreMPBackupUseCaseTest {
             .withParsingFailure()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure"), result.failure)
@@ -134,7 +133,7 @@ class RestoreMPBackupUseCaseTest {
             .withUnzipFailure()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unzipping error"), result.failure)
@@ -147,7 +146,7 @@ class RestoreMPBackupUseCaseTest {
             .withOtherFailure()
             .arrange()
 
-        val result = useCase(arrangement.storedPath, "invalid_password")
+        val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error"), result.failure)
@@ -155,25 +154,12 @@ class RestoreMPBackupUseCaseTest {
 
     private inner class Arrangement {
 
-        @Mock
         val backupRepository = mock(BackupRepository::class)
-
-        @Mock
         val importerProvider = mock(MPBackupImporterProvider::class)
-
-        @Mock
-        val resultPager = mock(ImportResultPager::class)
-
-        @Mock
-        val usersPager = mock(classOf<ImportDataPager<BackupUser>>())
-
-        @Mock
-        val conversationsPager = mock(classOf<ImportDataPager<BackupConversation>>())
-
-        @Mock
-        val messagesPager = mock(classOf<ImportDataPager<BackupMessage>>())
-
-        @Mock
+        val resultPager = mock(ImportResultPagerMockable::class)
+        val usersPager = mock(of<ImportDataPagerMockable<BackupUser>>())
+        val conversationsPager = mock(of<ImportDataPagerMockable<BackupConversation>>())
+        val messagesPager = mock(of<ImportDataPagerMockable<BackupMessage>>())
         val importer = mock(BackupImporter::class)
 
         val storedPath = "testPath/backupFile.zip".toPath()
@@ -230,6 +216,7 @@ class RestoreMPBackupUseCaseTest {
             every { resultPager.usersPager }.returns(usersPager)
             every { resultPager.conversationsPager }.returns(conversationsPager)
             every { resultPager.messagesPager }.returns(messagesPager)
+            every { resultPager.totalPagesCount }.returns(1)
 
             return this to RestoreMPBackupUseCaseImpl(
                 selfUserId = selfUserId,

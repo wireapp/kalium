@@ -148,15 +148,10 @@ private fun readCompressedEntry(
     entry: ZipEntry
 ): Long {
     var totalExtractedFilesSize = 0L
-    var byteCount: Int
     val entryPathName = "$outputRootPath/${entry.name}"
     val outputSink = fileSystem.sink(entryPathName.toPath().normalized())
-    outputSink.buffer().use { output ->
-        while (zipInputStream.read().also { byteCount = it } != -1) {
-            output.writeByte(byteCount)
-            totalExtractedFilesSize += byteCount
-        }
-        output.write(zipInputStream.readBytes())
+    outputSink.buffer().outputStream().use { output ->
+        totalExtractedFilesSize = zipInputStream.copyTo(output, BUFFER_SIZE.toInt())
     }
     return totalExtractedFilesSize
 }

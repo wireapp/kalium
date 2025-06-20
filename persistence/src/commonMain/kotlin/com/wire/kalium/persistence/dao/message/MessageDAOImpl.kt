@@ -122,10 +122,14 @@ internal class MessageDAOImpl internal constructor(
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsList().firstOrNull() == 1L
 
-    @Deprecated("For test only!")
-    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
+    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>, withUnreadEvents: Boolean) = withContext(coroutineContext) {
         queries.transaction {
-            messages.forEach { insertInDB(it) }
+            messages.forEach {
+                insertInDB(
+                    message = it,
+                    withUnreadEvents = withUnreadEvents
+                )
+            }
         }
     }
 
@@ -145,14 +149,14 @@ internal class MessageDAOImpl internal constructor(
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
-    private fun insertInDB(message: MessageEntity) {
+    private fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true) {
         // do not add withContext
         if (!updateIdIfAlreadyExists(message)) {
             if (isValidAssetMessageUpdate(message)) {
                 updateAssetMessage(message)
                 return
             } else {
-                insertMessageOrIgnore(message)
+                insertMessageOrIgnore(message, withUnreadEvents)
             }
         }
     }
@@ -530,18 +534,36 @@ internal class MessageDAOImpl internal constructor(
             queries.selectNextAudioMessage(conversationId, prevMessageId).executeAsOneOrNull()
         }
 
-    override suspend fun getMessagesPage(
+    override fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =
+        queries.countBackupMessages(contentTypes).executeAsOne()
+
+    override fun getMessagesPaged(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        pageSize: Int,
+        onPage: (List<MessageEntity>) -> Unit,
+    ) {
+        queries.transaction {
+            var currentOffset = 0L
+            var page: List<MessageEntity>
+
+            do {
+                page = getMessagesPage(contentTypes, currentOffset, pageSize.toLong())
+                onPage(page)
+                currentOffset += pageSize
+            } while (page.size == pageSize)
+        }
+    }
+
+    private fun getMessagesPage(
         contentTypes: Collection<MessageEntity.ContentType>,
         offset: Long,
         pageSize: Long,
-    ) = withContext(coroutineContext) {
-            queries.selectForBackup(
-                contentType = contentTypes,
-                limit = pageSize,
-                offset = offset,
-                mapper::toEntityMessageFromView
-            ).executeAsList()
-        }
+    ) = queries.selectForBackup(
+        contentType = contentTypes,
+        limit = pageSize,
+        offset = offset,
+        mapper::toEntityMessageFromView
+    ).executeAsList()
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 

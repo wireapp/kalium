@@ -28,7 +28,9 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.logger.kaliumLogger
+import io.mockative.Mockable
 
+@Mockable
 internal interface OneOnOneProtocolSelector {
     suspend fun getProtocolForUser(userId: UserId): Either<CoreFailure, SupportedProtocol>
 }

@@ -233,6 +233,8 @@ import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
@@ -479,6 +481,7 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -989,6 +992,7 @@ class UserSessionScope internal constructor(
         get() = EventGathererImpl(
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
+            processingScope = this@UserSessionScope,
             logger = userScopedLogger
         )
 
@@ -1255,6 +1259,7 @@ class UserSessionScope internal constructor(
         get() = EventDataSource(
             notificationApi = authenticatedNetworkContainer.notificationApi,
             metadataDAO = userStorage.database.metadataDAO,
+            eventDAO = userStorage.database.eventDAO,
             currentClientId = clientIdProvider,
             clientRegistrationStorage = clientRegistrationStorage,
             selfUserId = userId
@@ -1463,7 +1468,8 @@ class UserSessionScope internal constructor(
                 conversationRepository,
                 userId,
                 isMessageSentInSelfConversation,
-                conversations.clearConversationAssetsLocally
+                conversations.clearConversationAssetsLocally,
+                deleteConversationUseCase
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
@@ -1520,7 +1526,8 @@ class UserSessionScope internal constructor(
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
             conversationRepository,
-            NotificationEventsManagerImpl
+            NotificationEventsManagerImpl,
+            deleteConversationUseCase
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
@@ -1540,8 +1547,7 @@ class UserSessionScope internal constructor(
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
-            mlsClientProvider = mlsClientProvider,
-            conversationDAO = userStorage.database.conversationDAO,
+            deleteConversation = deleteConversationUseCase,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -1728,6 +1734,7 @@ class UserSessionScope internal constructor(
         MissedNotificationsEventReceiverImpl(
             slowSyncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
+            eventRepository = eventRepository,
         )
     }
 
@@ -1924,6 +1931,7 @@ class UserSessionScope internal constructor(
             messages.messageRepository,
             assetRepository,
             newGroupConversationSystemMessagesCreator,
+            deleteConversationUseCase
         )
     }
 
@@ -2173,7 +2181,6 @@ class UserSessionScope internal constructor(
     val team: TeamScope
         get() = TeamScope(
             teamRepository = teamRepository,
-            conversationRepository = conversationRepository,
             slowSyncRepository = slowSyncRepository,
             selfTeamIdProvider = selfTeamId
         )
@@ -2330,6 +2337,12 @@ class UserSessionScope internal constructor(
         )
     }
 
+    val deleteConversationUseCase: DeleteConversationUseCase
+        get() = DeleteConversationUseCaseImpl(
+        conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+        )
+
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
@@ -2397,6 +2410,7 @@ class UserSessionScope internal constructor(
     }
 }
 
+@Mockable
 fun interface CachedClientIdClearer {
     operator fun invoke()
 }
