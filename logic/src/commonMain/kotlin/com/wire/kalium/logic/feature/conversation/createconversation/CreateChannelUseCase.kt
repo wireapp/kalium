@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation.createconversation
 
-import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.user.UserId
 
 /**
@@ -29,11 +29,11 @@ class CreateChannelUseCase internal constructor(
     suspend operator fun invoke(
         name: String,
         userIdList: List<UserId>,
-        options: ConversationOptions
+        options: CreateConversationParam
     ): ConversationCreationResult =
         createGroupConversation.invoke(
             name,
             userIdList,
-            options.copy(groupType = ConversationOptions.GroupType.CHANNEL)
+            options.copy(groupType = CreateConversationParam.GroupType.CHANNEL)
         )
 }
