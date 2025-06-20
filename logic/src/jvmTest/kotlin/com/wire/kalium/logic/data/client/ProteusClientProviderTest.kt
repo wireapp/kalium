@@ -33,14 +33,14 @@ class ProteusClientProviderTest {
         try {
             proteusClientProvider.getOrCreate()
         } catch (e: ProteusStorageMigrationException) {
-            coVerify { arrangement.proteusMigrationRecoveryHandler.clearClientData(any()) }.wasInvoked(once)
+            coVerify { arrangement.coreCryptoMigrationRecoveryHandler.clearClientData(any()) }.wasInvoked(once)
         }
     }
 
     private class Arrangement {
 
         val passphraseStorage = mock(PassphraseStorage::class)
-        val proteusMigrationRecoveryHandler = mock(ProteusMigrationRecoveryHandler::class)
+        val coreCryptoMigrationRecoveryHandler = mock(CoreCryptoMigrationRecoveryHandler::class)
 
         init {
             val newKeyBytes = SecureRandom().nextBytes(32)
@@ -68,7 +68,7 @@ class ProteusClientProviderTest {
             passphraseStorage = passphraseStorage,
             kaliumConfigs = KaliumConfigs(encryptProteusStorage = true),
             dispatcher = KaliumDispatcherImpl,
-            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
+            coreCryptoMigrationRecoveryHandler = coreCryptoMigrationRecoveryHandler
         )
     }
 }

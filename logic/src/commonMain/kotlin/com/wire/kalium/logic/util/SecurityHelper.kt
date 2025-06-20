@@ -39,8 +39,8 @@ internal interface SecurityHelper {
     fun globalDBSecret(): GlobalDatabaseSecret
     fun userDBSecret(userId: UserId): UserDBSecret
     fun userDBOrSecretNull(userId: UserId): UserDBSecret?
-    suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret
-    suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
+    suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret?
+    suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret?
 }
 
 internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStorage) : SecurityHelper {
@@ -54,35 +54,44 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
     override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
         getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let { UserDBSecret(it) }
 
-    override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
+    override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret? {
         val newPassphrase = getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId")
         val oldPassphrase = getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
 
-        if (newPassphrase != null) {
-            return MlsDBSecret(newPassphrase.decodeBase64Bytes())
+        return if (newPassphrase != null) {
+            MlsDBSecret(newPassphrase.decodeBase64Bytes())
         } else {
             val newKeyBytes = SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH)
             val newKeyBase64 = newKeyBytes.encodeBase64()
-            migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
-            passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
-            return MlsDBSecret(newKeyBytes)
+
+            return try {
+                migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
+                passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
+                MlsDBSecret(newKeyBytes)
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 
-    override suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret {
+    @Suppress("ReturnCount")
+    override suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret? {
         val newPassphrase = getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId")
         val oldPassphrase = getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
 
-        if (newPassphrase != null) {
-            return ProteusDBSecret(newPassphrase.decodeBase64Bytes())
+        return if (newPassphrase != null) {
+            ProteusDBSecret(newPassphrase.decodeBase64Bytes())
         } else {
             val newKeyBytes = SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH)
             val newKeyBase64 = newKeyBytes.encodeBase64()
-            migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
 
-            passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
-
-            return ProteusDBSecret(newKeyBytes)
+            return try {
+                migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
+                passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
+                ProteusDBSecret(newKeyBytes)
+            } catch (_: Exception) {
+                return null
+            }
         }
     }
 
