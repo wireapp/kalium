@@ -47,7 +47,7 @@ interface ConversationDAO {
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
-    suspend fun insertOrIgnoreConversations(conversationEntities: List<ConversationEntity>)
+    suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun updateMlsGroupStateAndCipherSuite(
@@ -154,8 +154,6 @@ interface ConversationDAO {
 
     suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?)
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
-
-    suspend fun setLastModifiedIfNotSet(conversationId: QualifiedIDEntity, lastModifiedDate: Instant)
 }
 
 data class NameAndHandleEntity(

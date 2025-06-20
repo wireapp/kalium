@@ -151,15 +151,6 @@ internal class RestoreMPBackupUseCaseImpl(
                     kaliumLogger.e("Restore conversations error: $error")
                 }
 
-            conversations.forEach { conversation ->
-                conversation.lastModifiedDate?.let { date ->
-                    backupRepository.updateConversationLastModifiedDate(conversation.id, date)
-                        .onFailure { error ->
-                            kaliumLogger.e("Restore conversation last modified date error: $error")
-                        }
-                }
-            }
-
             onPageProcessed()
         }
     }

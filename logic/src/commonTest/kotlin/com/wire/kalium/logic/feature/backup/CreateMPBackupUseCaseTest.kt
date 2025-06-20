@@ -124,11 +124,6 @@ class CreateMPBackupUseCaseTest {
             override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
-
-            override suspend fun updateConversationLastModifiedDate(
-                conversationId: ConversationId,
-                instant: Instant
-            ): Either<CoreFailure, Unit> = Unit.right()
         }
 
         fun withMessages(messages: List<Message.Standalone>) = apply {
