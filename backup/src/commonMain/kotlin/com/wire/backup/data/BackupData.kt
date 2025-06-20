@@ -19,6 +19,8 @@
 
 package com.wire.backup.data
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
@@ -26,6 +28,7 @@ import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
 @JsExport
+@Serializable
 public class BackupData(
     public val metadata: BackupMetadata,
     @ShouldRefineInSwift
@@ -46,6 +49,7 @@ public class BackupData(
 }
 
 @JsExport
+@Serializable
 public data class BackupQualifiedId(
     val id: String,
     val domain: String,
@@ -64,6 +68,7 @@ public data class BackupQualifiedId(
 }
 
 @JsExport
+@Serializable
 public data class BackupUser(
     val id: BackupQualifiedId,
     val name: String,
@@ -71,12 +76,14 @@ public data class BackupUser(
 )
 
 @JsExport
+@Serializable
 public data class BackupConversation(
     val id: BackupQualifiedId,
     val name: String,
 )
 
 @JsExport
+@Serializable
 public data class BackupMessage(
     val id: String,
     val conversationId: BackupQualifiedId,
@@ -89,20 +96,25 @@ public data class BackupMessage(
     val lastEditTime: BackupDateTime? = null,
 )
 
+@Serializable(BackupDateTimeSerializer::class)
 public expect class BackupDateTime
 
 public expect fun BackupDateTime(timestampMillis: Long): BackupDateTime
 public expect fun BackupDateTime.toLongMilliseconds(): Long
 
 @JsExport
+@Serializable
 public sealed class BackupMessageContent {
+    @Serializable
     public data class Text(val text: String) : BackupMessageContent()
-
+    @Serializable
     public data class Asset(
         val mimeType: String,
         val size: Int,
         val name: String?,
+        @Serializable(with = ByteArrayStringSerializer::class)
         val otrKey: ByteArray,
+        @Serializable(with = ByteArrayStringSerializer::class)
         val sha256: ByteArray,
         val assetId: String,
         val assetToken: String?,
@@ -110,28 +122,31 @@ public sealed class BackupMessageContent {
         val encryption: EncryptionAlgorithm?,
         val metaData: AssetMetadata?,
     ) : BackupMessageContent() {
+        @Serializable
         public enum class EncryptionAlgorithm {
             AES_GCM, AES_CBC
         }
-
+        @Serializable
         public sealed class AssetMetadata {
+            @Serializable
             public data class Image(
                 val width: Int,
                 val height: Int,
                 val tag: String?
             ) : AssetMetadata()
-
+            @Serializable
             public data class Video(
                 val width: Int?,
                 val height: Int?,
                 val duration: Long?,
             ) : AssetMetadata()
-
+            @Serializable
             public data class Audio(
+                @Serializable(with = ByteArrayStringSerializer::class)
                 val normalization: ByteArray?,
                 val duration: Long?,
             ) : AssetMetadata()
-
+            @Serializable
             public data class Generic(
                 val name: String?,
             ) : AssetMetadata()
@@ -165,7 +180,7 @@ public sealed class BackupMessageContent {
             return result
         }
     }
-
+    @Serializable
     public data class Location(
         val longitude: Float,
         val latitude: Float,
