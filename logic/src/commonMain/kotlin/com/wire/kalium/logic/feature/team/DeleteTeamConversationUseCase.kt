@@ -19,13 +19,13 @@
 package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 
 fun interface DeleteTeamConversationUseCase {
 
@@ -42,7 +42,7 @@ fun interface DeleteTeamConversationUseCase {
 internal class DeleteTeamConversationUseCaseImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val teamRepository: TeamRepository,
-    private val conversationRepository: ConversationRepository,
+    private val deleteConversation: DeleteConversationUseCase
 ) : DeleteTeamConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Result {
@@ -55,7 +55,7 @@ internal class DeleteTeamConversationUseCaseImpl(
             }.fold({
                 Result.Failure.GenericFailure(it)
             }, {
-                conversationRepository.deleteConversation(conversationId)
+                deleteConversation(conversationId)
                 Result.Success
             })
     }

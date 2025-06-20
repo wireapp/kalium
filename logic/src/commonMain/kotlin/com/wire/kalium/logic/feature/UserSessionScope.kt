@@ -233,6 +233,8 @@ import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
@@ -286,11 +288,8 @@ import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
-import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
-import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
-import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
@@ -915,14 +914,12 @@ class UserSessionScope internal constructor(
 
     val backup: BackupScope
         get() = BackupScope(
-            userId,
-            clientIdProvider,
-            userRepository,
-            kaliumFileSystem,
-            userStorage,
-            persistMigratedMessage,
-            restartSlowSyncProcessForRecoveryUseCase,
-            globalPreferences,
+            userId = userId,
+            clientIdProvider = clientIdProvider,
+            userRepository = userRepository,
+            kaliumFileSystem = kaliumFileSystem,
+            userStorage = userStorage,
+            globalPreferences = globalPreferences,
         )
 
     val multiPlatformBackup: MultiPlatformBackupScope
@@ -1471,7 +1468,8 @@ class UserSessionScope internal constructor(
                 conversationRepository,
                 userId,
                 isMessageSentInSelfConversation,
-                conversations.clearConversationAssetsLocally
+                conversations.clearConversationAssetsLocally,
+                deleteConversationUseCase
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
@@ -1528,7 +1526,8 @@ class UserSessionScope internal constructor(
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
             conversationRepository,
-            NotificationEventsManagerImpl
+            NotificationEventsManagerImpl,
+            deleteConversationUseCase
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
@@ -1548,8 +1547,7 @@ class UserSessionScope internal constructor(
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
-            mlsClientProvider = mlsClientProvider,
-            conversationDAO = userStorage.database.conversationDAO,
+            deleteConversation = deleteConversationUseCase,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -1855,13 +1853,6 @@ class UserSessionScope internal constructor(
     private val protoContentMapper: ProtoContentMapper
         get() = ProtoContentMapperImpl(selfUserId = userId)
 
-    val persistMigratedMessage: PersistMigratedMessagesUseCase
-        get() = PersistMigratedMessagesUseCaseImpl(
-            userId,
-            userStorage.database.migrationDAO,
-            protoContentMapper = protoContentMapper
-        )
-
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector
         get() = OneOnOneProtocolSelectorImpl(
             userRepository,
@@ -1940,6 +1931,7 @@ class UserSessionScope internal constructor(
             messages.messageRepository,
             assetRepository,
             newGroupConversationSystemMessagesCreator,
+            deleteConversationUseCase
         )
     }
 
@@ -1952,7 +1944,6 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val migration by lazy { MigrationScope(userId, userStorage.database) }
     val debug: DebugScope by lazy {
         DebugScope(
             messageRepository,
@@ -2190,7 +2181,6 @@ class UserSessionScope internal constructor(
     val team: TeamScope
         get() = TeamScope(
             teamRepository = teamRepository,
-            conversationRepository = conversationRepository,
             slowSyncRepository = slowSyncRepository,
             selfTeamIdProvider = selfTeamId
         )
@@ -2346,6 +2336,12 @@ class UserSessionScope internal constructor(
             serverConfig = sessionManager.serverConfig(),
         )
     }
+
+    val deleteConversationUseCase: DeleteConversationUseCase
+        get() = DeleteConversationUseCaseImpl(
+        conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+        )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

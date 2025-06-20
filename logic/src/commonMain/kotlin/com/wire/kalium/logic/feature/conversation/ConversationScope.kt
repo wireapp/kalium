@@ -54,6 +54,7 @@ import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegul
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
@@ -128,6 +129,7 @@ class ConversationScope internal constructor(
     internal val messageRepository: MessageRepository,
     internal val assetRepository: AssetRepository,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val deleteConversationUseCase: DeleteConversationUseCase,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -182,7 +184,7 @@ class ConversationScope internal constructor(
         )
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
-        get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
+        get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, deleteConversationUseCase)
 
     internal val createGroupConversation: GroupConversationCreator
         get() = GroupConversationCreatorImpl(
@@ -293,7 +295,7 @@ class ConversationScope internal constructor(
     val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
         get() = DeleteConversationLocallyUseCaseImpl(
             clearConversationContent,
-            conversationRepository
+            deleteConversationUseCase
         )
 
     val joinConversationViaCode: JoinConversationViaCodeUseCase
