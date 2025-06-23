@@ -199,7 +199,11 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         val self = this
         return this.monkeyState.readyThen {
             val result = conversations.createRegularGroup(
-                name, monkeyList.map { it.monkeyType.userId() }, CreateConversationParam(protocol = protocol)
+                name,
+                monkeyList.map { it.monkeyType.userId() },
+                CreateConversationParam(
+                    protocol = protocol
+                )
             )
             if (result is ConversationCreationResult.Success) {
                 MonkeyConversation(self, result.conversation.id, isDestroyable, monkeyList)
