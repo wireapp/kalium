@@ -22,6 +22,7 @@ import com.wire.backup.dump.BackupExportResult
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.message.Message
@@ -42,7 +43,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
@@ -56,7 +57,7 @@ interface CreateMPBackupUseCase {
      * with the provided password if password is not empty.
      * @param password The password to encrypt the backup file with. If empty, the file will be unencrypted.
      */
-    suspend operator fun invoke(password: String): CreateBackupResult
+    suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult
 }
 
 internal class CreateMPBackupUseCaseImpl(
@@ -69,32 +70,40 @@ internal class CreateMPBackupUseCaseImpl(
 ) : CreateMPBackupUseCase {
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun invoke(password: String): CreateBackupResult = withContext(dispatchers.io) {
+    override suspend fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult = withContext(dispatchers.io) {
         try {
 
             val selfUser = userRepository.getSelfUser().getOrNull() ?: error("Self user not found")
             val backupFileName = createBackupFileName(selfUser)
             val backupWorkDir = kaliumFileSystem.tempFilePath("$backupFileName-create-workdir")
             val mpBackupExporter = createBackupExporter(selfUser, backupFileName, backupWorkDir.toString())
+            var pageIndex = 0
 
             with(backupRepository) {
                 awaitAll(
-                    async {
-                        getUsers().forEach { user ->
-                            mpBackupExporter.add(user.toBackupUser())
+                    coroutineScope {
+                        async {
+                            getUsers().forEach { user ->
+                                mpBackupExporter.add(user.toBackupUser())
+                            }
                         }
                     },
-                    async {
-                        getConversations().forEach { conversation ->
-                            mpBackupExporter.add(conversation.toBackupConversation())
+                    coroutineScope {
+                        async {
+                            getConversations().forEach { conversation ->
+                                mpBackupExporter.add(conversation.toBackupConversation())
+                            }
                         }
                     },
-                    async {
-                        getMessages().collectLatest { page ->
-                            page.mapNotNull(Message::toBackupMessage)
-                                .forEach { mpBackupExporter.add(it) }
+                    coroutineScope {
+                        async {
+                            getMessages { totalPages, page ->
+                                page.mapNotNull(Message::toBackupMessage)
+                                    .forEach { mpBackupExporter.add(it) }
+                                onProgress(pageIndex++.toFloat() / totalPages)
+                            }
                         }
-                    }
+                    },
                 )
             }
 
@@ -112,6 +121,7 @@ internal class CreateMPBackupUseCaseImpl(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            kaliumLogger.e("Failed to create backup", e)
             Failure(CoreFailure.Unknown(e))
         }
     }

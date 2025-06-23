@@ -41,6 +41,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -82,6 +83,8 @@ internal class EventGathererImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
+    processingScope: CoroutineScope,
+    private val liveSourceChangeHandler: LiveSourceChangeHandler = LiveSourceChangeHandlerImpl(processingScope),
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
@@ -97,6 +100,9 @@ internal class EventGathererImpl(
         .onEach {
             it.firstOrNull()?.let { lastEvent ->
                 _currentSource.value = lastEvent.deliveryInfo.source
+                liveSourceChangeHandler.scheduleNewCatchingUpJob(
+                    onEventIntervalGapReached = { _currentSource.value = EventSource.LIVE }
+                )
             }
         }
         .flatten()
@@ -150,7 +156,8 @@ internal class EventGathererImpl(
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Unit>) =
+    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Unit>) {
+        liveSourceChangeHandler.clear()
         when (val cause = webSocketEvent.cause) {
             null -> logger.i("Websocket closed normally")
             is IOException ->
@@ -159,6 +166,7 @@ internal class EventGathererImpl(
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }
+    }
 
     private suspend fun FlowCollector<Unit>.onWebSocketEventReceived() {
         logger.i("Websocket Binary payload received")
@@ -186,7 +194,7 @@ internal class EventGathererImpl(
         } else {
             logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
         }
-        _currentSource.value = EventSource.LIVE
+        liveSourceChangeHandler.startNewCatchingUpJob(onStartIntervalReached = { _currentSource.value = EventSource.LIVE })
     }
 
     private suspend fun handleTimeDrift() {

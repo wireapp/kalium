@@ -67,11 +67,11 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        google()
+        mavenCentral()
         // temporary repo containing mockative 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 is uploaded
         // until mockative releases a new version with a proper fix
         maven(url = "https://raw.githubusercontent.com/saleniuk/mockative/fix/duplicates-while-merging-dex-archives-mvn/release")
-        google()
-        mavenCentral()
     }
 }
 

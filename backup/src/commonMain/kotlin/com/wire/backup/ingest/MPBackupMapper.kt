@@ -54,7 +54,7 @@ internal class MPBackupMapper {
     @Suppress("LongMethod")
     fun mapMessageToProtobuf(it: BackupMessage): ExportedMessage {
         return ExportedMessage(
-            id = it.id,
+            id = it.id.lowercase(),
             timeIso = it.creationDate.toLongMilliseconds(),
             senderUserId = it.senderUserId.toProtoModel(),
             senderClientId = it.senderClientId,
@@ -124,7 +124,8 @@ internal class MPBackupMapper {
                     )
                 )
             },
-            webPk = it.webPrimaryKey?.toLong()
+            webPk = it.webPrimaryKey?.toLong(),
+            lastEditTime = it.lastEditTime?.toLongMilliseconds(),
         )
     }
 
@@ -152,7 +153,7 @@ internal class MPBackupMapper {
         )
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun fromMessageProtoToBackupModel(message: ExportedMessage): BackupMessage {
         val content = when (val protoContent = message.content) {
             is Content.Text -> {
@@ -217,7 +218,8 @@ internal class MPBackupMapper {
             senderClientId = message.senderClientId,
             creationDate = BackupDateTime(message.timeIso),
             content = content,
-            webPrimaryKey = message.webPk?.toInt()
+            webPrimaryKey = message.webPk?.toInt(),
+            lastEditTime = message.lastEditTime?.let { BackupDateTime(it) },
         )
     }
 

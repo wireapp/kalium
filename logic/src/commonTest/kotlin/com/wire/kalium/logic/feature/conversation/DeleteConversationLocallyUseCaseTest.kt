@@ -18,9 +18,10 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -43,8 +44,9 @@ class DeleteConversationLocallyUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withClearLocalAsset(true)
-            .withDeleteLocalConversation(SUCCESS)
-            .arrange()
+            .arrange {
+                withDeletingConversationSucceeding()
+            }
 
         // when
         val result = useCase(CONVERSATION_ID)
@@ -52,7 +54,7 @@ class DeleteConversationLocallyUseCaseTest {
         // then
         assertIs<Either.Right<Unit>>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.deleteConversation(any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -60,8 +62,9 @@ class DeleteConversationLocallyUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withClearLocalAsset(true)
-            .withDeleteLocalConversation(ERROR)
-            .arrange()
+            .arrange {
+                withDeletingConversationFailing()
+            }
 
         // when
         val result = useCase(CONVERSATION_ID)
@@ -69,7 +72,7 @@ class DeleteConversationLocallyUseCaseTest {
         // then
         assertIs<Either.Left<Unit>>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.deleteConversation(any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -77,8 +80,9 @@ class DeleteConversationLocallyUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withClearLocalAsset(false)
-            .withDeleteLocalConversation(SUCCESS)
-            .arrange()
+            .arrange {
+                withDeletingConversationSucceeding()
+            }
 
         // when
         val result = useCase(CONVERSATION_ID)
@@ -86,17 +90,12 @@ class DeleteConversationLocallyUseCaseTest {
         // then
         assertIs<Either.Left<Unit>>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.conversationRepository.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl() {
 
-        val conversationRepository = mock(ConversationRepository::class)
         val clearConversationContent = mock(ClearConversationContentUseCase::class)
-
-        suspend fun withDeleteLocalConversation(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { conversationRepository.deleteConversation(any()) }.returns(result)
-        }
 
         suspend fun withClearLocalAsset(isSuccess: Boolean) = apply {
             coEvery { clearConversationContent(any(), any()) }.returns(
@@ -105,9 +104,13 @@ class DeleteConversationLocallyUseCaseTest {
             )
         }
 
-        fun arrange() = this to DeleteConversationLocallyUseCaseImpl(
-            conversationRepository = conversationRepository,
-            clearConversationContent = clearConversationContent
-        )
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationLocallyUseCase> = run {
+            val useCase = DeleteConversationLocallyUseCaseImpl(
+                clearConversationContent = clearConversationContent,
+                deleteConversation = deleteConversation
+            )
+            block()
+            this to useCase
+        }
     }
 }

@@ -103,7 +103,9 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone {
         },
         isSelfMessage = isSelfMessage,
         senderClientId = ClientId(senderClientId),
-        editStatus = Message.EditStatus.NotEdited
+        editStatus = lastEditTime?.let {
+            Message.EditStatus.Edited(it.instant)
+        } ?: Message.EditStatus.NotEdited
     )
 }
 
@@ -116,6 +118,7 @@ private fun BackupMessageContent.toMessageContent() =
         is BackupMessageContent.Location -> MessageContent.Location(
             latitude = latitude,
             longitude = longitude,
+            name = name,
         )
 
         is BackupMessageContent.Asset -> MessageContent.Asset(
