@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation.createconversation
 
-import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.framework.TestConversation
 import io.mockative.any
 import io.mockative.coEvery

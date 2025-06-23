@@ -113,7 +113,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldSucceed()
@@ -145,7 +145,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldSucceed()
@@ -177,7 +177,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldSucceed()
@@ -210,7 +210,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID, unreachableUserId),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldSucceed()
@@ -262,7 +262,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID, unreachableUserId),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldFail()
@@ -353,7 +353,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             usersWithConsent.ids() + usersWithoutConsent + usersFailed,
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldSucceed()
@@ -408,7 +408,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             usersWithConsent.ids() + usersWithoutConsent + usersFailed,
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldFail()
@@ -450,7 +450,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
         )
 
         result.shouldSucceed()
@@ -493,7 +493,7 @@ class ConversationGroupRepositoryTest {
             val result = conversationGroupRepository.createGroupConversation(
                 GROUP_NAME,
                 allWantedMembers.toList(),
-                ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+                CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
             )
 
             result.shouldSucceed()
@@ -1456,7 +1456,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldSucceed()
