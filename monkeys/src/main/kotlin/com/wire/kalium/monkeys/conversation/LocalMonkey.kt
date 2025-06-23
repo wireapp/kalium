@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.sync.SyncState
@@ -171,7 +172,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
 
     override suspend fun createPrefixedConversation(
         name: String,
-        protocol: ConversationOptions.Protocol,
+        protocol: CreateConversationParam.Protocol,
         userCount: UserCount,
         coreLogic: CoreLogic,
         monkeyPool: MonkeyPool,
@@ -192,13 +193,13 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     override suspend fun createConversation(
         name: String,
         monkeyList: List<Monkey>,
-        protocol: ConversationOptions.Protocol,
+        protocol: CreateConversationParam.Protocol,
         isDestroyable: Boolean
     ): MonkeyConversation {
         val self = this
         return this.monkeyState.readyThen {
             val result = conversations.createRegularGroup(
-                name, monkeyList.map { it.monkeyType.userId() }, ConversationOptions(protocol = protocol)
+                name, monkeyList.map { it.monkeyType.userId() }, CreateConversationParam(protocol = protocol)
             )
             if (result is ConversationCreationResult.Success) {
                 MonkeyConversation(self, result.conversation.id, isDestroyable, monkeyList)

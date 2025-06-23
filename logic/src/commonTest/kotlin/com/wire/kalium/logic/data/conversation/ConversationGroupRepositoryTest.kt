@@ -301,7 +301,7 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID, conflictingUserId),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
         result.shouldFail()
