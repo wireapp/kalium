@@ -162,7 +162,7 @@ internal class MPBackupMapper {
 
             is Content.Asset -> BackupMessageContent.Asset(
                 protoContent.value.mimetype,
-                protoContent.value.protoSize,
+                protoContent.value.size.toInt(),
                 protoContent.value.name,
                 protoContent.value.otrKey.array,
                 protoContent.value.sha256.array,
