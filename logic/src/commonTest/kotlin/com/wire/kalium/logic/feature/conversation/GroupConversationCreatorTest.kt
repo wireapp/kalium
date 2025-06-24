@@ -25,8 +25,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
-import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
@@ -57,7 +57,7 @@ class GroupConversationCreatorTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
+        val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
         val (_, createGroupConversation) = Arrangement()
             .withWaitingForSyncFailing()
@@ -76,7 +76,7 @@ class GroupConversationCreatorTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
+        val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
         val (_, createGroupConversation) = Arrangement()
             .withForbiddenFailure()
@@ -95,7 +95,7 @@ class GroupConversationCreatorTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
+        val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
         val createdConversation = TestConversation.GROUP()
         val (_, createGroupConversation) = Arrangement()
@@ -117,7 +117,7 @@ class GroupConversationCreatorTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
+        val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
@@ -143,7 +143,7 @@ class GroupConversationCreatorTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
+        val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
         val rootCause = StorageFailure.DataNotFound
         val (arrangement, createGroupConversation) = Arrangement()
@@ -164,7 +164,7 @@ class GroupConversationCreatorTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
+        val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
@@ -187,8 +187,8 @@ class GroupConversationCreatorTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(
-            protocol = ConversationOptions.Protocol.PROTEUS,
+        val conversationOptions = CreateConversationParam(
+            protocol = CreateConversationParam.Protocol.PROTEUS,
             creatorClientId = creatorClientId,
             readReceiptsEnabled = true
         )
