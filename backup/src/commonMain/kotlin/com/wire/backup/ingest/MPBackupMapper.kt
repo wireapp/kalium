@@ -54,7 +54,7 @@ internal class MPBackupMapper {
     @Suppress("LongMethod")
     fun mapMessageToProtobuf(it: BackupMessage): ExportedMessage {
         return ExportedMessage(
-            id = it.id,
+            id = it.id.lowercase(),
             timeIso = it.creationDate.toLongMilliseconds(),
             senderUserId = it.senderUserId.toProtoModel(),
             senderClientId = it.senderClientId,
