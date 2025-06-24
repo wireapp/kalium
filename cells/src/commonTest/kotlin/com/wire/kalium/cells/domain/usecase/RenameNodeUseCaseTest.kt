@@ -42,10 +42,9 @@ class RenameNodeUseCaseTest {
         )
 
         coVerify {
-            arrangement.cellsRepository.moveNode(
+            arrangement.cellsRepository.renameNode(
                 uuid = ("uuid"),
                 path = ("somePath/someFile.txt"),
-                targetIsParent = (false),
                 targetPath = ("somePath/newName.jpg")
             )
         }.wasInvoked(once)
@@ -56,7 +55,7 @@ class RenameNodeUseCaseTest {
         val cellsRepository = mock(CellsRepository::class)
 
         suspend fun withSuccessRename() = apply {
-            coEvery { cellsRepository.moveNode(any(), any(), any(), any()) }.returns(Unit.right())
+            coEvery { cellsRepository.renameNode(any(), any(), any()) }.returns(Unit.right())
         }
 
         suspend fun arrange() = this to RenameNodeUseCaseImpl(

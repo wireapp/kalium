@@ -48,7 +48,12 @@ internal interface CellsApi {
         uuid: String,
         path: String,
         targetPath: String,
-        targetIsParent: Boolean = true
+    ): NetworkResponse<Unit>
+
+    suspend fun renameNode(
+        uuid: String,
+        path: String,
+        targetPath: String,
     ): NetworkResponse<Unit>
     suspend fun restoreNode(path: String): NetworkResponse<Unit>
 }

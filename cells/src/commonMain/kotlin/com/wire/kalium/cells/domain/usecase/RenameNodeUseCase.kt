@@ -30,10 +30,9 @@ internal class RenameNodeUseCaseImpl(
     private val cellsRepository: CellsRepository,
 ) : RenameNodeUseCase {
     override suspend fun invoke(uuid: String, path: String, newName: String): Either<CoreFailure, Unit> =
-        cellsRepository.moveNode(
+        cellsRepository.renameNode(
             uuid = uuid,
             path = path,
-            targetIsParent = false,
             targetPath = "${path.substringBeforeLast("/")}/$newName"
         ).map { }
 }

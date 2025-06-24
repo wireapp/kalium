@@ -218,7 +218,6 @@ internal class CellsApiImpl(
         uuid: String,
         path: String,
         targetPath: String,
-        targetIsParent: Boolean
     ): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
             name = NodeServiceApi.NamePerformAction.move,
@@ -228,11 +227,32 @@ internal class CellsApiImpl(
                 awaitTimeout = AWAIT_TIMEOUT,
                 copyMoveOptions = RestActionOptionsCopyMove(
                     targetPath = targetPath,
-                    targetIsParent = targetIsParent,
+                    targetIsParent = true,
                 )
             )
         )
     }.mapSuccess {}
+
+
+    override suspend fun renameNode(
+        uuid: String,
+        path: String,
+        targetPath: String,
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.move,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path, uuid)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT,
+                copyMoveOptions = RestActionOptionsCopyMove(
+                    targetPath = targetPath,
+                    targetIsParent = false,
+                )
+            )
+        )
+    }.mapSuccess {}
+
 
     override suspend fun restoreNode(path: String): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
