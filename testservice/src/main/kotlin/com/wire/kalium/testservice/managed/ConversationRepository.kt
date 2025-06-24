@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
@@ -124,7 +124,7 @@ sealed class ConversationRepository {
                         when (val result = conversations.createRegularGroup(
                             name,
                             userIds,
-                            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+                            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
                         )) {
                             is ConversationCreationResult.Success -> {
                                 Response.status(Response.Status.OK).build()

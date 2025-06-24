@@ -25,7 +25,6 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -55,6 +54,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.network.exceptions.KaliumException
@@ -341,7 +341,7 @@ internal class MessageSenderImpl internal constructor(
                                 jsonStringKeyValues = mapOf(
                                     "message" to message.toLogString(),
                                     "protocolInfo" to protocolInfo.toLogMap(),
-                                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                                    "protocol" to CreateConversationParam.Protocol.MLS.name,
                                     "errorInfo" to "$it"
                                 )
                             )
@@ -367,7 +367,7 @@ internal class MessageSenderImpl internal constructor(
                 jsonStringKeyValues = mapOf(
                     "message" to message.toLogString(),
                     "protocolInfo" to protocolInfo.toLogMap(),
-                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                    "protocol" to CreateConversationParam.Protocol.MLS.name,
                     "errorInfo" to "$it"
                 )
             )
@@ -378,7 +378,7 @@ internal class MessageSenderImpl internal constructor(
                 jsonStringKeyValues = mapOf(
                     "message" to message.toLogString(),
                     "protocolInfo" to protocolInfo.toLogMap(),
-                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                    "protocol" to CreateConversationParam.Protocol.MLS.name,
                 )
             )
         }
@@ -418,7 +418,7 @@ internal class MessageSenderImpl internal constructor(
                     leadingMessage = "Message Send Success",
                     jsonStringKeyValues = mapOf(
                         "message" to message.toLogString(),
-                        "protocol" to ConversationOptions.Protocol.PROTEUS.name
+                        "protocol" to CreateConversationParam.Protocol.PROTEUS.name
                     )
                 )
             }
@@ -452,7 +452,7 @@ internal class MessageSenderImpl internal constructor(
                     leadingMessage = "Message Broadcast Success",
                     jsonStringKeyValues = mapOf(
                         "message" to message.toLogString(),
-                        "protocol" to ConversationOptions.Protocol.PROTEUS.name
+                        "protocol" to CreateConversationParam.Protocol.PROTEUS.name
                     )
                 )
             }
