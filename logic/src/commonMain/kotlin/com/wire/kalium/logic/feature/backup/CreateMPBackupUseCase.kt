@@ -22,6 +22,7 @@ import com.wire.backup.dump.BackupExportResult
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.message.Message
@@ -42,6 +43,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
@@ -79,23 +81,29 @@ internal class CreateMPBackupUseCaseImpl(
 
             with(backupRepository) {
                 awaitAll(
-                    async {
-                        getUsers().forEach { user ->
-                            mpBackupExporter.add(user.toBackupUser())
+                    coroutineScope {
+                        async {
+                            getUsers().forEach { user ->
+                                mpBackupExporter.add(user.toBackupUser())
+                            }
                         }
                     },
-                    async {
-                        getConversations().forEach { conversation ->
-                            mpBackupExporter.add(conversation.toBackupConversation())
+                    coroutineScope {
+                        async {
+                            getConversations().forEach { conversation ->
+                                mpBackupExporter.add(conversation.toBackupConversation())
+                            }
                         }
                     },
-                    async {
-                        getMessages { totalPages, page ->
-                            page.mapNotNull(Message::toBackupMessage)
-                                .forEach { mpBackupExporter.add(it) }
-                            onProgress(pageIndex++.toFloat() / totalPages)
+                    coroutineScope {
+                        async {
+                            getMessages { totalPages, page ->
+                                page.mapNotNull(Message::toBackupMessage)
+                                    .forEach { mpBackupExporter.add(it) }
+                                onProgress(pageIndex++.toFloat() / totalPages)
+                            }
                         }
-                    }
+                    },
                 )
             }
 
@@ -113,6 +121,7 @@ internal class CreateMPBackupUseCaseImpl(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            kaliumLogger.e("Failed to create backup", e)
             Failure(CoreFailure.Unknown(e))
         }
     }

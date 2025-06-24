@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.monkeys.model
 
-import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
