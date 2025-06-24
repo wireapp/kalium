@@ -233,7 +233,6 @@ internal class CellsApiImpl(
         )
     }.mapSuccess {}
 
-
     override suspend fun renameNode(
         uuid: String,
         path: String,
@@ -252,7 +251,6 @@ internal class CellsApiImpl(
             )
         )
     }.mapSuccess {}
-
 
     override suspend fun restoreNode(path: String): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
