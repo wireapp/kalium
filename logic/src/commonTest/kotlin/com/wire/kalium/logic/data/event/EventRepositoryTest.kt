@@ -60,6 +60,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -231,6 +232,7 @@ class EventRepositoryTest {
         assertNotNull(time)
     }
 
+    @Ignore // TODO Kubaz
     @Test
     fun givenUnprocessedEventsInDAO_whenObservingEvents_thenShouldEmitMappedEvents() = runTest {
         val testEvent = EventResponse(

@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -50,14 +51,14 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.mockative.Mockable
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.NewEventEntity
+import io.mockative.Mockable
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -74,8 +75,8 @@ interface EventRepository {
      * Performs an acknowledgment of the missed event after performing a slow sync.
      */
     suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit>
-    suspend fun fetchEvents(): Flow<Either<CoreFailure, EventEnvelope>>
-    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Unit>>>
+    suspend fun fetchEvents(): Flow<Either<CoreFailure, Boolean>>
+    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Boolean>>>
     suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit>
 
     /**
@@ -136,20 +137,24 @@ class EventDataSource(
 ) : EventRepository {
 
     private val clearOnFirstWSMessage = MutableStateFlow(false)
+    private val localEventsTrigger = Channel<Unit>(Channel.UNLIMITED)
 
-    override suspend fun observeEvents(): Flow<List<EventEnvelope>> = flow {
-        eventDAO.observeUnprocessedEvents()
-            .conflate()
-            // add limit of 200, think about making it dynamic depending on device ram
-            // control flow of by websocket new push concat map?
-            .distinctUntilChanged()
-            .collect { batch ->
-                batch.forEach { entity ->
-                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                    emit(eventMapper.fromDTO(payload, isLive = entity.isLive))
-                }
+    override suspend fun observeEvents(): Flow<List<EventEnvelope>> = localEventsTrigger.consumeAsFlow()
+        .map {
+            val list = eventDAO.getUnprocessedEvents()
+            val events = list.map { entity ->
+                val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
+                eventMapper.fromDTO(payload, isLive = entity.isLive)
             }
-    }
+                .flatten()
+
+            val pendingEvents = events
+                .filter { it.deliveryInfo.source != EventSource.LIVE }
+
+            pendingEvents.ifEmpty {
+                events
+            }
+        }
 
     override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> =
         currentClientId().fold(
@@ -162,10 +167,10 @@ class EventDataSource(
         )
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
-    override suspend fun fetchEvents(): Flow<Either<CoreFailure, EventEnvelope>> =
+    override suspend fun fetchEvents(): Flow<Either<CoreFailure, Boolean>> =
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Unit>>> =
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Boolean>>> =
         currentClientId().flatMap { clientId ->
             val hasConsumableNotifications = clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull()
             if (hasConsumableNotifications == true) {
@@ -175,16 +180,17 @@ class EventDataSource(
             }
         }
 
-    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Unit>>> =
+    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Boolean>>> =
         wrapApiRequest { notificationApi.consumeLiveEvents(clientId.value) }.map { webSocketEventFlow ->
             flow {
-                webSocketEventFlow.collect(handleEvents(this))
+                webSocketEventFlow.collect(handleEvents(this, isAsync = true))
             }
         }
 
     @Suppress("LongMethod")
     private suspend fun handleEvents(
-        flowCollector: FlowCollector<WebSocketEvent<Unit>>,
+        flowCollector: FlowCollector<WebSocketEvent<Boolean>>,
+        isAsync: Boolean
     ): suspend (value: WebSocketEvent<ConsumableNotificationResponse>) -> Unit =
         { webSocketEvent ->
             when (webSocketEvent) {
@@ -199,7 +205,7 @@ class EventDataSource(
                 }
 
                 is WebSocketEvent.Close -> {
-                    flowCollector.emit(WebSocketEvent.Close(webSocketEvent.cause))
+                    flowCollector.emit(WebSocketEvent.Close(webSocketEvent.cause, isAsync))
                 }
 
                 is WebSocketEvent.BinaryPayloadReceived -> {
@@ -227,8 +233,9 @@ class EventDataSource(
                                     if (!event.data.event.transient) {
                                         updateLastSavedEventId(event.data.event.id)
                                     }
-                                    flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(Unit))
+                                    flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(isAsync))
                                 }
+                                localEventsTrigger.send(Unit)
                             }
                         }
 
@@ -295,7 +302,7 @@ class EventDataSource(
         eventDAO.setAllUnprocessedEventsAsPending()
     }
 
-    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Unit>>> =
+    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Boolean>>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }
             .map { webSocketEventFlow ->
                 flow {
@@ -319,13 +326,13 @@ class EventDataSource(
                                 is WebSocketEvent.Open<EventResponse> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
                             }
                         }
-                        .collect(handleEvents(this))
+                        .collect(handleEvents(this, isAsync = false))
                 }
             }
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId
-    ) = flow<Either<CoreFailure, EventEnvelope>> {
+    ) = flow<Either<CoreFailure, Boolean>> {
 
         var hasMore = true
         var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
@@ -346,13 +353,20 @@ class EventDataSource(
                         )
                     }
                 }
+                val eventIdsToRemove = entities.map { it.eventId }
                 wrapStorageRequest {
-                    eventDAO.insertEvents(entities)
+                    eventDAO.deleteUnprocessedLiveEventsByIds(eventIdsToRemove)
                 }.onSuccess {
-                    notificationsPageResult.value.notifications.lastOrNull { !it.transient }?.let {
-                        updateLastSavedEventId(it.id)
+                    wrapStorageRequest {
+                        eventDAO.insertEvents(entities)
+                    }.onSuccess {
+                        notificationsPageResult.value.notifications.lastOrNull { !it.transient }?.let {
+                            updateLastSavedEventId(it.id)
+                        }
                     }
                 }
+                localEventsTrigger.send(Unit)
+                emit(Either.Right(false)) // TODO Kubaz refactor to enum EventType
             } else {
                 hasMore = false
                 emit(Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException)))

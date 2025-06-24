@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatten
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -96,16 +97,24 @@ internal class EventGathererImpl(
     private val logger = logger.withFeatureId(SYNC)
 
     // TODO handle multiple events at once
-    override suspend fun gatherEvents(): Flow<EventEnvelope> = eventRepository.observeEvents()
-        .onEach {
-            it.firstOrNull()?.let { lastEvent ->
-                _currentSource.value = lastEvent.deliveryInfo.source
-                liveSourceChangeHandler.scheduleNewCatchingUpJob(
-                    onEventIntervalGapReached = { _currentSource.value = EventSource.LIVE }
-                )
+    override suspend fun gatherEvents(): Flow<EventEnvelope> {
+        val isAsyncNotifications = isClientAsyncNotificationsCapableProvider().getOrElse { false }
+
+        return eventRepository.observeEvents()
+            .onEach { events ->
+                if (!isAsyncNotifications) {
+                    if (events.any { eventEnvelope ->
+                            eventEnvelope.deliveryInfo.source == EventSource.PENDING
+                        }
+                    ) {
+                        _currentSource.value = EventSource.PENDING
+                    } else {
+                        _currentSource.value = EventSource.LIVE
+                    }
+                }
             }
-        }
-        .flatten()
+            .flatten()
+    }
 
     override suspend fun liveEvents(): Flow<Unit> = flow {
         /**
@@ -141,23 +150,26 @@ internal class EventGathererImpl(
     }
 
     private suspend fun FlowCollector<Unit>.emitEvents(
-        webSocketEventFlow: Flow<WebSocketEvent<Unit>>
+        webSocketEventFlow: Flow<WebSocketEvent<Boolean>>
     ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
         .cancellable()
         .collect { handleWebsocketEvent(it) }
 
     private suspend fun FlowCollector<Unit>.handleWebsocketEvent(
-        webSocketEvent: WebSocketEvent<Unit>
+        webSocketEvent: WebSocketEvent<Boolean>
     ) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen(webSocketEvent.shouldProcessPendingEvents)
-        is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived()
+        is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
         is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Unit>) {
-        liveSourceChangeHandler.clear()
+    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Boolean>) {
+        val isAsync = webSocketEvent.payload ?: false
+        if (isAsync) {
+            liveSourceChangeHandler.clear()
+        }
         when (val cause = webSocketEvent.cause) {
             null -> logger.i("Websocket closed normally")
             is IOException ->
@@ -168,7 +180,13 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun FlowCollector<Unit>.onWebSocketEventReceived() {
+    private suspend fun FlowCollector<Unit>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Boolean>) {
+        val isAsync: Boolean = webSocketEvent.payload
+        if (isAsync) {
+            liveSourceChangeHandler.scheduleNewCatchingUpJob(
+                onEventIntervalGapReached = { _currentSource.value = EventSource.LIVE }
+            )
+        }
         logger.i("Websocket Binary payload received")
         emit(Unit)
     }
@@ -184,17 +202,16 @@ internal class EventGathererImpl(
                 .onEach { result ->
                     result.onFailure(::throwPendingEventException)
                 }
-                .filterIsInstance<Either.Right<EventEnvelope>>()
-                .map { offlineEvent -> offlineEvent.value }
+                .filterIsInstance<Either.Right<Boolean>>()
+                .map { it.value }
                 .collect {
-                    logger.i("Collecting offline event: ${it.event.toLogString()}")
                     emit(Unit)
                 }
             logger.i("Offline events collection finished. Collecting Live events.")
         } else {
             logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
+            liveSourceChangeHandler.startNewCatchingUpJob(onStartIntervalReached = { _currentSource.value = EventSource.LIVE })
         }
-        liveSourceChangeHandler.startNewCatchingUpJob(onStartIntervalReached = { _currentSource.value = EventSource.LIVE })
     }
 
     private suspend fun handleTimeDrift() {
