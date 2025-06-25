@@ -46,7 +46,6 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -76,50 +75,24 @@ data class EventEnvelope(
 /**
  * Data class representing information about the delivery of an event.
  *
- * @property isTransient Specifies whether the event is transient.
- * Transient events are events that only matter if the user is online/active. For example "user is typing",
- * and call signaling (mute/unmute), which are irrelevant after a few minutes. These are likely to not even
- * be stored in the backend.
- * @property source The source of the event.
- * @see EventSource
+ * @property isLive Indicates whether the event was received in real-time via WebSocket (`true`)
+ * or fetched in batch as a pending event (`false`).
  */
-sealed class EventDeliveryInfo(
-    open val isTransient: Boolean,
-    open val source: EventSource
+data class EventDeliveryInfo(
+    val isLive: Boolean,
 ) {
 
     fun toLogMap(): Map<String, Any?> = mapOf(
-        "isTransient" to isTransient,
-        "source" to source.name
+        "isLive" to isLive,
     )
-
-    /**
-     * Async event delivery info, represents events that needs to be ACK'ed in the new system.
-     */
-    data class Async(
-        val deliveryTag: ULong,
-        override val source: EventSource
-    ) : EventDeliveryInfo(
-        isTransient = false, // in async events, everything needs to be ACK'ed so they are not transient
-        source = source
-    )
-
-    /**
-     * Async event delivery info, represents full sync needed, which is a special case of async event and also needs to be ACK'ed.
-     */
-    data object AsyncMissed : EventDeliveryInfo(
-        isTransient = false,
-        source = EventSource.LIVE
-    )
-
-    /**
-     * Event from the old quick sync system, not needing ACK.
-     */
-    data class Legacy(
-        override val isTransient: Boolean,
-        override val source: EventSource,
-    ) : EventDeliveryInfo(isTransient, source)
 }
+
+/**
+ * Represents the information about pending events.
+ *
+ * @property hasMore Indicates whether there are more pending events to be fetched.
+ */
+data class PendingEventInfo(val hasMore: Boolean)
 
 /**
  * Represents an event.

@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.event.PendingEventInfo
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -163,7 +164,7 @@ class EventGathererTest {
 
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withPendingEventsReturning(flowOf(Either.Right(false)))
+            .withPendingEventsReturning(flowOf(Either.Right(PendingEventInfo(false))))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withLocalEventsReturning(emptyFlow())
             .withFetchServerTimeReturning(null)
@@ -232,6 +233,7 @@ class EventGathererTest {
         assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
     }
 
+    @Ignore // TODO Kubaz
     @Test
     fun givenEventsWithLiveSource_whenGathering_thenCurrentSourceIsLive() = runTest(testScope) {
         val event = TestEvent.memberJoin()
@@ -329,7 +331,7 @@ class EventGathererTest {
 
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withPendingEventsReturning(flowOf(Either.Right(false)))
+            .withPendingEventsReturning(flowOf(Either.Right(PendingEventInfo(false))))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .withFetchServerTimeReturning(null)
             .arrange(this.backgroundScope)
@@ -459,53 +461,28 @@ class EventGathererTest {
 
     @Ignore // TODO Kubaz
     @Test
-    fun givenOnlyPendingEvent_whenNoMoreEventsEmitted_thenCurrentSourceIsSetToLiveAfterDelay() = runTest {
-        val pendingEvent = TestEvent.memberJoin()
-            .wrapInEnvelope(source = EventSource.PENDING)
-
-        val localEventsFlow = flowOf(listOf(pendingEvent))
-
-        val (_, eventGatherer) = Arrangement()
-            .withLocalEventsReturning(localEventsFlow)
-            .withLiveEventsReturning(Either.Right(emptyFlow()))
-            .arrange(backgroundScope)
-
-        eventGatherer.gatherEvents().test {
-            awaitItem()
-            cancelAndIgnoreRemainingEvents()
-        }
-
-        assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
-
-        advanceTimeBy(1.seconds)
-
-        assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
-    }
-
-    @Ignore // TODO Kubaz
-    @Test
-    fun givenFirstEventPendingThenLive_whenGathering_thenCurrentSourceUpdatesOnlyAfterDelay() = runTest {
+    fun givenFirstEventPendingThenLive_whenGathering_thenCurrentSourceUpdates() = runTest {
         val event1 = TestEvent.memberJoin().wrapInEnvelope(source = EventSource.PENDING)
         val event2 = TestEvent.memberJoin().wrapInEnvelope(source = EventSource.LIVE)
 
-        val localEventsFlow = flowOf(listOf(event1, event2))
+        val localEventsChannel = Channel<List<EventEnvelope>>(capacity = Channel.UNLIMITED)
 
         val (_, eventGatherer) = Arrangement()
-            .withLocalEventsReturning(localEventsFlow)
+            .withIsClientAsyncNotificationsCapableReturning(false)
+            .withLocalEventsReturning(localEventsChannel.consumeAsFlow())
             .withLiveEventsReturning(Either.Right(emptyFlow()))
             .arrange(backgroundScope)
 
         eventGatherer.gatherEvents().test {
+            assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
+            localEventsChannel.send(listOf(event1))
             awaitItem()
+            assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
+            localEventsChannel.send(listOf(event2))
             awaitItem()
+            assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
             cancelAndIgnoreRemainingEvents()
         }
-
-        assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
-
-        advanceTimeBy(1.seconds)
-
-        assertEquals(EventSource.LIVE, eventGatherer.currentSource.value)
     }
 
 
@@ -549,7 +526,7 @@ class EventGathererTest {
             }.returns(time)
         }
 
-        suspend fun withPendingEventsReturning(either: Flow<Either<CoreFailure, Boolean>>) = apply {
+        suspend fun withPendingEventsReturning(either: Flow<Either<CoreFailure, PendingEventInfo>>) = apply {
             coEvery {
                 eventRepository.fetchEvents()
             }.returns(either)

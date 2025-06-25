@@ -27,15 +27,17 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -53,18 +55,23 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.NewEventEntity
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.isActive
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 
@@ -75,7 +82,7 @@ interface EventRepository {
      * Performs an acknowledgment of the missed event after performing a slow sync.
      */
     suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit>
-    suspend fun fetchEvents(): Flow<Either<CoreFailure, Boolean>>
+    suspend fun fetchEvents(): Flow<Either<CoreFailure, PendingEventInfo>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Boolean>>>
     suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit>
 
@@ -133,28 +140,42 @@ class EventDataSource(
     private val currentClientId: CurrentClientIdProvider,
     private val selfUserId: UserId,
     private val clientRegistrationStorage: ClientRegistrationStorage,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId)
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : EventRepository {
 
     private val clearOnFirstWSMessage = MutableStateFlow(false)
-    private val localEventsTrigger = Channel<Unit>(Channel.UNLIMITED)
+    private val localEventsTrigger = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    private val processedEventIds = mutableSetOf<String>()
 
-    override suspend fun observeEvents(): Flow<List<EventEnvelope>> = localEventsTrigger.consumeAsFlow()
-        .map {
-            val list = eventDAO.getUnprocessedEvents()
-            val events = list.map { entity ->
-                val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                eventMapper.fromDTO(payload, isLive = entity.isLive)
-            }
-                .flatten()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override suspend fun observeEvents(): Flow<List<EventEnvelope>> = localEventsTrigger.asSharedFlow()
+        .mapLatest {
+           kaliumLogger.d("$TAG get unprocessed events")
+            wrapStorageRequest { eventDAO.getUnprocessedEvents() }
+                .map { eventEntities ->
 
-            val pendingEvents = events
-                .filter { it.deliveryInfo.source != EventSource.LIVE }
+                    val filtered = eventEntities.filterNot { processedEventIds.contains(it.eventId) }
 
-            pendingEvents.ifEmpty {
-                events
-            }
+                    kaliumLogger.d("$TAG got ${eventEntities.size} unprocessed events")
+                    val events = filtered.map { entity ->
+                        val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
+                        eventMapper.fromDTO(payload, isLive = entity.isLive)
+                            .also { processedEventIds.add(payload.id) }
+                    }
+                        .flatten()
+                    val pendingEvents = events
+                        .filter { !it.deliveryInfo.isLive }
+
+                    pendingEvents.ifEmpty {
+                        events
+                    }
+                }.getOrElse { listOf() }
         }
+        .flowOn(dispatcher.io)
 
     override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> =
         currentClientId().fold(
@@ -167,7 +188,7 @@ class EventDataSource(
         )
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
-    override suspend fun fetchEvents(): Flow<Either<CoreFailure, Boolean>> =
+    override suspend fun fetchEvents(): Flow<Either<CoreFailure, PendingEventInfo>> =
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Boolean>>> =
@@ -183,19 +204,20 @@ class EventDataSource(
     private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Boolean>>> =
         wrapApiRequest { notificationApi.consumeLiveEvents(clientId.value) }.map { webSocketEventFlow ->
             flow {
-                webSocketEventFlow.collect(handleEvents(this, isAsync = true))
+                webSocketEventFlow.collect(handleEvents(this, isAsyncNotifications = true))
             }
         }
 
     @Suppress("LongMethod")
     private suspend fun handleEvents(
         flowCollector: FlowCollector<WebSocketEvent<Boolean>>,
-        isAsync: Boolean
+        isAsyncNotifications: Boolean
     ): suspend (value: WebSocketEvent<ConsumableNotificationResponse>) -> Unit =
         { webSocketEvent ->
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
+                    kaliumLogger.d("$TAG set all unprocessed events as pending")
                     setAllUnprocessedEventsAsPending()
                     flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
@@ -205,7 +227,7 @@ class EventDataSource(
                 }
 
                 is WebSocketEvent.Close -> {
-                    flowCollector.emit(WebSocketEvent.Close(webSocketEvent.cause, isAsync))
+                    flowCollector.emit(WebSocketEvent.Close(webSocketEvent.cause, isAsyncNotifications))
                 }
 
                 is WebSocketEvent.BinaryPayloadReceived -> {
@@ -213,9 +235,11 @@ class EventDataSource(
                         is ConsumableNotificationResponse.EventNotification -> {
                             if (clearOnFirstWSMessage.value) {
                                 clearOnFirstWSMessage.emit(false)
+                                kaliumLogger.d("$TAG clear processed events before ${event.data.event.id.obfuscateId()}")
                                 clearProcessedEvents(event.data.event.id)
                             }
                             event.data.event.let { eventResponse ->
+                                kaliumLogger.d("$TAG insert events from WS")
                                 wrapStorageRequest {
                                     eventDAO.insertEvents(
                                         listOf(
@@ -233,9 +257,10 @@ class EventDataSource(
                                     if (!event.data.event.transient) {
                                         updateLastSavedEventId(event.data.event.id)
                                     }
-                                    flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(isAsync))
+                                    flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(isAsyncNotifications))
+                                    kaliumLogger.d("$TAG trigger local events fetcher from WS")
+                                    localEventsTrigger.tryEmit(Unit)
                                 }
-                                localEventsTrigger.send(Unit)
                             }
                         }
 
@@ -326,13 +351,13 @@ class EventDataSource(
                                 is WebSocketEvent.Open<EventResponse> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
                             }
                         }
-                        .collect(handleEvents(this, isAsync = false))
+                        .collect(handleEvents(this, isAsyncNotifications = false))
                 }
             }
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId
-    ) = flow<Either<CoreFailure, Boolean>> {
+    ) = flow<Either<CoreFailure, PendingEventInfo>> {
 
         var hasMore = true
         var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
@@ -365,8 +390,9 @@ class EventDataSource(
                         }
                     }
                 }
-                localEventsTrigger.send(Unit)
-                emit(Either.Right(false)) // TODO Kubaz refactor to enum EventType
+                kaliumLogger.d("$TAG trigger local events fetcher from pending")
+                localEventsTrigger.tryEmit(Unit)
+                emit(Either.Right(PendingEventInfo(hasMore)))
             } else {
                 hasMore = false
                 emit(Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException)))
@@ -432,5 +458,6 @@ class EventDataSource(
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
         const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
+        const val TAG = "[EventRepository]"
     }
 }
