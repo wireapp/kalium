@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation.createconversation
 
-import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.framework.TestConversation
 import io.mockative.any
 import io.mockative.coEvery
@@ -35,14 +35,14 @@ class CreateRegularGroupUseCaseTest {
             .withGroupConversationCreator()
             .arrange()
 
-        createRegularGroup.invoke(groupName, emptyList(), ConversationOptions())
+        createRegularGroup.invoke(groupName, emptyList(), CreateConversationParam())
 
         coVerify {
             arrangement.groupConversationCreator(
                 name = groupName,
                 userIdList = emptyList(),
-                options = ConversationOptions().copy(
-                    groupType = ConversationOptions.GroupType.REGULAR_GROUP
+                options = CreateConversationParam().copy(
+                    groupType = CreateConversationParam.GroupType.REGULAR_GROUP
                 )
             )
         }

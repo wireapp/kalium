@@ -15,21 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
+package com.wire.kalium.logic.util.arrangement.mls
 
-package com.wire.kalium.logic.feature.migration
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
+import io.mockative.coEvery
+import io.mockative.mock
 
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.PersistMigratedConversationUseCase
-import com.wire.kalium.logic.feature.conversation.PersistMigratedConversationUseCaseImpl
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
+interface IsMlsEnabledUseCaseArrangement {
+    val isMlsEnabledUseCase: IsMLSEnabledUseCase
 
-class MigrationScope(
-    private val selfUserId: UserId,
-    private val userDatabase: UserDatabaseBuilder
-) {
+    suspend fun withMLSEnabled(result: Boolean)
+}
 
-    val persistMigratedConversation: PersistMigratedConversationUseCase
-        get() = PersistMigratedConversationUseCaseImpl(selfUserId, userDatabase.migrationDAO)
+class IsMlsEnabledUseCaseArrangementImpl : IsMlsEnabledUseCaseArrangement {
+        override val isMlsEnabledUseCase: IsMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
 
+    override suspend fun withMLSEnabled(result: Boolean) {
+        coEvery {
+            isMlsEnabledUseCase.invoke()
+        }.returns(result)
+    }
 }
