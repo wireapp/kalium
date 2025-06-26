@@ -57,16 +57,19 @@ internal class IncrementalSyncWorkerImpl(
         launch {
             kaliumLogger.d("$TAG gatherEvents starting...")
             eventGatherer.gatherEvents()
-                .collect { envelope ->
-                    eventProcessor.processEvent(envelope).onFailure {
-                        throw KaliumSyncException("Processing failed", it)
+                .collect { envelopes ->
+                    kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
+                    envelopes.forEach { envelope ->
+                        eventProcessor.processEvent(envelope).onFailure {
+                            throw KaliumSyncException("Processing failed", it)
+                        }
                     }
                 }
         }
 
         launch {
             kaliumLogger.d("$TAG liveEvents starting...")
-            eventGatherer.liveEvents().cancellable().collect {}
+            eventGatherer.receiveEvents().cancellable().collect {}
             // When events are all consumed, cancel the source job to complete the channelFlow
             sourceJob.cancel()
             logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")

@@ -21,9 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatten
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
@@ -31,17 +29,14 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.event.PendingEventInfo
+import com.wire.kalium.logic.data.event.EventVersion
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
@@ -53,9 +48,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.toInstant
 
@@ -81,7 +75,7 @@ internal interface EventGatherer {
      *
      * This flow is hot and updated based on the internal event trigger mechanism.
      */
-    suspend fun gatherEvents(): Flow<EventEnvelope>
+    suspend fun gatherEvents(): Flow<List<EventEnvelope>>
 
     /**
      * Establishes a WebSocket connection to start receiving real-time events.
@@ -93,7 +87,7 @@ internal interface EventGatherer {
      *
      * Emits `Unit` whenever a new event frame arrives.
      */
-    suspend fun liveEvents(): Flow<Unit>
+    suspend fun receiveEvents(): Flow<Unit>
 
     /**
      * Represents the current source of events:
@@ -116,31 +110,31 @@ internal class EventGathererImpl(
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
 
-    private val _hasPendingEventsFinished = MutableStateFlow(false)
-
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val logger = logger.withFeatureId(SYNC)
 
     // TODO handle multiple events at once
-    override suspend fun gatherEvents(): Flow<EventEnvelope> {
+    override suspend fun gatherEvents(): Flow<List<EventEnvelope>> {
         val isAsyncNotifications = isClientAsyncNotificationsCapableProvider().getOrElse { false }
 
         return eventRepository.observeEvents()
             .onEach { events ->
+                kaliumLogger.d("$TAG gathering ${events.size} events")
+
                 if (!isAsyncNotifications) {
-                    val hasPendingFinished = _hasPendingEventsFinished.value
-                    val isPending = events.any { !it.deliveryInfo.isLive }
+                    val hasAnyPendingEvents = events.any { !it.deliveryInfo.isLive }
 
                     when {
-                        hasPendingFinished && events.size <= MIN_PENDING_EVENTS_TO_SWITCH_TO_LIVE -> {
-                            _currentSource.value = EventSource.LIVE
-                        }
 
-                        isPending -> {
+                        hasAnyPendingEvents -> {
                             kaliumLogger.d("$TAG source switch to PENDING")
                             _currentSource.value = EventSource.PENDING
+                        }
+
+                        events.size <= MAX_EVENTS_TO_SWITCH_TO_LIVE -> {
+                            _currentSource.value = EventSource.LIVE
                         }
 
                         else -> {
@@ -150,30 +144,18 @@ internal class EventGathererImpl(
                     }
                 }
             }
-            .map { events ->
-                val hasPendingFinished = _hasPendingEventsFinished.value
-
-                events.filter { event ->
-                    if (!isAsyncNotifications && !hasPendingFinished && event.deliveryInfo.isLive) {
-                        kaliumLogger.d("$TAG skipping live event ${event.event.id.obfuscateId()} before pending")
-                        false
-                    } else {
-                        true
-                    }
-                }
-            }
-            .flatten()
+            .filter { events -> events.isNotEmpty() }
     }
 
-    override suspend fun liveEvents(): Flow<Unit> = flow {
+    override suspend fun receiveEvents(): Flow<Unit> = flow {
         /**
-         * Fetches and emits live events based on whether the client supports async notifications.
+         * Fetches and saves live events and pending based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
          */
         isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
             fetchEventFlow(isAsyncNotifications)
                 .onSuccess { emitEvents(it) }
-                .onFailure { throw KaliumSyncException("Failure when gathering events", it) }
+                .onFailure { throw KaliumSyncException("Failure when receiving events", it) }
         }
     }
 
@@ -199,14 +181,14 @@ internal class EventGathererImpl(
     }
 
     private suspend fun FlowCollector<Unit>.emitEvents(
-        webSocketEventFlow: Flow<WebSocketEvent<Boolean>>
+        webSocketEventFlow: Flow<WebSocketEvent<EventVersion>>
     ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
         .cancellable()
         .collect { handleWebsocketEvent(it) }
 
     private suspend fun FlowCollector<Unit>.handleWebsocketEvent(
-        webSocketEvent: WebSocketEvent<Boolean>
+        webSocketEvent: WebSocketEvent<EventVersion>
     ) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen(webSocketEvent.shouldProcessPendingEvents)
         is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
@@ -214,9 +196,9 @@ internal class EventGathererImpl(
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Boolean>) {
-        val isAsync = webSocketEvent.payload ?: false
-        if (isAsync) {
+    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventVersion>) {
+        val eventVersion = webSocketEvent.payload ?: EventVersion.LEGACY
+        if (eventVersion == EventVersion.ASYNC) {
             liveSourceChangeHandler.clear()
         }
         when (val cause = webSocketEvent.cause) {
@@ -229,9 +211,9 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun FlowCollector<Unit>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Boolean>) {
-        val isAsync: Boolean = webSocketEvent.payload
-        if (isAsync) {
+    private suspend fun FlowCollector<Unit>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<EventVersion>) {
+        val eventVersion: EventVersion = webSocketEvent.payload
+        if (eventVersion == EventVersion.ASYNC) {
             liveSourceChangeHandler.scheduleNewCatchingUpJob(
                 onEventIntervalGapReached = { _currentSource.value = EventSource.LIVE }
             )
@@ -245,26 +227,11 @@ internal class EventGathererImpl(
         // TODO: Handle time drift in a different way, e.g. the notification api is already called
         //  somewhere else so maybe we can take the time from there ?
 //          handleTimeDrift()
-        if (shouldProcessPendingEvents) {
-            eventRepository
-                .fetchEvents()
-                .onEach { result ->
-                    result.onFailure(::throwPendingEventException)
-                }
-                .filterIsInstance<Either.Right<PendingEventInfo>>()
-                .map { it.value }
-                .collect {
-                    if (!it.hasMore) {
-                        kaliumLogger.d("$TAG no more pending events")
-                        _hasPendingEventsFinished.value = true
-                    }
-                    emit(Unit)
-                }
-            logger.i("Offline events collection finished. Collecting Live events.")
-        } else {
+        if (!shouldProcessPendingEvents) {
             logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
             liveSourceChangeHandler.startNewCatchingUpJob(onStartIntervalReached = { _currentSource.value = EventSource.LIVE })
         }
+        emit(Unit)
     }
 
     private suspend fun handleTimeDrift() {
@@ -273,18 +240,8 @@ internal class EventGathererImpl(
         }
     }
 
-    private fun throwPendingEventException(failure: CoreFailure) {
-        val networkCause = (failure as? NetworkFailure.ServerMiscommunication)?.rootCause
-        val isEventNotFound = networkCause is KaliumException.InvalidRequestError
-                && networkCause.errorResponse.code == HttpStatusCode.NotFound.value
-        throw KaliumSyncException(
-            message = "$TAG Failure to fetch pending events, aborting Incremental Sync",
-            coreFailureCause = if (isEventNotFound) CoreFailure.SyncEventOrClientNotFound else failure
-        )
-    }
-
     companion object {
-        const val MIN_PENDING_EVENTS_TO_SWITCH_TO_LIVE = 5
+        const val MAX_EVENTS_TO_SWITCH_TO_LIVE = 5
         const val TAG = "[EventGatherer]"
     }
 }
