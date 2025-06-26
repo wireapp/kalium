@@ -38,6 +38,7 @@ internal data class CellNodeDTO(
     val ownerUserId: String?,
     val conversationId: String?,
     val publicLinkId: String?,
+    val tags: List<String> = emptyList(),
 )
 
 internal fun CellNodeDTO.toModel() = CellNode(
@@ -57,6 +58,7 @@ internal fun CellNodeDTO.toModel() = CellNode(
     ownerUserId = ownerUserId,
     conversationId = conversationId,
     publicLinkId = publicLinkId,
+    tags = tags
 )
 
 internal fun CellNode.toDto() = CellNodeDTO(
@@ -75,6 +77,7 @@ internal fun CellNode.toDto() = CellNodeDTO(
     ownerUserId = ownerUserId,
     conversationId = conversationId,
     publicLinkId = publicLinkId,
+    tags = tags
 )
 
 internal fun RestNode.toDto() = CellNodeDTO(
@@ -101,6 +104,12 @@ internal fun RestNode.toDto() = CellNodeDTO(
     ownerUserId = userMetadata
         ?.firstOrNull { it.namespace == "usermeta-owner-uuid" }
         ?.jsonValue?.removeSurrounding("\""),
+    tags = userMetadata?.firstOrNull { it.namespace == "usermeta-tags" }
+        ?.jsonValue
+        ?.removeSurrounding("\"")
+        ?.split(",")
+        ?.map { it.trim() }
+        ?: emptyList(),
     conversationId = contextWorkspace?.uuid,
     publicLinkId = shares?.firstOrNull()?.uuid,
 )
