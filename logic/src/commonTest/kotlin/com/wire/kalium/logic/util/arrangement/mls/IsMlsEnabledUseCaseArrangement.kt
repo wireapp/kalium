@@ -15,22 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.util.arrangement.mls
 
-package com.wire.backup.data
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
+import io.mockative.coEvery
+import io.mockative.mock
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlin.js.JsExport
+interface IsMlsEnabledUseCaseArrangement {
+    val isMlsEnabledUseCase: IsMLSEnabledUseCase
 
-@JsExport
-@Serializable
-public data class BackupMetadata(
-    @SerialName("version")
-    val version: String,
-    @SerialName("userId")
-    val userId: BackupQualifiedId,
-    @SerialName("creationTime")
-    val creationTime: BackupDateTime,
-    @SerialName("clientId")
-    val clientId: String?
-)
+    suspend fun withMLSEnabled(result: Boolean)
+}
+
+class IsMlsEnabledUseCaseArrangementImpl : IsMlsEnabledUseCaseArrangement {
+        override val isMlsEnabledUseCase: IsMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
+
+    override suspend fun withMLSEnabled(result: Boolean) {
+        coEvery {
+            isMlsEnabledUseCase.invoke()
+        }.returns(result)
+    }
+}

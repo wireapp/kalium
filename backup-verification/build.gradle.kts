@@ -15,25 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.conversation.createconversation
+plugins {
+    kotlin("jvm")
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.compose.jetbrains)
+}
 
-import com.wire.kalium.logic.data.conversation.CreateConversationParam
-import com.wire.kalium.logic.data.user.UserId
+dependencies {
+    implementation(project(":backup"))
+    implementation(compose.desktop.currentOs)
+    implementation(compose.materialIconsExtended)
+    implementation(kotlin("reflect"))
+    implementation(libs.compose.fileKit.core)
+    implementation(libs.compose.fileKit.compose)
+    implementation(libs.coroutines.core)
+    implementation(libs.ktxSerialization)
+}
 
-/**
- * Use case to create a channel.
- */
-class CreateChannelUseCase internal constructor(
-    private val createGroupConversation: GroupConversationCreator
-) {
-    suspend operator fun invoke(
-        name: String,
-        userIdList: List<UserId>,
-        options: CreateConversationParam
-    ): ConversationCreationResult =
-        createGroupConversation.invoke(
-            name,
-            userIdList,
-            options.copy(groupType = CreateConversationParam.GroupType.CHANNEL)
-        )
+compose.desktop {
+    application {
+        mainClass = "MainKt"
+        nativeDistributions {
+            linux {
+                modules("jdk.security.auth")
+            }
+        }
+    }
 }

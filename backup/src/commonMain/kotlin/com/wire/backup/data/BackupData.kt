@@ -19,6 +19,8 @@
 
 package com.wire.backup.data
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
@@ -46,8 +48,11 @@ public class BackupData(
 }
 
 @JsExport
+@Serializable
 public data class BackupQualifiedId(
+    @SerialName("id")
     val id: String,
+    @SerialName("domain")
     val domain: String,
 ) {
     override fun toString(): String = "$id@$domain"
@@ -64,76 +69,127 @@ public data class BackupQualifiedId(
 }
 
 @JsExport
+@Serializable
 public data class BackupUser(
+    @SerialName("id")
     val id: BackupQualifiedId,
+    @SerialName("name")
     val name: String,
+    @SerialName("handle")
     val handle: String,
 )
 
 @JsExport
+@Serializable
 public data class BackupConversation(
+    @SerialName("id")
     val id: BackupQualifiedId,
+    @SerialName("name")
     val name: String,
     val lastModifiedTime: BackupDateTime? = null,
 )
 
 @JsExport
+@Serializable
 public data class BackupMessage(
+    @SerialName("id")
     val id: String,
+    @SerialName("conversationId")
     val conversationId: BackupQualifiedId,
+    @SerialName("senderUserId")
     val senderUserId: BackupQualifiedId,
+    @SerialName("senderClientId")
     val senderClientId: String,
+    @SerialName("creationDate")
     val creationDate: BackupDateTime,
+    @SerialName("content")
     val content: BackupMessageContent,
+    @SerialName("webPrimaryKey")
     @Deprecated("Used only by the Webteam in order to simplify debugging", ReplaceWith(""))
     val webPrimaryKey: Int? = null,
+    @SerialName("lastEditTime")
     val lastEditTime: BackupDateTime? = null,
 )
 
+@Serializable(BackupDateTimeSerializer::class)
 public expect class BackupDateTime
 
 public expect fun BackupDateTime(timestampMillis: Long): BackupDateTime
 public expect fun BackupDateTime.toLongMilliseconds(): Long
 
 @JsExport
+@Serializable
 public sealed class BackupMessageContent {
+
+    @Serializable
     public data class Text(val text: String) : BackupMessageContent()
 
+    @Serializable
     public data class Asset(
+        @SerialName("mimeType")
         val mimeType: String,
+        @SerialName("size")
         val size: Int,
+        @SerialName("name")
         val name: String?,
+        @Serializable(with = ByteArrayStringSerializer::class)
+        @SerialName("otrKey")
         val otrKey: ByteArray,
+        @Serializable(with = ByteArrayStringSerializer::class)
+        @SerialName("sha256")
         val sha256: ByteArray,
+        @SerialName("assetId")
         val assetId: String,
+        @SerialName("assetToken")
         val assetToken: String?,
+        @SerialName("assetDomain")
         val assetDomain: String?,
+        @SerialName("encryption")
         val encryption: EncryptionAlgorithm?,
+        @SerialName("metaData")
         val metaData: AssetMetadata?,
     ) : BackupMessageContent() {
+
+        @Serializable
         public enum class EncryptionAlgorithm {
             AES_GCM, AES_CBC
         }
 
+        @Serializable
         public sealed class AssetMetadata {
+
+            @Serializable
             public data class Image(
+                @SerialName("width")
                 val width: Int,
+                @SerialName("height")
                 val height: Int,
+                @SerialName("tag")
                 val tag: String?
             ) : AssetMetadata()
 
+            @Serializable
             public data class Video(
+                @SerialName("width")
                 val width: Int?,
+                @SerialName("height")
                 val height: Int?,
+                @SerialName("duration")
                 val duration: Long?,
             ) : AssetMetadata()
 
+            @Serializable
             public data class Audio(
+                @Serializable(with = ByteArrayStringSerializer::class)
+                @SerialName("normalization")
                 val normalization: ByteArray?,
+                @SerialName("duration")
                 val duration: Long?,
             ) : AssetMetadata()
 
+            @Serializable
             public data class Generic(
+                @SerialName("name")
                 val name: String?,
             ) : AssetMetadata()
         }
@@ -167,10 +223,15 @@ public sealed class BackupMessageContent {
         }
     }
 
+    @Serializable
     public data class Location(
+        @SerialName("longitude")
         val longitude: Float,
+        @SerialName("latitude")
         val latitude: Float,
+        @SerialName("name")
         val name: String?,
+        @SerialName("zoom")
         val zoom: Int?,
     ) : BackupMessageContent()
 }

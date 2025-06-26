@@ -24,10 +24,10 @@ import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetUserMlsClientIdentitiesUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.IsMlsEnabledUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.mls.IsMlsEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import io.mockative.any
@@ -39,36 +39,36 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class GetUserE2eiAllCertificateStatusesUseCaseTest {
+class GetUserMlsClientIdentitiesUseCaseTest {
 
     @Test
-    fun givenErrorOnGettingUserIdentity_whenGetUserE2eiAllCertificateStatuses_thenEmptyMapResult() =
+    fun givenErrorOnGettingUserIdentity_whenGetUserMlsClientIdentities_thenEmptyMapResult() =
         runTest {
-            val (_, getUserE2eiAllCertificateStatuses) = arrange {
-                withE2EIEnabledAndMLSEnabled(true)
+            val (_, getUserMlsClientIdentities) = arrange {
+                withMLSEnabled(true)
                 withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
             }
 
-            val result = getUserE2eiAllCertificateStatuses(USER_ID)
+            val result = getUserMlsClientIdentities(USER_ID)
 
             assertTrue(result.isEmpty())
         }
 
     @Test
-    fun givenEmptyWireIdentityList_whenGetUserE2eiAllCertificateStatuses_thenEmptyMapResult() =
+    fun givenEmptyWireIdentityList_whenGetUserMlsClientIdentities_thenEmptyMapResult() =
         runTest {
-            val (_, getUserE2eiAllCertificateStatuses) = arrange {
-                withE2EIEnabledAndMLSEnabled(true)
+            val (_, getUserMlsClientIdentities) = arrange {
+                withMLSEnabled(true)
                 withUserIdentity(Either.Right(listOf()))
             }
 
-            val result = getUserE2eiAllCertificateStatuses(USER_ID)
+            val result = getUserMlsClientIdentities(USER_ID)
 
             assertTrue(result.isEmpty())
         }
 
     @Test
-    fun givenOneWireIdentityExpired_whenGetUserE2eiAllCertificateStatuses_thenResultCorrectMap() =
+    fun givenOneWireIdentityExpired_whenGetUserMlsClientIdentities_thenResultCorrectMap() =
         runTest {
             val identity1 = WIRE_IDENTITY
             val identity2 = WIRE_IDENTITY.copy(
@@ -79,12 +79,12 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy("id_3"),
                 status = CryptoCertificateStatus.REVOKED
             )
-            val (_, getUserE2eiAllCertificateStatuses) = arrange {
-                withE2EIEnabledAndMLSEnabled(true)
+            val (_, getUserMlsClientIdentities) = arrange {
+                withMLSEnabled(true)
                 withUserIdentity(Either.Right(listOf(identity1, identity2, identity3)))
             }
 
-            val result = getUserE2eiAllCertificateStatuses(USER_ID)
+            val result = getUserMlsClientIdentities(USER_ID)
 
             assertEquals(3, result.size)
             assertEquals(MLSClientE2EIStatus.VALID, result[identity1.clientId.value]?.e2eiStatus)
@@ -93,15 +93,15 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
         }
 
     @Test
-    fun givenE2EIAndMLSIsDisabled_whenGettingUserE2EICertificate_thenEmptyMapIsReturned() =
+    fun givenE2EIAndMLSIsDisabled_whenGettingUserMlsClientIdentities_thenEmptyMapIsReturned() =
         runTest {
             // given
-            val (arrangement, getUserE2eiAllCertificateStatuses) = arrange {
-                withE2EIEnabledAndMLSEnabled(false)
+            val (arrangement, getUserMlsClientIdentities) = arrange {
+                withMLSEnabled(false)
             }
 
             // when
-            val result = getUserE2eiAllCertificateStatuses(USER_ID)
+            val result = getUserMlsClientIdentities(USER_ID)
 
             // then
             assertEquals(
@@ -115,13 +115,13 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
+        IsMlsEnabledUseCaseArrangement by IsMlsEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
             runBlocking { block() }
-            this@Arrangement to GetUserE2eiCertificatesUseCaseImpl(
+            this@Arrangement to GetUserMlsClientIdentitiesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                isE2EIEnabledUseCase = isE2EIEnabledUseCase
+                isMlsEnabledUseCase = isMlsEnabledUseCase,
             )
         }
     }

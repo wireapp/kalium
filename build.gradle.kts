@@ -53,6 +53,7 @@ plugins {
     alias(libs.plugins.moduleGraph)
     alias(libs.plugins.completeKotlin)
     alias(libs.plugins.compose.compiler) apply false
+    alias(libs.plugins.compose.jetbrains) apply false
 }
 
 dependencies {
