@@ -54,4 +54,9 @@ sealed interface AnalyticsIdentifierResult {
     data class MigrationIdentifier(
         override val identifier: String
     ) : Enabled
+
+    /**
+     * To be used when we are registering a new potential user.
+     */
+    data class RegistrationIdentifier(override val identifier: String) : Enabled
 }
