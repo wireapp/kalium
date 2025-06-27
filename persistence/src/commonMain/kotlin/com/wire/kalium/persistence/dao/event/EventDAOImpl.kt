@@ -44,6 +44,14 @@ class EventDAOImpl(
             .mapToList()
     }
 
+    override suspend fun getUnprocessedEvents(): List<EventEntity> = withContext(queriesContext) {
+        eventsQueries.selectUnprocessedEvents(::mapEvent).executeAsList()
+    }
+
+    override suspend fun deleteUnprocessedLiveEventsByIds(ids: List<String>) = withContext(queriesContext) {
+        eventsQueries.deleteUnprocessedLiveEventsByIds(ids)
+    }
+
     override suspend fun insertEvents(events: List<NewEventEntity>) {
         withContext(queriesContext) {
             events.forEach { event ->
