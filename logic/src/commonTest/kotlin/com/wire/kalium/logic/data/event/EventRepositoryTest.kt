@@ -41,7 +41,6 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
@@ -286,7 +285,7 @@ class EventRepositoryTest {
             .withUnprocessedEvents(entities)
             .arrange()
 
-
+        repository.setEventAsProcessed(eventB.id)
 
         repository.observeEvents().test {
             val emitted = awaitItem()
@@ -350,7 +349,7 @@ class EventRepositoryTest {
         val flow = eitherFlow.value
 
         val thrown = assertFailsWith<KaliumSyncException> {
-            flow.collect{}
+            flow.collect {}
         }
 
         assertTrue(thrown.coreFailureCause is CoreFailure.SyncEventOrClientNotFound)
