@@ -51,7 +51,10 @@ sealed class WebSocketEvent<BinaryPayloadType> {
         }
     }
 
-    data class Close<BinaryPayloadType>(val cause: Throwable?) : WebSocketEvent<BinaryPayloadType>()
+    data class Close<BinaryPayloadType>(
+        val cause: Throwable?,
+        val payload: BinaryPayloadType? = null
+    ) : WebSocketEvent<BinaryPayloadType>()
 }
 
 @Mockable

@@ -1256,15 +1256,14 @@ class UserSessionScope internal constructor(
             apiMigrations
         )
 
-    private val eventRepository: EventRepository
-        get() = EventDataSource(
-            notificationApi = authenticatedNetworkContainer.notificationApi,
-            metadataDAO = userStorage.database.metadataDAO,
-            eventDAO = userStorage.database.eventDAO,
-            currentClientId = clientIdProvider,
-            clientRegistrationStorage = clientRegistrationStorage,
-            selfUserId = userId
-        )
+    private val eventRepository: EventRepository = EventDataSource(
+        notificationApi = authenticatedNetworkContainer.notificationApi,
+        metadataDAO = userStorage.database.metadataDAO,
+        eventDAO = userStorage.database.eventDAO,
+        currentClientId = clientIdProvider,
+        clientRegistrationStorage = clientRegistrationStorage,
+        selfUserId = userId
+    )
 
     private val mlsMigrator: MLSMigrator
         get() = MLSMigratorImpl(
