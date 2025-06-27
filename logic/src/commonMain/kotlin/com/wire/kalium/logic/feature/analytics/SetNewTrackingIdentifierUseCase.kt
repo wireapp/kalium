@@ -26,6 +26,7 @@ interface SetNewTrackingIdentifierUseCase {
     suspend operator fun invoke(newIdentifier: String)
 }
 
+@Suppress("FunctionNaming")
 fun SetNewTrackingIdentifierUseCase(userConfigRepository: UserConfigRepository) = object : SetNewTrackingIdentifierUseCase {
     override suspend fun invoke(newIdentifier: String) {
         userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
