@@ -57,7 +57,9 @@ import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -254,7 +256,7 @@ class EventRepositoryTest {
 
         val (_, repository) = Arrangement()
             .withLastStoredEventId(null)
-            .withUnprocessedEvents(listOf(testEventEntity))
+            .withUnprocessedEvents(flowOf(listOf(testEventEntity)))
             .arrange()
 
         repository.observeEvents().test {
@@ -271,6 +273,8 @@ class EventRepositoryTest {
         val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
         val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
 
+        val unprocessedEventsChannel = Channel<List<EventEntity>>(capacity = Channel.UNLIMITED)
+
         val entities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
             EventEntity(
                 id = index.toLong(),
@@ -282,14 +286,18 @@ class EventRepositoryTest {
         }
 
         val (arrangement, repository) = Arrangement()
-            .withUnprocessedEvents(entities)
+            .withUnprocessedEvents(unprocessedEventsChannel.consumeAsFlow())
             .arrange()
 
         repository.setEventAsProcessed(eventB.id)
 
         repository.observeEvents().test {
+            unprocessedEventsChannel.send(entities)
             val emitted = awaitItem()
-            assertEquals(listOf("c"), emitted.map { it.event.id })
+            assertEquals(entities.size, emitted.size)
+            unprocessedEventsChannel.send(entities)
+            val secondEmitted = awaitItem()
+            assertEquals(0, secondEmitted.size)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -312,7 +320,7 @@ class EventRepositoryTest {
 
         val (arrangement, repository) = Arrangement()
             .withLastStoredEventId("not-present")
-            .withUnprocessedEvents(entities)
+            .withUnprocessedEvents(flowOf(entities))
             .arrange()
 
         repository.observeEvents().test {
@@ -488,10 +496,10 @@ class EventRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withUnprocessedEvents(events: List<EventEntity>) = apply {
+        suspend fun withUnprocessedEvents(events: Flow<List<EventEntity>>) = apply {
             coEvery {
                 eventDAO.observeUnprocessedEvents()
-            }.returns(flowOf(events))
+            }.returns(events)
         }
 
         suspend fun withMarkEventAsProcessed() = apply {

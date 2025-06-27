@@ -39,7 +39,6 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -69,9 +68,9 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 
@@ -143,50 +142,40 @@ class EventDataSource(
 ) : EventRepository {
 
     private val clearOnFirstWSMessage = MutableStateFlow(false)
-    private val processedEventMutex = Mutex()
-    private var lastProcessedEventId: String? = null
 
-    override suspend fun observeEvents(): Flow<List<EventEnvelope>> = eventDAO.observeUnprocessedEvents()
-        .map { eventEntities ->
+    override suspend fun observeEvents(): Flow<List<EventEnvelope>> {
+        var lastEmittedEventId: String? = null
+        return eventDAO.observeUnprocessedEvents().transform { eventEntities ->
             kaliumLogger.d("$TAG got ${eventEntities.size} unprocessed events")
+            kaliumLogger.d("$TAG current last emitted event id: ${lastEmittedEventId?.obfuscateId()}")
 
-            val (filteredEntities, skipCount) = processedEventMutex.withLock {
-                kaliumLogger.d("$TAG current last processed event id: ${lastProcessedEventId?.obfuscateId()}")
+            val emittedEventIndex = eventEntities.indexOfFirst { entity -> entity.eventId == lastEmittedEventId }
 
-                if (eventEntities.isEmpty()) {
-                    kaliumLogger.d("$TAG no unprocessed events found")
-                    return@map emptyList<EventEnvelope>()
-                }
-
-                lastProcessedEventId?.let { lastId ->
-                    val index = eventEntities.indexOfFirst { it.eventId == lastId }
-                    if (index >= 0) {
-                        val result = eventEntities.drop(index + 1)
-                        val skipped = index + 1
-                        result to skipped
-                    } else {
-                        kaliumLogger.w("$TAG lastProcessedEventId ${lastId.obfuscateId()} not found in current batch. Skipping no events.")
-                        eventEntities to 0
-                    }
-                } ?: (eventEntities to 0)
+            if (emittedEventIndex == -1) {
+                emit(eventEntities)
+                return@transform
             }
-
-            if (skipCount > 0) {
-                kaliumLogger.d("$TAG filtered out $skipCount events already marked as processed")
-            }
-
-            val events = filteredEntities.map { entity ->
-                val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                eventMapper.fromDTO(payload, isLive = entity.isLive)
-            }
-                .flatten()
-            val pendingEvents = events
-                .filter { it.deliveryInfo.source == EventSource.PENDING }
-
-            pendingEvents.ifEmpty {
-                events
+            if (emittedEventIndex != eventEntities.lastIndex) {
+                kaliumLogger.d("$TAG filtered out ${emittedEventIndex + 1} events already marked as processed")
+                emit(eventEntities.subList(emittedEventIndex + 1, eventEntities.lastIndex))
+            } else {
+                kaliumLogger.d("$TAG no unprocessed events found")
+                emit(emptyList())
             }
         }
+            .onEach { entities ->
+                entities.lastOrNull()?.let {
+                    lastEmittedEventId = it.eventId
+                }
+            }
+            .map { eventEntities ->
+                eventEntities.map { entity ->
+                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
+                    eventMapper.fromDTO(payload, isLive = entity.isLive)
+                }
+                    .flatten()
+            }
+    }
 
     override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> =
         currentClientId().fold(
@@ -436,16 +425,8 @@ class EventDataSource(
         metadataDAO.insertValue(eventId, LAST_SAVED_EVENT_ID_KEY)
     }
 
-    override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> {
-        return wrapStorageRequest {
-            eventDAO.markEventAsProcessed(eventId)
-        }
-            .onSuccess {
-                processedEventMutex.withLock {
-                    kaliumLogger.d("$TAG caching last processed event ${eventId.obfuscateId()}")
-                    lastProcessedEventId = eventId
-                }
-            }
+    override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> = wrapStorageRequest {
+        eventDAO.markEventAsProcessed(eventId)
     }
 
     private suspend fun getNextPendingEventsPage(
