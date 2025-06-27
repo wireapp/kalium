@@ -27,7 +27,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class SetNewTrackingIdentifierUseCaseTest {
+class SetNewUserTrackingIdentifierUseCaseTest {
 
     @Test
     fun givenAnIdentifier_whenSettingANewOne_thenRepositoryShouldBeCalled() = runTest {
@@ -49,7 +49,7 @@ class SetNewTrackingIdentifierUseCaseTest {
             }
         }
 
-        fun arrange() = this to SetNewTrackingIdentifierUseCase(
+        fun arrange() = this to SetNewUserTrackingIdentifierUseCase(
             userConfigRepository = userConfigRepository
         )
     }
