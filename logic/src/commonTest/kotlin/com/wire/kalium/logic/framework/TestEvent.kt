@@ -274,13 +274,12 @@ object TestEvent {
     )
 
     fun Event.wrapInEnvelope(
-        isTransient: Boolean = false, // TODO Kubaz remove
         source: EventSource = EventSource.LIVE
-    ): EventEnvelope = EventEnvelope(this, EventDeliveryInfo(source == EventSource.LIVE))
+    ): EventEnvelope = EventEnvelope(this, EventDeliveryInfo(source))
 
     fun notificationsMissed(eventId: String = "eventId") = Event.AsyncMissed(eventId)
 
-    val liveDeliveryInfo = EventDeliveryInfo(true)
-    val nonLiveDeliveryInfo = EventDeliveryInfo(false)
+    val liveDeliveryInfo = EventDeliveryInfo(EventSource.LIVE)
+    val nonLiveDeliveryInfo = EventDeliveryInfo(EventSource.PENDING)
 
 }

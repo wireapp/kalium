@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
@@ -159,7 +160,7 @@ internal class NewMessageEventHandlerImpl(
         deliveryInfo: EventDeliveryInfo
     ) {
         if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.isLive)
+            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
         }
         handleSuccessfulResult(it)
         onMessageInserted(it)

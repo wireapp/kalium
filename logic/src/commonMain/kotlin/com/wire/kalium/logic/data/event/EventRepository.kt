@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -180,7 +181,7 @@ class EventDataSource(
             }
                 .flatten()
             val pendingEvents = events
-                .filter { !it.deliveryInfo.isLive }
+                .filter { it.deliveryInfo.source == EventSource.PENDING }
 
             pendingEvents.ifEmpty {
                 events

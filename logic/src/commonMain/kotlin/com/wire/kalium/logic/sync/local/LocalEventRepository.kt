@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.local
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
+import com.wire.kalium.logic.sync.incremental.EventSource
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -50,7 +51,7 @@ internal class LocalEventRepositoryImpl : LocalEventRepository {
     )
 
     override fun emitLocalEvent(event: Event) {
-        val eventEnvelope = EventEnvelope(event, EventDeliveryInfo(true))
+        val eventEnvelope = EventEnvelope(event, EventDeliveryInfo(EventSource.LIVE))
         localEventFlow.tryEmit(eventEnvelope)
     }
 

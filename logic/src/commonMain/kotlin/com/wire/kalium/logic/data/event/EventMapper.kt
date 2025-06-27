@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
@@ -74,9 +75,10 @@ class EventMapper(
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
         return eventResponse.payload?.map { eventContentDTO ->
+            val eventSource = if (isLive) EventSource.LIVE else EventSource.PENDING
             EventEnvelope(
                 fromEventContentDTO(id, eventContentDTO),
-                EventDeliveryInfo(isLive)
+                EventDeliveryInfo(eventSource)
             )
         } ?: listOf()
     }

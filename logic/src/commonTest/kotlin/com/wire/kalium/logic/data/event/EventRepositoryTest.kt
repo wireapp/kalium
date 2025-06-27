@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.event
 
 import app.cash.turbine.test
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
@@ -27,6 +28,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
@@ -38,6 +41,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
@@ -59,13 +63,14 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class EventRepositoryTest {
 
@@ -208,7 +213,7 @@ class EventRepositoryTest {
                         matches {
                             it.type == AcknowledgeType.ACK &&
                                     it.data?.deliveryTag == deliveryTag
-                                    it.data?.multiple == false
+                            it.data?.multiple == false
                         }
                     )
                 }.wasInvoked(exactly = once)
@@ -232,7 +237,6 @@ class EventRepositoryTest {
         assertNotNull(time)
     }
 
-    @Ignore // TODO Kubaz
     @Test
     fun givenUnprocessedEventsInDAO_whenObservingEvents_thenShouldEmitMappedEvents() = runTest {
         val testEvent = EventResponse(
@@ -262,6 +266,138 @@ class EventRepositoryTest {
         }
     }
 
+    @Test
+    fun givenLastProcessedIdExistsInBatch_whenObservingEvents_thenShouldFilterCorrectly() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+
+        val entities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong(),
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e),
+                isLive = true
+            )
+        }
+
+        val (arrangement, repository) = Arrangement()
+            .withUnprocessedEvents(entities)
+            .arrange()
+
+
+
+        repository.observeEvents().test {
+            val emitted = awaitItem()
+            assertEquals(listOf("c"), emitted.map { it.event.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenLastProcessedIdNotInBatch_whenObservingEvents_thenShouldNotFilterAnything() = runTest {
+        val eventX = EventResponse(id = "x", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventY = EventResponse(id = "y", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventZ = EventResponse(id = "z", payload = listOf(EventContentDTO.AsyncMissedNotification))
+
+        val entities = listOf(eventX, eventY, eventZ).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong(),
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e),
+                isLive = true
+            )
+        }
+
+        val (arrangement, repository) = Arrangement()
+            .withLastStoredEventId("not-present")
+            .withUnprocessedEvents(entities)
+            .arrange()
+
+        repository.observeEvents().test {
+            val emitted = awaitItem()
+            assertEquals(listOf("x", "y", "z"), emitted.map { it.event.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenNotFoundFailure_whenReceivingLiveEvent_thenShouldThrowSyncEventOrClientNotFound() = runTest {
+        val (_, repository) = Arrangement()
+            .withClientHasConsumableNotifications(false)
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withSetAllUnprocessedEventsAsPending()
+            .withLastStoredEventId("someNotificationId")
+            .withListenLiveEventsReturning(
+                NetworkResponse.Success(
+                    flowOf(WebSocketEvent.Open(shouldProcessPendingEvents = true)),
+                    emptyMap(),
+                    200
+                )
+            )
+            .apply {
+                coEvery {
+                    notificationApi.notificationsByBatch(any(), any(), any())
+                } returns NetworkResponse.Error(TestNetworkException.notFound)
+            }
+            .arrange()
+
+        val eitherFlow = repository.liveEvents()
+        assertTrue(eitherFlow is Either.Right)
+
+        val flow = eitherFlow.value
+
+        val thrown = assertFailsWith<KaliumSyncException> {
+            flow.collect{}
+        }
+
+        assertTrue(thrown.coreFailureCause is CoreFailure.SyncEventOrClientNotFound)
+
+    }
+
+    @Test
+    fun givenGenericServerFailure_whenReceivingLiveEvent_thenShouldThrowOriginalCoreFailure() = runTest {
+        val (_, repository) = Arrangement()
+            .withClientHasConsumableNotifications(false)
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withSetAllUnprocessedEventsAsPending()
+            .withLastStoredEventId("someNotificationId")
+            .withListenLiveEventsReturning(
+                NetworkResponse.Success(
+                    flowOf(WebSocketEvent.Open(shouldProcessPendingEvents = true)),
+                    emptyMap(),
+                    200
+                )
+            )
+            .apply {
+                coEvery {
+                    notificationApi.notificationsByBatch(any(), any(), any())
+                } returns NetworkResponse.Error(TestNetworkException.generic)
+            }
+            .arrange()
+
+        val eitherFlow = repository.liveEvents()
+        assertTrue(eitherFlow is Either.Right)
+
+        val flow = eitherFlow.value
+
+        val thrown = assertFailsWith<KaliumSyncException> {
+            flow.collect {}
+        }
+
+        assertFalse(thrown.coreFailureCause is CoreFailure.SyncEventOrClientNotFound)
+        val cause = thrown.coreFailureCause
+        assertIs<NetworkFailure.ServerMiscommunication>(cause)
+
+        val actual = cause.rootCause
+        assertIs<KaliumException.InvalidRequestError>(actual)
+
+        assertEquals(400, actual.errorResponse.code)
+        assertEquals("generic test error", actual.errorResponse.message)
+        assertEquals("generic-test-error", actual.errorResponse.label)
+    }
 
     private companion object {
         const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
@@ -295,6 +431,7 @@ class EventRepositoryTest {
             runBlocking {
                 withCurrentClientIdReturning(TestClient.CLIENT_ID)
                 withClientHasConsumableNotifications()
+                withMarkEventAsProcessed()
             }
         }
 
@@ -356,6 +493,18 @@ class EventRepositoryTest {
             coEvery {
                 eventDAO.observeUnprocessedEvents()
             }.returns(flowOf(events))
+        }
+
+        suspend fun withMarkEventAsProcessed() = apply {
+            coEvery {
+                eventDAO.markEventAsProcessed(any())
+            }.returns(Unit)
+        }
+
+        suspend fun withSetAllUnprocessedEventsAsPending() = apply {
+            coEvery {
+                eventDAO.setAllUnprocessedEventsAsPending()
+            }.returns(Unit)
         }
 
         suspend fun withClearProcessedEvents(eventId: String, id: Long = 1L) = apply {

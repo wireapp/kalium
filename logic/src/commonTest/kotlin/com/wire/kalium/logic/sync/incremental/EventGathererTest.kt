@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync.incremental
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
@@ -28,7 +27,6 @@ import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvid
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.event.EventVersion
-import com.wire.kalium.logic.data.event.PendingEventInfo
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -36,8 +34,6 @@ import com.wire.kalium.logic.sync.incremental.EventGathererTest.Arrangement.Comp
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -51,13 +47,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import okio.IOException
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -113,7 +105,6 @@ class EventGathererTest {
         assertEquals(EventSource.PENDING, eventGatherer.currentSource.value)
     }
 
-    @Ignore // TODO Kubaz
     @Test
     fun givenEventsWithLiveSource_whenGathering_thenCurrentSourceIsLive() = runTest(testScope) {
         val event = TestEvent.memberJoin()
@@ -242,38 +233,6 @@ class EventGathererTest {
         }
     }
 
-    // TODO move all pending event tests to repository
-//     @Test
-//     fun givenPendingEventsFailWith404_whenGathering_thenShouldThrowExceptionWithEventNotFoundCause() = runTest(testScope) {
-//         val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
-//
-//         val failureCause = NetworkFailure.ServerMiscommunication(
-//             KaliumException.InvalidRequestError(
-//                 ErrorResponse(
-//                     code = 404,
-//                     label = "Event not found",
-//                     message = "Event not found"
-//                 )
-//             )
-//         )
-//         val (_, eventGatherer) = Arrangement()
-//             .withLastEventIdReturning(Either.Right("lastEventId"))
-//             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-//             .withFetchServerTimeReturning(null)
-//             .arrange(this.backgroundScope)
-//
-//         eventGatherer.receiveEvents().test {
-//             // Open Websocket should trigger fetching pending events
-//             liveEventsChannel.send(WebSocketEvent.Open())
-//             advanceUntilIdle()
-//
-//             val error = awaitError()
-//             assertIs<KaliumSyncException>(error)
-//             assertIs<CoreFailure.SyncEventOrClientNotFound>(error.coreFailureCause)
-//             cancelAndIgnoreRemainingEvents()
-//         }
-//     }
-
     @Test
     fun givenWebSocketOpens_whenGatheringAndAsyncNotificationsCapable_thenShouldNotFetchLastEvent() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
@@ -329,7 +288,6 @@ class EventGathererTest {
             }
         }
 
-    @Ignore // TODO Kubaz
     @Test
     fun givenFirstEventPendingThenLive_whenGathering_thenCurrentSourceUpdates() = runTest {
         val event1 = TestEvent.memberJoin().wrapInEnvelope(source = EventSource.PENDING)

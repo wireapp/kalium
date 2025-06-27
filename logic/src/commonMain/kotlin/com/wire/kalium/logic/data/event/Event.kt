@@ -46,6 +46,7 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -80,24 +81,17 @@ enum class EventVersion {
 /**
  * Data class representing information about the delivery of an event.
  *
- * @property isLive Indicates whether the event was received in real-time via WebSocket (`true`)
- * or fetched in batch as a pending event (`false`).
+ * @property source Indicates whether the event was received in real-time via WebSocket [EventSource.LIVE]
+ * or fetched in batch as a pending event [EventSource.PENDING].
  */
 data class EventDeliveryInfo(
-    val isLive: Boolean,
+    val source: EventSource,
 ) {
 
     fun toLogMap(): Map<String, Any?> = mapOf(
-        "isLive" to isLive,
+        "source" to source,
     )
 }
-
-/**
- * Represents the information about pending events.
- *
- * @property hasMore Indicates whether there are more pending events to be fetched.
- */
-data class PendingEventInfo(val hasMore: Boolean)
 
 /**
  * Represents an event.

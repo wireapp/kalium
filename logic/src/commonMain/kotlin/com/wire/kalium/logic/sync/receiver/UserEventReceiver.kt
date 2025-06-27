@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
@@ -110,7 +111,7 @@ internal class UserEventReceiverImpl internal constructor(
                         if (event.connection.status == ConnectionState.ACCEPTED) {
                             oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
                                 event.connection.qualifiedToId,
-                                delay = if (deliveryInfo.isLive) 3.seconds else ZERO
+                                delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
                             )
                             if (previousStatus != ConnectionState.MISSING_LEGALHOLD_CONSENT) {
                                 newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(

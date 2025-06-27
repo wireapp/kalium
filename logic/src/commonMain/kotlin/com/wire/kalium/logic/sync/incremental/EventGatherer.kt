@@ -124,7 +124,7 @@ internal class EventGathererImpl(
                 kaliumLogger.d("$TAG gathering ${events.size} events")
 
                 if (!isAsyncNotifications) {
-                    val hasAnyPendingEvents = events.any { !it.deliveryInfo.isLive }
+                    val hasAnyPendingEvents = events.any { it.deliveryInfo.source == EventSource.PENDING }
 
                     when {
 
