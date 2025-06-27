@@ -177,6 +177,7 @@ import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
+import com.wire.kalium.logic.feature.analytics.SetNewTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -1647,6 +1648,9 @@ class UserSessionScope internal constructor(
     val observeAnalyticsTrackingIdentifierStatus: ObserveAnalyticsTrackingIdentifierStatusUseCase
         get() = ObserveAnalyticsTrackingIdentifierStatusUseCase(userConfigRepository, userScopedLogger)
 
+    val setNewTrackingIdentifier: SetNewTrackingIdentifierUseCase
+        get() = SetNewTrackingIdentifierUseCase(userConfigRepository)
+
     val getCurrentAnalyticsTrackingIdentifier: GetCurrentAnalyticsTrackingIdentifierUseCase
         get() = GetCurrentAnalyticsTrackingIdentifierUseCase(userConfigRepository)
 
@@ -2340,7 +2344,7 @@ class UserSessionScope internal constructor(
 
     val deleteConversationUseCase: DeleteConversationUseCase
         get() = DeleteConversationUseCaseImpl(
-        conversationRepository = conversationRepository,
+            conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
         )
 
