@@ -311,7 +311,7 @@ class SecurityHelperTest {
             val secret = securityHelper.proteusDBSecret(userId, tempDir)
             // Verify new key was generated (32 bytes)
             assertEquals(32, secret.passphrase.size)
-            // Verify v2 key was stored\\
+            // Verify v2 key was stored
             assertEquals(1, capturedV2Keys.size)
             // Verify stored key is base64 encoded
             assertTrue(capturedV2Keys[0].isNotEmpty())
