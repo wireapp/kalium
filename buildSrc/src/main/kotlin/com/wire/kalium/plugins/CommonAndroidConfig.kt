@@ -51,7 +51,7 @@ fun LibraryExtension.commonAndroidLibConfig(
     sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
         minSdk = Android.Sdk.min
-        targetSdk = Android.Sdk.target
+        lint.targetSdk = Android.Sdk.target
         consumerProguardFiles("consumer-proguard-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
