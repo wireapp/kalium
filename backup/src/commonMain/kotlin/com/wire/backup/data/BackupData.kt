@@ -86,6 +86,7 @@ public data class BackupConversation(
     val id: BackupQualifiedId,
     @SerialName("name")
     val name: String,
+    @SerialName("lastModifiedTime")
     val lastModifiedTime: BackupDateTime? = null,
 )
 
