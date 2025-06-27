@@ -81,25 +81,43 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getPaginatedNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) =
-        withContext(dispatchers.io) {
-            wrapApiRequest {
-                if (path == null) {
-                    cellsApi.getNodes(query, limit, offset)
-                } else {
-                    cellsApi.getNodesForPath(path, limit, offset, onlyDeleted)
-                }
-            }.map { response ->
-                PaginatedList(
-                    data = response.nodes.map { it.toModel() },
-                    pagination = response.pagination?.let {
-                        Pagination(
-                            nextOffset = it.nextOffset,
-                        )
-                    },
+    override suspend fun getPaginatedNodes(
+        path: String?,
+        query: String,
+        limit: Int,
+        offset: Int,
+        onlyDeleted: Boolean,
+        tags: List<String>
+    ) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            if (path == null) {
+                cellsApi.getNodes(
+                    query = query,
+                    limit = limit,
+                    offset = offset,
+                    tags = tags
+                )
+            } else {
+                cellsApi.getNodesForPath(
+                    path = path,
+                    limit = limit,
+                    offset = offset,
+                    onlyDeleted = onlyDeleted,
+                    onlyFolders = false,
+                    tags = tags
                 )
             }
+        }.map { response ->
+            PaginatedList(
+                data = response.nodes.map { it.toModel() },
+                pagination = response.pagination?.let {
+                    Pagination(
+                        nextOffset = it.nextOffset,
+                    )
+                },
+            )
         }
+    }
 
     override suspend fun getNodesByPath(
         path: String,
@@ -211,4 +229,10 @@ internal class CellsDataSource internal constructor(
                 cellsApi.restoreNode(path = path)
             }
         }
+
+    override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.getAllTags()
+        }
+    }
 }

@@ -29,6 +29,7 @@ public interface GetCellFilesPagedUseCase {
         conversationId: String?,
         query: String,
         onlyDeleted: Boolean = false,
+        tags: List<String> = emptyList(),
     ): Flow<PagingData<Node>>
 }
 
@@ -43,7 +44,8 @@ internal class GetCellFilesPagedUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
-        onlyDeleted: Boolean
+        onlyDeleted: Boolean,
+        tags: List<String>
     ): Flow<PagingData<Node>> {
         return Pager(
             config = PagingConfig(
@@ -55,7 +57,8 @@ internal class GetCellFilesPagedUseCaseImpl(
                     pageSize = PAGE_SIZE,
                     conversationId = conversationId,
                     getPaginatedNodesUseCase = getPaginatedNodesUseCase,
-                    onlyDeleted = onlyDeleted
+                    onlyDeleted = onlyDeleted,
+                    tags = tags
                 )
             }
         ).flow

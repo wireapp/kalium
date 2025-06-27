@@ -26,6 +26,7 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
 import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterMetaFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
@@ -60,6 +61,7 @@ internal class CellsApiImpl(
 
     private companion object {
         private const val AWAIT_TIMEOUT = "5s"
+        const val TAGS_METADATA = "usermeta-tags"
     }
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
@@ -67,8 +69,14 @@ internal class CellsApiImpl(
             nodeServiceApi.getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun getNodes(query: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO> =
+    override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
+            val lookupTags = tags.map {
+                LookupFilterMetaFilter(
+                    namespace = TAGS_METADATA,
+                    term = it,
+                )
+            }
             nodeServiceApi.lookup(
                 RestLookupRequest(
                     limit = limit.toString(),
@@ -80,6 +88,7 @@ internal class CellsApiImpl(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query
                         ),
+                        metadata = lookupTags
                     ),
                     sortDirDesc = true,
                     flags = listOf(RestFlag.WithPreSignedURLs)
@@ -93,8 +102,15 @@ internal class CellsApiImpl(
         offset: Int?,
         onlyDeleted: Boolean,
         onlyFolders: Boolean,
+        tags: List<String>
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
+            val lookupTags = tags.map {
+                LookupFilterMetaFilter(
+                    namespace = TAGS_METADATA,
+                    term = it,
+                )
+            }
             nodeServiceApi.lookup(
                 RestLookupRequest(
                     limit = limit?.toString(),
@@ -111,6 +127,7 @@ internal class CellsApiImpl(
                         } else {
                             TreeNodeType.UNKNOWN
                         },
+                        metadata = lookupTags
                     ),
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -239,6 +256,10 @@ internal class CellsApiImpl(
             )
         )
     }.mapSuccess {}
+
+    override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
+        nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA, operationValues = listOf())
+    }.mapSuccess { it.propertyValues ?: emptyList() }
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))
