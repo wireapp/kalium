@@ -54,6 +54,7 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
     override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
         getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let { UserDBSecret(it) }
 
+    @Suppress("ReturnCount")
     override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
         // Step 1: Try current format (v2) - return if found
         getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId")
@@ -74,7 +75,7 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
         }
     }
 
-
+    @Suppress("ReturnCount")
     override suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret {
             // Step 1: Try current format (v2) - return if found
             getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId")
