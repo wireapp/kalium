@@ -56,6 +56,7 @@ internal class KaliumHttpLogger(
 
         requestLog["method"] = request.method.value
         requestLog["endpoint"] = obfuscatePath(Url(request.url))
+        requestLog["headers"] = request.headers
 
         val content = request.body as OutgoingContent
 
@@ -96,6 +97,7 @@ internal class KaliumHttpLogger(
         responseLog["method"] = response.call.request.method.value
         responseLog["endpoint"] = obfuscatePath(response.call.request.url)
         responseLog["status"] = response.status.value
+        requestLog["headers"] = response.call.request.headers
 
         when {
             level.info -> {

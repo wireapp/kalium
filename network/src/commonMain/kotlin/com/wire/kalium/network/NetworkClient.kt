@@ -38,11 +38,13 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.http.ContentType
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
 import io.ktor.websocket.WebSocketSession
 
 /**
@@ -67,6 +69,7 @@ internal class AuthenticatedNetworkClient(
         installWireDefaultRequest(serverConfigDTO)
         installAuth(bearerAuthProvider)
         install(ContentNegotiation) {
+            json(KtxSerializer.json)
             mls()
             xprotobuf()
         }
@@ -84,6 +87,9 @@ internal class UnauthenticatedNetworkClient(
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, kaliumLogger) {
         installWireDefaultRequest(backendLinks)
+        install(ContentNegotiation) {
+            json(KtxSerializer.json)
+        }
     }
 }
 
@@ -96,7 +102,11 @@ internal class UnauthenticatedNetworkClient(
 internal class UnboundNetworkClient(
     engine: HttpClientEngine
 ) {
-    val httpClient: HttpClient = provideBaseHttpClient(engine, kaliumLogger)
+    val httpClient: HttpClient = provideBaseHttpClient(engine, kaliumLogger) {
+        install(ContentNegotiation) {
+            json(KtxSerializer.json)
+        }
+    }
 }
 
 /**
@@ -122,7 +132,7 @@ internal class AuthenticatedWebSocketClient(
             host = baseUrl.host,
             port = URLProtocol.WSS.defaultPort,
         )
-            .appendPathSegments(baseUrl.pathSegments)
+            .appendPathSegments(baseUrl.rawSegments)
             .appendPathSegments(
                 if (shouldAddApiVersion) "v${serverConfigDTO.metaData.commonApiVersion.version}" else ""
             ).appendPathSegments(path.toList())
@@ -140,13 +150,14 @@ internal class AuthenticatedWebSocketClient(
             installWireDefaultRequest(serverConfigDTO)
             installAuth(bearerAuthProvider)
             install(ContentNegotiation) {
+                json(KtxSerializer.json)
                 mls()
                 xprotobuf()
             }
             install(WebSockets) {
                 // Depending on the Engine (OkHttp for example), we might
                 // need to set this value there too, as this here won't work
-                pingInterval = WEBSOCKET_PING_INTERVAL_MILLIS
+                pingIntervalMillis = WEBSOCKET_PING_INTERVAL_MILLIS
             }
         }
 

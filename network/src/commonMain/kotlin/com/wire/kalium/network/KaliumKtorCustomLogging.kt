@@ -27,20 +27,18 @@ import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.observer.ResponseHandler
-import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.HttpSendPipeline
 import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.client.statement.HttpResponsePipeline
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.Url
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
-import io.ktor.util.InternalAPI
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
-import io.ktor.utils.io.core.readText
+import io.ktor.utils.io.readUTF8Line
 import kotlin.coroutines.cancellation.CancellationException
 
 private val KaliumHttpCustomLogger = AttributeKey<KaliumHttpLogger>("KaliumHttpLogger")
@@ -120,7 +118,6 @@ class KaliumKtorCustomLogging private constructor(
         }
     }
 
-    @OptIn(InternalAPI::class)
     private fun setupResponseLogging(client: HttpClient) {
         client.receivePipeline.intercept(HttpReceivePipeline.State) { response ->
             if (level == LogLevel.NONE || response.call.attributes.contains(DisableLogging)) return@intercept
@@ -157,20 +154,21 @@ class KaliumKtorCustomLogging private constructor(
 
         if (!level.body) return
 
-        val observer: ResponseHandler = observer@{
-            if (level == LogLevel.NONE || it.call.attributes.contains(DisableLogging)) {
-                return@observer
+        client.receivePipeline.intercept(HttpReceivePipeline.After) { httpResponse ->
+            if (level == LogLevel.NONE || httpResponse.call.attributes.contains(DisableLogging)) {
+                proceedWith(subject)
+                return@intercept
             }
 
-            val logger = it.call.attributes[KaliumHttpCustomLogger]
+            val logger = httpResponse.call.attributes[KaliumHttpCustomLogger]
             try {
-                logger.logResponseBody(it.contentType(), it.content)
+                logger.logResponseBody(httpResponse.contentType(), httpResponse.bodyAsChannel())
             } catch (_: Throwable) {
             } finally {
                 logger.closeResponseLog()
             }
+            proceedWith(subject)
         }
-        ResponseObserver.install(ResponseObserver(observer), client)
     }
 
     private fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
@@ -217,13 +215,13 @@ class KaliumKtorCustomLogging private constructor(
  * Configure and install [Logging] in [HttpClient].
  */
 @Suppress("FunctionNaming")
-fun HttpClientConfig<*>.Logging(block: Logging.Config.() -> Unit = {}) {
-    install(Logging, block)
+fun HttpClientConfig<*>.Logging(block: KaliumKtorCustomLogging.Config.() -> Unit = {}) {
+    install(KaliumKtorCustomLogging, block)
 }
 
 @Suppress("TooGenericExceptionCaught")
 internal suspend inline fun ByteReadChannel.tryReadText(charset: Charset): String? = try {
-    readRemaining().readText(charset = charset)
+    readUTF8Line() ?: ""
 } catch (cause: Throwable) {
     null
 }

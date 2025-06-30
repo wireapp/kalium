@@ -72,7 +72,7 @@ internal abstract class ApiTest {
         get() = {
             val newSession = TEST_SESSION_MANAGER.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldRefreshToken = oldTokens!!.refreshToken
+                oldRefreshToken = oldTokens!!.refreshToken ?: throw IllegalStateException("Refresh token is null")
             )
             newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)

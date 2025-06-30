@@ -14,7 +14,7 @@ cryptobox4j = "1.4.0"
 cryptobox-android = "1.1.5"
 fileKit = "0.10.0-beta04"
 android-security = "1.1.0-alpha06"
-ktor = "2.3.10"
+ktor = "3.0.1"
 okio = "3.9.0"
 ok-http = "4.12.0"
 # 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 uploaded to a temporary repo

@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.kaliumLogger
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.HttpClientCall
@@ -33,9 +34,9 @@ import io.ktor.client.utils.buildHeaders
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpProtocolVersion
 import io.ktor.http.HttpStatusCode
-import io.ktor.util.InternalAPI
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.InternalAPI
 import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
 
@@ -83,8 +84,8 @@ private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
                     override val version: HttpProtocolVersion = response.version
                     override val requestTime: GMTDate = response.requestTime
                     override val responseTime: GMTDate = response.responseTime
-                    override val content: ByteReadChannel = response.content
-                    override val headers get() = headers
+                    override val rawContent: ByteReadChannel = response.rawContent
+                    override val headers = headers
                     override val coroutineContext: CoroutineContext = response.coroutineContext
                 }
             )

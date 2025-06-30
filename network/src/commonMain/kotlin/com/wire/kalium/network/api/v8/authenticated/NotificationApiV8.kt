@@ -37,9 +37,11 @@ import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.utils.io.CancellationException
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -117,7 +119,15 @@ internal open class NotificationApiV8 internal constructor(
             .onCompletion {
                 defaultClientWebSocketSession.close()
                 logger.w("Websocket Closed", it)
-                session?.close(it)
+                it?.let {
+                    when(it) {
+                        is CancellationException -> {
+                            session?.cancel(it)
+                        }
+                        // TODO: check for errors and close session with a correct error code
+                        else -> session?.close()
+                    }
+                }
                 session = null
                 emit(WebSocketEvent.Close(it))
             }
