@@ -43,7 +43,12 @@ internal interface SecurityHelper {
     suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
 }
 
-internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStorage) : SecurityHelper {
+internal typealias DatabaseMigrator = suspend (rootDir: String, oldKey: String, passphrase: ByteArray) -> Unit
+
+internal class SecurityHelperImpl(
+    private val passphraseStorage: PassphraseStorage,
+    private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey
+) : SecurityHelper {
 
     override fun globalDBSecret(): GlobalDatabaseSecret =
         GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
@@ -64,7 +69,7 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
         getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
             ?.let { legacyPassphrase ->
                 return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
-                    migrateDatabaseKey(rootDir, legacyPassphrase, newKeyBytes)
+                    databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
                     passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
                 }.let { MlsDBSecret(it) }
             }
@@ -85,7 +90,7 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
             getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
                 ?.let { legacyPassphrase ->
                     return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
-                        migrateDatabaseKey(rootDir, legacyPassphrase, newKeyBytes)
+                        databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
                         passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
                     }.let { ProteusDBSecret(it) }
                 }

@@ -51,7 +51,9 @@ class SecurityHelperTest {
 
     @BeforeTest
     fun setup() {
-        securityHelper = SecurityHelperImpl(passphraseStorage)
+        // Use a no-op migrator by default for tests to avoid file system dependencies
+        val noOpMigrator: DatabaseMigrator = { _, _, _ -> }
+        securityHelper = SecurityHelperImpl(passphraseStorage, noOpMigrator)
     }
 
     @Test
@@ -133,29 +135,16 @@ class SecurityHelperTest {
         val v1b64 = "oldBase64"
         val captured = mutableListOf<String>()
         
-        // Mock directory creation to avoid file system dependency
         val tempDir = "/tmp/test"
         setupSequencedGetPassphrase(mlsV2Alias, listOf(null))
         setupSequencedGetPassphrase(mlsV1Alias, listOf(v1b64))
         setupSequencedSetPassphrase(mlsV2Alias, captured)
 
-        // This test will fail due to real migration call, so we'll test the logic differently
-        // by using a temp directory that might exist
-        try {
-            val secret = securityHelper.mlsDBSecret(userId, tempDir)
-            assertEquals(32, secret.passphrase.size)
-            assertEquals(1, captured.size)
-            assertTrue(captured[0].isNotEmpty())
-        } catch (e: Exception) {
-            if (e.message == "v1=file is not a database") {
-                // Migration failed due to file system - this is expected in test environment
-                // Verify that v1 key was read and v2 storage was attempted
-                assertTrue(captured.isEmpty()) // setPassphrase not called due to migration failure
-            } else {
-                // If we hit any other exception, fail the test
-                throw e
-            }
-        }
+        val secret = securityHelper.mlsDBSecret(userId, tempDir)
+        
+        assertEquals(32, secret.passphrase.size)
+        assertEquals(1, captured.size)
+        assertTrue(captured[0].isNotEmpty())
     }
 
     private fun setupSequencedSetPassphrase(key: String, capturedValues: MutableList<String>) = apply {
@@ -220,21 +209,11 @@ class SecurityHelperTest {
         setupSequencedGetPassphrase(proteusV1Alias, listOf(v1b64))
         setupSequencedSetPassphrase(proteusV2Alias, captured)
 
-        try {
-            val secret = securityHelper.proteusDBSecret(userId, tempDir)
-            assertEquals(32, secret.passphrase.size)
-            assertEquals(1, captured.size)
-            assertTrue(captured[0].isNotEmpty())
-        } catch (e: Exception) {
-            if (e.message == "v1=file is not a database") {
-                // Migration failed due to file system - this is expected in test environment
-                // Verify that v1 key was read and v2 storage was attempted
-                assertTrue(captured.isEmpty()) // setPassphrase not called due to migration failure
-            } else {
-                // If we hit any other exception, fail the test
-                throw e
-            }
-        }
+        val secret = securityHelper.proteusDBSecret(userId, tempDir)
+        
+        assertEquals(32, secret.passphrase.size)
+        assertEquals(1, captured.size)
+        assertTrue(captured[0].isNotEmpty())
     }
 
     @Test
@@ -261,10 +240,6 @@ class SecurityHelperTest {
         assertTrue(secret1.passphrase.contentEquals(secret2.passphrase))
     }
 
-    // MIGRATION VERIFICATION TESTS
-    // Note: These tests focus on the migration logic behavior rather than the actual migrateDatabaseKey function
-    // since it's a platform-specific expect function that would need to be mocked differently
-
     @Test
     fun givenV1ExistsForMls_whenCallingMlsDBSecret_thenGeneratesNewKeyAndStoresV2() = runTest {
         val v1Secret = "oldMlsSecret"
@@ -275,26 +250,16 @@ class SecurityHelperTest {
         setupSequencedGetPassphrase(mlsV1Alias, listOf(v1Secret))
         setupSequencedSetPassphrase(mlsV2Alias, capturedV2Keys)
 
-        try {
-            val secret = securityHelper.mlsDBSecret(userId, tempDir)
-            // Verify new key was generated (32 bytes)
-            assertEquals(32, secret.passphrase.size)
-            // Verify v2 key was stored
-            assertEquals(1, capturedV2Keys.size)
-            // Verify stored key is base64 encoded
-            assertTrue(capturedV2Keys[0].isNotEmpty())
-            // Verify the returned secret matches what was stored
-            assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
-        } catch (e: Exception) {
-            if (e.message == "v1=file is not a database") {
-                // Migration failed due to file system - this is expected in test environment
-                // Verify that v1 key was read and v2 storage was attempted
-                assertTrue(capturedV2Keys.isEmpty()) // setPassphrase not called due to migration failure
-            } else {
-                // If we hit any other exception, fail the test
-                throw e
-            }
-        }
+        val secret = securityHelper.mlsDBSecret(userId, tempDir)
+        
+        // Verify new key was generated (32 bytes)
+        assertEquals(32, secret.passphrase.size)
+        // Verify v2 key was stored
+        assertEquals(1, capturedV2Keys.size)
+        // Verify stored key is base64 encoded
+        assertTrue(capturedV2Keys[0].isNotEmpty())
+        // Verify the returned secret matches what was stored
+        assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
     }
 
     @Test
@@ -307,25 +272,15 @@ class SecurityHelperTest {
         setupSequencedGetPassphrase(proteusV1Alias, listOf(v1Secret))
         setupSequencedSetPassphrase(proteusV2Alias, capturedV2Keys)
 
-        try {
-            val secret = securityHelper.proteusDBSecret(userId, tempDir)
-            // Verify new key was generated (32 bytes)
-            assertEquals(32, secret.passphrase.size)
-            // Verify v2 key was stored
-            assertEquals(1, capturedV2Keys.size)
-            // Verify stored key is base64 encoded
-            assertTrue(capturedV2Keys[0].isNotEmpty())
-            // Verify the returned secret matches what was stored
-            assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
-        } catch (e: Exception) {
-            if (e.message == "v1=file is not a database") {
-                // Migration failed due to file system - this is expected in test environment
-                // Verify that v1 key was read and v2 storage was attempted
-                assertTrue(capturedV2Keys.isEmpty()) // setPassphrase not called due to migration failure
-            } else {
-                // If we hit any other exception, fail the test
-                throw e
-            }
-        }
+        val secret = securityHelper.proteusDBSecret(userId, tempDir)
+        
+        // Verify new key was generated (32 bytes)
+        assertEquals(32, secret.passphrase.size)
+        // Verify v2 key was stored
+        assertEquals(1, capturedV2Keys.size)
+        // Verify stored key is base64 encoded
+        assertTrue(capturedV2Keys[0].isNotEmpty())
+        // Verify the returned secret matches what was stored
+        assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
     }
 }
