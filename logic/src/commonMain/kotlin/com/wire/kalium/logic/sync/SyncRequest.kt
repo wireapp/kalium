@@ -32,13 +32,19 @@ interface SyncRequest {
      * @return An [Either] containing [CoreFailure] if [SyncState.Failed] is encountered,
      * or [Unit] if the specified [syncState] is reached.
      */
-    suspend fun waitUntilOrFailure(syncState: SyncState): Either<CoreFailure, Unit>
+    suspend fun waitUntilOrFailure(syncState: SyncState, dropFirst: Int = 0): Either<CoreFailure, Unit>
 
     /**
      * Shortcut for [waitUntilOrFailure] with Live state.
      * @see waitUntilOrFailure
      */
     suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
+
+    /**
+     * Shortcut for [waitUntilOrFailure] with Live state dropping first event.
+     * @see waitUntilOrFailure
+     */
+    suspend fun waitUntilSecondLiveOrFailure(): Either<CoreFailure, Unit>
 
     /**
      * When called, the sync process continues without being released.
