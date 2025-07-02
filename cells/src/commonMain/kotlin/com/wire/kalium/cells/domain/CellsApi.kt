@@ -48,4 +48,6 @@ internal interface CellsApi {
     suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit>
     suspend fun restoreNode(path: String): NetworkResponse<Unit>
     suspend fun getAllTags(): NetworkResponse<List<String>>
+    suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit>
+    suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
 }

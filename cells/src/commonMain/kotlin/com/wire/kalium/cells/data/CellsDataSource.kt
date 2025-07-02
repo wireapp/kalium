@@ -235,4 +235,16 @@ internal class CellsDataSource internal constructor(
             cellsApi.getAllTags()
         }
     }
+
+    override suspend fun updateNodeTags(uuid: String, tags: List<String>): Either<NetworkFailure, Unit> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.updateNodeTags(uuid = uuid, tags = tags)
+        }
+    }
+
+    override suspend fun removeNodeTags(uuid: String): Either<NetworkFailure, Unit> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.removeTagsFromNode(uuid = uuid)
+        }
+    }
 }
