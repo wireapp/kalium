@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v8
+package com.wire.kalium.api.v9
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
@@ -25,7 +25,7 @@ import com.wire.kalium.mocks.responses.NotificationEventsResponseJson
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.api.v8.authenticated.NotificationApiV8
+import com.wire.kalium.network.api.v9.authenticated.NotificationApiV9
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
@@ -33,7 +33,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-internal class NotificationApiV8Test : ApiTest() {
+internal class NotificationApiV9Test : ApiTest() {
 
     /**
      * Doesn't do anything.
@@ -47,7 +47,7 @@ internal class NotificationApiV8Test : ApiTest() {
             NotificationEventsResponseJson.notificationWithLastEvent,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiV8(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV9(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
         val result = notificationsApi.consumeLiveEvents("")
 
         assertIs<NetworkResponse.Success<Flow<WebSocketEvent<ConsumableNotificationResponse>>>>(result)
@@ -59,7 +59,7 @@ internal class NotificationApiV8Test : ApiTest() {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest,
         )
-        val notificationsApi = NotificationApiV8(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV9(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
         val result = notificationsApi.consumeLiveEvents("")
 
         assertIs<NetworkResponse.Error>(result)

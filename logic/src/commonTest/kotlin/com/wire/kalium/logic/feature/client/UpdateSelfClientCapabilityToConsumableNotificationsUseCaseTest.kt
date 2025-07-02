@@ -86,7 +86,7 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
     @Test
     fun givenShouldUpdate_AndClientIsEnabledByAPI_thenTheClientCapabilitiesShouldBeUpdatedAndLocalStateUpdated() =
         runTest {
-            val config = newServerConfig(1).copy(metaData = ServerConfig.MetaData(false, CommonApiVersionType.Valid(8), "domain"))
+            val config = newServerConfig(1).copy(metaData = ServerConfig.MetaData(false, CommonApiVersionType.Valid(9), "domain"))
             val (arrangement, useCase) = Arrangement()
                 .withSyncDone()
                 .withShouldUpdateConsumableNotificationsCapabilityResult(true)
