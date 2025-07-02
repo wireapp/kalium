@@ -424,14 +424,12 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    // TODO kubaz delicateAPI
     override suspend fun persistConversations(
         conversations: List<ConversationEntity>
     ) = wrapStorageRequest {
         conversationDAO.insertConversations(conversations)
     }
 
-    // TODO delicate API
     override suspend fun updateConversationMembers(
         conversations: List<ConversationResponse>,
         selfUserTeamId: TeamId?,
