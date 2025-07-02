@@ -18,20 +18,8 @@
 package com.wire.kalium.network.api.v9.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
-import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
-import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationRequest
 import com.wire.kalium.network.api.v8.unauthenticated.GetDomainRegistrationApiV8
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.setUrl
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.accept
-import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.Url
 
 internal open class GetDomainRegistrationApiV9 internal constructor(
     unauthenticatedNetworkClient: UnauthenticatedNetworkClient
-) : GetDomainRegistrationApiV8(unauthenticatedNetworkClient) 
+) : GetDomainRegistrationApiV8(unauthenticatedNetworkClient)
