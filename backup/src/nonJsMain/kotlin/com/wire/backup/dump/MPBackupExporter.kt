@@ -25,6 +25,7 @@ import com.wire.backup.data.getBackupFileName
 import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
+import com.wire.backup.logger.BackupLogger
 import com.wire.kalium.protobuf.backup.BackupData
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
@@ -50,8 +51,9 @@ public actual class MPBackupExporter : CommonMPBackupExporter {
         workDirectory: String,
         outputDirectory: String,
         fileZipper: FileZipper,
-        fileSystem: FileSystem
-    ) : super(selfUserId) {
+        fileSystem: FileSystem,
+        logger: BackupLogger? = null,
+    ) : super(selfUserId, logger) {
         this.outputDirectory = outputDirectory
         this.fileZipper = fileZipper
         this.fileSystem = fileSystem

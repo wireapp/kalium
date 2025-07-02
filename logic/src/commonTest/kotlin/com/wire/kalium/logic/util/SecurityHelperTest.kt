@@ -43,13 +43,17 @@ class SecurityHelperTest {
     private lateinit var securityHelper: SecurityHelper
 
     private val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
-    private val v1Alias = "mls_db_secret_alias_$userId"
-    private val v2Alias = "mls_db_secret_alias_v2_$userId"
+    private val mlsV1Alias = "mls_db_secret_alias_$userId"
+    private val mlsV2Alias = "mls_db_secret_alias_v2_$userId"
+    private val proteusV1Alias = "proteus_db_secret_alias_$userId"
+    private val proteusV2Alias = "proteus_db_secret_alias_v2_$userId"
     private val rootPath = "/root/path"
 
     @BeforeTest
     fun setup() {
-        securityHelper = SecurityHelperImpl(passphraseStorage)
+        // Use a no-op migrator by default for tests to avoid file system dependencies
+        val noOpMigrator: DatabaseMigrator = { _, _, _ -> }
+        securityHelper = SecurityHelperImpl(passphraseStorage, noOpMigrator)
     }
 
     @Test
@@ -102,25 +106,22 @@ class SecurityHelperTest {
 
         val oldKeyBytes = ByteArray(32) { 0 }
         every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
-        setupSequencedGetPassphrase("mls_db_secret_alias_v2_$userId", listOf(oldKeyBytes.encodeBase64(), oldKeyBytes.encodeBase64()))
-        setupSequencedGetPassphrase("mls_db_secret_alias_$userId", listOf(null, "oldKeyBase64"))
+        setupSequencedGetPassphrase(mlsV2Alias, listOf(oldKeyBytes.encodeBase64(), oldKeyBytes.encodeBase64()))
+        setupSequencedGetPassphrase(mlsV1Alias, listOf(null, "oldKeyBase64"))
 
         val secret1 = securityHelper.mlsDBSecret(userId, rootPath)
         val secret2 = securityHelper.mlsDBSecret(userId, rootPath)
 
         assertTrue(secret1.passphrase.contentEquals(secret2.passphrase))
 
-        verify { passphraseStorage.setPassphrase(eq("mls_db_secret_alias_$userId"), any()) }.wasInvoked(exactly = once)
+        verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
     }
 
     @Test
-    fun whenBothV1AndV2Exist_thenHasMigratedTrueAndNoNewV2Produced() = runTest {
-        val v1b64 = "oldBase64"
+    fun givenV2Exists_whenCallingMlsDBSecret_thenReturnsV2WithoutMigration() = runTest {
         val v2b64 = "newBase64"
 
-        setupSequencedGetPassphrase(v2Alias, listOf(v2b64))
-        setupSequencedGetPassphrase(v1Alias, listOf(v1b64))
-
+        setupSequencedGetPassphrase(mlsV2Alias, listOf(v2b64))
         every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
 
         val secret = securityHelper.mlsDBSecret(userId, rootPath)
@@ -130,18 +131,20 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun whenV2ExistsButV1Absent_thenGeneratesOnlyV1() = runTest {
-        val v2b64 = "newBase64"
+    fun givenOnlyV1Exists_whenCallingMlsDBSecret_thenMigratesToV2() = runTest {
+        val v1b64 = "oldBase64"
         val captured = mutableListOf<String>()
+        
+        val tempDir = "/tmp/test"
+        setupSequencedGetPassphrase(mlsV2Alias, listOf(null))
+        setupSequencedGetPassphrase(mlsV1Alias, listOf(v1b64))
+        setupSequencedSetPassphrase(mlsV2Alias, captured)
 
-        setupSequencedGetPassphrase(v2Alias, listOf(v2b64))
-        setupSequencedGetPassphrase(v1Alias, listOf(null, "generatedOldB64"))
-        setupSequencedSetPassphrase(v1Alias, captured)
-
-        val secret = securityHelper.mlsDBSecret(userId, rootPath)
-
-        assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
+        val secret = securityHelper.mlsDBSecret(userId, tempDir)
+        
+        assertEquals(32, secret.passphrase.size)
         assertEquals(1, captured.size)
+        assertTrue(captured[0].isNotEmpty())
     }
 
     private fun setupSequencedSetPassphrase(key: String, capturedValues: MutableList<String>) = apply {
@@ -167,5 +170,117 @@ class SecurityHelperTest {
                     null
                 }
             }
+    }
+
+    @Test
+    fun givenNeitherV1NorV2Exist_whenCallingMlsDBSecret_thenGeneratesNewV2Secret() = runTest {
+        setupSequencedGetPassphrase(mlsV2Alias, listOf(null, null))
+        setupSequencedGetPassphrase(mlsV1Alias, listOf(null))
+        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+
+        val secret = securityHelper.mlsDBSecret(userId, rootPath)
+
+        assertEquals(32, secret.passphrase.size)
+        verify { passphraseStorage.setPassphrase(eq(mlsV2Alias), any()) }.wasInvoked(exactly = once)
+    }
+
+    // PROTEUS DB SECRET TESTS
+
+    @Test
+    fun givenV2Exists_whenCallingProteusDBSecret_thenReturnsV2WithoutMigration() = runTest {
+        val v2b64 = "proteusV2Secret"
+
+        setupSequencedGetPassphrase(proteusV2Alias, listOf(v2b64))
+        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+
+        val secret = securityHelper.proteusDBSecret(userId, rootPath)
+
+        assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
+        verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenOnlyV1Exists_whenCallingProteusDBSecret_thenMigratesToV2() = runTest {
+        val v1b64 = "proteusV1Secret"
+        val captured = mutableListOf<String>()
+        
+        val tempDir = "/tmp/test"
+        setupSequencedGetPassphrase(proteusV2Alias, listOf(null))
+        setupSequencedGetPassphrase(proteusV1Alias, listOf(v1b64))
+        setupSequencedSetPassphrase(proteusV2Alias, captured)
+
+        val secret = securityHelper.proteusDBSecret(userId, tempDir)
+        
+        assertEquals(32, secret.passphrase.size)
+        assertEquals(1, captured.size)
+        assertTrue(captured[0].isNotEmpty())
+    }
+
+    @Test
+    fun givenNeitherV1NorV2Exist_whenCallingProteusDBSecret_thenGeneratesNewV2Secret() = runTest {
+        setupSequencedGetPassphrase(proteusV2Alias, listOf(null, null))
+        setupSequencedGetPassphrase(proteusV1Alias, listOf(null))
+        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+
+        val secret = securityHelper.proteusDBSecret(userId, rootPath)
+
+        assertEquals(32, secret.passphrase.size)
+        verify { passphraseStorage.setPassphrase(eq(proteusV2Alias), any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenCallingProteusDBSecretTwiceForSameUser_thenReturnsSameValue() = runTest {
+        val secretB64 = "proteusSecretValue"
+        setupSequencedGetPassphrase(proteusV2Alias, listOf(secretB64, secretB64))
+        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+
+        val secret1 = securityHelper.proteusDBSecret(userId, rootPath)
+        val secret2 = securityHelper.proteusDBSecret(userId, rootPath)
+
+        assertTrue(secret1.passphrase.contentEquals(secret2.passphrase))
+    }
+
+    @Test
+    fun givenV1ExistsForMls_whenCallingMlsDBSecret_thenGeneratesNewKeyAndStoresV2() = runTest {
+        val v1Secret = "oldMlsSecret"
+        val capturedV2Keys = mutableListOf<String>()
+        
+        val tempDir = "/tmp/test"
+        setupSequencedGetPassphrase(mlsV2Alias, listOf(null))
+        setupSequencedGetPassphrase(mlsV1Alias, listOf(v1Secret))
+        setupSequencedSetPassphrase(mlsV2Alias, capturedV2Keys)
+
+        val secret = securityHelper.mlsDBSecret(userId, tempDir)
+        
+        // Verify new key was generated (32 bytes)
+        assertEquals(32, secret.passphrase.size)
+        // Verify v2 key was stored
+        assertEquals(1, capturedV2Keys.size)
+        // Verify stored key is base64 encoded
+        assertTrue(capturedV2Keys[0].isNotEmpty())
+        // Verify the returned secret matches what was stored
+        assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
+    }
+
+    @Test
+    fun givenV1ExistsForProteus_whenCallingProteusDBSecret_thenGeneratesNewKeyAndStoresV2() = runTest {
+        val v1Secret = "oldProteusSecret"
+        val capturedV2Keys = mutableListOf<String>()
+        
+        val tempDir = "/tmp/test"
+        setupSequencedGetPassphrase(proteusV2Alias, listOf(null))
+        setupSequencedGetPassphrase(proteusV1Alias, listOf(v1Secret))
+        setupSequencedSetPassphrase(proteusV2Alias, capturedV2Keys)
+
+        val secret = securityHelper.proteusDBSecret(userId, tempDir)
+        
+        // Verify new key was generated (32 bytes)
+        assertEquals(32, secret.passphrase.size)
+        // Verify v2 key was stored
+        assertEquals(1, capturedV2Keys.size)
+        // Verify stored key is base64 encoded
+        assertTrue(capturedV2Keys[0].isNotEmpty())
+        // Verify the returned secret matches what was stored
+        assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
     }
 }
