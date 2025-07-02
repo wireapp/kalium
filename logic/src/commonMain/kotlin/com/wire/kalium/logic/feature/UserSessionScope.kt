@@ -82,6 +82,14 @@ import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCaseImpl
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
+import com.wire.kalium.logic.data.conversation.FetchConversationsUseCaseImpl
+import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
+import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
@@ -96,8 +104,14 @@ import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
+import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
+import com.wire.kalium.logic.data.conversation.PersistConversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCaseImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
+import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
+import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCaseImpl
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderDataSource
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -750,8 +764,6 @@ class UserSessionScope internal constructor(
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             userId,
-            mlsClientProvider,
-            selfTeamId,
             userStorage.database.conversationDAO,
             userStorage.database.memberDAO,
             authenticatedNetworkContainer.conversationApi,
@@ -886,6 +898,45 @@ class UserSessionScope internal constructor(
             serviceDAO = userStorage.database.serviceDAO
         )
 
+    private val persistConversationsUseCase: PersistConversationsUseCase
+        get() = PersistConversationsUseCaseImpl(
+            selfUserId = userId,
+            conversationRepository = conversationRepository,
+            selfTeamIdProvider = selfTeamId,
+            mlsClientProvider = mlsClientProvider, // TODO remove on next pr and pass mls context
+        )
+
+    private val persistConversationUseCase: PersistConversationUseCase
+        get() = PersistConversationUseCaseImpl(
+            conversationRepository = conversationRepository,
+            persistConversations = persistConversationsUseCase,
+        )
+
+    private val fetchMLSOneToOneConversationUseCase: FetchMLSOneToOneConversationUseCase
+        get() = FetchMLSOneToOneConversationUseCaseImpl(
+            selfUserId = userId,
+            conversationRepository = conversationRepository,
+            persistConversations = persistConversationsUseCase
+        )
+
+    private val fetchConversationUseCase: FetchConversationUseCase
+        get() = FetchConversationUseCaseImpl(
+            conversationRepository = conversationRepository,
+            persistConversations = persistConversationsUseCase
+        )
+
+    private val fetchConversationIfUnknownUseCase: FetchConversationIfUnknownUseCase
+        get() = FetchConversationIfUnknownUseCaseImpl(
+            conversationRepository = conversationRepository,
+            fetchConversation = fetchConversationUseCase
+        )
+
+    private val fetchConversationsUseCase: FetchConversationsUseCase
+        get() = FetchConversationsUseCaseImpl(
+            conversationRepository = conversationRepository,
+            persistConversations = persistConversationsUseCase
+        )
+
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
             userStorage.database.conversationDAO,
@@ -893,7 +944,8 @@ class UserSessionScope internal constructor(
             userStorage.database.connectionDAO,
             authenticatedNetworkContainer.connectionApi,
             userStorage.database.userDAO,
-            conversationRepository
+            conversationRepository,
+            persistConversationsUseCase
         )
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
@@ -1040,7 +1092,14 @@ class UserSessionScope internal constructor(
     private val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCaseImpl(
             conversationRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            fetchConversationsUseCase
+        )
+
+    private val updateConversationProtocolUseCase: UpdateConversationProtocolUseCase
+        get() = UpdateConversationProtocolUseCaseImpl(
+            conversationRepository,
+            persistConversationsUseCase
         )
 
     private val syncConnections: SyncConnectionsUseCase
@@ -1065,7 +1124,9 @@ class UserSessionScope internal constructor(
             clientRepository,
             conversationRepository,
             mlsConversationRepository,
-            userId
+            fetchMLSOneToOneConversationUseCase,
+            fetchConversationUseCase,
+            userId,
         )
 
     private val registerMLSClientUseCase: RegisterMLSClientUseCase
@@ -1113,7 +1174,8 @@ class UserSessionScope internal constructor(
     private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
         get() = MLSOneOnOneConversationResolverImpl(
             conversationRepository,
-            joinExistingMLSConversationUseCase
+            joinExistingMLSConversationUseCase,
+            fetchMLSOneToOneConversationUseCase
         )
 
     private val oneOnOneMigrator: OneOnOneMigrator
@@ -1272,7 +1334,8 @@ class UserSessionScope internal constructor(
             conversationRepository,
             mlsConversationRepository,
             systemMessageInserter,
-            callRepository
+            callRepository,
+            updateConversationProtocolUseCase
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(
@@ -1486,7 +1549,8 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            subconversationRepository = subconversationRepository
+            subconversationRepository = subconversationRepository,
+            fetchConversation = fetchConversationUseCase
         )
 
     private val newMessageHandler: NewMessageEventHandler
@@ -1520,6 +1584,7 @@ class UserSessionScope internal constructor(
             selfTeamId,
             newGroupConversationSystemMessagesCreator,
             oneOnOneResolver,
+            persistConversationUseCase
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
@@ -1536,6 +1601,7 @@ class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
             selfUserId = userId,
+            fetchConversationUseCase
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
@@ -1551,7 +1617,9 @@ class UserSessionScope internal constructor(
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(
-            conversationRepository
+            conversationRepository,
+            fetchConversationIfUnknownUseCase
+
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
@@ -1562,6 +1630,7 @@ class UserSessionScope internal constructor(
             revocationListChecker = checkRevocationList,
             certificateRevocationListRepository = certificateRevocationListRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
         )
 
     private val renamedConversationHandler: RenamedConversationEventHandler
@@ -1597,9 +1666,9 @@ class UserSessionScope internal constructor(
 
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
         get() = ProtocolUpdateEventHandlerImpl(
-            conversationRepository = conversationRepository,
             systemMessageInserter = systemMessageInserter,
-            callRepository = callRepository
+            callRepository = callRepository,
+            updateConversationProtocolUseCase
         )
 
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
@@ -1930,7 +1999,8 @@ class UserSessionScope internal constructor(
             messages.messageRepository,
             assetRepository,
             newGroupConversationSystemMessagesCreator,
-            deleteConversationUseCase
+            deleteConversationUseCase,
+            persistConversationsUseCase
         )
     }
 
@@ -1970,6 +2040,7 @@ class UserSessionScope internal constructor(
             userStorage,
             updateSelfClientCapabilityToConsumableNotifications,
             users.serverLinks,
+            fetchConversationUseCase,
             userScopedLogger,
         )
     }
@@ -2008,6 +2079,7 @@ class UserSessionScope internal constructor(
             cells.publishAttachments,
             cells.removeAttachments,
             cells.deleteAttachmentsUseCase,
+            fetchConversationUseCase,
             this,
             userScopedLogger,
         )
@@ -2217,7 +2289,8 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             oneOnOneResolver,
-            newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator,
+            fetchConversationUseCase
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase

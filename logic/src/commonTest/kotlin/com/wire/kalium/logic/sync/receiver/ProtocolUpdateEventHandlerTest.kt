@@ -17,22 +17,26 @@
  */
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -46,7 +50,7 @@ class ProtocolUpdateEventHandlerTest {
         val event = TestEvent.newConversationProtocolEvent()
 
         val (arrangement, useCase) = arrange {
-            withUpdateProtocolLocally(Either.Right(true))
+            withUpdateProtocolUpdateReturns(Either.Right(true))
             withInsertProtocolChangedSystemMessage()
             withoutAnyEstablishedCall()
         }
@@ -54,7 +58,7 @@ class ProtocolUpdateEventHandlerTest {
         useCase.handle(event).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -67,7 +71,7 @@ class ProtocolUpdateEventHandlerTest {
         val event = TestEvent.newConversationProtocolEvent()
 
         val (arrangement, useCase) = arrange {
-            withUpdateProtocolLocally(Either.Right(true))
+            withUpdateProtocolUpdateReturns(Either.Right(true))
             withInsertProtocolChangedSystemMessage()
             withEstablishedCall()
         }
@@ -75,7 +79,7 @@ class ProtocolUpdateEventHandlerTest {
         useCase.handle(event).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -93,7 +97,7 @@ class ProtocolUpdateEventHandlerTest {
         val failure = NetworkFailure.NoNetworkConnection(null)
 
         val (arrangement, useCase) = arrange {
-            withUpdateProtocolLocally(Either.Left(failure))
+            withUpdateProtocolUpdateReturns(Either.Left(failure))
             withInsertProtocolChangedSystemMessage()
         }
 
@@ -102,7 +106,7 @@ class ProtocolUpdateEventHandlerTest {
         }
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -111,7 +115,7 @@ class ProtocolUpdateEventHandlerTest {
         val event = TestEvent.newConversationProtocolEvent()
 
         val (arrangement, useCase) = arrange {
-            withUpdateProtocolLocally(Either.Right(true))
+            withUpdateProtocolUpdateReturns(Either.Right(true))
             withInsertProtocolChangedSystemMessage()
             withoutAnyEstablishedCall()
         }
@@ -119,7 +123,7 @@ class ProtocolUpdateEventHandlerTest {
         useCase.handle(event).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -128,7 +132,7 @@ class ProtocolUpdateEventHandlerTest {
         val event = TestEvent.newConversationProtocolEvent()
 
         val (arrangement, useCase) = arrange {
-            withUpdateProtocolLocally(Either.Right(false))
+            withUpdateProtocolUpdateReturns(Either.Right(false))
             withInsertProtocolChangedSystemMessage()
         }
 
@@ -147,11 +151,19 @@ class ProtocolUpdateEventHandlerTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
         CallRepositoryArrangement by CallRepositoryArrangementImpl() {
+        val updateConversationProtocol = mock(UpdateConversationProtocolUseCase::class)
+
         private val protocolUpdateEventHandler: ProtocolUpdateEventHandler = ProtocolUpdateEventHandlerImpl(
-            conversationRepository,
             systemMessageInserter,
-            callRepository
+            callRepository,
+            updateConversationProtocol
         )
+
+        suspend fun withUpdateProtocolUpdateReturns(result: Either<CoreFailure, Boolean>) {
+            coEvery {
+                updateConversationProtocol(any(), any(), any())
+            }.returns(result)
+        }
 
         fun arrange() = run {
             runBlocking { block() }

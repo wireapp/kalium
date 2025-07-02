@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -37,6 +36,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
 
@@ -78,7 +78,7 @@ class MessageSendFailureHandlerImpl internal constructor(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val messageRepository: MessageRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val conversationRepository: ConversationRepository,
+    private val fetchConversation: FetchConversationUseCase,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
 ) : MessageSendFailureHandler {
 
@@ -103,7 +103,7 @@ class MessageSendFailureHandlerImpl internal constructor(
     ): Either<CoreFailure, Unit> = when {
             (conversationId == null) -> Either.Right(Unit)
             (sendFailure.deletedClientsOfUsers.isEmpty() && sendFailure.missingClientsOfUsers.isEmpty()) -> Either.Right(Unit)
-            else -> conversationRepository.fetchConversation(conversationId)
+            else -> fetchConversation(conversationId)
         }
 
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {

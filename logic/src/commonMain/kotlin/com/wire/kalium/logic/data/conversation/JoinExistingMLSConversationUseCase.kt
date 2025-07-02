@@ -65,6 +65,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val fetchMLSOneToOneConversation: FetchMLSOneToOneConversationUseCase,
+    private val fetchConversation: FetchConversationUseCase,
     private val selfUserId: UserId,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : JoinExistingMLSConversationUseCase {
@@ -107,12 +109,12 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         // Re-fetch current epoch and try again
                         if (conversation.type == Conversation.Type.OneOnOne) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                conversationRepository.fetchMlsOneToOneConversation(it.first()).map {
+                                fetchMLSOneToOneConversation(it.first()).map {
                                     it.mlsPublicKeys
                                 }
                             }
                         } else {
-                            conversationRepository.fetchConversation(conversation.id)
+                            fetchConversation(conversation.id)
                         }.flatMap {
                             conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(conversation, null)

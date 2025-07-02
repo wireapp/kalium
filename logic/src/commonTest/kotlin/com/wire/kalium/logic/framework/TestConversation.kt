@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
@@ -37,6 +38,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationMember
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
@@ -244,6 +246,12 @@ object TestConversation {
         ),
         mlsCipherSuiteTag = null,
         receiptMode = ReceiptMode.DISABLED,
+    )
+
+    val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(
+        conversationsFound = listOf(CONVERSATION_RESPONSE),
+        conversationsFailed = listOf(NetworkQualifiedId("failedId", "someDomain")),
+        conversationsNotFound = emptyList()
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
