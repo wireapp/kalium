@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,13 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v8
+package com.wire.kalium.api.v9
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.mocks.responses.ClientResponseJson
 import com.wire.kalium.mocks.responses.RegisterClientRequestJson
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.v8.authenticated.ClientApiV8
+import com.wire.kalium.network.api.v9.authenticated.ClientApiV9
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,7 +32,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-internal class ClientApiV8Test : ApiTest() {
+internal class ClientApiV9Test : ApiTest() {
     @Test
     fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
@@ -46,7 +46,7 @@ internal class ClientApiV8Test : ApiTest() {
                     assertPathEqual(PATH_CLIENTS)
                 }
             )
-            val clientApi: ClientApi = ClientApiV8(networkClient, shouldEnableAsyncNotificationsClientRegistration = true)
+            val clientApi: ClientApi = ClientApiV9(networkClient, shouldEnableAsyncNotificationsClientRegistration = true)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
             assertEquals(VALID_REGISTER_CLIENT_RESPONSE.serializableData, response.value)
@@ -63,10 +63,10 @@ internal class ClientApiV8Test : ApiTest() {
                     assertJson()
                     assertNoQueryParams()
                     assertPathEqual(PATH_CLIENTS)
-                    assertJsonBodyContent(REGISTER_CLIENT_REQUEST_V8)
+                    assertJsonBodyContent(REGISTER_CLIENT_REQUEST_V9)
                 }
             )
-            val clientApi: ClientApi = ClientApiV8(networkClient, shouldEnableAsyncNotificationsClientRegistration = true)
+            val clientApi: ClientApi = ClientApiV9(networkClient, shouldEnableAsyncNotificationsClientRegistration = true)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
             assertEquals(VALID_REGISTER_CLIENT_RESPONSE.serializableData, response.value)
@@ -76,7 +76,7 @@ internal class ClientApiV8Test : ApiTest() {
     private companion object {
         const val PATH_CLIENTS = "/clients"
         val REGISTER_CLIENT_REQUEST = RegisterClientRequestJson.valid
-        val REGISTER_CLIENT_REQUEST_V8 = RegisterClientRequestJson.validV8
+        val REGISTER_CLIENT_REQUEST_V9 = RegisterClientRequestJson.validV9
         val VALID_REGISTER_CLIENT_RESPONSE = ClientResponseJson.valid
     }
 }
