@@ -16,15 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v8.authenticated
+package com.wire.kalium.network.api.v9.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
-import com.wire.kalium.network.api.v7.authenticated.NotificationApiV7
+import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.v8.authenticated.AssetApiV8
 
-internal open class NotificationApiV8 internal constructor(
+internal open class AssetApiV9 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    authenticatedWebSocketClient: AuthenticatedWebSocketClient,
-    serverLinks: ServerConfigDTO.Links
-) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks)
+    selfUserId: UserId
+) : AssetApiV8(authenticatedNetworkClient, selfUserId)
