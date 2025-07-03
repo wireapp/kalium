@@ -55,7 +55,7 @@ class IncrementalSyncWorkerTest {
         val envelope = TestEvent.memberJoin().wrapInEnvelope()
         val (arrangement, worker) = Arrangement()
             .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
-            .withEventGathererReturning(flowOf(envelope))
+            .withEventGathererReturning(flowOf(listOf(envelope)))
             .withLiveEventsReturning(flowOf(Unit))
             .arrange()
 
@@ -75,7 +75,7 @@ class IncrementalSyncWorkerTest {
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
                 .withLiveEventsReturning(flowOf(Unit))
-                .withEventGathererReturning(flowOf(event))
+                .withEventGathererReturning(flowOf(listOf(event)))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
                 .arrange()
 
@@ -94,7 +94,7 @@ class IncrementalSyncWorkerTest {
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
                 .withLiveEventsReturning(flowOf(Unit))
-                .withEventGathererReturning(flowOf(event))
+                .withEventGathererReturning(flowOf(listOf(event)))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
                 .arrange()
 
@@ -129,7 +129,7 @@ class IncrementalSyncWorkerTest {
         val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
         val (_, worker) = Arrangement()
             .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
-            .withEventGathererReturning(flowOf(TestEvent.memberJoin().wrapInEnvelope()))
+            .withEventGathererReturning(flowOf(listOf(TestEvent.memberJoin().wrapInEnvelope())))
             .withEventProcessorFailingWith(coreFailureCause)
             .arrange()
 
@@ -150,7 +150,7 @@ class IncrementalSyncWorkerTest {
             }
         }
 
-        suspend fun withEventGathererReturning(eventFlow: Flow<EventEnvelope>) = apply {
+        suspend fun withEventGathererReturning(eventFlow: Flow<List<EventEnvelope>>) = apply {
             coEvery {
                 eventGatherer.gatherEvents()
             }.returns(eventFlow)
@@ -158,7 +158,7 @@ class IncrementalSyncWorkerTest {
 
         suspend fun withLiveEventsReturning(eventFlow: Flow<Unit>) = apply {
             coEvery {
-                eventGatherer.liveEvents()
+                eventGatherer.receiveEvents()
             }.returns(eventFlow)
         }
 

@@ -133,11 +133,11 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun insertOrIgnoreConversations(conversationEntities: List<ConversationEntity>) = withContext(coroutineContext) {
+    override suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>) = withContext(coroutineContext) {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 with(conversationEntity) {
-                    conversationQueries.insertConversationOrIgnore(
+                    conversationQueries.insertConversationOrUpdateLastModifiedDate(
                         qualified_id = id,
                         name = name,
                         type = type,
