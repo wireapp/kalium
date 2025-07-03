@@ -24,9 +24,9 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.serialization.Configuration
 import io.ktor.serialization.ContentConverter
 import io.ktor.util.reflect.TypeInfo
-import io.ktor.util.toByteArray
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.readAvailable
 
 /**
  * A ContentConverter which does nothing, it simply passes byte arrays through as they are. This is useful
@@ -35,11 +35,20 @@ import io.ktor.utils.io.charsets.Charset
 class ByteArrayConverter : ContentConverter {
 
     override suspend fun deserialize(charset: Charset, typeInfo: TypeInfo, content: ByteReadChannel): Any? {
-        return content.toByteArray()
+        // Read all bytes from the channel into a ByteArray
+        val buffer = mutableListOf<Byte>()
+        while (!content.isClosedForRead) {
+            val bytes = ByteArray(8192)
+            val bytesRead = content.readAvailable(bytes)
+            if (bytesRead > 0) {
+                buffer.addAll(bytes.take(bytesRead))
+            }
+        }
+        return buffer.toByteArray()
     }
 
-    override suspend fun serializeNullable(contentType: ContentType, charset: Charset, typeInfo: TypeInfo, value: Any?): OutgoingContent? {
-        return ByteArrayContent(value as ByteArray, contentType)
+    override suspend fun serialize(contentType: ContentType, charset: Charset, typeInfo: TypeInfo, value: Any?): OutgoingContent? {
+        return if (value != null) ByteArrayContent(value as ByteArray, contentType) else null
     }
 }
 

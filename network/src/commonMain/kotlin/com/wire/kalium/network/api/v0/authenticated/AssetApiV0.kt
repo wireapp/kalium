@@ -50,6 +50,8 @@ import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
 import okio.Sink
+import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.writeFully
 import okio.Source
 import okio.use
 import kotlin.coroutines.cancellation.CancellationException
@@ -96,13 +98,12 @@ internal open class AssetApiV0 internal constructor(
         val channel = httpResponse.body<ByteReadChannel>()
         tempFileSink.use { sink ->
             while (!channel.isClosedForRead) {
-                val packet = channel.readRemaining(BUFFER_SIZE)
-                while (packet.isNotEmpty) {
-                    val (bytes, size) = packet.readBytes().let { byteArray ->
-                        Buffer().write(byteArray) to byteArray.size.toLong()
-                    }
-                    sink.write(bytes, size).also {
-                        bytes.clear()
+                val bytes = ByteArray(BUFFER_SIZE.toInt())
+                val bytesRead = channel.readAvailable(bytes)
+                if (bytesRead > 0) {
+                    val buffer = Buffer().write(bytes, 0, bytesRead)
+                    sink.write(buffer, bytesRead.toLong()).also {
+                        buffer.clear()
                         sink.flush()
                     }
                 }
@@ -194,7 +195,7 @@ internal class StreamAssetContent internal constructor(
         val fileContentStream = fileContentStream()
         while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
             contentBuffer.readByteArray().let { content ->
-                channel.writePacket(ByteReadPacket(content))
+                channel.writeFully(content)
             }
         }
         channel.writeStringUtf8(closingArray)
