@@ -438,6 +438,7 @@ com.wire.backup.envelope
 com.wire.backup.filesystem
 com.wire.backup.hash
 com.wire.backup.ingest
+com.wire.backup.logger
 module:calling
 com.wire.kalium.calling
 com.wire.kalium.calling.callbacks
@@ -648,6 +649,10 @@ com.wire.kalium.network.api.v8.authenticated
 com.wire.kalium.network.api.v8.authenticated.networkContainer
 com.wire.kalium.network.api.v8.unauthenticated
 com.wire.kalium.network.api.v8.unauthenticated.networkContainer
+com.wire.kalium.network.api.v9.authenticated
+com.wire.kalium.network.api.v9.authenticated.networkContainer
+com.wire.kalium.network.api.v9.unauthenticated
+com.wire.kalium.network.api.v9.unauthenticated.networkContainer
 com.wire.kalium.network.api.vcommon
 com.wire.kalium.network.exceptions
 com.wire.kalium.network.networkContainer

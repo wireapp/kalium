@@ -1,0 +1,511 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>AuthenticatedNetworkContainerV9</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/jetbrains-mono.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+<div class="navigation-wrapper" id="navigation-wrapper">
+    <div id="leftToggler"><span class="icon-toggler"></span></div>
+    <div class="library-name">
+<a href="../../../index.html">
+<span>kalium</span>            </a>    </div>
+    <div>
+    </div>
+    <div class="pull-right d-flex">
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":network:dokkaHtmlPartial/commonMain">common</button>
+        </div>
+        <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
+        <div id="searchBar"></div>
+    </div>
+</div>
+<div id="container">
+    <div id="leftColumn">
+        <div id="sideMenu"></div>
+    </div>
+    <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="network::com.wire.kalium.network.api.v9.authenticated.networkContainer/AuthenticatedNetworkContainerV9///PointingToDeclaration//-333076745">
+  <div class="breadcrumbs"><a href="../../index.html">network</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.network.api.v9.authenticated.networkContainer</a><span class="delimiter">/</span><span class="current">AuthenticatedNetworkContainerV9</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Authenticated</span><wbr><span>Network</span><wbr><span>Container</span><wbr><span><span>V9</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="index.html">AuthenticatedNetworkContainerV9</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../../com.wire.kalium.network.session/-session-manager/index.html">SessionManager</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">certificatePinning<span class="token operator">: </span><a href="../../com.wire.kalium.network.session/index.html#88430783%2FClasslikes%2F-333076745">CertificatePinning</a><span class="token punctuation">, </span></span><span class="parameter ">mockEngine<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">mockWebSocketSession<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">kaliumLogger<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">engine<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>mockEngine ?: defaultHttpEngine(
+        serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
+        proxyCredentials = sessionManager.proxyCredentials(),
+        certificatePinning = certificatePinning
+    )</span></span><span class="token punctuation">)</span> : <a href="../../com.wire.kalium.network.networkContainer/-authenticated-network-container/index.html">AuthenticatedNetworkContainer</a>, <a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/index.html">AuthenticatedHttpClientProvider</a></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="298653777%2FConstructors%2F-333076745" anchor-label="AuthenticatedNetworkContainerV9" id="298653777%2FConstructors%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-authenticated-network-container-v9.html"><span>Authenticated</span><wbr><span>Network</span><wbr><span>Container</span><wbr><span><span>V9</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="298653777%2FConstructors%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../../com.wire.kalium.network.session/-session-manager/index.html">SessionManager</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">certificatePinning<span class="token operator">: </span><a href="../../com.wire.kalium.network.session/index.html#88430783%2FClasslikes%2F-333076745">CertificatePinning</a><span class="token punctuation">, </span></span><span class="parameter ">mockEngine<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">mockWebSocketSession<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">kaliumLogger<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">engine<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>mockEngine ?: defaultHttpEngine(
+        serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
+        proxyCredentials = sessionManager.proxyCredentials(),
+        certificatePinning = certificatePinning
+    )</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1324853185%2FProperties%2F-333076745" anchor-label="accessTokenApi" id="1324853185%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="access-token-api.html"><span>access</span><wbr><span>Token</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1324853185%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="access-token-api.html">accessTokenApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated/-access-token-api/index.html">AccessTokenApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1984908292%2FProperties%2F-333076745" anchor-label="assetApi" id="-1984908292%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="asset-api.html"><span>asset</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1984908292%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="asset-api.html">assetApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.asset/-asset-api/index.html">AssetApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1487446232%2FProperties%2F-333076745" anchor-label="backendConfig" id="1487446232%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/backend-config.html"><span>backend</span><wbr><span><span>Config</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1487446232%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/backend-config.html">backendConfig</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="209832248%2FProperties%2F-333076745" anchor-label="callApi" id="209832248%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="call-api.html"><span>call</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="209832248%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="call-api.html">callApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated/-call-api/index.html">CallApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1081095013%2FProperties%2F-333076745" anchor-label="clientApi" id="1081095013%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="client-api.html"><span>client</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1081095013%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="client-api.html">clientApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.client/-client-api/index.html">ClientApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="125685880%2FProperties%2F-333076745" anchor-label="connectionApi" id="125685880%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="connection-api.html"><span>connection</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="125685880%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="connection-api.html">connectionApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.connection/-connection-api/index.html">ConnectionApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-260609315%2FProperties%2F-333076745" anchor-label="conversationApi" id="-260609315%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="conversation-api.html"><span>conversation</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-260609315%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="conversation-api.html">conversationApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.conversation/-conversation-api/index.html">ConversationApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-981653973%2FProperties%2F-333076745" anchor-label="e2eiApi" id="-981653973%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="e2ei-api.html"><span>e2ei</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-981653973%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="e2ei-api.html">e2eiApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.e2ei/-e2-e-i-api/index.html">E2EIApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="304094692%2FProperties%2F-333076745" anchor-label="featureConfigApi" id="304094692%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="feature-config-api.html"><span>feature</span><wbr><span>Config</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="304094692%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="feature-config-api.html">featureConfigApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.featureConfigs/-feature-config-api/index.html">FeatureConfigApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1613328129%2FProperties%2F-333076745" anchor-label="keyPackageApi" id="1613328129%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="key-package-api.html"><span>key</span><wbr><span>Package</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1613328129%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="key-package-api.html">keyPackageApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.keypackage/-key-package-api/index.html">KeyPackageApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1517989724%2FProperties%2F-333076745" anchor-label="logoutApi" id="-1517989724%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="logout-api.html"><span>logout</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1517989724%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="logout-api.html">logoutApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.logout/-logout-api/index.html">LogoutApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-543526317%2FProperties%2F-333076745" anchor-label="messageApi" id="-543526317%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="message-api.html"><span>message</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-543526317%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="message-api.html">messageApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.message/-message-api/index.html">MessageApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-774066483%2FProperties%2F-333076745" anchor-label="mlsMessageApi" id="-774066483%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mls-message-api.html"><span>mls</span><wbr><span>Message</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-774066483%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="mls-message-api.html">mlsMessageApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.message/-m-l-s-message-api/index.html">MLSMessageApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1389300924%2FProperties%2F-333076745" anchor-label="mlsPublicKeyApi" id="1389300924%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mls-public-key-api.html"><span>mls</span><wbr><span>Public</span><wbr><span>Key</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1389300924%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="mls-public-key-api.html">mlsPublicKeyApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.serverpublickey/-m-l-s-public-key-api/index.html">MLSPublicKeyApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1252615573%2FProperties%2F-333076745" anchor-label="networkClient" id="1252615573%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/network-client.html"><span>network</span><wbr><span><span>Client</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1252615573%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/network-client.html">networkClient</a><span class="token operator">: </span><a href="../../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-217129545%2FProperties%2F-333076745" anchor-label="networkClientWithoutCompression" id="-217129545%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/network-client-without-compression.html"><span>network</span><wbr><span>Client</span><wbr><span>Without</span><wbr><span><span>Compression</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-217129545%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/network-client-without-compression.html">networkClientWithoutCompression</a><span class="token operator">: </span><a href="../../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-70325435%2FProperties%2F-333076745" anchor-label="notificationApi" id="-70325435%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="notification-api.html"><span>notification</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-70325435%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="notification-api.html">notificationApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.notification/-notification-api/index.html">NotificationApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-701257514%2FProperties%2F-333076745" anchor-label="preKeyApi" id="-701257514%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="pre-key-api.html"><span>pre</span><wbr><span>Key</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-701257514%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="pre-key-api.html">preKeyApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.prekey/-pre-key-api/index.html">PreKeyApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1660109491%2FProperties%2F-333076745" anchor-label="propertiesApi" id="-1660109491%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="properties-api.html"><span>properties</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1660109491%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="properties-api.html">propertiesApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.properties/-properties-api/index.html">PropertiesApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-347501274%2FProperties%2F-333076745" anchor-label="selfApi" id="-347501274%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="self-api.html"><span>self</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-347501274%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="self-api.html">selfApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.self/-self-api/index.html">SelfApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-775451198%2FProperties%2F-333076745" anchor-label="teamsApi" id="-775451198%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="teams-api.html"><span>teams</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-775451198%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="teams-api.html">teamsApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated/-teams-api/index.html">TeamsApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="64204832%2FProperties%2F-333076745" anchor-label="upgradePersonalToTeamApi" id="64204832%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="upgrade-personal-to-team-api.html"><span>upgrade</span><wbr><span>Personal</span><wbr><span>To</span><wbr><span>Team</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="64204832%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="upgrade-personal-to-team-api.html">upgradePersonalToTeamApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated/-upgrade-personal-to-team-api/index.html">UpgradePersonalToTeamApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-553848381%2FProperties%2F-333076745" anchor-label="userDetailsApi" id="-553848381%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="user-details-api.html"><span>user</span><wbr><span>Details</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-553848381%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="user-details-api.html">userDetailsApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.userDetails/-user-details-api/index.html">UserDetailsApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="53262701%2FProperties%2F-333076745" anchor-label="userSearchApi" id="53262701%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="user-search-api.html"><span>user</span><wbr><span>Search</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="53262701%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="user-search-api.html">userSearchApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated.search/-user-search-api/index.html">UserSearchApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1358946148%2FProperties%2F-333076745" anchor-label="websocketClient" id="-1358946148%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/websocket-client.html"><span>websocket</span><wbr><span><span>Client</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1358946148%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="../../com.wire.kalium.network.networkContainer/-authenticated-http-client-provider/websocket-client.html">websocketClient</a><span class="token operator">: </span><a href="../../com.wire.kalium.network/-authenticated-web-socket-client/index.html">AuthenticatedWebSocketClient</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="257323860%2FProperties%2F-333076745" anchor-label="wildCardApi" id="257323860%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wild-card-api.html"><span>wild</span><wbr><span>Card</span><wbr><span><span>Api</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="257323860%2FProperties%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="wild-card-api.html">wildCardApi</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.api.base.authenticated/-wild-card-api/index.html">WildCardApi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="496296145%2FFunctions%2F-333076745" anchor-label="clearCachedToken" id="496296145%2FFunctions%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.network.networkContainer/-authenticated-network-container/clear-cached-token.html"><span>clear</span><wbr><span>Cached</span><wbr><span><span>Token</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="496296145%2FFunctions%2F-333076745"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="../../com.wire.kalium.network.networkContainer/-authenticated-network-container/clear-cached-token.html"><span class="token function">clearCachedToken</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Clear any cached token on the http clients. This will trigger a reloading of the access token from the session manager on the next request.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="footer">
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2025 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+      </div>
+    </div>
+</div>
+</body>
+</html>
+
