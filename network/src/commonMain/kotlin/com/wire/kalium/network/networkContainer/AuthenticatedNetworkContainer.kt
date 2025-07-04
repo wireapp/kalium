@@ -23,6 +23,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
@@ -114,6 +115,8 @@ interface AuthenticatedNetworkContainer {
     val wildCardApi: WildCardApi
 
     val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
+
+    val serverTimeApi: ServerTimeApi
 
     companion object {
 

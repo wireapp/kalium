@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v2.authenticated.networkContainer
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
@@ -60,6 +61,7 @@ import com.wire.kalium.network.api.v2.authenticated.NotificationApiV2
 import com.wire.kalium.network.api.v2.authenticated.PreKeyApiV2
 import com.wire.kalium.network.api.v2.authenticated.PropertiesApiV2
 import com.wire.kalium.network.api.v2.authenticated.SelfApiV2
+import com.wire.kalium.network.api.v2.authenticated.ServerTimeApiV2
 import com.wire.kalium.network.api.v2.authenticated.TeamsApiV2
 import com.wire.kalium.network.api.v2.authenticated.UpgradePersonalToTeamApiV2
 import com.wire.kalium.network.api.v2.authenticated.UserDetailsApiV2
@@ -146,4 +148,6 @@ internal class AuthenticatedNetworkContainerV2 internal constructor(
         get() = UpgradePersonalToTeamApiV2(
             networkClient
         )
+    override val serverTimeApi: ServerTimeApi
+        get() = ServerTimeApiV2(networkClient)
 }
