@@ -140,6 +140,7 @@ class CreateMPBackupUseCaseTest {
                     workDirectory = any(),
                     outputDirectory = any(),
                     fileZipper = any(),
+                    logger = any(),
                 )
             }.returns(exporter)
         }
@@ -154,6 +155,7 @@ class CreateMPBackupUseCaseTest {
                     workDirectory = any(),
                     outputDirectory = any(),
                     fileZipper = any(),
+                    logger = any(),
                 )
             }.returns(exporter)
         }

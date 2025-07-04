@@ -154,7 +154,8 @@ internal class CreateMPBackupUseCaseImpl(
                         backupFilePath.toString()
                     }
                 )
-            }
+            },
+            logger = { kaliumLogger.d(it) }
         )
 
     private fun deleteBackupFiles(backupFilePath: Path) {

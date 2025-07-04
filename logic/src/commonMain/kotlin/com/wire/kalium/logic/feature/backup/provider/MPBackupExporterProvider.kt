@@ -24,6 +24,7 @@ import com.wire.backup.data.BackupUser
 import com.wire.backup.dump.BackupExportResult
 import com.wire.backup.dump.FileZipper
 import com.wire.backup.dump.MPBackupExporter
+import com.wire.backup.logger.BackupLogger
 import io.mockative.Mockable
 import okio.FileSystem
 import okio.SYSTEM
@@ -43,6 +44,7 @@ interface MPBackupExporterProvider {
         workDirectory: String,
         outputDirectory: String,
         fileZipper: FileZipper,
+        logger: BackupLogger? = null,
     ): BackupExporter
 }
 
@@ -54,6 +56,7 @@ internal class MPBackupExporterProviderImpl(
         workDirectory: String,
         outputDirectory: String,
         fileZipper: FileZipper,
+        logger: BackupLogger?,
     ): BackupExporter {
 
         val exporter = MPBackupExporter(
@@ -62,6 +65,7 @@ internal class MPBackupExporterProviderImpl(
             outputDirectory = outputDirectory,
             fileZipper = fileZipper,
             fileSystem = fileSystem,
+            logger = logger,
         )
 
         return object : BackupExporter {
