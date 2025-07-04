@@ -332,7 +332,7 @@ class MessageSendFailureHandlerTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversation(any())
         }.wasNotInvoked()
     }
 
@@ -351,7 +351,7 @@ class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversation(any())
         }.wasNotInvoked()
     }
 

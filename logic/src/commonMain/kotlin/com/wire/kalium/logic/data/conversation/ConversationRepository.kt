@@ -104,10 +104,13 @@ interface ConversationRepository {
 
     @ConversationPersistenceApi
     suspend fun fetchConversations(lastPagingState: String?): Either<CoreFailure, ConversationBatch>
+
     @ConversationPersistenceApi
     suspend fun persistConversations(conversations: List<ConversationEntity>): Either<CoreFailure, Unit>
+
     @ConversationPersistenceApi
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, ConversationResponse>
+
     @ConversationPersistenceApi
     suspend fun updateConversationMembers(
         conversations: List<ConversationResponse>,

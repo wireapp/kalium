@@ -21,6 +21,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.any
 import io.mockative.mock
 import io.mockative.coEvery
@@ -28,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ConversationPersistenceApi::class)
 class UpdateConversationProtocolUseCaseTest {
 
     @Test

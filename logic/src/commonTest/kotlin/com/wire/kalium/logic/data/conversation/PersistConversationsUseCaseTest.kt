@@ -12,6 +12,7 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -23,6 +24,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(ConversationPersistenceApi::class)
 class PersistConversationsUseCaseTest {
 
     @Test

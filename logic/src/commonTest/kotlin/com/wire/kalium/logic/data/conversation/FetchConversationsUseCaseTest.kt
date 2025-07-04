@@ -26,6 +26,7 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -37,6 +38,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+@OptIn(ConversationPersistenceApi::class)
 class FetchConversationsUseCaseTest {
 
     @Test

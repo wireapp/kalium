@@ -253,7 +253,7 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversation(any())
         }.wasNotInvoked()
     }
 

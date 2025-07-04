@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -106,6 +107,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withGetConversationMembers(result: List<UserId>)
 }
 
+@OptIn(ConversationPersistenceApi::class)
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
 
     override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)

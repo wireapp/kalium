@@ -57,6 +57,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
+import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
 import io.mockative.coEvery
@@ -79,6 +80,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import com.wire.kalium.network.api.model.UserId as NetworkUserId
 
+@OptIn(ConversationPersistenceApi::class)
 class ConnectionRepositoryTest {
 
     @Test
