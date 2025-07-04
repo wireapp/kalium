@@ -19,42 +19,8 @@
 package com.wire.kalium.network.api.v8.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.client.ClientDTO
-import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
-import com.wire.kalium.network.api.authenticated.client.UpdateClientCapabilitiesRequest
-import com.wire.kalium.network.api.model.ApiModelMapper
-import com.wire.kalium.network.api.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.v7.authenticated.ClientApiV7
-import com.wire.kalium.network.utils.ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
 
-internal open class ClientApiV8 internal constructor(
+internal class ClientApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl(),
-    private val shouldEnableAsyncNotificationsClientRegistration: Boolean = ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
-) : ClientApiV7(authenticatedNetworkClient) {
-
-    override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
-        if (shouldEnableAsyncNotificationsClientRegistration) {
-            wrapKaliumResponse {
-                httpClient.post(PATH_CLIENTS) {
-                    setBody(apiModelMapper.toApiV8(registerClientRequest))
-                }
-            }
-        } else {
-            super.registerClient(registerClientRequest)
-        }
-
-    override suspend fun updateClientCapabilities(
-        updateClientCapabilitiesRequest: UpdateClientCapabilitiesRequest,
-        clientID: String
-    ): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.put("$PATH_CLIENTS/$clientID") {
-            setBody(updateClientCapabilitiesRequest)
-        }
-    }
-}
+) : ClientApiV7(authenticatedNetworkClient)

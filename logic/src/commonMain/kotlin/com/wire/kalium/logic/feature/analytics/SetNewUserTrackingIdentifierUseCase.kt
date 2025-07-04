@@ -15,16 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.analytics
 
-package com.wire.kalium.network.api.v8.authenticated
+import com.wire.kalium.logic.configuration.UserConfigRepository
 
-import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
-import com.wire.kalium.network.api.v7.authenticated.NotificationApiV7
+interface SetNewUserTrackingIdentifierUseCase {
+    /**
+     * Use case for setting a new tracking identifier [newIdentifier] associated with the user.
+     */
+    suspend operator fun invoke(newIdentifier: String)
+}
 
-internal open class NotificationApiV8 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
-    authenticatedWebSocketClient: AuthenticatedWebSocketClient,
-    serverLinks: ServerConfigDTO.Links
-) : NotificationApiV7(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks)
+@Suppress("FunctionNaming")
+fun SetNewUserTrackingIdentifierUseCase(userConfigRepository: UserConfigRepository) = object : SetNewUserTrackingIdentifierUseCase {
+    override suspend fun invoke(newIdentifier: String) {
+        userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
+    }
+}
