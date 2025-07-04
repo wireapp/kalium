@@ -151,7 +151,8 @@ fun DecryptedMessage.toBundle(messageInstant: Instant) = DecryptedMessageBundle(
     senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() },
-    messageInstant
+    messageInstant,
+    bufferedMessages?.map { it.toBundle(messageInstant) } ?: emptyList()
 )
 
 fun BufferedDecryptedMessage.toBundle(messageInstant: Instant) = DecryptedMessageBundle(
@@ -160,7 +161,8 @@ fun BufferedDecryptedMessage.toBundle(messageInstant: Instant) = DecryptedMessag
     senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() },
-    messageInstant
+    messageInstant,
+    null
 )
 
 fun CredentialType.toCrypto() = when (this) {

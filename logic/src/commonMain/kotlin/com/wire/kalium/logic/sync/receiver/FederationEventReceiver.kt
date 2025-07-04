@@ -39,6 +39,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -61,7 +62,11 @@ class FederationEventReceiverImpl internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : FederationEventReceiver {
 
-    override suspend fun onEvent(event: Event.Federation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(
+        event: Event.Federation,
+        deliveryInfo: EventDeliveryInfo,
+        cryptoContext: CryptoTransactionContext?
+    ): Either<CoreFailure, Unit> {
         when (event) {
             is Event.Federation.Delete -> handleDeleteEvent(event)
             is Event.Federation.ConnectionRemoved -> handleConnectionRemovedEvent(event)

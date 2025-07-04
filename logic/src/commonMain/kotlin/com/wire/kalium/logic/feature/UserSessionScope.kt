@@ -58,6 +58,8 @@ import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
@@ -1001,6 +1003,12 @@ class UserSessionScope internal constructor(
             logger = userScopedLogger
         )
 
+    private val cryptoTransactionProvider: CryptoTransactionProvider
+        get() = CryptoTransactionProviderImpl(
+            mlsClientProvider = mlsClientProvider,
+            proteusClientProvider = proteusClientProvider,
+        )
+
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
             eventRepository = eventRepository,
@@ -1013,6 +1021,7 @@ class UserSessionScope internal constructor(
             missedNotificationsEventReceiver = missedNotificationsEventReceiver,
             processingScope = this@UserSessionScope,
             logger = userScopedLogger,
+            transactionProvider = cryptoTransactionProvider,
         )
     }
 

@@ -31,6 +31,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -55,7 +56,11 @@ import kotlinx.coroutines.withContext
  */
 @Mockable
 internal interface JoinExistingMLSConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, mlsPublicKeys: MLSPublicKeys? = null): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        mlsPublicKeys: MLSPublicKeys? = null,
+        mlsContext: MlsCoreCryptoContext? = null
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -70,7 +75,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 ) : JoinExistingMLSConversationUseCase {
     private val dispatcher = kaliumDispatcher.io
 
-    override suspend operator fun invoke(conversationId: ConversationId, mlsPublicKeys: MLSPublicKeys?): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        mlsPublicKeys: MLSPublicKeys?,
+        mlsContext: MlsCoreCryptoContext?
+    ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
@@ -81,16 +90,17 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    joinOrEstablishMLSGroupAndRetry(conversation, mlsPublicKeys)
+                    joinOrEstablishMLSGroupAndRetry(conversation, mlsPublicKeys, mlsContext)
                 }
             })
         }
 
     private suspend fun joinOrEstablishMLSGroupAndRetry(
         conversation: Conversation,
-        mlsPublicKeys: MLSPublicKeys?
+        mlsPublicKeys: MLSPublicKeys?,
+        mlsContext: MlsCoreCryptoContext?
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishMLSGroup(conversation, mlsPublicKeys)
+        joinOrEstablishMLSGroup(conversation, mlsPublicKeys, mlsContext)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
@@ -115,7 +125,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             conversationRepository.fetchConversation(conversation.id)
                         }.flatMap {
                             conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(conversation, null)
+                                joinOrEstablishMLSGroup(conversation, null, mlsContext)
                             }
                         }
                     } else if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsMissingGroupInfo()) {
@@ -130,7 +140,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
     @Suppress("LongMethod")
-    private suspend fun joinOrEstablishMLSGroup(conversation: Conversation, publicKeys: MLSPublicKeys?): Either<CoreFailure, Unit> {
+    private suspend fun joinOrEstablishMLSGroup(
+        conversation: Conversation,
+        publicKeys: MLSPublicKeys?,
+        mlsContext: MlsCoreCryptoContext?
+    ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         val type = conversation.type
         return when {
@@ -145,7 +159,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 }.flatMap { groupInfo ->
                     mlsConversationRepository.joinGroupByExternalCommit(
                         protocol.groupId,
-                        groupInfo
+                        groupInfo,
+                        mlsContext
                     ).flatMapLeft { failure ->
                         if (MLSMessageFailureHandler.handleFailure(failure) is MLSMessageFailureResolution.Ignore) {
                             kaliumLogger.logStructuredJson(

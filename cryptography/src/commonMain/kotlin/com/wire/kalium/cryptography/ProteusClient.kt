@@ -107,6 +107,17 @@ interface ProteusClient {
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun deleteSession(sessionId: CryptoSessionId)
+
+    /**
+     * Runs a block of code inside a CoreCrypto transaction.
+     *
+     * @param name optional name of the transaction (used for logging)
+     * @param block transaction block executed with CoreCryptoContext
+     * @return result of the block
+     */
+    @Throws(ProteusException::class, CancellationException::class)
+    suspend fun <R> transaction(name: String = "proteus-transaction", block: suspend (context: ProteusCoreCryptoContext) -> R): R
+
 }
 
 suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, Map<String, PreKeyCrypto>>>) {

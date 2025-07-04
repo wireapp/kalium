@@ -42,6 +42,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.common.error.wrapProteusRequest
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mockable
 
@@ -50,6 +51,7 @@ internal interface ProteusMessageUnpacker {
 
     suspend fun <T : Any> unpackProteusMessage(
         event: Event.Conversation.NewMessage,
+        proteusCoreCryptoContext: ProteusCoreCryptoContext?,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
     ): Either<CoreFailure, T>
 
@@ -64,8 +66,10 @@ internal class ProteusMessageUnpackerImpl(
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
+    // TODO KBX make not optional
     override suspend fun <T : Any> unpackProteusMessage(
         event: Event.Conversation.NewMessage,
+        proteusCoreCryptoContext: ProteusCoreCryptoContext?,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
     ): Either<CoreFailure, T> {
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
@@ -76,7 +80,9 @@ internal class ProteusMessageUnpackerImpl(
         return proteusClientProvider.getOrError()
             .flatMap {
                 wrapProteusRequest {
-                    it.decrypt(decodedContentBytes, cryptoSessionId) {
+                    proteusCoreCryptoContext?.decryptMessage(
+                        cryptoSessionId, decodedContentBytes
+                    ) {
                         val plainMessageBlob = PlainMessageBlob(it)
                         getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent).map { readableContent ->
                             val appMessage = MessageUnpackResult.ApplicationMessage(
@@ -89,6 +95,19 @@ internal class ProteusMessageUnpackerImpl(
                             handleMessage(appMessage)
                         }
                     }
+                        ?: it.decrypt(decodedContentBytes, cryptoSessionId) {
+                            val plainMessageBlob = PlainMessageBlob(it)
+                            getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent).map { readableContent ->
+                                val appMessage = MessageUnpackResult.ApplicationMessage(
+                                    conversationId = event.conversationId,
+                                    instant = event.messageInstant,
+                                    senderUserId = event.senderUserId,
+                                    senderClientId = event.senderClientId,
+                                    content = readableContent
+                                )
+                                handleMessage(appMessage)
+                            }
+                        }
                 }
             }.flatMap { it }
             .onFailure { logUnpackingError(it, event, cryptoSessionId) }

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
@@ -32,6 +33,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
@@ -40,6 +43,7 @@ interface StaleEpochVerifier {
     suspend fun verifyEpoch(
         conversationId: ConversationId,
         subConversationId: SubconversationId? = null,
+        mlsContext: MlsCoreCryptoContext?
     ): Either<CoreFailure, Unit>
 }
 
@@ -54,16 +58,20 @@ internal class StaleEpochVerifierImpl(
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
     override suspend fun verifyEpoch(
         conversationId: ConversationId,
-        subConversationId: SubconversationId?
+        subConversationId: SubconversationId?,
+        mlsContext: MlsCoreCryptoContext? // TODO KBX make not optional
     ): Either<CoreFailure, Unit> {
         return if (subConversationId != null) {
-            verifySubConversationEpoch(conversationId, subConversationId)
+            verifySubConversationEpoch(conversationId, subConversationId, mlsContext)
         } else {
-            verifyConversationEpoch(conversationId)
+            verifyConversationEpoch(conversationId, mlsContext)
         }
     }
 
-    private suspend fun verifyConversationEpoch(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    private suspend fun verifyConversationEpoch(
+        conversationId: ConversationId,
+        mlsContext: MlsCoreCryptoContext?
+    ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for conversation ${conversationId.toLogString()}")
         return getUpdatedConversationProtocolInfo(conversationId).flatMap { protocol ->
             if (protocol is Conversation.ProtocolInfo.MLS) {
@@ -72,13 +80,23 @@ internal class StaleEpochVerifierImpl(
                 Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
             }
         }.flatMap { protocolInfo ->
-            mlsConversationRepository.isGroupOutOfSync(protocolInfo.groupId, protocolInfo.epoch)
-                .map { epochIsStale ->
-                    epochIsStale
+            if (mlsContext != null) {
+                wrapMLSRequest {
+                    mlsContext.isGroupOutOfSync(protocolInfo.groupId.value.decodeBase64Bytes(), protocolInfo.epoch)
                 }
+                    .map { epochIsStale ->
+                        epochIsStale
+                    }
+            } else {
+                mlsConversationRepository.isGroupOutOfSync(protocolInfo.groupId, protocolInfo.epoch)
+                    .map { epochIsStale ->
+                        epochIsStale
+                    }
+            }
         }.flatMap { hasMissedCommits ->
             if (hasMissedCommits) {
                 logger.w("Epoch stale due to missing commits, re-joining")
+
                 joinExistingMLSConversation(conversationId).flatMap {
                     systemMessageInserter.insertLostCommitSystemMessage(
                         conversationId,
@@ -94,21 +112,37 @@ internal class StaleEpochVerifierImpl(
 
     private suspend fun verifySubConversationEpoch(
         conversationId: ConversationId,
-        subConversationId: SubconversationId
+        subConversationId: SubconversationId,
+        mlsContext: MlsCoreCryptoContext?
     ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for subconversation ${subConversationId.toLogString()}")
         return subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
             .flatMap { subConversationDetails ->
-                mlsConversationRepository.isGroupOutOfSync(subConversationDetails.groupId, subConversationDetails.epoch)
-                    .map { epochIsStale ->
-                        epochIsStale
+                (if (mlsContext != null) {
+                    wrapMLSRequest {
+                        mlsContext.isGroupOutOfSync(
+                            subConversationDetails.groupId.value.decodeBase64Bytes(),
+                            subConversationDetails.epoch,
+                        )
                     }
+                        .map { epochIsStale ->
+                            epochIsStale
+                        }
+                } else {
+                    mlsConversationRepository.isGroupOutOfSync(subConversationDetails.groupId, subConversationDetails.epoch)
+                        .map { epochIsStale ->
+                            epochIsStale
+                        }
+                })
                     .flatMap { hasMissedCommits ->
                         if (hasMissedCommits) {
                             logger.w("Epoch stale due to missing commits, joining by external commit")
                             subconversationRepository.fetchRemoteSubConversationGroupInfo(conversationId, subConversationId)
                                 .flatMap { groupInfo ->
-                                    mlsConversationRepository.joinGroupByExternalCommit(subConversationDetails.groupId, groupInfo)
+                                    mlsConversationRepository.joinGroupByExternalCommit(
+                                        subConversationDetails.groupId, groupInfo,
+                                        mlsContext
+                                    )
                                 }
                         } else {
                             logger.i("Epoch stale due to unprocessed events")

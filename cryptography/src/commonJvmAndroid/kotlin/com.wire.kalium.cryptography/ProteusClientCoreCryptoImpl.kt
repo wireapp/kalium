@@ -20,6 +20,7 @@ package com.wire.kalium.cryptography
 
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.SessionId
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.cryptography.utils.toCrypto
@@ -116,7 +117,6 @@ class ProteusClientCoreCryptoImpl private constructor(
     ): T {
 
         return wrapException {
-            // TODO KBX handle multiple messages on next PR
             coreCrypto.transaction("decrypt") {
                 handleDecryptedMessage(it.proteusDecrypt(message, sessionId.value))
             }
@@ -164,6 +164,26 @@ class ProteusClientCoreCryptoImpl private constructor(
             }
         }
     }
+
+    override suspend fun <R> transaction(
+        name: String,
+        block: suspend (context: ProteusCoreCryptoContext) -> R
+    ): R {
+        return coreCrypto.transaction(name) { coreContext ->
+            val context = object : ProteusCoreCryptoContext {
+                override suspend fun <T : Any> decryptMessage(
+                    sessionId: CryptoSessionId,
+                    message: ByteArray,
+                    handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+                ): T {
+                    val decrypted = coreContext.proteusDecrypt(message,sessionId.value)
+                    return handleDecryptedMessage(decrypted)
+                }
+            }
+            block(context)
+        }
+    }
+
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private inline fun <T> wrapException(b: () -> T): T {

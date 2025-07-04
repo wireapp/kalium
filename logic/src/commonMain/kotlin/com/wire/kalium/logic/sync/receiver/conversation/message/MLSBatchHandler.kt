@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -45,9 +46,17 @@ import io.mockative.Mockable
 
 @Mockable
 internal interface MLSBatchHandler {
-    suspend fun handleNewMLSBatch(event: Event.Conversation.MLSGroupMessages, deliveryInfo: EventDeliveryInfo)
-    suspend fun handleNewMLSSubGroupBatch(event: Event.Conversation.MLSSubGroupMessages, deliveryInfo: EventDeliveryInfo)
+    suspend fun handleNewMLSBatch(
+        event: Event.Conversation.MLSGroupMessages,
+        deliveryInfo: EventDeliveryInfo,
+        mlsContext: MlsCoreCryptoContext?
+    )
 
+    suspend fun handleNewMLSSubGroupBatch(
+        event: Event.Conversation.MLSSubGroupMessages,
+        deliveryInfo: EventDeliveryInfo,
+        mlsContext: MlsCoreCryptoContext?
+    )
 }
 
 @Suppress("LongParameterList")
@@ -61,15 +70,20 @@ internal class MLSBatchHandlerImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handleNewMLSBatch(event: Event.Conversation.MLSGroupMessages, deliveryInfo: EventDeliveryInfo) {
+    override suspend fun handleNewMLSBatch(
+        event: Event.Conversation.MLSGroupMessages,
+        deliveryInfo: EventDeliveryInfo,
+        mlsContext: MlsCoreCryptoContext?
+    ) {
         var eventLogger = logger.createEventProcessingLogger(event)
-        messagesFromMLSGroupMessages(event, deliveryInfo.source == EventSource.LIVE)
+        messagesFromMLSGroupMessages(event, deliveryInfo.source == EventSource.LIVE, mlsContext)
             .onFailure {
                 handleMLSFailure(
                     eventLogger,
                     it,
                     event.conversationId,
-                    null
+                    null,
+                    mlsContext
                 )
             }.onSuccess { batchResult ->
                 batchResult?.let { failedMessage ->
@@ -97,9 +111,12 @@ internal class MLSBatchHandlerImpl(
 
                         is MLSMessageFailureResolution.OutOfSync -> {
                             eventLogger.logFailure(failedMessage.error, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+
+                            // TODO KBX all mls client related things need to be pushed by context
                             staleEpochVerifier.verifyEpoch(
                                 event.conversationId,
                                 null,
+                                mlsContext
                             )
                         }
                     }
@@ -107,23 +124,28 @@ internal class MLSBatchHandlerImpl(
                     eventLogger.logSuccess(
                         "protocol" to "MLS",
                         "isPartOfMLSBatch" to (event.messages.size > 1)
-                        )
+                    )
                 }
                 // reset the time for next messages, if this is a batch
                 eventLogger = logger.createEventProcessingLogger(event)
             }
     }
 
-    override suspend fun handleNewMLSSubGroupBatch(event: Event.Conversation.MLSSubGroupMessages, deliveryInfo: EventDeliveryInfo) {
+    override suspend fun handleNewMLSSubGroupBatch(
+        event: Event.Conversation.MLSSubGroupMessages,
+        deliveryInfo: EventDeliveryInfo,
+        mlsContext: MlsCoreCryptoContext?
+    ) {
         var eventLogger: EventProcessingLogger = logger.createEventProcessingLogger(event)
 
-        messagesFromMLSSubGroupMessages(event, deliveryInfo.source == EventSource.LIVE)
+        messagesFromMLSSubGroupMessages(event, deliveryInfo.source == EventSource.LIVE, mlsContext)
             .onFailure {
                 handleMLSFailure(
                     eventLogger,
                     it,
                     event.conversationId,
-                    event.subConversationId
+                    event.subConversationId,
+                    mlsContext
                 )
             }.onSuccess {
                 // TODO do we need to log failures here
@@ -132,80 +154,86 @@ internal class MLSBatchHandlerImpl(
             }
     }
 
-private suspend fun handleMLSFailure(
-    eventLogger: EventProcessingLogger,
-    failure: CoreFailure,
-    conversationId: ConversationId,
-    subConversationId: SubconversationId?
-) {
-    when (MLSMessageFailureHandler.handleFailure(failure)) {
-        is MLSMessageFailureResolution.Ignore -> {
-            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
-        }
+    private suspend fun handleMLSFailure(
+        eventLogger: EventProcessingLogger,
+        failure: CoreFailure,
+        conversationId: ConversationId,
+        subConversationId: SubconversationId?,
+        mlsContext: MlsCoreCryptoContext?
+    ) {
+        when (MLSMessageFailureHandler.handleFailure(failure)) {
+            is MLSMessageFailureResolution.Ignore -> {
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+            }
 
-        is MLSMessageFailureResolution.InformUser -> {
-            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-        }
+            is MLSMessageFailureResolution.InformUser -> {
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+            }
 
-        is MLSMessageFailureResolution.OutOfSync -> {
-            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-            staleEpochVerifier.verifyEpoch(
-                conversationId,
-                subConversationId,
-            )
-        }
-    }
-}
-
-private suspend fun messagesFromMLSGroupMessages(
-    event: Event.Conversation.MLSGroupMessages,
-    isLive: Boolean
-): Either<CoreFailure, FailedMLSMessage?> = conversationRepository.getConversationProtocolInfo(event.conversationId)
-    .flatMap { protocolInfo ->
-        if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
-            logger.logStructuredJson(
-                KaliumLogLevel.DEBUG,
-                "Decrypting MLS for Conversation",
-                mapOf(
-                    "conversationId" to event.conversationId.toLogString(),
-                    "groupID" to protocolInfo.groupId.toLogString(),
-                    "protocolInfo" to protocolInfo.toLogMap()
+            is MLSMessageFailureResolution.OutOfSync -> {
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                staleEpochVerifier.verifyEpoch(
+                    conversationId,
+                    subConversationId,
+                    mlsContext
                 )
-            )
-            mlsConversationRepository.decryptMessages(
-                messages = event.messages,
-                groupID = protocolInfo.groupId,
-                conversationId = event.conversationId,
-                subConversationId = null,
-                isLive = isLive
-
-            )
-        } else {
-            Either.Left(CoreFailure.NotSupportedByProteus)
+            }
         }
     }
 
-private suspend fun messagesFromMLSSubGroupMessages(
-    event: Event.Conversation.MLSSubGroupMessages,
-    isLive: Boolean
-): Either<CoreFailure, FailedMLSMessage?> =
-    subconversationRepository.getSubconversationInfo(event.conversationId, event.subConversationId)
-        ?.let { groupID ->
-            logger.logStructuredJson(
-                KaliumLogLevel.DEBUG,
-                "Decrypting MLS for SubConversation",
-                mapOf(
-                    "conversationId" to event.conversationId.toLogString(),
-                    "subConversationId" to event.subConversationId.toLogString(),
-                    "groupID" to groupID.toLogString()
+    private suspend fun messagesFromMLSGroupMessages(
+        event: Event.Conversation.MLSGroupMessages,
+        isLive: Boolean,
+        mlsContext: MlsCoreCryptoContext?
+    ): Either<CoreFailure, FailedMLSMessage?> = conversationRepository.getConversationProtocolInfo(event.conversationId)
+        .flatMap { protocolInfo ->
+            if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
+                logger.logStructuredJson(
+                    KaliumLogLevel.DEBUG,
+                    "Decrypting MLS for Conversation",
+                    mapOf(
+                        "conversationId" to event.conversationId.toLogString(),
+                        "groupID" to protocolInfo.groupId.toLogString(),
+                        "protocolInfo" to protocolInfo.toLogMap()
+                    )
                 )
-            )
-            mlsConversationRepository.decryptMessages(
-                messages = event.messages,
-                groupID = groupID,
-                conversationId = event.conversationId,
-                subConversationId = event.subConversationId,
-                isLive = isLive
-            )
-        } ?: Either.Right(null)
+                mlsConversationRepository.decryptMessages(
+                    messages = event.messages,
+                    groupID = protocolInfo.groupId,
+                    conversationId = event.conversationId,
+                    subConversationId = null,
+                    isLive = isLive,
+                    mlsContext = mlsContext
+
+                )
+            } else {
+                Either.Left(CoreFailure.NotSupportedByProteus)
+            }
+        }
+
+    private suspend fun messagesFromMLSSubGroupMessages(
+        event: Event.Conversation.MLSSubGroupMessages,
+        isLive: Boolean,
+        mlsContext: MlsCoreCryptoContext?
+    ): Either<CoreFailure, FailedMLSMessage?> =
+        subconversationRepository.getSubconversationInfo(event.conversationId, event.subConversationId)
+            ?.let { groupID ->
+                logger.logStructuredJson(
+                    KaliumLogLevel.DEBUG,
+                    "Decrypting MLS for SubConversation",
+                    mapOf(
+                        "conversationId" to event.conversationId.toLogString(),
+                        "subConversationId" to event.subConversationId.toLogString(),
+                        "groupID" to groupID.toLogString()
+                    )
+                )
+                mlsConversationRepository.decryptMessages(
+                    messages = event.messages,
+                    groupID = groupID,
+                    conversationId = event.conversationId,
+                    subConversationId = event.subConversationId,
+                    isLive = isLive,
+                    mlsContext = mlsContext
+                )
+            } ?: Either.Right(null)
 }

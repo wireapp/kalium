@@ -20,10 +20,13 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
@@ -66,10 +69,14 @@ internal interface EventProcessor {
      * @see Event
      */
     suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit>
+
+    suspend fun processEvents(eventEnvelopes: List<EventEnvelope>): Either<CoreFailure, Unit>
+
 }
 
 @Suppress("LongParameterList")
 internal class EventProcessorImpl(
+    private val transactionProvider: CryptoTransactionProvider,
     private val eventRepository: EventRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: UserEventReceiver,
@@ -96,7 +103,26 @@ internal class EventProcessorImpl(
         } else {
             logger.i("Starting processing of event: ${event.toLogString()}")
             withContext(NonCancellable) {
-                doProcess(event, deliveryInfo, eventEnvelope)
+                doProcess(event, deliveryInfo, eventEnvelope, null)
+            }
+        }
+    }.await()
+
+    override suspend fun processEvents(eventEnvelopes: List<EventEnvelope>): Either<CoreFailure, Unit> = processingScope.async {
+        if (disableEventProcessing) {
+            logger.w("Skipping processing of events due to debug option")
+            Either.Right(Unit)
+        } else {
+            withContext(NonCancellable) {
+                // TODO KBX probably need to handle errors
+                transactionProvider.transaction("decrypt-batch") { cryptoContext ->
+                    eventEnvelopes
+                        .map { eventEnvelope ->
+                            logger.i("Starting processing of event: ${eventEnvelope.event.toLogString()}")
+                            doProcess(eventEnvelope.event, eventEnvelope.deliveryInfo, eventEnvelope, cryptoContext)
+                        }
+                        .foldToEitherWhileRight(Unit) { value, _ -> value }
+                }
             }
         }
     }.await()
@@ -104,12 +130,13 @@ internal class EventProcessorImpl(
     private suspend fun doProcess(
         event: Event,
         deliveryInfo: EventDeliveryInfo,
-        eventEnvelope: EventEnvelope
+        eventEnvelope: EventEnvelope,
+        cryptoContext: CryptoTransactionContext?
     ): Either<CoreFailure, Unit> {
         return when (event) {
-            is Event.Conversation -> conversationEventReceiver.onEvent(event, deliveryInfo)
-            is Event.User -> userEventReceiver.onEvent(event, deliveryInfo)
-            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event, deliveryInfo)
+            is Event.Conversation -> conversationEventReceiver.onEvent(event, deliveryInfo, cryptoContext)
+            is Event.User -> userEventReceiver.onEvent(event, deliveryInfo, cryptoContext)
+            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event, deliveryInfo, cryptoContext)
             is Event.Unknown -> {
                 kaliumLogger.createEventProcessingLogger(event)
                     .logComplete(EventLoggingStatus.SKIPPED)
@@ -117,11 +144,11 @@ internal class EventProcessorImpl(
                 Either.Right(Unit)
             }
 
-            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
-            is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
-            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
+            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo, cryptoContext)
+            is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo, cryptoContext)
+            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo, cryptoContext)
             is Event.AsyncMissed -> {
-                missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
+                missedNotificationsEventReceiver.onEvent(event, deliveryInfo, cryptoContext)
             }
         }.onSuccess {
             eventRepository.setEventAsProcessed(event.id)

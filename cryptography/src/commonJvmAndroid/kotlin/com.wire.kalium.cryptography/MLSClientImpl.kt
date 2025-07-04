@@ -189,22 +189,23 @@ class MLSClientImpl(
         groupId: MLSGroupId,
         messages: List<EncryptedMessage>,
         onDecryption: (suspend (batch: DecryptedBatch, eventId: String) -> Unit),
-        onIgnoreError: (suspend (eventId: String) -> Unit)
-        // should we have separate function for errors?
+        onIgnoreError: (suspend (eventId: String) -> Unit),
+        mlsContext: MlsCoreCryptoContext?,
     ): FailedMessage? {
-        coreCrypto.transaction { context ->
+        if (mlsContext != null) {
             val results = mutableListOf<DecryptedMessageBundle>()
 
             for (message in messages) {
                 try {
-                    val decrypted = context.decryptMessage(
-                        com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
-                        MlsMessage(message.content)
+                    val decrypted = mlsContext.decryptMessage(
+                        groupId.decodeBase64Bytes(),
+                        message.content,
+                        message.messageInstant
                     )
 
                     decrypted.let { dec ->
-                        results += dec.toBundle(message.messageInstant)
-                        results += dec.bufferedMessages?.map { buf -> buf.toBundle(message.messageInstant) }.orEmpty()
+                        results += dec
+                        results += dec.bufferedMessages?.map { buf -> buf }.orEmpty()
                     }
                     onDecryption(DecryptedBatch(results, groupId), message.eventId)
 
@@ -220,17 +221,61 @@ class MLSClientImpl(
                             }
 
                             else -> {
-                                return@transaction FailedMessage(
+                                return FailedMessage(
                                     eventId = message.eventId,
                                     error = throwable
                                 )
                             }
                         }
                     } else {
-                        return@transaction FailedMessage(
+                        return FailedMessage(
                             eventId = message.eventId,
                             error = throwable
                         )
+                    }
+                }
+            }
+        } else {
+            coreCrypto.transaction { context ->
+                val results = mutableListOf<DecryptedMessageBundle>()
+
+                for (message in messages) {
+                    try {
+                        val decrypted = context.decryptMessage(
+                            com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
+                            MlsMessage(message.content)
+                        )
+
+                        decrypted.let { dec ->
+                            results += dec.toBundle(message.messageInstant)
+                            results += dec.bufferedMessages?.map { buf -> buf.toBundle(message.messageInstant) }.orEmpty()
+                        }
+                        onDecryption(DecryptedBatch(results, groupId), message.eventId)
+
+                    } catch (throwable: Throwable) {
+                        if (throwable is CoreCryptoException.Mls) {
+                            when (throwable.exception) {
+                                is MlsException.BufferedFutureMessage,
+                                is MlsException.BufferedCommit,
+                                is MlsException.DuplicateMessage -> {
+                                    onIgnoreError(message.eventId)
+                                    // ignore errors and continue decrypting
+                                    continue
+                                }
+
+                                else -> {
+                                    return@transaction FailedMessage(
+                                        eventId = message.eventId,
+                                        error = throwable
+                                    )
+                                }
+                            }
+                        } else {
+                            return@transaction FailedMessage(
+                                eventId = message.eventId,
+                                error = throwable
+                            )
+                        }
                     }
                 }
             }
@@ -350,6 +395,36 @@ class MLSClientImpl(
             groupList.forEach { groupId ->
                 cc.e2eiRotate(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()))
             }
+        }
+    }
+
+    override suspend fun <R> transaction(name: String, block: suspend (context: MlsCoreCryptoContext) -> R): R {
+        return coreCrypto.transaction(name) { coreCtx ->
+            val wrapper = object : MlsCoreCryptoContext {
+
+                override suspend fun decryptMessage(
+                    groupId: ByteArray,
+                    message: ByteArray,
+                    messageInstant: Instant
+                ): DecryptedMessageBundle {
+                    return coreCtx.decryptMessage(
+                        com.wire.crypto.MLSGroupId(groupId),
+                        MlsMessage(message)
+                    ).toBundle(messageInstant)
+                }
+
+                override suspend fun isGroupOutOfSync(groupID: ByteArray, currentEpoch: ULong): Boolean {
+                    return coreCtx.conversationEpoch(com.wire.crypto.MLSGroupId(groupID)) < currentEpoch
+                }
+
+                override suspend fun joinByExternalCommit(publicGroupState: ByteArray): WelcomeBundle {
+                    val mlsCredentialType = if (coreCtx.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
+                    return coreCtx.joinByExternalCommit(GroupInfo(publicGroupState), mlsCredentialType.toCrypto()).toCryptography()
+                }
+
+                // TODO KBX implement other methods
+            }
+            block(wrapper)
         }
     }
 

@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
 
@@ -38,7 +39,11 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
     private val conversationFolderRepository: ConversationFolderRepository
 ) : UserPropertiesEventReceiver {
 
-    override suspend fun onEvent(event: Event.UserProperty, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(
+        event: Event.UserProperty,
+        deliveryInfo: EventDeliveryInfo,
+        cryptoContext: CryptoTransactionContext?
+    ): Either<CoreFailure, Unit> {
         return when (event) {
             is Event.UserProperty.ReadReceiptModeSet -> {
                 handleReadReceiptMode(event)

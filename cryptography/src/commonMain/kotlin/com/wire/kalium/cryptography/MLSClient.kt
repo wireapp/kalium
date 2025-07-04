@@ -132,6 +132,7 @@ data class DecryptedMessageBundle(
     val identity: WireIdentity?,
     val crlNewDistributionPoints: List<String>?,
     val messageInstant: Instant,
+    val bufferedMessages: List<DecryptedMessageBundle>?,
     ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -331,7 +332,8 @@ interface MLSClient {
         groupId: MLSGroupId,
         messages: List<EncryptedMessage>,
         onDecryption: (suspend (batch: DecryptedBatch, eventId: String) -> Unit),
-        onIgnoreError: (suspend (eventId: String) -> Unit)
+        onIgnoreError: (suspend (eventId: String) -> Unit),
+        mlsContext: MlsCoreCryptoContext?,
     ): FailedMessage?
 
     /**
@@ -467,4 +469,14 @@ interface MLSClient {
      * Rotates credentials for each conversation
      */
     suspend fun e2eiRotateGroups(groupList: List<MLSGroupId>)
+
+    /**
+     * Runs a block of code inside a CoreCrypto transaction.
+     *
+     * @param name optional name of the transaction (used for logging)
+     * @param block transaction block executed with CoreCryptoContext
+     * @return result of the block
+     */
+    suspend fun <R> transaction(name: String = "mls-transaction", block: suspend (context: MlsCoreCryptoContext) -> R): R
+
 }

@@ -183,6 +183,10 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
+    override suspend fun <R> transaction(name: String, block: suspend (context: ProteusCoreCryptoContext) -> R): R {
+        TODO("Not yet implemented")
+    }
+
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private inline fun <T> wrapException(b: () -> T): T {
         try {

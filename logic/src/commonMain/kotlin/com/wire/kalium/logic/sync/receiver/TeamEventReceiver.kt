@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import io.mockative.Mockable
 
 @Mockable
@@ -40,7 +41,11 @@ internal class TeamEventReceiverImpl(
     private val selfUserId: UserId,
 ) : TeamEventReceiver {
 
-    override suspend fun onEvent(event: Event.Team, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(
+        event: Event.Team,
+        deliveryInfo: EventDeliveryInfo,
+        cryptoContext: CryptoTransactionContext?
+    ): Either<CoreFailure, Unit> {
         when {
             event is Event.Team.MemberLeave -> handleMemberLeave(event)
         }

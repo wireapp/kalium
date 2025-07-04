@@ -41,6 +41,7 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.EncryptedMessage
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.toDao
@@ -135,6 +136,7 @@ data class DecryptedMessageBundle(
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
+// TODO KBX change to MLSTransactionContext
 @Mockable
 interface MLSConversationRepository {
     suspend fun decryptMessages(
@@ -142,7 +144,8 @@ interface MLSConversationRepository {
         groupID: GroupID,
         conversationId: ConversationId,
         subConversationId: SubconversationId?,
-        isLive: Boolean
+        isLive: Boolean,
+        mlsContext: MlsCoreCryptoContext?
     ): Either<CoreFailure, FailedMLSMessage?>
 
     /**
@@ -178,7 +181,11 @@ interface MLSConversationRepository {
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<QualifiedClientID>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
-    suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
+    suspend fun joinGroupByExternalCommit(
+        groupID: GroupID, groupInfo: ByteArray,
+        mlsContext: MlsCoreCryptoContext? = null
+    ): Either<CoreFailure, Unit>
+
     suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean>
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
@@ -301,7 +308,8 @@ internal class MLSConversationDataSource(
         groupID: GroupID,
         conversationId: ConversationId,
         subConversationId: SubconversationId?,
-        isLive: Boolean
+        isLive: Boolean,
+        mlsContext: MlsCoreCryptoContext?
     ): Either<CoreFailure, FailedMLSMessage?> {
         logger.d("Decrypting message for group ${groupID.toLogString()}")
         return mutex.withLock("decryptMessage") {
@@ -315,6 +323,7 @@ internal class MLSConversationDataSource(
                                 eventDAO.markEventAsProcessed(eventId)
                             }
                         },
+                        mlsContext = mlsContext,
                         onDecryption = { decryptedBatch, eventId ->
                             val localEventId = uuid4().toString()
                             val decryptedMessages = decryptedBatch.messages.mapNotNull {
@@ -389,14 +398,15 @@ internal class MLSConversationDataSource(
 
     override suspend fun joinGroupByExternalCommit(
         groupID: GroupID,
-        groupInfo: ByteArray
+        groupInfo: ByteArray,
+        mlsContext: MlsCoreCryptoContext?
     ): Either<CoreFailure, Unit> {
         logger.d("Joining group ${groupID.toLogString()} by external commit")
         return mutex.withLock {
             kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} via external commit")
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    mlsClient.joinByExternalCommit(groupInfo)
+                    mlsContext?.joinByExternalCommit(groupInfo) ?: mlsClient.joinByExternalCommit(groupInfo)
                 }.onSuccess { welcomeBundle ->
                     welcomeBundle.crlNewDistributionPoints?.let {
                         checkRevocationList(it)

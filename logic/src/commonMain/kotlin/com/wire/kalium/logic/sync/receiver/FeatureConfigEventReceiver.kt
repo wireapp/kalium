@@ -34,6 +34,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
@@ -54,32 +55,36 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val appLockConfigHandler: AppLockConfigHandler
 ) : FeatureConfigEventReceiver {
 
-    override suspend fun onEvent(event: Event.FeatureConfig, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(
+        event: Event.FeatureConfig,
+        deliveryInfo: EventDeliveryInfo,
+        cryptoContext: CryptoTransactionContext?
+    ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return handleFeatureConfigEvent(event)
             .onSuccess { logger.logSuccess() }
             .onFailure { logger.logFailure(it) }
     }
 
-@Suppress("LongMethod", "ComplexMethod")
-private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
-    when (event) {
-        is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
-        is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
-        is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
-        is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
-        is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
-        is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
-        is Event.FeatureConfig.SelfDeletingMessagesConfig -> selfDeletingMessagesConfigHandler.handle(event.model)
-        is Event.FeatureConfig.MLSE2EIUpdated -> e2EIConfigHandler.handle(event.model)
-        is Event.FeatureConfig.AppLockUpdated -> appLockConfigHandler.handle(event.model)
-        is Event.FeatureConfig.UnknownFeatureUpdated -> {
-            kaliumLogger.createEventProcessingLogger(event).logComplete(
-                EventLoggingStatus.SKIPPED,
-                arrayOf("info" to "Ignoring unknown feature config update")
-            )
+    @Suppress("LongMethod", "ComplexMethod")
+    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
+        when (event) {
+            is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
+            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
+            is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
+            is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
+            is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
+            is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
+            is Event.FeatureConfig.SelfDeletingMessagesConfig -> selfDeletingMessagesConfigHandler.handle(event.model)
+            is Event.FeatureConfig.MLSE2EIUpdated -> e2EIConfigHandler.handle(event.model)
+            is Event.FeatureConfig.AppLockUpdated -> appLockConfigHandler.handle(event.model)
+            is Event.FeatureConfig.UnknownFeatureUpdated -> {
+                kaliumLogger.createEventProcessingLogger(event).logComplete(
+                    EventLoggingStatus.SKIPPED,
+                    arrayOf("info" to "Ignoring unknown feature config update")
+                )
 
-            Either.Right(Unit)
+                Either.Right(Unit)
+            }
         }
-    }
 }
