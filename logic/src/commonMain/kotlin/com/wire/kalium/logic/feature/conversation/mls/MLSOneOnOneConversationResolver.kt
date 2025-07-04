@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import io.mockative.Mockable
 
 /**
@@ -51,6 +52,7 @@ internal interface MLSOneOnOneConversationResolver {
 internal class MLSOneOnOneConversationResolverImpl(
     private val conversationRepository: ConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
+    private val fetchMLSOneToOneConversation: FetchMLSOneToOneConversationUseCase
 ) : MLSOneOnOneConversationResolver {
 
     override suspend fun invoke(userId: UserId): Either<CoreFailure, ConversationId> =
@@ -69,7 +71,7 @@ internal class MLSOneOnOneConversationResolverImpl(
                 Either.Right(initializedMLSOneOnOne.id)
             } else {
                 kaliumLogger.d("Establishing mls group for one-on-one with ${userId.toLogString()}")
-                conversationRepository.fetchMlsOneToOneConversation(userId).flatMap { conversation ->
+                fetchMLSOneToOneConversation(userId).flatMap { conversation ->
                     joinExistingMLSConversationUseCase(conversation.id, conversation.mlsPublicKeys).map { conversation.id }
                 }
             }
