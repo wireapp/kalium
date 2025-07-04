@@ -31,6 +31,7 @@ import com.wire.backup.filesystem.BackupPage
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.ingest.MPBackupMapper
 import com.wire.backup.ingest.close
+import com.wire.backup.logger.BackupLogger
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportUser
@@ -53,7 +54,8 @@ import kotlin.js.JsName
  */
 @JsExport
 public abstract class CommonMPBackupExporter(
-    private val selfUserId: BackupQualifiedId
+    private val selfUserId: BackupQualifiedId,
+    internal val logger: BackupLogger? = null,
 ) {
     private val mapper = MPBackupMapper()
     private val usersChunk = mutableListOf<ExportUser>()
@@ -75,7 +77,7 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addUser")
     public fun add(user: BackupUser) {
-        user.validate()
+        validate(user)
         usersChunk.add(mapper.mapUserToProtobuf(user))
         if (usersChunk.size > ITEMS_CHUNK_SIZE) {
             flushUsers()
@@ -97,7 +99,7 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addConversation")
     public fun add(conversation: BackupConversation) {
-        conversation.validate()
+        validate(conversation)
         conversationsChunk.add(mapper.mapConversationToProtobuf(conversation))
         if (conversationsChunk.size > ITEMS_CHUNK_SIZE) {
             flushConversations()
@@ -119,10 +121,11 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addMessage")
     public fun add(message: BackupMessage) {
-        message.validate()
-        messagesChunk.add(mapper.mapMessageToProtobuf(message))
-        if (messagesChunk.size > ITEMS_CHUNK_SIZE) {
-            flushMessages()
+        if (validate(message)) {
+            messagesChunk.add(mapper.mapMessageToProtobuf(message))
+            if (messagesChunk.size > ITEMS_CHUNK_SIZE) {
+                flushMessages()
+            }
         }
     }
 

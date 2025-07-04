@@ -43,7 +43,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
@@ -75,30 +74,13 @@ class EventMapper(
     fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
-        val source = if (isLive) EventSource.LIVE else EventSource.PENDING
         return eventResponse.payload?.map { eventContentDTO ->
+            val eventSource = if (isLive) EventSource.LIVE else EventSource.PENDING
             EventEnvelope(
                 fromEventContentDTO(id, eventContentDTO),
-                EventDeliveryInfo.Legacy(eventResponse.transient, source)
+                EventDeliveryInfo(eventSource)
             )
         } ?: listOf()
-    }
-
-    /**
-     * Converts a single processed event to an acknowledge request.
-     * Note: we can extend this when we want to implement multiple ack at once.
-     */
-    fun toAcknowledgeRequest(
-        eventDeliveryInfo: EventDeliveryInfo.Async,
-        multiple: Boolean = false
-    ): EventAcknowledgeRequest {
-        return EventAcknowledgeRequest(
-            type = AcknowledgeType.ACK,
-            data = AcknowledgeData(
-                deliveryTag = eventDeliveryInfo.deliveryTag,
-                multiple = multiple
-            )
-        )
     }
 
     internal companion object {

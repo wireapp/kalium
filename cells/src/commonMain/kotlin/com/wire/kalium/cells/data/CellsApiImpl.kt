@@ -235,7 +235,11 @@ internal class CellsApiImpl(
         }.mapSuccess { response -> response.toDto() }
     }
 
-    override suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
+    override suspend fun moveNode(
+        uuid: String,
+        path: String,
+        targetPath: String,
+    ): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
             name = NodeServiceApi.NamePerformAction.move,
             parameters = RestActionParameters(
@@ -245,6 +249,25 @@ internal class CellsApiImpl(
                 copyMoveOptions = RestActionOptionsCopyMove(
                     targetPath = targetPath,
                     targetIsParent = true,
+                )
+            )
+        )
+    }.mapSuccess {}
+
+    override suspend fun renameNode(
+        uuid: String,
+        path: String,
+        targetPath: String,
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.move,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path, uuid)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT,
+                copyMoveOptions = RestActionOptionsCopyMove(
+                    targetPath = targetPath,
+                    targetIsParent = false,
                 )
             )
         )

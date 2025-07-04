@@ -177,6 +177,7 @@ import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
+import com.wire.kalium.logic.feature.analytics.SetNewUserTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -1255,15 +1256,14 @@ class UserSessionScope internal constructor(
             apiMigrations
         )
 
-    private val eventRepository: EventRepository
-        get() = EventDataSource(
-            notificationApi = authenticatedNetworkContainer.notificationApi,
-            metadataDAO = userStorage.database.metadataDAO,
-            eventDAO = userStorage.database.eventDAO,
-            currentClientId = clientIdProvider,
-            clientRegistrationStorage = clientRegistrationStorage,
-            selfUserId = userId
-        )
+    private val eventRepository: EventRepository = EventDataSource(
+        notificationApi = authenticatedNetworkContainer.notificationApi,
+        metadataDAO = userStorage.database.metadataDAO,
+        eventDAO = userStorage.database.eventDAO,
+        currentClientId = clientIdProvider,
+        clientRegistrationStorage = clientRegistrationStorage,
+        selfUserId = userId
+    )
 
     private val mlsMigrator: MLSMigrator
         get() = MLSMigratorImpl(
@@ -1646,6 +1646,9 @@ class UserSessionScope internal constructor(
 
     val observeAnalyticsTrackingIdentifierStatus: ObserveAnalyticsTrackingIdentifierStatusUseCase
         get() = ObserveAnalyticsTrackingIdentifierStatusUseCase(userConfigRepository, userScopedLogger)
+
+    val setNewUserTrackingIdentifier: SetNewUserTrackingIdentifierUseCase
+        get() = SetNewUserTrackingIdentifierUseCase(userConfigRepository)
 
     val getCurrentAnalyticsTrackingIdentifier: GetCurrentAnalyticsTrackingIdentifierUseCase
         get() = GetCurrentAnalyticsTrackingIdentifierUseCase(userConfigRepository)
@@ -2046,6 +2049,7 @@ class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userScopedLogger,
             getTeamUrlUseCase,
+            isMLSEnabled,
             this,
         )
     }
@@ -2339,7 +2343,7 @@ class UserSessionScope internal constructor(
 
     val deleteConversationUseCase: DeleteConversationUseCase
         get() = DeleteConversationUseCaseImpl(
-        conversationRepository = conversationRepository,
+            conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
         )
 

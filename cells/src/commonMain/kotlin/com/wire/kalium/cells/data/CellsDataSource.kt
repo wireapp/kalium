@@ -223,6 +223,13 @@ internal class CellsDataSource internal constructor(
             }
         }
 
+    override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.renameNode(uuid = uuid, path = path, targetPath = targetPath)
+            }
+        }
+
     override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> =
         withContext(dispatchers.io) {
             wrapApiRequest {

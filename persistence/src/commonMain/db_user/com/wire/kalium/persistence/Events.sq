@@ -44,4 +44,6 @@ SELECT * FROM Events
 WHERE is_processed = 0
 ORDER BY id ASC;
 
-
+deleteUnprocessedLiveEventsByIds:
+DELETE FROM Events
+WHERE is_processed = 0 AND is_live = 1 AND event_id IN ?;

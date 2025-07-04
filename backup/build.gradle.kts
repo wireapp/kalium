@@ -76,6 +76,7 @@ kotlin {
 
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
+                implementation(libs.ktxSerialization)
 
                 implementation(libs.okio.core)
 

@@ -274,25 +274,12 @@ object TestEvent {
     )
 
     fun Event.wrapInEnvelope(
-        isTransient: Boolean = false,
         source: EventSource = EventSource.LIVE
-    ): EventEnvelope = EventEnvelope(this, EventDeliveryInfo.Legacy(isTransient, source))
-
-    fun Event.wrapAsyncInEnvelope(
-        source: EventSource = EventSource.LIVE,
-        isMissedNotifications: Boolean = false
-    ): EventEnvelope = EventEnvelope(
-        event = this,
-        deliveryInfo = if (isMissedNotifications) {
-            EventDeliveryInfo.AsyncMissed
-        } else {
-            EventDeliveryInfo.Async(ULong.MAX_VALUE, source)
-        }
-    )
+    ): EventEnvelope = EventEnvelope(this, EventDeliveryInfo(source))
 
     fun notificationsMissed(eventId: String = "eventId") = Event.AsyncMissed(eventId)
 
-    val liveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.LIVE)
-    val nonLiveDeliveryInfo = EventDeliveryInfo.Legacy(false, EventSource.PENDING)
+    val liveDeliveryInfo = EventDeliveryInfo(EventSource.LIVE)
+    val nonLiveDeliveryInfo = EventDeliveryInfo(EventSource.PENDING)
 
 }

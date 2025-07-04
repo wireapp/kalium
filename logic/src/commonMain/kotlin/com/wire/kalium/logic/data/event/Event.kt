@@ -73,52 +73,24 @@ data class EventEnvelope(
     )
 }
 
+enum class EventVersion {
+    ASYNC,
+    LEGACY
+}
+
 /**
  * Data class representing information about the delivery of an event.
  *
- * @property isTransient Specifies whether the event is transient.
- * Transient events are events that only matter if the user is online/active. For example "user is typing",
- * and call signaling (mute/unmute), which are irrelevant after a few minutes. These are likely to not even
- * be stored in the backend.
- * @property source The source of the event.
- * @see EventSource
+ * @property source Indicates whether the event was received in real-time via WebSocket [EventSource.LIVE]
+ * or fetched in batch as a pending event [EventSource.PENDING].
  */
-sealed class EventDeliveryInfo(
-    open val isTransient: Boolean,
-    open val source: EventSource
+data class EventDeliveryInfo(
+    val source: EventSource,
 ) {
 
     fun toLogMap(): Map<String, Any?> = mapOf(
-        "isTransient" to isTransient,
-        "source" to source.name
+        "source" to source,
     )
-
-    /**
-     * Async event delivery info, represents events that needs to be ACK'ed in the new system.
-     */
-    data class Async(
-        val deliveryTag: ULong,
-        override val source: EventSource
-    ) : EventDeliveryInfo(
-        isTransient = false, // in async events, everything needs to be ACK'ed so they are not transient
-        source = source
-    )
-
-    /**
-     * Async event delivery info, represents full sync needed, which is a special case of async event and also needs to be ACK'ed.
-     */
-    data object AsyncMissed : EventDeliveryInfo(
-        isTransient = false,
-        source = EventSource.LIVE
-    )
-
-    /**
-     * Event from the old quick sync system, not needing ACK.
-     */
-    data class Legacy(
-        override val isTransient: Boolean,
-        override val source: EventSource,
-    ) : EventDeliveryInfo(isTransient, source)
 }
 
 /**
