@@ -253,28 +253,6 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
-    override suspend fun compareAndSetMessagesStatus(
-        status: MessageEntity.Status,
-        id: List<String>,
-        conversationId: QualifiedIDEntity
-    ) = withContext(coroutineContext) {
-        queries.transaction {
-            val messageStatus = queries.getMessagesStatus(id, conversationId).executeAsList()
-            val messageIds = id.filter { messageId ->
-                val currentStatus = messageStatus.firstOrNull { it.id == messageId }?.status
-                currentStatus != MessageEntity.Status.READ
-            }
-            messageIds.forEach { queries.updateMessageStatus(status, it, conversationId) }
-        }
-    }
-
-    override suspend fun getMessagesStatus(
-        ids: List<String>,
-        conversationId: QualifiedIDEntity,
-    ) = withContext(coroutineContext) {
-        queries.getMessagesStatus(ids, conversationId).executeAsList()
-    }
-
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
@@ -296,6 +274,14 @@ internal class MessageDAOImpl internal constructor(
                 mapper::toEntityAssetMessageFromView
             ).executeAsList()
         }
+
+    override suspend fun updateMessagesStatusIfNotRead(
+        status: MessageEntity.Status,
+        conversationId: QualifiedIDEntity,
+        messageIds: List<String>
+    ) = withContext(coroutineContext) {
+        queries.updateMessagesStatusIfNotRead(status, messageIds, conversationId)
+    }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,

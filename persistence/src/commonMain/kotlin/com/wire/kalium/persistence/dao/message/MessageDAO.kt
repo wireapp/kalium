@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.GetMessagesStatus
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -173,6 +172,6 @@ interface MessageDAO {
         onPage: (List<MessageEntity>) -> Unit,
     )
     fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
-    suspend fun getMessagesStatus(ids: List<String>, conversationId: QualifiedIDEntity): List<GetMessagesStatus>
-    suspend fun compareAndSetMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
+
+    suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)
 }

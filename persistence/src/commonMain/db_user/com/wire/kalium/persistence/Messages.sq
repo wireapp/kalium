@@ -452,8 +452,12 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
-getMessagesStatus:
-SELECT id, status FROM Message WHERE id IN ? AND conversation_id = ?;
+updateMessagesStatusIfNotRead:
+UPDATE Message
+SET status = ?
+WHERE id IN ?
+AND conversation_id = ?
+AND status != 'READ';
 
 updateQuotedMessageId:
 UPDATE MessageTextContent

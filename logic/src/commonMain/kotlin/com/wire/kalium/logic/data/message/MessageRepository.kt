@@ -259,17 +259,11 @@ internal interface MessageRepository {
 
     suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
     suspend fun getNextAudioMessageInConversation(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
-
-    suspend fun getMessagesStatus(
-        messageIds: List<String>,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<Pair<String, MessageEntity.Status>>>
-
-    suspend fun compareAndSetMessagesStatus(
+    suspend fun updateMessagesStatusIfNotRead(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
-        messageUuids: List<String>
-    ): Either<StorageFailure, Unit>
+        messageIds: List<String>
+    ): Either<CoreFailure, Unit>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -408,19 +402,6 @@ internal class MessageDataSource internal constructor(
     ) =
         wrapStorageRequest {
             messageDAO.updateMessagesStatus(
-                status = messageStatus,
-                id = messageUuids,
-                conversationId = conversationId.toDao()
-            )
-        }
-
-    override suspend fun compareAndSetMessagesStatus(
-        messageStatus: MessageEntity.Status,
-        conversationId: ConversationId,
-        messageUuids: List<String>
-    ) =
-        wrapStorageRequest {
-            messageDAO.compareAndSetMessagesStatus(
                 status = messageStatus,
                 id = messageUuids,
                 conversationId = conversationId.toDao()
@@ -753,11 +734,11 @@ internal class MessageDataSource internal constructor(
     ): Either<CoreFailure, String> =
         wrapStorageRequest { messageDAO.getNextAudioMessageInConversation(messageId, conversationId.toDao()) }
 
-    override suspend fun getMessagesStatus(
-        messageIds: List<String>,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<Pair<String, MessageEntity.Status>>> = wrapStorageRequest {
-        messageDAO.getMessagesStatus(messageIds, conversationId.toDao())
-            .map { it.id to it.status }
+    override suspend fun updateMessagesStatusIfNotRead(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageIds: List<String>
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateMessagesStatusIfNotRead(messageStatus, conversationId.toDao(), messageIds)
     }
 }
