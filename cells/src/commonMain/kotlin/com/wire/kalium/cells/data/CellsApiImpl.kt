@@ -265,7 +265,6 @@ internal class CellsApiImpl(
         nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA, operationValues = listOf())
     }.mapSuccess { it.propertyValues ?: emptyList() }
 
-
     override suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.patchNode(
             uuid = uuid,
