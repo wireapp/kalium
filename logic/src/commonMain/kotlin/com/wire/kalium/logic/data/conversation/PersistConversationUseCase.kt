@@ -71,10 +71,9 @@ internal class PersistConversationUseCaseImpl(
     }
 
     internal fun Conversation?.isNewMLSConversation(): Boolean {
-        return this?.let {
-            val state = (it.protocol as? Conversation.ProtocolInfo.MLSCapable)?.groupState
-            state != Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
-        } ?: true
+        return when (val proto = this?.protocol) {
+            is Conversation.ProtocolInfo.MLSCapable -> proto.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+            else -> false // Non-MLS conversation is not considered new
+        }
     }
-
 }
