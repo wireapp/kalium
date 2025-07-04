@@ -174,4 +174,5 @@ interface MessageDAO {
     )
     fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
     suspend fun getMessagesStatus(ids: List<String>, conversationId: QualifiedIDEntity): List<GetMessagesStatus>
+    suspend fun compareAndSetMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
 }

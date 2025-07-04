@@ -264,6 +264,12 @@ internal interface MessageRepository {
         messageIds: List<String>,
         conversationId: ConversationId
     ): Either<CoreFailure, List<Pair<String, MessageEntity.Status>>>
+
+    suspend fun compareAndSetMessagesStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuids: List<String>
+    ): Either<StorageFailure, Unit>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -402,6 +408,19 @@ internal class MessageDataSource internal constructor(
     ) =
         wrapStorageRequest {
             messageDAO.updateMessagesStatus(
+                status = messageStatus,
+                id = messageUuids,
+                conversationId = conversationId.toDao()
+            )
+        }
+
+    override suspend fun compareAndSetMessagesStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuids: List<String>
+    ) =
+        wrapStorageRequest {
+            messageDAO.compareAndSetMessagesStatus(
                 status = messageStatus,
                 id = messageUuids,
                 conversationId = conversationId.toDao()

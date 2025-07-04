@@ -253,6 +253,21 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun compareAndSetMessagesStatus(
+        status: MessageEntity.Status,
+        id: List<String>,
+        conversationId: QualifiedIDEntity
+    ) = withContext(coroutineContext) {
+        queries.transaction {
+            val messageStatus = queries.getMessagesStatus(id, conversationId).executeAsList()
+            val messageIds = id.filter { messageId ->
+                val currentStatus = messageStatus.firstOrNull { it.id == messageId }?.status
+                currentStatus != MessageEntity.Status.READ
+            }
+            messageIds.forEach { queries.updateMessageStatus(status, it, conversationId) }
+        }
+    }
+
     override suspend fun getMessagesStatus(
         ids: List<String>,
         conversationId: QualifiedIDEntity,
