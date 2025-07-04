@@ -63,21 +63,20 @@ internal class FetchMLSOneToOneConversationUseCaseImpl(
     ): ConversationResponse {
         val currentOtherMembers = conversationResponse.members.otherMembers
         val hasOtherUser = currentOtherMembers.any { it.id == otherMemberId.toApi() }
-        val otherMembers = if (hasOtherUser) {
-            currentOtherMembers
-        } else {
-            listOf(
-                ConversationMemberDTO.Other(
-                    id = otherMemberId.toApi(),
-                    conversationRole = "",
-                    service = null
-                )
-            )
-        }
+
+        if (hasOtherUser) return conversationResponse
+
+        val updatedOtherMembers = currentOtherMembers + ConversationMemberDTO.Other(
+            id = otherMemberId.toApi(),
+            conversationRole = "",
+            service = null
+        )
+
         return conversationResponse.copy(
             members = conversationResponse.members.copy(
-                otherMembers = otherMembers
+                otherMembers = updatedOtherMembers
             )
         )
     }
+
 }
