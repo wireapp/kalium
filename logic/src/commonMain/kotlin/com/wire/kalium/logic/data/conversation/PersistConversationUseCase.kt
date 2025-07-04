@@ -58,7 +58,7 @@ internal class PersistConversationUseCaseImpl(
         originatedFromEvent: Boolean
     ): Either<CoreFailure, Boolean> {
         val existingConversation = conversationRepository.getConversationDetails(conversation.id.toModel()).getOrNull()
-        val isNewConversation = existingConversation.isNewMLSConversation()
+        val isNewConversation = existingConversation.shouldPersistConversation()
 
         if (isNewConversation) {
             persistConversations(listOf(conversation), false, originatedFromEvent)
@@ -70,10 +70,11 @@ internal class PersistConversationUseCaseImpl(
         return Either.Right(isNewConversation)
     }
 
-    internal fun Conversation?.isNewMLSConversation(): Boolean {
+    internal fun Conversation?.shouldPersistConversation(): Boolean {
         return when (val proto = this?.protocol) {
             is Conversation.ProtocolInfo.MLSCapable -> proto.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
-            else -> false // Non-MLS conversation is not considered new
+            is Conversation.ProtocolInfo.Proteus -> false
+            null -> true
         }
     }
 }
