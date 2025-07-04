@@ -42,6 +42,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
@@ -54,17 +55,18 @@ interface MLSWelcomeEventHandler {
 
 @Suppress("LongParameterList", "LongMethod")
 internal class MLSWelcomeEventHandlerImpl(
-    val mlsClientProvider: MLSClientProvider,
-    val conversationRepository: ConversationRepository,
-    val oneOnOneResolver: OneOnOneResolver,
-    val refillKeyPackages: RefillKeyPackagesUseCase,
-    val revocationListChecker: RevocationListChecker,
-    val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val mlsClientProvider: MLSClientProvider,
+    private val conversationRepository: ConversationRepository,
+    private val oneOnOneResolver: OneOnOneResolver,
+    private val refillKeyPackages: RefillKeyPackagesUseCase,
+    private val revocationListChecker: RevocationListChecker,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return conversationRepository.fetchConversationIfUnknown(event.conversationId)
+        return fetchConversationIfUnknown(event.conversationId)
             .flatMap {
                 mlsClientProvider.getMLSClient()
             }

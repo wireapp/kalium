@@ -40,6 +40,10 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import io.mockative.once
@@ -61,11 +65,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(event)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
-        }.wasNotInvoked()
-
-        coVerify {
-            arrangement.conversationRepository.fetchConversation(eq(event.conversationId))
+            arrangement.fetchConversation(eq(event.conversationId))
         }.wasInvoked(exactly = once)
     }
 
@@ -93,7 +93,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationIfUnknownFailingWith(NetworkFailure.NoNetworkConnection(null))
-            withFetchConversation(NetworkFailure.NoNetworkConnection(null).left())
+            withFetchConversationFailingWith(NetworkFailure.NoNetworkConnection(null))
             withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
@@ -298,12 +298,9 @@ class MemberJoinEventHandlerTest {
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl(),
+        FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
+        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
-
-        suspend fun withFetchConversationSucceeding() = apply {
-            withFetchConversationIfUnknownSucceeding()
-            withFetchConversation(Unit.right())
-        }
 
         suspend fun arrange() = run {
             block()
@@ -321,6 +318,7 @@ class MemberJoinEventHandlerTest {
                 legalHoldHandler = legalHoldHandler,
                 newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
                 selfUserId = TEST_SELF_USER_ID,
+                fetchConversation
             )
         }
     }

@@ -17,9 +17,13 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -35,10 +39,22 @@ interface RefreshConversationsWithoutMetadataUseCase {
 
 internal class RefreshConversationsWithoutMetadataUseCaseImpl(
     private val conversationRepository: ConversationRepository,
+    private val persistConversations: PersistConversationsUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RefreshConversationsWithoutMetadataUseCase {
     override suspend fun invoke() = withContext(dispatchers.io) {
-        conversationRepository.syncConversationsWithoutMetadata()
+        conversationRepository.getConversationIdsWithoutMetadata()
+            .flatMap { conversationIdList ->
+                if (conversationIdList.isNotEmpty()) {
+                    kaliumLogger.d("Numbers of conversations to refresh: ${conversationIdList.size}")
+                    conversationRepository.fetchConversationListDetails(conversationIdList)
+                        .onSuccess {
+                            persistConversations(it.conversationsFound, false)
+                        }
+                } else {
+                    Either.Right(Unit)
+                }
+            }
             .fold({
                 kaliumLogger.w("Error while syncing conversations without metadata $it")
             }) {
