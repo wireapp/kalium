@@ -32,6 +32,6 @@ internal open class ServerTimeApiV9(authenticatedNetworkClient: AuthenticatedNet
     }
 
     companion object {
-        const val PATH_SERVER_TIME = "/time"
+        const val PATH_SERVER_TIME = "time"
     }
 }
