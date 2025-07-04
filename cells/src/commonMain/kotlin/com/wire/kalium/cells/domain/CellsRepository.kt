@@ -28,7 +28,7 @@ import com.wire.kalium.common.functional.Either
 import io.mockative.Mockable
 import okio.Path
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 @Mockable
 internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>

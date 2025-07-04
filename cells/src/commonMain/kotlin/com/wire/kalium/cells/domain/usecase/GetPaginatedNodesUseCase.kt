@@ -40,6 +40,7 @@ public interface GetPaginatedNodesUseCase {
      *
      * @return [List] of [Node]
      */
+    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
