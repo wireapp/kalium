@@ -253,6 +253,13 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun getMessagesStatus(
+        ids: List<String>,
+        conversationId: QualifiedIDEntity,
+    ) = withContext(coroutineContext) {
+        queries.getMessagesStatus(ids, conversationId).executeAsList()
+    }
+
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }

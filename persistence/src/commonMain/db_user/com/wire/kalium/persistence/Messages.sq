@@ -452,6 +452,9 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
+getMessagesStatus:
+SELECT id, status FROM Message WHERE id IN ? AND conversation_id = ?;
+
 updateQuotedMessageId:
 UPDATE MessageTextContent
 SET quoted_message_id = ?

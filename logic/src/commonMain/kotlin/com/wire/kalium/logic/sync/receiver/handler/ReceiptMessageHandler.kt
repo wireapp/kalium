@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -25,6 +26,7 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
 
 @Mockable
@@ -66,11 +68,19 @@ internal class ReceiptMessageHandlerImpl(
         messageContent: MessageContent.Receipt,
         message: Message.Signaling
     ) {
+
+        val messageIdsWithStatus =
+            messageRepository.getMessagesStatus(messageContent.messageIds, message.conversationId).getOrElse { emptyList() }
+
+        val messageIds = messageContent.messageIds.filter { messageId ->
+            val currentStatus = messageIdsWithStatus.firstOrNull { it.first == messageId }?.second
+            currentStatus != MessageEntity.Status.READ
+        }
+
         messageRepository.updateMessagesStatus(
-            messageUuids = messageContent.messageIds,
+            messageUuids = messageIds,
             conversationId = message.conversationId,
             messageStatus = receiptsMapper.fromTypeToMessageStatus(messageContent.type),
         )
     }
-
 }
