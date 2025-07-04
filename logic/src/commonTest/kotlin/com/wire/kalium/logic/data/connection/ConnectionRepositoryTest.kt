@@ -32,6 +32,7 @@ import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -56,8 +57,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
+import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Matchers
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -79,6 +80,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import com.wire.kalium.network.api.model.UserId as NetworkUserId
 
+@OptIn(ConversationPersistenceApi::class)
 class ConnectionRepositoryTest {
 
     @Test
@@ -135,7 +137,8 @@ class ConnectionRepositoryTest {
                 userId = EqualsMatcher(userId)
             )
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
-            .withFetchSentConversationSucceed()
+            .withFetchConversationSucceed()
+            .withPersistConversationsSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -155,7 +158,8 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withErrorOnCreateConnectionResponse(userId)
-            .withFetchSentConversationSucceed()
+            .withFetchConversationSucceed()
+            .withPersistConversationsSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -169,7 +173,7 @@ class ConnectionRepositoryTest {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.conversationRepository.fetchConversations()
+            arrangement.conversationRepository.fetchConversation(any())
         }.wasNotInvoked()
     }
 
@@ -189,7 +193,8 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
-            .withFetchSentConversationSucceed()
+            .withFetchConversationSucceed()
+            .withPersistConversationsSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -503,6 +508,7 @@ class ConnectionRepositoryTest {
         val userDetailsApi = mock(UserDetailsApi::class)
         val userDAO = mock(UserDAO::class)
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val persistConversations = mock(PersistConversationsUseCase::class)
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
@@ -510,7 +516,8 @@ class ConnectionRepositoryTest {
             connectionDAO = connectionDAO,
             userDAO = userDAO,
             memberDAO = memberDAO,
-            conversationRepository = conversationRepository
+            conversationRepository = conversationRepository,
+            persistConversations = persistConversations
         )
 
 
@@ -573,9 +580,16 @@ class ConnectionRepositoryTest {
             return this
         }
 
-        suspend fun withFetchSentConversationSucceed(): Arrangement {
+        suspend fun withFetchConversationSucceed(): Arrangement {
             coEvery {
-                conversationRepository.fetchSentConnectionConversation(any())
+                conversationRepository.fetchConversation(any())
+            }.returns(Either.Right(TestConversation.CONVERSATION_RESPONSE))
+            return this
+        }
+
+        suspend fun withPersistConversationsSucceed(): Arrangement {
+            coEvery {
+                persistConversations(any(), any(), any())
             }.returns(Either.Right(Unit))
             return this
         }

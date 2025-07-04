@@ -19,5 +19,5 @@ package com.wire.backup.data
 
 import com.wire.kalium.protobuf.backup.ExportedQualifiedId
 
-internal fun BackupQualifiedId.toProtoModel() = ExportedQualifiedId(id, domain)
+internal fun BackupQualifiedId.toProtoModel() = ExportedQualifiedId(id.lowercase(), domain)
 internal fun ExportedQualifiedId.toModel() = BackupQualifiedId(value, domain)

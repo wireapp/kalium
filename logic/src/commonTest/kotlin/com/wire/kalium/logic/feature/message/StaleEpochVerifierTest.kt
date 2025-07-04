@@ -33,6 +33,8 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.SubconversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.SubconversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -49,7 +51,7 @@ class StaleEpochVerifierTest {
     @Test
     fun givenConversationIsNotMLS_whenHandlingStaleEpoch_thenShouldNotInsertWarning() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.PROTEUS_PROTOCOL_INFO))
         }
 
@@ -64,14 +66,14 @@ class StaleEpochVerifierTest {
     fun givenMLSConversation_whenHandlingStaleEpoch_thenShouldFetchConversationAgain() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(false))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
         }
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(eq(CONVERSATION_ID))
+            arrangement.fetchConversation(eq(CONVERSATION_ID))
         }.wasInvoked(once)
     }
 
@@ -79,7 +81,7 @@ class StaleEpochVerifierTest {
     fun givenEpochIsLatest_whenHandlingStaleEpoch_thenShouldNotRejoinTheConversation() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(false))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
         }
 
@@ -94,7 +96,7 @@ class StaleEpochVerifierTest {
     fun givenStaleEpoch_whenHandlingStaleEpoch_thenShouldRejoinTheConversation() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(true))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
@@ -111,7 +113,7 @@ class StaleEpochVerifierTest {
     fun givenRejoiningFails_whenHandlingStaleEpoch_thenShouldNotInsertLostCommitSystemMessage() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(true))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
@@ -127,7 +129,7 @@ class StaleEpochVerifierTest {
     fun givenConversationIsRejoined_whenHandlingStaleEpoch_thenShouldInsertLostCommitSystemMessage() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(true))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
@@ -251,7 +253,7 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversation(any())
         }.wasNotInvoked()
     }
 
@@ -261,6 +263,7 @@ class StaleEpochVerifierTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         SubconversationRepositoryArrangement by SubconversationRepositoryArrangementImpl(),
+        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
         suspend fun arrange() = run {
             block()
@@ -269,7 +272,8 @@ class StaleEpochVerifierTest {
                 conversationRepository = conversationRepository,
                 subconversationRepository = subconversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
-                joinExistingMLSConversation = joinExistingMLSConversationUseCase
+                joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+                fetchConversation = fetchConversation
             )
         }
     }

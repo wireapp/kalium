@@ -33,14 +33,10 @@ import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.LastPreKey
-import com.wire.kalium.logic.data.message.mls.DecryptedMLSMessage
-import com.wire.kalium.logic.data.message.mls.MLSMessage
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
@@ -75,154 +71,16 @@ class EventMapper(
     private val qualifiedIdMapper: QualifiedIdMapper = MapperProvider.qualifiedIdMapper(selfUserId),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) {
-
-    @Suppress("CyclomaticComplexMethod")
-    fun fromBatch(batch: List<LocalEvent>): List<EventEnvelope> {
-        val flattened = batch.flatMap { event ->
-            val id = event.payload.id
-            val isLive = event.isLive
-            event.payload.payload.orEmpty().map { dto -> Triple(id, dto, isLive) }
-        }
-
-        val result = mutableListOf<EventEnvelope>()
-        val mlsMainConvBuffer = mutableListOf<Triple<String, EventContentDTO.Conversation.NewMLSMessageDTO, Boolean>>()
-        val mlsSubConvBuffer = mutableListOf<Triple<String, EventContentDTO.Conversation.NewMLSMessageDTO, Boolean>>()
-
-        fun flushBuffer(
-            buffer: MutableList<Triple<String, EventContentDTO.Conversation.NewMLSMessageDTO, Boolean>>,
-            subConversation: String? = null
-        ) {
-            if (buffer.isEmpty()) return
-
-            val conversationId = buffer.first().second.qualifiedConversation.toModel()
-            val hasPending = buffer.any { !it.third }
-            val deliveryInfo = EventDeliveryInfo.Legacy(false, if (hasPending) EventSource.PENDING else EventSource.LIVE)
-
-            val reduced = buffer.map { (id, dto, _) -> id to dto }
-            result += emitMLSGroup(reduced, deliveryInfo, conversationId, subConversation)
-            buffer.clear()
-        }
-
-        for ((id, dto, isLive) in flattened) {
-            val deliveryInfo = EventDeliveryInfo.Legacy(false, if (isLive) EventSource.LIVE else EventSource.PENDING)
-
-            when (dto) {
-                is EventContentDTO.Conversation.NewMLSMessageDTO -> {
-                    if (dto.subconversation == null) {
-                        flushBuffer(mlsSubConvBuffer, dto.subconversation)
-                        mlsMainConvBuffer += Triple(id, dto, isLive)
-                    } else {
-                        flushBuffer(mlsMainConvBuffer)
-                        mlsSubConvBuffer += Triple(id, dto, isLive)
-                    }
-                }
-
-                else -> {
-                    flushBuffer(mlsMainConvBuffer)
-                    flushBuffer(mlsSubConvBuffer, mlsSubConvBuffer.firstOrNull()?.second?.subconversation)
-                    result += EventEnvelope(fromEventContentDTO(id, dto), deliveryInfo)
-                }
-            }
-        }
-
-        // Final flush
-        flushBuffer(mlsMainConvBuffer)
-        flushBuffer(mlsSubConvBuffer, mlsSubConvBuffer.firstOrNull()?.second?.subconversation)
-
-        return result
-    }
-
-    private fun emitMLSGroup(
-        messages: List<Pair<String, EventContentDTO.Conversation.NewMLSMessageDTO>>,
-        deliveryInfo: EventDeliveryInfo,
-        conversationId: ConversationId,
-        subConversation: String?,
-    ): List<EventEnvelope> {
-
-        val mlsMessages = messages.map { (id, dto) ->
-            MLSMessage(
-                id = id,
-                senderUserId = dto.qualifiedFrom.toModel(),
-                messageInstant = dto.time,
-                content = dto.message
-            )
-        }
-
-        val event = if (subConversation == null) {
-            Event.Conversation.MLSGroupMessages(messages.first().first, conversationId, mlsMessages)
-        } else {
-            Event.Conversation.MLSSubGroupMessages(
-                id = messages.first().first,
-                conversationId = conversationId,
-                subConversationId = SubconversationId(subConversation),
-                messages = mlsMessages
-            )
-        }
-
-        return listOf(EventEnvelope(event, deliveryInfo))
-    }
-
-    private fun groupMLSMessages(
-        messages: List<Pair<String, EventContentDTO.Conversation.NewMLSMessageDTO>>
-    ): List<Event> {
-        return messages
-            .groupBy { (_, dto) -> dto.qualifiedConversation to dto.subconversation }
-            .map { (key, groupedMessages) ->
-                val (qualifiedConv, subId) = key
-                val convId = qualifiedConv.toModel()
-
-                val mlsMessages = groupedMessages.map { (id, dto) ->
-                    MLSMessage(
-                        id = id,
-                        senderUserId = dto.qualifiedFrom.toModel(),
-                        messageInstant = dto.time,
-                        content = dto.message,
-                    )
-                }
-
-                if (subId == null) {
-                    Event.Conversation.MLSGroupMessages(
-                        id = groupedMessages.first().first,
-                        conversationId = convId,
-                        messages = mlsMessages
-                    )
-                } else {
-                    Event.Conversation.MLSSubGroupMessages(
-                        id = groupedMessages.first().first,
-                        conversationId = convId,
-                        subConversationId = SubconversationId(subId),
-                        messages = mlsMessages
-                    )
-                }
-            }
-    }
-
-    fun fromDTOv2(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
+    fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
+        // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
-        val source = if (isLive) EventSource.LIVE else EventSource.PENDING
-
-        val (mlsMessages, otherEvents) = (eventResponse.payload ?: emptyList()).partition {
-            it is EventContentDTO.Conversation.NewMLSMessageDTO
-        }
-
-        val groupedMlsEvents = groupMLSMessageEvents(
-            id,
-            mlsMessages.filterIsInstance<EventContentDTO.Conversation.NewMLSMessageDTO>()
-        )
-
-        val otherEnvelopes = otherEvents.map {
+        return eventResponse.payload?.map { eventContentDTO ->
+            val eventSource = if (isLive) EventSource.LIVE else EventSource.PENDING
             EventEnvelope(
-                fromEventContentDTO(id, it),
-                EventDeliveryInfo.Legacy(eventResponse.transient, source)
+                fromEventContentDTO(id, eventContentDTO),
+                EventDeliveryInfo(eventSource)
             )
-        }
-
-        return groupedMlsEvents.map {
-            EventEnvelope(
-                it,
-                EventDeliveryInfo.Legacy(eventResponse.transient, source)
-            )
-        } + otherEnvelopes
+        } ?: listOf()
     }
 
     internal companion object {
@@ -242,7 +100,7 @@ class EventMapper(
             is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO)
             is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
-            is EventContentDTO.Conversation.NewMLSMessageDTO -> groupMLSMessages(listOf(id to eventContentDTO)).first()
+            is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
             is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
             is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO)
             is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO)
@@ -268,73 +126,12 @@ class EventMapper(
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
             EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
-            is EventContentDTO.Conversation.DecryptedMLSBatchDTO -> decryptedMLSBatch(id, eventContentDTO)
         }
-
-    private fun decryptedMLSBatch(
-        id: String,
-        eventContentDTO: EventContentDTO.Conversation.DecryptedMLSBatchDTO
-    ): Event.Conversation.DecryptedMLSBatch {
-        return Event.Conversation.DecryptedMLSBatch(
-            id = id,
-            conversationId = eventContentDTO.qualifiedConversation.toModel(),
-            groupID = GroupID(eventContentDTO.groupId),
-            subconversationId = eventContentDTO.subconversation?.let { SubconversationId(it) },
-            messages = eventContentDTO.decryptedMessages.map { mlsMessage ->
-                DecryptedMLSMessage(
-                    id = id,
-                    senderUserId = mlsMessage.qualifiedFrom.toModel(),
-                    messageInstant = mlsMessage.time,
-                    protoContent = mlsMessage.decryptedContent,
-                    senderClientId = ClientId(mlsMessage.senderClientId),
-                    commitDelay = mlsMessage.commitDelay,
-                )
-            }
-        )
-    }
-
-    private fun groupMLSMessageEvents(
-        id: String,
-        events: List<EventContentDTO.Conversation.NewMLSMessageDTO>
-    ): List<Event> {
-        return events
-            .groupBy { it.subconversation }
-            .map { (subId, messages) ->
-                if (subId == null) {
-                    Event.Conversation.MLSGroupMessages(
-                        id = id,
-                        conversationId = messages.first().qualifiedConversation.toModel(),
-                        messages = messages.map {
-                            MLSMessage(
-                                id = id,
-                                senderUserId = it.qualifiedFrom.toModel(),
-                                messageInstant = it.time,
-                                content = it.message
-                            )
-                        }
-                    )
-                } else {
-                    Event.Conversation.MLSSubGroupMessages(
-                        id = id,
-                        conversationId = messages.first().qualifiedConversation.toModel(),
-                        subConversationId = SubconversationId(subId),
-                        messages = messages.map {
-                            MLSMessage(
-                                id = id,
-                                senderUserId = it.qualifiedFrom.toModel(),
-                                messageInstant = it.time,
-                                content = it.message
-                            )
-                        }
-                    )
-                }
-            }
-    }
 
     private fun conversationTyping(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ConversationTypingDTO,
-    ): Event.Conversation =
+    ): Event =
         Event.Conversation.TypingIndicator(
             id,
             eventContentDTO.qualifiedConversation.toModel(),
@@ -397,7 +194,7 @@ class EventMapper(
     private fun conversationProtocolUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ProtocolUpdate,
-    ): Event.Conversation = Event.Conversation.ConversationProtocol(
+    ): Event = Event.Conversation.ConversationProtocol(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         protocol = eventContentDTO.data.protocol.toModel(),
@@ -428,7 +225,7 @@ class EventMapper(
     private fun conversationAccessUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.AccessUpdate
-    ): Event.Conversation = Event.Conversation.AccessUpdate(
+    ): Event = Event.Conversation.AccessUpdate(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         access = conversationMapper.fromApiModelToAccessModel(eventContentDTO.data.access),
@@ -439,7 +236,7 @@ class EventMapper(
     private fun conversationReceiptModeUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ReceiptModeUpdate,
-    ): Event.Conversation = Event.Conversation.ConversationReceiptMode(
+    ): Event = Event.Conversation.ConversationReceiptMode(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         receiptMode = receiptModeMapper.fromApiToModel(eventContentDTO.data.receiptMode),
@@ -527,17 +324,17 @@ class EventMapper(
         }
     )
 
-//     private fun newMLSMessage(
-//         id: String,
-//         eventContentDTO: EventContentDTO.Conversation.NewMLSMessageDTO,
-//     ) = Event.Conversation.NewMLSMessage(
-//         id = id,
-//         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-//         subconversationId = eventContentDTO.subconversation?.let { SubconversationId(it) },
-//         senderUserId = eventContentDTO.qualifiedFrom.toModel(),
-//         messageInstant = eventContentDTO.time,
-//         content = eventContentDTO.message
-//     )
+    private fun newMLSMessage(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.NewMLSMessageDTO,
+    ) = Event.Conversation.NewMLSMessage(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        subconversationId = eventContentDTO.subconversation?.let { SubconversationId(it) },
+        senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+        messageInstant = eventContentDTO.time,
+        content = eventContentDTO.message
+    )
 
     private fun connectionUpdate(
         id: String,

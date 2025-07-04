@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -134,6 +135,7 @@ class MessageScope internal constructor(
     private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
     private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
     private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
+    private val fetchConversationUseCase: FetchConversationUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -147,7 +149,7 @@ class MessageScope internal constructor(
             clientRemoteRepository,
             messageRepository,
             messageSendingScheduler,
-            conversationRepository
+            fetchConversationUseCase
         )
 
     private val sessionEstablisher: SessionEstablisher

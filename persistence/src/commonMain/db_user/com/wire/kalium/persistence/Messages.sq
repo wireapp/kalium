@@ -497,8 +497,11 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
+countBackupMessages:
+SELECT count(*) FROM MessageDetailsView WHERE visibility = "VISIBLE" AND selfDeletionEndDate IS NULL AND contentType IN :contentType;
+
 selectForBackup:
-SELECT * FROM MessageDetailsView WHERE visibility = "VISIBLE" AND contentType IN :contentType ORDER BY date ASC LIMIT :limit OFFSET :offset;
+SELECT * FROM MessageDetailsView WHERE visibility = "VISIBLE" AND selfDeletionEndDate IS NULL AND contentType IN :contentType ORDER BY date ASC LIMIT :limit OFFSET :offset;
 
 selectLastMessagesByConversationIds:
 SELECT MessageDetailsView.*

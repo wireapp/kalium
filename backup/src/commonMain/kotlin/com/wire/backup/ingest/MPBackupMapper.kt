@@ -54,7 +54,7 @@ internal class MPBackupMapper {
     @Suppress("LongMethod")
     fun mapMessageToProtobuf(it: BackupMessage): ExportedMessage {
         return ExportedMessage(
-            id = it.id,
+            id = it.id.lowercase(),
             timeIso = it.creationDate.toLongMilliseconds(),
             senderUserId = it.senderUserId.toProtoModel(),
             senderClientId = it.senderClientId,
@@ -129,7 +129,11 @@ internal class MPBackupMapper {
         )
     }
 
-    fun mapConversationToProtobuf(it: BackupConversation) = ExportedConversation(it.id.toProtoModel(), it.name)
+    fun mapConversationToProtobuf(it: BackupConversation) = ExportedConversation(
+        id = it.id.toProtoModel(),
+        name = it.name,
+        lastModifiedTime = it.lastModifiedTime?.toLongMilliseconds(),
+    )
 
     fun fromProtoToBackupModel(
         protobufData: ProtoBackupData
@@ -162,7 +166,7 @@ internal class MPBackupMapper {
 
             is Content.Asset -> BackupMessageContent.Asset(
                 protoContent.value.mimetype,
-                protoContent.value.protoSize,
+                protoContent.value.size.toInt(),
                 protoContent.value.name,
                 protoContent.value.otrKey.array,
                 protoContent.value.sha256.array,
@@ -224,7 +228,11 @@ internal class MPBackupMapper {
     }
 
     private fun fromConversationProtoToBackupModel(conversation: ExportedConversation) =
-        BackupConversation(conversation.id.toModel(), conversation.name)
+        BackupConversation(
+            id = conversation.id.toModel(),
+            name = conversation.name,
+            lastModifiedTime = conversation.lastModifiedTime?.let { BackupDateTime(it) }
+        )
 
     private fun fromUserProtoToBackupModel(user: ExportUser) =
         BackupUser(user.id.toModel(), user.name, user.handle)

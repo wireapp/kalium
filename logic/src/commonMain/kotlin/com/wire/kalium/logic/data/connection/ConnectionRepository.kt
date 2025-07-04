@@ -18,12 +18,24 @@
 
 package com.wire.kalium.logic.data.connection
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
@@ -41,19 +53,9 @@ import com.wire.kalium.logic.data.user.ConnectionState.SENT
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.isRight
-import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadConnectionStatusUpdate
@@ -64,6 +66,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -93,6 +96,7 @@ internal class ConnectionDataSource(
     private val connectionApi: ConnectionApi,
     private val userDAO: UserDAO,
     private val conversationRepository: ConversationRepository,
+    private val persistConversations: PersistConversationsUseCase,
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper()
 ) : ConnectionRepository {
@@ -243,9 +247,26 @@ internal class ConnectionDataSource(
             }
         }
 
+    @OptIn(ConversationPersistenceApi::class)
+    // This usage intentionally bypasses normal persistence flow.
+    // We override the `type` field of the fetched conversation to WAIT_FOR_CONNECTION,
+    // which would not normally be allowed. This is a workaround for missing backend support
+    // and should be removed once WPB-3560 is implemented.
+    // TODO KBX check if it can block mls transaction on next PR
     private suspend fun insertConversationFromConnection(connection: Connection) {
         when (connection.status) {
-            SENT -> conversationRepository.fetchSentConnectionConversation(connection.qualifiedConversationId)
+            SENT -> {
+                // TODO check if this can create mls conv or is needed to check mls status
+                // TODO: this function should/might be need to be removed when BE implements https://wearezeta.atlassian.net/browse/WPB-3560
+                conversationRepository.fetchConversation(connection.qualifiedConversationId)
+                    .flatMap {
+                        val conversation = it.copy(
+                            type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
+                        )
+                        persistConversations(listOf(conversation), invalidateMembers = true)
+                    }
+            }
+
             PENDING -> {
                 /* TODO: we had to do it manually, the server won't give us for received connections
                      as the final solution we need to ignore the conversation part, but now? we can't! */

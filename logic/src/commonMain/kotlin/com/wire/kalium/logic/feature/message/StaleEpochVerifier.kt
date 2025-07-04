@@ -33,16 +33,19 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Mockable
 interface StaleEpochVerifier {
     suspend fun verifyEpoch(
         conversationId: ConversationId,
         subConversationId: SubconversationId? = null,
+        timestamp: Instant? = null, // TODO KBX do we need this
         mlsContext: MlsCoreCryptoContext?
     ): Either<CoreFailure, Unit>
 }
@@ -52,26 +55,25 @@ internal class StaleEpochVerifierImpl(
     private val conversationRepository: ConversationRepository,
     private val subconversationRepository: SubconversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val fetchConversation: FetchConversationUseCase
 ) : StaleEpochVerifier {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
     override suspend fun verifyEpoch(
         conversationId: ConversationId,
         subConversationId: SubconversationId?,
+        timestamp: Instant?,
         mlsContext: MlsCoreCryptoContext? // TODO KBX make not optional
     ): Either<CoreFailure, Unit> {
         return if (subConversationId != null) {
-            verifySubConversationEpoch(conversationId, subConversationId, mlsContext)
+            verifySubConversationEpoch(conversationId, subConversationId)
         } else {
-            verifyConversationEpoch(conversationId, mlsContext)
+            verifyConversationEpoch(conversationId)
         }
     }
 
-    private suspend fun verifyConversationEpoch(
-        conversationId: ConversationId,
-        mlsContext: MlsCoreCryptoContext?
-    ): Either<CoreFailure, Unit> {
+    private suspend fun verifyConversationEpoch(conversationId: ConversationId): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for conversation ${conversationId.toLogString()}")
         return getUpdatedConversationProtocolInfo(conversationId).flatMap { protocol ->
             if (protocol is Conversation.ProtocolInfo.MLS) {
@@ -80,23 +82,13 @@ internal class StaleEpochVerifierImpl(
                 Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
             }
         }.flatMap { protocolInfo ->
-            if (mlsContext != null) {
-                wrapMLSRequest {
-                    mlsContext.isGroupOutOfSync(protocolInfo.groupId.value.decodeBase64Bytes(), protocolInfo.epoch)
+            mlsConversationRepository.isGroupOutOfSync(protocolInfo.groupId, protocolInfo.epoch)
+                .map { epochIsStale ->
+                    epochIsStale
                 }
-                    .map { epochIsStale ->
-                        epochIsStale
-                    }
-            } else {
-                mlsConversationRepository.isGroupOutOfSync(protocolInfo.groupId, protocolInfo.epoch)
-                    .map { epochIsStale ->
-                        epochIsStale
-                    }
-            }
         }.flatMap { hasMissedCommits ->
             if (hasMissedCommits) {
                 logger.w("Epoch stale due to missing commits, re-joining")
-
                 joinExistingMLSConversation(conversationId).flatMap {
                     systemMessageInserter.insertLostCommitSystemMessage(
                         conversationId,
@@ -112,37 +104,21 @@ internal class StaleEpochVerifierImpl(
 
     private suspend fun verifySubConversationEpoch(
         conversationId: ConversationId,
-        subConversationId: SubconversationId,
-        mlsContext: MlsCoreCryptoContext?
+        subConversationId: SubconversationId
     ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for subconversation ${subConversationId.toLogString()}")
         return subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
             .flatMap { subConversationDetails ->
-                (if (mlsContext != null) {
-                    wrapMLSRequest {
-                        mlsContext.isGroupOutOfSync(
-                            subConversationDetails.groupId.value.decodeBase64Bytes(),
-                            subConversationDetails.epoch,
-                        )
+                mlsConversationRepository.isGroupOutOfSync(subConversationDetails.groupId, subConversationDetails.epoch)
+                    .map { epochIsStale ->
+                        epochIsStale
                     }
-                        .map { epochIsStale ->
-                            epochIsStale
-                        }
-                } else {
-                    mlsConversationRepository.isGroupOutOfSync(subConversationDetails.groupId, subConversationDetails.epoch)
-                        .map { epochIsStale ->
-                            epochIsStale
-                        }
-                })
                     .flatMap { hasMissedCommits ->
                         if (hasMissedCommits) {
                             logger.w("Epoch stale due to missing commits, joining by external commit")
                             subconversationRepository.fetchRemoteSubConversationGroupInfo(conversationId, subConversationId)
                                 .flatMap { groupInfo ->
-                                    mlsConversationRepository.joinGroupByExternalCommit(
-                                        subConversationDetails.groupId, groupInfo,
-                                        mlsContext
-                                    )
+                                    mlsConversationRepository.joinGroupByExternalCommit(subConversationDetails.groupId, groupInfo)
                                 }
                         } else {
                             logger.i("Epoch stale due to unprocessed events")
@@ -153,7 +129,7 @@ internal class StaleEpochVerifierImpl(
     }
 
     private suspend fun getUpdatedConversationProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo> {
-        return conversationRepository.fetchConversation(conversationId).flatMap {
+        return fetchConversation(conversationId).flatMap {
             conversationRepository.getConversationProtocolInfo(conversationId)
         }
     }
