@@ -43,7 +43,7 @@ internal class FetchConversationIfUnknownUseCaseImpl(
         return conversationRepository.getConversationById(conversationId)
             .run {
                 if (isLeft()) {
-                    return fetchConversation(conversationId)
+                    fetchConversation(conversationId)
                 } else {
                     Either.Right(Unit)
                 }
