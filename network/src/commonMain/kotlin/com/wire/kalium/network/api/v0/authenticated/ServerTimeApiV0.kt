@@ -22,7 +22,9 @@ import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.utils.NetworkResponse
 
-internal open class ServerTimeApiV0(val authenticatedNetworkClient: AuthenticatedNetworkClient) : ServerTimeApi {
+internal open class ServerTimeApiV0(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ServerTimeApi {
+
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getServerTime(): NetworkResponse<ServerTimeDTO> =
         getApiNotSupportedError(::getServerTime.name, ServerTimeApi.MIN_API_VERSION)

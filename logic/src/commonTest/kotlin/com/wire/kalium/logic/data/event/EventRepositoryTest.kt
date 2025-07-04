@@ -39,6 +39,8 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -225,7 +227,7 @@ class EventRepositoryTest {
     @Test
     fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
         val result = NetworkResponse.Success(
-            value = "123434545",
+            value = ServerTimeDTO("123434545"),
             headers = mapOf(),
             httpCode = HttpStatusCode.OK.value
         )
@@ -424,9 +426,11 @@ class EventRepositoryTest {
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
         val eventDAO: EventDAO = mock(EventDAO::class)
+        val serverTimeApi: ServerTimeApi = mock(ServerTimeApi::class)
 
         private val eventRepository: EventRepository = EventDataSource(
             notificationApi,
+            serverTimeApi,
             metaDAO,
             eventDAO,
             clientIdProvider,
@@ -466,9 +470,9 @@ class EventRepositoryTest {
             }.returns(result)
         }
 
-        suspend fun withGetServerTimeReturning(result: NetworkResponse<String>) = apply {
+        suspend fun withGetServerTimeReturning(result: NetworkResponse<ServerTimeDTO>) = apply {
             coEvery {
-                notificationApi.getServerTime(any())
+                serverTimeApi.getServerTime()
             }.returns(result)
         }
 

@@ -47,6 +47,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -133,6 +134,7 @@ interface EventRepository {
 @Suppress("TooManyFunctions", "LongParameterList")
 class EventDataSource(
     private val notificationApi: NotificationApi,
+    private val serverTimeApi: ServerTimeApi,
     private val metadataDAO: MetadataDAO,
     private val eventDAO: EventDAO,
     private val currentClientId: CurrentClientIdProvider,
@@ -444,9 +446,9 @@ class EventDataSource(
         }.map { it.id }
 
     override suspend fun fetchServerTime(): String? {
-        val result = notificationApi.getServerTime(NOTIFICATIONS_QUERY_SIZE)
+        val result = serverTimeApi.getServerTime()
         return if (result.isSuccessful()) {
-            result.value
+            result.value.time
         } else {
             null
         }

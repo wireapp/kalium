@@ -1320,6 +1320,7 @@ class UserSessionScope internal constructor(
 
     private val eventRepository: EventRepository = EventDataSource(
         notificationApi = authenticatedNetworkContainer.notificationApi,
+        serverTimeApi = authenticatedNetworkContainer.serverTimeApi,
         metadataDAO = userStorage.database.metadataDAO,
         eventDAO = userStorage.database.eventDAO,
         currentClientId = clientIdProvider,

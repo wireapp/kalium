@@ -224,9 +224,7 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<Unit>.onWebSocketOpen(shouldProcessPendingEvents: Boolean) {
         logger.i("Websocket Open")
-        // TODO: Handle time drift in a different way, e.g. the notification api is already called
-        //  somewhere else so maybe we can take the time from there ?
-//          handleTimeDrift()
+        handleTimeDrift()
         if (!shouldProcessPendingEvents) {
             logger.i("Offline events collection skipped due to new system available. Collecting Live events.")
             liveSourceChangeHandler.startNewCatchingUpJob(onStartIntervalReached = { _currentSource.value = EventSource.LIVE })
