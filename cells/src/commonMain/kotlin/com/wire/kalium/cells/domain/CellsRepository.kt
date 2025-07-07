@@ -28,7 +28,7 @@ import com.wire.kalium.common.functional.Either
 import io.mockative.Mockable
 import okio.Path
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 @Mockable
 internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
@@ -39,7 +39,8 @@ internal interface CellsRepository {
         query: String,
         limit: Int,
         offset: Int,
-        onlyDeleted: Boolean = false
+        onlyDeleted: Boolean = false,
+        tags: List<String> = emptyList()
     ): Either<NetworkFailure, PaginatedList<CellNode>>
 
     suspend fun getNodesByPath(
@@ -60,4 +61,5 @@ internal interface CellsRepository {
     suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun restoreNode(path: String): Either<NetworkFailure, Unit>
+    suspend fun getAllTags(): Either<NetworkFailure, List<String>>
 }
