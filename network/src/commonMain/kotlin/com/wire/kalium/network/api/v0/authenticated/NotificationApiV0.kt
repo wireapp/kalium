@@ -132,10 +132,13 @@ internal open class NotificationApiV0 internal constructor(
             }
         }
 
-    override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
+    override suspend fun consumeLiveEvents(
+        clientId: String,
+        markerId: String
+    ): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
         getApiNotSupportedError(::consumeLiveEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
 
-    override suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
+    override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
         getApiNotSupportedError(::acknowledgeEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
     }
 
@@ -180,6 +183,7 @@ internal open class NotificationApiV0 internal constructor(
         const val PATH_LAST = "last"
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
+        const val SYNC_MARKER_KEY = "sync_marker"
         const val SINCE_QUERY_KEY = "since"
 
         /**
@@ -187,7 +191,7 @@ internal open class NotificationApiV0 internal constructor(
          * value.
          */
         const val MINIMUM_QUERY_SIZE = 100
-        const val MIN_API_VERSION_CONSUMABLE_EVENTS = 8
+        const val MIN_API_VERSION_CONSUMABLE_EVENTS = 9
     }
 
     internal object Hardcoded {

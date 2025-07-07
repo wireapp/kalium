@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.event
 
+import co.touchlab.stately.concurrency.AtomicReference
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -142,6 +143,7 @@ class EventDataSource(
 ) : EventRepository {
 
     private val clearOnFirstWSMessage = MutableStateFlow(false)
+    private val sentinelMarker = AtomicReference<SentinelMarker>(SentinelMarker.None)
 
     override suspend fun observeEvents(): Flow<List<EventEnvelope>> {
         var lastEmittedEventId: String? = null
@@ -181,8 +183,7 @@ class EventDataSource(
         currentClientId().fold(
             { it.left() },
             {
-                // todo(ym) check for errors.
-                notificationApi.acknowledgeEvents(it.value, EventMapper.FULL_ACKNOWLEDGE_REQUEST)
+                notificationApi.acknowledgeEvents(it.value, sentinelMarker.get().getMarker(), EventMapper.FULL_ACKNOWLEDGE_REQUEST)
                 Unit.right()
             }
         )
@@ -201,12 +202,16 @@ class EventDataSource(
             }
         }
 
-    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventVersion>>> =
-        wrapApiRequest { notificationApi.consumeLiveEvents(clientId.value) }.map { webSocketEventFlow ->
+    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventVersion>>> {
+        sentinelMarker.set(SentinelMarker.Marker(uuid4().toString()))
+        return wrapApiRequest {
+            notificationApi.consumeLiveEvents(clientId = clientId.value, markerId = sentinelMarker.get().getMarker())
+        }.map { webSocketEventFlow ->
             flow {
                 webSocketEventFlow.collect(handleEvents(this, EventVersion.ASYNC))
             }
         }
+    }
 
     @Suppress("LongMethod")
     private suspend fun handleEvents(
@@ -219,10 +224,11 @@ class EventDataSource(
                     clearOnFirstWSMessage.emit(true)
                     kaliumLogger.d("$TAG set all unprocessed events as pending")
                     setAllUnprocessedEventsAsPending()
-                    kaliumLogger.d("$TAG fetch pending events from server")
-                    val result = fetchEvents()
-                    result.onFailure(::throwPendingEventException)
-
+                    if (webSocketEvent.shouldProcessPendingEvents) {
+                        kaliumLogger.d("$TAG fetch pending events from server")
+                        val result = fetchEvents()
+                        result.onFailure(::throwPendingEventException)
+                    }
                     flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
                 }
 
@@ -250,7 +256,7 @@ class EventDataSource(
                                             NewEventEntity(
                                                 eventId = eventResponse.id,
                                                 payload = KtxSerializer.json.encodeToString(eventResponse),
-                                                isLive = true // TODO Yamil we need to decide when set it as false for async notificaitons
+                                                isLive = isWebsocketEventReceivedLive()
                                             )
                                         )
                                     )
@@ -285,18 +291,35 @@ class EventDataSource(
                                 )
                             }
                         }
+
+                        is ConsumableNotificationResponse.SynchronizationNotification -> {
+                            event.data.deliveryTag?.let { ackEvent(it) }
+                            val currentMarker = sentinelMarker.get().getMarker()
+                            if (event.data.markerId == currentMarker) {
+                                kaliumLogger.d("$TAG Handling current marker [${event.data.markerId}] for this session.")
+                                sentinelMarker.set(SentinelMarker.None)
+                            } else {
+                                kaliumLogger.d("$TAG Skipping this marker [${event.data.markerId}] is not valid for this session.")
+                            }
+                        }
                     }
                 }
             }
         }
+
+    /**
+     * Returns true if the current event is received when there is no current marker present for the session.
+     */
+    private fun isWebsocketEventReceivedLive() = sentinelMarker.get().getMarker().isBlank()
 
     private suspend fun ackEvent(deliveryTag: ULong): Either<CoreFailure, Unit> {
         return currentClientId().fold(
             { it.left() },
             { clientId ->
                 notificationApi.acknowledgeEvents(
-                    clientId.value,
-                    EventAcknowledgeRequest(
+                    clientId = clientId.value,
+                    markerId = sentinelMarker.get().getMarker(),
+                    eventAcknowledgeRequest = EventAcknowledgeRequest(
                         type = AcknowledgeType.ACK,
                         data = AcknowledgeData(
                             deliveryTag = deliveryTag,
@@ -304,7 +327,6 @@ class EventDataSource(
                         )
                     )
                 )
-                // todo(ym) check for errors.
                 Unit.right()
             }
         )
