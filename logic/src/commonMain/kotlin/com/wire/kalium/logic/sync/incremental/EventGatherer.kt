@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -117,7 +116,7 @@ internal class EventGathererImpl(
 
     // TODO handle multiple events at once
     override suspend fun gatherEvents(): Flow<List<EventEnvelope>> {
-        val isAsyncNotifications = isClientAsyncNotificationsCapableProvider().getOrElse { false }
+        val isAsyncNotifications = isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
 
         return eventRepository.observeEvents()
             .onEach { events ->
@@ -152,11 +151,10 @@ internal class EventGathererImpl(
          * Fetches and saves live events and pending based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
          */
-        isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
-            fetchEventFlow(isAsyncNotifications)
-                .onSuccess { emitEvents(it) }
-                .onFailure { throw KaliumSyncException("Failure when receiving events", it) }
-        }
+        val isAsyncNotifications = isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
+        fetchEventFlow(isAsyncNotifications)
+            .onSuccess { emitEvents(it) }
+            .onFailure { throw KaliumSyncException("Failure when receiving events", it) }
     }
 
     /**

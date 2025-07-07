@@ -213,7 +213,7 @@ class EventDataSource(
         }
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private suspend fun handleEvents(
         flowCollector: FlowCollector<WebSocketEvent<EventVersion>>,
         eventVersion: EventVersion
