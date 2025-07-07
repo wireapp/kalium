@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
@@ -130,6 +131,7 @@ class ConversationScope internal constructor(
     internal val assetRepository: AssetRepository,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val deleteConversationUseCase: DeleteConversationUseCase,
+    private val persistConversationsUseCase: PersistConversationsUseCase,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -341,7 +343,8 @@ class ConversationScope internal constructor(
 
     val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
         get() = RefreshConversationsWithoutMetadataUseCaseImpl(
-            conversationRepository = conversationRepository
+            conversationRepository = conversationRepository,
+            persistConversations = persistConversationsUseCase
         )
 
     val canCreatePasswordProtectedLinks: CanCreatePasswordProtectedLinksUseCase

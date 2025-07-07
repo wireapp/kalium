@@ -18,11 +18,12 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
@@ -30,8 +31,10 @@ import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversatio
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -98,7 +101,7 @@ class MLSOneOnOneConversationResolverTest {
                     ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED
                 )
             )
-            withFetchMlsOneToOneConversation(Either.Left(cause))
+            withFetchMLSOneToOneConversation(Either.Left(cause))
         }
 
         val result = getOrEstablishMlsOneToOneUseCase(userId)
@@ -116,7 +119,7 @@ class MLSOneOnOneConversationResolverTest {
                     ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED
                 )
             )
-            withFetchMlsOneToOneConversation(Either.Right(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED))
+            withFetchMLSOneToOneConversation(Either.Right(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
         }
 
@@ -137,12 +140,20 @@ class MLSOneOnOneConversationResolverTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
+            val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
+
+        suspend fun withFetchMLSOneToOneConversation(result: Either<CoreFailure, Conversation>) = apply {
+            coEvery {
+                fetchMLSOneToOneConversation(any())
+            }.returns(result)
+        }
 
         fun arrange() = run {
             runBlocking { block() }
             this to MLSOneOnOneConversationResolverImpl(
                 conversationRepository = conversationRepository,
                 joinExistingMLSConversationUseCase = joinExistingMLSConversationUseCase,
+                fetchMLSOneToOneConversation = fetchMLSOneToOneConversation
             )
         }
     }

@@ -36,6 +36,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
@@ -53,7 +54,8 @@ internal class MLSMigratorImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val systemMessageInserter: SystemMessageInserter,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val updateConversationProtocol: UpdateConversationProtocolUseCase
 ) : MLSMigrator {
 
     override suspend fun migrateProteusConversations(): Either<CoreFailure, Unit> =
@@ -99,7 +101,7 @@ internal class MLSMigratorImpl(
 
     private suspend fun migrate(conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("migrating ${conversationId.toLogString()} to mixed")
-        return conversationRepository.updateProtocolRemotely(conversationId, Protocol.MIXED)
+        return updateConversationProtocol(conversationId, Protocol.MIXED, localOnly = false)
             .flatMap { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
@@ -122,7 +124,7 @@ internal class MLSMigratorImpl(
 
     private suspend fun finalise(conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("finalising ${conversationId.toLogString()} to mls")
-        return conversationRepository.updateProtocolRemotely(conversationId, Protocol.MLS)
+        return updateConversationProtocol(conversationId, Protocol.MLS, localOnly = false)
             .fold({ failure ->
                 kaliumLogger.w("failed to finalise ${conversationId.toLogString()} to mls: $failure")
                 Either.Right(Unit)
