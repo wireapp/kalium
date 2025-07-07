@@ -77,7 +77,7 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.READ
 
         coEvery {
-            messageRepository.updateMessagesStatus(any(), any(), any())
+            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
         }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
@@ -99,7 +99,7 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.READ
 
         coEvery {
-            messageRepository.updateMessagesStatus(any(), any(), any())
+            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
         }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
@@ -126,7 +126,7 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.READ
 
         coEvery {
-            messageRepository.updateMessagesStatus(any(), any(), any())
+            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
         }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
@@ -149,7 +149,7 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.DELIVERED
 
         coEvery {
-            messageRepository.updateMessagesStatus(any(), any(), any())
+            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
         }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
@@ -169,7 +169,7 @@ class ReceiptMessageHandlerTest {
         val messageUuids = listOf("1", "2", "3")
 
         coEvery {
-            messageRepository.updateMessagesStatus(any(), any(), any())
+            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
         }.returns(Either.Right(Unit))
 
         // when
@@ -177,7 +177,7 @@ class ReceiptMessageHandlerTest {
 
         // then
         coVerify {
-            messageRepository.updateMessagesStatus(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
+            messageRepository.updateMessagesStatusIfNotRead(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
         }.wasInvoked(exactly = once)
     }
 

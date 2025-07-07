@@ -322,6 +322,10 @@ internal class CellsApiImpl(
         )
     }.mapSuccess { }
 
+    override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
+        nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA, operationValues = listOf())
+    }.mapSuccess { it.propertyValues ?: emptyList() }
+
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))
 }

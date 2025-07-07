@@ -341,10 +341,7 @@ private class TestRepository : CellsRepository {
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> = Unit.right()
-
     override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = listOf<String>().right()
-
     override suspend fun updateNodeTags(uuid: String, tags: List<String>): Either<NetworkFailure, Unit> = Unit.right()
-
     override suspend fun removeNodeTags(uuid: String): Either<NetworkFailure, Unit> = Unit.right()
 }

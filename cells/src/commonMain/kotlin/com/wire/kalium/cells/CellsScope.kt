@@ -227,4 +227,7 @@ public class CellsScope(
     public val renameNodeUseCase: RenameNodeUseCase by lazy {
         RenameNodeUseCaseImpl(cellsRepository)
     }
+    public val getAllTags: GetAllTagsUseCase by lazy {
+        GetAllTagsUseCaseImpl(cellsRepository)
+    }
 }
