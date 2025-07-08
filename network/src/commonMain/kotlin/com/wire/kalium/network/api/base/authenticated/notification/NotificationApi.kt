@@ -28,11 +28,18 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 sealed class WebSocketEvent<BinaryPayloadType> {
-    /**
-     * @property shouldProcessPendingEvents if false, the client should skip pending events, due to new async notifications.
-     * @since API v8
-     */
-    data class Open<BinaryPayloadType>(val shouldProcessPendingEvents: Boolean = true) : WebSocketEvent<BinaryPayloadType>()
+
+    class Open<BinaryPayloadType>() : WebSocketEvent<BinaryPayloadType>() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return this::class.hashCode()
+        }
+    }
 
     data class BinaryPayloadReceived<BinaryPayloadType>(val payload: BinaryPayloadType) : WebSocketEvent<BinaryPayloadType>()
 

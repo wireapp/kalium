@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -30,8 +29,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
-import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.event.stream.EventStreamData
 import com.wire.kalium.logic.data.event.EventVersion
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.ServerTimeHandler
@@ -41,16 +40,13 @@ import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.datetime.toInstant
 
 /**
@@ -66,37 +62,22 @@ import kotlinx.datetime.toInstant
 internal interface EventGatherer {
 
     /**
-     * Emits all unprocessed events stored locally, and updates the [currentSource] depending on:
-     * - Whether async notifications are enabled,
-     * - Whether pending events are still being processed.
+     * Establishes a WebSocket connection to start receiving real-time events.
+     *
+     * Emits all unprocessed events stored locally, and changes in current source, see [EventStreamData].
+     * This flow is expected to emit in the following sequence:
+     * 1. [EventStreamData.StatusChange], with [EventStreamData.StatusChange.isCatchingUp] = true.
+     * 2. Pending events (if any exist).
+     * 3. [EventStreamData.StatusChange], with [EventStreamData.StatusChange.isCatchingUp] = false as soon as pending events are finished
+     * 4. Live events
      *
      * When `isAsyncNotifications = true`, this flow emits only live events.
      * When `false`, this flow starts with pending events and switches to live once completed.
      *
      * This flow is hot and updated based on the internal event trigger mechanism.
      */
-    suspend fun gatherEvents(): Flow<List<EventEnvelope>>
+    suspend fun gatherEvents(): Flow<EventStreamData>
 
-    /**
-     * Establishes a WebSocket connection to start receiving real-time events.
-     *
-     * Depending on the server configuration and async notification support, this function may:
-     * - Trigger the reception of pending events if applicable,
-     * - Initiate event acknowledgment flows,
-     * - Start the transition to [EventSource.LIVE].
-     *
-     * Emits `Unit` whenever a new event frame arrives.
-     */
-    suspend fun receiveEvents(): Flow<Unit>
-
-    /**
-     * Represents the current source of events:
-     * - [EventSource.PENDING] if the system is processing past events,
-     * - [EventSource.LIVE] if only real-time events are being received.
-     *
-     * This state is managed internally and exposed as a [StateFlow] for UI or logic to react.
-     */
-    val currentSource: StateFlow<EventSource>
 }
 
 internal class EventGathererImpl(
@@ -108,43 +89,27 @@ internal class EventGathererImpl(
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
-    private val _currentSource = MutableStateFlow(EventSource.PENDING)
-
-    // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
-    override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
-
     private val logger = logger.withFeatureId(SYNC)
 
     // TODO handle multiple events at once
-    override suspend fun gatherEvents(): Flow<List<EventEnvelope>> {
-        val isAsyncNotifications = isClientAsyncNotificationsCapableProvider().getOrElse { false }
-
-        return eventRepository.observeEvents()
-            .onEach { events ->
-                kaliumLogger.d("$TAG gathering ${events.size} events")
-
-                if (!isAsyncNotifications) {
-                    val hasAnyPendingEvents = events.any { it.deliveryInfo.source == EventSource.PENDING }
-
-                    when {
-
-                        hasAnyPendingEvents -> {
-                            kaliumLogger.d("$TAG source switch to PENDING")
-                            _currentSource.value = EventSource.PENDING
-                        }
-
-                        events.size <= MAX_EVENTS_TO_SWITCH_TO_LIVE -> {
-                            _currentSource.value = EventSource.LIVE
-                        }
-
-                        else -> {
-                            kaliumLogger.d("$TAG source switch to LIVE")
-                            _currentSource.value = EventSource.LIVE
-                        }
-                    }
-                }
+    override suspend fun gatherEvents(): Flow<EventStreamData> = flow {
+        coroutineScope {
+            launch {
+                receiveEvents
             }
-            .filter { events -> events.isNotEmpty() }
+        }
+        var hasEmittedLiveEvents = false
+        emit(EventStreamData.StatusChange(EventSource.PENDING))
+        eventRepository.observeEvents().collect { events ->
+            emit(EventStreamData.Envelopes(events))
+
+            val hasAnyLiveEvent = events.any { it.deliveryInfo.source == EventSource.LIVE }
+            if (!hasEmittedLiveEvents && hasAnyLiveEvent) {
+                hasEmittedLiveEvents = true
+                emit(EventStreamData.StatusChange(EventSource.LIVE))
+            }
+            emit(EventStreamData.NewEnvelope(event))
+        }
     }
 
     override suspend fun receiveEvents(): Flow<Unit> = flow {

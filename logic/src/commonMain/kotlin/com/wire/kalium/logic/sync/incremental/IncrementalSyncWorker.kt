@@ -66,14 +66,6 @@ internal class IncrementalSyncWorkerImpl(
                     }
                 }
         }
-
-        launch {
-            kaliumLogger.d("$TAG liveEvents starting...")
-            eventGatherer.receiveEvents().cancellable().collect {}
-            // When events are all consumed, cancel the source job to complete the channelFlow
-            sourceJob.cancel()
-            logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
-        }
     }
 
     companion object {
