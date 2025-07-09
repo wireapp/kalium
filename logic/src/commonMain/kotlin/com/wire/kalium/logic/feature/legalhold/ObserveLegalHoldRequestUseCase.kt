@@ -17,13 +17,14 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
-import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -48,6 +49,7 @@ interface ObserveLegalHoldRequestUseCase {
 
             override fun hashCode(): Int = fingerprint.contentHashCode()
         }
+
         data object NoLegalHoldRequest : Result()
         data class Failure(val failure: CoreFailure) : Result()
     }
@@ -56,7 +58,7 @@ interface ObserveLegalHoldRequestUseCase {
 
 internal class ObserveLegalHoldRequestUseCaseImpl internal constructor(
     val userConfigRepository: UserConfigRepository,
-    val preKeyRepository: PreKeyRepository
+    val transactionProvider: CryptoTransactionProvider,
 ) : ObserveLegalHoldRequestUseCase {
     override fun invoke(): Flow<ObserveLegalHoldRequestUseCase.Result> =
         userConfigRepository.observeLegalHoldRequest().map {
@@ -71,19 +73,23 @@ internal class ObserveLegalHoldRequestUseCaseImpl internal constructor(
                     }
                 },
                 { request ->
-                    val preKeyCrypto = PreKeyCrypto(request.lastPreKey.id, request.lastPreKey.key)
-                    val result = preKeyRepository.getFingerprintForPreKey(preKeyCrypto)
-                    result.fold(
-                        { failure ->
-                            kaliumLogger.i("Legal hold request fingerprint failure: $failure")
-                            ObserveLegalHoldRequestUseCase.Result.Failure(failure)
-                        },
-                        { fingerprint ->
-                            ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable(
-                                fingerprint
-                            )
+                    transactionProvider.proteusTransaction { proteusContext ->
+                        val preKeyCrypto = PreKeyCrypto(request.lastPreKey.id, request.lastPreKey.key)
+                        wrapProteusRequest {
+                            proteusContext.getFingerprintFromPreKey(preKeyCrypto)
                         }
-                    )
+                    }
+                        .fold(
+                            { failure ->
+                                kaliumLogger.i("Legal hold request fingerprint failure: $failure")
+                                ObserveLegalHoldRequestUseCase.Result.Failure(failure)
+                            },
+                            { fingerprint ->
+                                ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable(
+                                    fingerprint
+                                )
+                            }
+                        )
                 }
             )
         }

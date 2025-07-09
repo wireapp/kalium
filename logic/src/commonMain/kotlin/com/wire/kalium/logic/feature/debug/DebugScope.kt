@@ -23,8 +23,8 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
@@ -80,7 +80,6 @@ class DebugScope internal constructor(
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val proteusClientProvider: ProteusClientProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
@@ -101,15 +100,16 @@ class DebugScope internal constructor(
     UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
     private val selfServerConfig: SelfServerConfigUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     val establishSession: EstablishSessionUseCase
-        get() = EstablishSessionUseCaseImpl(sessionEstablisher)
+        get() = EstablishSessionUseCaseImpl(sessionEstablisher, transactionProvider)
 
     val breakSession: BreakSessionUseCase
-        get() = BreakSessionUseCaseImpl(proteusClientProvider)
+        get() = BreakSessionUseCaseImpl(transactionProvider)
 
     val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
         get() = SendBrokenAssetMessageUseCaseImpl(
@@ -137,7 +137,8 @@ class DebugScope internal constructor(
     val synchronizeExternalData: SynchronizeExternalDataUseCase
         get() = SynchronizeExternalDataUseCaseImpl(
             eventRepository = eventRepository,
-            eventProcessor = eventProcessor
+            eventProcessor = eventProcessor,
+            transactionProvider = transactionProvider
         )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -151,7 +152,7 @@ class DebugScope internal constructor(
         )
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
+        get() = SessionEstablisherImpl(preKeyRepository)
 
     private val protoContentMapper: ProtoContentMapper
         get() = ProtoContentMapperImpl(selfUserId = userId)
@@ -160,7 +161,6 @@ class DebugScope internal constructor(
         get() = MessageEnvelopeCreatorImpl(
             conversationRepository = conversationRepository,
             legalHoldStatusMapper = LegalHoldStatusMapperImpl,
-            proteusClientProvider = proteusClientProvider,
             selfUserId = userId,
             protoContentMapper = protoContentMapper
         )
@@ -192,6 +192,7 @@ class DebugScope internal constructor(
             messageSendingInterceptor,
             userRepository,
             staleEpochVerifier,
+            transactionProvider,
             { message, expirationData ->
                 ephemeralMessageDeletionHandler.enqueueSelfDeletion(
                     message,

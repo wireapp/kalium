@@ -18,10 +18,12 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +46,7 @@ interface IncrementalSyncWorker {
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
     private val eventProcessor: EventProcessor,
+    private val transactionProvider: CryptoTransactionProvider,
     logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncWorker {
 
@@ -59,11 +62,15 @@ internal class IncrementalSyncWorkerImpl(
             eventGatherer.gatherEvents()
                 .collect { envelopes ->
                     kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
-                    envelopes.forEach { envelope ->
-                        eventProcessor.processEvent(envelope).onFailure {
+                    // TODO Check if one of events fail during transaction will it save already processed ones
+                    transactionProvider.transaction { context ->
+                        envelopes.map { envelope ->
+                            eventProcessor.processEvent(context, envelope)
+                        }.foldToEitherWhileRight(Unit) { value, _ -> value }
+                    }
+                        .onFailure {
                             throw KaliumSyncException("Processing failed", it)
                         }
-                    }
                 }
         }
 

@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
@@ -41,7 +42,12 @@ import io.mockative.Mockable
 
 @Mockable
 internal interface NewMessageEventHandler {
-    suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo)
+    suspend fun handleNewProteusMessage(
+        proteusContext: ProteusCoreCryptoContext,
+        event: Event.Conversation.NewMessage,
+        deliveryInfo: EventDeliveryInfo
+    )
+
     suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo)
 }
 
@@ -59,9 +65,13 @@ internal class NewMessageEventHandlerImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo) {
+    override suspend fun handleNewProteusMessage(
+        proteusContext: ProteusCoreCryptoContext,
+        event: Event.Conversation.NewMessage,
+        deliveryInfo: EventDeliveryInfo
+    ) {
         val eventLogger = logger.createEventProcessingLogger(event)
-        proteusMessageUnpacker.unpackProteusMessage(event) {
+        proteusMessageUnpacker.unpackProteusMessage(proteusContext, event) {
             processApplicationMessage(it, deliveryInfo)
             it
         }.onSuccess {

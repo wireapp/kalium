@@ -22,6 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -73,7 +74,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val registerMLSClientUseCase: RegisterMLSClientUseCase,
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) {
     @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
@@ -100,7 +102,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             updateSupportedProtocolsAndResolveOneOnOnes,
         )
     val needsToRegisterClient: NeedsToRegisterClientUseCase
-        get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, proteusClientProvider, selfUserId)
+        get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, transactionProvider, selfUserId)
     val deregisterNativePushToken: DeregisterTokenUseCase
         get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
@@ -128,7 +130,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
 
     val getProteusFingerprint: GetProteusFingerprintUseCase
-        get() = GetProteusFingerprintUseCaseImpl(preKeyRepository)
+        get() = GetProteusFingerprintUseCaseImpl(transactionProvider)
 
     @OptIn(DelicateKaliumApi::class)
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase
@@ -157,7 +159,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             syncFeatureConfigsUseCase
         )
 
-    val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCaseImpl(proteusClientProvider, preKeyRepository)
+    val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCaseImpl(transactionProvider, preKeyRepository)
     val updateClientVerificationStatus: UpdateClientVerificationStatusUseCase
         get() = UpdateClientVerificationStatusUseCase(clientRepository)
 

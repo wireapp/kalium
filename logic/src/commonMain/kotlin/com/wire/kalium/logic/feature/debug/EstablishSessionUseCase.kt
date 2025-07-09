@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 interface EstablishSessionUseCase {
 
@@ -44,11 +45,17 @@ sealed class EstablishSessionResult {
     data class Failure(val coreFailure: CoreFailure) : EstablishSessionResult()
 }
 
-internal class EstablishSessionUseCaseImpl(val sessionEstablisher: SessionEstablisher) : EstablishSessionUseCase {
+internal class EstablishSessionUseCaseImpl(
+    private val sessionEstablisher: SessionEstablisher,
+    private val transactionProvider: CryptoTransactionProvider
+) : EstablishSessionUseCase {
     override suspend fun invoke(userId: UserId, clientId: ClientId): EstablishSessionResult {
-        return sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
-            listOf(Recipient(id = userId, clients = listOf(clientId)))
-        ).fold({
+        return transactionProvider.proteusTransaction { proteusContext ->
+            sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
+                proteusContext,
+                listOf(Recipient(id = userId, clients = listOf(clientId)))
+            )
+        }.fold({
             kaliumLogger.e("Failed to get establish session $it")
             EstablishSessionResult.Failure(it)
         }, {

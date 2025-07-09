@@ -18,9 +18,12 @@
 package com.wire.kalium.logic.data.event
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -40,7 +43,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 
-class EventGenerator(private val selfClient: QualifiedClientID, targetClient: QualifiedClientID, val proteusClient: ProteusClient) {
+class EventGenerator(
+    private val selfClient: QualifiedClientID,
+    targetClient: QualifiedClientID
+) {
 
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfClient.userId)
     private val targetSessionId = CryptoSessionId(
@@ -53,15 +59,20 @@ class EventGenerator(private val selfClient: QualifiedClientID, targetClient: Qu
     )
 
     fun generateEvents(
+        transactionProvider: CryptoTransactionProvider,
         limit: Int,
         conversationId: ConversationId,
     ): Flow<EventResponse> {
         return flow {
             repeat(limit) { count ->
                 val protobuf = generateProtoContent(generateTextContent(count))
-                val message = encryptMessage(protobuf, proteusClient, selfSessionId, targetSessionId)
-                val event = generateNewMessageDTO(selfClient.userId, conversationId, message)
-                emit(generateEventResponse(event))
+                val message = transactionProvider.proteusTransaction {
+                    encryptMessage(protobuf, it, selfSessionId, targetSessionId).right()
+                }
+                message.onSuccess {
+                    val event = generateNewMessageDTO(selfClient.userId, conversationId, it)
+                    emit(generateEventResponse(event))
+                }
             }
         }
     }
@@ -88,12 +99,12 @@ class EventGenerator(private val selfClient: QualifiedClientID, targetClient: Qu
 
     private suspend fun encryptMessage(
         message: PlainMessageBlob,
-        proteusClient: ProteusClient,
+        proteusContext: ProteusCoreCryptoContext,
         sender: CryptoSessionId,
         recipient: CryptoSessionId
     ): MessageEventData {
         return MessageEventData(
-            text = proteusClient.encrypt(message.data, recipient).encodeBase64(),
+            text = proteusContext.encrypt(message.data, recipient).encodeBase64(),
             sender = sender.cryptoClientId.value,
             recipient = recipient.cryptoClientId.value,
             encryptedExternalData = null

@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.SecureRandom
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -66,7 +65,6 @@ class ProteusClientProviderTest {
             rootProteusPath = "/tmp/rootProteusPath",
             userId = TestUser.USER_ID,
             passphraseStorage = passphraseStorage,
-            kaliumConfigs = KaliumConfigs(encryptProteusStorage = true),
             dispatcher = KaliumDispatcherImpl,
             proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
         )
