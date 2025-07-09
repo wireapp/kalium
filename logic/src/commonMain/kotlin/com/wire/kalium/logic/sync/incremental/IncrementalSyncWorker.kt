@@ -27,6 +27,9 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -49,15 +52,22 @@ internal class IncrementalSyncWorkerImpl(
 
     private val logger = logger.withFeatureId(SYNC)
 
-    override suspend fun processEventsFlow() = channelFlow {
-        val sourceJob = launch {
-            eventGatherer.currentSource.collect { send(it) }
-        }
+    override suspend fun processEventsFlow(): Flow<EventSource> = channelFlow {
+        // We start as PENDING
+        send(EventSource.PENDING)
 
         launch {
             kaliumLogger.d("$TAG gatherEvents starting...")
             eventGatherer.gatherEvents()
-                .collect { envelopes ->
+                // If we ever become Up-To-Date, move to LIVE
+                .onEach { eventStreamData ->
+                    if (eventStreamData is EventStreamData.IsUpToDate) {
+                        send(EventSource.LIVE) // We are LIVE!!!!!!
+                    }
+                }
+                .filterIsInstance<EventStreamData.NewEvents>()
+                .collect { streamData ->
+                    val envelopes = streamData.eventList
                     kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
                     envelopes.forEach { envelope ->
                         eventProcessor.processEvent(envelope).onFailure {
@@ -71,10 +81,9 @@ internal class IncrementalSyncWorkerImpl(
             kaliumLogger.d("$TAG liveEvents starting...")
             eventGatherer.receiveEvents().cancellable().collect {}
             // When events are all consumed, cancel the source job to complete the channelFlow
-            sourceJob.cancel()
             logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
         }
-    }
+    }.distinctUntilChanged()
 
     companion object {
         const val TAG = "[IncrementalSyncWorker]"
