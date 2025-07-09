@@ -275,6 +275,14 @@ internal class MessageDAOImpl internal constructor(
             ).executeAsList()
         }
 
+    override suspend fun updateMessagesStatusIfNotRead(
+        status: MessageEntity.Status,
+        conversationId: QualifiedIDEntity,
+        messageIds: List<String>
+    ) = withContext(coroutineContext) {
+        queries.updateMessagesStatusIfNotRead(status, messageIds, conversationId)
+    }
+
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,

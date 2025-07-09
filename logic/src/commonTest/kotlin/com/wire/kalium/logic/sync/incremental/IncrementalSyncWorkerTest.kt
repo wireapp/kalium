@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.incremental
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.common.functional.Either
@@ -33,12 +32,9 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -56,9 +52,7 @@ class IncrementalSyncWorkerTest {
         // Given
         val envelope = TestEvent.memberJoin().wrapInEnvelope()
         val (arrangement, worker) = Arrangement()
-            .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
-            .withEventGathererReturning(flowOf(listOf(envelope)))
-            .withLiveEventsReturning(flowOf(Unit))
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
             .arrange()
 
         // When
@@ -71,33 +65,12 @@ class IncrementalSyncWorkerTest {
     }
 
     @Test
-    fun givenGathererEmitsEventDuringLiveSource_whenPerformingIncrementalSync_thenWorkerShouldEmitLiveSource() =
+    fun givenGathererEmitsSinglePageOfEvents_whenPerformingIncrementalSync_thenWorkerShouldEmitPendingSource() =
         runTest(TestKaliumDispatcher.default) {
             // Given
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
-                .withLiveEventsReturning(flowOf(Unit))
-                .withEventGathererReturning(flowOf(listOf(event)))
-                .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
-                .arrange()
-
-            // When
-            worker.processEventsFlow().test {
-                // Then
-                assertEquals(EventSource.LIVE, awaitItem())
-                awaitComplete()
-            }
-        }
-
-    @Test
-    fun givenGathererEmitsEventDuringPendingSource_whenPerformingIncrementalSync_thenWorkerShouldEmitPendingSource() =
-        runTest(TestKaliumDispatcher.default) {
-            // Given
-            val event = TestEvent.memberJoin().wrapInEnvelope()
-            val (_, worker) = Arrangement()
-                .withLiveEventsReturning(flowOf(Unit))
-                .withEventGathererReturning(flowOf(listOf(event)))
-                .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
+                .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
                 .arrange()
 
             // When
@@ -109,12 +82,34 @@ class IncrementalSyncWorkerTest {
         }
 
     @Test
+    fun givenGathererEmitsLiveSource_whenPerformingIncrementalSync_thenWorkerShouldEmitLiveSource() =
+        runTest(TestKaliumDispatcher.default) {
+            // Given
+            val event = TestEvent.memberJoin().wrapInEnvelope()
+            val (_, worker) = Arrangement()
+                .withEventGathererReturning(
+                    flowOf(
+                        EventStreamData.NewEvents(listOf(event)),
+                        EventStreamData.IsUpToDate
+                    )
+                )
+                .arrange()
+
+            // When
+            worker.processEventsFlow().test {
+                // Then
+                assertEquals(EventSource.PENDING, awaitItem())
+                assertEquals(EventSource.LIVE, awaitItem())
+                awaitComplete()
+            }
+        }
+
+    @Test
     fun givenGathererThrows_whenPerformingIncrementalSync_thenTheFailureIsPropagated() = runTest(TestKaliumDispatcher.default) {
         // Given
         val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
         val exception = KaliumSyncException("Oopsie", coreFailureCause)
         val (_, worker) = Arrangement()
-            .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
             .withEventGathererReturning(flow { throw exception })
             .arrange()
 
@@ -129,9 +124,9 @@ class IncrementalSyncWorkerTest {
     @Test
     fun givenProcessorFails_whenPerformingIncrementalSync_thenShouldThrowKaliumSyncException() = runTest {
         val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
+        val event = TestEvent.memberJoin().wrapInEnvelope()
         val (_, worker) = Arrangement()
-            .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
-            .withEventGathererReturning(flowOf(listOf(TestEvent.memberJoin().wrapInEnvelope())))
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
             .withEventProcessorFailingWith(coreFailureCause)
             .withLiveEventsReturning(flowOf(Unit))
             .arrange()
@@ -153,27 +148,10 @@ class IncrementalSyncWorkerTest {
             }
         }
 
-        suspend fun withEventGathererReturning(eventFlow: Flow<List<EventEnvelope>>) = apply {
+        suspend fun withEventGathererReturning(eventFlow: Flow<EventStreamData>) = apply {
             coEvery {
                 eventGatherer.gatherEvents()
             }.returns(eventFlow)
-        }
-
-        suspend fun withLiveEventsReturning(eventFlow: Flow<Unit>) = apply {
-            coEvery {
-                eventGatherer.receiveEvents()
-            }.returns(eventFlow)
-        }
-
-        fun withEventGathererSourceReturning(sourceFlow: StateFlow<EventSource>) = apply {
-            every {
-                eventGatherer.currentSource
-            }.returns(sourceFlow)
-        }
-
-        suspend fun withEventGathererThrowing(throwable: Throwable) = apply {
-            coEvery { eventGatherer.gatherEvents() }
-                .throws(throwable)
         }
 
         suspend fun withEventProcessorReturning(result: Either<CoreFailure, Unit>) = apply {

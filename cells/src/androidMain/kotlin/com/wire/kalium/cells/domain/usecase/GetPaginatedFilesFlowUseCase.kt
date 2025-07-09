@@ -26,6 +26,7 @@ public interface GetPaginatedFilesFlowUseCase {
         conversationId: String?,
         query: String,
         onlyDeleted: Boolean = false,
+        tags: List<String> = emptyList(),
     ): Flow<PagingData<Node>>
 }
 
@@ -37,7 +38,8 @@ internal class GetPaginatedFilesFlowUseCaseImpl(
         conversationId: String?,
         query: String,
         onlyDeleted: Boolean,
+        tags: List<String>
     ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query, onlyDeleted)
+        return getCellFilesUseCase(conversationId, query, onlyDeleted, tags)
     }
 }
