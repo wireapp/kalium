@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.incremental.SyncPhase
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -82,7 +83,7 @@ interface EventRepository {
      * Performs an acknowledgment of the missed event after performing a slow sync.
      */
     suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit>
-    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventVersion>>>
+    suspend fun liveEvents(): Either<CoreFailure, Flow<SyncPhase>>
     suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit>
 
     /**
@@ -192,7 +193,7 @@ class EventDataSource(
     private suspend fun fetchEvents(): Either<CoreFailure, Unit> =
         currentClientId().fold({ Either.Left(it) }, { clientId -> fetchPendingEvents(clientId) })
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventVersion>>> =
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<SyncPhase>> =
         currentClientId().flatMap { clientId ->
             val hasConsumableNotifications = clientRegistrationStorage.observeHasConsumableNotifications().firstOrNull()
             if (hasConsumableNotifications == true) {
@@ -202,22 +203,21 @@ class EventDataSource(
             }
         }
 
-    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventVersion>>> {
+    private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<SyncPhase>> {
         sentinelMarker.set(SentinelMarker.Marker(uuid4().toString()))
         kaliumLogger.d("$TAG Creating new sentinel marker [${sentinelMarker.get().getMarker()}] for this session.")
         return wrapApiRequest {
             notificationApi.consumeLiveEvents(clientId = clientId.value, markerId = sentinelMarker.get().getMarker())
         }.map { webSocketEventFlow ->
             flow {
-                webSocketEventFlow.collect(handleEvents(this, EventVersion.ASYNC))
+                webSocketEventFlow.collect(handleEvents(this))
             }
         }
     }
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     private suspend fun handleEvents(
-        flowCollector: FlowCollector<WebSocketEvent<EventVersion>>,
-        eventVersion: EventVersion
+        flowCollector: FlowCollector<SyncPhase>
     ): suspend (value: WebSocketEvent<ConsumableNotificationResponse>) -> Unit =
         { webSocketEvent ->
             when (webSocketEvent) {
@@ -230,18 +230,19 @@ class EventDataSource(
                         val result = fetchEvents()
                         result.onFailure(::throwPendingEventException)
                     }
-                    flowCollector.emit(WebSocketEvent.Open(shouldProcessPendingEvents = webSocketEvent.shouldProcessPendingEvents))
+                    flowCollector.emit(if (webSocketEvent.shouldProcessPendingEvents) SyncPhase.Ready else SyncPhase.CatchingUp)
                 }
 
                 is WebSocketEvent.NonBinaryPayloadReceived -> {
-                    flowCollector.emit(WebSocketEvent.NonBinaryPayloadReceived(webSocketEvent.payload))
+                    // todo raise exception this should not happen
                 }
 
                 is WebSocketEvent.Close -> {
-                    flowCollector.emit(WebSocketEvent.Close(webSocketEvent.cause, eventVersion))
+                    // todo raise exception from here...
                 }
 
                 is WebSocketEvent.BinaryPayloadReceived -> {
+                    val isLive = isWebsocketEventReceivedLive()
                     when (val event: ConsumableNotificationResponse = webSocketEvent.payload) {
                         is ConsumableNotificationResponse.EventNotification -> {
                             if (clearOnFirstWSMessage.value) {
@@ -257,7 +258,7 @@ class EventDataSource(
                                             NewEventEntity(
                                                 eventId = eventResponse.id,
                                                 payload = KtxSerializer.json.encodeToString(eventResponse),
-                                                isLive = isWebsocketEventReceivedLive()
+                                                isLive = isLive
                                             )
                                         )
                                     )
@@ -268,7 +269,7 @@ class EventDataSource(
                                     if (!event.data.event.transient) {
                                         updateLastSavedEventId(event.data.event.id)
                                     }
-                                    flowCollector.emit(WebSocketEvent.BinaryPayloadReceived(eventVersion))
+                                    flowCollector.emit(if (isLive) SyncPhase.Ready else SyncPhase.CatchingUp)
                                 }
                             }
                         }
@@ -299,6 +300,7 @@ class EventDataSource(
                             if (event.data.markerId == currentMarker) {
                                 kaliumLogger.d("$TAG Handling current sentinel marker [${event.data.markerId}] for this session.")
                                 sentinelMarker.set(SentinelMarker.None)
+                                flowCollector.emit(SyncPhase.Ready)
                             } else {
                                 kaliumLogger.d("$TAG Skipping this sentinel marker [${event.data.markerId}] is not valid for this session.")
                             }
@@ -352,7 +354,7 @@ class EventDataSource(
         eventDAO.setAllUnprocessedEventsAsPending()
     }
 
-    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventVersion>>> =
+    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<SyncPhase>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }
             .map { webSocketEventFlow ->
                 flow {
@@ -377,7 +379,7 @@ class EventDataSource(
                                 is WebSocketEvent.Open<EventResponse> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
                             }
                         }
-                        .collect(handleEvents(this, EventVersion.LEGACY))
+                        .collect(handleEvents(this))
                 }
             }
 

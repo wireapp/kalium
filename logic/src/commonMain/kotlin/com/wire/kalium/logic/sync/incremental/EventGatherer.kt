@@ -91,7 +91,10 @@ internal class EventGathererImpl(
             val waitForReceivingSetupJob = Job()
             launch {
                 // TODO(refactor): stop emitting Unit, emit status of the underlying event fetching for clarity
-                receiveEventsFromRemoteAndInsertIntoLocalStorage().onEach { waitForReceivingSetupJob.complete() }.collect()
+                receiveEventsFromRemoteAndInsertIntoLocalStorage().onEach {
+                    // only complete the job if we are in ready state
+                    if (it == SyncPhase.Ready) waitForReceivingSetupJob.complete()
+                }.collect()
             }
             launch {
                 waitForReceivingSetupJob.join()
@@ -108,7 +111,7 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun receiveEventsFromRemoteAndInsertIntoLocalStorage(): Flow<Unit> = flow {
+    private suspend fun receiveEventsFromRemoteAndInsertIntoLocalStorage(): Flow<SyncPhase> = flow {
         /**
          * Fetches and saves live events and pending based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
@@ -138,20 +141,18 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun FlowCollector<Unit>.emitEvents(
-        webSocketEventFlow: Flow<WebSocketEvent<EventVersion>>
+    private suspend fun FlowCollector<SyncPhase>.emitEvents(
+        webSocketEventFlow: Flow<SyncPhase>
     ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
         .cancellable()
         .collect { handleWebsocketEvent(it) }
 
-    private suspend fun FlowCollector<Unit>.handleWebsocketEvent(
-        webSocketEvent: WebSocketEvent<EventVersion>
-    ) = when (webSocketEvent) {
-        is WebSocketEvent.Open -> onWebSocketOpen()
-        is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived()
-        is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
-        is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
+    private suspend fun FlowCollector<SyncPhase>.handleWebsocketEvent(
+        syncPhase: SyncPhase
+    ) = when (syncPhase) {
+        SyncPhase.CatchingUp -> emit(SyncPhase.CatchingUp)
+        SyncPhase.Ready -> emit(SyncPhase.Ready)
     }
 
     private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventVersion>) {
