@@ -32,6 +32,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
@@ -39,6 +40,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -104,7 +106,9 @@ internal fun IncrementalSyncManager(
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
             logger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
-            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+            withContext(NonCancellable) {
+                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+            }
         },
         onFailure = { failure ->
             logger.i("ExceptionHandler error $failure")

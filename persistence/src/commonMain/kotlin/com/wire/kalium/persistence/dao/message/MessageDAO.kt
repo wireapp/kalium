@@ -172,4 +172,6 @@ interface MessageDAO {
         onPage: (List<MessageEntity>) -> Unit,
     )
     fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
+
+    suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)
 }
