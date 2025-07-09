@@ -204,6 +204,7 @@ class EventDataSource(
 
     private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventVersion>>> {
         sentinelMarker.set(SentinelMarker.Marker(uuid4().toString()))
+        kaliumLogger.d("$TAG Creating new sentinel marker [${sentinelMarker.get().getMarker()}] for this session.")
         return wrapApiRequest {
             notificationApi.consumeLiveEvents(clientId = clientId.value, markerId = sentinelMarker.get().getMarker())
         }.map { webSocketEventFlow ->
@@ -296,10 +297,10 @@ class EventDataSource(
                             event.data.deliveryTag?.let { ackEvent(it) }
                             val currentMarker = sentinelMarker.get().getMarker()
                             if (event.data.markerId == currentMarker) {
-                                kaliumLogger.d("$TAG Handling current marker [${event.data.markerId}] for this session.")
+                                kaliumLogger.d("$TAG Handling current sentinel marker [${event.data.markerId}] for this session.")
                                 sentinelMarker.set(SentinelMarker.None)
                             } else {
-                                kaliumLogger.d("$TAG Skipping this marker [${event.data.markerId}] is not valid for this session.")
+                                kaliumLogger.d("$TAG Skipping this sentinel marker [${event.data.markerId}] is not valid for this session.")
                             }
                         }
                     }
