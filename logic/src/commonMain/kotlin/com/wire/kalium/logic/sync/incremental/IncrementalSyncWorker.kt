@@ -18,19 +18,17 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.sync.KaliumSyncException
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 /**
  * Gathers and processes IncrementalSync events.
@@ -56,33 +54,25 @@ internal class IncrementalSyncWorkerImpl(
         // We start as PENDING
         send(EventSource.PENDING)
 
-        launch {
-            kaliumLogger.d("$TAG gatherEvents starting...")
-            eventGatherer.gatherEvents()
-                // If we ever become Up-To-Date, move to LIVE
-                .onEach { eventStreamData ->
-                    if (eventStreamData is EventStreamData.IsUpToDate) {
-                        send(EventSource.LIVE) // We are LIVE!!!!!!
+        kaliumLogger.d("$TAG gatherEvents starting...")
+        eventGatherer.gatherEvents()
+            // If we ever become Up-To-Date, move to LIVE
+            .onEach { eventStreamData ->
+                if (eventStreamData is EventStreamData.IsUpToDate) {
+                    send(EventSource.LIVE) // We are LIVE!!!!!!
+                }
+            }
+            .filterIsInstance<EventStreamData.NewEvents>()
+            .collect { streamData ->
+                val envelopes = streamData.eventList
+                kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
+                envelopes.forEach { envelope ->
+                    eventProcessor.processEvent(envelope).onFailure {
+                        throw KaliumSyncException("Processing failed", it)
                     }
                 }
-                .filterIsInstance<EventStreamData.NewEvents>()
-                .collect { streamData ->
-                    val envelopes = streamData.eventList
-                    kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
-                    envelopes.forEach { envelope ->
-                        eventProcessor.processEvent(envelope).onFailure {
-                            throw KaliumSyncException("Processing failed", it)
-                        }
-                    }
-                }
-        }
-
-        launch {
-            kaliumLogger.d("$TAG liveEvents starting...")
-            eventGatherer.receiveEvents().cancellable().collect {}
-            // When events are all consumed, cancel the source job to complete the channelFlow
-            logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
-        }
+            }
+        logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()
 
     companion object {

@@ -51,7 +51,6 @@ class IncrementalSyncWorkerTest {
         val envelope = TestEvent.memberJoin().wrapInEnvelope()
         val (arrangement, worker) = Arrangement()
             .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
-            .withLiveEventsReturning(flowOf(Unit))
             .arrange()
 
         // When
@@ -69,7 +68,6 @@ class IncrementalSyncWorkerTest {
             // Given
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
-                .withLiveEventsReturning(flowOf(Unit))
                 .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
                 .arrange()
 
@@ -87,7 +85,6 @@ class IncrementalSyncWorkerTest {
             // Given
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
-                .withLiveEventsReturning(flowOf(Unit))
                 .withEventGathererReturning(
                     flowOf(
                         EventStreamData.NewEvents(listOf(event)),
@@ -151,12 +148,6 @@ class IncrementalSyncWorkerTest {
         suspend fun withEventGathererReturning(eventFlow: Flow<EventStreamData>) = apply {
             coEvery {
                 eventGatherer.gatherEvents()
-            }.returns(eventFlow)
-        }
-
-        suspend fun withLiveEventsReturning(eventFlow: Flow<Unit>) = apply {
-            coEvery {
-                eventGatherer.receiveEvents()
             }.returns(eventFlow)
         }
 
