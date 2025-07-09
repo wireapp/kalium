@@ -37,14 +37,18 @@ import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
 import kotlinx.datetime.toInstant
 
 /**
@@ -59,7 +63,9 @@ import kotlinx.datetime.toInstant
 internal interface EventGatherer {
 
     /**
-     * Emits all unprocessed events stored locally.
+     * Establishes a WebSocket connection and starts receiving events in real time.
+     * Waits until an initial connection is established before starting
+     * to emit all unprocessed events stored locally.
      *
      * This flow is hot and updated based on the internal event trigger mechanism.
      *
@@ -68,17 +74,6 @@ internal interface EventGatherer {
      */
     suspend fun gatherEvents(): Flow<EventStreamData>
 
-    /**
-     * Establishes a WebSocket connection to start receiving real-time events.
-     *
-     * Depending on the server configuration and async notification support, this function may:
-     * - Trigger the reception of pending events if applicable,
-     * - Initiate event acknowledgment flows,
-     * - Start the transition to [EventSource.LIVE].
-     *
-     * Emits `Unit` whenever a new event frame arrives.
-     */
-    suspend fun receiveEvents(): Flow<Unit>
 }
 
 internal class EventGathererImpl(
@@ -91,19 +86,29 @@ internal class EventGathererImpl(
     private val logger = logger.withFeatureId(SYNC)
 
     // TODO handle multiple events at once
-    override suspend fun gatherEvents(): Flow<EventStreamData> {
-        return eventRepository.observeEvents().onEach { events ->
-            kaliumLogger.d("$TAG gathering ${events.size} events")
-        }.transform { events ->
-            if (events.isEmpty()) {
-                emit(EventStreamData.IsUpToDate)
-            } else {
-                emit(EventStreamData.NewEvents(events))
+    override suspend fun gatherEvents(): Flow<EventStreamData> = channelFlow {
+        coroutineScope {
+            val waitForReceivingSetupJob = Job()
+            launch {
+                // TODO(refactor): stop emitting Unit, emit status of the underlying event fetching for clarity
+                receiveEventsFromRemoteAndInsertIntoLocalStorage().onEach { waitForReceivingSetupJob.complete() }.collect()
+            }
+            launch {
+                waitForReceivingSetupJob.join()
+                eventRepository.observeEvents().onEach { events ->
+                    kaliumLogger.d("$TAG gathering ${events.size} events")
+                }.collect { events ->
+                    if (events.isEmpty()) {
+                        send(EventStreamData.IsUpToDate)
+                    } else {
+                        send(EventStreamData.NewEvents(events))
+                    }
+                }
             }
         }
     }
 
-    override suspend fun receiveEvents(): Flow<Unit> = flow {
+    private suspend fun receiveEventsFromRemoteAndInsertIntoLocalStorage(): Flow<Unit> = flow {
         /**
          * Fetches and saves live events and pending based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.

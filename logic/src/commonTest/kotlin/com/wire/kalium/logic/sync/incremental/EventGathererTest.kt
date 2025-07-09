@@ -45,7 +45,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -57,42 +57,15 @@ import kotlin.test.assertIs
 class EventGathererTest {
 
     @Test
-    fun givenLocalThousandsEventsAndKeepAlivePolicy_whenGathering_thenShouldEmitAllEvents() = runTest(testScope) {
-        val repeatValue = 10_000
-        val webSocketEventFlow = channelFlow<WebSocketEvent<EventVersion>> {
-            send(WebSocketEvent.Open())
-            repeat(repeatValue) { value ->
-                send(WebSocketEvent.BinaryPayloadReceived(EventVersion.LEGACY))
-            }
-            awaitCancellation()
-        }
-
-        val (arrangement, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withLiveEventsReturning(Either.Right(webSocketEventFlow))
-            .withFetchServerTimeReturning(null)
-            .arrange()
-
-        eventGatherer.receiveEvents().test {
-            repeat(repeatValue) { value ->
-                awaitItem()
-            }
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun givenSomeEvents_whenGathering_thenShouldReceiveEvents() = runTest(testScope) {
         val event = TestEvent.memberJoin().wrapInEnvelope()
         val eventList = listOf(event)
-        val webSocketEventFlow = channelFlow<List<EventEnvelope>> {
-            send(eventList)
-            awaitCancellation()
-        }
+        val localEventsFlow = flowOf(listOf(event))
 
         val (_, eventGatherer) = Arrangement()
-            .withLocalEventsReturning(webSocketEventFlow)
-            .withLiveEventsReturning(Either.Right(emptyFlow()))
+            .withLocalEventsReturning(localEventsFlow)
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withLiveEventsReturning(Either.Right(flowOf(WebSocketEvent.Open())))
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -112,12 +85,32 @@ class EventGathererTest {
 
         val (_, eventGatherer) = Arrangement()
             .withLocalEventsReturning(webSocketEventFlow)
-            .withLiveEventsReturning(Either.Right(emptyFlow()))
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withLiveEventsReturning(Either.Right(flowOf(WebSocketEvent.Open())))
             .arrange()
 
         eventGatherer.gatherEvents().test {
             val item = awaitItem()
             assertIs<EventStreamData.IsUpToDate>(item)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenNoMoreEvents_whenGathering_thenShouldReceiveUpToDateOnlyAfterWebsocketIsConnected() = runTest(testScope) {
+        val localEvents = flowOf<List<EventEnvelope>>(listOf())
+        val websocketEvents = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
+
+        val (_, eventGatherer) = Arrangement()
+            .withLocalEventsReturning(localEvents)
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withLiveEventsReturning(Either.Right(websocketEvents.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            expectNoEvents()
+            websocketEvents.send(WebSocketEvent.Open())
+            assertIs<EventStreamData.IsUpToDate>(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -169,56 +162,16 @@ class EventGathererTest {
 //     }
 
     @Test
-    fun givenAnEventIsInOnPendingSource_whenGathering_theEventIsEmitted() = runTest(testScope) {
-
-        val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
-
-        val (_, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .withFetchServerTimeReturning(null)
-            .arrange()
-
-        // Open Websocket should trigger fetching pending events
-        liveEventsChannel.send(WebSocketEvent.Open())
-        eventGatherer.receiveEvents().test {
-            awaitItem()
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun givenAnEventIsInOnLiveSource_whenGathering_theEventIsEmitted() = runTest(testScope) {
-        val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
-
-        val (_, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .withFetchServerTimeReturning(null)
-            .arrange()
-
-        // Open Websocket should trigger fetching pending events
-        liveEventsChannel.send(WebSocketEvent.Open())
-        // Event from the Websocket
-        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(EventVersion.LEGACY))
-
-        eventGatherer.receiveEvents().test {
-            awaitItem()
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun givenWebSocketOpens_whenGatheringAndAsyncNotificationsCapable_thenShouldNotFetchLastEvent() = runTest(testScope) {
         val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
 
         val (arrangement, eventGatherer) = Arrangement()
             .withIsClientAsyncNotificationsCapableReturning(true)
+            .withLastEventIdReturning(Either.Right("lastEventId"))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .arrange()
 
-        eventGatherer.receiveEvents().test {
+        eventGatherer.gatherEvents().test {
             coVerify {
                 arrangement.isClientAsyncNotificationsCapableProvider.invoke()
             }.wasInvoked(exactly = once)
@@ -251,10 +204,11 @@ class EventGathererTest {
         runTest(testScope) {
             val (_, eventGatherer) = Arrangement()
                 .withIsClientAsyncNotificationsCapableReturning(false)
+                .withLastEventIdReturning(Either.Right("lastEventId"))
                 .withLastEventIdReturning(Either.Left(StorageFailure.DataNotFound))
                 .arrange()
 
-            eventGatherer.receiveEvents().test {
+            eventGatherer.gatherEvents().test {
                 advanceUntilIdle()
                 awaitError().let {
                     assertIs<KaliumSyncException>(it).also {
@@ -272,8 +226,9 @@ class EventGathererTest {
 
         val (_, eventGatherer) = Arrangement()
             .withIsClientAsyncNotificationsCapableReturning(false)
+            .withLastEventIdReturning(Either.Right("lastEventId"))
             .withLocalEventsReturning(localEventsChannel.consumeAsFlow())
-            .withLiveEventsReturning(Either.Right(emptyFlow()))
+            .withLiveEventsReturning(Either.Right(flowOf(WebSocketEvent.Open())))
             .arrange()
 
         eventGatherer.gatherEvents().test {
