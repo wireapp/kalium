@@ -97,7 +97,6 @@ interface ConversationRepository {
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, ConversationDetailsWithEvents>>
 
-
     // endregion
 
     @DelicateKaliumApi("This function does not get values from cache")

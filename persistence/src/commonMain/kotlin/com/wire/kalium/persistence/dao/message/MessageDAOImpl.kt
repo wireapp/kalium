@@ -264,7 +264,6 @@ internal class MessageDAOImpl internal constructor(
             .mapToOneOrNull()
             .distinctUntilChanged()
 
-
     override suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
         mimeTypes: Set<String>,
