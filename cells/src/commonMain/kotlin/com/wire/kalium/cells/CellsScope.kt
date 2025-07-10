@@ -45,6 +45,8 @@ import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
+import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
@@ -211,5 +213,8 @@ public class CellsScope(
     }
     public val renameNodeUseCase: RenameNodeUseCase by lazy {
         RenameNodeUseCaseImpl(cellsRepository)
+    }
+    public val getAllTags: GetAllTagsUseCase by lazy {
+        GetAllTagsUseCaseImpl(cellsRepository)
     }
 }

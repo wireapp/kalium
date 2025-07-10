@@ -66,11 +66,10 @@ internal class ReceiptMessageHandlerImpl(
         messageContent: MessageContent.Receipt,
         message: Message.Signaling
     ) {
-        messageRepository.updateMessagesStatus(
-            messageUuids = messageContent.messageIds,
-            conversationId = message.conversationId,
+        messageRepository.updateMessagesStatusIfNotRead(
             messageStatus = receiptsMapper.fromTypeToMessageStatus(messageContent.type),
+            messageIds = messageContent.messageIds,
+            conversationId = message.conversationId,
         )
     }
-
 }

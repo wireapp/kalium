@@ -294,11 +294,17 @@ private class TestRepository : CellsRepository {
         return Unit.right()
     }
 
-    override suspend fun getPaginatedNodes(path: String?, query: String, limit: Int, offset: Int, onlyDeleted: Boolean) =
-        PaginatedList<CellNode>(
-            data = emptyList(),
-            pagination = null
-        ).right()
+    override suspend fun getPaginatedNodes(
+        path: String?,
+        query: String,
+        limit: Int,
+        offset: Int,
+        onlyDeleted: Boolean,
+        tags: List<String>
+    ) = PaginatedList<CellNode>(
+        data = emptyList(),
+        pagination = null
+    ).right()
 
     override suspend fun getNodesByPath(path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
         TODO("Not yet implemented")
@@ -335,4 +341,5 @@ private class TestRepository : CellsRepository {
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> = Unit.right()
+    override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = listOf<String>().right()
 }
