@@ -146,7 +146,7 @@ class EventRepositoryTest {
     fun givenAPISucceeds_whenFetchingOldestEventId_thenShouldPropagateEventId() = runTest {
         val eventId = "testEventId"
         val result = NetworkResponse.Success(
-            value = EventResponse(eventId, emptyList()),
+            value = EventResponseToStore(eventId, "[]"),
             headers = mapOf(),
             httpCode = HttpStatusCode.OK.value
         )
@@ -465,7 +465,7 @@ class EventRepositoryTest {
             }.returns(result)
         }
 
-        suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponse>) = apply {
+        suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponseToStore>) = apply {
             coEvery {
                 notificationApi.oldestNotification(any())
             }.returns(result)
