@@ -57,6 +57,7 @@ import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Transient
 import kotlinx.serialization.serializer
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
@@ -75,6 +76,19 @@ class EventMapper(
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
         return eventResponse.payload?.map { eventContentDTO ->
+            val eventSource = if (isLive) EventSource.LIVE else EventSource.PENDING
+            EventEnvelope(
+                fromEventContentDTO(id, eventContentDTO),
+                EventDeliveryInfo(eventSource)
+            )
+        } ?: listOf()
+    }
+
+    fun fromStoredDTO(eventId: String, payload: List<EventContentDTO>?, isLive: Boolean): List<EventEnvelope> {
+        // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
+        val id = eventId
+
+        return payload?.map { eventContentDTO ->
             val eventSource = if (isLive) EventSource.LIVE else EventSource.PENDING
             EventEnvelope(
                 fromEventContentDTO(id, eventContentDTO),
