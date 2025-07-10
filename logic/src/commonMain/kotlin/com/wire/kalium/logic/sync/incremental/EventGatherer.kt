@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.mapLeft
@@ -30,12 +29,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.event.EventVersion
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.util.ServerTimeHandler
-import com.wire.kalium.logic.util.ServerTimeHandlerImpl
-import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -49,7 +43,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.datetime.toInstant
 
 /**
  * Orchestrates the reception of events from remote sources,
@@ -79,8 +72,7 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
-    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
-    logger: KaliumLogger = kaliumLogger,
+    logger: KaliumLogger = kaliumLogger
 ) : EventGatherer {
 
     private val logger = logger.withFeatureId(SYNC)
@@ -90,16 +82,15 @@ internal class EventGathererImpl(
         coroutineScope {
             val waitForReceivingSetupJob = Job()
             launch {
-                // TODO(refactor): stop emitting Unit, emit status of the underlying event fetching for clarity
-                receiveEventsFromRemoteAndInsertIntoLocalStorage().onEach {
-                    // only complete the job if we are in ready state
-                    if (it == SyncPhase.Ready) waitForReceivingSetupJob.complete()
+                receiveEventsFromRemoteAndInsertIntoLocalStorage().onEach { syncPhase ->
+                    // only complete the job if we are in [ReadyToProcess] state
+                    if (syncPhase == IncrementalSyncPhase.ReadyToProcess) waitForReceivingSetupJob.complete()
                 }.collect()
             }
             launch {
                 waitForReceivingSetupJob.join()
                 eventRepository.observeEvents().onEach { events ->
-                    kaliumLogger.d("$TAG gathering ${events.size} events")
+                    logger.d("$TAG gathering ${events.size} events")
                 }.collect { events ->
                     if (events.isEmpty()) {
                         send(EventStreamData.IsUpToDate)
@@ -111,7 +102,7 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun receiveEventsFromRemoteAndInsertIntoLocalStorage(): Flow<SyncPhase> = flow {
+    private suspend fun receiveEventsFromRemoteAndInsertIntoLocalStorage(): Flow<IncrementalSyncPhase> = flow {
         /**
          * Fetches and saves live events and pending based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
@@ -141,51 +132,14 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun FlowCollector<SyncPhase>.emitEvents(
-        webSocketEventFlow: Flow<SyncPhase>
+    private suspend fun FlowCollector<IncrementalSyncPhase>.emitEvents(
+        webSocketEventFlow: Flow<IncrementalSyncPhase>
     ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
         .cancellable()
-        .collect { handleWebsocketEvent(it) }
-
-    private suspend fun FlowCollector<SyncPhase>.handleWebsocketEvent(
-        syncPhase: SyncPhase
-    ) = when (syncPhase) {
-        SyncPhase.CatchingUp -> emit(SyncPhase.CatchingUp)
-        SyncPhase.Ready -> emit(SyncPhase.Ready)
-    }
-
-    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventVersion>) {
-        when (val cause = webSocketEvent.cause) {
-            null -> logger.i("Websocket closed normally")
-            is IOException ->
-                throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
-
-            else ->
-                throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
-        }
-    }
-
-    private suspend fun FlowCollector<Unit>.onWebSocketEventReceived() {
-        emit(Unit)
-    }
-
-    private suspend fun FlowCollector<Unit>.onWebSocketOpen() {
-        logger.i("Websocket Open")
-        // TODO: Handle time drift in a different way, e.g. the notification api is already called
-        //  somewhere else so maybe we can take the time from there ?
-//          handleTimeDrift()
-        emit(Unit)
-    }
-
-    private suspend fun handleTimeDrift() {
-        eventRepository.fetchServerTime()?.let {
-            serverTimeHandler.computeTimeOffset(it.toInstant().epochSeconds)
-        }
-    }
+        .collect { emit(it) }
 
     companion object {
-        const val MAX_EVENTS_TO_SWITCH_TO_LIVE = 5
         const val TAG = "[EventGatherer]"
     }
 }
