@@ -39,6 +39,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.SynchronizationDataDTO
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -329,6 +330,55 @@ class EventRepositoryTest {
             assertEquals(listOf("x", "y", "z"), emitted.map { it.event.id })
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun givenLiveEventForSyncMarker_whenReceived_thenShouldAcknowledgeWithACK() = runTest {
+        val eventId = "event-id"
+        val deliveryTag = 987654UL
+
+        val (arrangement, repository) = Arrangement()
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withClientHasConsumableNotifications(true)
+            .withClearProcessedEvents(eventId)
+            .withConsumeLiveEventsReturning(
+                NetworkResponse.Success(
+                    value = flowOf(
+                        WebSocketEvent.BinaryPayloadReceived(
+                            ConsumableNotificationResponse.SynchronizationNotification(
+                                SynchronizationDataDTO(
+                                    deliveryTag = deliveryTag,
+                                    markerId = "sync-marker"
+                                )
+                            )
+                        )
+                    ),
+                    headers = mapOf(),
+                    httpCode = 200
+                )
+            )
+            .withAcknowledgeEvents()
+            .arrange()
+
+        val result = repository.liveEvents()
+        result.shouldSucceed {}
+
+        result.fold({}, { flow ->
+            flow.test {
+                awaitComplete()
+                coVerify {
+                    arrangement.notificationApi.acknowledgeEvents(
+                        eq(TestClient.CLIENT_ID.value),
+                        any(),
+                        matches {
+                            it.type == AcknowledgeType.ACK &&
+                                    it.data?.deliveryTag == deliveryTag
+                            it.data?.multiple == false
+                        }
+                    )
+                }.wasInvoked(exactly = once)
+            }
+        })
     }
 
     @Test
