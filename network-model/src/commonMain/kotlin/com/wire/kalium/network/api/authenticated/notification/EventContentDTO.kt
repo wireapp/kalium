@@ -125,6 +125,7 @@ data class EventResponseToStore(
         )
     }
 }
+
 /**
  * Handwritten serializer of the FeatureConfigUpdatedDTO because we want to extend it with the
  * `JsonCorrectingSerializer`, which is not possible using the plugin generated serializer.

@@ -21,7 +21,6 @@ package com.wire.kalium.mocks.responses
 import com.wire.kalium.mocks.extensions.toJsonString
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
-import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.tools.KtxSerializer
 

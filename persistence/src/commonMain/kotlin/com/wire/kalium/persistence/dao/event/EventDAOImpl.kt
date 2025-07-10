@@ -99,6 +99,7 @@ class EventDAOImpl(
         }
     }
 
+    @Suppress("LongParameterList")
     private fun mapEvent(
         id: Long,
         eventId: String,

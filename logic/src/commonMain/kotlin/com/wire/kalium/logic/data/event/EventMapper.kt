@@ -57,7 +57,6 @@ import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.Transient
 import kotlinx.serialization.serializer
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")

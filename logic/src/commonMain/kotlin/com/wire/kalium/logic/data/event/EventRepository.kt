@@ -45,7 +45,6 @@ import com.wire.kalium.network.api.authenticated.notification.ConsumableNotifica
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
-import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
@@ -171,7 +170,10 @@ class EventDataSource(
             }
             .map { eventEntities ->
                 eventEntities.map { entity ->
-                    val payload:  List<EventContentDTO>? = entity.payload?.let { KtxSerializer.json.decodeFromString<List<EventContentDTO>>(it) }
+                    val payload: List<EventContentDTO>? =
+                        entity.payload?.let {
+                            KtxSerializer.json.decodeFromString<List<EventContentDTO>>(it)
+                        }
                     eventMapper.fromStoredDTO(eventId = entity.eventId, payload = payload, isLive = entity.isLive)
                 }
                     .flatten()
