@@ -20,4 +20,4 @@ package com.wire.kalium.network.utils
 /**
  * Whether or not to enable async notifications client registration or upgrade.
  */
-const val ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION = true
+const val ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION = false
