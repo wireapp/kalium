@@ -97,7 +97,7 @@ class EventRepositoryTest {
             .arrange()
 
         eventRepository.liveEvents()
-        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value), any()) }
             .wasInvoked(exactly = once)
     }
 
@@ -211,6 +211,7 @@ class EventRepositoryTest {
                 coVerify {
                     arrangement.notificationApi.acknowledgeEvents(
                         eq(TestClient.CLIENT_ID.value),
+                        any(),
                         matches {
                             it.type == AcknowledgeType.ACK &&
                                     it.data?.deliveryTag == deliveryTag
@@ -480,7 +481,7 @@ class EventRepositoryTest {
 
         suspend fun withConsumeLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>) = apply {
             coEvery {
-                notificationApi.consumeLiveEvents(any())
+                notificationApi.consumeLiveEvents(any(), any())
             }.returns(result)
         }
 
@@ -492,7 +493,7 @@ class EventRepositoryTest {
 
         suspend fun withAcknowledgeEvents() = apply {
             coEvery {
-                notificationApi.acknowledgeEvents(any(), any())
+                notificationApi.acknowledgeEvents(any(), any(), any())
             }.returns(Unit)
         }
 

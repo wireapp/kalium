@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncStep
@@ -46,6 +45,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.times
@@ -646,10 +646,10 @@ class SlowSyncWorkerTest {
             }.returns(success)
         }
 
-        suspend fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
-            coEvery {
-                isClientAsyncNotificationsCapableProvider.invoke()
-            }.returns(value.right())
+        fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
+            every {
+                isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
+            }.returns(value)
         }
     }
 
