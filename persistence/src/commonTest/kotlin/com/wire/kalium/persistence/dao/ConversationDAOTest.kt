@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
@@ -41,7 +42,10 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
+import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -2364,6 +2368,76 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertContentEquals(listOf(channel.id), ids)
     }
 
+    @Test
+    fun givenConversationExists_whenObservingDetailsWithEventsByIdAndUpdated_thenEmitConversation() = runTest(dispatcher) {
+        val conversationEntity = conversationEntity1.copy(type = ConversationEntity.Type.GROUP)
+        conversationDAO.insertConversation(conversationEntity)
+        insertTeamUserAndMember(team, user1, conversationEntity.id)
+
+        conversationDAO.observeConversationDetailsWithEventsById(conversationEntity.id).test {
+            awaitItem().let {
+                assertNotNull(it)
+                assertEquals(conversationEntity.toViewEntity(user1).toConversationDetailsWithEventsEntity(), it)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenConversationDoesNotExist_whenObservingDetailsWithEventsByIdAndUpdated_thenEmitNull() = runTest(dispatcher) {
+        val conversationEntity = conversationEntity1.copy(type = ConversationEntity.Type.GROUP)
+        conversationDAO.observeConversationDetailsWithEventsById(conversationEntity.id).test {
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenConversationChanged_whenObservingDetailsWithEventsByIdAndUpdated_thenEmitUpdatedConversation() = runTest(dispatcher) {
+        val conversationEntity = conversationEntity1.copy(type = ConversationEntity.Type.GROUP)
+        conversationDAO.insertConversation(conversationEntity)
+        insertTeamUserAndMember(team, user1, conversationEntity.id)
+
+        conversationDAO.observeConversationDetailsWithEventsById(conversationEntity.id).test {
+            awaitItem().let {
+                assertNotNull(it)
+                assertEquals(conversationEntity.toViewEntity(user1).toConversationDetailsWithEventsEntity(), it)
+            }
+
+            conversationDAO.updateConversationMutedStatus(
+                conversationEntity.id,
+                ConversationEntity.MutedStatus.MENTIONS_MUTED,
+                Clock.System.now().toEpochMilliseconds()
+            )
+
+            awaitItem().let {
+                assertNotNull(it)
+                assertEquals(ConversationEntity.MutedStatus.MENTIONS_MUTED, it.conversationViewEntity.mutedStatus)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenConversationRemoved_whenObservingDetailsWithEventsByIdAndUpdated_thenEmitNull() = runTest(dispatcher) {
+        val conversationEntity = conversationEntity1.copy(type = ConversationEntity.Type.GROUP)
+        conversationDAO.insertConversation(conversationEntity)
+        insertTeamUserAndMember(team, user1, conversationEntity.id)
+
+        conversationDAO.observeConversationDetailsWithEventsById(conversationEntity.id).test {
+            awaitItem().let {
+                assertNotNull(it)
+                assertEquals(conversationEntity.toViewEntity(user1).toConversationDetailsWithEventsEntity(), it)
+            }
+
+            conversationDAO.deleteConversationByQualifiedID(conversationEntity.id)
+
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?
@@ -2427,7 +2501,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            accentId = 1,
+            accentId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.accentId ?: 0 else 0,
             isFavorite = false,
             folderName = null,
             folderId = null,
@@ -2437,6 +2511,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
             wireCell = null,
         )
     }
+
+    private fun ConversationViewEntity.toConversationDetailsWithEventsEntity(
+        lastMessage: MessagePreviewEntity? = null,
+        messageDraft: MessageDraftEntity? = null,
+        unreadEvents: ConversationUnreadEventEntity = ConversationUnreadEventEntity(this.id, mapOf()),
+        hasNewActivitiesToShow: Boolean = false,
+    ): ConversationDetailsWithEventsEntity =
+        ConversationDetailsWithEventsEntity(this, lastMessage, messageDraft, unreadEvents, hasNewActivitiesToShow)
 
     private companion object {
         const val teamId = "teamId"

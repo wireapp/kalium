@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -2525,6 +2526,86 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertNull(exception, "Expected no exception but got: ${exception?.message}")
         val result = messageDAO.getMessagesByConversationAndVisibility(conversationEntity2.id, 100, 0).first()
         assertEquals(messages.size, result.size)
+    }
+
+    @Test
+    fun givenMessageExists_whenObservingById_thenEmitMessage() = runTest {
+        insertInitialData()
+        val message = newRegularMessageEntity(
+            conversationId = conversationEntity1.id,
+            senderUserId = userDetailsEntity1.id,
+            sender = userDetailsEntity1
+        )
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.observeMessageById(message.id, message.conversationId).test {
+            awaitItem().let {
+                assertNotNull(it)
+                assertEquals(message.id, it.id)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenMessageDoesNotExist_whenObservingById_thenEmitNull() = runTest {
+        insertInitialData()
+
+        messageDAO.observeMessageById("non_existing_message_id", conversationEntity1.id).test {
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenMessageChanged_whenObservingById_thenEmitUpdatedMessage() = runTest {
+        insertInitialData()
+        val message = newRegularMessageEntity(
+            conversationId = conversationEntity1.id,
+            senderUserId = userDetailsEntity1.id,
+            sender = userDetailsEntity1,
+            status = MessageEntity.Status.SENT,
+        )
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.observeMessageById(message.id, message.conversationId).test {
+            awaitItem().let {
+                assertNotNull(it)
+                assertEquals(MessageEntity.Status.SENT, it.status)
+            }
+
+            // update the message
+            messageDAO.updateMessageStatus(MessageEntity.Status.READ, message.id, message.conversationId)
+
+            awaitItem().let {
+                assertNotNull(it)
+                assertEquals(MessageEntity.Status.READ, it.status)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenMessageRemoved_whenObservingById_thenEmitNull() = runTest {
+        insertInitialData()
+        val message = newRegularMessageEntity(
+            conversationId = conversationEntity1.id,
+            senderUserId = userDetailsEntity1.id,
+            sender = userDetailsEntity1
+        )
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.observeMessageById(message.id, message.conversationId).test {
+            val firstObservedMessage = awaitItem()
+            assertNotNull(firstObservedMessage)
+            assertEquals(message.content, firstObservedMessage.content)
+
+            // remove the message
+            messageDAO.deleteMessage(message.id, message.conversationId)
+
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private suspend fun insertInitialData() {

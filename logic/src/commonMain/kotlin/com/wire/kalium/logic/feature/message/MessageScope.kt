@@ -300,6 +300,10 @@ class MessageScope internal constructor(
     val getMessageById: GetMessageByIdUseCase
         get() = GetMessageByIdUseCase(messageRepository)
 
+    val observeMessageById: ObserveMessageByIdUseCase
+        get() = ObserveMessageByIdUseCase(messageRepository)
+
+
     val sendAssetMessage: ScheduleNewAssetMessageUseCase
         get() = ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
