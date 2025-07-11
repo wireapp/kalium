@@ -32,8 +32,6 @@ import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvid
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.event.EventVersion
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.util.ServerTimeHandler
-import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
@@ -49,7 +47,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.datetime.toInstant
 
 /**
  * Orchestrates the reception of events from remote sources,
@@ -79,7 +76,6 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
-    private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
@@ -172,16 +168,7 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<Unit>.onWebSocketOpen() {
         logger.i("Websocket Open")
-        // TODO: Handle time drift in a different way, e.g. the notification api is already called
-        //  somewhere else so maybe we can take the time from there ?
-//          handleTimeDrift()
         emit(Unit)
-    }
-
-    private suspend fun handleTimeDrift() {
-        eventRepository.fetchServerTime()?.let {
-            serverTimeHandler.computeTimeOffset(it.toInstant().epochSeconds)
-        }
     }
 
     companion object {

@@ -47,7 +47,6 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
-import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -127,14 +126,12 @@ interface EventRepository {
      * @return Either containing a [CoreFailure] or the oldest available event ID as a String.
      */
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
-    suspend fun fetchServerTime(): String?
     suspend fun observeEvents(): Flow<List<EventEnvelope>>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class EventDataSource(
     private val notificationApi: NotificationApi,
-    private val serverTimeApi: ServerTimeApi,
     private val metadataDAO: MetadataDAO,
     private val eventDAO: EventDAO,
     private val currentClientId: CurrentClientIdProvider,
@@ -444,15 +441,6 @@ class EventDataSource(
                 notificationApi.oldestNotification(clientId.value)
             }
         }.map { it.id }
-
-    override suspend fun fetchServerTime(): String? {
-        val result = serverTimeApi.getServerTime()
-        return if (result.isSuccessful()) {
-            result.value.time
-        } else {
-            null
-        }
-    }
 
     private fun throwPendingEventException(failure: CoreFailure) {
         val networkCause = (failure as? NetworkFailure.ServerMiscommunication)?.rootCause
