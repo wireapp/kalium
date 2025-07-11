@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
@@ -41,7 +42,10 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
+import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -2427,7 +2431,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            accentId = 1,
+            accentId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.accentId ?: 0 else 0,
             isFavorite = false,
             folderName = null,
             folderId = null,

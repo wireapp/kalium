@@ -19,23 +19,17 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
-import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UnreadEventType
@@ -45,9 +39,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -55,7 +49,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
@@ -89,6 +82,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -101,7 +95,6 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.any
 import io.mockative.coEvery
@@ -1584,6 +1577,5 @@ class ConversationRepositoryTest {
             UpdateConversationProtocolResponse.ProtocolUnchanged,
             emptyMap(), 204
         )
-
     }
 }

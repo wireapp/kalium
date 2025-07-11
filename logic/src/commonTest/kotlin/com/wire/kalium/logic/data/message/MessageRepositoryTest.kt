@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -66,6 +67,7 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -596,6 +598,80 @@ class MessageRepositoryTest {
 
     }
 
+    @Test
+    fun givenMessageExists_whenObservingById_thenEmitMessage() = runTest {
+        val messageEntity = TEST_MESSAGE_ENTITY
+        val message = TEST_MESSAGE
+        val (_, messageRepository) = Arrangement()
+            .withObserveMessageById(flowOf(messageEntity))
+            .withMappedMessageModel(message, messageEntity)
+            .arrange()
+
+        messageRepository.observeMessageById(message.conversationId, message.id).test {
+            awaitItem().shouldSucceed {
+                assertEquals(message, it)
+            }
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenMessageDoesNotExist_whenObservingById_thenEmitNull() = runTest {
+        val (_, messageRepository) = Arrangement()
+            .withObserveMessageById(flowOf(null))
+            .arrange()
+
+        messageRepository.observeMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_ID).test {
+            awaitItem().shouldFail {
+                assertEquals(StorageFailure.DataNotFound, it)
+            }
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenMessageChanged_whenObservingById_thenEmitUpdatedMessage() = runTest {
+        val messageEntity = TEST_MESSAGE_ENTITY.copy(status = MessageEntity.Status.SENT)
+        val message = TEST_MESSAGE.copy(status = Message.Status.Sent)
+        val updatedMessageEntity = messageEntity.copy(status = MessageEntity.Status.READ, readCount = 1L)
+        val updatedMessage = message.copy(status = Message.Status.Read(1L))
+        val (_, messageRepository) = Arrangement()
+            .withObserveMessageById(flowOf(messageEntity, updatedMessageEntity))
+            .withMappedMessageModel(message, messageEntity)
+            .withMappedMessageModel(updatedMessage, updatedMessageEntity)
+            .arrange()
+
+        messageRepository.observeMessageById(message.conversationId, message.id).test {
+            awaitItem().shouldSucceed {
+                assertEquals(message, it)
+            }
+            awaitItem().shouldSucceed {
+                assertEquals(updatedMessage, it)
+            }
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenMessageRemoved_whenObservingById_thenEmitNull() = runTest {
+        val messageEntity = TEST_MESSAGE_ENTITY
+        val message = TEST_MESSAGE
+        val (_, messageRepository) = Arrangement()
+            .withObserveMessageById(flowOf(messageEntity, null))
+            .withMappedMessageModel(message, messageEntity)
+            .arrange()
+
+        messageRepository.observeMessageById(message.conversationId, message.id).test {
+            awaitItem().shouldSucceed {
+                assertEquals(message, it)
+            }
+            awaitItem().shouldFail {
+                assertEquals(StorageFailure.DataNotFound, it)
+            }
+            awaitComplete()
+        }
+    }
+
     private class Arrangement {
         val messageApi = mock(MessageApi::class)
         val mlsMessageApi = mock(MLSMessageApi::class)
@@ -773,6 +849,12 @@ class MessageRepositoryTest {
             coEvery {
                 messageDAO.insertFailedRecipientDelivery(any(), any(), any(), any())
             }.returns(Unit)
+        }
+
+        suspend fun withObserveMessageById(messageFlow: Flow<MessageEntity?>) = apply {
+            coEvery {
+                messageDAO.observeMessageById(any(), any())
+            }.returns(messageFlow)
         }
     }
 
