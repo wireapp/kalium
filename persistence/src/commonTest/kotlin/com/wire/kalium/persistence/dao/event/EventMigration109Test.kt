@@ -244,4 +244,69 @@ class EventMigration109Test : BaseDatabaseTest() {
         val eventsAfter = eventDAO.observeEvents(0).first()
         assertTrue(eventsAfter.isEmpty())
     }
+
+    @Test
+    fun givenEmptyEventsTableAndNoMetadataKey_whenRunningMigration_thenShouldNotCreateKey() = runTest(dispatcher) {
+        // Given: Events table is empty and no metadata key exists
+        // (No setup needed - both tables are empty by default)
+        
+        // When: running migration
+        runMigration109Query()
+        
+        // Then: metadata key should not be created
+        val result = metadataDAO.valueByKeyFlow("last_processed_event_id").first()
+        assertNull(result)
+    }
+
+    @Test
+    fun givenAllEventsAreProcessed_whenRunningMigration_thenShouldUseLatestProcessedEvent() = runTest(dispatcher) {
+        // Given: setup metadata key and all events are processed
+        metadataDAO.insertValue("old_value", "last_processed_event_id")
+        
+        val events = listOf(
+            NewEventEntity(eventId = "event1", payload = "{}", isLive = false, transient = false),
+            NewEventEntity(eventId = "event2", payload = "{}", isLive = false, transient = false),
+            NewEventEntity(eventId = "event3", payload = "{}", isLive = false, transient = false)
+        )
+        eventDAO.insertEvents(events)
+        
+        // Mark ALL events as processed
+        eventDAO.markEventAsProcessed("event1")
+        eventDAO.markEventAsProcessed("event2")
+        eventDAO.markEventAsProcessed("event3")
+        
+        // When: running migration
+        runMigration109Query()
+        
+        // Then: should use the latest processed event (highest ID)
+        val result = metadataDAO.valueByKeyFlow("last_processed_event_id").first()
+        assertEquals("event3", result) // event3 has the highest ID
+        
+        // And: Events table should be empty
+        val eventsAfter = eventDAO.observeEvents(0).first()
+        assertTrue(eventsAfter.isEmpty())
+    }
+    
+    @Test
+    fun givenSingleEvent_whenRunningMigration_thenShouldHandleCorrectly() = runTest(dispatcher) {
+        // Given: setup metadata key and single event
+        metadataDAO.insertValue("old_value", "last_processed_event_id")
+        
+        val events = listOf(
+            NewEventEntity(eventId = "single-event", payload = "{}", isLive = false, transient = false)
+        )
+        eventDAO.insertEvents(events)
+        // Leave event unprocessed
+        
+        // When: running migration
+        runMigration109Query()
+        
+        // Then: should use the single unprocessed event
+        val result = metadataDAO.valueByKeyFlow("last_processed_event_id").first()
+        assertEquals("single-event", result)
+        
+        // And: Events table should be empty
+        val eventsAfter = eventDAO.observeEvents(0).first()
+        assertTrue(eventsAfter.isEmpty())
+    }
 }
