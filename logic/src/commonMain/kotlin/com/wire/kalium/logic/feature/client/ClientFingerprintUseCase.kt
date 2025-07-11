@@ -17,20 +17,23 @@
  */
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.CryptoClientId
-import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.common.error.wrapProteusRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.mapLeft
+import com.wire.kalium.cryptography.CryptoClientId
+import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
+import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.error.wrapProteusRequest
 
 /**
  * Retrieves the Proteus-specific fingerprint of a client.
@@ -45,38 +48,45 @@ interface ClientFingerprintUseCase {
 }
 
 class ClientFingerprintUseCaseImpl internal constructor(
-    private val proteusClientProvider: ProteusClientProvider,
+    private val transactionProvider: CryptoTransactionProvider,
     private val prekeyRepository: PreKeyRepository
 ) : ClientFingerprintUseCase {
     override suspend operator fun invoke(userId: UserId, clientId: ClientId): Result =
-        proteusClientProvider.getOrError().flatMap { proteusClient ->
+        transactionProvider.proteusTransaction("remoteFingerPrint") { proteusContext ->
             wrapProteusRequest {
-                proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
+                proteusContext.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
             }
-        }.fold(
-            {
-                when (it) {
-                    is ProteusFailure -> onProteusFailure(it, userId, clientId)
-                    else -> Result.Failure(it)
+                .mapLeft { it as CoreFailure }
+                .flatMapLeft {
+                    when (it) {
+                        is ProteusFailure -> onProteusFailure(it, userId, clientId, proteusContext)
+                        else -> it.left()
+                    }
                 }
-            },
-            Result::Success
-        )
+        }
+            .fold(Result::Failure, Result::Success)
 
-    private suspend fun onProteusFailure(proteusFailure: ProteusFailure, userId: UserId, clientId: ClientId): Result =
+    private suspend fun onProteusFailure(
+        proteusFailure: ProteusFailure,
+        userId: UserId,
+        clientId: ClientId,
+        proteusContext: ProteusCoreCryptoContext
+    ): Either<CoreFailure, ByteArray> =
         when (proteusFailure.proteusException.code) {
-            ProteusException.Code.SESSION_NOT_FOUND -> onSessionNotFound(userId, clientId)
+            ProteusException.Code.SESSION_NOT_FOUND -> onSessionNotFound(userId, clientId, proteusContext)
             else -> Either.Left(proteusFailure)
-        }.fold(Result::Failure, Result::Success)
+        }
 
-    private suspend fun onSessionNotFound(userId: UserId, clientId: ClientId): Either<CoreFailure, ByteArray> {
-        return prekeyRepository.establishSessions(mapOf(userId to listOf(clientId))).fold(
+    private suspend fun onSessionNotFound(
+        userId: UserId,
+        clientId: ClientId,
+        proteusContext: ProteusCoreCryptoContext
+    ): Either<CoreFailure, ByteArray> {
+        return prekeyRepository.establishSessions(proteusContext, mapOf(userId to listOf(clientId))).fold(
             { error -> Either.Left(error) },
             { _ ->
-                proteusClientProvider.getOrError().flatMap { proteusClient ->
-                    wrapProteusRequest {
-                        proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
-                    }
+                wrapProteusRequest {
+                    proteusContext.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
                 }
             }
         )

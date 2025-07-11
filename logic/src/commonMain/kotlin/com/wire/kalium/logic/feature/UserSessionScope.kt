@@ -58,6 +58,8 @@ import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
@@ -683,7 +685,6 @@ class UserSessionScope internal constructor(
             rootProteusPath = rootPathsProvider.rootProteusPath(userId),
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
-            kaliumConfigs = kaliumConfigs,
             proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
         )
     }
@@ -1048,6 +1049,12 @@ class UserSessionScope internal constructor(
             logger = userScopedLogger
         )
 
+    val cryptoTransactionProvider: CryptoTransactionProvider
+        get() = CryptoTransactionProviderImpl(
+            mlsClientProvider = mlsClientProvider,
+            proteusClientProvider = proteusClientProvider,
+        )
+
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
             eventRepository = eventRepository,
@@ -1270,6 +1277,7 @@ class UserSessionScope internal constructor(
         IncrementalSyncWorkerImpl(
             eventGatherer,
             eventProcessor,
+            cryptoTransactionProvider,
             userScopedLogger,
         )
     }
@@ -1294,6 +1302,7 @@ class UserSessionScope internal constructor(
         LocalEventManagerImpl(
             localEventRepository,
             eventProcessor,
+            cryptoTransactionProvider,
             this
         )
     }
@@ -1472,7 +1481,7 @@ class UserSessionScope internal constructor(
 
     private val proteusUnpacker: ProteusMessageUnpacker
         get() = ProteusMessageUnpackerImpl(
-            proteusClientProvider = proteusClientProvider, selfUserId = userId
+            selfUserId = userId
         )
 
     private val messageEncoder get() = MessageContentEncoder()
@@ -1746,7 +1755,7 @@ class UserSessionScope internal constructor(
     val observeLegalHoldRequest: ObserveLegalHoldRequestUseCase
         get() = ObserveLegalHoldRequestUseCaseImpl(
             userConfigRepository = userConfigRepository,
-            preKeyRepository = preKeyRepository
+            transactionProvider = cryptoTransactionProvider
         )
 
     val approveLegalHoldRequest: ApproveLegalHoldRequestUseCase
@@ -1968,7 +1977,8 @@ class UserSessionScope internal constructor(
             updateSupportedProtocolsAndResolveOneOnOnes,
             registerMLSClientUseCase,
             syncFeatureConfigsUseCase,
-            userConfigRepository
+            userConfigRepository,
+            cryptoTransactionProvider
         )
     }
     val conversations: ConversationScope by lazy {
@@ -2024,7 +2034,6 @@ class UserSessionScope internal constructor(
             clientRepository,
             clientRemoteRepository,
             clientIdProvider,
-            proteusClientProvider,
             mlsClientProvider,
             preKeyRepository,
             userRepository,
@@ -2044,6 +2053,7 @@ class UserSessionScope internal constructor(
             updateSelfClientCapabilityToConsumableNotifications,
             users.serverLinks,
             fetchConversationUseCase,
+            cryptoTransactionProvider,
             userScopedLogger,
         )
     }
@@ -2061,7 +2071,6 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
-            proteusClientProvider,
             mlsClientProvider,
             preKeyRepository,
             userRepository,
@@ -2083,6 +2092,7 @@ class UserSessionScope internal constructor(
             cells.removeAttachments,
             cells.deleteAttachmentsUseCase,
             fetchConversationUseCase,
+            cryptoTransactionProvider,
             this,
             userScopedLogger,
         )

@@ -18,22 +18,23 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.auth.AccountInfo
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,7 +47,7 @@ class NeedsToRegisterClientUseCaseTest {
 
         val (arrangement, needsToRegisterClient) = Arrangement()
             .withUserAccountInfo(Either.Right(AccountInfo.Invalid(selfUserId, LogoutReason.SESSION_EXPIRED)))
-            .arrange()
+            .arrange{}
         needsToRegisterClient().also {
             assertEquals(false, it)
         }
@@ -66,8 +67,9 @@ class NeedsToRegisterClientUseCaseTest {
         val (arrangement, needsToRegisterClient) = Arrangement()
             .withUserAccountInfo(Either.Right(AccountInfo.Valid(selfUserId)))
             .withCurrentClientId(Either.Left(StorageFailure.DataNotFound))
-            .withProteusClientSuccess()
-            .arrange()
+            .arrange{
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
         needsToRegisterClient().also {
             assertEquals(true, it)
         }
@@ -79,10 +81,6 @@ class NeedsToRegisterClientUseCaseTest {
         coVerify {
             arrangement.currentClientIdProvider.invoke()
         }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.proteusClientProvider.getOrError()
-        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -90,8 +88,9 @@ class NeedsToRegisterClientUseCaseTest {
         val (arrangement, needsToRegisterClient) = Arrangement()
             .withUserAccountInfo(Either.Right(AccountInfo.Valid(selfUserId)))
             .withCurrentClientId(Either.Right(ClientId("client-id")))
-            .withProteusClientSuccess()
-            .arrange()
+            .arrange{
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
         needsToRegisterClient().also {
             assertEquals(false, it)
         }
@@ -103,18 +102,15 @@ class NeedsToRegisterClientUseCaseTest {
         coVerify {
             arrangement.currentClientIdProvider.invoke()
         }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.proteusClientProvider.getOrError()
-        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAccountIsValidAndClientIsRegisteredAndLocalCryptoFilesAreMissing_thenReturnTrue() = runTest {
         val (arrangement, needsToRegisterClient) = Arrangement()
             .withUserAccountInfo(Either.Right(AccountInfo.Valid(selfUserId)))
-            .withProteusClientFailure(Either.Left(CoreFailure.MissingClientRegistration))
-            .arrange()
+            .arrange{
+                withProteusTransactionResultOnly(Either.Left(CoreFailure.MissingClientRegistration))
+            }
         needsToRegisterClient().also {
             assertTrue(it)
         }
@@ -126,24 +122,18 @@ class NeedsToRegisterClientUseCaseTest {
         coVerify {
             arrangement.currentClientIdProvider.invoke()
         }.wasNotInvoked()
-
-        coVerify {
-            arrangement.proteusClientProvider.getOrError()
-        }.wasInvoked(exactly = once)
     }
 
     private companion object {
         val selfUserId = UserId("selfUserId", "selfUserDomain")
     }
 
-    private class Arrangement {
-                val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
         val sessionRepository = mock(SessionRepository::class)
-        val proteusClientProvider = mock(ProteusClientProvider::class)
-        private val proteusClient = mock(ProteusClient::class)
 
-        private var needsToRegisterClientUseCase: NeedsToRegisterClientUseCase =
-            NeedsToRegisterClientUseCaseImpl(currentClientIdProvider, sessionRepository, proteusClientProvider, selfUserId)
+        private val needsToRegisterClientUseCase: NeedsToRegisterClientUseCase =
+            NeedsToRegisterClientUseCaseImpl(currentClientIdProvider, sessionRepository, cryptoTransactionProvider, selfUserId)
 
         suspend fun withCurrentClientId(result: Either<StorageFailure, ClientId>) = apply {
             coEvery {
@@ -157,18 +147,10 @@ class NeedsToRegisterClientUseCaseTest {
             }.returns(result)
         }
 
-        suspend fun withProteusClientSuccess() = apply {
-            coEvery {
-                proteusClientProvider.getOrError()
-            }.returns(Either.Right(proteusClient))
+        fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            runBlocking { block() }
+            this to needsToRegisterClientUseCase
         }
 
-        suspend fun withProteusClientFailure(result: Either.Left<CoreFailure>) = apply {
-            coEvery {
-                proteusClientProvider.getOrError()
-            }.returns(result)
-        }
-
-        fun arrange() = this to needsToRegisterClientUseCase
     }
 }

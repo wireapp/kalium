@@ -47,69 +47,48 @@ class ProteusClientTest : BaseProteusClientTest() {
         Dispatchers.setMain(dispatcher)
     }
 
-    @IgnoreJS
-    @IgnoreIOS
-    @Test
-    fun givenExistingUnencryptedProteusData_whenCallingOpenOrError_thenItMigratesExistingData() = runTest {
-        val proteusStoreRef = createProteusStoreRef(alice.id)
-        val unencryptedAliceClient = createProteusClient(proteusStoreRef)
-        val previousFingerprint = unencryptedAliceClient.getLocalFingerprint()
-        val encryptedAliceClient = createProteusClient(proteusStoreRef, PROTEUS_DB_SECRET)
-
-        assertEquals(previousFingerprint.decodeToString(), encryptedAliceClient.getLocalFingerprint().decodeToString())
-    }
-
-    @IgnoreJS
-    @IgnoreIOS
-    @Test
-    fun givenExistingUnencryptedProteusData_whenCallingOpenOrCreate_thenItMigratesExistingData() = runTest {
-        val proteusStoreRef = createProteusStoreRef(alice.id)
-        val unencryptedAliceClient = createProteusClient(proteusStoreRef)
-        val previousFingerprint = unencryptedAliceClient.getLocalFingerprint()
-        val encryptedAliceClient = createProteusClient(proteusStoreRef, PROTEUS_DB_SECRET)
-
-        assertEquals(previousFingerprint.decodeToString(), encryptedAliceClient.getLocalFingerprint().decodeToString())
-    }
-
     @Test
     fun givenProteusClient_whenCallingNewLastKey_thenItReturnsALastPreKey() = runTest {
-        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val lastPreKey = aliceClient.newLastResortPreKey()
         assertEquals(65535, lastPreKey.id)
     }
 
     @Test
     fun givenProteusClient_whenCallingNewPreKeys_thenItReturnsAListOfPreKeys() = runTest {
-        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val preKeyList = aliceClient.newPreKeys(0, 10)
         assertEquals(preKeyList.size, 10)
     }
 
     @Test
     fun givenIncomingPreKeyMessage_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
-        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         val message = "Hi Alice!"
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
-        val encryptedMessage = bobClient.encryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId)
-        val decryptedMessage = aliceClient.decrypt(encryptedMessage, bobSessionId) { it }
+        val encryptedMessage =
+            bobClient.transaction("encryptWithPreKey") { it.encryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId) }
+        val decryptedMessage = aliceClient.transaction("decrypt") { it.decryptMessage(bobSessionId, encryptedMessage) { it } }
         assertEquals(message, decryptedMessage.decodeToString())
     }
 
     @Test
     fun givenSessionAlreadyExists_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
-        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
-        val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
-        aliceClient.decrypt(encryptedMessage1, bobSessionId) {}
+        val encryptedMessage1 = bobClient.transaction("encryptWithPreKey") {
+            it.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        }
+        aliceClient.transaction("decrypt") { it.decryptMessage(bobSessionId, encryptedMessage1) {} }
 
         val message2 = "Hi again Alice!"
-        val encryptedMessage2 = bobClient.encrypt(message2.encodeToByteArray(), aliceSessionId)
-        val decryptedMessage2 = aliceClient.decrypt(encryptedMessage2, bobSessionId) { it }
+        val encryptedMessage2 = bobClient.transaction("encrypt") { it.encrypt(message2.encodeToByteArray(), aliceSessionId) }
+        val decryptedMessage2 = aliceClient.transaction("decrypt") { it.decryptMessage(bobSessionId, encryptedMessage2) { it } }
 
         assertEquals(message2, decryptedMessage2.decodeToString())
     }
@@ -123,11 +102,12 @@ class ProteusClientTest : BaseProteusClientTest() {
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
-        val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
-        aliceClient.decrypt(encryptedMessage1, bobSessionId) {}
+        val encryptedMessage1 =
+            bobClient.transaction("encryptWithPreKey") { it.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId) }
+        aliceClient.transaction("decrypt") { it.decryptMessage(bobSessionId, encryptedMessage1) {} }
 
         val exception: ProteusException = assertFailsWith {
-            aliceClient.decrypt(encryptedMessage1, bobSessionId) {}
+            aliceClient.transaction("decrypt") { it.decryptMessage(bobSessionId, encryptedMessage1) {} }
         }
         assertEquals(ProteusException.Code.DUPLICATE_MESSAGE, exception.code)
     }
@@ -136,15 +116,20 @@ class ProteusClientTest : BaseProteusClientTest() {
     @IgnoreIOS
     @Test
     fun givenMissingSession_whenCallingEncryptBatched_thenMissingSessionAreIgnored() = runTest {
-        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
-        bobClient.createSession(aliceKey, aliceSessionId)
+        bobClient.transaction("createSession") { it.createSession(aliceKey, aliceSessionId) }
 
         val missingAliceSessionId = CryptoSessionId(alice.id, CryptoClientId("missing"))
-        val encryptedMessages = bobClient.encryptBatched(message1.encodeToByteArray(), listOf(aliceSessionId, missingAliceSessionId))
+        val encryptedMessages = bobClient.transaction("encryptBatched") {
+            it.encryptBatched(
+                message1.encodeToByteArray(),
+                listOf(aliceSessionId, missingAliceSessionId)
+            )
+        }
 
         assertEquals(1, encryptedMessages.size)
         assertTrue(encryptedMessages.containsKey(aliceSessionId))
@@ -152,12 +137,12 @@ class ProteusClientTest : BaseProteusClientTest() {
 
     @Test
     fun givenNoSessionExists_whenCallingCreateSession_thenSessionIsCreated() = runTest {
-        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
-        bobClient.createSession(aliceKey, aliceSessionId)
-        assertNotNull(bobClient.encrypt("Hello World".encodeToByteArray(), aliceSessionId))
+        bobClient.transaction("createSession") { it.createSession(aliceKey, aliceSessionId) }
+        assertNotNull(bobClient.transaction("encrypt") { it.encrypt("Hello World".encodeToByteArray(), aliceSessionId) })
     }
 
     // TODO: cryptobox4j does not expose the session
@@ -166,10 +151,10 @@ class ProteusClientTest : BaseProteusClientTest() {
     @IgnoreJS
     @Test
     fun givenNoSessionExists_whenGettingRemoteFingerPrint_thenReturnSessionNotFound() = runTest {
-        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         assertFailsWith<ProteusException> {
-            bobClient.remoteFingerPrint(aliceSessionId)
+            bobClient.transaction("remoteFingerPrint") { it.remoteFingerPrint(aliceSessionId) }
         }.also {
             assertEquals(ProteusException.Code.SESSION_NOT_FOUND, it.code)
         }
@@ -178,13 +163,13 @@ class ProteusClientTest : BaseProteusClientTest() {
     @IgnoreJvm // cryptobox4j does not expose the session
     @Test
     fun givenSessionExists_whenGettingRemoteFingerPrint_thenReturnSuccess() = runTest {
-        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
-        bobClient.createSession(aliceKey, aliceSessionId)
-        bobClient.remoteFingerPrint(aliceSessionId).also {
-            assertEquals(aliceClient.getLocalFingerprint().decodeToString(), it.decodeToString())
+        bobClient.transaction("createSession") { it.createSession(aliceKey, aliceSessionId) }
+        bobClient.transaction("remoteFingerPrint") { it.remoteFingerPrint(aliceSessionId) }.also {
+            assertEquals(aliceClient.transaction("getLocalFingerprint") { it.getLocalFingerprint() }.decodeToString(), it.decodeToString())
         }
     }
 
@@ -193,21 +178,24 @@ class ProteusClientTest : BaseProteusClientTest() {
     @IgnoreJvm
     @IgnoreIOS
     @Test
-    fun givenNonEncryptedClient_whenThrowingDuringTransaction_thenShouldNotSaveSessionAndBeAbleToDecryptAgain() = runTest {
+    fun givenEncryptedClient_whenThrowingDuringTransaction_thenShouldNotSaveSessionAndBeAbleToDecryptAgain() = runTest {
         val aliceRef = createProteusStoreRef(alice.id)
-        val failedAliceClient = createProteusClient(aliceRef)
-        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        val failedAliceClient = createProteusClient(aliceRef, PROTEUS_DB_SECRET)
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         val aliceKey = failedAliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
 
         var decryptedCount = 0
 
-        val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        val encryptedMessage1 =
+            bobClient.transaction("encryptWithPreKey") { it.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId) }
         try {
-            failedAliceClient.decrypt(encryptedMessage1, bobSessionId) {
-                decryptedCount++
-                throw NullPointerException("")
+            failedAliceClient.transaction("decrypt") {
+                it.decryptMessage(bobSessionId, encryptedMessage1) {
+                    decryptedCount++
+                    throw NullPointerException("")
+                }
             }
         } catch (ignore: Throwable) {
             /** No-op **/
@@ -215,11 +203,13 @@ class ProteusClientTest : BaseProteusClientTest() {
         // Assume that the app crashed after decrypting but before saving session.
         // Trying to decrypt again should succeed.
 
-        val secondAliceClient = createProteusClient(aliceRef)
+        val secondAliceClient = createProteusClient(aliceRef, PROTEUS_DB_SECRET)
 
-        val result = secondAliceClient.decrypt(encryptedMessage1, bobSessionId) { result ->
-            decryptedCount++
-            result
+        val result = secondAliceClient.transaction("decrypt") {
+            it.decryptMessage(bobSessionId, encryptedMessage1) { result ->
+                decryptedCount++
+                result
+            }
         }
         assertEquals(message1, result.decodeToString())
         assertEquals(2, decryptedCount)

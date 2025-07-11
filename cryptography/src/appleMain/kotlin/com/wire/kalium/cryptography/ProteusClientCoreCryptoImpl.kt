@@ -21,35 +21,15 @@ package com.wire.kalium.cryptography
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import io.ktor.utils.io.core.toByteArray
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
-import platform.Foundation.URLByAppendingPathComponent
 import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: CoreCrypto) : ProteusClient {
     @Suppress("EmptyFunctionBlock")
     override suspend fun close() {
-    }
-
-    override fun getIdentity(): ByteArray {
-        return ByteArray(0)
-    }
-
-    override suspend fun getLocalFingerprint(): ByteArray {
-        return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
-    }
-
-    override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
-        return wrapException { coreCrypto.proteusFingerprintRemote(sessionId.value).toByteArray() }
-    }
-
-    override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray {
-        // TODO this is a hack, we need to expose the fingerprint from the core
-        return "".toByteArray()
     }
 
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
@@ -64,73 +44,8 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         return wrapException { toPreKey(UShort.MAX_VALUE.toInt(), toByteArray(coreCrypto.proteusNewPrekey(UShort.MAX_VALUE))) }
     }
 
-    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        return wrapException {
-            coreCrypto.proteusSessionExists(sessionId.value)
-        }
-    }
-
-    override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-        wrapException { coreCrypto.proteusSessionFromPrekey(sessionId.value, toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes())) }
-    }
-
-    override suspend fun <T : Any> decrypt(
-        message: ByteArray,
-        sessionId: CryptoSessionId,
-        handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
-    ): T {
-        val sessionExists = doesSessionExist(sessionId)
-
-        return wrapException {
-            val decryptedMessage = if (sessionExists) {
-                toByteArray(coreCrypto.proteusDecrypt(sessionId.value, toUByteList(message)))
-            } else {
-                toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))
-            }
-            handleDecryptedMessage(decryptedMessage).also {
-                coreCrypto.proteusSessionSave(sessionId.value)
-            }
-        }
-    }
-
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException {
-            val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId.value, toUByteList(message)))
-            coreCrypto.proteusSessionSave(sessionId.value)
-            encryptedMessage
-        }
-    }
-
-    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
-        return wrapException {
-            coreCrypto.proteusEncryptBatched(
-                sessionId = sessionIds.map { it.value },
-                plaintext = toUByteList((message))
-            ).mapNotNull { entry ->
-                CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
-                    sessionId to toByteArray(entry.value)
-                }
-            }.toMap()
-        }
-    }
-
-    override suspend fun encryptWithPreKey(
-        message: ByteArray,
-        preKeyCrypto: PreKeyCrypto,
-        sessionId: CryptoSessionId
-    ): ByteArray {
-        return wrapException {
-            coreCrypto.proteusSessionFromPrekey(sessionId.value, toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes()))
-            val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId.value, toUByteList(message)))
-            coreCrypto.proteusSessionSave(sessionId.value)
-            encryptedMessage
-        }
-    }
-
-    override suspend fun deleteSession(sessionId: CryptoSessionId) {
-        wrapException {
-            coreCrypto.proteusSessionDelete(sessionId.value)
-        }
+    override suspend fun <R> transaction(name: String, block: suspend (context: ProteusCoreCryptoContext) -> R): R {
+        TODO("Not yet implemented")
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")

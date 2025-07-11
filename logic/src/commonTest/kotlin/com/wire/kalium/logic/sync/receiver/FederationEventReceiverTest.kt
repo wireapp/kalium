@@ -30,6 +30,8 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -116,7 +118,7 @@ class FederationEventReceiverTest {
         )
 
         // Then
-        useCase.onEvent(event, TestEvent.liveDeliveryInfo).shouldSucceed()
+        useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
         coVerify {
             arrangement.connectionRepository.deleteConnection(matches { it.qualifiedConversationId.domain == defederatedDomain })
@@ -182,7 +184,7 @@ class FederationEventReceiverTest {
             )
 
             // Then
-            useCase.onEvent(event, TestEvent.liveDeliveryInfo).shouldSucceed()
+            useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
             coVerify {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
@@ -233,7 +235,9 @@ class FederationEventReceiverTest {
         ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
-        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl() {
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
+    {
 
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher
 

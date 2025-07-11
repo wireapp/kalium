@@ -23,11 +23,14 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -41,7 +44,11 @@ class MissedNotificationsEventReceiverTest {
             .withAcknowledgeMissedEvent()
             .arrange()
 
-        receiver.onEvent(event = TestEvent.notificationsMissed(), deliveryInfo = TestEvent.liveDeliveryInfo)
+        receiver.onEvent(
+            transactionContext = arrangement.transactionContext,
+            event = TestEvent.notificationsMissed(),
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             advanceUntilIdle()
@@ -51,7 +58,7 @@ class MissedNotificationsEventReceiverTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
@@ -65,10 +72,13 @@ class MissedNotificationsEventReceiverTest {
             coEvery { eventRepository.acknowledgeMissedEvent() }.returns(Either.Right(Unit))
         }
 
-        fun arrange() = this to MissedNotificationsEventReceiverImpl(
-            slowSyncRequester = slowSyncExecutorProvider,
-            slowSyncRepository = slowSyncRepository,
-            eventRepository = eventRepository
-        )
+        fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
+            runBlocking { block() }
+            this to MissedNotificationsEventReceiverImpl(
+                slowSyncRequester = slowSyncExecutorProvider,
+                slowSyncRepository = slowSyncRepository,
+                eventRepository = eventRepository
+            )
+        }
     }
 }

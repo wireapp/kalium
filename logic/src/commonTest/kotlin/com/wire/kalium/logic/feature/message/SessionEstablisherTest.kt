@@ -18,48 +18,46 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
+import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import io.mockative.any
-
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SessionEstablisherTest {
 
     @Test
     fun givenAllSessionsAreEstablishedAlready_whenPreparingSessions_thenItShouldSucceed() = runTest {
-        val (_, sessionEstablisher) = Arrangement()
+        val (arrangement, sessionEstablisher) = Arrangement()
             .withDoesSessionExist(true)
-            .arrange()
+            .arrange {}
 
-        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
+        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
             .shouldSucceed()
     }
 
@@ -67,11 +65,11 @@ class SessionEstablisherTest {
     fun givenProteusClientThrowsWhenCheckingSession_whenPreparingSessions_thenItShouldFail() = runTest {
         val exception = ProteusException("PANIC!!!11!eleven!", ProteusException.Code.PANIC, 15)
 
-        val (_, sessionEstablisher) = Arrangement()
+        val (arrangement, sessionEstablisher) = Arrangement()
             .withDoesSessionExistThrows(exception)
-            .arrange()
+            .arrange {}
 
-        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
+        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
             .shouldFail {
                 assertIs<ProteusFailure>(it)
                 assertEquals(exception, it.proteusException)
@@ -82,12 +80,12 @@ class SessionEstablisherTest {
     fun givenAllSessionsAreEstablishedAlready_whenPreparingSessions_thenPreKeyRepositoryShouldNotBeCalled() = runTest {
         val (arrangement, sessionEstablisher) = Arrangement()
             .withDoesSessionExist(true)
-            .arrange()
+            .arrange {}
 
-        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
+        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
 
         coVerify {
-            arrangement.preKeyRepository.establishSessions(any())
+            arrangement.preKeyRepository.establishSessions(any(), any())
         }.wasNotInvoked()
     }
 
@@ -95,12 +93,19 @@ class SessionEstablisherTest {
     fun givenARecipient_whenPreparingSessions_thenProteusClientShouldCheckIfSessionExists() = runTest {
         val (arrangement, sessionEstablisher) = Arrangement()
             .withDoesSessionExist(true)
-            .arrange()
+            .arrange {}
 
-        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
+        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
 
         coVerify {
-            arrangement.proteusClient.doesSessionExist(eq(CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(TEST_CLIENT_ID_1.value))))
+            arrangement.proteusContext.doesSessionExist(
+                eq(
+                    CryptoSessionId(
+                        CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain),
+                        CryptoClientId(TEST_CLIENT_ID_1.value)
+                    )
+                )
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -109,12 +114,12 @@ class SessionEstablisherTest {
         val preKey = PreKeyDTO(42, "encodedData")
         val userPreKeysResult = mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))
 
-        val (_, sessionEstablisher) = Arrangement()
+        val (arrangement, sessionEstablisher) = Arrangement()
             .withDoesSessionExist(false)
             .withEstablishSessions(Either.Right(UsersWithoutSessions.EMPTY))
-            .arrange()
+            .arrange {}
 
-        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
+        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
             .shouldSucceed()
     }
 
@@ -124,50 +129,33 @@ class SessionEstablisherTest {
         val TEST_RECIPIENT_1 = Recipient(TestUser.USER_ID, listOf(TestClient.CLIENT_ID))
     }
 
-    private class Arrangement {
-                val proteusClient = mock(ProteusClient::class)
-        val proteusClientProvider = mock(ProteusClientProvider::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val preKeyRepository = mock(PreKeyRepository::class)
 
         private val sessionEstablisher: SessionEstablisher =
-            SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
-
-        suspend fun withCreateSession(throwable: Throwable?) = apply {
-            if (throwable == null) {
-                coEvery {
-                    proteusClient.createSession(any(), any())
-                }.returns(Unit)
-            } else {
-                coEvery {
-                    proteusClient.createSession(any(), any())
-                }.throws(throwable)
-            }
-
-        }
+            SessionEstablisherImpl(preKeyRepository)
 
         suspend fun withEstablishSessions(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
             coEvery {
-                preKeyRepository.establishSessions(any())
+                preKeyRepository.establishSessions(any(), any())
             }.returns(result)
         }
 
         suspend fun withDoesSessionExist(result: Boolean) = apply {
             coEvery {
-                proteusClient.doesSessionExist(any())
+                proteusContext.doesSessionExist(any())
             }.returns(result)
         }
 
         suspend fun withDoesSessionExistThrows(throwable: Throwable) = apply {
             coEvery {
-                proteusClient.doesSessionExist(any())
+                proteusContext.doesSessionExist(any())
             }.throws(throwable)
         }
 
-
-        suspend fun arrange() = this to sessionEstablisher.also {
-            coEvery {
-                proteusClientProvider.getOrError()
-            }.returns(Either.Right(proteusClient))
+        fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            runBlocking { block() }
+            this to sessionEstablisher
         }
     }
 }

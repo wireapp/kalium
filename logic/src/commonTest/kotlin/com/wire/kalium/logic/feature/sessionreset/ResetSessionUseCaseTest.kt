@@ -18,193 +18,88 @@
 
 package com.wire.kalium.logic.feature.sessionreset
 
-import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.message.SessionResetSender
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ResetSessionUseCaseTest {
 
-        val proteusClientProvider = mock(ProteusClientProvider::class)
-
-        val sessionResetSender = mock(SessionResetSender::class)
-
-        private val messageRepository = mock(MessageRepository::class)
-
-        val proteusClient = mock(ProteusClient::class)
-
-        val idMapper = mock(IdMapper::class)
-
-    private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
-
-    lateinit var resetSessionUseCase: ResetSessionUseCase
-
-    @BeforeTest
-    fun setup() {
-        resetSessionUseCase = ResetSessionUseCaseImpl(
-            proteusClientProvider,
-            sessionResetSender,
-            messageRepository,
-            idMapper,
-            testDispatchers
-        )
-    }
-
     @Test
-    fun givenProteusProviderReturningFailure_whenResettingSession_ThenReturnFailure() = runTest(testDispatchers.io) {
-        coEvery {
-            proteusClientProvider.getOrError()
-        }.returns(Either.Left(failure))
+    fun givenProteusProviderReturningFailure_whenResettingSession_ThenReturnFailure() = runTest(TestKaliumDispatcher.io) {
+        val (arrangement, useCase) = Arrangement()
+            .withIdMapperMapping()
+            .arrange {
+                withProteusTransactionResultOnly(Either.Left(failure))
+            }
 
-        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
-
-        coVerify {
-            proteusClientProvider.getOrError()
-        }.wasInvoked(exactly = once)
-        assertEquals(ResetSessionResult.Failure(failure), result)
-    }
-
-    @Test
-    fun givenAnErrorWhenSendingSessionReset_whenResettingSession_ThenReturnFailure() = runTest(testDispatchers.io) {
-        coEvery {
-            proteusClientProvider.getOrError()
-        }.returns(Either.Right(proteusClient))
-
-        every {
-
-            idMapper.toCryptoQualifiedIDId(eq(TestClient.USER_ID))
-
-        }.returns(CRYPTO_USER_ID)
-
-        coEvery {
-            sessionResetSender.invoke(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
-        }.returns(Either.Left(failure))
-
-        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
-
-        verify {
-            idMapper.toCryptoQualifiedIDId(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            proteusClient.deleteSession(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            sessionResetSender.invoke(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
-        }.wasInvoked(exactly = once)
+        val result = useCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         assertEquals(ResetSessionResult.Failure(failure), result)
     }
 
     @Test
-    fun givenMarkingDecryptionFailureAsResolvedFailed_whenResettingSession_ThenReturnFailure() = runTest(testDispatchers.io) {
-        coEvery {
-            proteusClientProvider.getOrError()
-        }.returns(Either.Right(proteusClient))
+    fun givenAnErrorWhenSendingSessionReset_whenResettingSession_ThenReturnFailure() = runTest(TestKaliumDispatcher.io) {
+        val (arrangement, useCase) = Arrangement()
+            .withIdMapperMapping()
+            .withDeleteSession()
+            .withSessionResetReturning(Either.Left(failure))
+            .arrange {
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
 
-        every {
+        val result = useCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-            idMapper.toCryptoQualifiedIDId(eq(TestClient.USER_ID))
-
-        }.returns(CRYPTO_USER_ID)
-
-        coEvery {
-            sessionResetSender.invoke(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
-        }.returns(Either.Right(Unit))
-
-        coEvery {
-            messageRepository.markMessagesAsDecryptionResolved(
-                eq(TestClient.CONVERSATION_ID),
-                eq(TestClient.USER_ID),
-                eq(TestClient.CLIENT_ID)
-            )
-        }.returns(Either.Left(failure))
-
-        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
-
-        verify {
-            idMapper.toCryptoQualifiedIDId(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            proteusClient.deleteSession(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            messageRepository.markMessagesAsDecryptionResolved(
-                eq(TestClient.CONVERSATION_ID),
-                eq(TestClient.USER_ID),
-                eq(TestClient.CLIENT_ID)
-            )
-        }.wasInvoked(exactly = once)
-
+        coVerify { arrangement.proteusContext.deleteSession(any()) }.wasInvoked(once)
+        coVerify { arrangement.sessionResetSender.invoke(any(), any(), any()) }.wasInvoked(once)
         assertEquals(ResetSessionResult.Failure(failure), result)
     }
 
     @Test
-    fun givenResetSessionCalled_whenRunningSuccessfully_thenReturnSuccessResult() = runTest(testDispatchers.io) {
-        coEvery {
-            proteusClientProvider.getOrError()
-        }.returns(Either.Right(proteusClient))
+    fun givenMarkingDecryptionFailureAsResolvedFailed_whenResettingSession_ThenReturnFailure() = runTest(TestKaliumDispatcher.io) {
+        val (arrangement, useCase) = Arrangement()
+            .withIdMapperMapping()
+            .withSessionResetReturning(Either.Right(Unit))
+            .withMarkMessagesAsDecryptionResolvedReturning(Either.Left(failure))
+            .arrange {
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
 
-        every {
+        val result = useCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-            idMapper.toCryptoQualifiedIDId(eq(TestClient.USER_ID))
+        coVerify { arrangement.messageRepository.markMessagesAsDecryptionResolved(any(), any(), any()) }.wasInvoked(once)
+        assertEquals(ResetSessionResult.Failure(failure), result)
+    }
 
-        }.returns(CRYPTO_USER_ID)
+    @Test
+    fun givenResetSessionCalled_whenRunningSuccessfully_thenReturnSuccessResult() = runTest(TestKaliumDispatcher.io) {
+        val (arrangement, useCase) = Arrangement()
+            .withIdMapperMapping()
+            .withSessionResetReturning(Either.Right(Unit))
+            .withMarkMessagesAsDecryptionResolvedReturning(Either.Right(Unit))
+            .arrange {
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
 
-        coEvery {
-            sessionResetSender.invoke(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
-        }.returns(Either.Right(Unit))
-
-        coEvery {
-            messageRepository.markMessagesAsDecryptionResolved(
-                eq(TestClient.CONVERSATION_ID),
-                eq(TestClient.USER_ID),
-                eq(TestClient.CLIENT_ID)
-            )
-        }.returns(Either.Right(Unit))
-
-        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
-
-        verify {
-            idMapper.toCryptoQualifiedIDId(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            proteusClient.deleteSession(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            messageRepository.markMessagesAsDecryptionResolved(
-                eq(TestClient.CONVERSATION_ID),
-                eq(TestClient.USER_ID),
-                eq(TestClient.CLIENT_ID)
-            )
-        }.wasInvoked(exactly = once)
+        val result = useCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         assertEquals(ResetSessionResult.Success, result)
-
     }
 
     companion object {
@@ -212,4 +107,38 @@ class ResetSessionUseCaseTest {
         val failure = CoreFailure.Unknown(null)
     }
 
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val sessionResetSender = mock(SessionResetSender::class)
+        val messageRepository = mock(MessageRepository::class)
+        val idMapper = mock(IdMapper::class)
+
+        fun withIdMapperMapping() = apply {
+            every { idMapper.toCryptoQualifiedIDId(TestClient.USER_ID) } returns CRYPTO_USER_ID
+        }
+
+        suspend fun withSessionResetReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery { sessionResetSender.invoke(any(), any(), any()) } returns result
+        }
+
+        suspend fun withMarkMessagesAsDecryptionResolvedReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                messageRepository.markMessagesAsDecryptionResolved(any(), any(), any())
+            } returns result
+        }
+
+        suspend fun withDeleteSession(): Arrangement = apply {
+            coEvery { proteusContext.deleteSession(any()) } returns Unit
+        }
+
+        fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            runBlocking { block() }
+            this to ResetSessionUseCaseImpl(
+                transactionProvider = cryptoTransactionProvider,
+                sessionResetSender = sessionResetSender,
+                messageRepository = messageRepository,
+                idMapper = idMapper,
+                dispatchers = TestKaliumDispatcher
+            )
+        }
+    }
 }

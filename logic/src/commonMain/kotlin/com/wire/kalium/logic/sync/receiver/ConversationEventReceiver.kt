@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
@@ -64,14 +65,18 @@ internal class ConversationEventReceiverImpl(
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
     private val accessUpdateEventHandler: AccessUpdateEventHandler
 ) : ConversationEventReceiver {
-    override suspend fun onEvent(event: Event.Conversation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation,
+        deliveryInfo: EventDeliveryInfo
+    ): Either<CoreFailure, Unit> {
         // TODO: Make sure errors are accounted for by each handler.
         //       onEvent now requires Either, so we can propagate errors,
         //       but not all handlers are using it yet.
         //       Returning Either.Right is the equivalent of how it was originally working.
         return when (event) {
             is Event.Conversation.NewMessage -> {
-                newMessageHandler.handleNewProteusMessage(event, deliveryInfo)
+                newMessageHandler.handleNewProteusMessage(transactionContext.proteus, event, deliveryInfo)
                 Either.Right(Unit)
             }
 
@@ -122,6 +127,7 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.ConversationProtocol -> {
                 protocolUpdateEventHandler.handle(event)
             }
+
             is Event.Conversation.ConversationChannelAddPermission -> {
                 channelAddPermissionUpdateEventHandler.handle(event)
             }

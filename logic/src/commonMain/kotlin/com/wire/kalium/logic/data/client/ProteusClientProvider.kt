@@ -18,23 +18,22 @@
 
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.CoreCryptoCentral
-import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.coreCryptoCentral
-import com.wire.kalium.cryptography.cryptoboxProteusClient
-import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
-import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.SecurityHelperImpl
-import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
+import com.wire.kalium.util.InternalCryptoAccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -54,6 +53,7 @@ interface ProteusClientProvider {
     /**
      * Returns the ProteusClient, retrieves it from local files or returns a failure if local files doesn't exist.
      */
+    @InternalCryptoAccess
     suspend fun getOrError(): Either<CoreFailure, ProteusClient>
 }
 
@@ -61,7 +61,6 @@ class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
-    private val kaliumConfigs: KaliumConfigs,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
 ) : ProteusClientProvider {
@@ -81,6 +80,7 @@ class ProteusClientProviderImpl(
         }
     }
 
+    @InternalCryptoAccess
     override suspend fun getOrError(): Either<CoreFailure, ProteusClient> {
         return mutex.withLock {
             withContext(dispatcher.io) {
@@ -101,32 +101,24 @@ class ProteusClientProviderImpl(
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun createProteusClient(): ProteusClient {
-        return if (kaliumConfigs.encryptProteusStorage) {
-            val central = try {
+        val central = try {
 
-                val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
-                coreCryptoCentral(
-                    rootDir = rootProteusPath,
-                    passphrase = dbSecret.passphrase,
-                )
-            } catch (e: Exception) {
-                val logMap = mapOf(
-                    "userId" to userId.value.obfuscateId(),
-                    "exception" to e,
-                    "message" to e.message,
-                    "stackTrace" to e.stackTraceToString()
-                )
-                kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
-                throw e
-            }
-            getCentralProteusClientOrError(central)
-        } else {
-            cryptoboxProteusClient(
+            val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
+            coreCryptoCentral(
                 rootDir = rootProteusPath,
-                defaultContext = dispatcher.default,
-                ioContext = dispatcher.io
+                passphrase = dbSecret.passphrase,
             )
+        } catch (e: Exception) {
+            val logMap = mapOf(
+                "userId" to userId.value.obfuscateId(),
+                "exception" to e,
+                "message" to e.message,
+                "stackTrace" to e.stackTraceToString()
+            )
+            kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
+            throw e
         }
+        return getCentralProteusClientOrError(central)
     }
 
     private suspend fun getCentralProteusClientOrError(central: CoreCryptoCentral): ProteusClient {

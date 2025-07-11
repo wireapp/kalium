@@ -48,7 +48,7 @@ internal class FeatureConfigEventReceiverArrangementImpl : FeatureConfigEventRec
         event: Matcher<Event.FeatureConfig>
     ) {
         coEvery {
-            featureConfigEventReceiver.onEvent(matches { event.matches(it) }, any())
+            featureConfigEventReceiver.onEvent(any(), matches { event.matches(it) }, any())
         }.returns(result)
     }
 }

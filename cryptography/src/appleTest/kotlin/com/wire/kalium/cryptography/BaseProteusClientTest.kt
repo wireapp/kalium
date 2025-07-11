@@ -30,7 +30,7 @@ actual open class BaseProteusClientTest actual constructor() {
 
     actual suspend fun createProteusClient(
         proteusStore: ProteusStoreRef,
-        databaseKey: ProteusDBSecret?
+        databaseKey: ProteusDBSecret
     ): ProteusClient {
         return coreCryptoCentral(proteusStore.value, ByteArray(32) { 0 }).proteusClient()
     }

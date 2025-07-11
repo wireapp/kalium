@@ -28,7 +28,7 @@ data class KaliumConfigs(
     val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
     // Disabling db-encryption will crash on android-api level below 30
     val shouldEncryptData: Boolean = true,
-    val encryptProteusStorage: Boolean = false,
+    val encryptProteusStorage: Boolean = false, // TODO not used can be removed
     val lowerKeyPackageLimits: Boolean = false,
     val developmentApiEnabled: Boolean = false,
     val ignoreSSLCertificatesForUnboundCalls: Boolean = false,

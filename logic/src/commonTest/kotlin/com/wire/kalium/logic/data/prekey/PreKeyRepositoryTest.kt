@@ -18,28 +18,30 @@
 
 package com.wire.kalium.logic.data.prekey
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.createSessions
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangement
+import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
-import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -49,17 +51,17 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlinx.coroutines.test.runTest
 
 class PreKeyRepositoryTest {
 
@@ -85,7 +87,7 @@ class PreKeyRepositoryTest {
             )
         val (arrange, preKeyRepository) = Arrangement()
             .withGetRemoteUsersPreKeySuccess(expected)
-            .arrange()
+            .arrange {}
 
         preKeyRepository.preKeysOfClientsByQualifiedUsers(mapOf()).also {
             assertIs<Either.Right<List<QualifiedUserPreKeyInfo>>>(it)
@@ -101,7 +103,7 @@ class PreKeyRepositoryTest {
         val expected = listOf(PreKeyCrypto(44, "key"))
         val (arrange, preKeyRepository) = Arrangement()
             .withGenerateNewPreKeysSuccess(1, 1, expected)
-            .arrange()
+            .arrange {}
 
         preKeyRepository.generateNewPreKeys(1, 1).also {
             assertIs<Either.Right<List<PreKeyCrypto>>>(it)
@@ -118,7 +120,9 @@ class PreKeyRepositoryTest {
         val expected = PreKeyCrypto(44, "key")
         val (arrange, preKeyRepository) = Arrangement()
             .withGenerateLastPreKeysSuccess(expected)
-            .arrange()
+            .arrange {
+                withNewLastResortPreKeyReturning(expected)
+            }
 
         preKeyRepository.generateNewLastResortKey().also {
             assertIs<Either.Right<PreKeyCrypto>>(it)
@@ -159,12 +163,12 @@ class PreKeyRepositoryTest {
         val (arrangement, preKeyRepository) = Arrangement()
             .withDoesSessionExist(false)
             .withPreKeysOfClientsByQualifiedUsersSuccess(userPreKeysResult)
-            .arrange()
+            .arrange {}
 
-        preKeyRepository.establishSessions(expectedInvalid)
+        preKeyRepository.establishSessions(arrangement.proteusContext, expectedInvalid)
 
         coVerify {
-            arrangement.proteusClient.createSessions(expectedValid)
+            arrangement.proteusContext.createSessions(expectedValid)
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -182,13 +186,13 @@ class PreKeyRepositoryTest {
         val userPreKeysResult =
             mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))
 
-        val (_, prekeyRepository) = Arrangement()
+        val (arrangement, prekeyRepository) = Arrangement()
             .withGetRemoteUsersPreKeySuccess(userPreKeysResult)
             .withDoesSessionExist(false)
             .withCreateSession(exception)
-            .arrange()
+            .arrange {}
 
-        prekeyRepository.establishSessions(mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
+        prekeyRepository.establishSessions(arrangement.proteusContext, mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
             .shouldFail {
                 assertIs<ProteusFailure>(it)
                 assertEquals(exception, it.proteusException)
@@ -212,9 +216,9 @@ class PreKeyRepositoryTest {
                     )
                 )
             )
-            .arrange()
+            .arrange {}
 
-        sessionEstablisher.establishSessions(mapOf(TEST_RECIPIENT_1.id to TEST_RECIPIENT_1.clients))
+        sessionEstablisher.establishSessions(arrangement.proteusContext, mapOf(TEST_RECIPIENT_1.id to TEST_RECIPIENT_1.clients))
 
         coVerify {
             arrangement.preKeyApi.getUsersPreKey(
@@ -233,12 +237,12 @@ class PreKeyRepositoryTest {
     fun givenFetchingPreKeysFails_whenPreparingSessions_thenFailureShouldBePropagated() = runTest {
         val failure = NETWORK_ERROR
 
-        val (_, sessionEstablisher) = Arrangement()
+        val (arrangement, sessionEstablisher) = Arrangement()
             .withDoesSessionExist(false)
             .withGetRemoteUsersPreKeyFail(NetworkResponse.Error(failure.kaliumException))
-            .arrange()
+            .arrange {}
 
-        sessionEstablisher.establishSessions(mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
+        sessionEstablisher.establishSessions(arrangement.proteusContext, mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
             .shouldFail {
                 assertIs<NetworkFailure.ServerMiscommunication>(it)
                 assertEquals(failure.kaliumException, it.kaliumException)
@@ -250,7 +254,7 @@ class PreKeyRepositoryTest {
         val failure = CoreFailure.Unknown(null)
         val (_, preKeyRepository) = Arrangement()
             .withCurrentClientIdReturning(Either.Left(failure))
-            .arrange()
+            .arrange {}
 
         preKeyRepository.fetchRemotelyAvailablePrekeys()
             .shouldFail {
@@ -264,8 +268,9 @@ class PreKeyRepositoryTest {
         val availablePreKeysIds = listOf(1, 3, 6)
         val result = NetworkResponse.Success(availablePreKeysIds, mapOf(), HttpStatusCode.OK.value)
         val (_, preKeyRepository) = Arrangement()
+            .withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
             .withGetClientAvailablePrekeysReturning(result)
-            .arrange()
+            .arrange {}
 
         preKeyRepository.fetchRemotelyAvailablePrekeys()
             .shouldSucceed { preKeys ->
@@ -278,7 +283,7 @@ class PreKeyRepositoryTest {
         val (arrangement, preKeyRepository) = Arrangement()
             .withGetClientAvailablePrekeysReturning(NetworkResponse.Success(listOf(), mapOf(), HttpStatusCode.OK.value))
             .withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
-            .arrange()
+            .arrange {}
 
         preKeyRepository.fetchRemotelyAvailablePrekeys()
 
@@ -292,7 +297,7 @@ class PreKeyRepositoryTest {
         val failure = CoreFailure.Unknown(null)
         val (_, preKeyRepository) = Arrangement()
             .withCurrentClientIdReturning(Either.Left(failure))
-            .arrange()
+            .arrange {}
 
         preKeyRepository.uploadNewPrekeyBatch(listOf())
             .shouldFail {
@@ -307,7 +312,7 @@ class PreKeyRepositoryTest {
         val (arrangement, preKeyRepository) = Arrangement()
             .withUploadPrekeysReturning(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
             .withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
-            .arrange()
+            .arrange {}
 
         preKeyRepository.uploadNewPrekeyBatch(preKeys)
             .shouldSucceed()
@@ -322,7 +327,8 @@ class PreKeyRepositoryTest {
         val result = NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
         val (_, preKeyRepository) = Arrangement()
             .withUploadPrekeysReturning(result)
-            .arrange()
+            .withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
+            .arrange {}
 
         preKeyRepository.uploadNewPrekeyBatch(listOf())
             .shouldSucceed()
@@ -335,7 +341,7 @@ class PreKeyRepositoryTest {
         val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }
 
-    private class Arrangement {
+    private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementImpl() {
         val preKeyApi: PreKeyApi = mock(PreKeyApi::class)
         val proteusClient: ProteusClient = mock(ProteusClient::class)
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
@@ -343,20 +349,6 @@ class PreKeyRepositoryTest {
         val prekeyDAO: PrekeyDAO = mock(PrekeyDAO::class)
         val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
         val clientDAO: ClientDAO = mock(ClientDAO::class)
-
-        init {
-            runBlocking {
-                coEvery {
-                    proteusClientProvider.getOrCreate()
-                }.returns(proteusClient)
-
-                coEvery {
-                    proteusClientProvider.getOrError()
-                }.returns(Either.Right(proteusClient))
-
-                withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
-            }
-        }
 
         private val preKeyRepository: PreKeyDataSource =
             PreKeyDataSource(
@@ -411,7 +403,7 @@ class PreKeyRepositoryTest {
 
         suspend fun withDoesSessionExist(result: Boolean) = apply {
             coEvery {
-                proteusClient.doesSessionExist(any())
+                proteusContext.doesSessionExist(any())
             }.returns(result)
         }
 
@@ -425,7 +417,7 @@ class PreKeyRepositoryTest {
 
         suspend fun withCreateSession(throwable: Throwable) = apply {
             coEvery {
-                proteusClient.createSession(any(), any())
+                proteusContext.createSession(any(), any())
             }.throws(throwable)
         }
 
@@ -447,6 +439,13 @@ class PreKeyRepositoryTest {
             }.returns(result)
         }
 
-        suspend fun arrange() = this to preKeyRepository
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            coEvery {
+                proteusClientProvider.getOrCreate()
+            }.returns(proteusClient)
+            runBlocking { block() }
+            this to preKeyRepository
+        }
     }
 }

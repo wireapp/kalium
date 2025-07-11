@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
@@ -32,6 +33,8 @@ import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.any
 import io.mockative.coEvery
@@ -66,7 +69,7 @@ class EventProcessorTest {
         }
 
         // When
-        eventProcessor.processEvent(event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
 
         // Then
         coVerify {
@@ -84,11 +87,11 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
 
         // Then
         coVerify {
-            arrangement.conversationEventReceiver.onEvent(eq(event), any())
+            arrangement.conversationEventReceiver.onEvent(any(), eq(event), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -104,7 +107,7 @@ class EventProcessorTest {
         }
 
         // When
-        eventProcessor.processEvent(event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
@@ -123,11 +126,11 @@ class EventProcessorTest {
         }
 
         // When
-        eventProcessor.processEvent(event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
 
         // Then
         coVerify {
-            arrangement.userEventReceiver.onEvent(eq(event), any())
+            arrangement.userEventReceiver.onEvent(any(), eq(event), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -143,7 +146,7 @@ class EventProcessorTest {
         }
 
         // When
-        eventProcessor.processEvent(event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
@@ -162,7 +165,7 @@ class EventProcessorTest {
         }
 
         // When
-        eventProcessor.processEvent(envelope.event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, envelope.event.wrapInEnvelope())
 
         // Then
         coVerify {
@@ -179,10 +182,10 @@ class EventProcessorTest {
             withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
         }
 
-        eventProcessor.processEvent(event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
 
         coVerify {
-            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -198,7 +201,7 @@ class EventProcessorTest {
         }
 
         // When
-        eventProcessor.processEvent(event.wrapInEnvelope())
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
@@ -222,13 +225,13 @@ class EventProcessorTest {
         }
 
         callerScope.launch {
-            eventProcessor.processEvent(event.wrapInEnvelope())
+            eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
         }.join()
         advanceUntilIdle()
         assertFalse(callerScope.isActive)
         // Then
         coVerify {
-            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any(), any())
         }.wasInvoked(exactly = once)
         coVerify {
             arrangement.eventRepository.setEventAsProcessed(any())
@@ -250,12 +253,12 @@ class EventProcessorTest {
         }
 
         assertFailsWith(CancellationException::class) {
-            eventProcessor.processEvent(event.wrapInEnvelope())
+            eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
             advanceUntilIdle()
         }
         // Then
         coVerify {
-            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any(), any())
         }.wasInvoked(exactly = once)
         coVerify {
             arrangement.eventRepository.setEventAsProcessed(any())
@@ -274,12 +277,12 @@ class EventProcessorTest {
         }
 
         assertFailsWith(CancellationException::class) {
-            eventProcessor.processEvent(event.wrapInEnvelope())
+            eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
             advanceUntilIdle()
         }
         // Then
         coVerify {
-            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any(), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.eventRepository.setEventAsProcessed(any())
@@ -289,7 +292,9 @@ class EventProcessorTest {
 
     private class Arrangement(
         val processingScope: CoroutineScope
-    ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
+    ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl(),
+            CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
+    {
 
         val eventRepository = mock(EventRepository::class)
         val conversationEventReceiver = mock(ConversationEventReceiver::class)
@@ -307,7 +312,7 @@ class EventProcessorTest {
 
         suspend fun withConversationEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                conversationEventReceiver.onEvent(any(), any())
+                conversationEventReceiver.onEvent(any(), any(), any())
             }.returns(result)
         }
 
@@ -319,7 +324,7 @@ class EventProcessorTest {
 
         suspend fun withUserEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                userEventReceiver.onEvent(any(), any())
+                userEventReceiver.onEvent(any(), any(), any())
             }.returns(result)
         }
 
@@ -331,7 +336,7 @@ class EventProcessorTest {
 
         suspend fun withTeamEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                teamEventReceiver.onEvent(any(), any())
+                teamEventReceiver.onEvent(any(), any(), any())
             }.returns(result)
         }
 
@@ -339,13 +344,13 @@ class EventProcessorTest {
 
         suspend fun withUserPropertiesEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                userPropertiesEventReceiver.onEvent(any(), any())
+                userPropertiesEventReceiver.onEvent(any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withUserPropertiesEventReceiverInvoking(invocation: (args: Array<Any?>) -> Either<CoreFailure, Unit>) = apply {
             coEvery {
-                userPropertiesEventReceiver.onEvent(any(), any())
+                userPropertiesEventReceiver.onEvent(any(), any(), any())
             }.invokes(invocation)
         }
 
@@ -357,7 +362,7 @@ class EventProcessorTest {
 
         suspend fun withMissedNotificationsEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                missedNotificationsEventReceiver.onEvent(any(), any())
+                missedNotificationsEventReceiver.onEvent(any(), any(), any())
             }.returns(result)
         }
 

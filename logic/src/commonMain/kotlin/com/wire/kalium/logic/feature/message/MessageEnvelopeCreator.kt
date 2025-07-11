@@ -18,15 +18,23 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapProteusRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
@@ -42,14 +50,6 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapProteusRequest
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
@@ -57,11 +57,13 @@ import kotlinx.coroutines.flow.first
 interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(
+        proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>,
         message: Message.Sendable
     ): Either<CoreFailure, MessageEnvelope>
 
     suspend fun createOutgoingBroadcastEnvelope(
+        proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>,
         message: BroadcastMessage
     ): Either<CoreFailure, MessageEnvelope>
@@ -71,13 +73,13 @@ interface MessageEnvelopeCreator {
 class MessageEnvelopeCreatorImpl(
     private val conversationRepository: ConversationRepository,
     private val legalHoldStatusMapper: LegalHoldStatusMapper,
-    private val proteusClientProvider: ProteusClientProvider,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MessageEnvelopeCreator {
 
     override suspend fun createOutgoingEnvelope(
+        proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>,
         message: Message.Sendable
     ): Either<CoreFailure, MessageEnvelope> {
@@ -102,10 +104,11 @@ class MessageEnvelopeCreatorImpl(
             legalHoldStatus = legalHoldStatus
         )
 
-        return createEnvelope(actualMessageContent, recipients, senderClientId)
+        return createEnvelope(proteusContext, actualMessageContent, recipients, senderClientId)
     }
 
     override suspend fun createOutgoingBroadcastEnvelope(
+        proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>,
         message: BroadcastMessage
     ): Either<CoreFailure, MessageEnvelope> {
@@ -116,10 +119,11 @@ class MessageEnvelopeCreatorImpl(
 
         val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation, legalHoldStatus)
 
-        return createEnvelope(actualMessageContent, recipients, senderClientId)
+        return createEnvelope(proteusContext, actualMessageContent, recipients, senderClientId)
     }
 
     private suspend fun createEnvelope(
+        proteusContext: ProteusCoreCryptoContext,
         actualMessageContent: ProtoContent.Readable,
         recipients: List<Recipient>,
         senderClientId: ClientId
@@ -132,17 +136,16 @@ class MessageEnvelopeCreatorImpl(
             }
         }
 
-        return proteusClientProvider.getOrError().flatMap { proteusClient ->
-            wrapProteusRequest {
-                proteusClient.encryptBatched(encodedContent.data, sessions)
-            }
-        }.flatMap {
-            val recipientEntries = it.entries.groupBy(
-                { it.key.userId.toModel() },
-                { ClientPayload(it.key.cryptoClientId.toModel(), EncryptedMessageBlob(it.value)) }
-            ).map { RecipientEntry(it.key, it.value) }
-            Either.Right(MessageEnvelope(senderClientId, recipientEntries, externalDataBlob))
+        return wrapProteusRequest {
+            proteusContext.encryptBatched(encodedContent.data, sessions)
         }
+            .flatMap { idByteArrayMap ->
+                val recipientEntries = idByteArrayMap.entries.groupBy(
+                    { it.key.userId.toModel() },
+                    { ClientPayload(it.key.cryptoClientId.toModel(), EncryptedMessageBlob(it.value)) }
+                ).map { RecipientEntry(it.key, it.value) }
+                Either.Right(MessageEnvelope(senderClientId, recipientEntries, externalDataBlob))
+            }
     }
 
     private fun getContentAndExternalData(

@@ -18,14 +18,13 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -33,8 +32,9 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
@@ -52,6 +52,7 @@ import io.mockative.matchers.PredicateMatcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -75,7 +76,7 @@ class ProteusMessageUnpackerTest {
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
-        proteusUnpacker.unpackProteusMessage(messageEvent) {  }
+        proteusUnpacker.unpackProteusMessage(arrangement.proteusContext, messageEvent) { }
 
         val cryptoSessionId = CryptoSessionId(
             CryptoUserID(messageEvent.senderUserId.value, messageEvent.senderUserId.domain),
@@ -84,7 +85,7 @@ class ProteusMessageUnpackerTest {
 
         val decodedByteArray = Base64.decodeFromBase64(messageEvent.content.toByteArray())
         coVerify {
-            arrangement.proteusClient.decrypt<Any>(matches { it.contentEquals(decodedByteArray) }, eq(cryptoSessionId), any())
+            arrangement.proteusContext.decryptMessage<Any>(eq(cryptoSessionId), matches { it.contentEquals(decodedByteArray) }, any())
         }.wasInvoked(exactly = once)
     }
 
@@ -108,7 +109,7 @@ class ProteusMessageUnpackerTest {
         val decryptedExternalContent = MessageContent.Text(plainTextContent)
         val emptyArray = byteArrayOf()
 
-        val (_, proteusUnpacker) = Arrangement()
+        val (arrangement, proteusUnpacker) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
             .withProtoContentMapperReturning(
                 PredicateMatcher(PlainMessageBlob::class, valueOf()) { it.data.contentEquals(emptyArray) },
@@ -129,7 +130,7 @@ class ProteusMessageUnpackerTest {
             encryptedExternalContent = encryptedProtobufExternalContent
         )
 
-        val result = proteusUnpacker.unpackProteusMessage(messageEvent) { it }
+        val result = proteusUnpacker.unpackProteusMessage(arrangement.proteusContext, messageEvent) { it }
 
         result.shouldSucceed {
             assertIs<MessageUnpackResult.ApplicationMessage>(it)
@@ -139,14 +140,12 @@ class ProteusMessageUnpackerTest {
         }
     }
 
-    private class Arrangement {
-                val proteusClient = mock(ProteusClient::class)
-        val proteusClientProvider = mock(ProteusClientProvider::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val protoContentMapper = mock(ProtoContentMapper::class)
 
         suspend fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
             coEvery {
-                proteusClient.decrypt<Either<*, *>>(any(), any(), any())
+                proteusContext.decryptMessage<Either<*, *>>(any(), any(), any())
             }.invokes { args ->
                 val lambda = args[2] as suspend (ByteArray) -> Either<*, *>
                 lambda.invoke(decryptedData)
@@ -159,13 +158,9 @@ class ProteusMessageUnpackerTest {
             }.returns(protoContent)
         }
 
-        suspend fun arrange() = run {
-            coEvery {
-                proteusClientProvider.getOrError()
-            }.returns(Either.Right(proteusClient))
-            this to ProteusMessageUnpackerImpl(
-                proteusClientProvider, SELF_USER_ID, protoContentMapper
-            )
+        fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
+            runBlocking { block() }
+            this to ProteusMessageUnpackerImpl(SELF_USER_ID, protoContentMapper)
         }
 
         companion object {

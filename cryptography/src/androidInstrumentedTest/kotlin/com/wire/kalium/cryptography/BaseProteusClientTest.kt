@@ -32,9 +32,7 @@ actual open class BaseProteusClientTest {
     }
 
 
-    actual suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret?): ProteusClient {
-        return databaseKey?.let {
-            coreCryptoCentral(proteusStore.value, it.passphrase).proteusClient()
-        } ?: cryptoboxProteusClient(proteusStore.value, testCoroutineScheduler, testCoroutineScheduler)
+    actual suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret): ProteusClient {
+        return coreCryptoCentral(proteusStore.value, databaseKey.passphrase).proteusClient()
     }
 }

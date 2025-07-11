@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
@@ -66,7 +67,11 @@ internal class UserEventReceiverImpl internal constructor(
     private val legalHoldHandler: LegalHoldHandler
 ) : UserEventReceiver {
 
-    override suspend fun onEvent(event: Event.User, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(
+        transactionContext: CryptoTransactionContext,
+        event: Event.User,
+        deliveryInfo: EventDeliveryInfo
+    ): Either<CoreFailure, Unit> {
         return when (event) {
             is Event.User.NewConnection -> handleNewConnection(event, deliveryInfo)
             is Event.User.ClientRemove -> handleClientRemove(event)
