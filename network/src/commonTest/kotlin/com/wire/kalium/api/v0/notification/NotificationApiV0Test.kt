@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.authenticated.notification.NotificationRespon
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -102,8 +103,8 @@ internal class NotificationApiV0Test : ApiTest() {
         assertTrue(result.isSuccessful())
         val notifications = result.value.notifications.first()
 
-        val firstEvent = notifications.payload!!.first()
-        assertIs<EventContentDTO.Unknown>(firstEvent)
+        val firstEvent = notifications.payload
+        assertIs<EventContentDTO.Unknown>(KtxSerializer.json.decodeFromString<List<EventContentDTO>>(firstEvent!!).first())
     }
 
     @Test
@@ -119,8 +120,8 @@ internal class NotificationApiV0Test : ApiTest() {
         assertTrue(result.isSuccessful())
         val notifications = result.value.notifications.first()
 
-        val firstEvent = notifications.payload!!.first()
-        assertIs<EventContentDTO.Unknown>(firstEvent)
+        val firstEvent = notifications.payload
+        assertIs<EventContentDTO.Unknown>(KtxSerializer.json.decodeFromString<List<EventContentDTO>>(firstEvent!!).first())
     }
 
     @Test
@@ -203,7 +204,11 @@ internal class NotificationApiV0Test : ApiTest() {
         val result = notificationsApi.oldestNotification("")
 
         assertTrue(result.isSuccessful())
-        assertEquals(jsonProvider.serializableData.notifications.first(), result.value)
+        
+        val expectedNotificationResponse = KtxSerializer.json.decodeFromString<NotificationResponse>(jsonProvider.rawJson)
+        val expectedOldestNotification = expectedNotificationResponse.notifications.first()
+        
+        assertEquals(expectedOldestNotification, result.value)
     }
 
     private companion object {

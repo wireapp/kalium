@@ -31,7 +31,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.data.event.EventGenerator
 import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.logic.data.event.toEventResponseToStore
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -77,14 +80,14 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
             ),
             proteusClient = userSession.proteusClientProvider.getOrCreate()
         )
-        val events = generator.generateEvents(
+        val events: Flow<EventResponse> = generator.generateEvents(
             limit = eventLimit,
             conversationId = ConversationId(conversationId, domain = selfUserId.domain)
         )
         val response = NotificationResponse(
             time = Clock.System.now().toString(),
             hasMore = false,
-            notifications = events.toList()
+            notifications = events.toList().map { it.toEventResponseToStore() }
         )
 
         val sink = SystemFileSystem.sink(Path(outputFile)).buffered()

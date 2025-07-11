@@ -44,6 +44,7 @@ import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.kaliumUtilLogger
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
@@ -53,7 +54,10 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializer
 import kotlinx.serialization.descriptors.PolymorphicKind
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
@@ -63,8 +67,10 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonTransformingSerializer
@@ -74,11 +80,51 @@ import kotlin.jvm.JvmInline
 
 @Serializable
 data class EventResponse(
-    @Serializable
     @SerialName("id") val id: String,
     @SerialName("payload") val payload: List<EventContentDTO>?,
     @SerialName("transient") val transient: Boolean = false
 )
+
+@Serializer(forClass = String::class)
+object RawJsonStringSerializer : KSerializer<String> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("RawJsonString", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): String {
+        // Expect a JsonDecoder so we can grab the raw element
+        require(decoder is JsonDecoder)
+        val element: JsonElement = decoder.decodeJsonElement()
+        // Return the raw JSON text of that element
+        return element.toString()
+    }
+
+    override fun serialize(encoder: Encoder, value: String) {
+        // On serialization, we assume the value *is* raw JSON text.
+        require(encoder is JsonEncoder)
+        // Parse it back to a JsonElement so it's emitted as JSON, not as a quoted string
+        val jsonElement = Json.parseToJsonElement(value)
+        encoder.encodeJsonElement(jsonElement)
+    }
+}
+
+@Serializable
+data class EventResponseToStore(
+    @SerialName("id") val id: String,
+    @Serializable(with = RawJsonStringSerializer::class)
+    @SerialName("payload") val payload: String?,
+    @SerialName("transient") val transient: Boolean = false
+) {
+
+    fun toEventResponse(): EventResponse {
+        return EventResponse(
+            id = this.id,
+            payload = this.payload?.let { payload ->
+                KtxSerializer.json.decodeFromString(payload)
+            },
+            transient = this.transient
+        )
+    }
+}
 
 /**
  * Handwritten serializer of the FeatureConfigUpdatedDTO because we want to extend it with the
