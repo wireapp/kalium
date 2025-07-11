@@ -1577,13 +1577,5 @@ class ConversationRepositoryTest {
             UpdateConversationProtocolResponse.ProtocolUnchanged,
             emptyMap(), 204
         )
-
-        fun CONVERSATION_DETAILS_WITH_EVENTS_ENTITY(archived: Boolean = false) = ConversationDetailsWithEventsEntity(
-            TestConversation.GROUP_VIEW_ENTITY().copy(archived = archived)
-        )
-
-        fun CONVERSATION_DETAILS_WITH_EVENTS(archived: Boolean = false) = ConversationDetailsWithEvents(
-            TestConversationDetails.CONVERSATION_GROUP.copy(TestConversation.GROUP().copy(archived = archived))
-        )
     }
 }

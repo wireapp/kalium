@@ -2442,14 +2442,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
     }
 
-    private fun ConversationViewEntity.toConversationDetailsWithEventsEntity(
-        lastMessage: MessagePreviewEntity? = null,
-        messageDraft: MessageDraftEntity? = null,
-        unreadEvents: ConversationUnreadEventEntity = ConversationUnreadEventEntity(this.id, mapOf()),
-        hasNewActivitiesToShow: Boolean = false,
-    ): ConversationDetailsWithEventsEntity =
-        ConversationDetailsWithEventsEntity(this, lastMessage, messageDraft, unreadEvents, hasNewActivitiesToShow)
-
     private companion object {
         const val teamId = "teamId"
 
