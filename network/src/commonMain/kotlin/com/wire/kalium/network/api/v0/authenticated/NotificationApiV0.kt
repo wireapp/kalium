@@ -24,6 +24,7 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
@@ -75,7 +76,7 @@ internal open class NotificationApiV0 internal constructor(
         }
     }
 
-    override suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponse> =
+    override suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponseToStore> =
         getAllNotifications(
             querySize = MINIMUM_QUERY_SIZE,
             queryClient = queryClient
@@ -116,7 +117,7 @@ internal open class NotificationApiV0 internal constructor(
     }
 
     @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
-    override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>> =
+    override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>> =
         mostRecentNotification(clientId).mapSuccess {
             flow {
                 // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
@@ -142,7 +143,7 @@ internal open class NotificationApiV0 internal constructor(
         getApiNotSupportedError(::acknowledgeEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
     }
 
-    private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
+    private suspend fun FlowCollector<WebSocketEvent<EventResponseToStore>>.emitWebSocketEvents(
         defaultClientWebSocketSession: WebSocketSession
     ) {
         val logger = kaliumLogger.withFeatureId(EVENT_RECEIVER)
@@ -164,7 +165,7 @@ internal open class NotificationApiV0 internal constructor(
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
 
                         logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
-                        val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
+                        val event = KtxSerializer.json.decodeFromString<EventResponseToStore>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
 

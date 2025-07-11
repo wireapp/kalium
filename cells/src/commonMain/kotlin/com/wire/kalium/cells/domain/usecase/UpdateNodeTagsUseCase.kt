@@ -15,20 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.dao.event
+package com.wire.kalium.cells.domain.usecase
 
-data class EventEntity(
-    val id: Long,
-    val eventId: String,
-    val isProcessed: Boolean,
-    val payload: String?,
-    val transient: Boolean,
-    val isLive: Boolean
-)
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 
-data class NewEventEntity(
-    val eventId: String,
-    val payload: String?,
-    val transient: Boolean,
-    val isLive: Boolean
-)
+/**
+ * Use case to update the tags of a node in the cells repository.
+ */
+public interface UpdateNodeTagsUseCase {
+    public suspend operator fun invoke(uuid: String, tags: List<String>): Either<CoreFailure, Unit>
+}
+
+internal class UpdateNodeTagsUseCaseImpl(
+    private val cellsRepository: CellsRepository,
+) : UpdateNodeTagsUseCase {
+    override suspend fun invoke(uuid: String, tags: List<String>): Either<CoreFailure, Unit> =
+        cellsRepository.updateNodeTags(uuid, tags)
+}

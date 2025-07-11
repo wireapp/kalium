@@ -48,7 +48,7 @@ class EventDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenUnprocessedEventInserted_whenObservingUnprocessed_shouldReturnEvent() = runTest {
-        val event = NewEventEntity(eventId = "e1", payload = "{\"test\":true}", isLive = false)
+        val event = NewEventEntity(eventId = "e1", payload = "{\"test\":true}", isLive = false, transient = true)
         dao.insertEvents(listOf(event))
 
         val result = dao.observeUnprocessedEvents().first()
@@ -63,7 +63,7 @@ class EventDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenEventInserted_whenMarkingAsProcessed_thenShouldBeExcludedFromUnprocessedFlow() = runTest {
-        val event = NewEventEntity(eventId = "e2", payload = "{}", isLive = false)
+        val event = NewEventEntity(eventId = "e2", payload = "{}", isLive = false, transient = false)
         dao.insertEvents(listOf(event))
 
         dao.markEventAsProcessed("e2")
@@ -75,9 +75,9 @@ class EventDAOTest : BaseDatabaseTest() {
     @Test
     fun givenMultipleEventsMarkedProcessed_whenDeletingAllProcessed_thenOnlyUnprocessedRemain() = runTest {
         val events = listOf(
-            NewEventEntity(eventId = "e1", payload = "{}", isLive = false),
-            NewEventEntity(eventId = "e2", payload = "{}", isLive = false),
-            NewEventEntity(eventId = "e3", payload = "{}", isLive = false)
+            NewEventEntity(eventId = "e1", payload = "{}", isLive = false, transient = false),
+            NewEventEntity(eventId = "e2", payload = "{}", isLive = false, transient = false),
+            NewEventEntity(eventId = "e3", payload = "{}", isLive = false, transient = true)
         )
         dao.insertEvents(events)
         dao.markEventAsProcessed("e1")
@@ -92,8 +92,8 @@ class EventDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenEventsWithDifferentIds_whenGettingById_shouldReturnCorrectEvent() = runTest {
-        val e1 = NewEventEntity(eventId = "eventA", payload = "{\"a\":1}", isLive = false)
-        val e2 = NewEventEntity(eventId = "eventB", payload = "{\"b\":2}", isLive = false)
+        val e1 = NewEventEntity(eventId = "eventA", payload = "{\"a\":1}", isLive = false, transient = false)
+        val e2 = NewEventEntity(eventId = "eventB", payload = "{\"b\":2}", isLive = false, transient = true)
         dao.insertEvents(listOf(e1, e2))
 
         val result = dao.getEventById("eventB")
@@ -107,9 +107,9 @@ class EventDAOTest : BaseDatabaseTest() {
     fun givenProcessedEventsBeforeId_whenDeletingBefore_shouldRemoveOnlyThose() = runTest {
         dao.insertEvents(
             listOf(
-                NewEventEntity(eventId = "e1", payload = "{}", isLive = false),
-                NewEventEntity(eventId = "e2", payload = "{}", isLive = false),
-                NewEventEntity(eventId = "e3", payload = "{}", isLive = false)
+                NewEventEntity(eventId = "e1", payload = "{}", isLive = false, transient = false),
+                NewEventEntity(eventId = "e2", payload = "{}", isLive = false, transient = false),
+                NewEventEntity(eventId = "e3", payload = "{}", isLive = false, transient = true)
             )
         )
         dao.markEventAsProcessed("e1")
@@ -126,9 +126,9 @@ class EventDAOTest : BaseDatabaseTest() {
     @Test
     fun givenMultipleEventsInserted_whenObservingEvents_shouldReturnAll() = runTest {
         val events = listOf(
-            NewEventEntity(eventId = "e1", payload = "{}", isLive = false),
-            NewEventEntity(eventId = "e2", payload = "{}", isLive = false),
-            NewEventEntity(eventId = "e3", payload = "{}", isLive = false)
+            NewEventEntity(eventId = "e1", payload = "{}", isLive = false, transient = false),
+            NewEventEntity(eventId = "e2", payload = "{}", isLive = false, transient = true),
+            NewEventEntity(eventId = "e3", payload = "{}", isLive = false, transient = false)
         )
         dao.insertEvents(events)
 
@@ -141,7 +141,7 @@ class EventDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenDuplicateEventIds_whenInserting_thenShouldIgnoreDuplicates() = runTest {
-        val event = NewEventEntity(eventId = "duplicate", payload = "{\"x\":1}", isLive = false)
+        val event = NewEventEntity(eventId = "duplicate", payload = "{\"x\":1}", isLive = false, transient = false)
         dao.insertEvents(listOf(event))
         dao.insertEvents(listOf(event))
 
@@ -159,8 +159,8 @@ class EventDAOTest : BaseDatabaseTest() {
     @Test
     fun givenOnlyUnprocessedEvents_whenDeletingProcessed_thenNoneShouldBeDeleted() = runTest {
         val events = listOf(
-            NewEventEntity(eventId = "a", payload = "{}", isLive = false),
-            NewEventEntity(eventId = "b", payload = "{}", isLive = false)
+            NewEventEntity(eventId = "a", payload = "{}", isLive = false, transient = true),
+            NewEventEntity(eventId = "b", payload = "{}", isLive = false, transient = false)
         )
         dao.insertEvents(events)
 
@@ -172,7 +172,7 @@ class EventDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenUnprocessedEvent_whenMarkingAsProcessed_thenShouldBeMarked() = runTest {
-        val event = NewEventEntity(eventId = "z", payload = "{}", isLive = false)
+        val event = NewEventEntity(eventId = "z", payload = "{}", isLive = false, transient = false)
         dao.insertEvents(listOf(event))
 
         dao.markEventAsProcessed("z")

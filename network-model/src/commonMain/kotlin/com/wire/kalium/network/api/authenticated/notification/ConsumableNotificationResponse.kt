@@ -56,7 +56,7 @@ data class EventDataDTO(
     @SerialName("delivery_tag")
     val deliveryTag: ULong?,
     @SerialName("event")
-    val event: EventResponse
+    val event: EventResponseToStore
 )
 
 @Serializable
