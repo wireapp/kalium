@@ -53,7 +53,6 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 //       Even if they operate on the same table underneath, these DAOs can represent/do different things.
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class ConversationDAOImpl internal constructor(
-    private val conversationDetailsWithEventsCache: FlowCache<ConversationIDEntity, ConversationDetailsWithEventsEntity?>,
     private val conversationDetailsCache: FlowCache<ConversationIDEntity, ConversationViewEntity?>,
     private val conversationCache: FlowCache<ConversationIDEntity, ConversationEntity?>,
     private val conversationQueries: ConversationsQueries,

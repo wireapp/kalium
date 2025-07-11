@@ -53,7 +53,6 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
-import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
@@ -204,9 +203,6 @@ class UserDatabaseBuilder internal constructor(
             queriesContext
         )
 
-    private val conversationDetailsWithEventsCache =
-        FlowCache<ConversationIDEntity, ConversationDetailsWithEventsEntity?>(databaseScope)
-
     private val conversationDetailsCache =
         FlowCache<ConversationIDEntity, ConversationViewEntity?>(databaseScope)
 
@@ -214,7 +210,6 @@ class UserDatabaseBuilder internal constructor(
         FlowCache<ConversationIDEntity, ConversationEntity?>(databaseScope)
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
-            conversationDetailsWithEventsCache,
             conversationDetailsCache,
             conversationCache,
             database.conversationsQueries,
