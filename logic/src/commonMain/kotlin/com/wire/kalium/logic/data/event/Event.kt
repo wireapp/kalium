@@ -73,11 +73,6 @@ data class EventEnvelope(
     )
 }
 
-enum class EventVersion {
-    ASYNC,
-    LEGACY
-}
-
 /**
  * Data class representing information about the delivery of an event.
  *

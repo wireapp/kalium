@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_EVENTS
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.SYNC_MARKER_KEY
 import com.wire.kalium.network.api.v8.authenticated.NotificationApiV8
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
@@ -61,21 +62,22 @@ internal open class NotificationApiV9 internal constructor(
      * Creates a new WebSocket session or returns an existing one.
      * @param clientId the clientId of the user to connect to the websocket
      */
-    protected suspend fun getOrCreateAsyncEventsWebSocketSession(clientId: String, origin: String): WebSocketSession {
+    protected suspend fun getOrCreateAsyncEventsWebSocketSession(clientId: String, markerId: String, origin: String): WebSocketSession {
         mutex.withLock {
             if (session == null) {
                 kaliumLogger.d("Creating new WebSocket session on $this by $origin")
                 session = authenticatedWebSocketClient.createWebSocketSession(clientId) {
                     setWSSUrl(authenticatedWebSocketClient.createWSSUrl(shouldAddApiVersion = true), PATH_EVENTS)
                     parameter(CLIENT_QUERY_KEY, clientId)
+                    parameter(SYNC_MARKER_KEY, markerId)
                 }
             }
             return session!!
         }
     }
 
-    override suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
-        val session = getOrCreateAsyncEventsWebSocketSession(clientId, ::acknowledgeEvents.name)
+    override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
+        val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, ::acknowledgeEvents.name)
 
         KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
             val result = session.outgoing.trySend(Frame.Text(json.toString()))
@@ -87,7 +89,10 @@ internal open class NotificationApiV9 internal constructor(
         }
     }
 
-    override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
+    override suspend fun consumeLiveEvents(
+        clientId: String,
+        markerId: String
+    ): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
         cookies().mapSuccess {
             flow {
                 // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
@@ -95,7 +100,7 @@ internal open class NotificationApiV9 internal constructor(
                 //       exceptions when the backend returns 401 instead of triggering a token refresh.
                 //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
                 //       before attempting to open the websocket
-                val session = getOrCreateAsyncEventsWebSocketSession(clientId, ::consumeLiveEvents.name)
+                val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, ::consumeLiveEvents.name)
                 emitWebSocketEvents(session)
             }
         }
@@ -109,7 +114,7 @@ internal open class NotificationApiV9 internal constructor(
     ) {
         val logger = kaliumLogger.withFeatureId(EVENT_RECEIVER)
         logger.i("Websocket open")
-        emit(WebSocketEvent.Open())
+        emit(WebSocketEvent.Open(shouldProcessPendingEvents = false))
 
         defaultClientWebSocketSession.incoming
             .consumeAsFlow()

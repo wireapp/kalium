@@ -48,7 +48,7 @@ internal class NotificationApiV9Test : ApiTest() {
             statusCode = HttpStatusCode.OK
         )
         val notificationsApi = NotificationApiV9(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
-        val result = notificationsApi.consumeLiveEvents("")
+        val result = notificationsApi.consumeLiveEvents("some-client", "some-marker")
 
         assertIs<NetworkResponse.Success<Flow<WebSocketEvent<ConsumableNotificationResponse>>>>(result)
     }
@@ -60,7 +60,7 @@ internal class NotificationApiV9Test : ApiTest() {
             statusCode = HttpStatusCode.BadRequest,
         )
         val notificationsApi = NotificationApiV9(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
-        val result = notificationsApi.consumeLiveEvents("")
+        val result = notificationsApi.consumeLiveEvents("some-client", "some-marker")
 
         assertIs<NetworkResponse.Error>(result)
     }

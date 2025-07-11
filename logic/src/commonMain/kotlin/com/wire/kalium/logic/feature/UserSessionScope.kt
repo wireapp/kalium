@@ -562,7 +562,7 @@ class UserSessionScope internal constructor(
         )
 
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
-        get() = IsClientAsyncNotificationsCapableProviderImpl(clientRegistrationStorage)
+        get() = IsClientAsyncNotificationsCapableProviderImpl(clientRegistrationStorage, this)
 
     val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
