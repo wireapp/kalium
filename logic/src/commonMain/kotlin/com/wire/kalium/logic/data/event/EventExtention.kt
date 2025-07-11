@@ -15,20 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.dao.event
+package com.wire.kalium.logic.data.event
 
-data class EventEntity(
-    val id: Long,
-    val eventId: String,
-    val isProcessed: Boolean,
-    val payload: String?,
-    val transient: Boolean,
-    val isLive: Boolean
-)
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
+import com.wire.kalium.network.tools.KtxSerializer
 
-data class NewEventEntity(
-    val eventId: String,
-    val payload: String?,
-    val transient: Boolean,
-    val isLive: Boolean
+fun EventResponse.toEventResponseToStore(): EventResponseToStore = EventResponseToStore(
+    id = id,
+    payload = KtxSerializer.json.encodeToString(payload),
+    transient = transient,
 )

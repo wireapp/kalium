@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.logic.data.event.toEventResponseToStore
 import com.wire.kalium.logic.util.TimeLogger
 import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.requests.ACMERequests
@@ -173,7 +174,7 @@ class PocIntegrationTest {
             val response = NotificationResponse(
                 time = Clock.System.now().toString(),
                 hasMore = false,
-                notifications = events.toList()
+                notifications = events.toList().map { it.toEventResponseToStore() }
             )
 
             val encodedData = json.encodeToString(response)
