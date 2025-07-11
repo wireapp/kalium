@@ -45,7 +45,7 @@ import com.wire.kalium.network.api.authenticated.notification.ConsumableNotifica
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
-import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
@@ -169,8 +169,11 @@ class EventDataSource(
             }
             .map { eventEntities ->
                 eventEntities.map { entity ->
-                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                    eventMapper.fromDTO(payload, isLive = entity.isLive)
+                    val payload: List<EventContentDTO>? =
+                        entity.payload?.let {
+                            KtxSerializer.json.decodeFromString<List<EventContentDTO>>(it)
+                        }
+                    eventMapper.fromStoredDTO(eventId = entity.eventId, payload = payload, isLive = entity.isLive)
                 }
                     .flatten()
             }
@@ -248,7 +251,8 @@ class EventDataSource(
                                         listOf(
                                             NewEventEntity(
                                                 eventId = eventResponse.id,
-                                                payload = KtxSerializer.json.encodeToString(eventResponse),
+                                                payload = eventResponse.payload,
+                                                transient = eventResponse.transient,
                                                 isLive = true // TODO Yamil we need to decide when set it as false for async notificaitons
                                             )
                                         )
@@ -272,12 +276,8 @@ class EventDataSource(
                                     listOf(
                                         NewEventEntity(
                                             eventId = eventId,
-                                            payload = KtxSerializer.json.encodeToString(
-                                                EventResponse(
-                                                    eventId,
-                                                    payload = listOf(EventContentDTO.AsyncMissedNotification)
-                                                )
-                                            ),
+                                            payload = KtxSerializer.json.encodeToString(listOf(EventContentDTO.AsyncMissedNotification)),
+                                            transient = true,
                                             isLive = true
                                         )
                                     )
@@ -336,7 +336,7 @@ class EventDataSource(
                         .buffer(capacity = Channel.UNLIMITED, onBufferOverflow = BufferOverflow.SUSPEND)
                         .map {
                             when (it) {
-                                is WebSocketEvent.BinaryPayloadReceived<EventResponse> ->
+                                is WebSocketEvent.BinaryPayloadReceived<EventResponseToStore> ->
                                     WebSocketEvent.BinaryPayloadReceived<ConsumableNotificationResponse>(
                                         ConsumableNotificationResponse.EventNotification(
                                             EventDataDTO(
@@ -346,11 +346,11 @@ class EventDataSource(
                                         )
                                     )
 
-                                is WebSocketEvent.Close<EventResponse> -> WebSocketEvent.Close(it.cause)
-                                is WebSocketEvent.NonBinaryPayloadReceived<EventResponse> ->
+                                is WebSocketEvent.Close<EventResponseToStore> -> WebSocketEvent.Close(it.cause)
+                                is WebSocketEvent.NonBinaryPayloadReceived<EventResponseToStore> ->
                                     WebSocketEvent.NonBinaryPayloadReceived(it.payload)
 
-                                is WebSocketEvent.Open<EventResponse> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
+                                is WebSocketEvent.Open<EventResponseToStore> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
                             }
                         }
                         .collect(handleEvents(this, EventVersion.LEGACY))
@@ -372,8 +372,9 @@ class EventDataSource(
                     event.payload?.let {
                         NewEventEntity(
                             eventId = event.id,
-                            payload = KtxSerializer.json.encodeToString(event),
-                            isLive = false
+                            payload = event.payload,
+                            isLive = false,
+                            transient = event.transient
                         )
                     }
                 }
@@ -401,7 +402,7 @@ class EventDataSource(
     override fun parseExternalEvents(data: String): List<EventEnvelope> {
         val notificationResponse = Json.decodeFromString<NotificationResponse>(data)
         return notificationResponse.notifications.flatMap {
-            eventMapper.fromDTO(it, isLive = false)
+            eventMapper.fromDTO(it.toEventResponse(), isLive = false)
         }
     }
 
