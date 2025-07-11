@@ -54,14 +54,16 @@ class EventDAOImpl(
 
     override suspend fun insertEvents(events: List<NewEventEntity>) {
         withContext(queriesContext) {
-            events.forEach { event ->
-                eventsQueries.insertOrIgnoreEvent(
-                    event_id = event.eventId,
-                    is_processed = 0,
-                    payload = event.payload,
-                    is_live = if (event.isLive) 1L else 0L,
-                    transient = event.transient
-                )
+            eventsQueries.transaction {
+                events.forEach { event ->
+                    eventsQueries.insertOrIgnoreEvent(
+                        event_id = event.eventId,
+                        is_processed = 0,
+                        payload = event.payload,
+                        is_live = if (event.isLive) 1L else 0L,
+                        transient = event.transient
+                    )
+                }
             }
         }
     }
