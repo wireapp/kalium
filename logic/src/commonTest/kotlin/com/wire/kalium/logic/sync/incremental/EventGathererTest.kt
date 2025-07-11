@@ -284,7 +284,6 @@ class EventGathererTest {
         fun arrange() = this to EventGathererImpl(
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
-            serverTimeHandler = serverTimeHandler
         )
     }
 }
