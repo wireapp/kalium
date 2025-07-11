@@ -465,6 +465,7 @@ class EventDataSource(
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
+
         // DO NOT CHANGE THE NAME IT IS INTENTIONAL THAT LAST_SAVED_EVENT_ID_KEY VALUE IS last_processed_event_id
         // CHANGE IT AND YOU WILL BE FIRED
         // ALSO KUBAZ WILL THROW A CURSE AT YOUR FAMILY
