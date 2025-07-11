@@ -194,6 +194,3 @@ WHERE
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%');
-
-selectConversationDetailsWithEventsByQualifiedId:
-SELECT * FROM ConversationDetailsWithEvents WHERE qualifiedId = ?;

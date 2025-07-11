@@ -93,9 +93,6 @@ interface ConversationRepository {
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
-    suspend fun observeConversationDetailsWithEventsById(
-        conversationId: ConversationId
-    ): Flow<Either<StorageFailure, ConversationDetailsWithEvents>>
 
     // endregion
 
@@ -400,23 +397,6 @@ internal class ConversationDataSource internal constructor(
                         Either.Right(conversationMapper.fromDaoModelToDetails(it))
                     } catch (error: IllegalArgumentException) {
                         kaliumLogger.e("require field in conversation Details", error)
-                        Either.Left(StorageFailure.DataNotFound)
-                    }
-                }
-            }
-            .distinctUntilChanged()
-
-    override suspend fun observeConversationDetailsWithEventsById(
-        conversationId: ConversationId
-    ): Flow<Either<StorageFailure, ConversationDetailsWithEvents>> =
-        conversationDAO.observeConversationDetailsWithEventsById(conversationId.toDao())
-            .wrapStorageRequest()
-            .map { eitherConversationView ->
-                eitherConversationView.flatMap {
-                    try {
-                        Either.Right(conversationMapper.fromDaoModelToDetailsWithEvents(it))
-                    } catch (error: IllegalArgumentException) {
-                        kaliumLogger.e("require field in conversation details with events", error)
                         Either.Left(StorageFailure.DataNotFound)
                     }
                 }

@@ -40,7 +40,6 @@ interface ConversationDAO {
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
-    suspend fun observeConversationDetailsWithEventsById(conversationId: QualifiedIDEntity): Flow<ConversationDetailsWithEventsEntity?>
     suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
     //endregion
 

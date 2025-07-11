@@ -1144,76 +1144,6 @@ class ConversationRepositoryTest {
         assertTrue { result.isRight() }
     }
 
-    @Test
-    fun givenConversationExists_whenObservingDetailsWithEventsById_thenEmitConversation() = runTest {
-        val conversationEntity = CONVERSATION_DETAILS_WITH_EVENTS_ENTITY()
-        val conversation = CONVERSATION_DETAILS_WITH_EVENTS()
-        val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversationDetailsWithEventsFlow(flowOf(conversationEntity))
-            .arrange()
-
-        conversationRepository.observeConversationDetailsWithEventsById(conversation.conversationDetails.conversation.id).test {
-            awaitItem().shouldSucceed() {
-                assertEquals(conversation, it)
-            }
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun givenConversationDoesNotExist_whenObservingDetailsWithEventsById_thenEmitNull() = runTest {
-        val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversationDetailsWithEventsFlow(flowOf(null))
-            .arrange()
-
-        conversationRepository.observeConversationDetailsWithEventsById(TestConversationDetails.CONVERSATION_GROUP.conversation.id).test {
-            awaitItem().shouldFail {
-                assertEquals(StorageFailure.DataNotFound, it)
-            }
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun givenConversationChanged_whenObservingDetailsWithEventsById_thenEmitUpdatedConversation() = runTest {
-        val conversationEntity = CONVERSATION_DETAILS_WITH_EVENTS_ENTITY(archived = false)
-        val conversation = CONVERSATION_DETAILS_WITH_EVENTS(archived = false)
-        val updatedConversationEntity = CONVERSATION_DETAILS_WITH_EVENTS_ENTITY(archived = true)
-        val updatedConversation = CONVERSATION_DETAILS_WITH_EVENTS(archived = true)
-        val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversationDetailsWithEventsFlow(flowOf(conversationEntity, updatedConversationEntity))
-            .arrange()
-
-        conversationRepository.observeConversationDetailsWithEventsById(conversation.conversationDetails.conversation.id).test {
-            awaitItem().shouldSucceed() {
-                assertEquals(conversation, it)
-            }
-            awaitItem().shouldSucceed() {
-                assertEquals(updatedConversation, it)
-            }
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun givenConversationRemoved_whenObservingDetailsWithEventsById_thenEmitNull() = runTest {
-        val conversationEntity = CONVERSATION_DETAILS_WITH_EVENTS_ENTITY(archived = false)
-        val conversation = CONVERSATION_DETAILS_WITH_EVENTS(archived = false)
-        val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversationDetailsWithEventsFlow(flowOf(conversationEntity, null))
-            .arrange()
-
-        conversationRepository.observeConversationDetailsWithEventsById(conversation.conversationDetails.conversation.id).test {
-            awaitItem().shouldSucceed() {
-                assertEquals(conversation, it)
-            }
-            awaitItem().shouldFail {
-                assertEquals(StorageFailure.DataNotFound, it)
-            }
-            awaitComplete()
-        }
-    }
-
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1381,12 +1311,6 @@ class ConversationRepositoryTest {
             coEvery {
                 conversationDAO.observeConversationDetailsById(any())
             }.returns(flowOf(conversationEntity))
-        }
-
-        suspend fun withExpectedObservableConversationDetailsWithEventsFlow(result: Flow<ConversationDetailsWithEventsEntity?>) = apply {
-            coEvery {
-                conversationDAO.observeConversationDetailsWithEventsById(any())
-            }.returns(result)
         }
 
         suspend fun withExpectedObservableConversation(conversationEntity: ConversationEntity? = null) = apply {

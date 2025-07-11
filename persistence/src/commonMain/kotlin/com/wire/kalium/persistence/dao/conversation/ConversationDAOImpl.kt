@@ -92,15 +92,6 @@ internal class ConversationDAOImpl internal constructor(
             .mapToOneOrNull()
     }
 
-    override suspend fun observeConversationDetailsWithEventsById(
-        conversationId: QualifiedIDEntity
-    ): Flow<ConversationDetailsWithEventsEntity?> = conversationDetailsWithEventsCache.get(conversationId) {
-        conversationDetailsWithEventsQueries
-            .selectConversationDetailsWithEventsByQualifiedId(conversationId, conversationDetailsWithEventsMapper::fromViewToModel)
-            .asFlow()
-            .mapToOneOrNull()
-    }
-
     override suspend fun getConversationDetailsById(
         qualifiedID: QualifiedIDEntity
     ): ConversationViewEntity? =
