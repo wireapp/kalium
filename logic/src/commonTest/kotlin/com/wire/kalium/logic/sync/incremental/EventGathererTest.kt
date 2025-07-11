@@ -275,12 +275,6 @@ class EventGathererTest {
             }.returns(either)
         }
 
-        suspend fun withFetchServerTimeReturning(time: String?) = apply {
-            coEvery {
-                eventRepository.fetchServerTime()
-            }.returns(time)
-        }
-
         suspend fun withLastEventIdReturning(either: Either<StorageFailure, String>) = apply {
             coEvery {
                 eventRepository.lastSavedEventId()
@@ -290,7 +284,6 @@ class EventGathererTest {
         fun arrange() = this to EventGathererImpl(
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
-            serverTimeHandler = serverTimeHandler
         )
     }
 }

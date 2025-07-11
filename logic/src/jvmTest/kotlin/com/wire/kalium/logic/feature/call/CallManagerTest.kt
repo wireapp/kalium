@@ -75,6 +75,7 @@ class CallManagerTest {
             .onWcallRecvMsgReturning(0)
             .onObserveConversationMembersReturning(emptyList())
             .onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
+            .withFetchServerTimeReturning()
             .arrange()
 
         callManager.onCallingMessageReceived(
@@ -147,6 +148,10 @@ class CallManagerTest {
 
         suspend fun onGetCallConversationTypeReturning(result: ConversationTypeCalling) = apply {
             coEvery { getCallConversationType(any()) }.returns(result)
+        }
+
+        suspend fun withFetchServerTimeReturning() = apply {
+            coEvery { callRepository.fetchServerTime() }.returns("2022-03-30T16:36:00.000Z")
         }
 
         suspend fun arrange() = this to CallManagerImpl(

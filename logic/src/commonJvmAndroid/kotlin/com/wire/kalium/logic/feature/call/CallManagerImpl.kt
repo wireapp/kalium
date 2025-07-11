@@ -96,6 +96,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.json.Json
 import java.util.Collections
 
@@ -151,6 +152,21 @@ class CallManagerImpl internal constructor(
             callingLogger.d("$TAG - clientId $it")
             it
         })
+    }
+
+    private val initializeServerTimeOffsetJob: Deferred<Unit> = scope.async(start = CoroutineStart.LAZY) {
+        callRepository.fetchServerTime()?.let { serverTime ->
+            callingLogger.d("$TAG - Computing server time offset: $serverTime")
+            serverTimeHandler.computeTimeOffset(serverTime.toInstant().epochSeconds)
+        } ?: run {
+            callingLogger.w("$TAG: Failed to fetch server time for offset computation.")
+        }
+    }
+
+    private suspend fun ensureServerTimeOffsetComputed() {
+        if (!initializeServerTimeOffsetJob.isCompleted && !initializeServerTimeOffsetJob.isCancelled) {
+            initializeServerTimeOffsetJob.await()
+        }
     }
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
@@ -241,6 +257,7 @@ class CallManagerImpl internal constructor(
         message: Message.Signaling,
         content: MessageContent.Calling,
     ) = withCalling {
+        ensureServerTimeOffsetComputed() // make sure the offset is now computed and only process if was not computed before.
         callingLogger.i("$TAG - onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val msg = content.value.toByteArray()
 
