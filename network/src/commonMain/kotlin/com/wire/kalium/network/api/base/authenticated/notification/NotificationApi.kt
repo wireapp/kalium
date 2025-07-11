@@ -75,6 +75,7 @@ interface NotificationApi : BaseApi {
 
     @Deprecated("Starting API v9 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
     suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>>
+
     /**
      * Open a websocket connection to listen to live events.
      * @param clientId the id of current the client.
