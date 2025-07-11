@@ -39,11 +39,15 @@ import com.wire.kalium.cells.sdk.kmp.model.RestIncomingNode
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupScope
+import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdate
+import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdateOp
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
+import com.wire.kalium.cells.sdk.kmp.model.RestNodeUpdates
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
+import com.wire.kalium.cells.sdk.kmp.model.RestUserMeta
 import com.wire.kalium.cells.sdk.kmp.model.StatusFilterDeletedStatus
 import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -279,6 +283,40 @@ internal class CellsApiImpl(
             )
         )
     }.mapSuccess {}
+
+    override suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.patchNode(
+            uuid = uuid,
+            nodeUpdates = RestNodeUpdates(
+                metaUpdates = listOf(
+                    RestMetaUpdate(
+                        userMeta = RestUserMeta(
+                            namespace = TAGS_METADATA,
+                            jsonValue = "\"${tags.joinToString(",")} \""
+                        ),
+                        operation = RestMetaUpdateOp.PUT
+                    )
+                )
+            )
+        )
+    }.mapSuccess { }
+
+    override suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.patchNode(
+            uuid = uuid,
+            nodeUpdates = RestNodeUpdates(
+                metaUpdates = listOf(
+                    RestMetaUpdate(
+                        userMeta = RestUserMeta(
+                            namespace = TAGS_METADATA,
+                            jsonValue = "\"\""
+                        ),
+                        operation = RestMetaUpdateOp.DELETE
+                    )
+                )
+            )
+        )
+    }.mapSuccess { }
 
     override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
         nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA, operationValues = listOf())
