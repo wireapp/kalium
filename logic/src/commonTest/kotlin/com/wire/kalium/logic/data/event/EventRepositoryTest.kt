@@ -40,8 +40,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
-import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
-import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
+import com.wire.kalium.network.api.authenticated.notification.SynchronizationDataDTO
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -98,7 +97,7 @@ class EventRepositoryTest {
             .arrange()
 
         eventRepository.liveEvents()
-        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value), any()) }
             .wasInvoked(exactly = once)
     }
 
@@ -201,6 +200,7 @@ class EventRepositoryTest {
                 coVerify {
                     arrangement.notificationApi.acknowledgeEvents(
                         eq(TestClient.CLIENT_ID.value),
+                        any(),
                         matches {
                             it.type == AcknowledgeType.ACK &&
                                     it.data?.deliveryTag == deliveryTag
@@ -305,6 +305,55 @@ class EventRepositoryTest {
             assertEquals(listOf("x", "y", "z"), emitted.map { it.event.id })
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun givenLiveEventForSyncMarker_whenReceived_thenShouldAcknowledgeWithACK() = runTest {
+        val eventId = "event-id"
+        val deliveryTag = 987654UL
+
+        val (arrangement, repository) = Arrangement()
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withClientHasConsumableNotifications(true)
+            .withClearProcessedEvents(eventId)
+            .withConsumeLiveEventsReturning(
+                NetworkResponse.Success(
+                    value = flowOf(
+                        WebSocketEvent.BinaryPayloadReceived(
+                            ConsumableNotificationResponse.SynchronizationNotification(
+                                SynchronizationDataDTO(
+                                    deliveryTag = deliveryTag,
+                                    markerId = "sync-marker"
+                                )
+                            )
+                        )
+                    ),
+                    headers = mapOf(),
+                    httpCode = 200
+                )
+            )
+            .withAcknowledgeEvents()
+            .arrange()
+
+        val result = repository.liveEvents()
+        result.shouldSucceed {}
+
+        result.fold({}, { flow ->
+            flow.test {
+                awaitComplete()
+                coVerify {
+                    arrangement.notificationApi.acknowledgeEvents(
+                        eq(TestClient.CLIENT_ID.value),
+                        any(),
+                        matches {
+                            it.type == AcknowledgeType.ACK &&
+                                    it.data?.deliveryTag == deliveryTag
+                            it.data?.multiple == false
+                        }
+                    )
+                }.wasInvoked(exactly = once)
+            }
+        })
     }
 
     @Test
@@ -487,7 +536,6 @@ class EventRepositoryTest {
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
         val eventDAO: EventDAO = mock(EventDAO::class)
-        val serverTimeApi: ServerTimeApi = mock(ServerTimeApi::class)
 
         private val eventRepository: EventRepository = EventDataSource(
             notificationApi,
@@ -530,12 +578,6 @@ class EventRepositoryTest {
             }.returns(result)
         }
 
-        suspend fun withGetServerTimeReturning(result: NetworkResponse<ServerTimeDTO>) = apply {
-            coEvery {
-                serverTimeApi.getServerTime()
-            }.returns(result)
-        }
-
         suspend fun withCurrentClientIdReturning(clientId: ClientId) = apply {
             coEvery {
                 clientIdProvider.invoke()
@@ -544,7 +586,7 @@ class EventRepositoryTest {
 
         suspend fun withConsumeLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>) = apply {
             coEvery {
-                notificationApi.consumeLiveEvents(any())
+                notificationApi.consumeLiveEvents(any(), any())
             }.returns(result)
         }
 
@@ -556,7 +598,7 @@ class EventRepositoryTest {
 
         suspend fun withAcknowledgeEvents() = apply {
             coEvery {
-                notificationApi.acknowledgeEvents(any(), any())
+                notificationApi.acknowledgeEvents(any(), any(), any())
             }.returns(Unit)
         }
 

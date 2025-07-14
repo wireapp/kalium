@@ -39,6 +39,7 @@ internal class MissedNotificationsEventReceiverImpl(
 ) : MissedNotificationsEventReceiver {
 
     override suspend fun onEvent(event: Event.AsyncMissed, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+        slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
         slowSyncRepository.clearLastSlowSyncCompletionInstant()
         return slowSyncRequester.invoke()
             .flatMap {
