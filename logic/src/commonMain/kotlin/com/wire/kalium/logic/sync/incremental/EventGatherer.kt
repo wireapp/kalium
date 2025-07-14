@@ -35,18 +35,17 @@ import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.transform
 
 /**
  * Orchestrates the reception of events from remote sources,
@@ -81,25 +80,22 @@ internal class EventGathererImpl(
 
     private val logger = logger.withFeatureId(SYNC)
 
-    // TODO handle multiple events at once
-    override suspend fun gatherEvents(): Flow<EventStreamData> = channelFlow {
-        coroutineScope {
-            val waitForReceivingSetupJob = Job()
-            launch {
-                // TODO(refactor): stop emitting Unit, emit status of the underlying event fetching for clarity
-                receiveEventsFromRemoteAndInsertIntoLocalStorage().onEach { waitForReceivingSetupJob.complete() }.collect()
-            }
-            launch {
-                waitForReceivingSetupJob.join()
-                eventRepository.observeEvents().onEach { events ->
-                    kaliumLogger.d("$TAG gathering ${events.size} events")
-                }.collect { events ->
-                    if (events.isEmpty()) {
-                        send(EventStreamData.IsUpToDate)
-                    } else {
-                        send(EventStreamData.NewEvents(events))
-                    }
-                }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override suspend fun gatherEvents(): Flow<EventStreamData> {
+        var hasEmitted = false
+
+        // TODO(refactor): stop emitting Unit, emit status of the underlying event fetching for clarity
+        return receiveEventsFromRemoteAndInsertIntoLocalStorage().transform {
+            if (hasEmitted) return@transform
+            hasEmitted = true
+            emit(Unit)
+        }.flatMapConcat { eventRepository.observeEvents() }.onEach { events ->
+            kaliumLogger.d("$TAG gathering ${events.size} events")
+        }.map { events ->
+            if (events.isEmpty()) {
+                EventStreamData.IsUpToDate
+            } else {
+                EventStreamData.NewEvents(events)
             }
         }
     }
