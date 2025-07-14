@@ -32,6 +32,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
+// After removing cryptobox, proteus is not implemented on iOS and JS
+@IgnoreJS
+@IgnoreIOS
 class ProteusClientTest : BaseProteusClientTest() {
 
     data class SampleUser(val id: CryptoUserID, val name: String)
@@ -93,8 +96,6 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertEquals(message2, decryptedMessage2.decodeToString())
     }
 
-    @IgnoreJS
-    @IgnoreIOS
     @Test
     fun givenReceivingSameMessageTwice_whenCallingDecrypt_thenDuplicateMessageError() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
@@ -112,8 +113,6 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertEquals(ProteusException.Code.DUPLICATE_MESSAGE, exception.code)
     }
 
-    @IgnoreJS
-    @IgnoreIOS
     @Test
     fun givenMissingSession_whenCallingEncryptBatched_thenMissingSessionAreIgnored() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
@@ -160,7 +159,7 @@ class ProteusClientTest : BaseProteusClientTest() {
 //         }
 //     }
 
-    @IgnoreJvm // cryptobox4j does not expose the session
+    //     @IgnoreJvm // cryptobox4j does not expose the session
     @Test
     fun givenSessionExists_whenGettingRemoteFingerPrint_thenReturnSuccess() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
@@ -173,10 +172,6 @@ class ProteusClientTest : BaseProteusClientTest() {
         }
     }
 
-    // TODO: Implement on CoreCrypto as well once it supports transactions
-    @IgnoreJS
-    @IgnoreJvm
-    @IgnoreIOS
     @Test
     fun givenEncryptedClient_whenThrowingDuringTransaction_thenShouldNotSaveSessionAndBeAbleToDecryptAgain() = runTest {
         val aliceRef = createProteusStoreRef(alice.id)
