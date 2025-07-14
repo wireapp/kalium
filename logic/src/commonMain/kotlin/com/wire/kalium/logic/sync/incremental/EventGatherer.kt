@@ -82,7 +82,7 @@ internal class EventGathererImpl(
 
         // TODO(refactor): stop emitting Unit, emit status of the underlying event fetching for clarity
         return receiveEventsFromRemoteAndInsertIntoLocalStorage().transform { syncPhase ->
-            if (hasEmitted && syncPhase == IncrementalSyncPhase.ReadyToProcess) return@transform
+            if (hasEmitted || syncPhase == IncrementalSyncPhase.CatchingUp) return@transform
             hasEmitted = true
             emit(Unit)
         }.flatMapConcat { eventRepository.observeEvents() }.onEach { events ->
