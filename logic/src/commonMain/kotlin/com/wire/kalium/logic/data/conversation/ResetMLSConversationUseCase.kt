@@ -73,7 +73,8 @@ internal class ResetMLSConversationUseCaseImpl(
                     mlsConversationRepository.leaveGroup(mlsContext, groupId)
                 }
                 .flatMap { fetchConversation(transaction, conversationId) }
-                .flatMap { getMlsProtocolInfo(conversationId) }
+                .flatMap { fetchConversationUseCase(conversationId) }
+            .flatMap { getMlsProtocolInfo(conversationId) }
                 .map { updatedProtocolInfo ->
 
                     val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
