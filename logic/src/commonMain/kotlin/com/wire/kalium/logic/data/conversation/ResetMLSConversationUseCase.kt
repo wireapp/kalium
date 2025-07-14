@@ -73,6 +73,7 @@ internal class ResetMLSConversationUseCaseImpl(
                     fetchConversationUseCase(context, conversationId)
                 }
             }
+            .flatMap { fetchConversationUseCase(conversationId) }
             .flatMap { getMlsProtocolInfo(conversationId) }
             .map { updatedProtocolInfo ->
 

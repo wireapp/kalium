@@ -178,6 +178,7 @@ class ResetMLSConversationUseCaseTest {
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
                 fetchConversationUseCase = fetchConversationUseCase,
+                conversationApi = conversationApi,
             )
         }
     }
