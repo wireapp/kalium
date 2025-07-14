@@ -19,9 +19,11 @@
 import action.ACMEActions
 import action.ClientActions
 import action.LoginActions
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.event.EventGenerator
+import com.wire.kalium.logic.data.event.toEventResponseToStore
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -30,8 +32,6 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.getOrFail
-import com.wire.kalium.logic.data.event.toEventResponseToStore
 import com.wire.kalium.logic.util.TimeLogger
 import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.requests.ACMERequests
@@ -54,7 +54,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Ignore
 import org.junit.Test
@@ -163,12 +162,12 @@ class PocIntegrationTest {
                     clientId = selfClientId,
                     userId = targetUserId
                 ),
-                proteusClient = userSession.proteusClientProvider.getOrCreate()
             )
 
             val events = generator.generateEvents(
                 limit = 1000,
                 conversationId = ConversationId(ConversationMocks.conversationId.value, ConversationMocks.conversationId.domain),
+                transactionProvider = userSession.cryptoTransactionProvider
             )
 
             val response = NotificationResponse(
