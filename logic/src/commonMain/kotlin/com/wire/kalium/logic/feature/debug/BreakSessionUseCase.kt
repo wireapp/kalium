@@ -59,8 +59,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
         userId: UserId,
         clientId: ClientId
     ): BreakSessionResult = withContext(dispatchers.io) {
-
-        return@withContext transactionProvider.proteusTransaction { proteusContext ->
+         transactionProvider.proteusTransaction("BreakSession") { proteusContext ->
             val cryptoUserID = idMapper.toCryptoQualifiedIDId(userId)
             val cryptoSessionId = CryptoSessionId(
                 userId = cryptoUserID,

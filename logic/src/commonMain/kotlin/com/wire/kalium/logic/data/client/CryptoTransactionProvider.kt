@@ -72,8 +72,8 @@ class CryptoTransactionProviderImpl(
     ): Either<CoreFailure, R> {
         val proteusClient = proteusClientProvider.getOrError()
         return proteusClient.flatMap { proteus ->
-            proteus.transaction(name ?: "proteus") { mlsCtx ->
-                block(mlsCtx)
+            proteus.transaction(name ?: "proteus") { proteusContext ->
+                block(proteusContext)
             }
         }
     }

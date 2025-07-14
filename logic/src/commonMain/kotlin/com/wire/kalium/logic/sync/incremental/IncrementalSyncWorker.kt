@@ -69,7 +69,7 @@ internal class IncrementalSyncWorkerImpl(
             .collect { streamData ->
                 val envelopes = streamData.eventList
                 kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
-                transactionProvider.transaction { context ->
+                transactionProvider.transaction("processEvents") { context ->
                     envelopes.map { envelope ->
                         eventProcessor.processEvent(context, envelope)
                     }.foldToEitherWhileRight(Unit) { value, _ -> value }

@@ -186,7 +186,7 @@ internal class MessageSenderImpl internal constructor(
         messageSendingInterceptor
             .prepareMessage(message)
             .flatMap { processedMessage ->
-                transactionProvider.transaction { transactionContext ->
+                transactionProvider.transaction("sendMessage") { transactionContext ->
                     attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
                         val localDate = message.date
                         val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
@@ -221,7 +221,7 @@ internal class MessageSenderImpl internal constructor(
         target: BroadcastMessageTarget
     ): Either<CoreFailure, Unit> =
         withContext(scope.coroutineContext) {
-            transactionProvider.proteusTransaction {
+            transactionProvider.proteusTransaction("broadcastMessage") {
                 attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
             }
         }

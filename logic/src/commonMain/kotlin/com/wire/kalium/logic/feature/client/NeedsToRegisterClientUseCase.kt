@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -49,8 +50,7 @@ internal class NeedsToRegisterClientUseCaseImpl(
             }
         )
 
-    private suspend fun onValidAccount(): Boolean = transactionProvider.proteusTransaction {
+    private suspend fun onValidAccount(): Boolean = transactionProvider.proteusTransaction("NeedsToRegisterClient") {
         currentClientIdProvider()
-    }
-        .fold({ true }, { false })
+    }.isLeft()
 }

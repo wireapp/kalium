@@ -52,7 +52,7 @@ internal class SynchronizeExternalDataUseCaseImpl(
     override suspend operator fun invoke(
         data: String,
     ): SynchronizeExternalDataResult {
-        return transactionProvider.transaction { transactionContext ->
+        return transactionProvider.transaction("SynchronizeExternalData") { transactionContext ->
             eventRepository.parseExternalEvents(data).foldToEitherWhileRight(Unit) { event, _ ->
                 eventProcessor.processEvent(transactionContext, event)
             }

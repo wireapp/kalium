@@ -57,8 +57,7 @@ internal class ResetSessionUseCaseImpl internal constructor(
         userId: UserId,
         clientId: ClientId
     ): ResetSessionResult = withContext(dispatchers.io) {
-        // TODO KBX name all transactions
-        return@withContext transactionProvider.proteusTransaction { proteusContext ->
+        transactionProvider.proteusTransaction("ResetSession") { proteusContext ->
             val cryptoUserID = idMapper.toCryptoQualifiedIDId(userId)
             val cryptoSessionId = CryptoSessionId(
                 userId = cryptoUserID,

@@ -56,7 +56,7 @@ internal class LocalEventManagerImpl(
     }
 
     private suspend fun processEvent(eventEnvelope: EventEnvelope) {
-        transactionProvider.transaction {
+        transactionProvider.transaction("LocalEventManager") {
             when (val result = eventProcessor.processEvent(it, eventEnvelope)) {
                 is Either.Right -> {
                     kaliumLogger.i("Event processed successfully: ${eventEnvelope.event.id}", tag = LOCAL_EVENT)

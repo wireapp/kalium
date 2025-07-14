@@ -73,7 +73,7 @@ internal class ObserveLegalHoldRequestUseCaseImpl internal constructor(
                     }
                 },
                 { request ->
-                    transactionProvider.proteusTransaction { proteusContext ->
+                    transactionProvider.proteusTransaction("ObserveLegalHoldRequest") { proteusContext ->
                         val preKeyCrypto = PreKeyCrypto(request.lastPreKey.id, request.lastPreKey.key)
                         wrapProteusRequest {
                             proteusContext.getFingerprintFromPreKey(preKeyCrypto)

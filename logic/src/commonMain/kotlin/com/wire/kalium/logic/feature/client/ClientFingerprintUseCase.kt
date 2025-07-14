@@ -52,7 +52,7 @@ class ClientFingerprintUseCaseImpl internal constructor(
     private val prekeyRepository: PreKeyRepository
 ) : ClientFingerprintUseCase {
     override suspend operator fun invoke(userId: UserId, clientId: ClientId): Result =
-        transactionProvider.proteusTransaction("remoteFingerPrint") { proteusContext ->
+        transactionProvider.proteusTransaction("ClientFingerprint") { proteusContext ->
             wrapProteusRequest {
                 proteusContext.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
             }

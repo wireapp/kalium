@@ -50,7 +50,7 @@ internal class EstablishSessionUseCaseImpl(
     private val transactionProvider: CryptoTransactionProvider
 ) : EstablishSessionUseCase {
     override suspend fun invoke(userId: UserId, clientId: ClientId): EstablishSessionResult {
-        return transactionProvider.proteusTransaction { proteusContext ->
+        return transactionProvider.proteusTransaction("EstablishSession") { proteusContext ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
                 proteusContext,
                 listOf(Recipient(id = userId, clients = listOf(clientId)))

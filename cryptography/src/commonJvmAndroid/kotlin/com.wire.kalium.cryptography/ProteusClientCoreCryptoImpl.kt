@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
@@ -50,88 +51,88 @@ class ProteusClientCoreCryptoImpl private constructor(
     ): R {
         return wrapException {
             coreCrypto.transaction(name) { coreContext ->
-                block(
-                    object : ProteusCoreCryptoContext {
-                        override suspend fun getLocalFingerprint(): ByteArray {
-                            return coreContext.proteusGetLocalFingerprint()
-                        }
-
-                        override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
-                            return coreContext.proteusGetRemoteFingerprint(sessionId.value)
-                        }
-
-                        override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray {
-                            return coreContext.proteusGetPrekeyFingerprint(preKey.encodedData.decodeBase64Bytes())
-                        }
-
-                        override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
-                            return coreContext.proteusNewPreKeys(from, count).map {
-                                PreKeyCrypto(it.id.toInt(), it.data.encodeBase64())
-                            } as ArrayList<PreKeyCrypto>
-                        }
-
-                        override suspend fun newLastResortPreKey(): PreKeyCrypto {
-                            return coreContext.proteusNewLastPreKey().toCryptography()
-                        }
-
-                        override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = mutex.withLock {
-                            if (existingSessionsCache.contains(sessionId)) {
-                                return@withLock true
-                            }
-
-                            coreContext.proteusDoesSessionExist(sessionId.value)
-                                .also { exists ->
-                                    if (exists) {
-                                        existingSessionsCache.add(sessionId)
-                                    }
-                                }
-                        }
-
-                        override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-                            return coreContext.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
-                        }
-
-                        override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-                            return coreContext.proteusEncrypt(message, sessionId.value)
-                        }
-
-                        override suspend fun encryptBatched(
-                            message: ByteArray,
-                            sessionIds: List<CryptoSessionId>
-                        ): Map<CryptoSessionId, ByteArray> {
-                            return coreContext.proteusEncryptBatched(sessionIds.map { sessionId -> sessionId.value }, message)
-                                .mapNotNull { entry ->
-                                    CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
-                                        sessionId to entry.value
-                                    }
-                                }.toMap()
-                        }
-
-                        override suspend fun encryptWithPreKey(
-                            message: ByteArray,
-                            preKeyCrypto: PreKeyCrypto,
-                            sessionId: CryptoSessionId
-                        ): ByteArray {
-                            coreContext.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
-                            return coreContext.proteusEncrypt(message, sessionId.value)
-                        }
-
-                        override suspend fun deleteSession(sessionId: CryptoSessionId) {
-                            existingSessionsCache.remove(sessionId)
-                            coreContext.proteusDeleteSession(sessionId.value)
-                        }
-
-                        override suspend fun <T : Any> decryptMessage(
-                            sessionId: CryptoSessionId,
-                            message: ByteArray,
-                            handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
-                        ): T {
-                            val decrypted = coreContext.proteusDecrypt(message, sessionId.value)
-                            return handleDecryptedMessage(decrypted)
-                        }
-                    }
-                )
+                block(proteusCoreCryptoContext(coreContext))
             }
+        }
+    }
+
+    private fun proteusCoreCryptoContext(coreContext: CoreCryptoContext) = object : ProteusCoreCryptoContext {
+        override suspend fun getLocalFingerprint(): ByteArray {
+            return coreContext.proteusGetLocalFingerprint()
+        }
+
+        override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
+            return coreContext.proteusGetRemoteFingerprint(sessionId.value)
+        }
+
+        override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray {
+            return coreContext.proteusGetPrekeyFingerprint(preKey.encodedData.decodeBase64Bytes())
+        }
+
+        override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
+            return coreContext.proteusNewPreKeys(from, count).map {
+                PreKeyCrypto(it.id.toInt(), it.data.encodeBase64())
+            } as ArrayList<PreKeyCrypto>
+        }
+
+        override suspend fun newLastResortPreKey(): PreKeyCrypto {
+            return coreContext.proteusNewLastPreKey().toCryptography()
+        }
+
+        override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = mutex.withLock {
+            if (existingSessionsCache.contains(sessionId)) {
+                return@withLock true
+            }
+
+            coreContext.proteusDoesSessionExist(sessionId.value)
+                .also { exists ->
+                    if (exists) {
+                        existingSessionsCache.add(sessionId)
+                    }
+                }
+        }
+
+        override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
+            return coreContext.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
+        }
+
+        override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+            return coreContext.proteusEncrypt(message, sessionId.value)
+        }
+
+        override suspend fun encryptBatched(
+            message: ByteArray,
+            sessionIds: List<CryptoSessionId>
+        ): Map<CryptoSessionId, ByteArray> {
+            return coreContext.proteusEncryptBatched(sessionIds.map { sessionId -> sessionId.value }, message)
+                .mapNotNull { entry ->
+                    CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
+                        sessionId to entry.value
+                    }
+                }.toMap()
+        }
+
+        override suspend fun encryptWithPreKey(
+            message: ByteArray,
+            preKeyCrypto: PreKeyCrypto,
+            sessionId: CryptoSessionId
+        ): ByteArray {
+            coreContext.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
+            return coreContext.proteusEncrypt(message, sessionId.value)
+        }
+
+        override suspend fun deleteSession(sessionId: CryptoSessionId) {
+            existingSessionsCache.remove(sessionId)
+            coreContext.proteusDeleteSession(sessionId.value)
+        }
+
+        override suspend fun <T : Any> decryptMessage(
+            sessionId: CryptoSessionId,
+            message: ByteArray,
+            handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
+        ): T {
+            val decrypted = coreContext.proteusDecrypt(message, sessionId.value)
+            return handleDecryptedMessage(decrypted)
         }
     }
 

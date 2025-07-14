@@ -34,7 +34,7 @@ class GetProteusFingerprintUseCaseImpl internal constructor(
     private val transactionProvider: CryptoTransactionProvider
 ) : GetProteusFingerprintUseCase {
     override suspend fun invoke(): GetProteusFingerprintResult {
-        return transactionProvider.proteusTransaction {
+        return transactionProvider.proteusTransaction("GetProteusFingerprint") {
             wrapProteusRequest {
                 it.getLocalFingerprint()
             }

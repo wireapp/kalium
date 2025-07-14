@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
@@ -169,12 +168,5 @@ class ClientFingerprintUseCaseTest {
             runBlocking { block() }
             this to userCase
         }
-
-//         suspend fun arrange() = this to userCase.also {
-
-//             coEvery {
-//                 proteusClientProvider.getOrError()
-//             }.returns(Either.Right(proteusClient))
-//         }
     }
 }

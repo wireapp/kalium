@@ -66,7 +66,7 @@ class EventGenerator(
         return flow {
             repeat(limit) { count ->
                 val protobuf = generateProtoContent(generateTextContent(count))
-                val message = transactionProvider.proteusTransaction {
+                val message = transactionProvider.proteusTransaction("EventGenerator") {
                     encryptMessage(protobuf, it, selfSessionId, targetSessionId).right()
                 }
                 message.onSuccess {
