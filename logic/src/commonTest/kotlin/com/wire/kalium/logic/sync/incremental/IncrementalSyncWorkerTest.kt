@@ -21,9 +21,9 @@ package com.wire.kalium.logic.sync.incremental
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -128,7 +128,6 @@ class IncrementalSyncWorkerTest {
         val (_, worker) = Arrangement()
             .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
             .withEventProcessorFailingWith(coreFailureCause)
-            .withLiveEventsReturning(flowOf(Unit))
             .arrange()
 
         val resultException = assertFailsWith<KaliumSyncException> {
@@ -138,7 +137,7 @@ class IncrementalSyncWorkerTest {
         assertEquals(coreFailureCause, resultException.coreFailureCause)
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
 
