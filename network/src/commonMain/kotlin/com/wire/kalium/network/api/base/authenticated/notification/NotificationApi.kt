@@ -71,8 +71,6 @@ interface NotificationApi : BaseApi {
      */
     suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
-    suspend fun getServerTime(querySize: Int): NetworkResponse<String>
-
     @Deprecated("Starting API v9 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
     suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>>
 

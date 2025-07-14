@@ -71,7 +71,7 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
-    logger: KaliumLogger = kaliumLogger
+    logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
     private val logger = logger.withFeatureId(SYNC)

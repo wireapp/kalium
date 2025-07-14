@@ -71,8 +71,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class EventRepositoryTest {
@@ -161,17 +159,6 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenAPIFailure_whenFetchingServerTime_thenReturnNull() = runTest {
-        val (_, eventRepository) = Arrangement()
-            .withGetServerTimeReturning(NetworkResponse.Error(KaliumException.NoNetwork()))
-            .arrange()
-
-        val result = eventRepository.fetchServerTime()
-
-        assertNull(result)
-    }
-
-    @Test
     fun givenLiveEvent_whenReceived_thenShouldAcknowledgeWithACK() = runTest {
         val eventId = "event-id"
         val testEventResponse = EventResponseToStore(
@@ -223,22 +210,6 @@ class EventRepositoryTest {
                 }.wasInvoked(exactly = once)
             }
         })
-    }
-
-    @Test
-    fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
-        val result = NetworkResponse.Success(
-            value = "123434545",
-            headers = mapOf(),
-            httpCode = HttpStatusCode.OK.value
-        )
-        val (_, eventRepository) = Arrangement()
-            .withGetServerTimeReturning(result)
-            .arrange()
-
-        val time = eventRepository.fetchServerTime()
-
-        assertNotNull(time)
     }
 
     @Test
@@ -604,12 +575,6 @@ class EventRepositoryTest {
         suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponseToStore>) = apply {
             coEvery {
                 notificationApi.oldestNotification(any())
-            }.returns(result)
-        }
-
-        suspend fun withGetServerTimeReturning(result: NetworkResponse<String>) = apply {
-            coEvery {
-                notificationApi.getServerTime(any())
             }.returns(result)
         }
 
