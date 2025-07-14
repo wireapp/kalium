@@ -124,8 +124,9 @@ internal class EventProcessorImpl(
                 missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
             }
         }.onSuccess {
-            eventRepository.setEventAsProcessed(event.id)
-            logger.i("Event set as processed: ${eventEnvelope.toLogString()}")
+            eventRepository.setEventAsProcessed(event.id).onSuccess {
+                logger.i("Event set as processed: ${eventEnvelope.toLogString()}")
+            }
         }
     }
 }

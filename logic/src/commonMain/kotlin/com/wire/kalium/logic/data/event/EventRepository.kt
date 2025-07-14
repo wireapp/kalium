@@ -157,7 +157,7 @@ class EventDataSource(
             }
             if (emittedEventIndex != eventEntities.lastIndex) {
                 kaliumLogger.d("$TAG filtered out ${emittedEventIndex + 1} events already marked as processed")
-                emit(eventEntities.subList(emittedEventIndex + 1, eventEntities.lastIndex))
+                emit(eventEntities.subList(emittedEventIndex + 1, eventEntities.size))
             } else {
                 kaliumLogger.d("$TAG no unprocessed events found")
                 emit(emptyList())
