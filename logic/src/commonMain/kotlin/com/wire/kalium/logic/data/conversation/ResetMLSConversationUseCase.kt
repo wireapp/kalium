@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrFail
@@ -29,6 +30,7 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 
 /**
  * Reset an MLS conversation which cannot be recovered by any other means.
@@ -50,6 +52,7 @@ internal class ResetMLSConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val conversationApi: ConversationApi,
 ) : ResetMLSConversationUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {

@@ -114,6 +114,7 @@ class ResetMLSConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
+        val conversationApi = mock(ConversationApi::class)
 
         suspend fun withFeatureDisabled() = apply {
             coEvery { userConfig.isMlsConversationsResetEnabled() } returns false
@@ -158,6 +159,7 @@ class ResetMLSConversationUseCaseTest {
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
                 fetchConversationUseCase = fetchConversationUseCase,
+                conversationApi = conversationApi,
             )
         }
     }
