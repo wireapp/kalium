@@ -19,9 +19,11 @@
 package com.wire.kalium.logic.data.call
 
 import app.cash.turbine.test
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.callerId
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.participant
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
@@ -31,6 +33,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -52,17 +55,18 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import io.ktor.http.HttpStatusCode
 import io.ktor.util.reflect.instanceOf
 import io.mockative.any
 import io.mockative.coEvery
@@ -86,6 +90,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -1667,6 +1672,33 @@ class CallRepositoryTest {
         )
     }
 
+    @Test
+    fun givenAPIFailure_whenFetchingServerTime_thenReturnNull() = runTest {
+        val (_, eventRepository) = Arrangement()
+            .withGetServerTimeReturning(NetworkResponse.Error(KaliumException.NoNetwork()))
+            .arrange()
+
+        val result = eventRepository.fetchServerTime()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
+        val result = NetworkResponse.Success(
+            value = ServerTimeDTO("123434545"),
+            headers = mapOf(),
+            httpCode = HttpStatusCode.OK.value
+        )
+        val (_, eventRepository) = Arrangement()
+            .withGetServerTimeReturning(result)
+            .arrange()
+
+        val time = eventRepository.fetchServerTime()
+
+        assertNotNull(time)
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1725,12 +1757,14 @@ class CallRepositoryTest {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val epochChangesObserver = mock(EpochChangesObserver::class)
         val callDAO = mock(CallDAO::class)
+        val serverTimeApi: ServerTimeApi = mock(ServerTimeApi::class)
 
         private val callMapper = CallMapperImpl(qualifiedIdMapper)
         private val federatedIdMapper = FederatedIdMapperImpl(TestUser.SELF.id, qualifiedIdMapper, sessionRepository)
 
         private val callRepository: CallRepository = CallDataSource(
             callApi = callApi,
+            serverTimeApi = serverTimeApi,
             callDAO = callDAO,
             qualifiedIdMapper = qualifiedIdMapper,
             conversationRepository = conversationRepository,
@@ -1914,6 +1948,12 @@ class CallRepositoryTest {
             coEvery {
                 mlsClient.deriveSecret(any(), any())
             }.returns(ByteArray(32))
+        }
+
+        suspend fun withGetServerTimeReturning(result: NetworkResponse<ServerTimeDTO>) = apply {
+            coEvery {
+                serverTimeApi.getServerTime()
+            }.returns(result)
         }
 
         companion object {

@@ -40,6 +40,8 @@ import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -70,8 +72,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class EventRepositoryTest {
@@ -160,17 +160,6 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenAPIFailure_whenFetchingServerTime_thenReturnNull() = runTest {
-        val (_, eventRepository) = Arrangement()
-            .withGetServerTimeReturning(NetworkResponse.Error(KaliumException.NoNetwork()))
-            .arrange()
-
-        val result = eventRepository.fetchServerTime()
-
-        assertNull(result)
-    }
-
-    @Test
     fun givenLiveEvent_whenReceived_thenShouldAcknowledgeWithACK() = runTest {
         val eventId = "event-id"
         val testEventResponse = EventResponseToStore(
@@ -221,22 +210,6 @@ class EventRepositoryTest {
                 }.wasInvoked(exactly = once)
             }
         })
-    }
-
-    @Test
-    fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
-        val result = NetworkResponse.Success(
-            value = "123434545",
-            headers = mapOf(),
-            httpCode = HttpStatusCode.OK.value
-        )
-        val (_, eventRepository) = Arrangement()
-            .withGetServerTimeReturning(result)
-            .arrange()
-
-        val time = eventRepository.fetchServerTime()
-
-        assertNotNull(time)
     }
 
     @Test
@@ -514,6 +487,7 @@ class EventRepositoryTest {
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
         val eventDAO: EventDAO = mock(EventDAO::class)
+        val serverTimeApi: ServerTimeApi = mock(ServerTimeApi::class)
 
         private val eventRepository: EventRepository = EventDataSource(
             notificationApi,
@@ -556,9 +530,9 @@ class EventRepositoryTest {
             }.returns(result)
         }
 
-        suspend fun withGetServerTimeReturning(result: NetworkResponse<String>) = apply {
+        suspend fun withGetServerTimeReturning(result: NetworkResponse<ServerTimeDTO>) = apply {
             coEvery {
-                notificationApi.getServerTime(any())
+                serverTimeApi.getServerTime()
             }.returns(result)
         }
 

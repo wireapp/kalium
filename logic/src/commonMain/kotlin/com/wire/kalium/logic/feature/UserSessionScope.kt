@@ -996,6 +996,7 @@ class UserSessionScope internal constructor(
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedNetworkContainer.callApi,
+            serverTimeApi = authenticatedNetworkContainer.serverTimeApi,
             qualifiedIdMapper = qualifiedIdMapper,
             callDAO = userStorage.database.callDAO,
             conversationRepository = conversationRepository,
