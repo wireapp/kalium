@@ -40,7 +40,6 @@ class EventDAOImpl(
     override suspend fun observeUnprocessedEvents(): Flow<List<EventEntity>> {
         return eventsQueries.selectUnprocessedEvents(::mapEvent)
             .asFlow()
-            .flowOn(queriesContext)
             .mapToList()
     }
 

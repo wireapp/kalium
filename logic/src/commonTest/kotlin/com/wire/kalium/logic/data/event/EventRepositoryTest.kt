@@ -65,7 +65,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Transient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -409,6 +408,92 @@ class EventRepositoryTest {
         assertEquals(400, actual.errorResponse.code)
         assertEquals("generic test error", actual.errorResponse.message)
         assertEquals("generic-test-error", actual.errorResponse.label)
+    }
+
+    @Test
+    fun givenEventsPreviouslyEmitted_whenEmittingSameEventsAgain_thenTheyAreFilteredCorrectly() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+
+        val initialEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong(),
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
+            )
+        }
+
+        val repeatEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong() + 10,
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
+            )
+        }
+
+        val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
+
+        val (_, repository) = Arrangement()
+            .withUnprocessedEvents(channel.consumeAsFlow())
+            .arrange()
+
+        repository.observeEvents().test {
+            channel.send(initialEntities)
+            val first = awaitItem()
+            assertEquals(listOf("a", "b", "c"), first.map { it.event.id })
+
+            channel.send(repeatEntities)
+            val second = awaitItem()
+            assertEquals(emptyList(), second.map { it.event.id })
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenLastProcessedEventIsSecond_whenReceivingThreeEvents_thenShouldEmitOnlyLast() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+
+        val allEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong(),
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
+            )
+        }
+
+        val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
+
+        val (arrangement, repository) = Arrangement()
+            .withUnprocessedEvents(channel.consumeAsFlow())
+            .arrange()
+
+        repository.observeEvents().test {
+            val abEvents = allEntities.take(2)
+
+            channel.send(abEvents)
+            val first = awaitItem()
+            assertEquals(listOf("a", "b"), first.map { it.event.id })
+
+            channel.send(allEntities)
+            val second = awaitItem()
+
+            assertTrue(second.size == 1, "Expected one new event, but got: ${second.map { it.event.id }}")
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private companion object {
