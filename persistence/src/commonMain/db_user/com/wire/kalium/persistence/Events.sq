@@ -1,14 +1,17 @@
+import kotlin.Boolean;
+
 CREATE TABLE Events (
     id INTEGER NOT NULL PRIMARY KEY,
     event_id TEXT NOT NULL UNIQUE,
     is_processed INTEGER NOT NULL,
-    payload TEXT NOT NULL,
+    payload TEXT,
+    transient INTEGER AS Boolean NOT NULL,
     is_live INTEGER NOT NULL DEFAULT 0
 );
 
 insertOrIgnoreEvent:
-INSERT OR IGNORE INTO Events(event_id, is_processed, payload, is_live)
-VALUES (?, ?, ?, ?);
+INSERT OR IGNORE INTO Events(event_id, is_processed, payload, is_live, transient)
+VALUES (:event_id, :is_processed, :payload, :is_live, :transient);
 
 selectAll:
 SELECT * FROM Events;
@@ -42,7 +45,8 @@ WHERE is_processed = 0;
 selectUnprocessedEvents:
 SELECT * FROM Events
 WHERE is_processed = 0
-ORDER BY id ASC;
+ORDER BY id ASC
+LIMIT 500;
 
 deleteUnprocessedLiveEventsByIds:
 DELETE FROM Events

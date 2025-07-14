@@ -45,7 +45,7 @@ import com.wire.kalium.network.api.authenticated.notification.ConsumableNotifica
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
-import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
@@ -157,7 +157,7 @@ class EventDataSource(
             }
             if (emittedEventIndex != eventEntities.lastIndex) {
                 kaliumLogger.d("$TAG filtered out ${emittedEventIndex + 1} events already marked as processed")
-                emit(eventEntities.subList(emittedEventIndex + 1, eventEntities.lastIndex))
+                emit(eventEntities.subList(emittedEventIndex + 1, eventEntities.size))
             } else {
                 kaliumLogger.d("$TAG no unprocessed events found")
                 emit(emptyList())
@@ -170,8 +170,11 @@ class EventDataSource(
             }
             .map { eventEntities ->
                 eventEntities.map { entity ->
-                    val payload = KtxSerializer.json.decodeFromString<EventResponse>(entity.payload)
-                    eventMapper.fromDTO(payload, isLive = entity.isLive)
+                    val payload: List<EventContentDTO>? =
+                        entity.payload?.let {
+                            KtxSerializer.json.decodeFromString<List<EventContentDTO>>(it)
+                        }
+                    eventMapper.fromStoredDTO(eventId = entity.eventId, payload = payload, isLive = entity.isLive)
                 }
                     .flatten()
             }
@@ -249,7 +252,8 @@ class EventDataSource(
                                         listOf(
                                             NewEventEntity(
                                                 eventId = eventResponse.id,
-                                                payload = KtxSerializer.json.encodeToString(eventResponse),
+                                                payload = eventResponse.payload,
+                                                transient = eventResponse.transient,
                                                 isLive = true // TODO Yamil we need to decide when set it as false for async notificaitons
                                             )
                                         )
@@ -273,12 +277,8 @@ class EventDataSource(
                                     listOf(
                                         NewEventEntity(
                                             eventId = eventId,
-                                            payload = KtxSerializer.json.encodeToString(
-                                                EventResponse(
-                                                    eventId,
-                                                    payload = listOf(EventContentDTO.AsyncMissedNotification)
-                                                )
-                                            ),
+                                            payload = KtxSerializer.json.encodeToString(listOf(EventContentDTO.AsyncMissedNotification)),
+                                            transient = true,
                                             isLive = true
                                         )
                                     )
@@ -337,7 +337,7 @@ class EventDataSource(
                         .buffer(capacity = Channel.UNLIMITED, onBufferOverflow = BufferOverflow.SUSPEND)
                         .map {
                             when (it) {
-                                is WebSocketEvent.BinaryPayloadReceived<EventResponse> ->
+                                is WebSocketEvent.BinaryPayloadReceived<EventResponseToStore> ->
                                     WebSocketEvent.BinaryPayloadReceived<ConsumableNotificationResponse>(
                                         ConsumableNotificationResponse.EventNotification(
                                             EventDataDTO(
@@ -347,11 +347,11 @@ class EventDataSource(
                                         )
                                     )
 
-                                is WebSocketEvent.Close<EventResponse> -> WebSocketEvent.Close(it.cause)
-                                is WebSocketEvent.NonBinaryPayloadReceived<EventResponse> ->
+                                is WebSocketEvent.Close<EventResponseToStore> -> WebSocketEvent.Close(it.cause)
+                                is WebSocketEvent.NonBinaryPayloadReceived<EventResponseToStore> ->
                                     WebSocketEvent.NonBinaryPayloadReceived(it.payload)
 
-                                is WebSocketEvent.Open<EventResponse> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
+                                is WebSocketEvent.Open<EventResponseToStore> -> WebSocketEvent.Open(it.shouldProcessPendingEvents)
                             }
                         }
                         .collect(handleEvents(this, EventVersion.LEGACY))
@@ -373,8 +373,9 @@ class EventDataSource(
                     event.payload?.let {
                         NewEventEntity(
                             eventId = event.id,
-                            payload = KtxSerializer.json.encodeToString(event),
-                            isLive = false
+                            payload = event.payload,
+                            isLive = false,
+                            transient = event.transient
                         )
                     }
                 }
@@ -402,7 +403,7 @@ class EventDataSource(
     override fun parseExternalEvents(data: String): List<EventEnvelope> {
         val notificationResponse = Json.decodeFromString<NotificationResponse>(data)
         return notificationResponse.notifications.flatMap {
-            eventMapper.fromDTO(it, isLive = false)
+            eventMapper.fromDTO(it.toEventResponse(), isLive = false)
         }
     }
 
@@ -464,6 +465,16 @@ class EventDataSource(
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
+
+        // DO NOT CHANGE THE NAME IT IS INTENTIONAL THAT LAST_SAVED_EVENT_ID_KEY VALUE IS last_processed_event_id
+        // CHANGE IT AND YOU WILL BE FIRED
+        // ALSO KUBAZ WILL THROW A CURSE AT YOUR FAMILY
+        // SERIOUSLY, YOUR PHONE WILL AUTOCORRECT EVERYTHING TO "BANANA" FOR A MONTH
+        // YOUR COFFEE WILL TASTE LIKE SADNESS AND BROKEN DREAMS
+        // LEGACY REASONS - THIS NAME IS SACRED AND MUST NOT BE TOUCHED
+        // CHANGING THIS WILL CAUSE THE BUILD SERVERS TO PERSONALLY HUNT YOU DOWN
+        // THE LAST PERSON WHO CHANGED THIS IS NOW WORKING AS A MIME IN FRANCE
+        // DON'T BE THAT PERSON. JUST DON'T.
         const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
         const val TAG = "[EventRepository]"
     }

@@ -83,6 +83,19 @@ class EventMapper(
         } ?: listOf()
     }
 
+    fun fromStoredDTO(eventId: String, payload: List<EventContentDTO>?, isLive: Boolean): List<EventEnvelope> {
+        // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
+        val id = eventId
+
+        return payload?.map { eventContentDTO ->
+            val eventSource = if (isLive) EventSource.LIVE else EventSource.PENDING
+            EventEnvelope(
+                fromEventContentDTO(id, eventContentDTO),
+                EventDeliveryInfo(eventSource)
+            )
+        } ?: listOf()
+    }
+
     internal companion object {
         /**
          * Full sync acknowledge request for notifications missed.
