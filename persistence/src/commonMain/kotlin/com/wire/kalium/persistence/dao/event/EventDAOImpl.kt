@@ -40,7 +40,6 @@ class EventDAOImpl(
     override suspend fun observeUnprocessedEvents(): Flow<List<EventEntity>> {
         return eventsQueries.selectUnprocessedEvents(::mapEvent)
             .asFlow()
-            .flowOn(queriesContext)
             .mapToList()
     }
 
@@ -54,13 +53,16 @@ class EventDAOImpl(
 
     override suspend fun insertEvents(events: List<NewEventEntity>) {
         withContext(queriesContext) {
-            events.forEach { event ->
-                eventsQueries.insertOrIgnoreEvent(
-                    event.eventId,
-                    0,
-                    event.payload,
-                    if (event.isLive) 1L else 0L
-                )
+            eventsQueries.transaction {
+                events.forEach { event ->
+                    eventsQueries.insertOrIgnoreEvent(
+                        event_id = event.eventId,
+                        is_processed = 0,
+                        payload = event.payload,
+                        is_live = if (event.isLive) 1L else 0L,
+                        transient = event.transient
+                    )
+                }
             }
         }
     }
@@ -98,11 +100,13 @@ class EventDAOImpl(
         }
     }
 
+    @Suppress("LongParameterList")
     private fun mapEvent(
         id: Long,
         eventId: String,
         isProcessed: Long,
-        payload: String,
+        payload: String?,
+        transient: Boolean,
         isLive: Long
     ): EventEntity {
         return EventEntity(
@@ -110,7 +114,8 @@ class EventDAOImpl(
             eventId = eventId,
             isProcessed = isProcessed != 0L,
             payload = payload,
-            isLive = isLive != 0L
+            isLive = isLive != 0L,
+            transient = transient
         )
     }
 }

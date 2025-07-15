@@ -24,6 +24,7 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
@@ -75,7 +76,7 @@ internal open class NotificationApiV0 internal constructor(
         }
     }
 
-    override suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponse> =
+    override suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponseToStore> =
         getAllNotifications(
             querySize = MINIMUM_QUERY_SIZE,
             queryClient = queryClient
@@ -91,9 +92,6 @@ internal open class NotificationApiV0 internal constructor(
     // TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
-
-    override suspend fun getServerTime(querySize: Int): NetworkResponse<String> =
-        notificationsCall(querySize = querySize, queryClient = null, querySince = null).mapSuccess { it.time }
 
     protected open suspend fun notificationsCall(
         querySize: Int,
@@ -116,7 +114,7 @@ internal open class NotificationApiV0 internal constructor(
     }
 
     @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
-    override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>> =
+    override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>> =
         mostRecentNotification(clientId).mapSuccess {
             flow {
                 // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
@@ -132,14 +130,17 @@ internal open class NotificationApiV0 internal constructor(
             }
         }
 
-    override suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
+    override suspend fun consumeLiveEvents(
+        clientId: String,
+        markerId: String
+    ): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> =
         getApiNotSupportedError(::consumeLiveEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
 
-    override suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
+    override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
         getApiNotSupportedError(::acknowledgeEvents.name, MIN_API_VERSION_CONSUMABLE_EVENTS)
     }
 
-    private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
+    private suspend fun FlowCollector<WebSocketEvent<EventResponseToStore>>.emitWebSocketEvents(
         defaultClientWebSocketSession: WebSocketSession
     ) {
         val logger = kaliumLogger.withFeatureId(EVENT_RECEIVER)
@@ -161,7 +162,7 @@ internal open class NotificationApiV0 internal constructor(
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
 
                         logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
-                        val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
+                        val event = KtxSerializer.json.decodeFromString<EventResponseToStore>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
 
@@ -180,6 +181,7 @@ internal open class NotificationApiV0 internal constructor(
         const val PATH_LAST = "last"
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
+        const val SYNC_MARKER_KEY = "sync_marker"
         const val SINCE_QUERY_KEY = "since"
 
         /**
@@ -187,7 +189,7 @@ internal open class NotificationApiV0 internal constructor(
          * value.
          */
         const val MINIMUM_QUERY_SIZE = 100
-        const val MIN_API_VERSION_CONSUMABLE_EVENTS = 8
+        const val MIN_API_VERSION_CONSUMABLE_EVENTS = 9
     }
 
     internal object Hardcoded {

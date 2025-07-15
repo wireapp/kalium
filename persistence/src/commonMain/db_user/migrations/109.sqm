@@ -1,0 +1,17 @@
+UPDATE Metadata
+SET stringValue = COALESCE(
+    (SELECT event_id
+     FROM Events
+     WHERE is_processed = 1
+     ORDER BY id DESC
+     LIMIT 1),
+    (SELECT event_id
+     FROM Events
+     WHERE is_processed = 0
+     ORDER BY id ASC
+     LIMIT 1)
+)
+WHERE key = 'last_processed_event_id'
+AND EXISTS (SELECT 1 FROM Events);
+
+DELETE FROM Events;

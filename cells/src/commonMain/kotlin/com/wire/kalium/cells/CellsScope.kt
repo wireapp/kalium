@@ -65,6 +65,8 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RenameNodeUseCase
 import com.wire.kalium.cells.domain.usecase.RenameNodeUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCase
@@ -73,6 +75,8 @@ import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCase
 import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
+import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCase
@@ -223,10 +227,16 @@ public class CellsScope(
     public val restoreNodeFromRecycleBin: RestoreNodeFromRecycleBinUseCase by lazy {
         RestoreNodeFromRecycleBinUseCaseImpl(cellsRepository)
     }
-    public val renameNodeUseCase: RenameNodeUseCase by lazy {
-        RenameNodeUseCaseImpl(cellsRepository)
-    }
     public val getAllTags: GetAllTagsUseCase by lazy {
         GetAllTagsUseCaseImpl(cellsRepository)
+    }
+    public val updateNodeTagsUseCase: UpdateNodeTagsUseCase by lazy {
+        UpdateNodeTagsUseCaseImpl(cellsRepository)
+    }
+    public val removeNodeTagsUseCase: RemoveNodeTagsUseCase by lazy {
+        RemoveNodeTagsUseCaseImpl(cellsRepository)
+    }
+    public val renameNodeUseCase: RenameNodeUseCase by lazy {
+        RenameNodeUseCaseImpl(cellsRepository)
     }
 }

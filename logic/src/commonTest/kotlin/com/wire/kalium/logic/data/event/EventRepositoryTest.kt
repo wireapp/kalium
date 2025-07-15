@@ -38,7 +38,9 @@ import com.wire.kalium.network.api.authenticated.notification.ConsumableNotifica
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.SynchronizationDataDTO
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -69,8 +71,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class EventRepositoryTest {
@@ -97,7 +97,7 @@ class EventRepositoryTest {
             .arrange()
 
         eventRepository.liveEvents()
-        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value), any()) }
             .wasInvoked(exactly = once)
     }
 
@@ -144,7 +144,7 @@ class EventRepositoryTest {
     fun givenAPISucceeds_whenFetchingOldestEventId_thenShouldPropagateEventId() = runTest {
         val eventId = "testEventId"
         val result = NetworkResponse.Success(
-            value = EventResponse(eventId, emptyList()),
+            value = EventResponseToStore(eventId, "[]"),
             headers = mapOf(),
             httpCode = HttpStatusCode.OK.value
         )
@@ -159,22 +159,11 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenAPIFailure_whenFetchingServerTime_thenReturnNull() = runTest {
-        val (_, eventRepository) = Arrangement()
-            .withGetServerTimeReturning(NetworkResponse.Error(KaliumException.NoNetwork()))
-            .arrange()
-
-        val result = eventRepository.fetchServerTime()
-
-        assertNull(result)
-    }
-
-    @Test
     fun givenLiveEvent_whenReceived_thenShouldAcknowledgeWithACK() = runTest {
         val eventId = "event-id"
-        val testEventResponse = EventResponse(
+        val testEventResponse = EventResponseToStore(
             id = eventId,
-            payload = listOf(MEMBER_JOIN_EVENT)
+            payload = KtxSerializer.json.encodeToString(listOf(MEMBER_JOIN_EVENT))
         )
         val deliveryTag = 987654UL
 
@@ -211,6 +200,7 @@ class EventRepositoryTest {
                 coVerify {
                     arrangement.notificationApi.acknowledgeEvents(
                         eq(TestClient.CLIENT_ID.value),
+                        any(),
                         matches {
                             it.type == AcknowledgeType.ACK &&
                                     it.data?.deliveryTag == deliveryTag
@@ -223,35 +213,20 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
-        val result = NetworkResponse.Success(
-            value = "123434545",
-            headers = mapOf(),
-            httpCode = HttpStatusCode.OK.value
-        )
-        val (_, eventRepository) = Arrangement()
-            .withGetServerTimeReturning(result)
-            .arrange()
-
-        val time = eventRepository.fetchServerTime()
-
-        assertNotNull(time)
-    }
-
-    @Test
     fun givenUnprocessedEventsInDAO_whenObservingEvents_thenShouldEmitMappedEvents() = runTest {
         val testEvent = EventResponse(
             id = "test-event-id",
             payload = listOf(EventContentDTO.AsyncMissedNotification)
         )
-        val testPayload = KtxSerializer.json.encodeToString(testEvent)
+        val testPayload = KtxSerializer.json.encodeToString(testEvent.payload)
 
         val testEventEntity = EventEntity(
             id = 1L,
             eventId = testEvent.id,
             isProcessed = false,
             payload = testPayload,
-            isLive = true
+            isLive = true,
+            transient = testEvent.transient
         )
 
         val (_, repository) = Arrangement()
@@ -280,8 +255,9 @@ class EventRepositoryTest {
                 id = index.toLong(),
                 eventId = e.id,
                 isProcessed = false,
-                payload = KtxSerializer.json.encodeToString(e),
-                isLive = true
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
             )
         }
 
@@ -313,8 +289,9 @@ class EventRepositoryTest {
                 id = index.toLong(),
                 eventId = e.id,
                 isProcessed = false,
-                payload = KtxSerializer.json.encodeToString(e),
-                isLive = true
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
             )
         }
 
@@ -328,6 +305,55 @@ class EventRepositoryTest {
             assertEquals(listOf("x", "y", "z"), emitted.map { it.event.id })
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun givenLiveEventForSyncMarker_whenReceived_thenShouldAcknowledgeWithACK() = runTest {
+        val eventId = "event-id"
+        val deliveryTag = 987654UL
+
+        val (arrangement, repository) = Arrangement()
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withClientHasConsumableNotifications(true)
+            .withClearProcessedEvents(eventId)
+            .withConsumeLiveEventsReturning(
+                NetworkResponse.Success(
+                    value = flowOf(
+                        WebSocketEvent.BinaryPayloadReceived(
+                            ConsumableNotificationResponse.SynchronizationNotification(
+                                SynchronizationDataDTO(
+                                    deliveryTag = deliveryTag,
+                                    markerId = "sync-marker"
+                                )
+                            )
+                        )
+                    ),
+                    headers = mapOf(),
+                    httpCode = 200
+                )
+            )
+            .withAcknowledgeEvents()
+            .arrange()
+
+        val result = repository.liveEvents()
+        result.shouldSucceed {}
+
+        result.fold({}, { flow ->
+            flow.test {
+                awaitComplete()
+                coVerify {
+                    arrangement.notificationApi.acknowledgeEvents(
+                        eq(TestClient.CLIENT_ID.value),
+                        any(),
+                        matches {
+                            it.type == AcknowledgeType.ACK &&
+                                    it.data?.deliveryTag == deliveryTag
+                            it.data?.multiple == false
+                        }
+                    )
+                }.wasInvoked(exactly = once)
+            }
+        })
     }
 
     @Test
@@ -406,6 +432,92 @@ class EventRepositoryTest {
         assertEquals("generic-test-error", actual.errorResponse.label)
     }
 
+    @Test
+    fun givenEventsPreviouslyEmitted_whenEmittingSameEventsAgain_thenTheyAreFilteredCorrectly() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+
+        val initialEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong(),
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
+            )
+        }
+
+        val repeatEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong() + 10,
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
+            )
+        }
+
+        val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
+
+        val (_, repository) = Arrangement()
+            .withUnprocessedEvents(channel.consumeAsFlow())
+            .arrange()
+
+        repository.observeEvents().test {
+            channel.send(initialEntities)
+            val first = awaitItem()
+            assertEquals(listOf("a", "b", "c"), first.map { it.event.id })
+
+            channel.send(repeatEntities)
+            val second = awaitItem()
+            assertEquals(emptyList(), second.map { it.event.id })
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenLastProcessedEventIsSecond_whenReceivingThreeEvents_thenShouldEmitOnlyLast() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+
+        val allEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
+            EventEntity(
+                id = index.toLong(),
+                eventId = e.id,
+                isProcessed = false,
+                payload = KtxSerializer.json.encodeToString(e.payload),
+                isLive = true,
+                transient = e.transient
+            )
+        }
+
+        val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
+
+        val (arrangement, repository) = Arrangement()
+            .withUnprocessedEvents(channel.consumeAsFlow())
+            .arrange()
+
+        repository.observeEvents().test {
+            val abEvents = allEntities.take(2)
+
+            channel.send(abEvents)
+            val first = awaitItem()
+            assertEquals(listOf("a", "b"), first.map { it.event.id })
+
+            channel.send(allEntities)
+            val second = awaitItem()
+
+            assertTrue(second.size == 1, "Expected one new event, but got: ${second.map { it.event.id }}")
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private companion object {
         const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
         val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
@@ -460,15 +572,9 @@ class EventRepositoryTest {
             }.returns(result)
         }
 
-        suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponse>) = apply {
+        suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponseToStore>) = apply {
             coEvery {
                 notificationApi.oldestNotification(any())
-            }.returns(result)
-        }
-
-        suspend fun withGetServerTimeReturning(result: NetworkResponse<String>) = apply {
-            coEvery {
-                notificationApi.getServerTime(any())
             }.returns(result)
         }
 
@@ -480,11 +586,11 @@ class EventRepositoryTest {
 
         suspend fun withConsumeLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>) = apply {
             coEvery {
-                notificationApi.consumeLiveEvents(any())
+                notificationApi.consumeLiveEvents(any(), any())
             }.returns(result)
         }
 
-        suspend fun withListenLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<EventResponse>>>) = apply {
+        suspend fun withListenLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>>) = apply {
             coEvery {
                 notificationApi.listenToLiveEvents(any())
             }.returns(result)
@@ -492,7 +598,7 @@ class EventRepositoryTest {
 
         suspend fun withAcknowledgeEvents() = apply {
             coEvery {
-                notificationApi.acknowledgeEvents(any(), any())
+                notificationApi.acknowledgeEvents(any(), any(), any())
             }.returns(Unit)
         }
 
@@ -514,14 +620,15 @@ class EventRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withClearProcessedEvents(eventId: String, id: Long = 1L) = apply {
+        suspend fun withClearProcessedEvents(eventId: String, id: Long = 1L, transient: Boolean = false) = apply {
             coEvery { eventDAO.getEventById(eq(eventId)) }.returns(
                 EventEntity(
                     id = id,
                     eventId = eventId,
                     isProcessed = false,
                     payload = "",
-                    isLive = true
+                    isLive = true,
+                    transient = transient
                 )
             )
 

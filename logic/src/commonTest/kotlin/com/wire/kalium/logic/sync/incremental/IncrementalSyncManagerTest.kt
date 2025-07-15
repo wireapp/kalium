@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -199,12 +198,30 @@ class IncrementalSyncManagerTest {
     @Test
     fun givenDefaultState_whenCancellingSync_thenShouldUpdateIncrementalSyncStatusToPendingAgain() =
         runTest {
-
+            val workerChannel = Channel<EventSource>(capacity = Channel.UNLIMITED)
             val (arrangement, incrementalSyncManager) = Arrangement()
-                .withWorkerReturning(emptyFlow())
+                .withWorkerReturning(workerChannel.consumeAsFlow())
                 .arrange()
 
             incrementalSyncManager.performSyncFlow().test { // Start
+                workerChannel.send(EventSource.PENDING)
+                advanceUntilIdle()
+                cancelAndIgnoreRemainingEvents()
+            } // Stop
+
+            assertEquals(IncrementalSyncStatus.Pending, arrangement.incrementalSyncRepository.incrementalSyncState.first())
+        }
+
+    @Test
+    fun givenLiveState_whenCancellingSync_thenShouldUpdateIncrementalSyncStatusToPendingAgain() =
+        runTest {
+            val workerChannel = Channel<EventSource>(capacity = Channel.UNLIMITED)
+            val (arrangement, incrementalSyncManager) = Arrangement()
+                .withWorkerReturning(workerChannel.consumeAsFlow())
+                .arrange()
+
+            incrementalSyncManager.performSyncFlow().test { // Start
+                workerChannel.send(EventSource.LIVE)
                 advanceUntilIdle()
                 cancelAndIgnoreRemainingEvents()
             } // Stop
