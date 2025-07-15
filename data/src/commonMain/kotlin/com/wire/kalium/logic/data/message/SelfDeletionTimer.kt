@@ -86,12 +86,14 @@ sealed interface SelfDeletionTimer {
     }
 }
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class ConversationSelfDeletionStatus(
     val conversationId: ConversationId,
     val selfDeletionTimer: SelfDeletionTimer
 )
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class TeamSettingsSelfDeletionStatus(
     /**
