@@ -73,7 +73,7 @@ internal class ResetMLSConversationUseCaseImpl(
             .map { updatedProtocolInfo ->
 
                 val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
-                    kaliumLogger.e("Failed to get members for conversation $conversationId: $it")
+                    kaliumLogger.e("Failed to get members for conversation: $it")
                     return it.left()
                 }
 
@@ -88,7 +88,7 @@ internal class ResetMLSConversationUseCaseImpl(
         return conversationRepository.getConversationById(conversationId)
             .map {
                 it.mlsProtocolInfo() ?: return CoreFailure
-                    .Unknown(IllegalStateException("Conversation $conversationId is not an MLS conversation.")).left()
+                    .Unknown(IllegalStateException("Conversation is not an MLS conversation.")).left()
             }
     }
 }
