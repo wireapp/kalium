@@ -19,15 +19,18 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 
+@Serializable
 sealed interface SelfDeletionTimer {
     val duration: Duration?
 
     /**
      * Represents a self deletion timer that is currently disabled
      */
+    @Serializable
     data object Disabled : SelfDeletionTimer {
         override val duration: Duration? = null
     }
@@ -35,14 +38,19 @@ sealed interface SelfDeletionTimer {
     /**
      * Represents a self deletion timer that is enabled and can be changed/updated by the user
      */
+    @Serializable
     data class Enabled(override val duration: Duration?) : SelfDeletionTimer
 
     /**
      * Represents a self deletion timer that is imposed by the team or conversation settings that can't be changed by the user
-     * @param enforcedDuration the team or conversation imposed timer
      */
+    @Serializable
     sealed interface Enforced : SelfDeletionTimer {
+
+        @Serializable
         data class ByTeam(override val duration: Duration) : Enforced
+
+        @Serializable
         data class ByGroup(override val duration: Duration) : Enforced
     }
 
@@ -78,11 +86,13 @@ sealed interface SelfDeletionTimer {
     }
 }
 
+@Serializable
 data class ConversationSelfDeletionStatus(
     val conversationId: ConversationId,
     val selfDeletionTimer: SelfDeletionTimer
 )
 
+@Serializable
 data class TeamSettingsSelfDeletionStatus(
     /**
      * This value is used to inform the user that the team settings were changed. When true, an informative dialog will be shown. Once the
@@ -98,9 +108,16 @@ data class TeamSettingsSelfDeletionStatus(
     val enforcedSelfDeletionTimer: TeamSelfDeleteTimer
 )
 
+@Serializable
 sealed interface TeamSelfDeleteTimer {
+
+    @Serializable
     data object Disabled : TeamSelfDeleteTimer
+
+    @Serializable
     data object Enabled : TeamSelfDeleteTimer
+
+    @Serializable
     data class Enforced(val enforcedDuration: Duration) : TeamSelfDeleteTimer
 
     fun toLogMap(eventDescription: String): Map<String, Any?> = mapOf(
