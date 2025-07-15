@@ -111,6 +111,8 @@ internal interface MessageRepository {
 
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
 
+    suspend fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>>
+
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         limit: Int,
@@ -371,6 +373,11 @@ internal class MessageDataSource internal constructor(
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
         }.map(messageMapper::fromEntityToMessage)
+
+    override suspend fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>> =
+        messageDAO.observeMessageById(messageUuid, conversationId.toDao())
+            .wrapStorageRequest()
+            .mapRight(messageMapper::fromEntityToMessage)
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
