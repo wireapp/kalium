@@ -233,7 +233,6 @@ class RestoreBackupUseCaseTest {
 
     private inner class Arrangement {
         val databaseImporter = mock(DatabaseImporter::class)
-        val restoreWebBackupUseCase = mock(RestoreWebBackupUseCase::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
         val userRepository = mock(UserRepository::class)
 
@@ -361,7 +360,6 @@ class RestoreBackupUseCaseTest {
             userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             idMapper = idMapper,
-            restoreWebBackup = restoreWebBackupUseCase
         )
     }
 

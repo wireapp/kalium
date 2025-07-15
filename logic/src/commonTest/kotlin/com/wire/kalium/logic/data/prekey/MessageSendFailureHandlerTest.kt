@@ -38,6 +38,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -298,7 +300,7 @@ class MessageSendFailureHandlerTest {
                 withFetchOtherUserClients(Either.Right(emptyMap()))
                 withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
                 withFetchUsersByIdSuccess()
-                withFetchConversation(Either.Right(Unit))
+                withFetchConversationSucceeding()
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
@@ -309,7 +311,7 @@ class MessageSendFailureHandlerTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversation(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -330,7 +332,7 @@ class MessageSendFailureHandlerTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversation(any())
         }.wasNotInvoked()
     }
 
@@ -349,12 +351,13 @@ class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversation(any())
         }.wasNotInvoked()
     }
 
-    class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
-                internal val userRepository = mock(UserRepository::class)
+    class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
+        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl() {
+        internal val userRepository = mock(UserRepository::class)
         internal val messageRepository = mock(MessageRepository::class)
         val messageSendingScheduler = mock(MessageSendingScheduler::class)
         val conversationRepository = mock(ConversationRepository::class)
@@ -382,8 +385,8 @@ class MessageSendFailureHandlerTest {
                 clientRemoteRepository,
                 messageRepository,
                 messageSendingScheduler,
-                conversationRepository,
-                clientMapper
+                fetchConversation,
+                clientMapper,
             )
         }
 
@@ -403,12 +406,6 @@ class MessageSendFailureHandlerTest {
             coEvery {
                 messageRepository.updateMessageStatus(any(), any(), any())
             }.returns(Either.Right(Unit))
-        }
-
-        suspend fun withFetchConversation(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                conversationRepository.fetchConversation(any())
-            }.returns(result)
         }
 
         suspend fun withFetchOtherUserClients(result: Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>>) = apply {

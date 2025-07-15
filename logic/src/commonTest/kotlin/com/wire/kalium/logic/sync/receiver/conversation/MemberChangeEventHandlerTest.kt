@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -53,7 +54,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(event)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
+            arrangement.fetchConversationIfUnknown(eq(event.conversationId))
         }.wasInvoked(exactly = once)
     }
 
@@ -127,9 +128,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(event)
 
         coVerify {
-
             arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
-
         }
     }
 
@@ -150,7 +149,7 @@ class MemberChangeEventHandlerTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
+            arrangement.fetchConversationIfUnknown(eq(event.conversationId))
         }.wasNotInvoked()
     }
 
@@ -158,18 +157,22 @@ class MemberChangeEventHandlerTest {
 
         val conversationRepository = mock(ConversationRepository::class)
         private val userRepository = mock(UserRepository::class)
+        val fetchConversationIfUnknown = mock(FetchConversationIfUnknownUseCase::class)
 
-        private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(conversationRepository)
+        private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(
+            conversationRepository,
+            fetchConversationIfUnknown
+        )
 
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
             coEvery {
-                conversationRepository.fetchConversationIfUnknown(any())
+                fetchConversationIfUnknown(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
             coEvery {
-                conversationRepository.fetchConversationIfUnknown(any())
+                fetchConversationIfUnknown(any())
             }.returns(Either.Left(coreFailure))
         }
 

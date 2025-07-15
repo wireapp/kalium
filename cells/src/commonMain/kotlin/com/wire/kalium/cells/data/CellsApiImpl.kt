@@ -26,6 +26,7 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
 import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterMetaFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
@@ -38,11 +39,15 @@ import com.wire.kalium.cells.sdk.kmp.model.RestIncomingNode
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestLookupScope
+import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdate
+import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdateOp
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
+import com.wire.kalium.cells.sdk.kmp.model.RestNodeUpdates
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
+import com.wire.kalium.cells.sdk.kmp.model.RestUserMeta
 import com.wire.kalium.cells.sdk.kmp.model.StatusFilterDeletedStatus
 import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -60,6 +65,7 @@ internal class CellsApiImpl(
 
     private companion object {
         private const val AWAIT_TIMEOUT = "5s"
+        const val TAGS_METADATA = "usermeta-tags"
     }
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
@@ -67,8 +73,14 @@ internal class CellsApiImpl(
             nodeServiceApi.getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun getNodes(query: String, limit: Int, offset: Int): NetworkResponse<GetNodesResponseDTO> =
+    override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
+            val lookupTags = tags.map {
+                LookupFilterMetaFilter(
+                    namespace = TAGS_METADATA,
+                    term = it,
+                )
+            }
             nodeServiceApi.lookup(
                 RestLookupRequest(
                     limit = limit.toString(),
@@ -80,6 +92,7 @@ internal class CellsApiImpl(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query
                         ),
+                        metadata = lookupTags
                     ),
                     sortDirDesc = true,
                     flags = listOf(RestFlag.WithPreSignedURLs)
@@ -93,8 +106,15 @@ internal class CellsApiImpl(
         offset: Int?,
         onlyDeleted: Boolean,
         onlyFolders: Boolean,
+        tags: List<String>
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
+            val lookupTags = tags.map {
+                LookupFilterMetaFilter(
+                    namespace = TAGS_METADATA,
+                    term = it,
+                )
+            }
             nodeServiceApi.lookup(
                 RestLookupRequest(
                     limit = limit?.toString(),
@@ -111,6 +131,7 @@ internal class CellsApiImpl(
                         } else {
                             TreeNodeType.UNKNOWN
                         },
+                        metadata = lookupTags
                     ),
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -214,7 +235,11 @@ internal class CellsApiImpl(
         }.mapSuccess { response -> response.toDto() }
     }
 
-    override suspend fun moveNode(uuid: String, path: String, targetPath: String): NetworkResponse<Unit> = wrapCellsResponse {
+    override suspend fun moveNode(
+        uuid: String,
+        path: String,
+        targetPath: String,
+    ): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
             name = NodeServiceApi.NamePerformAction.move,
             parameters = RestActionParameters(
@@ -224,6 +249,25 @@ internal class CellsApiImpl(
                 copyMoveOptions = RestActionOptionsCopyMove(
                     targetPath = targetPath,
                     targetIsParent = true,
+                )
+            )
+        )
+    }.mapSuccess {}
+
+    override suspend fun renameNode(
+        uuid: String,
+        path: String,
+        targetPath: String,
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.performAction(
+            name = NodeServiceApi.NamePerformAction.move,
+            parameters = RestActionParameters(
+                nodes = listOf(RestNodeLocator(path, uuid)),
+                awaitStatus = JobsTaskStatus.Finished,
+                awaitTimeout = AWAIT_TIMEOUT,
+                copyMoveOptions = RestActionOptionsCopyMove(
+                    targetPath = targetPath,
+                    targetIsParent = false,
                 )
             )
         )
@@ -239,6 +283,44 @@ internal class CellsApiImpl(
             )
         )
     }.mapSuccess {}
+
+    override suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.patchNode(
+            uuid = uuid,
+            nodeUpdates = RestNodeUpdates(
+                metaUpdates = listOf(
+                    RestMetaUpdate(
+                        userMeta = RestUserMeta(
+                            namespace = TAGS_METADATA,
+                            jsonValue = "\"${tags.joinToString(",")} \""
+                        ),
+                        operation = RestMetaUpdateOp.PUT
+                    )
+                )
+            )
+        )
+    }.mapSuccess { }
+
+    override suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.patchNode(
+            uuid = uuid,
+            nodeUpdates = RestNodeUpdates(
+                metaUpdates = listOf(
+                    RestMetaUpdate(
+                        userMeta = RestUserMeta(
+                            namespace = TAGS_METADATA,
+                            jsonValue = "\"\""
+                        ),
+                        operation = RestMetaUpdateOp.DELETE
+                    )
+                )
+            )
+        )
+    }.mapSuccess { }
+
+    override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
+        nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA, operationValues = listOf())
+    }.mapSuccess { it.propertyValues ?: emptyList() }
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))

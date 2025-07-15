@@ -29,5 +29,7 @@ interface EventDAO {
     suspend fun getEventById(id: String): EventEntity?
     suspend fun markEventAsProcessed(eventId: String)
     suspend fun observeUnprocessedEvents(): Flow<List<EventEntity>>
+    suspend fun getUnprocessedEvents(): List<EventEntity>
     suspend fun setAllUnprocessedEventsAsPending()
+    suspend fun deleteUnprocessedLiveEventsByIds(ids: List<String>)
 }

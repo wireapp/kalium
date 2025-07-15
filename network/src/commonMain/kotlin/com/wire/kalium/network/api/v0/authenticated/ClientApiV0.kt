@@ -52,7 +52,7 @@ internal open class ClientApiV0 internal constructor(
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
         wrapKaliumResponse {
             httpClient.post(PATH_CLIENTS) {
-                setBody(apiModelMapper.toApiV0ToV7(registerClientRequest))
+                setBody(apiModelMapper.toApiV0ToV8(registerClientRequest))
             }
         }
 

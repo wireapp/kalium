@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -29,7 +30,8 @@ class ConnectionScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val fetchConversationUseCase: FetchConversationUseCase
 ) {
     val sendConnectionRequest: SendConnectionRequestUseCase get() = SendConnectionRequestUseCaseImpl(connectionRepository, userRepository)
 
@@ -38,7 +40,8 @@ class ConnectionScope internal constructor(
             connectionRepository,
             conversationRepository,
             oneOnOneResolver,
-            newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator,
+            fetchConversationUseCase
         )
 
     val cancelConnectionRequest: CancelConnectionRequestUseCase get() = CancelConnectionRequestUseCaseImpl(connectionRepository)

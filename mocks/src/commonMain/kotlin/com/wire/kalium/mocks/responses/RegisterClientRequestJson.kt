@@ -84,7 +84,7 @@ object RegisterClientRequestJson {
         jsonProvider
     )
 
-    val validV8 = """
+    val validV9 = """
         |{
         |   "password":"password",
         |   "prekeys":[

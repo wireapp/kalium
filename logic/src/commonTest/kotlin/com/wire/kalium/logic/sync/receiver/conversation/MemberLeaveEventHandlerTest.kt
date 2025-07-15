@@ -39,6 +39,8 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -290,36 +292,8 @@ class MemberLeaveEventHandlerTest {
             arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
         }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.getConversationsDeleteQueue() }.wasInvoked(once)
-        coVerify { arrangement.conversationRepository.deleteConversation(event.conversationId) }.wasInvoked(once)
+        coVerify { arrangement.deleteConversation(event.conversationId) }.wasInvoked(once)
         coVerify { arrangement.conversationRepository.removeConversationFromDeleteQueue(event.conversationId) }.wasInvoked(once)
-    }
-
-    @Test
-    fun givenUserLeavesMLSGroup_whenHandlingMemberLeaveEvent_thenMLSClientShouldWipeConversation() = runTest {
-        val event = memberLeaveEvent(reason = MemberLeaveReason.Left).copy(
-            conversationId = conversationId,
-            removedList = listOf(selfUserId), removedBy = selfUserId
-        )
-
-        val (arrangement, memberLeaveEventHandler) = Arrangement()
-            .arrange {
-                withDeleteMembersByQualifiedID(
-                    result = event.removedList.size.toLong(),
-                    conversationId = EqualsMatcher(event.conversationId.toDao()),
-                    memberIdList = EqualsMatcher(event.removedList.map { QualifiedIDEntity(it.value, it.domain) })
-                )
-                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
-                withTeamId(Either.Right(null))
-                withPersistingMessage(Either.Right(Unit))
-                withGetConversationsDeleteQueue(listOf(event.conversationId))
-                withDeletingConversationSucceeding(EqualsMatcher(event.conversationId))
-                withGetConversationProtocolInfoReturns(mlsProtocolInfo1)
-            }
-
-        memberLeaveEventHandler.handle(event)
-
-        coVerify { arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId)) }.wasInvoked(exactly = once)
-        coVerify { arrangement.mlsClient.wipeConversation(any()) }.wasInvoked(once)
     }
 
     @Test
@@ -386,6 +360,7 @@ class MemberLeaveEventHandlerTest {
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
+        DeleteConversationArrangement by DeleteConversationArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         val updateConversationClientsForCurrentCall = mock(UpdateConversationClientsForCurrentCallUseCase::class)
@@ -426,8 +401,7 @@ class MemberLeaveEventHandlerTest {
                 legalHoldHandler = legalHoldHandler,
                 selfTeamIdProvider = selfTeamIdProvider,
                 selfUserId = selfUserId,
-                mlsClientProvider = mlsClientProvider,
-                conversationDAO = conversationDAO,
+                deleteConversation = deleteConversation
             )
             this to memberLeaveEventHandler
         }

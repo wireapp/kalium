@@ -134,246 +134,6 @@ import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 class ConversationRepositoryTest {
 
     @Test
-    fun givenNewConversationEvent_whenCallingPersistConversation_thenConversationShouldBePersisted() = runTest {
-        val event = Event.Conversation.NewConversation(
-            "id",
-            TestConversation.ID,
-            TestUser.SELF.id,
-            Instant.UNIX_FIRST_DATE,
-            CONVERSATION_RESPONSE
-        )
-        val selfUserFlow = flowOf(TestUser.SELF)
-        val (arrangement, conversationRepository) = Arrangement()
-            .withSelfUserFlow(selfUserFlow)
-            .arrange()
-
-        conversationRepository.persistConversations(listOf(event.conversation), TeamId("teamId"))
-
-        with(arrangement) {
-            coVerify {
-                conversationDAO.insertConversations(
-                    matches { conversations ->
-                        conversations.any { entity -> entity.id.value == CONVERSATION_RESPONSE.id.value }
-                    }
-                )
-            }.wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenNewConversationEvent_whenCallingPersistConversationFromEvent_thenConversationShouldBePersisted() =
-        runTest {
-            val event = Event.Conversation.NewConversation(
-                "id",
-                TestConversation.ID,
-                TestUser.SELF.id,
-                Instant.UNIX_FIRST_DATE,
-                CONVERSATION_RESPONSE
-            )
-            val selfUserFlow = flowOf(TestUser.SELF)
-            val (arrangement, conversationRepository) = Arrangement()
-                .withSelfUserFlow(selfUserFlow)
-                .withExpectedConversationBase(null)
-                .arrange()
-
-            conversationRepository.persistConversation(event.conversation, "teamId")
-
-            with(arrangement) {
-                coVerify {
-                    conversationDAO.insertConversation(
-                        matches { conversation ->
-                            conversation.id.value == CONVERSATION_RESPONSE.id.value
-                        }
-                    )
-                }.wasInvoked(exactly = once)
-            }
-        }
-
-    @Test
-    fun givenNewMLSConversationEvent_whenMLSIsDisabled_thenConversationShouldNotPersisted() =
-        runTest {
-            val event = Event.Conversation.NewConversation(
-                "id",
-                TestConversation.ID,
-                TestUser.SELF.id,
-                Instant.UNIX_FIRST_DATE,
-                CONVERSATION_RESPONSE.copy(
-                    groupId = RAW_GROUP_ID,
-                    protocol = MLS,
-                    mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
-                )
-            )
-            val selfUserFlow = flowOf(TestUser.SELF)
-            val (arrangement, conversationRepository) = Arrangement()
-                .withSelfUserFlow(selfUserFlow)
-                .withDisabledMlsClientProvider()
-                .withHasEstablishedMLSGroup(true)
-                .arrange()
-
-            conversationRepository.persistConversation(event.conversation, "teamId")
-
-            with(arrangement) {
-                coVerify {
-                    conversationDAO.insertConversation(
-                        matches { conversation ->
-                            conversation.id.value == CONVERSATION_RESPONSE.id.value
-                        }
-                    )
-                }.wasNotInvoked()
-            }
-        }
-
-    @Test
-    fun givenNewConversationEvent_whenCallingPersistConversationFromEventAndExists_thenConversationPersistenceShouldBeSkipped() =
-        runTest {
-            val event = Event.Conversation.NewConversation(
-                "id",
-                TestConversation.ID,
-                TestUser.SELF.id,
-                Instant.UNIX_FIRST_DATE,
-                CONVERSATION_RESPONSE
-            )
-            val selfUserFlow = flowOf(TestUser.SELF)
-            val (arrangement, conversationRepository) = Arrangement()
-                .withSelfUserFlow(selfUserFlow)
-                .withExpectedConversationBase(TestConversation.ENTITY)
-                .arrange()
-
-            conversationRepository.persistConversation(event.conversation, "teamId")
-
-            with(arrangement) {
-                coVerify {
-                    conversationDAO.insertConversation(
-                        matches { conversation ->
-                            conversation.id.value == CONVERSATION_RESPONSE.id.value
-                        }
-                    )
-                }.wasNotInvoked()
-            }
-        }
-
-    @Test
-    fun givenNewConversationEventWithMlsConversation_whenCallingInsertConversation_thenMlsGroupExistenceShouldBeQueried() =
-        runTest {
-            val event = Event.Conversation.NewConversation(
-                "id",
-                TestConversation.ID,
-                TestUser.SELF.id,
-                Instant.UNIX_FIRST_DATE,
-                CONVERSATION_RESPONSE.copy(
-                    groupId = RAW_GROUP_ID,
-                    protocol = MLS,
-                    mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
-                )
-            )
-            val protocolInfo = ConversationEntity.ProtocolInfo.MLS(
-                RAW_GROUP_ID,
-                ConversationEntity.GroupState.ESTABLISHED,
-                0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            )
-
-            val (arrangement, conversationRepository) = Arrangement()
-                .withSelfUserFlow(flowOf(TestUser.SELF))
-                .withHasEstablishedMLSGroup(true)
-                .arrange()
-
-            conversationRepository.persistConversations(
-                listOf(event.conversation),
-                TeamId("teamId"),
-                originatedFromEvent = true
-            )
-
-            coVerify {
-                arrangement.mlsClient.conversationExists(eq(RAW_GROUP_ID))
-            }.wasInvoked(once)
-
-            coVerify {
-                arrangement.conversationDAO.insertConversations(
-                    matches { conversations ->
-                        conversations.any { entity ->
-                            entity.id.value == CONVERSATION_RESPONSE.id.value && entity.protocolInfo == protocolInfo.copy(
-                                keyingMaterialLastUpdate = (entity.protocolInfo as ConversationEntity.ProtocolInfo.MLS).keyingMaterialLastUpdate
-                            )
-                        }
-                    }
-                )
-            }.wasInvoked(once)
-        }
-
-    @Test
-    fun givenTwoPagesOfConversation_whenFetchingConversationsAndItsDetails_thenThePagesShouldBeAddedAndPersistOnlyFounds() =
-        runTest {
-            // given
-            val response =
-                ConversationPagingResponse(listOf(CONVERSATION_IDS_DTO_ONE, CONVERSATION_IDS_DTO_TWO), false, "")
-
-            val (arrangement, conversationRepository) = Arrangement()
-                .withFetchConversationsIds(NetworkResponse.Success(response, emptyMap(), HttpStatusCode.OK.value))
-                .withFetchConversationsListDetails(
-                    { it.size == 2 },
-                    NetworkResponse.Success(CONVERSATION_RESPONSE_DTO, emptyMap(), HttpStatusCode.OK.value)
-                )
-                .withSelfUserFlow(flowOf(TestUser.SELF))
-                .arrange()
-
-            // when
-            conversationRepository.fetchConversations()
-
-            // then
-            coVerify {
-                arrangement.conversationDAO.insertConversations(
-                    matches { conversations ->
-                        conversations.any { entity ->
-                            entity.id.value == CONVERSATION_RESPONSE_DTO.conversationsFailed.first().value
-                        }
-                    }
-                )
-            }.wasInvoked(exactly = once)
-
-            coVerify {
-                arrangement.conversationDAO.insertConversations(
-                    matches { list ->
-                        list.any {
-                            it.id.value == CONVERSATION_RESPONSE.id.value
-                        }
-                    }
-                )
-            }.wasInvoked(exactly = once)
-        }
-
-    @Test
-    fun givenFetchingAConversation_whenFetchingAConnectionSentConversation_thenTheTypeShouldBePersistedAsPendingAlways() =
-        runTest {
-            // given
-            val (arrangement, conversationRepository) = Arrangement()
-                .withFetchConversationDetailsResult(
-                    NetworkResponse.Success(
-                        TestConversation.CONVERSATION_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
-                )
-                .withSelfUserFlow(flowOf(TestUser.SELF))
-                .arrange()
-
-            // when
-            conversationRepository.fetchSentConnectionConversation(TestConversation.ID)
-
-            // then
-            coVerify {
-                arrangement.conversationDAO.insertConversations(
-                    matches { list ->
-                        list.any {
-                            it.type == ConversationEntity.Type.CONNECTION_PENDING
-                        }
-                    }
-                )
-            }.wasInvoked(exactly = once)
-        }
-
-    @Test
     fun givenConversationDaoReturnsAGroupConversation_whenGettingConversationDetailsById_thenReturnAGroupConversationDetails() =
         runTest {
             val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
@@ -525,72 +285,6 @@ class ConversationRepositoryTest {
         }.wasNotInvoked()
     }
 
-    @Test
-    fun givenAConversationExists_whenFetchingConversationIfUnknown_thenShouldNotFetchFromApi() = runTest {
-        val conversationId = TestConversation.ID
-        val (arrangement, conversationRepository) = Arrangement()
-            .withExpectedConversation(TestConversation.VIEW_ENTITY)
-            .arrange()
-
-        conversationRepository.fetchConversationIfUnknown(conversationId)
-
-        coVerify {
-            arrangement.conversationApi.fetchConversationDetails(
-                APIConversationId(value = conversationId.value, domain = conversationId.domain)
-            )
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenAConversationExists_whenFetchingConversationIfUnknown_thenShouldSucceed() = runTest {
-        val conversationId = TestConversation.ID
-        val (_, conversationRepository) = Arrangement()
-            .withExpectedConversation(TestConversation.VIEW_ENTITY)
-            .arrange()
-
-        conversationRepository.fetchConversationIfUnknown(conversationId)
-            .shouldSucceed()
-    }
-
-    @Test
-    fun givenAConversationDoesNotExist_whenFetchingConversationIfUnknown_thenShouldFetchFromAPI() = runTest {
-        val conversationId = TestConversation.ID
-        val conversationIdDTO = APIConversationId(value = conversationId.value, domain = conversationId.domain)
-
-        val (arrangement, conversationRepository) = Arrangement()
-            .withExpectedConversation(null)
-            .withSelfUser(TestUser.SELF)
-            .withFetchConversationDetailsResult(
-                NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value),
-                EqualsMatcher(conversationIdDTO)
-            )
-            .arrange()
-
-        conversationRepository.fetchConversationIfUnknown(conversationId)
-            .shouldSucceed()
-
-        coVerify {
-            arrangement.conversationApi.fetchConversationDetails(eq(conversationIdDTO))
-        }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAConversationDoesNotExistAndAPISucceeds_whenFetchingConversationIfUnknown_thenShouldSucceed() = runTest {
-        val conversationId = TestConversation.ID
-
-        val (_, conversationRepository) = Arrangement()
-            .withExpectedConversation(null)
-            .withSelfUser(TestUser.SELF)
-            .withFetchConversationDetailsResult(
-                NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value),
-                EqualsMatcher(APIConversationId(value = conversationId.value, domain = conversationId.domain))
-            )
-            .arrange()
-
-        conversationRepository.fetchConversationIfUnknown(conversationId)
-            .shouldSucceed()
-    }
-
     @Suppress("LongMethod")
     @Test
     fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() =
@@ -713,29 +407,9 @@ class ConversationRepositoryTest {
             .arrange()
         val conversationId = ConversationId("conv_id", "conv_domain")
 
-        conversationRepository.deleteConversation(conversationId).shouldSucceed()
+        conversationRepository.deleteConversationLocally(conversationId).shouldSucceed()
 
         with(arrangement) {
-            coVerify {
-                conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
-            }.wasInvoked(once)
-        }
-    }
-
-    @Test
-    fun givenMlsConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withGetConversationProtocolInfoReturns(MLS_PROTOCOL_INFO)
-            .withSuccessfulConversationDeletion()
-            .arrange()
-        val conversationId = ConversationId("conv_id", "conv_domain")
-
-        conversationRepository.deleteConversation(conversationId).shouldSucceed()
-
-        with(arrangement) {
-            coVerify {
-                mlsClient.wipeConversation(eq(GROUP_ID.toCrypto()))
-            }.wasInvoked(once)
             coVerify {
                 conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
             }.wasInvoked(once)
@@ -1135,41 +809,6 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationWithoutMetadata_whenUpdatingMetadata_thenShouldUpdateLocally() = runTest {
-        // given
-        val (arrange, conversationRepository) = Arrangement()
-            .withConversationsWithoutMetadataId(listOf(CONVERSATION_ENTITY_ID))
-            .withFetchConversationsListDetails(
-                { it.size == 1 },
-                NetworkResponse.Success(CONVERSATION_RESPONSE_DTO, emptyMap(), HttpStatusCode.OK.value)
-            )
-            .arrange()
-
-        // when
-        val result = conversationRepository.syncConversationsWithoutMetadata()
-
-        // then
-        with(result) {
-            shouldSucceed()
-            coVerify {
-                arrange.conversationDAO.getConversationsWithoutMetadata()
-            }.wasInvoked(exactly = once)
-
-            coVerify {
-                arrange.conversationApi.fetchConversationsListDetails(matches {
-                    it.first() == CONVERSATION_ID.toApi()
-                })
-            }.wasInvoked(exactly = once)
-
-            coVerify {
-                arrange.conversationDAO.insertConversations(matches {
-                    it.first().id.value == CONVERSATION_RESPONSE.id.value
-                })
-            }.wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
     fun givenDomains_whenGettingConversationsWithMembersWithBothDomains_thenShouldReturnConversationsWithMembers() = runTest {
         // Given
         val federatedDomain = "federated.com"
@@ -1516,8 +1155,6 @@ class ConversationRepositoryTest {
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         val userRepository: UserRepository = mock(UserRepository::class)
-        val mlsClient: MLSClient = mock(MLSClient::class)
-        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
         val conversationApi: ConversationApi = mock(ConversationApi::class)
@@ -1527,13 +1164,10 @@ class ConversationRepositoryTest {
         private val messageDraftDAO = mock(MessageDraftDAO::class)
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
         val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
-        val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
 
         val conversationRepository =
             ConversationDataSource(
                 TestUser.USER_ID,
-                mlsClientProvider,
-                selfTeamIdProvider,
                 conversationDAO,
                 memberDAO,
                 conversationApi,
@@ -1544,13 +1178,6 @@ class ConversationRepositoryTest {
                 conversationMetaDataDAO,
                 metadataDAO
             )
-
-
-        suspend fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
-            coEvery {
-                mlsClient.conversationExists(any())
-            }.returns(isClient)
-        }
 
         suspend fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {
             coEvery {
@@ -1849,12 +1476,6 @@ class ConversationRepositoryTest {
             }.returns(updated)
         }
 
-        suspend fun withDisabledMlsClientProvider() = apply {
-            coEvery {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Left(MLSFailure.Disabled))
-        }
-
         suspend fun arrange() = this to conversationRepository.also {
             coEvery { conversationDAO.insertConversations(any()) }
                 .returns(Unit)
@@ -1864,10 +1485,6 @@ class ConversationRepositoryTest {
             coEvery {
                 conversationDAO.updateConversationMutedStatus(any(), any(), any())
             }.returns(Unit)
-
-            coEvery {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
 
             coEvery {
                 selfTeamIdProvider.invoke()

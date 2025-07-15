@@ -24,6 +24,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
@@ -204,7 +206,7 @@ class JoinExistingMLSConversationUseCaseTest {
         joinExistingMLSConversationsUseCase(Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(eq(Arrangement.MLS_CONVERSATION1.id))
+            arrangement.fetchConversation(eq(Arrangement.MLS_CONVERSATION1.id))
         }.wasInvoked(once)
 
         coVerify {
@@ -232,6 +234,8 @@ class JoinExistingMLSConversationUseCaseTest {
         val clientRepository = mock(ClientRepository::class)
         val conversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
+        val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
+        val fetchConversation = mock(FetchConversationUseCase::class)
 
         val selfUserId = TestUser.USER_ID
 
@@ -241,6 +245,8 @@ class JoinExistingMLSConversationUseCaseTest {
             clientRepository,
             conversationRepository,
             mlsConversationRepository,
+            fetchMLSOneToOneConversation,
+            fetchConversation,
             selfUserId,
             dispatcher
         )
@@ -255,7 +261,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withFetchConversationSuccessful() = apply {
             coEvery {
-                conversationRepository.fetchConversation(any())
+                fetchConversation.invoke(any())
             }.returns(Either.Right(Unit))
         }
 

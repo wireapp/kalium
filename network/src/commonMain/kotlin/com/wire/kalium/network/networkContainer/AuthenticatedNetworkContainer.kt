@@ -23,6 +23,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
@@ -52,6 +53,7 @@ import com.wire.kalium.network.api.v5.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v6.authenticated.networkContainer.AuthenticatedNetworkContainerV6
 import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
 import com.wire.kalium.network.api.v8.authenticated.networkContainer.AuthenticatedNetworkContainerV8
+import com.wire.kalium.network.api.v9.authenticated.networkContainer.AuthenticatedNetworkContainerV9
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.HttpClient
@@ -113,6 +115,8 @@ interface AuthenticatedNetworkContainer {
     val wildCardApi: WildCardApi
 
     val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
+
+    val serverTimeApi: ServerTimeApi
 
     companion object {
 
@@ -203,6 +207,15 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 8 -> AuthenticatedNetworkContainerV8(
+                    sessionManager,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                9 -> AuthenticatedNetworkContainerV9(
                     sessionManager,
                     selfUserId,
                     certificatePinning,

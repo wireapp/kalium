@@ -71,7 +71,7 @@ internal fun BackupConversation.toConversation() = Conversation(
     mutedStatus = MutedConversationStatus.AllMuted,
     removedBy = null,
     lastNotificationDate = null,
-    lastModifiedDate = null,
+    lastModifiedDate = lastModifiedTime?.instant,
     lastReadDate = Clock.System.now(),
     access = emptyList(),
     accessRole = emptyList(),
@@ -118,6 +118,7 @@ private fun BackupMessageContent.toMessageContent() =
         is BackupMessageContent.Location -> MessageContent.Location(
             latitude = latitude,
             longitude = longitude,
+            name = name,
         )
 
         is BackupMessageContent.Asset -> MessageContent.Asset(

@@ -29,7 +29,7 @@ import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mockable
 
-internal expect class SecureRandom constructor() {
+internal expect class SecureRandom internal constructor() {
     fun nextBytes(length: Int): ByteArray
     fun nextInt(bound: Int): Int
 }
@@ -43,7 +43,12 @@ internal interface SecurityHelper {
     suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
 }
 
-internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStorage) : SecurityHelper {
+internal typealias DatabaseMigrator = suspend (rootDir: String, oldKey: String, passphrase: ByteArray) -> Unit
+
+internal class SecurityHelperImpl(
+    private val passphraseStorage: PassphraseStorage,
+    private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey
+) : SecurityHelper {
 
     override fun globalDBSecret(): GlobalDatabaseSecret =
         GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
@@ -54,37 +59,47 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
     override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
         getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let { UserDBSecret(it) }
 
+    @Suppress("ReturnCount")
     override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
-        val newPassphrase = getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId")
-        val oldPassphrase = getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
+        // Step 1: Try current format (v2) - return if found
+        getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId")
+            ?.let { return MlsDBSecret(it.decodeBase64Bytes()) }
 
-        if (newPassphrase != null) {
-            return MlsDBSecret(newPassphrase.decodeBase64Bytes())
-        } else {
-            val newKeyBytes = SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH)
-            val newKeyBase64 = newKeyBytes.encodeBase64()
-            migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
-            passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
-            return MlsDBSecret(newKeyBytes)
+        // Step 2: Try legacy format (v1) - migrate to v2 if found
+        getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
+            ?.let { legacyPassphrase ->
+                return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
+                    databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
+                    passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
+                }.let { MlsDBSecret(it) }
+            }
+
+        // Step 3: Generate new secret as fallback
+        return getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
+            MlsDBSecret(it.decodeBase64Bytes())
         }
     }
 
+    @Suppress("ReturnCount")
     override suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret {
-        val newPassphrase = getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId")
-        val oldPassphrase = getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
+            // Step 1: Try current format (v2) - return if found
+            getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId")
+                ?.let { return ProteusDBSecret(it.decodeBase64Bytes()) }
 
-        if (newPassphrase != null) {
-            return ProteusDBSecret(newPassphrase.decodeBase64Bytes())
-        } else {
-            val newKeyBytes = SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH)
-            val newKeyBase64 = newKeyBytes.encodeBase64()
-            migrateDatabaseKey(rootDir, oldPassphrase, newKeyBytes)
+            // Step 2: Try legacy format (v1) - migrate to v2 if found
+            getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
+                ?.let { legacyPassphrase ->
+                    return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
+                        databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
+                        passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
+                    }.let { ProteusDBSecret(it) }
+                }
 
-            passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBase64)
-
-            return ProteusDBSecret(newKeyBytes)
+            // Step 3: Generate new secret as fallback
+            return getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
+                ProteusDBSecret(it.decodeBase64Bytes())
+            }
         }
-    }
 
     private fun getOrGeneratePassPhrase(alias: String): String =
         getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
@@ -98,12 +113,9 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
         return key
     }
 
-    private fun generatePassword(): ByteArray {
+    private fun generatePassword(minPasswordLength: Int = MIN_DATABASE_SECRET_LENGTH): ByteArray {
         val secureRandom = SecureRandom()
-        val max = MAX_DATABASE_SECRET_LENGTH
-        val min = MIN_DATABASE_SECRET_LENGTH
-        val passwordLen = secureRandom.nextInt(max - min + 1) + min
-        return secureRandom.nextBytes(passwordLen)
+        return secureRandom.nextBytes(minPasswordLength)
     }
 
     private val String.toPreservedByteArray: ByteArray
@@ -113,7 +125,6 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
         get() = this.encodeBase64()
 
     private companion object {
-        const val MAX_DATABASE_SECRET_LENGTH = 48
         const val MIN_DATABASE_SECRET_LENGTH = 32
         const val GLOBAL_DB_PASSPHRASE_ALIAS = "global_db_passphrase_alias"
         const val USER_DB_PASSPHRASE_PREFIX = "user_db_secret_alias"

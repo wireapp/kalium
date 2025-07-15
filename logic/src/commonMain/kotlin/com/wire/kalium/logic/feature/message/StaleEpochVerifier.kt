@@ -32,6 +32,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -50,7 +51,8 @@ internal class StaleEpochVerifierImpl(
     private val conversationRepository: ConversationRepository,
     private val subconversationRepository: SubconversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val fetchConversation: FetchConversationUseCase
 ) : StaleEpochVerifier {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
@@ -122,7 +124,7 @@ internal class StaleEpochVerifierImpl(
     }
 
     private suspend fun getUpdatedConversationProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo> {
-        return conversationRepository.fetchConversation(conversationId).flatMap {
+        return fetchConversation(conversationId).flatMap {
             conversationRepository.getConversationProtocolInfo(conversationId)
         }
     }

@@ -18,15 +18,16 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
@@ -40,7 +41,8 @@ interface DeletedConversationEventHandler {
 internal class DeletedConversationEventHandlerImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val notificationEventsManager: NotificationEventsManager
+    private val notificationEventsManager: NotificationEventsManager,
+    private val deleteConversation: DeleteConversationUseCase
 ) : DeletedConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.DeletedConversation) {
@@ -55,7 +57,7 @@ internal class DeletedConversationEventHandlerImpl(
                 )
             }
             .flatMap { conversation ->
-                conversationRepository.deleteConversation(event.conversationId)
+                deleteConversation(event.conversationId)
                     .onFailure {
                         logger.logFailure(it)
                     }.onSuccess {

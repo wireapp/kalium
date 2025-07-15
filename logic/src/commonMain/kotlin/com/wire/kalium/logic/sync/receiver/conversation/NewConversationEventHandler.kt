@@ -35,6 +35,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -51,13 +52,13 @@ internal class NewConversationEventHandlerImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val oneOnOneResolver: OneOnOneResolver,
+    private val persistConversation: PersistConversationUseCase,
 ) : NewConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.NewConversation) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
-        conversationRepository
-            .persistConversation(event.conversation, selfUserTeamId?.value, true)
+        persistConversation(event.conversation, originatedFromEvent = true)
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(selfUserTeamId, event)
                     .flatMap {

@@ -18,12 +18,15 @@
 
 package com.wire.kalium.plugins
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 fun KotlinJvmTarget.commonJvmConfig(includeNativeInterop: Boolean, enableIntegrationTests: Boolean = false) {
     compilations.all {
-        kotlinOptions.jvmTarget = "17"
-        kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+        compileTaskProvider.configure {
+            compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+            compilerOptions.freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+        }
     }
     testRuns.getByName("test").executionTask.configure {
         useJUnit()

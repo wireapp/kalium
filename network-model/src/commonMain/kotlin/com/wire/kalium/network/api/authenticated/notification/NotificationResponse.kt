@@ -25,5 +25,5 @@ import kotlinx.serialization.Serializable
 data class NotificationResponse(
     @SerialName("time") val time: String,
     @SerialName("has_more") val hasMore: Boolean,
-    @SerialName("notifications") val notifications: List<EventResponse>,
+    @SerialName("notifications") val notifications: List<EventResponseToStore>,
 )

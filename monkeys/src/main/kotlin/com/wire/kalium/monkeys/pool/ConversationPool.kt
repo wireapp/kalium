@@ -18,7 +18,6 @@
 package com.wire.kalium.monkeys.pool
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey

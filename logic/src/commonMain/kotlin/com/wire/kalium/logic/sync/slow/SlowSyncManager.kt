@@ -35,6 +35,7 @@ import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
@@ -43,6 +44,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -106,7 +108,9 @@ internal fun SlowSyncManager(
 
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
-            slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+            withContext(NonCancellable) {
+                slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+            }
         },
         onFailure = { failure ->
             logger.i("SlowSync ExceptionHandler error $failure")
