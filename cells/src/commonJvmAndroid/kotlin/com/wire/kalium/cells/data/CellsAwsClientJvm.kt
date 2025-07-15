@@ -35,6 +35,8 @@ import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.session.SessionManager
 import okhttp3.internal.http2.Header
 import okio.Path
 import okio.Sink
@@ -44,10 +46,16 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import kotlin.time.Duration.Companion.hours
 
-internal actual fun cellsAwsClient(credentials: CellsCredentials): CellsAwsClient = CellsAwsClientJvm(credentials)
+internal actual fun cellsAwsClient(
+    credentials: CellsCredentials?,
+    sessionManager: SessionManager,
+    accessTokenApi: AccessTokenApi
+): CellsAwsClient = CellsAwsClientJvm(credentials, sessionManager, accessTokenApi)
 
 private class CellsAwsClientJvm(
-    private val credentials: CellsCredentials
+    private val credentials: CellsCredentials?,
+    private val sessionManager: SessionManager,
+    private val accessTokenAPI: AccessTokenApi,
 ) : CellsAwsClient {
 
     private companion object {
@@ -63,13 +71,14 @@ private class CellsAwsClientJvm(
         S3Client {
             region = DEFAULT_REGION
             enableAwsChunked = false
-            credentialsProvider = StaticCredentialsProvider(
-                Credentials(
-                    accessKeyId = accessToken,
-                    secretAccessKey = gatewaySecret,
-                )
-            )
-            endpointUrl = Url.parse(serverUrl)
+//             credentialsProvider = StaticCredentialsProvider(
+//                 Credentials(
+//                     accessKeyId = this@with?.accessToken ?: "",
+//                     secretAccessKey = this@with?.gatewaySecret ?: "",
+//                 )
+//             )
+            endpointUrl = Url.parse(this@with?.serverUrl ?: "")
+            credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI)
         }
     }
 

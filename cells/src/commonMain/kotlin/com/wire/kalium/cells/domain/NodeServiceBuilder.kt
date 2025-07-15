@@ -23,6 +23,7 @@ import com.wire.kalium.network.session.installAuth
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.http.headers
 
 internal object NodeServiceBuilder {
 
@@ -31,10 +32,12 @@ internal object NodeServiceBuilder {
     private var httpClient: HttpClient? = null
     private var baseUrl: String? = null
     private var accessToken: String? = null
+    private var refreshToken: String? = null
 
-    fun withCredentials(credentials: CellsCredentials): NodeServiceBuilder {
-        baseUrl = "${credentials.serverUrl}/$API_VERSION"
-        accessToken = credentials.accessToken
+    fun withCredentials(credentials: CellsCredentials?): NodeServiceBuilder {
+        baseUrl = "${credentials?.serverUrl}/$API_VERSION"
+//         accessToken = credentials?.accessToken
+//         refreshToken = credentials?.refreshToken
         return this
     }
 
@@ -46,15 +49,7 @@ internal object NodeServiceBuilder {
     fun build(): NodeServiceApi {
         return NodeServiceApi(
             baseUrl = baseUrl ?: error("Base URL is not set"),
-            httpClient = httpClient?.config {
-                installAuth(
-                    BearerAuthProvider(
-                        loadTokens = { BearerTokens(accessToken ?: error("Access token not set"), "") },
-                        refreshTokens = { null },
-                        realm = null
-                    )
-                )
-            } ?: error("HttpClient is not set")
+            httpClient = httpClient!!
         )
     }
 }

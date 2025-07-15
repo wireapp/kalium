@@ -121,8 +121,7 @@ class GlobalKaliumScope internal constructor(
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository
-        get() =
-            NotificationTokenDataSource(globalPreferences.tokenStorage)
+        get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     private val customServerConfigRepository: CustomServerConfigRepository
         get() = CustomServerConfigDataSource(
@@ -141,7 +140,6 @@ class GlobalKaliumScope internal constructor(
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    val observeSessions: ObserveSessionsUseCase get() = ObserveSessionsUseCase(sessionRepository)
     val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
@@ -161,7 +159,6 @@ class GlobalKaliumScope internal constructor(
                 ).serverConfigRepository
             },
         )
-    val storeServerConfig: StoreServerConfigUseCase get() = StoreServerConfigUseCaseImpl(customServerConfigRepository)
 
     val saveNotificationToken: SaveNotificationTokenUseCase
         get() = SaveNotificationTokenUseCaseImpl(
@@ -183,13 +180,6 @@ class GlobalKaliumScope internal constructor(
             userSessionScopeProvider.value,
             globalDatabase,
             kaliumConfigs
-        )
-
-    val checkSystemIntegrity: CheckSystemIntegrityUseCase
-        get() = CheckSystemIntegrityUseCaseImpl(
-            kaliumConfigs,
-            RootDetectorImpl(),
-            sessionRepository
         )
 
     private val userClientRepositoryProvider: UserClientRepositoryProvider
