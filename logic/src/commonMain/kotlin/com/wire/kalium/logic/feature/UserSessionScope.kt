@@ -2131,6 +2131,7 @@ class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userScopedLogger,
             getTeamUrlUseCase,
+            isMLSEnabled,
             mlsPublicKeysSyncWorker,
             this,
         )
