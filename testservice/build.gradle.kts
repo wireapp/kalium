@@ -36,8 +36,9 @@ object Versions {
 val mainFunctionClassName = "com.wire.kalium.testservice.TestserviceApplication"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {

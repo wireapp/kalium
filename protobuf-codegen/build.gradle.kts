@@ -60,3 +60,9 @@ tasks {
         enabled = false
     }
 }
+
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+    }
+}
