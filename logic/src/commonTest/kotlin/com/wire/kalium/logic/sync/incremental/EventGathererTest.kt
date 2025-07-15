@@ -22,11 +22,9 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.event.EventVersion
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -37,6 +35,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -65,7 +64,7 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLocalEventsReturning(localEventsFlow)
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withLiveEventsReturning(Either.Right(flowOf(WebSocketEvent.Open())))
+            .withLiveEventsReturning(Either.Right(flowOf(IncrementalSyncPhase.ReadyToProcess)))
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -86,7 +85,7 @@ class EventGathererTest {
         val (_, eventGatherer) = Arrangement()
             .withLocalEventsReturning(webSocketEventFlow)
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withLiveEventsReturning(Either.Right(flowOf(WebSocketEvent.Open())))
+            .withLiveEventsReturning(Either.Right(flowOf(IncrementalSyncPhase.ReadyToProcess)))
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -99,7 +98,7 @@ class EventGathererTest {
     @Test
     fun givenNoMoreEvents_whenGathering_thenShouldReceiveUpToDateOnlyAfterWebsocketIsConnected() = runTest(testScope) {
         val localEvents = flowOf<List<EventEnvelope>>(listOf())
-        val websocketEvents = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
+        val websocketEvents = Channel<IncrementalSyncPhase>(capacity = Channel.UNLIMITED)
 
         val (_, eventGatherer) = Arrangement()
             .withLocalEventsReturning(localEvents)
@@ -109,7 +108,7 @@ class EventGathererTest {
 
         eventGatherer.gatherEvents().test {
             expectNoEvents()
-            websocketEvents.send(WebSocketEvent.Open())
+            websocketEvents.send(IncrementalSyncPhase.ReadyToProcess)
             assertIs<EventStreamData.IsUpToDate>(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -163,17 +162,17 @@ class EventGathererTest {
 
     @Test
     fun givenWebSocketOpens_whenGatheringAndAsyncNotificationsCapable_thenShouldNotFetchLastEvent() = runTest(testScope) {
-        val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
+        val liveEventsChannel = Channel<WebSocketEvent<IncrementalSyncPhase>>(capacity = Channel.UNLIMITED)
 
         val (arrangement, eventGatherer) = Arrangement()
             .withIsClientAsyncNotificationsCapableReturning(true)
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withLiveEventsReturning(Either.Right(flowOf(IncrementalSyncPhase.CatchingUp)))
             .arrange()
 
         eventGatherer.gatherEvents().test {
             coVerify {
-                arrangement.isClientAsyncNotificationsCapableProvider.invoke()
+                arrangement.isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
             }.wasInvoked(exactly = once)
 
             advanceUntilIdle()
@@ -228,7 +227,7 @@ class EventGathererTest {
             .withIsClientAsyncNotificationsCapableReturning(false)
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withLocalEventsReturning(localEventsChannel.consumeAsFlow())
-            .withLiveEventsReturning(Either.Right(flowOf(WebSocketEvent.Open())))
+            .withLiveEventsReturning(Either.Right(flowOf(IncrementalSyncPhase.ReadyToProcess)))
             .arrange()
 
         eventGatherer.gatherEvents().test {
@@ -257,10 +256,10 @@ class EventGathererTest {
             }
         }
 
-        suspend fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
-            coEvery {
-                isClientAsyncNotificationsCapableProvider.invoke()
-            }.returns(value.right())
+        fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
+            every {
+                isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
+            }.returns(value)
         }
 
         suspend fun withLocalEventsReturning(flow: Flow<List<EventEnvelope>>) = apply {
@@ -269,16 +268,10 @@ class EventGathererTest {
             }.returns(flow)
         }
 
-        suspend fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<EventVersion>>>) = apply {
+        suspend fun withLiveEventsReturning(either: Either<CoreFailure, Flow<IncrementalSyncPhase>>) = apply {
             coEvery {
                 eventRepository.liveEvents()
             }.returns(either)
-        }
-
-        suspend fun withFetchServerTimeReturning(time: String?) = apply {
-            coEvery {
-                eventRepository.fetchServerTime()
-            }.returns(time)
         }
 
         suspend fun withLastEventIdReturning(either: Either<StorageFailure, String>) = apply {
@@ -290,7 +283,6 @@ class EventGathererTest {
         fun arrange() = this to EventGathererImpl(
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
-            serverTimeHandler = serverTimeHandler
         )
     }
 }

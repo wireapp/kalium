@@ -182,4 +182,27 @@ class EventDAOTest : BaseDatabaseTest() {
         assertTrue(updated.isProcessed)
     }
 
+    @Test
+    fun givenThousandsOfUnprocessedEvents_whenObserving_thenShouldGetUpTo500AtOnce() {
+        runTest {
+            val eventSize = 5_000
+            val expectedSize = 500
+            val eventList = buildList {
+                repeat(eventSize) { i ->
+                    add(
+                        NewEventEntity(
+                            eventId = "e$i",
+                            payload = """{"wawawweewa":"it's a very nice"}""",
+                            isLive = false,
+                            transient = false
+                        )
+                    )
+                }
+            }
+            dao.insertEvents(eventList)
+
+            assertEquals(expectedSize, dao.observeUnprocessedEvents().first().size)
+        }
+    }
+
 }
