@@ -2422,8 +2422,6 @@ class UserSessionScope internal constructor(
             },
             sessionManager = sessionManager,
             accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
-//             Temporary workaround for switching between fulu / imai environments
-            serverConfig = sessionManager.serverConfig(),
         )
     }
 

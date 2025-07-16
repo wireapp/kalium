@@ -71,14 +71,17 @@ private class CellsAwsClientJvm(
         S3Client {
             region = DEFAULT_REGION
             enableAwsChunked = false
-//             credentialsProvider = StaticCredentialsProvider(
-//                 Credentials(
-//                     accessKeyId = this@with?.accessToken ?: "",
-//                     secretAccessKey = this@with?.gatewaySecret ?: "",
-//                 )
-//             )
             endpointUrl = Url.parse(this@with?.serverUrl ?: "")
-            credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI)
+            credentialsProvider = if (credentials?.accessToken != null) {
+                StaticCredentialsProvider(
+                    Credentials(
+                        accessKeyId = this@with?.accessToken ?: "",
+                        secretAccessKey = this@with?.gatewaySecret ?: "",
+                    )
+                )
+            } else {
+                TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
+            }
         }
     }
 

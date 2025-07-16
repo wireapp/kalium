@@ -103,7 +103,6 @@ public class CellsScope(
     private val cellsClient: HttpClient,
     private val userId: String,
     private val dao: CellScopeDao,
-    private val serverConfig: ServerConfigDTO,
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
 ) : CoroutineScope {
@@ -116,18 +115,10 @@ public class CellsScope(
         val userDao: UserDAO,
     )
 
-//     private var cellClientCredentials: CellsCredentials? = null
-
-//     init {
-//         CoroutineScope(Dispatchers.IO).launch {
-//             cellClientCredentials = CellsCredentialsProvider.getCredentials(userId, sessionManager)
-//         }
-//     }
-
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val cellClientCredentials: CellsCredentials
-        get() = CellsCredentialsProvider.getCredentials(userId, serverConfig)
+        get() = CellsCredentialsProvider.getCredentials(userId, sessionManager.serverConfig())
 
     private val cellAwsClient: CellsAwsClient
         get() = cellsAwsClient(cellClientCredentials, sessionManager, accessTokenApi)

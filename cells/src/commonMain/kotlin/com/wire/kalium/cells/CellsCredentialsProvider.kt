@@ -36,10 +36,9 @@ internal object CellsCredentialsProvider {
 
             serverConfig.links.api.endsWith("fulu.wire.link") -> CellsCredentials(
                 serverUrl = "https://cells.fulu.wire.link",
-                accessToken = "rnFZ9M3L27j2rxR3h8mvNs3X4ZKk2427ZH5gBnTt:$userId",
                 gatewaySecret = "gatewaysecret",
             )
 
-            else -> CellsCredentials("", "", "")
+            else -> CellsCredentials("", null, "")
         }
 }

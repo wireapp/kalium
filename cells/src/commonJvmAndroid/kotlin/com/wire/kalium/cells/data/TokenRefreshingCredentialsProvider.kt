@@ -25,13 +25,17 @@ import com.wire.kalium.network.session.SessionManager
 
 public class TokenRefreshingCredentialsProvider(
     private val sessionManager: SessionManager,
-    private val accessTokenAPI: AccessTokenApi
+    private val accessTokenAPI: AccessTokenApi,
+    private val secretAccessKey: String
 ) : CredentialsProvider {
     override suspend fun resolve(attributes: Attributes): Credentials {
-        val tokens = sessionManager.updateToken(accessTokenAPI, sessionManager.session()?.accessToken ?: "")
+        val tokens = sessionManager.updateToken(
+            accessTokenAPI,
+            sessionManager.session()?.refreshToken ?: ""
+        )
         return Credentials(
             accessKeyId = tokens.accessToken,
-            secretAccessKey = tokens.refreshToken
+            secretAccessKey = secretAccessKey
         )
     }
 }

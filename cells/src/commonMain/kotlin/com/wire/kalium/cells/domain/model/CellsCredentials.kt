@@ -19,6 +19,6 @@ package com.wire.kalium.cells.domain.model
 
 internal data class CellsCredentials(
     val serverUrl: String,
-    val accessToken: String,
+    val accessToken: String? = null,
     val gatewaySecret: String,
 )
