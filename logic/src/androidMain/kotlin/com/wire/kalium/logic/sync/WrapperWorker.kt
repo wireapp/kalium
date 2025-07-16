@@ -58,6 +58,7 @@ class WrapperWorker(
     // TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notification = Notification.Builder(applicationContext, createNotificationChannel().id)
+            .setContentTitle(NOTIFICATION_TITLE)
             .setSmallIcon(foregroundNotificationDetailsProvider.getSmallIconResId())
             .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
