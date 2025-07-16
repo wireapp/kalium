@@ -23,52 +23,44 @@ import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangemen
 import com.wire.kalium.logic.util.arrangement.repository.E2EIRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.E2EIRepositoryArrangementImpl
 import io.mockative.coVerify
-import io.mockative.twice
-import kotlinx.coroutines.launch
+import io.mockative.once
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 
-class ACMECertificatesSyncWorkerTest {
+class ACMECertificatesSyncUseCaseTest {
 
     @Test
-    fun givenWorkerExecuted_whenDayPassed_thenSyncCalledAgain() = runTest {
-        val (arrangement, worker) = arrange {
+    fun givenWorkerExecuted_whenE2EIAndMLSAreEnabled_thenSyncIsCalled() = runTest {
+        // given
+        val (arrangement, useCase) = arrange {
             withE2EIEnabledAndMLSEnabled(true)
             withFetchACMECertificates()
         }
-        val job = launch { worker.execute() }
 
-        advanceTimeBy(arrangement.syncInterval.inWholeMilliseconds + 10)
+        // when
+        useCase()
 
+        // then
         coVerify {
             arrangement.e2eiRepository.fetchFederationCertificates()
-        }.wasInvoked(exactly = twice) // first on start and second after interval passed
-
-        job.cancel()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenWorkerExecuted_whenE2EIAndMLSAreDisabled_thenSyncIsNotCalled() = runTest {
         // given
-        val (arrangement, worker) = arrange {
+        val (arrangement, useCase) = arrange {
             withE2EIEnabledAndMLSEnabled(false)
         }
 
         // when
-        val job = launch { worker.execute() }
-
-        advanceTimeBy(arrangement.syncInterval.inWholeMilliseconds + 10)
+        useCase()
 
         // then
         coVerify {
             arrangement.e2eiRepository.fetchFederationCertificates()
         }.wasNotInvoked()
-
-        job.cancel()
     }
 
     private class Arrangement(
@@ -76,20 +68,17 @@ class ACMECertificatesSyncWorkerTest {
     ) : E2EIRepositoryArrangement by E2EIRepositoryArrangementImpl(),
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
-        var syncInterval: Duration = 1.minutes
-
-        fun arrange(): Pair<Arrangement, ACMECertificatesSyncWorker> = run {
+        fun arrange(): Pair<Arrangement, ACMECertificatesSyncUseCase> = run {
             runBlocking { configure() }
-            this@Arrangement to ACMECertificatesSyncWorkerImpl(
+            this@Arrangement to ACMECertificatesSyncUseCaseImpl(
                 e2eiRepository = e2eiRepository,
-                syncInterval = syncInterval,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase,
                 kaliumLogger = kaliumLogger
             )
         }
     }
 
-    private companion object {
+    private companion object Companion {
         fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

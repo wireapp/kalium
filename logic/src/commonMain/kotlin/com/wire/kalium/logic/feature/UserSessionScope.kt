@@ -260,8 +260,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
-import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
-import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseImpl
@@ -1895,6 +1895,7 @@ class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase = syncFeatureConfigsUseCase,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
             mlsPublicKeysRepository = mlsPublicKeysRepository,
+            acmeCertificatesSyncUseCase = acmeCertificatesSyncUseCase,
             kaliumLogger = userScopedLogger,
         )
     }
@@ -1945,8 +1946,8 @@ class UserSessionScope internal constructor(
             userConfigRepository
         )
 
-    private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {
-        ACMECertificatesSyncWorkerImpl(
+    private val acmeCertificatesSyncUseCase: ACMECertificatesSyncUseCase by lazy {
+        ACMECertificatesSyncUseCaseImpl(
             e2eiRepository = e2eiRepository,
             kaliumLogger = userScopedLogger,
             isE2EIEnabledUseCase = isE2EIEnabled
@@ -2468,10 +2469,6 @@ class UserSessionScope internal constructor(
 
         launch {
             typingIndicatorSyncManager.execute()
-        }
-
-        launch {
-            acmeCertificatesSyncWorker.execute()
         }
 
         launch {

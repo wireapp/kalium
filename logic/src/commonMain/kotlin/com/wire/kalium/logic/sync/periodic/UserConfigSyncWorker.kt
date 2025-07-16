@@ -27,6 +27,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
@@ -69,6 +70,7 @@ internal class UserConfigSyncWorkerImpl(
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
+    private val acmeCertificatesSyncUseCase: ACMECertificatesSyncUseCase,
     kaliumLogger: KaliumLogger,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val timeout: Duration = TIMEOUT,
@@ -80,6 +82,7 @@ internal class UserConfigSyncWorkerImpl(
         { syncCertificateRevocationListUseCase().let { Unit.right() } },
         { mlsPublicKeysRepository.fetchKeys().map { Unit } },
         { proteusPreKeyRefiller.refillIfNeeded() },
+        { acmeCertificatesSyncUseCase().let { Unit.right() } },
     )
 
     override suspend fun doWork(): Result = withContext(dispatchers.io) {

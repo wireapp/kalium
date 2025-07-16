@@ -26,6 +26,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
@@ -139,6 +140,7 @@ class UserConfigSyncWorkerTest {
             syncCertificateRevocationListUseCase()
             proteusPreKeyRefiller.refillIfNeeded()
             mlsPublicKeysRepository.fetchKeys()
+            acmeCertificatesSyncUseCase()
         }.wasInvoked(exactly = times)
     }
 
@@ -148,6 +150,7 @@ class UserConfigSyncWorkerTest {
         val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
         val proteusPreKeyRefiller = mock(ProteusPreKeyRefiller::class)
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
+        val acmeCertificatesSyncUseCase = mock(ACMECertificatesSyncUseCase::class)
         val timeout = 10.seconds
 
         suspend fun arrange(): Pair<Arrangement, UserConfigSyncWorker> = run {
@@ -160,6 +163,7 @@ class UserConfigSyncWorkerTest {
                 syncFeatureConfigsUseCase = syncFeatureConfigsUseCase,
                 proteusPreKeyRefiller = proteusPreKeyRefiller,
                 mlsPublicKeysRepository = mlsPublicKeysRepository,
+                acmeCertificatesSyncUseCase = acmeCertificatesSyncUseCase,
                 kaliumLogger = kaliumLogger,
                 dispatchers = dispatchers,
                 timeout = timeout,
@@ -171,6 +175,7 @@ class UserConfigSyncWorkerTest {
             coEvery { syncFeatureConfigsUseCase() }.returns(actionResults.syncFeatureConfigsResult)
             coEvery { proteusPreKeyRefiller.refillIfNeeded() }.returns(actionResults.proteusPreKeyRefillResult)
             coEvery { mlsPublicKeysRepository.fetchKeys() }.returns(actionResults.mlsPublicKeysFetchResult)
+            coEvery { acmeCertificatesSyncUseCase() }.returns(Unit)
         }
     }
 
