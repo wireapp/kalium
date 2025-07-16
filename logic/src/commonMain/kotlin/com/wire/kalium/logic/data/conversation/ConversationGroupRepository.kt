@@ -178,15 +178,16 @@ internal class ConversationGroupRepositoryImpl(
         }.flatMap {
             when (protocol) {
                 is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
-                is Conversation.ProtocolInfo.MLSCapable -> transactionProvider.mlsTransaction { mlsContext ->
-                    mlsConversationRepository.establishMLSGroup(
-                        mlsContext = mlsContext,
-                        groupID = protocol.groupId,
-                        members = usersList + selfUserId,
-                        publicKeys = mlsPublicKeys,
-                        allowSkippingUsersWithoutKeyPackages = true,
-                    ).map { it.notAddedUsers }
-                }
+                is Conversation.ProtocolInfo.MLSCapable ->
+                    transactionProvider.mlsTransaction("handleGroupConversationCreated") { mlsContext ->
+                        mlsConversationRepository.establishMLSGroup(
+                            mlsContext = mlsContext,
+                            groupID = protocol.groupId,
+                            members = usersList + selfUserId,
+                            publicKeys = mlsPublicKeys,
+                            allowSkippingUsersWithoutKeyPackages = true,
+                        ).map { it.notAddedUsers }
+                    }
             }
         }.flatMap { protocolSpecificAdditionFailures ->
             newConversationMembersRepository.persistMembersAdditionToTheConversation(
@@ -261,7 +262,7 @@ internal class ConversationGroupRepositoryImpl(
                         tryAddMembersToCloudAndStorage(userIdList, conversationId, LastUsersAttempt.None)
                             .flatMap {
                                 // best effort approach for migrated conversations, no retries
-                                transactionProvider.mlsTransaction { mlsContext ->
+                                transactionProvider.mlsTransaction("addMembers") { mlsContext ->
                                     mlsConversationRepository.addMemberToMLSGroup(
                                         mlsContext = mlsContext,
                                         GroupID(protocol.groupId),
@@ -297,7 +298,7 @@ internal class ConversationGroupRepositoryImpl(
         remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
 
-        val addingMemberResult = transactionProvider.mlsTransaction { mlsContext ->
+        val addingMemberResult = transactionProvider.mlsTransaction("tryAddMembersToMLSGroup") { mlsContext ->
             mlsConversationRepository.addMemberToMLSGroup(
                 mlsContext = mlsContext,
                 GroupID(groupId),
@@ -517,7 +518,7 @@ internal class ConversationGroupRepositoryImpl(
                         deleteMemberFromCloudAndStorage(userId, conversationId)
 
                     is ConversationEntity.ProtocolInfo.MLSCapable ->
-                        transactionProvider.transaction { transactionContext ->
+                        transactionProvider.transaction("deleteMember") { transactionContext ->
                             deleteMemberFromMlsGroup(transactionContext, userId, conversationId, protocol)
                         }
                 }
@@ -546,7 +547,7 @@ internal class ConversationGroupRepositoryImpl(
                             Either.Right(Unit)
 
                         is ConversationEntity.ProtocolInfo.MLSCapable -> {
-                            transactionProvider.transaction { transactionContext ->
+                            transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
                                 joinExistingMLSConversation(transactionContext, conversationId).flatMap {
                                     transactionContext.wrapInMLSContext { mlsContext ->
                                         mlsConversationRepository.addMemberToMLSGroup(

@@ -62,7 +62,7 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
             { groups ->
                 val failedGroup: MutableList<GroupID> = mutableListOf()
                 // TODO: this should run in parallel
-                transactionProvider.mlsTransaction { mlsContext ->
+                transactionProvider.mlsTransaction("UpdateKeyingMaterials") { mlsContext ->
                     groups.map { group ->
                         mlsConversationRepository.updateKeyingMaterial(mlsContext, group)
                             .onFailure {

@@ -54,7 +54,7 @@ class SyncCertificateRevocationListUseCase internal constructor(
                 logger.i("Checking certificate revocation list (CRL)..")
                 certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
                     if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
-                        transactionProvider.mlsTransaction { mlsContext ->
+                        transactionProvider.mlsTransaction("SyncCertificateRevocationList") { mlsContext ->
                             revocationListChecker.check(mlsContext, crl.url).map { newExpirationTime ->
                                 newExpirationTime?.let {
                                     certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)

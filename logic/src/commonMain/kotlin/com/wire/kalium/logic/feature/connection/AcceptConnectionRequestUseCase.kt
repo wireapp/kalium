@@ -56,7 +56,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
 ) : AcceptConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
-        return transactionProvider.transaction { transactionContext ->
+        return transactionProvider.transaction("AcceptConnection") { transactionContext ->
             connectionRepository.updateConnectionStatus(transactionContext, userId, ConnectionState.ACCEPTED)
                 .flatMap { connection ->
                     fetchConversation(transactionContext, connection.qualifiedConversationId)

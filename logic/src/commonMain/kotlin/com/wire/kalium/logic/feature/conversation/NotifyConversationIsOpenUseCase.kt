@@ -84,7 +84,7 @@ internal class NotifyConversationIsOpenUseCaseImpl(
             kaliumLogger.v(
                 "$TAG: Reevaluating protocol for 1:1 conversation with ID: ${conversationId.toLogString()}"
             )
-            transactionProvider.transaction { transactionContext ->
+            transactionProvider.transaction("NotifyConversationIsOpen") { transactionContext ->
                 oneOnOneResolver.resolveOneOnOneConversationWithUser(
                     user = conversation.otherUser,
                     invalidateCurrentKnownProtocols = true,

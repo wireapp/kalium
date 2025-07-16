@@ -46,7 +46,7 @@ internal class BlockUserUseCaseImpl(
 
     override suspend fun invoke(userId: UserId): BlockUserResult {
         return transactionProvider
-            .transaction { transactionContext ->
+            .transaction("BlockUser") { transactionContext ->
                 connectionRepository.updateConnectionStatus(
                     transactionContext,
                     userId,

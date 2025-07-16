@@ -103,7 +103,6 @@ class CryptoTransactionProviderImpl(
     ): Either<CoreFailure, R> {
         val proteusClient = proteusClientProvider.getOrError()
         val mlsClient = mlsClientProvider.getMLSClient()
-        // TODO KBX add mls support on next PR
         return proteusClient
             .flatMap { proteus ->
                 return proteus.transaction("proteus${name?.let { "_$it" } ?: ""}") { proteusCtx ->
