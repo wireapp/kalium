@@ -55,17 +55,19 @@ class WrapperWorker(
         is KaliumResult.Success -> AndroidResult.success()
     }
 
+    // TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notification = Notification.Builder(applicationContext, createNotificationChannel().id)
-            .setContentTitle(applicationContext.getString(foregroundNotificationDetailsProvider.getTitleResId()))
             .setSmallIcon(foregroundNotificationDetailsProvider.getSmallIconResId())
             .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 
     private fun createNotificationChannel(): NotificationChannel {
-        val name = applicationContext.getString(foregroundNotificationDetailsProvider.getChannelNameResId())
-        val descriptionText = applicationContext.getString(foregroundNotificationDetailsProvider.getChannelDescriptionResId())
+        // TODO(ui-polishing): Internationalis(z)ation. Should come as a
+        //                    side-effect of enabling customization of notifications by consumer apps
+        val name = "Wire Sync"
+        val descriptionText = "Updating conversations and contact information"
         val importance = NotificationManager.IMPORTANCE_NONE
         val channel = NotificationChannel(CHANNEL_ID, name, importance)
         channel.description = descriptionText
@@ -75,6 +77,7 @@ class WrapperWorker(
     }
 
     private companion object {
+        const val NOTIFICATION_TITLE = "Wire is updating"
         const val NOTIFICATION_ID = -778899
         const val CHANNEL_ID = "kaliumWorker"
     }
