@@ -30,6 +30,7 @@ import androidx.work.WorkManager
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
@@ -40,8 +41,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import java.util.concurrent.TimeUnit
-
-private val workerClass = WrapperWorker::class.java
+import kotlin.reflect.KClass
 
 internal actual class GlobalWorkSchedulerImpl(
     private val appContext: Context,
@@ -49,37 +49,10 @@ internal actual class GlobalWorkSchedulerImpl(
 ) : GlobalWorkScheduler {
 
     override fun schedulePeriodicApiVersionUpdate() {
-        val inputData = WrapperWorkerFactory.workData(UpdateApiVersionsWorker::class)
-
-        val connectedConstraint = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val scheduledHourOfDayToExecute = TIME_OF_EXECUTION // schedule at 4AM
-        val repeatIntervalInHours = REPEAT_INTERVAL // execute every 24 hours
-        val localTimeZone = TimeZone.currentSystemDefault()
-        val timeNow: Instant = DateTimeUtil.currentInstant() // current time
-        val timeScheduledToExecute = timeNow.toLocalDateTime(localTimeZone) // time at which the today's execution should take place
-            .let { localDateTimeNow ->
-                LocalDateTime(
-                    localDateTimeNow.year, localDateTimeNow.monthNumber, localDateTimeNow.dayOfMonth,
-                    scheduledHourOfDayToExecute, 0, 0, 0
-                ).toInstant(localTimeZone)
-            }
-        val initialDelayMillis = // delay calculated as a difference between now and next scheduled execution
-            if (timeScheduledToExecute > timeNow) (timeScheduledToExecute - timeNow).inWholeMilliseconds
-            else (timeScheduledToExecute.plus(1, DateTimeUnit.DAY, localTimeZone) - timeNow).inWholeMilliseconds
-
-        val requestPeriodicWork = PeriodicWorkRequest.Builder(workerClass, repeatIntervalInHours.toLong(), TimeUnit.HOURS)
-            .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
-            .setConstraints(connectedConstraint)
-            .setInputData(inputData)
-            .build()
-
         WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
             "${UpdateApiVersionsWorker.name}-periodic",
             ExistingPeriodicWorkPolicy.KEEP,
-            requestPeriodicWork
+            buildConnectedPeriodicWorkRequest(UpdateApiVersionsWorker::class)
         )
     }
 
@@ -90,11 +63,6 @@ internal actual class GlobalWorkSchedulerImpl(
             }
         }
     }
-
-    private companion object {
-        const val TIME_OF_EXECUTION = 4
-        const val REPEAT_INTERVAL: Long = 24
-    }
 }
 
 internal actual class UserSessionWorkSchedulerImpl(
@@ -103,30 +71,65 @@ internal actual class UserSessionWorkSchedulerImpl(
 ) : UserSessionWorkScheduler {
 
     actual override fun scheduleSendingOfPendingMessages() {
-        val inputData = WrapperWorkerFactory.workData(PendingMessagesSenderWorker::class, userId)
-
-        val connectedConstraint = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val request = OneTimeWorkRequest.Builder(workerClass)
-            .setConstraints(connectedConstraint)
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .setInputData(inputData)
-            .build()
-
         WorkManager.getInstance(appContext).enqueueUniqueWork(
-            WORK_NAME_PREFIX_PER_USER + userId.value,
+            PendingMessagesSenderWorker.NAME_PREFIX + userId.value,
             ExistingWorkPolicy.APPEND,
-            request
+            buildConnectedOneTimeWorkRequest(PendingMessagesSenderWorker::class, userId)
         )
     }
 
     actual override fun cancelScheduledSendingOfPendingMessages() {
-        WorkManager.getInstance(appContext).cancelUniqueWork(WORK_NAME_PREFIX_PER_USER + userId.value)
+        WorkManager.getInstance(appContext).cancelUniqueWork(PendingMessagesSenderWorker.NAME_PREFIX + userId.value)
+    }
+
+    actual override fun schedulePeriodicUserConfigSync() {
+        WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
+            UserConfigSyncWorker.NAME + userId.value + "-periodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            buildConnectedPeriodicWorkRequest(UserConfigSyncWorker::class, userId)
+        )
     }
 
     private companion object {
-        const val WORK_NAME_PREFIX_PER_USER = "scheduled-message-"
     }
 }
+
+private fun buildConnectedPeriodicWorkRequest(worker: KClass<out DefaultWorker>, userId: UserId? = null): PeriodicWorkRequest {
+    val inputData = WrapperWorkerFactory.workData(worker, userId)
+    val connectedConstraint = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+    val localTimeZone = TimeZone.currentSystemDefault()
+    val timeNow: Instant = DateTimeUtil.currentInstant() // current time
+    val timeScheduledToExecute = timeNow.toLocalDateTime(localTimeZone) // time at which the today's execution should take place
+        .let { localDateTimeNow ->
+            LocalDateTime(
+                localDateTimeNow.year, localDateTimeNow.monthNumber, localDateTimeNow.dayOfMonth,
+                TIME_OF_EXECUTION, 0, 0, 0
+            ).toInstant(localTimeZone)
+        }
+    val initialDelayMillis = // delay calculated as a difference between now and next scheduled execution
+        if (timeScheduledToExecute > timeNow) (timeScheduledToExecute - timeNow).inWholeMilliseconds
+        else (timeScheduledToExecute.plus(1, DateTimeUnit.DAY, localTimeZone) - timeNow).inWholeMilliseconds
+    return PeriodicWorkRequest.Builder(workerClass, REPEAT_INTERVAL, TimeUnit.HOURS)
+        .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
+        .setConstraints(connectedConstraint)
+        .setInputData(inputData)
+        .build()
+}
+
+private fun buildConnectedOneTimeWorkRequest(worker: KClass<out DefaultWorker>, userId: UserId? = null): OneTimeWorkRequest {
+    val inputData = WrapperWorkerFactory.workData(worker, userId)
+    val connectedConstraint = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+    return OneTimeWorkRequest.Builder(workerClass)
+        .setConstraints(connectedConstraint)
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .setInputData(inputData)
+        .build()
+}
+
+private const val TIME_OF_EXECUTION = 4  // schedule at 4AM
+private const val REPEAT_INTERVAL: Long = 24 // execute every 24 hours
+private val workerClass = WrapperWorker::class.java

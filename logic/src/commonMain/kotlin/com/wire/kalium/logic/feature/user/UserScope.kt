@@ -54,6 +54,7 @@ import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
+import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
@@ -66,11 +67,8 @@ import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
-import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
-import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorker
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCase
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
@@ -125,7 +123,6 @@ class UserScope internal constructor(
     private val userScopedLogger: KaliumLogger,
     private val teamUrlUseCase: GetTeamUrlUseCase,
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
-    val mlsPublicKeysSyncWorker: MLSPublicKeysSyncWorker,
     private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -234,20 +231,13 @@ class UserScope internal constructor(
 
     val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase
         get() =
-            SyncCertificateRevocationListUseCase(
+            SyncCertificateRevocationListUseCaseImpl(
                 certificateRevocationListRepository = certificateRevocationListRepository,
                 incrementalSyncRepository = incrementalSyncRepository,
                 revocationListChecker = checkRevocationList,
                 kaliumLogger = userScopedLogger,
             )
 
-    val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
-        FeatureFlagSyncWorkerImpl(
-            incrementalSyncRepository = incrementalSyncRepository,
-            syncFeatureConfigs = syncFeatureConfigs,
-            kaliumLogger = userScopedLogger,
-        )
-    }
     val isPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase by lazy {
         CanMigrateFromPersonalToTeamUseCaseImpl(
             sessionManager = sessionManager,

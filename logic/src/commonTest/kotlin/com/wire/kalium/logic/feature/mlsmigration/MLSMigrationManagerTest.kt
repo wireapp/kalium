@@ -171,7 +171,7 @@ class MLSMigrationManagerTest {
             }.returns(result)
         }
 
-        fun arrange(coroutineScope: CoroutineScope) = this to MLSMigrationManager(
+        fun arrange(coroutineScope: CoroutineScope) = this to MLSMigrationManagerImpl(
             kaliumConfigs,
             isMLSEnabledUseCase,
             syncStateObserver,

@@ -227,6 +227,7 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseIm
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
@@ -251,6 +252,7 @@ import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
@@ -305,17 +307,14 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
-import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorker
-import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefillerImpl
-import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
-import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
@@ -392,6 +391,7 @@ import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
+import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -409,6 +409,8 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
 import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorkerImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -1351,7 +1353,7 @@ class UserSessionScope internal constructor(
     )
 
     val keyingMaterialsManager: KeyingMaterialsManager
-        get() = KeyingMaterialsManager(
+        get() = KeyingMaterialsManagerImpl(
             featureSupport,
             syncStateObserver,
             lazy { clientRepository },
@@ -1361,7 +1363,7 @@ class UserSessionScope internal constructor(
         )
 
     val mlsClientManager: MLSClientManager
-        get() = MLSClientManager(
+        get() = MLSClientManagerImpl(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
             syncStateObserver,
@@ -1385,7 +1387,7 @@ class UserSessionScope internal constructor(
         )
 
     val mlsMigrationManager: MLSMigrationManager
-        get() = MLSMigrationManager(
+        get() = MLSMigrationManagerImpl(
             kaliumConfigs,
             isMLSEnabled,
             syncStateObserver,
@@ -1886,20 +1888,22 @@ class UserSessionScope internal constructor(
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
         get() = ProteusPreKeyRefillerImpl(preKeyRepository)
 
-    private val proteusSyncWorker: ProteusSyncWorker by lazy {
-        ProteusSyncWorkerImpl(
+    internal val userConfigSyncWorker: UserConfigSyncWorker by lazy {
+        UserConfigSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
+            syncCertificateRevocationListUseCase = users.syncCertificateRevocationListUseCase,
+            syncFeatureConfigsUseCase = syncFeatureConfigsUseCase,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
-            preKeyRepository = preKeyRepository,
+            mlsPublicKeysRepository = mlsPublicKeysRepository,
             kaliumLogger = userScopedLogger,
         )
     }
 
-    val mlsPublicKeysSyncWorker: MLSPublicKeysSyncWorker by lazy {
-        MLSPublicKeysSyncWorkerImpl(
-            incrementalSyncRepository = incrementalSyncRepository,
-            mlsPublicKeysRepository = mlsPublicKeysRepository,
-            kaliumLogger = userScopedLogger,
+    internal val pendingMessagesSenderWorker: PendingMessagesSenderWorker by lazy {
+        PendingMessagesSenderWorker(
+            messageRepository = messageRepository,
+            messageSender = messages.messageSender,
+            userId = userId,
         )
     }
 
@@ -2132,7 +2136,6 @@ class UserSessionScope internal constructor(
             userScopedLogger,
             getTeamUrlUseCase,
             isMLSEnabled,
-            mlsPublicKeysSyncWorker,
             this,
         )
     }
@@ -2460,11 +2463,7 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            proteusSyncWorker.execute()
-        }
-
-        launch {
-            mlsPublicKeysSyncWorker.schedule()
+            userSessionWorkScheduler.schedulePeriodicUserConfigSync()
         }
 
         launch {

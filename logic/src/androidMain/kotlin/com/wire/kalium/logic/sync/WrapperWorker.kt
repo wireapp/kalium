@@ -22,21 +22,20 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ForegroundInfo
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistResult
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 import androidx.work.ListenableWorker.Result as AndroidResult
@@ -56,25 +55,17 @@ class WrapperWorker(
         is KaliumResult.Success -> AndroidResult.success()
     }
 
-    // TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
     override suspend fun getForegroundInfo(): ForegroundInfo {
-        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(applicationContext, createNotificationChannel().id)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(applicationContext)
-        }.setContentTitle(NOTIFICATION_TITLE)
+        val notification = Notification.Builder(applicationContext, createNotificationChannel().id)
+            .setContentTitle(applicationContext.getString(foregroundNotificationDetailsProvider.getTitleResId()))
             .setSmallIcon(foregroundNotificationDetailsProvider.getSmallIconResId())
             .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(): NotificationChannel {
-        // TODO(ui-polishing): Internationalis(z)ation. Should come as a
-        //                    side-effect of enabling customization of notifications by consumer apps
-        val name = "Wire Sync"
-        val descriptionText = "Updating conversations and contact information"
+        val name = applicationContext.getString(foregroundNotificationDetailsProvider.getChannelNameResId())
+        val descriptionText = applicationContext.getString(foregroundNotificationDetailsProvider.getChannelDescriptionResId())
         val importance = NotificationManager.IMPORTANCE_NONE
         val channel = NotificationChannel(CHANNEL_ID, name, importance)
         channel.description = descriptionText
@@ -84,7 +75,6 @@ class WrapperWorker(
     }
 
     private companion object {
-        const val NOTIFICATION_TITLE = "Wire is updating"
         const val NOTIFICATION_ID = -778899
         const val CHANNEL_ID = "kaliumWorker"
     }
@@ -110,58 +100,30 @@ class WrapperWorkerFactory(
 
         kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
         return when (innerWorkerClassName) {
-            PendingMessagesSenderWorker::class.java.canonicalName -> {
-                require(userId != null) { "No user id specified" }
-                createPendingMessageSenderWorker(workerParameters, userId, appContext)
-            }
+            PendingMessagesSenderWorker::class.java.canonicalName -> withSessionScope(userId) { it.pendingMessagesSenderWorker }
 
-            UpdateApiVersionsWorker::class.java.canonicalName -> {
-                createApiVersionCheckWorker(workerParameters, appContext)
-            }
+            UserConfigSyncWorker::class.java.canonicalName -> withSessionScope(userId) { it.userConfigSyncWorker }
+
+            UpdateApiVersionsWorker::class.java.canonicalName -> coreLogic.getGlobalScope().updateApiVersionsWorker
 
             else -> {
                 kaliumLogger.d("No specialized constructor found for class $innerWorkerClassName. Default constructor will be used")
-                createDefaultWorker(innerWorkerClassName, appContext, workerParameters)
+                Class.forName(innerWorkerClassName).getDeclaredConstructor().newInstance() as DefaultWorker
             }
+        }?.let { worker ->
+            WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
         }
     }
 
-    private fun createApiVersionCheckWorker(workerParameters: WorkerParameters, appContext: Context): WrapperWorker {
-        val worker = coreLogic.globalScope {
-            UpdateApiVersionsWorker(updateApiVersions)
-        }
-        return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
-    }
-
-    private fun createPendingMessageSenderWorker(
-        workerParameters: WorkerParameters,
-        userId: UserId,
-        appContext: Context
-    ): WrapperWorker? {
-        val doesValidSessionExist = runBlocking {
+    private fun withSessionScope(userId: UserId?, action: (UserSessionScope) -> DefaultWorker): DefaultWorker? {
+        require(userId != null) { "No user id specified" }
+        return runBlocking {
             coreLogic.globalScope {
                 doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }
             }
+        }.let { doesValidSessionExist ->
+            if (doesValidSessionExist) action(coreLogic.getSessionScope(userId)) else null
         }
-        return if (doesValidSessionExist) {
-            val userScope = coreLogic.getSessionScope(userId)
-            val worker = PendingMessagesSenderWorker(
-                userScope.messages.messageRepository,
-                userScope.messages.messageSender,
-                userId
-            )
-            WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
-        } else null
-    }
-
-    private fun createDefaultWorker(
-        innerWorkerClassName: String,
-        appContext: Context,
-        workerParameters: WorkerParameters
-    ): WrapperWorker {
-        val constructor = Class.forName(innerWorkerClassName).getDeclaredConstructor()
-        val innerWorker = constructor.newInstance()
-        return WrapperWorker(innerWorker as DefaultWorker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
     internal companion object {

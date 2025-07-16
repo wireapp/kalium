@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.any
@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class CertificateRevocationListCheckWorkerTest {
+class SyncCertificateRevocationListUseCaseTest {
 
     @Test
     fun givenExpiredCRL_whenTimeElapses_thenCheckRevocationList() = runTest {
@@ -69,7 +69,7 @@ class CertificateRevocationListCheckWorkerTest {
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
         val checkRevocationList = mock(RevocationListChecker::class)
 
-        fun arrange() = this to SyncCertificateRevocationListUseCase(
+        fun arrange() = this to SyncCertificateRevocationListUseCaseImpl(
             certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
         )
 

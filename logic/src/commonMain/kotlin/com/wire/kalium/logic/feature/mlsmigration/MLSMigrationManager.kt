@@ -18,6 +18,12 @@
 package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -25,13 +31,8 @@ import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncStateObserver
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -39,9 +40,13 @@ import kotlinx.datetime.Clock
 /**
  * Orchestrates the migration from proteus to MLS.
  */
+@Mockable
+interface MLSMigrationManager {
+    suspend operator fun invoke()
+}
 
 @Suppress("LongParameterList")
-class MLSMigrationManager internal constructor(
+class MLSMigrationManagerImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
     private val syncStateObserver: SyncStateObserver,
@@ -49,13 +54,13 @@ class MLSMigrationManager internal constructor(
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     private val mlsMigrationWorker: Lazy<MLSMigrationWorker>,
     private val userCoroutineScope: CoroutineScope,
-) {
+) : MLSMigrationManager {
     /**
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
 
-    suspend operator fun invoke() {
+    override suspend operator fun invoke() {
         syncStateObserver.waitUntilLiveOrFailure()
             .onSuccess {
                 if (
