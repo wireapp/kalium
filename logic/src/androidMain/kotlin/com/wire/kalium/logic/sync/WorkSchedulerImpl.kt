@@ -89,9 +89,6 @@ internal actual class UserSessionWorkSchedulerImpl(
             buildConnectedPeriodicWorkRequest(UserConfigSyncWorker::class, userId)
         )
     }
-
-    private companion object {
-    }
 }
 
 private fun buildConnectedPeriodicWorkRequest(worker: KClass<out DefaultWorker>, userId: UserId? = null): PeriodicWorkRequest {
