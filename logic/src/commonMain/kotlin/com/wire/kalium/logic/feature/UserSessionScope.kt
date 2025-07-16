@@ -2463,10 +2463,6 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            userSessionWorkScheduler.schedulePeriodicUserConfigSync()
-        }
-
-        launch {
             observeE2EIConversationsVerificationStatuses.invoke()
         }
 
@@ -2499,6 +2495,8 @@ class UserSessionScope internal constructor(
         launch {
             localEventManager.startProcessing()
         }
+
+        userSessionWorkScheduler.schedulePeriodicUserConfigSync()
     }
 }
 

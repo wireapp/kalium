@@ -37,7 +37,6 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
-import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -67,6 +66,7 @@ abstract class CoreLogicCommon internal constructor(
             userSessionScopeProvider,
             authenticationScopeProvider,
             logoutCallbackManager,
+            globalWorkScheduler,
         )
     }
     fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
@@ -106,8 +106,6 @@ abstract class CoreLogicCommon internal constructor(
     protected abstract val globalCallManager: GlobalCallManager
 
     protected abstract val globalWorkScheduler: GlobalWorkScheduler
-
-    val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
 
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
