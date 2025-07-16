@@ -21,14 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -37,6 +29,15 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -51,8 +52,16 @@ import kotlin.time.Duration
 
 @Mockable
 interface OneOnOneResolver {
-    suspend fun resolveAllOneOnOneConversations(synchronizeUsers: Boolean = false): Either<CoreFailure, Unit>
-    suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration = Duration.ZERO): Job
+    suspend fun resolveAllOneOnOneConversations(
+        transactionContext: CryptoTransactionContext,
+        synchronizeUsers: Boolean = false
+    ): Either<CoreFailure, Unit>
+
+    suspend fun scheduleResolveOneOnOneConversationWithUserId(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        delay: Duration = Duration.ZERO
+    ): Job
 
     /**
      * Resolves a one-on-one conversation with a user based on their userId.
@@ -63,6 +72,7 @@ interface OneOnOneResolver {
      * @return Either a [CoreFailure] if there is an error or a [ConversationId] if the resolution is successful.
      */
     suspend fun resolveOneOnOneConversationWithUserId(
+        transactionContext: CryptoTransactionContext,
         userId: UserId,
         invalidateCurrentKnownProtocols: Boolean,
     ): Either<CoreFailure, ConversationId>
@@ -76,6 +86,7 @@ interface OneOnOneResolver {
      * @return Either a [CoreFailure] if there is an error or a [ConversationId] if the resolution is successful.
      */
     suspend fun resolveOneOnOneConversationWithUser(
+        transactionContext: CryptoTransactionContext,
         user: OtherUser,
         invalidateCurrentKnownProtocols: Boolean,
     ): Either<CoreFailure, ConversationId>
@@ -95,12 +106,16 @@ internal class OneOnOneResolverImpl(
     // TODO: inherit the scope of UserSessionScope so it's cancelled if user logs out, etc.
     private val resolveActiveOneOnOneScope = CoroutineScope(dispatcher)
 
-    override suspend fun resolveAllOneOnOneConversations(synchronizeUsers: Boolean): Either<CoreFailure, Unit> =
+    override suspend fun resolveAllOneOnOneConversations(
+        transactionContext: CryptoTransactionContext,
+        synchronizeUsers: Boolean
+    ): Either<CoreFailure, Unit> =
         fetchAllOtherUsersIfNeeded(synchronizeUsers).flatMap {
             val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
             kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
             usersWithOneOnOne.foldToEitherWhileRight(Unit) { item, _ ->
                 resolveOneOnOneConversationWithUser(
+                    transactionContext = transactionContext,
                     user = item,
                     // Either it fetched all users on the previous step, or it's not needed
                     invalidateCurrentKnownProtocols = false
@@ -115,8 +130,7 @@ internal class OneOnOneResolverImpl(
         is NetworkFailure.ServerMiscommunication,
         is NetworkFailure.FederatedBackendFailure,
         is CoreFailure.NoCommonProtocolFound,
-        is MLSFailure.MessageRejected
-        -> {
+        is MLSFailure.MessageRejected -> {
             kaliumLogger.e("Resolving one-on-one failed $it, skipping")
             Either.Right(Unit)
         }
@@ -133,26 +147,33 @@ internal class OneOnOneResolverImpl(
         Either.Right(Unit)
     }
 
-    override suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration) =
+    override suspend fun scheduleResolveOneOnOneConversationWithUserId(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        delay: Duration
+    ) =
         resolveActiveOneOnOneScope.launch {
             kaliumLogger.d("Schedule resolving active one-on-one")
             incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
             delay(delay)
             resolveOneOnOneConversationWithUserId(
+                transactionContext = transactionContext,
                 userId = userId,
                 invalidateCurrentKnownProtocols = true
             )
         }
 
     override suspend fun resolveOneOnOneConversationWithUserId(
+        transactionContext: CryptoTransactionContext,
         userId: UserId,
         invalidateCurrentKnownProtocols: Boolean
     ): Either<CoreFailure, ConversationId> =
         userRepository.getKnownUser(userId).firstOrNull()?.let {
-            resolveOneOnOneConversationWithUser(it, invalidateCurrentKnownProtocols)
+            resolveOneOnOneConversationWithUser(transactionContext, it, invalidateCurrentKnownProtocols)
         } ?: Either.Left(StorageFailure.DataNotFound)
 
     override suspend fun resolveOneOnOneConversationWithUser(
+        transactionContext: CryptoTransactionContext,
         user: OtherUser,
         invalidateCurrentKnownProtocols: Boolean,
     ): Either<CoreFailure, ConversationId> {
@@ -170,7 +191,7 @@ internal class OneOnOneResolverImpl(
         }, { supportedProtocol ->
             when (supportedProtocol) {
                 SupportedProtocol.PROTEUS -> oneOnOneMigrator.migrateToProteus(user)
-                SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(user)
+                SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(transactionContext, user)
             }
         })
     }

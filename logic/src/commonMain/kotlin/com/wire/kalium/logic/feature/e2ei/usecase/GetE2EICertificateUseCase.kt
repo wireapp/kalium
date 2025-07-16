@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import io.mockative.Mockable
 
 /**
@@ -37,10 +38,15 @@ interface GetMLSClientIdentityUseCase {
 }
 
 class GetMLSClientIdentityUseCaseImpl internal constructor(
-    private val mlsConversationRepository: MLSConversationRepository
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : GetMLSClientIdentityUseCase {
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity> =
-        mlsConversationRepository.getClientIdentity(clientId).flatMap {
+        transactionProvider
+            .mlsTransaction("GetMLSClientIdentity") { mlsContext ->
+                mlsConversationRepository.getClientIdentity(mlsContext, clientId)
+            }
+            .flatMap {
                 it?.let {
                     MLSClientIdentity.fromWireIdentity(it).right()
                 } ?: StorageFailure.DataNotFound.left()

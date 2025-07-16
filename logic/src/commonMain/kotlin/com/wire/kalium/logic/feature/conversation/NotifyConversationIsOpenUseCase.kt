@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.filterIsInstance
@@ -47,11 +48,13 @@ interface NotifyConversationIsOpenUseCase {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 
+@Suppress("LongParameterList")
 internal class NotifyConversationIsOpenUseCaseImpl(
     private val oneOnOneResolver: OneOnOneResolver,
     private val conversationRepository: ConversationRepository,
     private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
     private val slowSyncRepository: SlowSyncRepository,
+    private val transactionProvider: CryptoTransactionProvider,
     private val kaliumLogger: KaliumLogger,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : NotifyConversationIsOpenUseCase {
@@ -81,10 +84,13 @@ internal class NotifyConversationIsOpenUseCaseImpl(
             kaliumLogger.v(
                 "$TAG: Reevaluating protocol for 1:1 conversation with ID: ${conversationId.toLogString()}"
             )
-            oneOnOneResolver.resolveOneOnOneConversationWithUser(
-                user = conversation.otherUser,
-                invalidateCurrentKnownProtocols = true
-            )
+            transactionProvider.transaction { transactionContext ->
+                oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                    user = conversation.otherUser,
+                    invalidateCurrentKnownProtocols = true,
+                    transactionContext = transactionContext
+                )
+            }
         }
 
         ephemeralCleanupJob.join()

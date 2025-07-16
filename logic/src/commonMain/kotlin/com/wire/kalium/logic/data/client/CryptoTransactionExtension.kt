@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,26 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.feature.connection
+package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import io.mockative.Mockable
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 
-@Mockable
-internal interface SyncConnectionsUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, Unit>
-}
-
-internal class SyncConnectionsUseCaseImpl(
-    private val connectionRepository: ConnectionRepository,
-    private val transactionProvider: CryptoTransactionProvider
-) : SyncConnectionsUseCase {
-
-    override suspend fun invoke(): Either<CoreFailure, Unit> {
-        return transactionProvider.transaction("SyncConnections") { connectionRepository.fetchSelfUserConnections(it) }
-    }
+suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
+    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
+): Either<CoreFailure, T> {
+    return mls?.let {
+        block(it)
+    } ?: Either.Left(MLSFailure.Disabled)
 }

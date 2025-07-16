@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * Use Case that allows the current self user to unblock another previously blocked user
@@ -39,17 +40,19 @@ fun interface UnblockUserUseCase {
 }
 
 internal class UnblockUserUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : UnblockUserUseCase {
 
-    override suspend fun invoke(userId: UserId): UnblockUserResult =
-        connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
-            .fold({
-                kaliumLogger.e("An error occurred when unblocking a user $userId")
-                UnblockUserResult.Failure(it)
-            }, {
-                UnblockUserResult.Success
-            })
+    override suspend fun invoke(userId: UserId): UnblockUserResult = transactionProvider.transaction("UnblockUser") { transactionContext ->
+        connectionRepository.updateConnectionStatus(transactionContext, userId, ConnectionState.ACCEPTED)
+    }
+        .fold({
+            kaliumLogger.e("An error occurred when unblocking a user $userId")
+            UnblockUserResult.Failure(it)
+        }, {
+            UnblockUserResult.Success
+        })
 }
 
 sealed class UnblockUserResult {

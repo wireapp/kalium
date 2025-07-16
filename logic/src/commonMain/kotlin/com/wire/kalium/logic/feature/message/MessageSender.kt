@@ -55,8 +55,8 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -127,6 +127,7 @@ interface MessageSender {
      *
      */
     suspend fun broadcastMessage(
+        transactionContext: CryptoTransactionContext,
         message: BroadcastMessage,
         target: BroadcastMessageTarget
     ): Either<CoreFailure, Unit>
@@ -217,11 +218,12 @@ internal class MessageSenderImpl internal constructor(
             }
 
     override suspend fun broadcastMessage(
+        transactionContext: CryptoTransactionContext,
         message: BroadcastMessage,
         target: BroadcastMessageTarget
     ): Either<CoreFailure, Unit> =
         withContext(scope.coroutineContext) {
-            transactionProvider.proteusTransaction("broadcastMessage") {
+            transactionProvider.transaction("broadcastMessage") {
                 attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
             }
         }
@@ -241,7 +243,7 @@ internal class MessageSenderImpl internal constructor(
 
                     is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {
                         // TODO(messaging): make this thread safe (per user)
-                        attemptToSendWithProteus(transactionContext.proteus, message, messageTarget, remainingAttempts = 1)
+                        attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts = 1)
                     }
                 }
             }
@@ -254,7 +256,7 @@ internal class MessageSenderImpl internal constructor(
     }
 
     private suspend fun attemptToSendWithProteus(
-        proteusContext: ProteusCoreCryptoContext,
+        transactionContext: CryptoTransactionContext,
         message: Message.Sendable,
         messageTarget: MessageTarget,
         remainingAttempts: Int
@@ -269,12 +271,12 @@ internal class MessageSenderImpl internal constructor(
         return target
             .flatMap { recipients ->
                 sessionEstablisher
-                    .prepareRecipientsForNewOutgoingMessage(proteusContext, recipients)
+                    .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
                     .flatMap { handleUsersWithNoClientsToDeliver(conversationId, message.id, it) }
                     .map { recipients to it }
             }.flatMap { (recipients, usersWithoutSessions) ->
                 messageEnvelopeCreator
-                    .createOutgoingEnvelope(proteusContext, recipients, message)
+                    .createOutgoingEnvelope(transactionContext.proteus, recipients, message)
                     .flatMap { envelope: MessageEnvelope ->
                         val updatedMessageTarget = when (messageTarget) {
                             is MessageTarget.Client,
@@ -283,7 +285,7 @@ internal class MessageSenderImpl internal constructor(
                             is MessageTarget.Conversation ->
                                 MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
                         }
-                        trySendingProteusEnvelope(proteusContext, envelope, message, updatedMessageTarget, remainingAttempts)
+                        trySendingProteusEnvelope(transactionContext, envelope, message, updatedMessageTarget, remainingAttempts)
                     }
             }
     }
@@ -300,7 +302,7 @@ internal class MessageSenderImpl internal constructor(
     }
 
     private suspend fun attemptToBroadcastWithProteus(
-        proteusContext: ProteusCoreCryptoContext,
+        transactionContext: CryptoTransactionContext,
         message: BroadcastMessage,
         target: BroadcastMessageTarget,
         remainingAttempts: Int,
@@ -315,13 +317,13 @@ internal class MessageSenderImpl internal constructor(
             )
 
             sessionEstablisher
-                .prepareRecipientsForNewOutgoingMessage(proteusContext, recipients)
+                .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
                 .flatMap { _ ->
                     messageEnvelopeCreator
-                        .createOutgoingBroadcastEnvelope(proteusContext, recipients, message)
+                        .createOutgoingBroadcastEnvelope(transactionContext.proteus, recipients, message)
                         .flatMap { envelope ->
                             tryBroadcastProteusEnvelope(
-                                proteusContext,
+                                transactionContext,
                                 envelope,
                                 message,
                                 option,
@@ -343,8 +345,12 @@ internal class MessageSenderImpl internal constructor(
         protocolInfo: Conversation.ProtocolInfo.MLS,
         message: Message.Sendable
     ): Either<CoreFailure, Instant> {
-        return mlsConversationRepository.commitPendingProposals(protocolInfo.groupId).flatMap {
-            mlsMessageCreator.createOutgoingMLSMessage(protocolInfo.groupId, message).flatMap { mlsMessage ->
+        return transactionContext
+            .wrapInMLSContext { mlsContext ->
+                mlsConversationRepository.commitPendingProposals(mlsContext, protocolInfo.groupId)
+                    .flatMap { mlsMessageCreator.createOutgoingMLSMessage(mlsContext, protocolInfo.groupId, message) }
+            }
+            .flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(mlsMessage).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         if ((it.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
@@ -358,7 +364,7 @@ internal class MessageSenderImpl internal constructor(
                                     "errorInfo" to "$it"
                                 )
                             )
-                            return staleEpochVerifier.verifyEpoch(message.conversationId)
+                            return staleEpochVerifier.verifyEpoch(transactionContext, message.conversationId)
                                 .flatMap {
                                     syncManager.waitUntilLiveOrFailure().flatMap {
                                         attemptToSend(transactionContext, message)
@@ -373,28 +379,28 @@ internal class MessageSenderImpl internal constructor(
                     }
                 })
             }
-        }.onFailure {
-            logger.logStructuredJson(
-                level = KaliumLogLevel.ERROR,
-                leadingMessage = "Message Send Failure",
-                jsonStringKeyValues = mapOf(
-                    "message" to message.toLogString(),
-                    "protocolInfo" to protocolInfo.toLogMap(),
-                    "protocol" to CreateConversationParam.Protocol.MLS.name,
-                    "errorInfo" to "$it"
+            .onFailure {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "Message Send Failure",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocolInfo" to protocolInfo.toLogMap(),
+                        "protocol" to CreateConversationParam.Protocol.MLS.name,
+                        "errorInfo" to "$it"
+                    )
                 )
-            )
-        }.onSuccess {
-            logger.logStructuredJson(
-                level = KaliumLogLevel.INFO,
-                leadingMessage = "Message Send Success",
-                jsonStringKeyValues = mapOf(
-                    "message" to message.toLogString(),
-                    "protocolInfo" to protocolInfo.toLogMap(),
-                    "protocol" to CreateConversationParam.Protocol.MLS.name,
+            }.onSuccess {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.INFO,
+                    leadingMessage = "Message Send Success",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocolInfo" to protocolInfo.toLogMap(),
+                        "protocol" to CreateConversationParam.Protocol.MLS.name,
+                    )
                 )
-            )
-        }
+            }
     }
 
     /**
@@ -402,7 +408,7 @@ internal class MessageSenderImpl internal constructor(
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
     private suspend fun trySendingProteusEnvelope(
-        proteusContext: ProteusCoreCryptoContext,
+        transactionContext: CryptoTransactionContext,
         envelope: MessageEnvelope,
         message: Message.Sendable,
         messageTarget: MessageTarget,
@@ -412,6 +418,7 @@ internal class MessageSenderImpl internal constructor(
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
                 handleProteusError(
+                    transactionContext = transactionContext,
                     failure = it,
                     action = "Send",
                     messageLogString = message.toLogString(),
@@ -420,7 +427,7 @@ internal class MessageSenderImpl internal constructor(
                     conversationId = message.conversationId,
                     remainingAttempts = remainingAttempts
                 ) { remainingAttempts ->
-                    attemptToSendWithProteus(proteusContext, message, messageTarget, remainingAttempts)
+                    attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts)
                 }
             }, { messageSent ->
                 handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
@@ -442,7 +449,7 @@ internal class MessageSenderImpl internal constructor(
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
     private suspend fun tryBroadcastProteusEnvelope(
-        proteusContext: ProteusCoreCryptoContext,
+        transactionContext: CryptoTransactionContext,
         envelope: MessageEnvelope,
         message: BroadcastMessage,
         option: BroadcastMessageOption,
@@ -452,9 +459,18 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .broadcastEnvelope(envelope, option)
             .fold({
-                handleProteusError(it, "Broadcast", message.toLogString(), message.id, message.date, null, remainingAttempts = 1) {
+                handleProteusError(
+                    transactionContext,
+                    it,
+                    "Broadcast",
+                    message.toLogString(),
+                    message.id,
+                    message.date,
+                    null,
+                    remainingAttempts = 1
+                ) {
                     attemptToBroadcastWithProteus(
-                        proteusContext,
+                        transactionContext,
                         message,
                         target,
                         remainingAttempts
@@ -474,6 +490,7 @@ internal class MessageSenderImpl internal constructor(
             }
 
     private suspend fun handleProteusError(
+        transactionContext: CryptoTransactionContext,
         failure: CoreFailure,
         action: String, // Send or Broadcast
         messageLogString: String,
@@ -490,7 +507,7 @@ internal class MessageSenderImpl internal constructor(
                 )
                 handleLegalHoldChanges(conversationId, messageInstant) {
                     messageSendFailureHandler
-                        .handleClientsHaveChangedFailure(failure, conversationId)
+                        .handleClientsHaveChangedFailure(transactionContext, failure, conversationId)
                 }
                     .flatMap { legalHoldEnabled ->
                         when {

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.Mockable
 
@@ -31,7 +32,7 @@ import io.mockative.Mockable
  */
 @Mockable
 internal interface FetchConversationIfUnknownUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 internal class FetchConversationIfUnknownUseCaseImpl(
@@ -39,11 +40,11 @@ internal class FetchConversationIfUnknownUseCaseImpl(
     private val fetchConversation: FetchConversationUseCase
 ) : FetchConversationIfUnknownUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
         return conversationRepository.getConversationById(conversationId)
             .run {
                 if (isLeft()) {
-                    fetchConversation(conversationId)
+                    fetchConversation(transactionContext, conversationId)
                 } else {
                     Either.Right(Unit)
                 }

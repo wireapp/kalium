@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.connection
 
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
@@ -25,15 +26,22 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 
+@Suppress("LongParameterList")
 class ConnectionScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val oneOnOneResolver: OneOnOneResolver,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
-    private val fetchConversationUseCase: FetchConversationUseCase
+    private val fetchConversationUseCase: FetchConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) {
-    val sendConnectionRequest: SendConnectionRequestUseCase get() = SendConnectionRequestUseCaseImpl(connectionRepository, userRepository)
+    val sendConnectionRequest: SendConnectionRequestUseCase
+        get() = SendConnectionRequestUseCaseImpl(
+            connectionRepository,
+            userRepository,
+            transactionProvider
+        )
 
     val acceptConnectionRequest: AcceptConnectionRequestUseCase
         get() = AcceptConnectionRequestUseCaseImpl(
@@ -41,20 +49,29 @@ class ConnectionScope internal constructor(
             conversationRepository,
             oneOnOneResolver,
             newGroupConversationSystemMessagesCreator,
-            fetchConversationUseCase
+            fetchConversationUseCase,
+            transactionProvider
         )
 
-    val cancelConnectionRequest: CancelConnectionRequestUseCase get() = CancelConnectionRequestUseCaseImpl(connectionRepository)
+    val cancelConnectionRequest: CancelConnectionRequestUseCase
+        get() = CancelConnectionRequestUseCaseImpl(
+            connectionRepository,
+            transactionProvider
+        )
 
-    val ignoreConnectionRequest: IgnoreConnectionRequestUseCase get() = IgnoreConnectionRequestUseCaseImpl(connectionRepository)
+    val ignoreConnectionRequest: IgnoreConnectionRequestUseCase
+        get() = IgnoreConnectionRequestUseCaseImpl(
+            connectionRepository,
+            transactionProvider
+        )
 
     val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
     val blockUser: BlockUserUseCase
-        get() = BlockUserUseCaseImpl(connectionRepository)
+        get() = BlockUserUseCaseImpl(connectionRepository, transactionProvider)
 
     val unblockUser: UnblockUserUseCase
-        get() = UnblockUserUseCaseImpl(connectionRepository)
+        get() = UnblockUserUseCaseImpl(connectionRepository, transactionProvider)
 
 }

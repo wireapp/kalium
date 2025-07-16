@@ -76,36 +76,36 @@ internal class ConversationEventReceiverImpl(
         //       Returning Either.Right is the equivalent of how it was originally working.
         return when (event) {
             is Event.Conversation.NewMessage -> {
-                newMessageHandler.handleNewProteusMessage(transactionContext.proteus, event, deliveryInfo)
+                newMessageHandler.handleNewProteusMessage(transactionContext, event, deliveryInfo)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.NewMLSMessage -> {
-                newMessageHandler.handleNewMLSMessage(event, deliveryInfo)
+                newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.NewConversation -> {
-                newConversationHandler.handle(event)
+                newConversationHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.DeletedConversation -> {
-                deletedConversationHandler.handle(event)
+                deletedConversationHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.MemberJoin -> memberJoinHandler.handle(event)
+            is Event.Conversation.MemberJoin -> memberJoinHandler.handle(transactionContext, event)
 
-            is Event.Conversation.MemberLeave -> memberLeaveHandler.handle(event)
+            is Event.Conversation.MemberLeave -> memberLeaveHandler.handle(transactionContext, event)
 
             is Event.Conversation.MemberChanged -> {
-                memberChangeHandler.handle(event)
+                memberChangeHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.MLSWelcome -> {
-                mlsWelcomeHandler.handle(event)
+                mlsWelcomeHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
@@ -125,7 +125,7 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
             is Event.Conversation.TypingIndicator -> typingIndicatorHandler.handle(event)
             is Event.Conversation.ConversationProtocol -> {
-                protocolUpdateEventHandler.handle(event)
+                protocolUpdateEventHandler.handle(transactionContext, event)
             }
 
             is Event.Conversation.ConversationChannelAddPermission -> {

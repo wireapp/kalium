@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
@@ -39,6 +40,7 @@ class SyncCertificateRevocationListUseCase internal constructor(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val revocationListChecker: RevocationListChecker,
+    private val transactionProvider: CryptoTransactionProvider,
     kaliumLogger: KaliumLogger
 ) {
 
@@ -52,9 +54,11 @@ class SyncCertificateRevocationListUseCase internal constructor(
                 logger.i("Checking certificate revocation list (CRL)..")
                 certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
                     if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
-                        revocationListChecker.check(crl.url).map { newExpirationTime ->
-                            newExpirationTime?.let {
-                                certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)
+                        transactionProvider.mlsTransaction { mlsContext ->
+                            revocationListChecker.check(mlsContext, crl.url).map { newExpirationTime ->
+                                newExpirationTime?.let {
+                                    certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)
+                                }
                             }
                         }
                     }

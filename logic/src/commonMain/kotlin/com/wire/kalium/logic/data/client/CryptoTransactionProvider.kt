@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
@@ -54,9 +55,14 @@ interface CryptoTransactionProvider {
         block: suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R>
 
+    suspend fun <R> mlsTransaction(
+        name: String? = null,
+        block: suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
+    ): Either<CoreFailure, R>
+
     suspend fun <R> transaction(
         name: String? = null,
-        block: suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
+        block: suspend (transactionContext: CryptoTransactionContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R>
 }
 
@@ -70,12 +76,24 @@ class CryptoTransactionProviderImpl(
         name: String?,
         block: suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R> {
-        val proteusClient = proteusClientProvider.getOrError()
-        return proteusClient.flatMap { proteus ->
-            proteus.transaction(name ?: "proteus") { proteusContext ->
-                block(proteusContext)
+        return proteusClientProvider.getOrError()
+            .flatMap { proteus ->
+                proteus.transaction("proteus${name?.let { "_$it" } ?: ""}") { proteusContext ->
+                    block(proteusContext)
+                }
             }
-        }
+    }
+
+    override suspend fun <R> mlsTransaction(
+        name: String?,
+        block: suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
+    ): Either<CoreFailure, R> {
+        return mlsClientProvider.getMLSClient()
+            .flatMap { mlsClient ->
+                mlsClient.transaction("mls${name?.let { "_$it" } ?: ""}") { mlsContext ->
+                    block(mlsContext)
+                }
+            }
     }
 
     @OptIn(InternalCryptoAccess::class)
@@ -84,14 +102,25 @@ class CryptoTransactionProviderImpl(
         block: suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R> {
         val proteusClient = proteusClientProvider.getOrError()
+        val mlsClient = mlsClientProvider.getMLSClient()
         // TODO KBX add mls support on next PR
         return proteusClient
             .flatMap { proteus ->
-                proteus.transaction(name ?: "crypto") { proteusCtx ->
-                    block(object : CryptoTransactionContext {
-                        override val mls: MlsCoreCryptoContext? = null
-                        override val proteus: ProteusCoreCryptoContext = proteusCtx
-                    })
+                return proteus.transaction("proteus${name?.let { "_$it" } ?: ""}") { proteusCtx ->
+                    mlsClient.fold({
+                        block(object : CryptoTransactionContext {
+                            override val mls: MlsCoreCryptoContext? = null
+                            override val proteus: ProteusCoreCryptoContext = proteusCtx
+                        })
+
+                    }) { mls ->
+                        mls.transaction("mls${name?.let { "_$it" } ?: ""}") { mlsContext ->
+                            block(object : CryptoTransactionContext {
+                                override val mls: MlsCoreCryptoContext = mlsContext
+                                override val proteus: ProteusCoreCryptoContext = proteusCtx
+                            })
+                        }
+                    }
                 }
             }
     }

@@ -20,16 +20,16 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
-import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.toModel
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import io.mockative.Mockable
 
 /**
@@ -43,9 +43,9 @@ interface MLSKeyPackageCountUseCase {
 internal class MLSKeyPackageCountUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val mlsClientProvider: MLSClientProvider,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val transactionProvider: CryptoTransactionProvider,
 ) : MLSKeyPackageCountUseCase {
     override suspend operator fun invoke(fromAPI: Boolean): MLSKeyPackageCountResult =
         when (fromAPI) {
@@ -63,7 +63,9 @@ internal class MLSKeyPackageCountUseCaseImpl(
             return MLSKeyPackageCountResult.Failure.NotEnabled
         }
 
-        val cipherSuite = mlsClientProvider.getMLSClient().map { it.getDefaultCipherSuite().toModel() }
+        val cipherSuite = transactionProvider.mlsTransaction("getDefaultCipherSuite") {
+            it.getDefaultCipherSuite().toModel().right()
+        }
             .getOrElse { return MLSKeyPackageCountResult.Failure.Generic(it) }
 
         return keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite).fold(
@@ -76,7 +78,9 @@ internal class MLSKeyPackageCountUseCaseImpl(
         currentClientIdProvider().fold({
             MLSKeyPackageCountResult.Failure.FetchClientIdFailure(it)
         }, { selfClient ->
-            keyPackageRepository.validKeyPackageCount(selfClient).fold(
+            transactionProvider.mlsTransaction("MLSKeyPackageCount") {
+                keyPackageRepository.validKeyPackageCount(it, selfClient)
+            }.fold(
                 {
                     MLSKeyPackageCountResult.Failure.Generic(it)
                 }, { MLSKeyPackageCountResult.Success(selfClient, it, keyPackageLimitsProvider.needsRefill(it)) })

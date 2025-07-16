@@ -89,23 +89,25 @@ internal class EI2EIClientProviderImpl(
     ): Either<E2EIFailure.GettingE2EIClient, E2EIClient> {
         return mlsClientProvider.getMLSClient(currentClientId).fold({
             E2EIFailure.GettingE2EIClient(it).left()
-        }, {
-            val newE2EIClient = if (it.isE2EIEnabled()) {
-                kaliumLogger.w("initial E2EI client for MLS client that already has E2EI enabled")
-                it.e2eiNewRotateEnrollment(
-                    selfUser.name,
-                    selfUser.handle,
-                    selfUser.teamId?.value,
-                    defaultE2EIExpiry
-                )
-            } else {
-                kaliumLogger.w("initial E2EI client for MLS client without E2EI")
-                it.e2eiNewActivationEnrollment(
-                    selfUser.name!!,
-                    selfUser.handle!!,
-                    selfUser.teamId?.value,
-                    defaultE2EIExpiry
-                )
+        }, { mlsClient ->
+            val newE2EIClient = mlsClient.transaction("E2EIClient") {
+                if (it.isE2EIEnabled()) {
+                    kaliumLogger.w("initial E2EI client for MLS client that already has E2EI enabled")
+                    it.e2eiNewRotateEnrollment(
+                        selfUser.name,
+                        selfUser.handle,
+                        selfUser.teamId?.value,
+                        defaultE2EIExpiry
+                    )
+                } else {
+                    kaliumLogger.w("initial E2EI client for MLS client without E2EI")
+                    it.e2eiNewActivationEnrollment(
+                        selfUser.name!!,
+                        selfUser.handle!!,
+                        selfUser.teamId?.value,
+                        defaultE2EIExpiry
+                    )
+                }
             }
             e2EIClient = newE2EIClient
             Either.Right(newE2EIClient)

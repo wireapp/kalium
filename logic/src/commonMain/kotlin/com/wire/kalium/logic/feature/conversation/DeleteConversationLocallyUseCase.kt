@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 
@@ -39,6 +40,7 @@ interface DeleteConversationLocallyUseCase {
 internal class DeleteConversationLocallyUseCaseImpl(
     private val clearConversationContent: ClearConversationContentUseCase,
     private val deleteConversation: DeleteConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : DeleteConversationLocallyUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
@@ -46,7 +48,7 @@ internal class DeleteConversationLocallyUseCaseImpl(
         return if (clearResult is ClearConversationContentUseCase.Result.Failure) {
             clearResult.failure.left()
         } else {
-            deleteConversation(conversationId)
+            transactionProvider.transaction("DeleteConversationLocally") { deleteConversation(it, conversationId) }
         }
     }
 }

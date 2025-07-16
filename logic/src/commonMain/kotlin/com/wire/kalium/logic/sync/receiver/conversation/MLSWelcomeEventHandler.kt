@@ -18,13 +18,26 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
@@ -33,29 +46,18 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.common.error.wrapMLSRequest
-import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 @Mockable
 interface MLSWelcomeEventHandler {
-    suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
+    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "LongMethod")
 internal class MLSWelcomeEventHandlerImpl(
-    private val mlsClientProvider: MLSClientProvider,
     private val conversationRepository: ConversationRepository,
     private val oneOnOneResolver: OneOnOneResolver,
     private val refillKeyPackages: RefillKeyPackagesUseCase,
@@ -64,28 +66,34 @@ internal class MLSWelcomeEventHandlerImpl(
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
-    override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MLSWelcome
+    ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return fetchConversationIfUnknown(event.conversationId)
+        val mlsContext = transactionContext.mls
+        if (mlsContext == null) {
+            kaliumLogger.w("$TAG: mls is disabled to handle welcome message")
+            return Unit.right()
+        }
+
+        return fetchConversationIfUnknown(transactionContext, event.conversationId)
             .flatMap {
-                mlsClientProvider.getMLSClient()
-            }
-            .flatMap { client ->
                 kaliumLogger.d("$TAG: Processing MLS welcome message")
                 wrapMLSRequest {
-                    client.processWelcomeMessage(event.message.decodeBase64Bytes())
+                    mlsContext.processWelcomeMessage(event.message.decodeBase64Bytes())
                 }
             }
             .flatMap { welcomeBundle ->
                 welcomeBundle.crlNewDistributionPoints?.let {
                     kaliumLogger.d("$TAG: checking revocation list")
-                    checkRevocationList(it)
+                    checkRevocationList(mlsContext, it)
                 }
                 kaliumLogger.d("$TAG: Marking conversation as established ${welcomeBundle.groupId.obfuscateId()}")
                 markConversationAsEstablished(GroupID(welcomeBundle.groupId))
             }.flatMap {
                 kaliumLogger.d("$TAG: Resolving conversation if one-on-one ${event.conversationId.toLogString()}")
-                resolveConversationIfOneOnOne(event.conversationId)
+                resolveConversationIfOneOnOne(transactionContext, event.conversationId)
             }
             .flatMapLeft {
                 when (it) {
@@ -97,6 +105,7 @@ internal class MLSWelcomeEventHandlerImpl(
                     is MLSFailure.OrphanWelcome -> {
                         kaliumLogger.w("$TAG: Discarding welcome and joining existing conversation by external commit")
                         joinExistingMLSConversation(
+                            transactionContext = transactionContext,
                             conversationId = event.conversationId,
                         ).map {
                             kaliumLogger.d("$TAG: Successfully joined existing MLS conversation")
@@ -109,21 +118,24 @@ internal class MLSWelcomeEventHandlerImpl(
                 }
             }
             .onSuccess {
-                val didSucceedRefillingKeyPackages = when (val refillResult = refillKeyPackages()) {
-                    is RefillKeyPackagesResult.Failure -> {
-                        val exception = (refillResult.failure as? CoreFailure.Unknown)?.rootCause
-                        kaliumLogger.w("$TAG: Failed to refill key packages; Failure: ${refillResult.failure}", exception)
-                        false
-                    }
+                transactionContext.wrapInMLSContext { mlsContext ->
+                    val didSucceedRefillingKeyPackages = when (val refillResult = refillKeyPackages(mlsContext)) {
+                        is RefillKeyPackagesResult.Failure -> {
+                            val exception = (refillResult.failure as? CoreFailure.Unknown)?.rootCause
+                            kaliumLogger.w("$TAG: Failed to refill key packages; Failure: ${refillResult.failure}", exception)
+                            false
+                        }
 
-                    RefillKeyPackagesResult.Success -> {
-                        true
+                        RefillKeyPackagesResult.Success -> {
+                            true
+                        }
                     }
+                    eventLogger.logSuccess(
+                        "info" to "Established mls conversation from welcome message",
+                        "didSucceedRefillingKeypackages" to didSucceedRefillingKeyPackages
+                    )
+                    Unit.right()
                 }
-                eventLogger.logSuccess(
-                    "info" to "Established mls conversation from welcome message",
-                    "didSucceedRefillingKeypackages" to didSucceedRefillingKeyPackages
-                )
             }
             .onFailure { eventLogger.logFailure(it) }
     }
@@ -131,9 +143,9 @@ internal class MLSWelcomeEventHandlerImpl(
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
         conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
 
-    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
+    private suspend fun checkRevocationList(mlsContext: MlsCoreCryptoContext, crlNewDistributionPoints: List<String>) {
         crlNewDistributionPoints.forEach { url ->
-            revocationListChecker.check(url).map { newExpiration ->
+            revocationListChecker.check(mlsContext, url).map { newExpiration ->
                 newExpiration?.let {
                     certificateRevocationListRepository.addOrUpdateCRL(url, it)
                 }
@@ -141,12 +153,16 @@ internal class MLSWelcomeEventHandlerImpl(
         }
     }
 
-    private suspend fun resolveConversationIfOneOnOne(conversationId: ConversationId): Either<CoreFailure, Unit> =
+    private suspend fun resolveConversationIfOneOnOne(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> =
         conversationRepository.observeConversationDetailsById(conversationId)
             .first()
             .flatMap {
                 if (it is ConversationDetails.OneOne) {
                     oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                        transactionContext = transactionContext,
                         user = it.otherUser,
                         invalidateCurrentKnownProtocols = true
                     ).map { Unit }

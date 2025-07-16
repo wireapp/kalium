@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
@@ -40,6 +41,7 @@ import io.mockative.Mockable
 @Mockable
 interface UpdateConversationProtocolUseCase {
     suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         protocol: Conversation.Protocol,
         localOnly: Boolean
@@ -53,6 +55,7 @@ internal class UpdateConversationProtocolUseCaseImpl(
 ) : UpdateConversationProtocolUseCase {
 
     override suspend fun invoke(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         protocol: Conversation.Protocol,
         localOnly: Boolean
@@ -69,7 +72,7 @@ internal class UpdateConversationProtocolUseCaseImpl(
                 if (status.hasUpdated) {
                     return@flatMap Either.Right(true)
                 }
-                persistConversations(listOf(status.response), invalidateMembers = true)
+                persistConversations(transactionContext, listOf(status.response), invalidateMembers = true)
                     .map { true }
             }
     }

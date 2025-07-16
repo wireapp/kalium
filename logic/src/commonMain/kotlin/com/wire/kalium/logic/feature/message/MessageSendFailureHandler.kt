@@ -36,6 +36,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
@@ -49,6 +50,7 @@ interface MessageSendFailureHandler {
      * @return Either.Right if the error was properly handled and a new attempt at sending message can be made
      */
     suspend fun handleClientsHaveChangedFailure(
+        transactionContext: CryptoTransactionContext,
         sendFailure: ProteusSendMessageFailure,
         conversationId: ConversationId?
     ): Either<CoreFailure, Unit>
@@ -83,6 +85,7 @@ class MessageSendFailureHandlerImpl internal constructor(
 ) : MessageSendFailureHandler {
 
     override suspend fun handleClientsHaveChangedFailure(
+        transactionContext: CryptoTransactionContext,
         sendFailure: ProteusSendMessageFailure,
         conversationId: ConversationId?
     ): Either<CoreFailure, Unit> =
@@ -92,18 +95,19 @@ class MessageSendFailureHandlerImpl internal constructor(
             }.flatMap { usersThatNeedInfoRefresh ->
                 syncUserIds(usersThatNeedInfoRefresh)
             }.flatMap {
-                updateConversationInfo(sendFailure, conversationId)
+                updateConversationInfo(transactionContext, sendFailure, conversationId)
             }.flatMap {
                 addMissingClients(sendFailure.missingClientsOfUsers)
             }
 
     private suspend fun updateConversationInfo(
+        transactionContext: CryptoTransactionContext,
         sendFailure: ProteusSendMessageFailure,
         conversationId: ConversationId?
     ): Either<CoreFailure, Unit> = when {
             (conversationId == null) -> Either.Right(Unit)
             (sendFailure.deletedClientsOfUsers.isEmpty() && sendFailure.missingClientsOfUsers.isEmpty()) -> Either.Right(Unit)
-            else -> fetchConversation(conversationId)
+            else -> fetchConversation(transactionContext, conversationId)
         }
 
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {

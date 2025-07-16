@@ -100,6 +100,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         get() = DeleteClientUseCaseImpl(
             clientRepository,
             updateSupportedProtocolsAndResolveOneOnOnes,
+            transactionProvider
         )
     val needsToRegisterClient: NeedsToRegisterClientUseCase
         get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, transactionProvider, selfUserId)
@@ -109,9 +110,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         get() = MLSKeyPackageCountUseCaseImpl(
             keyPackageRepository = keyPackageRepository,
             currentClientIdProvider = clientIdProvider,
-            mlsClientProvider = mlsClientProvider,
             keyPackageLimitsProvider = keyPackageLimitsProvider,
             userConfigRepository = userConfigRepository,
+            transactionProvider = transactionProvider
         )
     val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
         get() = RestartSlowSyncProcessForRecoveryUseCaseImpl(slowSyncRepository)
@@ -119,7 +120,6 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         get() = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository = keyPackageRepository,
             keyPackageLimitsProvider = keyPackageLimitsProvider,
-            mlsClientProvider = mlsClientProvider,
             currentClientIdProvider = clientIdProvider,
         )
 

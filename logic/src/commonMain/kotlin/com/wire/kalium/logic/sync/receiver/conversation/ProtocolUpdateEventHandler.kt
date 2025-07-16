@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -36,7 +37,10 @@ import kotlinx.coroutines.flow.first
 
 @Mockable
 interface ProtocolUpdateEventHandler {
-    suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit>
+    suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.ConversationProtocol
+    ): Either<CoreFailure, Unit>
 }
 
 internal class ProtocolUpdateEventHandlerImpl(
@@ -47,9 +51,12 @@ internal class ProtocolUpdateEventHandlerImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit> {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.ConversationProtocol
+    ): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
-        return updateConversationProtocol(event.conversationId, event.protocol, localOnly = true)
+        return updateConversationProtocol(transactionContext, event.conversationId, event.protocol, localOnly = true)
             .onSuccess { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(

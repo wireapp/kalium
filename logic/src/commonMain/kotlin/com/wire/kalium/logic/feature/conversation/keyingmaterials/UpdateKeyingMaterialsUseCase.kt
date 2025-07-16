@@ -20,12 +20,15 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import io.mockative.Mockable
 import kotlin.time.Duration.Companion.days
@@ -48,6 +51,7 @@ interface UpdateKeyingMaterialsUseCase {
 
 internal class UpdateKeyingMaterialsUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository,
+    val transactionProvider: CryptoTransactionProvider
 ) : UpdateKeyingMaterialsUseCase {
     override suspend fun invoke(): UpdateKeyingMaterialsResult = mlsConversationRepository
         .getMLSGroupsRequiringKeyingMaterialUpdate(KEYING_MATERIAL_UPDATE_THRESHOLD)
@@ -58,15 +62,22 @@ internal class UpdateKeyingMaterialsUseCaseImpl(
             { groups ->
                 val failedGroup: MutableList<GroupID> = mutableListOf()
                 // TODO: this should run in parallel
-                for (group in groups) {
-                    mlsConversationRepository.updateKeyingMaterial(group).onFailure {
-                        if (it is NetworkFailure.NoNetworkConnection) {
-                            return@fold UpdateKeyingMaterialsResult.Failure(it)
-
-                        }
+                transactionProvider.mlsTransaction { mlsContext ->
+                    groups.map { group ->
+                        mlsConversationRepository.updateKeyingMaterial(mlsContext, group)
+                            .onFailure {
+                                if (it is NetworkFailure.NoNetworkConnection) {
+                                    return@mlsTransaction it.left()
+                                }
+                                failedGroup.add(group)
+                            }
                     }
-                    failedGroup.add(group)
+                    Unit.right()
                 }
+                    .onFailure {
+                        return@fold UpdateKeyingMaterialsResult.Failure(it)
+                    }
+
                 kaliumLogger.logStructuredJson(
                     KaliumLogLevel.DEBUG,
                     "Keying materials updated successfully returning success",

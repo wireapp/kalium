@@ -24,6 +24,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -124,6 +125,7 @@ class UserScope internal constructor(
     private val userScopedLogger: KaliumLogger,
     private val teamUrlUseCase: GetTeamUrlUseCase,
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
     private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -141,6 +143,7 @@ class UserScope internal constructor(
             userRepository = userRepository,
             coroutineScope = userCoroutineScope,
             conversationRepository = conversationRepository,
+            transactionProvider = transactionProvider
         )
     val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 
@@ -151,23 +154,27 @@ class UserScope internal constructor(
         )
     val getE2EICertificate: GetMLSClientIdentityUseCase
         get() = GetMLSClientIdentityUseCaseImpl(
-            mlsConversationRepository = mlsConversationRepository
+            mlsConversationRepository = mlsConversationRepository,
+            transactionProvider = transactionProvider
         )
     val getUserE2eiCertificateStatus: IsOtherUserE2EIVerifiedUseCase
         get() = IsOtherUserE2EIVerifiedUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase,
-            userRepository = userRepository
+            userRepository = userRepository,
+            transactionProvider = transactionProvider
         )
     val getUserMlsClientIdentities: GetUserMlsClientIdentitiesUseCase
         get() = GetUserMlsClientIdentitiesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             isMlsEnabledUseCase = isMLSEnabledUseCase,
+            transactionProvider = transactionProvider
         )
     val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
         get() = GetMembersE2EICertificateStatusesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            conversationRepository = conversationRepository
+            conversationRepository = conversationRepository,
+            transactionProvider = transactionProvider
         )
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
@@ -175,7 +182,7 @@ class UserScope internal constructor(
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
     val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
-        get() = UpdateSelfAvailabilityStatusUseCase(accountRepository, messageSender, clientIdProvider, selfUserId)
+        get() = UpdateSelfAvailabilityStatusUseCase(accountRepository, messageSender, clientIdProvider, selfUserId, transactionProvider)
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 
@@ -236,6 +243,7 @@ class UserScope internal constructor(
                 certificateRevocationListRepository = certificateRevocationListRepository,
                 incrementalSyncRepository = incrementalSyncRepository,
                 revocationListChecker = checkRevocationList,
+                transactionProvider = transactionProvider,
                 kaliumLogger = userScopedLogger,
             )
 
