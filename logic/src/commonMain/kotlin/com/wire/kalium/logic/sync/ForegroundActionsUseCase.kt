@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
@@ -42,6 +43,7 @@ interface ForegroundActionsUseCase {
 internal class ForegroundActionsUseCaseImpl(
     private val updateApiVersionsUseCase: UpdateApiVersionsUseCase,
     private val userConfigSyncWorker: UserConfigSyncWorker,
+    private val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase,
     private val observeCertificateRevocationForSelfClientUseCase: ObserveCertificateRevocationForSelfClientUseCase,
     private val mlsClientManager: MLSClientManager,
     private val mlsMigrationManager: MLSMigrationManager,
@@ -52,6 +54,7 @@ internal class ForegroundActionsUseCaseImpl(
     private val actions: List<suspend () -> Unit> = listOf(
         { updateApiVersionsUseCase() },
         { userConfigSyncWorker.doWork() },
+        { syncCertificateRevocationListUseCase() },
         { observeCertificateRevocationForSelfClientUseCase() },
         { mlsClientManager() },
         { mlsMigrationManager() },

@@ -52,7 +52,9 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
+import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
@@ -69,6 +71,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationFo
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCase
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
@@ -77,6 +80,7 @@ import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
+import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
@@ -85,7 +89,10 @@ import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicator
 import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicatorEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCase
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCaseImpl
+import com.wire.kalium.logic.sync.ForegroundActionsUseCase
+import com.wire.kalium.logic.sync.ForegroundActionsUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.CoroutineScope
@@ -123,6 +130,11 @@ class UserScope internal constructor(
     private val userScopedLogger: KaliumLogger,
     private val teamUrlUseCase: GetTeamUrlUseCase,
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
+    private val updateApiVersionsUseCase: UpdateApiVersionsUseCase,
+    private val userConfigSyncWorker: UserConfigSyncWorker,
+    private val mlsClientManager: MLSClientManager,
+    private val mlsMigrationManager: MLSMigrationManager,
+    private val keyingMaterialsManager: KeyingMaterialsManager,
     private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -245,4 +257,15 @@ class UserScope internal constructor(
             selfTeamIdProvider = selfTeamIdProvider
         )
     }
+
+    val foregroundActions: ForegroundActionsUseCase
+        get() = ForegroundActionsUseCaseImpl(
+            updateApiVersionsUseCase = updateApiVersionsUseCase,
+            userConfigSyncWorker = userConfigSyncWorker,
+            syncCertificateRevocationListUseCase = syncCertificateRevocationListUseCase,
+            observeCertificateRevocationForSelfClientUseCase = observeCertificateRevocationForSelfClient,
+            mlsClientManager = mlsClientManager,
+            mlsMigrationManager = mlsMigrationManager,
+            keyingMaterialsManager = keyingMaterialsManager,
+        )
 }

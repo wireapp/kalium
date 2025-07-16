@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
-import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
 import com.wire.kalium.logic.sync.Result
@@ -137,7 +136,6 @@ class UserConfigSyncWorkerTest {
     private suspend fun Arrangement.verifyActions(times: Int = 1) {
         coVerify {
             syncFeatureConfigsUseCase()
-            syncCertificateRevocationListUseCase()
             proteusPreKeyRefiller.refillIfNeeded()
             mlsPublicKeysRepository.fetchKeys()
             acmeCertificatesSyncUseCase()
@@ -146,7 +144,6 @@ class UserConfigSyncWorkerTest {
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
-        val syncCertificateRevocationListUseCase = mock(SyncCertificateRevocationListUseCase::class)
         val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
         val proteusPreKeyRefiller = mock(ProteusPreKeyRefiller::class)
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
@@ -159,7 +156,6 @@ class UserConfigSyncWorkerTest {
             configure()
             this@Arrangement to UserConfigSyncWorkerImpl(
                 incrementalSyncRepository = incrementalSyncRepository,
-                syncCertificateRevocationListUseCase = syncCertificateRevocationListUseCase,
                 syncFeatureConfigsUseCase = syncFeatureConfigsUseCase,
                 proteusPreKeyRefiller = proteusPreKeyRefiller,
                 mlsPublicKeysRepository = mlsPublicKeysRepository,
@@ -171,7 +167,6 @@ class UserConfigSyncWorkerTest {
         }
 
         suspend fun withActionResults(actionResults: ActionResults) = apply {
-            coEvery { syncCertificateRevocationListUseCase() }.returns(Unit)
             coEvery { syncFeatureConfigsUseCase() }.returns(actionResults.syncFeatureConfigsResult)
             coEvery { proteusPreKeyRefiller.refillIfNeeded() }.returns(actionResults.proteusPreKeyRefillResult)
             coEvery { mlsPublicKeysRepository.fetchKeys() }.returns(actionResults.mlsPublicKeysFetchResult)

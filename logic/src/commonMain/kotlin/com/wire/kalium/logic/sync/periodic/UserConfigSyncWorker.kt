@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
-import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
 import com.wire.kalium.logic.sync.DefaultWorker
@@ -48,7 +47,6 @@ import kotlin.time.Duration.Companion.seconds
 /**
  *  Worker that is responsible for syncing/refreshing user configurations:
  *  - feature configs
- *  - Certificate Revocation List (CRL)
  *  - MLS public keys
  *  - Proteus pre-keys
  *
@@ -66,7 +64,6 @@ internal interface UserConfigSyncWorker : DefaultWorker {
 
 internal class UserConfigSyncWorkerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase,
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
@@ -79,7 +76,6 @@ internal class UserConfigSyncWorkerImpl(
 
     private val actions: List<suspend () -> Either<CoreFailure, Unit>> = listOf(
         { syncFeatureConfigsUseCase() },
-        { syncCertificateRevocationListUseCase().let { Unit.right() } },
         { mlsPublicKeysRepository.fetchKeys().map { Unit } },
         { proteusPreKeyRefiller.refillIfNeeded() },
         { acmeCertificatesSyncUseCase().let { Unit.right() } },

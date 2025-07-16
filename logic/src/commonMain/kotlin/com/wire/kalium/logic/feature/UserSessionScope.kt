@@ -1891,7 +1891,6 @@ class UserSessionScope internal constructor(
     internal val userConfigSyncWorker: UserConfigSyncWorker by lazy {
         UserConfigSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
-            syncCertificateRevocationListUseCase = users.syncCertificateRevocationListUseCase,
             syncFeatureConfigsUseCase = syncFeatureConfigsUseCase,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
             mlsPublicKeysRepository = mlsPublicKeysRepository,
@@ -2137,6 +2136,11 @@ class UserSessionScope internal constructor(
             userScopedLogger,
             getTeamUrlUseCase,
             isMLSEnabled,
+            globalScope.updateApiVersions,
+            userConfigSyncWorker,
+            mlsClientManager,
+            mlsMigrationManager,
+            keyingMaterialsManager,
             this,
         )
     }

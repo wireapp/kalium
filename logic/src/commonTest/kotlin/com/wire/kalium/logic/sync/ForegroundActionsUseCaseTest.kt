@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
@@ -57,6 +58,7 @@ class ForegroundActionsUseCaseTest {
         coVerify {
             updateApiVersionsUseCase()
             userConfigSyncWorker.doWork()
+            syncCertificateRevocationListUseCase()
             observeCertificateRevocationForSelfClient()
             mlsClientManager()
             mlsMigrationManager()
@@ -67,6 +69,7 @@ class ForegroundActionsUseCaseTest {
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
         val updateApiVersionsUseCase = mock(UpdateApiVersionsUseCase::class)
         val userConfigSyncWorker = mock(UserConfigSyncWorker::class)
+        val syncCertificateRevocationListUseCase = mock(SyncCertificateRevocationListUseCase::class)
         val observeCertificateRevocationForSelfClient = mock(ObserveCertificateRevocationForSelfClientUseCase::class)
         val mlsClientManager = mock(MLSClientManager::class)
         val mlsMigrationManager = mock(MLSMigrationManager::class)
@@ -78,6 +81,7 @@ class ForegroundActionsUseCaseTest {
             this@Arrangement to ForegroundActionsUseCaseImpl(
                 updateApiVersionsUseCase = updateApiVersionsUseCase,
                 userConfigSyncWorker = userConfigSyncWorker,
+                syncCertificateRevocationListUseCase = syncCertificateRevocationListUseCase,
                 observeCertificateRevocationForSelfClientUseCase = observeCertificateRevocationForSelfClient,
                 mlsClientManager = mlsClientManager,
                 mlsMigrationManager = mlsMigrationManager,
@@ -89,6 +93,7 @@ class ForegroundActionsUseCaseTest {
         suspend fun withActionResults(actionResults: ActionResults) = apply {
             coEvery { updateApiVersionsUseCase() }.returns(Unit)
             coEvery { userConfigSyncWorker.doWork() }.returns(actionResults.userConfigSyncWorkerResult)
+            coEvery { syncCertificateRevocationListUseCase() }.returns(Unit)
             coEvery { observeCertificateRevocationForSelfClient() }.returns(Unit)
             coEvery { mlsClientManager() }.returns(Unit)
             coEvery { mlsMigrationManager() }.returns(Unit)
