@@ -106,6 +106,7 @@ internal class UserConfigSyncWorkerImpl(
             incrementalSyncRepository.incrementalSyncState
                 .filter { it is IncrementalSyncStatus.Live }
                 .first()
+        }?.let {
             logger.i("Incremental sync is live, executing")
             actionWhenLive()
         } ?: run {
