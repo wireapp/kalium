@@ -305,6 +305,8 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
+import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorker
+import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
@@ -1904,6 +1906,14 @@ class UserSessionScope internal constructor(
         )
     }
 
+    val mlsPublicKeysSyncWorker: MLSPublicKeysSyncWorker by lazy {
+        MLSPublicKeysSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            mlsPublicKeysRepository = mlsPublicKeysRepository,
+            kaliumLogger = userScopedLogger,
+        )
+    }
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
@@ -2133,6 +2143,7 @@ class UserSessionScope internal constructor(
             userScopedLogger,
             getTeamUrlUseCase,
             isMLSEnabled,
+            mlsPublicKeysSyncWorker,
             this,
         )
     }
@@ -2463,6 +2474,10 @@ class UserSessionScope internal constructor(
         }
 
         launch {
+            mlsPublicKeysSyncWorker.schedule()
+        }
+
+        launch {
             observeE2EIConversationsVerificationStatuses.invoke()
         }
 
@@ -2491,6 +2506,7 @@ class UserSessionScope internal constructor(
         }
 
         syncExecutor.startAndStopSyncAsNeeded()
+
         launch {
             localEventManager.startProcessing()
         }

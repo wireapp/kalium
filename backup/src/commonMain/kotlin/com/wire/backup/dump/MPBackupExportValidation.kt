@@ -47,9 +47,9 @@ internal fun CommonMPBackupExporter.validate(conversation: BackupConversation) {
  * @throws IllegalStateException if mandatory validation fails.
  */
 internal fun CommonMPBackupExporter.validate(message: BackupMessage): Boolean = with(message) {
-    if (id.isEmpty()) error("Message ID cannot be empty")
-    if (conversationId.id.isEmpty()) error("Conversation ID cannot be empty")
-    if (senderUserId.id.isEmpty()) error("Sender ID cannot be empty")
+    if (id.isEmpty()) error("Backup: Message ID cannot be empty")
+    if (conversationId.id.isEmpty()) error("Backup: Conversation ID cannot be empty")
+    if (senderUserId.id.isEmpty()) error("Backup: Sender ID cannot be empty")
 
     return@with validate(content)
 }
@@ -63,24 +63,27 @@ internal fun CommonMPBackupExporter.validate(message: BackupMessage): Boolean = 
 private fun CommonMPBackupExporter.validate(content: BackupMessageContent): Boolean = with(content) {
     when (this) {
         is BackupMessageContent.Text -> {
-            if (text.isEmpty()) error("Text content cannot be empty")
+            if (text.isEmpty()) error("Backup: Text content cannot be empty")
         }
 
         is BackupMessageContent.Asset -> {
-            if (assetId.isEmpty()) error("Asset ID cannot be empty")
+            if (assetId.isEmpty()) {
+                logger?.log("Backup: Asset ID cannot be empty")
+                return@with false
+            }
             if (otrKey.isEmpty()) {
-                logger?.log("Asset OTR key cannot be empty")
+                logger?.log("Backup: Asset OTR key cannot be empty")
                 return@with false
             }
             if (sha256.isEmpty()) {
-                logger?.log("Asset SHA256 cannot be empty")
+                logger?.log("Backup: Asset SHA256 cannot be empty")
                 return@with false
             }
         }
 
         is BackupMessageContent.Location -> {
             if (latitude == 0f || longitude == 0f) {
-                error("Location content must have valid latitude and longitude")
+                error("Backup: Location content must have valid latitude and longitude")
             }
         }
     }

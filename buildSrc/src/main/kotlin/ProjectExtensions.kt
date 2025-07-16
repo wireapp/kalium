@@ -83,7 +83,8 @@ fun RepositoryHandler.wireDetektRulesRepo() {
 }
 
 fun Project.registerCopyTestResourcesTask(target: String) {
-    val task = tasks.register<Copy>("copy${target.capitalize()}TestResources") {
+    val targetName = target.replaceFirstChar { it.uppercase() }
+    val task = tasks.register<Copy>("copy${targetName}TestResources") {
         from("src/commonTest/resources")
         into("build/bin/$target/debugTest/resources")
     }

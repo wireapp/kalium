@@ -257,6 +257,13 @@ internal class MessageDAOImpl internal constructor(
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
 
+    override suspend fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
+            .asFlow()
+            .flowOn(coroutineContext)
+            .mapToOneOrNull()
+            .distinctUntilChanged()
+
     override suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
         mimeTypes: Set<String>,
