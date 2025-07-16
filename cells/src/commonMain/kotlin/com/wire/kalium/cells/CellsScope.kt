@@ -85,7 +85,6 @@ import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -101,7 +100,6 @@ import kotlin.coroutines.CoroutineContext
 
 public class CellsScope(
     private val cellsClient: HttpClient,
-    private val userId: String,
     private val dao: CellScopeDao,
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
@@ -118,7 +116,7 @@ public class CellsScope(
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val cellClientCredentials: CellsCredentials
-        get() = CellsCredentialsProvider.getCredentials(userId, sessionManager.serverConfig())
+        get() = CellsCredentialsProvider.getCredentials(sessionManager.serverConfig())
 
     private val cellAwsClient: CellsAwsClient
         get() = cellsAwsClient(cellClientCredentials, sessionManager, accessTokenApi)

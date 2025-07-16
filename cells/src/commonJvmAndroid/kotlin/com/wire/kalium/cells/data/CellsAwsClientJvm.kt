@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.data
 
-import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.completeMultipartUpload
 import aws.sdk.kotlin.services.s3.createMultipartUpload
@@ -28,7 +27,6 @@ import aws.sdk.kotlin.services.s3.presigners.presignGetObject
 import aws.sdk.kotlin.services.s3.putObject
 import aws.sdk.kotlin.services.s3.uploadPart
 import aws.sdk.kotlin.services.s3.withConfig
-import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.asByteStream
 import aws.smithy.kotlin.runtime.content.toInputStream
@@ -72,16 +70,7 @@ private class CellsAwsClientJvm(
             region = DEFAULT_REGION
             enableAwsChunked = false
             endpointUrl = Url.parse(this@with?.serverUrl ?: "")
-            credentialsProvider = if (credentials?.accessToken != null) {
-                StaticCredentialsProvider(
-                    Credentials(
-                        accessKeyId = this@with?.accessToken ?: "",
-                        secretAccessKey = this@with?.gatewaySecret ?: "",
-                    )
-                )
-            } else {
-                TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
-            }
+            credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
         }
     }
 

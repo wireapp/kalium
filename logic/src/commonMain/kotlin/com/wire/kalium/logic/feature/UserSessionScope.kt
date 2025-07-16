@@ -2410,7 +2410,6 @@ class UserSessionScope internal constructor(
     val cells: CellsScope by lazy {
         CellsScope(
             cellsClient = cellsClient,
-            userId = userId.toString(),
             dao = with(userStorage.database) {
                 CellsScope.CellScopeDao(
                     attachmentDraftDao = messageAttachmentDraftDao,
