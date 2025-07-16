@@ -57,4 +57,8 @@ internal actual class UserSessionWorkSchedulerImpl(
         TODO("Not yet implemented")
     }
 
+    actual override fun resetBackoffForPeriodicUserConfigSync() {
+        TODO("Not yet implemented")
+    }
+
 }

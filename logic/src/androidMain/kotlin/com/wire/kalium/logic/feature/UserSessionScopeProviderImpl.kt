@@ -61,7 +61,7 @@ internal actual class UserSessionScopeProviderImpl(
         val dbPath = DBFolder("${appContext.getDatabasePath(FileNameUtil.userDBName(userIdEntity))}")
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
-        val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
+        val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, globalScope, userId)
         return UserSessionScope(
             applicationContext = appContext,
             userAgent = userAgent,

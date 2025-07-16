@@ -37,4 +37,5 @@ internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
     override fun scheduleSendingOfPendingMessages()
     override fun cancelScheduledSendingOfPendingMessages()
     override fun schedulePeriodicUserConfigSync()
+    override fun resetBackoffForPeriodicUserConfigSync()
 }

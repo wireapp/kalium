@@ -110,7 +110,7 @@ internal class UserConfigSyncWorkerImpl(
             logger.i("Incremental sync is live, executing")
             actionWhenLive()
         } ?: run {
-            logger.w("Incremental sync is not live within the timeout of $timeout ms, scheduling retry later")
+            logger.w("Incremental sync is not live within the timeout of $timeout, scheduling retry later")
             Result.Retry
         }
     }

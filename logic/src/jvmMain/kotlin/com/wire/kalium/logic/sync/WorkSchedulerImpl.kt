@@ -65,4 +65,10 @@ internal actual class UserSessionWorkSchedulerImpl(
             "Scheduling periodic user config sync is not supported on JVM."
         )
     }
+
+    actual override fun resetBackoffForPeriodicUserConfigSync() {
+        kaliumLogger.withFeatureId(SYNC).w(
+            "Resetting backoff for user config sync is not supported on JVM."
+        )
+    }
 }

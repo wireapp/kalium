@@ -1292,6 +1292,7 @@ class UserSessionScope internal constructor(
             incrementalSyncRecoveryHandler,
             networkStateObserver,
             userScopedLogger,
+            userSessionWorkScheduler,
         )
     }
 

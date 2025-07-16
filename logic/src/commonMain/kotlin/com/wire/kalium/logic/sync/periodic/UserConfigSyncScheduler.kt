@@ -41,4 +41,9 @@ interface UserConfigSyncScheduler {
      *  **When** it's gonna to be executed may vary depending on the platform and/or implementation.
      */
     fun schedulePeriodicUserConfigSync()
+
+    /**
+     *  Resets the backoff for the enqueued [UserConfigSyncWorker] if it's already waiting to be retried, so that it can be done instantly.
+     */
+    fun resetBackoffForPeriodicUserConfigSync()
 }

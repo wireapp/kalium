@@ -28,10 +28,13 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -67,6 +70,7 @@ internal actual class GlobalWorkSchedulerImpl(
 
 internal actual class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
+    private val globalKaliumScope: GlobalKaliumScope,
     actual override val userId: UserId
 ) : UserSessionWorkScheduler {
 
@@ -89,9 +93,31 @@ internal actual class UserSessionWorkSchedulerImpl(
             buildConnectedPeriodicWorkRequest(UserConfigSyncWorker::class, userId)
         )
     }
+
+    actual override fun resetBackoffForPeriodicUserConfigSync() {
+        globalKaliumScope.launch {
+            WorkManager.getInstance(appContext).getWorkInfosForUniqueWorkFlow(UserConfigSyncWorker.NAME + userId.value + "-periodic")
+                .firstOrNull()
+                ?.firstOrNull()
+                ?.let {
+                    if (it.state == androidx.work.WorkInfo.State.ENQUEUED && it.runAttemptCount > 0) {
+                        // it means that the worker has been retried at least once, so update to reset the backoff
+                        WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
+                            UserConfigSyncWorker.NAME + userId.value + "-periodic",
+                            ExistingPeriodicWorkPolicy.UPDATE,
+                            buildConnectedPeriodicWorkRequest(UserConfigSyncWorker::class, userId, true)
+                        )
+                    }
+                }
+        }
+    }
 }
 
-private fun buildConnectedPeriodicWorkRequest(worker: KClass<out DefaultWorker>, userId: UserId? = null): PeriodicWorkRequest {
+private fun buildConnectedPeriodicWorkRequest(
+    worker: KClass<out DefaultWorker>,
+    userId: UserId? = null,
+    resetBackoff: Boolean = false,
+): PeriodicWorkRequest {
     val inputData = WrapperWorkerFactory.workData(worker, userId)
     val connectedConstraint = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -112,10 +138,14 @@ private fun buildConnectedPeriodicWorkRequest(worker: KClass<out DefaultWorker>,
         .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
         .setConstraints(connectedConstraint)
         .setInputData(inputData)
+        .let { if (resetBackoff) it.setNextScheduleTimeOverride(System.currentTimeMillis()) else it.clearNextScheduleTimeOverride() }
         .build()
 }
 
-private fun buildConnectedOneTimeWorkRequest(worker: KClass<out DefaultWorker>, userId: UserId? = null): OneTimeWorkRequest {
+private fun buildConnectedOneTimeWorkRequest(
+    worker: KClass<out DefaultWorker>,
+    userId: UserId? = null
+): OneTimeWorkRequest {
     val inputData = WrapperWorkerFactory.workData(worker, userId)
     val connectedConstraint = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
