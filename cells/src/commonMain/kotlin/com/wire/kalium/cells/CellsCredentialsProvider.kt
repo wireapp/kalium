@@ -22,7 +22,7 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 
 /**
  * Provides credentials for Cells API based on current environment.
- * Temporary solution until we start using Wire API for cells.
+ * Temporary solution until we make we way to get the serverUrl and gateway secret.
  */
 internal object CellsCredentialsProvider {
     internal fun getCredentials(serverConfig: ServerConfigDTO) =
