@@ -1,9 +1,11 @@
 <!doctype html>
-<html>
+<html class="no-js">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>NetworkErrorLabel</title>
-<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>    <script>const storage = localStorage.getItem("dokka-dark-mode")
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
     if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         if (osDarkSchemePreferred === true) {
@@ -16,39 +18,78 @@
         }
     }
     </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
 <script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
 <link href="../../../styles/style.css" rel="Stylesheet">
-<link href="../../../styles/jetbrains-mono.css" rel="Stylesheet">
 <link href="../../../styles/main.css" rel="Stylesheet">
 <link href="../../../styles/prism.css" rel="Stylesheet">
 <link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
 <script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
 <script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
 <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
 <script type="text/javascript" src="../../../scripts/main.js" defer></script>
 <script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
 <script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
 <body>
-<div class="navigation-wrapper" id="navigation-wrapper">
-    <div id="leftToggler"><span class="icon-toggler"></span></div>
-    <div class="library-name">
-<a href="../../../index.html">
-<span>kalium</span>            </a>    </div>
-    <div>
-    </div>
-    <div class="pull-right d-flex">
-        <div class="filter-section" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":network:dokkaHtmlPartial/commonMain">common</button>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
         </div>
-        <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
-        <div id="searchBar"></div>
-    </div>
-</div>
-<div id="container">
-    <div id="leftColumn">
-        <div id="sideMenu"></div>
-    </div>
-    <div id="main">
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":network:dokkaHtmlPartial/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":network:dokkaHtmlPartial/commonMain" data-filter=":network:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
 <div class="main-content" data-page-type="classlike" id="content" pageids="network::com.wire.kalium.network.exceptions/NetworkErrorLabel///PointingToDeclaration//-333076745">
   <div class="breadcrumbs"><a href="../../index.html">network</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.network.exceptions</a><span class="delimiter">/</span><span class="current">NetworkErrorLabel</span></div>
   <div class="cover ">
@@ -83,7 +124,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-a-c-c-e-s-s_-d-e-n-i-e-d.html"><span><span>ACCESS_DENIED</span></span></a></div>
+                  <div><a href="-a-c-c-e-s-s_-d-e-n-i-e-d.html"><span>ACCESS_</span><wbr><span>DENIED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="888518944%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -98,7 +139,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-a-c-c-o-u-n-t_-p-e-n-d-i-n-g_-a-c-t-i-v-a-t-i-o-n.html"><span><span>ACCOUNT_PENDING_ACTIVATION</span></span></a></div>
+                  <div><a href="-a-c-c-o-u-n-t_-p-e-n-d-i-n-g_-a-c-t-i-v-a-t-i-o-n.html"><span>ACCOUNT_</span><wbr><span>PENDING_</span><wbr><span>ACTIVATION</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="617318036%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -113,7 +154,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-a-c-c-o-u-n-t_-s-u-s-p-e-n-d-e-d.html"><span><span>ACCOUNT_SUSPENDED</span></span></a></div>
+                  <div><a href="-a-c-c-o-u-n-t_-s-u-s-p-e-n-d-e-d.html"><span>ACCOUNT_</span><wbr><span>SUSPENDED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="931572941%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -128,7 +169,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-b-a-d_-c-o-n-n-e-c-t-i-o-n_-u-p-d-a-t-e.html"><span><span>BAD_CONNECTION_UPDATE</span></span></a></div>
+                  <div><a href="-b-a-d_-c-o-n-n-e-c-t-i-o-n_-u-p-d-a-t-e.html"><span>BAD_</span><wbr><span>CONNECTION_</span><wbr><span>UPDATE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-98215738%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -143,7 +184,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-b-a-d_-r-e-q-u-e-s-t.html"><span><span>BAD_REQUEST</span></span></a></div>
+                  <div><a href="-b-a-d_-r-e-q-u-e-s-t.html"><span>BAD_</span><wbr><span>REQUEST</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2016875265%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -158,7 +199,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-b-l-a-c-k-l-i-s-t-e-d_-e-m-a-i-l.html"><span><span>BLACKLISTED_EMAIL</span></span></a></div>
+                  <div><a href="-b-l-a-c-k-l-i-s-t-e-d_-e-m-a-i-l.html"><span>BLACKLISTED_</span><wbr><span>EMAIL</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-409231107%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -173,7 +214,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-d-o-m-a-i-n_-b-l-o-c-k-e-d_-f-o-r_-r-e-g-i-s-t-r-a-t-i-o-n.html"><span><span>DOMAIN_BLOCKED_FOR_REGISTRATION</span></span></a></div>
+                  <div><a href="-d-o-m-a-i-n_-b-l-o-c-k-e-d_-f-o-r_-r-e-g-i-s-t-r-a-t-i-o-n.html"><span>DOMAIN_</span><wbr><span>BLOCKED_</span><wbr><span>FOR_</span><wbr><span><span>REGISTRATION</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="216637401%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -188,7 +229,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-e-n-t-e-r-p-r-i-s-e_-s-e-r-v-i-c-e_-n-o-t_-e-n-a-b-l-e-d.html"><span><span>ENTERPRISE_SERVICE_NOT_ENABLED</span></span></a></div>
+                  <div><a href="-e-n-t-e-r-p-r-i-s-e_-s-e-r-v-i-c-e_-n-o-t_-e-n-a-b-l-e-d.html"><span>ENTERPRISE_</span><wbr><span>SERVICE_</span><wbr><span>NOT_</span><wbr><span>ENABLED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="837944567%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -203,7 +244,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-d-e-n-i-e-d.html"><span><span>FEDERATION_DENIED</span></span></a></div>
+                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-d-e-n-i-e-d.html"><span>FEDERATION_</span><wbr><span>DENIED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1363094913%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -218,7 +259,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-f-a-i-l-u-r-e.html"><span><span>FEDERATION_FAILURE</span></span></a></div>
+                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-f-a-i-l-u-r-e.html"><span>FEDERATION_</span><wbr><span>FAILURE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1770731722%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -233,7 +274,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-n-o-t_-e-n-a-b-l-e-d.html"><span><span>FEDERATION_NOT_ENABLED</span></span></a></div>
+                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-n-o-t_-e-n-a-b-l-e-d.html"><span>FEDERATION_</span><wbr><span>NOT_</span><wbr><span>ENABLED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1760159723%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -248,7 +289,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-u-n-r-e-a-c-h-a-b-l-e_-d-o-m-a-i-n-s.html"><span><span>FEDERATION_UNREACHABLE_DOMAINS</span></span></a></div>
+                  <div><a href="-f-e-d-e-r-a-t-i-o-n_-u-n-r-e-a-c-h-a-b-l-e_-d-o-m-a-i-n-s.html"><span>FEDERATION_</span><wbr><span>UNREACHABLE_</span><wbr><span>DOMAINS</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-97011748%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -263,7 +304,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-g-u-e-s-t_-l-i-n-k-s_-d-i-s-a-b-l-e-d.html"><span><span>GUEST_LINKS_DISABLED</span></span></a></div>
+                  <div><a href="-g-u-e-s-t_-l-i-n-k-s_-d-i-s-a-b-l-e-d.html"><span>GUEST_</span><wbr><span>LINKS_</span><wbr><span>DISABLED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1511667589%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -278,7 +319,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-h-a-n-d-l-e_-e-x-i-s-t-s.html"><span><span>HANDLE_EXISTS</span></span></a></div>
+                  <div><a href="-h-a-n-d-l-e_-e-x-i-s-t-s.html"><span>HANDLE_</span><wbr><span>EXISTS</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-202599357%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -293,7 +334,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-i-n-v-a-l-i-d_-c-o-d-e.html"><span><span>INVALID_CODE</span></span></a></div>
+                  <div><a href="-i-n-v-a-l-i-d_-c-o-d-e.html"><span>INVALID_</span><wbr><span>CODE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1829447825%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -308,7 +349,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-i-n-v-a-l-i-d_-c-r-e-d-e-n-t-i-a-l-s.html"><span><span>INVALID_CREDENTIALS</span></span></a></div>
+                  <div><a href="-i-n-v-a-l-i-d_-c-r-e-d-e-n-t-i-a-l-s.html"><span>INVALID_</span><wbr><span><span>CREDENTIALS</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="124193410%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -323,7 +364,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-i-n-v-a-l-i-d_-e-m-a-i-l.html"><span><span>INVALID_EMAIL</span></span></a></div>
+                  <div><a href="-i-n-v-a-l-i-d_-e-m-a-i-l.html"><span>INVALID_</span><wbr><span>EMAIL</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1569698142%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -338,7 +379,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-i-n-v-a-l-i-d_-h-a-n-d-l-e.html"><span><span>INVALID_HANDLE</span></span></a></div>
+                  <div><a href="-i-n-v-a-l-i-d_-h-a-n-d-l-e.html"><span>INVALID_</span><wbr><span>HANDLE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1334018004%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -353,7 +394,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-k-e-y_-e-x-i-s-t-s.html"><span><span>KEY_EXISTS</span></span></a></div>
+                  <div><a href="-k-e-y_-e-x-i-s-t-s.html"><span>KEY_</span><wbr><span>EXISTS</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2139065352%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -368,7 +409,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-i-s-s-i-n-g_-a-u-t-h.html"><span><span>MISSING_AUTH</span></span></a></div>
+                  <div><a href="-m-i-s-s-i-n-g_-a-u-t-h.html"><span>MISSING_</span><wbr><span>AUTH</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="252797763%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -383,7 +424,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-i-s-s-i-n-g_-l-e-g-a-l-h-o-l-d_-c-o-n-s-e-n-t.html"><span><span>MISSING_LEGALHOLD_CONSENT</span></span></a></div>
+                  <div><a href="-m-i-s-s-i-n-g_-l-e-g-a-l-h-o-l-d_-c-o-n-s-e-n-t.html"><span>MISSING_</span><wbr><span>LEGALHOLD_</span><wbr><span>CONSENT</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2012599324%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -398,7 +439,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-c-l-i-e-n-t_-m-i-s-m-a-t-c-h.html"><span><span>MLS_CLIENT_MISMATCH</span></span></a></div>
+                  <div><a href="-m-l-s_-c-l-i-e-n-t_-m-i-s-m-a-t-c-h.html"><span>MLS_</span><wbr><span>CLIENT_</span><wbr><span>MISMATCH</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1330849855%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -413,7 +454,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-c-l-i-e-n-t_-s-e-n-d-e-r_-u-s-e-r_-m-i-s-m-a-t-c-h.html"><span><span>MLS_CLIENT_SENDER_USER_MISMATCH</span></span></a></div>
+                  <div><a href="-m-l-s_-c-l-i-e-n-t_-s-e-n-d-e-r_-u-s-e-r_-m-i-s-m-a-t-c-h.html"><span>MLS_</span><wbr><span>CLIENT_</span><wbr><span>SENDER_</span><wbr><span>USER_</span><wbr><span>MISMATCH</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-327902699%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -428,7 +469,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-c-o-m-m-i-t_-m-i-s-s-i-n-g_-r-e-f-e-r-e-n-c-e-s.html"><span><span>MLS_COMMIT_MISSING_REFERENCES</span></span></a></div>
+                  <div><a href="-m-l-s_-c-o-m-m-i-t_-m-i-s-s-i-n-g_-r-e-f-e-r-e-n-c-e-s.html"><span>MLS_</span><wbr><span>COMMIT_</span><wbr><span>MISSING_</span><wbr><span>REFERENCES</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1252988344%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -443,7 +484,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-d-u-p-l-i-c-a-t-e_-p-u-b-l-i-c_-k-e-y.html"><span><span>MLS_DUPLICATE_PUBLIC_KEY</span></span></a></div>
+                  <div><a href="-m-l-s_-d-u-p-l-i-c-a-t-e_-p-u-b-l-i-c_-k-e-y.html"><span>MLS_</span><wbr><span>DUPLICATE_</span><wbr><span>PUBLIC_</span><wbr><span>KEY</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1835856996%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -458,7 +499,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-f-e-d-e-r-a-t-e-d_-o-n-e2-o-n-e_-n-o-t_-s-u-p-p-o-r-t-e-d.html"><span><span>MLS_FEDERATED_ONE2ONE_NOT_SUPPORTED</span></span></a></div>
+                  <div><a href="-m-l-s_-f-e-d-e-r-a-t-e-d_-o-n-e2-o-n-e_-n-o-t_-s-u-p-p-o-r-t-e-d.html"><span>MLS_</span><wbr><span>FEDERATED_</span><wbr><span>ONE2ONE_</span><wbr><span>NOT_</span><wbr><span>SUPPORTED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2115371649%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -473,7 +514,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-g-r-o-u-p_-c-o-n-v-e-r-s-a-t-i-o-n_-m-i-s-m-a-t-c-h.html"><span><span>MLS_GROUP_CONVERSATION_MISMATCH</span></span></a></div>
+                  <div><a href="-m-l-s_-g-r-o-u-p_-c-o-n-v-e-r-s-a-t-i-o-n_-m-i-s-m-a-t-c-h.html"><span>MLS_</span><wbr><span>GROUP_</span><wbr><span>CONVERSATION_</span><wbr><span>MISMATCH</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1778611927%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -488,7 +529,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-i-n-v-a-l-i-d_-l-e-a-f_-n-o-d-e_-i-n-d-e-x.html"><span><span>MLS_INVALID_LEAF_NODE_INDEX</span></span></a></div>
+                  <div><a href="-m-l-s_-i-n-v-a-l-i-d_-l-e-a-f_-n-o-d-e_-i-n-d-e-x.html"><span>MLS_</span><wbr><span>INVALID_</span><wbr><span>LEAF_</span><wbr><span>NODE_</span><wbr><span>INDEX</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-478884813%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -503,7 +544,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-k-e-y_-p-a-c-k-a-g-e_-r-e-f_-n-o-t_-f-o-u-n-d.html"><span><span>MLS_KEY_PACKAGE_REF_NOT_FOUND</span></span></a></div>
+                  <div><a href="-m-l-s_-k-e-y_-p-a-c-k-a-g-e_-r-e-f_-n-o-t_-f-o-u-n-d.html"><span>MLS_</span><wbr><span>KEY_</span><wbr><span>PACKAGE_</span><wbr><span>REF_</span><wbr><span>NOT_</span><wbr><span>FOUND</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-613991888%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -518,7 +559,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-l-e-g-a-l_-h-o-l-d_-i-n-c-o-m-p-a-t-i-b-l-e.html"><span><span>MLS_LEGAL_HOLD_INCOMPATIBLE</span></span></a></div>
+                  <div><a href="-m-l-s_-l-e-g-a-l_-h-o-l-d_-i-n-c-o-m-p-a-t-i-b-l-e.html"><span>MLS_</span><wbr><span>LEGAL_</span><wbr><span>HOLD_</span><wbr><span><span>INCOMPATIBLE</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-410214386%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -533,7 +574,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-m-i-g-r-a-t-i-o-n_-c-r-i-t-e-r-i-a_-n-o-t_-s-a-t-i-s-f-i-e-d.html"><span><span>MLS_MIGRATION_CRITERIA_NOT_SATISFIED</span></span></a></div>
+                  <div><a href="-m-l-s_-m-i-g-r-a-t-i-o-n_-c-r-i-t-e-r-i-a_-n-o-t_-s-a-t-i-s-f-i-e-d.html"><span>MLS_</span><wbr><span>MIGRATION_</span><wbr><span>CRITERIA_</span><wbr><span>NOT_</span><wbr><span>SATISFIED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-309512766%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -548,7 +589,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-m-i-s-s-i-n-g_-g-r-o-u-p_-i-n-f-o.html"><span><span>MLS_MISSING_GROUP_INFO</span></span></a></div>
+                  <div><a href="-m-l-s_-m-i-s-s-i-n-g_-g-r-o-u-p_-i-n-f-o.html"><span>MLS_</span><wbr><span>MISSING_</span><wbr><span>GROUP_</span><wbr><span>INFO</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-706994702%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -563,7 +604,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-n-o-n_-e-m-p-t-y_-m-e-m-b-e-r_-l-i-s-t.html"><span><span>MLS_NON_EMPTY_MEMBER_LIST</span></span></a></div>
+                  <div><a href="-m-l-s_-n-o-n_-e-m-p-t-y_-m-e-m-b-e-r_-l-i-s-t.html"><span>MLS_</span><wbr><span>NON_</span><wbr><span>EMPTY_</span><wbr><span>MEMBER_</span><wbr><span>LIST</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1344611934%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -578,7 +619,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-n-o-t_-e-n-a-b-l-e-d.html"><span><span>MLS_NOT_ENABLED</span></span></a></div>
+                  <div><a href="-m-l-s_-n-o-t_-e-n-a-b-l-e-d.html"><span>MLS_</span><wbr><span>NOT_</span><wbr><span>ENABLED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-621394996%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -593,7 +634,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-p-r-o-p-o-s-a-l_-n-o-t_-f-o-u-n-d.html"><span><span>MLS_PROPOSAL_NOT_FOUND</span></span></a></div>
+                  <div><a href="-m-l-s_-p-r-o-p-o-s-a-l_-n-o-t_-f-o-u-n-d.html"><span>MLS_</span><wbr><span>PROPOSAL_</span><wbr><span>NOT_</span><wbr><span>FOUND</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1433819760%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -608,7 +649,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-p-r-o-t-o-c-o-l_-e-r-r-o-r.html"><span><span>MLS_PROTOCOL_ERROR</span></span></a></div>
+                  <div><a href="-m-l-s_-p-r-o-t-o-c-o-l_-e-r-r-o-r.html"><span>MLS_</span><wbr><span>PROTOCOL_</span><wbr><span>ERROR</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1538942680%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -623,7 +664,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-s-e-l-f_-r-e-m-o-v-a-l_-n-o-t_-a-l-l-o-w-e-d.html"><span><span>MLS_SELF_REMOVAL_NOT_ALLOWED</span></span></a></div>
+                  <div><a href="-m-l-s_-s-e-l-f_-r-e-m-o-v-a-l_-n-o-t_-a-l-l-o-w-e-d.html"><span>MLS_</span><wbr><span>SELF_</span><wbr><span>REMOVAL_</span><wbr><span>NOT_</span><wbr><span>ALLOWED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1314205795%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -638,7 +679,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-s-t-a-l-e_-m-e-s-s-a-g-e.html"><span><span>MLS_STALE_MESSAGE</span></span></a></div>
+                  <div><a href="-m-l-s_-s-t-a-l-e_-m-e-s-s-a-g-e.html"><span>MLS_</span><wbr><span>STALE_</span><wbr><span>MESSAGE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-370197312%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -653,7 +694,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-s-u-b-c-o-n-v_-c-l-i-e-n-t_-n-o-t_-i-n_-p-a-r-e-n-t.html"><span><span>MLS_SUBCONV_CLIENT_NOT_IN_PARENT</span></span></a></div>
+                  <div><a href="-m-l-s_-s-u-b-c-o-n-v_-c-l-i-e-n-t_-n-o-t_-i-n_-p-a-r-e-n-t.html"><span>MLS_</span><wbr><span>SUBCONV_</span><wbr><span>CLIENT_</span><wbr><span>NOT_</span><wbr><span>IN_</span><wbr><span>PARENT</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="652408842%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -668,7 +709,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-s-u-b-c-o-n-v_-u-n-s-u-p-p-o-r-t-e-d_-c-o-n-v_-t-y-p-e.html"><span><span>MLS_SUBCONV_UNSUPPORTED_CONV_TYPE</span></span></a></div>
+                  <div><a href="-m-l-s_-s-u-b-c-o-n-v_-u-n-s-u-p-p-o-r-t-e-d_-c-o-n-v_-t-y-p-e.html"><span>MLS_</span><wbr><span>SUBCONV_</span><wbr><span>UNSUPPORTED_</span><wbr><span>CONV_</span><wbr><span>TYPE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-503616079%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -683,7 +724,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-u-n-s-u-p-p-o-r-t-e-d_-m-e-s-s-a-g-e.html"><span><span>MLS_UNSUPPORTED_MESSAGE</span></span></a></div>
+                  <div><a href="-m-l-s_-u-n-s-u-p-p-o-r-t-e-d_-m-e-s-s-a-g-e.html"><span>MLS_</span><wbr><span>UNSUPPORTED_</span><wbr><span>MESSAGE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="780321444%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -698,7 +739,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-u-n-s-u-p-p-o-r-t-e-d_-p-r-o-p-o-s-a-l.html"><span><span>MLS_UNSUPPORTED_PROPOSAL</span></span></a></div>
+                  <div><a href="-m-l-s_-u-n-s-u-p-p-o-r-t-e-d_-p-r-o-p-o-s-a-l.html"><span>MLS_</span><wbr><span>UNSUPPORTED_</span><wbr><span>PROPOSAL</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1816981981%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -713,7 +754,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-m-l-s_-w-e-l-c-o-m-e_-m-i-s-m-a-t-c-h.html"><span><span>MLS_WELCOME_MISMATCH</span></span></a></div>
+                  <div><a href="-m-l-s_-w-e-l-c-o-m-e_-m-i-s-m-a-t-c-h.html"><span>MLS_</span><wbr><span>WELCOME_</span><wbr><span>MISMATCH</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1786216850%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -728,7 +769,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-n-o_-c-o-n-v-e-r-s-a-t-i-o-n.html"><span><span>NO_CONVERSATION</span></span></a></div>
+                  <div><a href="-n-o_-c-o-n-v-e-r-s-a-t-i-o-n.html"><span>NO_</span><wbr><span><span>CONVERSATION</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1848263125%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -743,7 +784,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-n-o_-c-o-n-v-e-r-s-a-t-i-o-n_-c-o-d-e.html"><span><span>NO_CONVERSATION_CODE</span></span></a></div>
+                  <div><a href="-n-o_-c-o-n-v-e-r-s-a-t-i-o-n_-c-o-d-e.html"><span>NO_</span><wbr><span>CONVERSATION_</span><wbr><span>CODE</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="419803993%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -758,7 +799,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-n-o_-t-e-a-m.html"><span><span>NO_TEAM</span></span></a></div>
+                  <div><a href="-n-o_-t-e-a-m.html"><span>NO_</span><wbr><span>TEAM</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1211326405%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -773,7 +814,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-n-o-t_-f-o-u-n-d.html"><span><span>NOT_FOUND</span></span></a></div>
+                  <div><a href="-n-o-t_-f-o-u-n-d.html"><span>NOT_</span><wbr><span>FOUND</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-663885408%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -788,7 +829,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-n-o-t_-t-e-a-m_-m-e-m-b-e-r.html"><span><span>NOT_TEAM_MEMBER</span></span></a></div>
+                  <div><a href="-n-o-t_-t-e-a-m_-m-e-m-b-e-r.html"><span>NOT_</span><wbr><span>TEAM_</span><wbr><span>MEMBER</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2076064710%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -803,7 +844,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-o-p-e-r-a-t-i-o-n_-d-e-n-i-e-d.html"><span><span>OPERATION_DENIED</span></span></a></div>
+                  <div><a href="-o-p-e-r-a-t-i-o-n_-d-e-n-i-e-d.html"><span>OPERATION_</span><wbr><span>DENIED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="552125297%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -818,7 +859,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-t-o-o_-m-a-n-y_-c-l-i-e-n-t-s.html"><span><span>TOO_MANY_CLIENTS</span></span></a></div>
+                  <div><a href="-t-o-o_-m-a-n-y_-c-l-i-e-n-t-s.html"><span>TOO_</span><wbr><span>MANY_</span><wbr><span>CLIENTS</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-594227247%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -833,7 +874,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-t-o-o_-m-a-n-y_-m-e-m-b-e-r-s.html"><span><span>TOO_MANY_MEMBERS</span></span></a></div>
+                  <div><a href="-t-o-o_-m-a-n-y_-m-e-m-b-e-r-s.html"><span>TOO_</span><wbr><span>MANY_</span><wbr><span>MEMBERS</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="954298848%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -848,7 +889,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-u-n-k-n-o-w-n_-c-l-i-e-n-t.html"><span><span>UNKNOWN_CLIENT</span></span></a></div>
+                  <div><a href="-u-n-k-n-o-w-n_-c-l-i-e-n-t.html"><span>UNKNOWN_</span><wbr><span>CLIENT</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1866320412%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -863,7 +904,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-u-s-e-r_-c-r-e-a-t-i-o-n_-r-e-s-t-r-i-c-t-e-d.html"><span><span>USER_CREATION_RESTRICTED</span></span></a></div>
+                  <div><a href="-u-s-e-r_-c-r-e-a-t-i-o-n_-r-e-s-t-r-i-c-t-e-d.html"><span>USER_</span><wbr><span>CREATION_</span><wbr><span>RESTRICTED</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="395870525%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -878,7 +919,7 @@
           <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-w-r-o-n-g_-c-o-n-v-e-r-s-a-t-i-o-n_-p-a-s-s-w-o-r-d.html"><span><span>WRONG_CONVERSATION_PASSWORD</span></span></a></div>
+                  <div><a href="-w-r-o-n-g_-c-o-n-v-e-r-s-a-t-i-o-n_-p-a-s-s-w-o-r-d.html"><span>WRONG_</span><wbr><span>CONVERSATION_</span><wbr><span>PASSWORD</span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1045625201%2FProperties%2F-333076745"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
@@ -894,11 +935,18 @@
     </div>
   </div>
 </div>
-      <div class="footer">
-        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2025 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
-      </div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
     </div>
-</div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
-

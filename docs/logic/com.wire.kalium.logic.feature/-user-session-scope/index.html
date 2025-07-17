@@ -1,9 +1,11 @@
 <!doctype html>
-<html>
+<html class="no-js">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>UserSessionScope</title>
-<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>    <script>const storage = localStorage.getItem("dokka-dark-mode")
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
     if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         if (osDarkSchemePreferred === true) {
@@ -16,39 +18,78 @@
         }
     }
     </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
 <script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
 <link href="../../../styles/style.css" rel="Stylesheet">
-<link href="../../../styles/jetbrains-mono.css" rel="Stylesheet">
 <link href="../../../styles/main.css" rel="Stylesheet">
 <link href="../../../styles/prism.css" rel="Stylesheet">
 <link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
 <script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
 <script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
 <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
 <script type="text/javascript" src="../../../scripts/main.js" defer></script>
 <script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
 <script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
 <body>
-<div class="navigation-wrapper" id="navigation-wrapper">
-    <div id="leftToggler"><span class="icon-toggler"></span></div>
-    <div class="library-name">
-<a href="../../../index.html">
-<span>kalium</span>            </a>    </div>
-    <div>
-    </div>
-    <div class="pull-right d-flex">
-        <div class="filter-section" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
         </div>
-        <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
-        <div id="searchBar"></div>
-    </div>
-</div>
-<div id="container">
-    <div id="leftColumn">
-        <div id="sideMenu"></div>
-    </div>
-    <div id="main">
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
 <div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic.feature/UserSessionScope///PointingToDeclaration//867774983">
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature</a><span class="delimiter">/</span><span class="current">UserSessionScope</span></div>
   <div class="cover ">
@@ -89,7 +130,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="analytics-identifier-manager.html">analyticsIdentifierManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-analytics-identifier-manager/index.html">AnalyticsIdentifierManager</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="analytics-identifier-manager.html">analyticsIdentifierManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-analytics-identifier-manager/index.html">AnalyticsIdentifierManager</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -104,7 +145,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="app-lock-team-feature-config-observer.html">appLockTeamFeatureConfigObserver</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.applock/-app-lock-team-feature-config-observer/index.html">AppLockTeamFeatureConfigObserver</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="app-lock-team-feature-config-observer.html">appLockTeamFeatureConfigObserver</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.applock/-app-lock-team-feature-config-observer/index.html">AppLockTeamFeatureConfigObserver</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -119,7 +160,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="approve-legal-hold-request.html">approveLegalHoldRequest</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-approve-legal-hold-request-use-case/index.html">ApproveLegalHoldRequestUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="approve-legal-hold-request.html">approveLegalHoldRequest</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-approve-legal-hold-request-use-case/index.html">ApproveLegalHoldRequestUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -134,7 +175,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="authentication-scope.html">authenticationScope</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-authentication-scope/index.html">AuthenticationScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="authentication-scope.html">authenticationScope</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-authentication-scope/index.html">AuthenticationScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -149,7 +190,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="backup.html">backup</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.backup/-backup-scope/index.html">BackupScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="backup.html">backup</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.backup/-backup-scope/index.html">BackupScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -164,7 +205,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="call-mapper.html">callMapper</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.call.mapper/-call-mapper/index.html">CallMapper</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="call-mapper.html">callMapper</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.call.mapper/-call-mapper/index.html">CallMapper</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -179,7 +220,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="calls.html">calls</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.call/-calls-scope/index.html">CallsScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="calls.html">calls</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.call/-calls-scope/index.html">CallsScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -194,7 +235,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="cells.html">cells</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="cells.html">cells</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -209,7 +250,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="channels.html">channels</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.channels/-channels-scope/index.html">ChannelsScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="channels.html">channels</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.channels/-channels-scope/index.html">ChannelsScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -224,7 +265,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="check-crl-revocation-list.html">checkCrlRevocationList</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.e2ei/-check-crl-revocation-list-use-case/index.html">CheckCrlRevocationListUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="check-crl-revocation-list.html">checkCrlRevocationList</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.e2ei/-check-crl-revocation-list-use-case/index.html">CheckCrlRevocationListUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -239,7 +280,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="client.html">client</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.client/-client-scope/index.html">ClientScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="client.html">client</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.client/-client-scope/index.html">ClientScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -254,7 +295,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="client-id-provider.html">clientIdProvider</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="client-id-provider.html">clientIdProvider</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -269,7 +310,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">val </span><a href="client-repository.html">clientRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="client-repository.html">clientRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -284,7 +325,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="connection.html">connection</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.connection/-connection-scope/index.html">ConnectionScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="connection.html">connection</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.connection/-connection-scope/index.html">ConnectionScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -299,7 +340,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="conversations.html">conversations</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-conversation-scope/index.html">ConversationScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="conversations.html">conversations</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-conversation-scope/index.html">ConversationScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -314,7 +355,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword"></span><span class="token keyword">val </span><a href="coroutine-context.html">coroutineContext</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="coroutine-context.html">coroutineContext</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -329,7 +370,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="debug.html">debug</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.debug/-debug-scope/index.html">DebugScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="debug.html">debug</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.debug/-debug-scope/index.html">DebugScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -344,7 +385,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="delete-conversation-use-case.html">deleteConversationUseCase</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation.delete/-delete-conversation-use-case/index.html">DeleteConversationUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="delete-conversation-use-case.html">deleteConversationUseCase</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation.delete/-delete-conversation-use-case/index.html">DeleteConversationUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -359,7 +400,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="federated-id-mapper.html">federatedIdMapper</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-federated-id-mapper/index.html">FederatedIdMapper</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="federated-id-mapper.html">federatedIdMapper</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-federated-id-mapper/index.html">FederatedIdMapper</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -374,7 +415,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="fetch-conversation-m-l-s-verification-status.html">fetchConversationMLSVerificationStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.e2ei.usecase/-fetch-conversation-m-l-s-verification-status-use-case/index.html">FetchConversationMLSVerificationStatusUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="fetch-conversation-m-l-s-verification-status.html">fetchConversationMLSVerificationStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.e2ei.usecase/-fetch-conversation-m-l-s-verification-status-use-case/index.html">FetchConversationMLSVerificationStatusUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -389,7 +430,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-analytics-contacts-data.html">getAnalyticsContactsData</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-get-analytics-contacts-data-use-case/index.html">GetAnalyticsContactsDataUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="get-analytics-contacts-data.html">getAnalyticsContactsData</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-get-analytics-contacts-data-use-case/index.html">GetAnalyticsContactsDataUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -404,7 +445,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-current-analytics-tracking-identifier.html">getCurrentAnalyticsTrackingIdentifier</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-get-current-analytics-tracking-identifier-use-case/index.html">GetCurrentAnalyticsTrackingIdentifierUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="get-current-analytics-tracking-identifier.html">getCurrentAnalyticsTrackingIdentifier</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-get-current-analytics-tracking-identifier-use-case/index.html">GetCurrentAnalyticsTrackingIdentifierUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -419,7 +460,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-default-protocol.html">getDefaultProtocol</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-get-default-protocol-use-case/index.html">GetDefaultProtocolUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="get-default-protocol.html">getDefaultProtocol</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-get-default-protocol-use-case/index.html">GetDefaultProtocolUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -434,7 +475,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-other-user-security-classification-label.html">getOtherUserSecurityClassificationLabel</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-observe-other-user-security-classification-label-use-case/index.html">ObserveOtherUserSecurityClassificationLabelUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="get-other-user-security-classification-label.html">getOtherUserSecurityClassificationLabel</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-observe-other-user-security-classification-label-use-case/index.html">ObserveOtherUserSecurityClassificationLabelUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -449,7 +490,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-persistent-web-socket-status.html">getPersistentWebSocketStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.webSocketStatus/-get-persistent-web-socket-status/index.html">GetPersistentWebSocketStatus</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="get-persistent-web-socket-status.html">getPersistentWebSocketStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.webSocketStatus/-get-persistent-web-socket-status/index.html">GetPersistentWebSocketStatus</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -464,7 +505,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">val </span><a href="get-proxy-credentials.html">getProxyCredentials</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.session/-get-proxy-credentials-use-case/index.html">GetProxyCredentialsUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="get-proxy-credentials.html">getProxyCredentials</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.session/-get-proxy-credentials-use-case/index.html">GetProxyCredentialsUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -479,7 +520,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-team-url-use-case.html">getTeamUrlUseCase</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.server/-get-team-url-use-case/index.html">GetTeamUrlUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="get-team-url-use-case.html">getTeamUrlUseCase</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.server/-get-team-url-use-case/index.html">GetTeamUrlUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -494,7 +535,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-e2-e-i-enabled.html">isE2EIEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-is-e2-e-i-enabled-use-case/index.html">IsE2EIEnabledUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="is-e2-e-i-enabled.html">isE2EIEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-is-e2-e-i-enabled-use-case/index.html">IsE2EIEnabledUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -509,7 +550,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-file-sharing-enabled.html">isFileSharingEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-is-file-sharing-enabled-use-case/index.html">IsFileSharingEnabledUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="is-file-sharing-enabled.html">isFileSharingEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-is-file-sharing-enabled-use-case/index.html">IsFileSharingEnabledUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -524,7 +565,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-m-l-s-enabled.html">isMLSEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-is-m-l-s-enabled-use-case/index.html">IsMLSEnabledUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="is-m-l-s-enabled.html">isMLSEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-is-m-l-s-enabled-use-case/index.html">IsMLSEnabledUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -539,7 +580,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="kalium-file-system.html">kaliumFileSystem</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-kalium-file-system/index.html">KaliumFileSystem</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="kalium-file-system.html">kaliumFileSystem</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-kalium-file-system/index.html">KaliumFileSystem</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -554,7 +595,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="keying-materials-manager.html">keyingMaterialsManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation.keyingmaterials/-keying-materials-manager/index.html">KeyingMaterialsManager</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="keying-materials-manager.html">keyingMaterialsManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation.keyingmaterials/-keying-materials-manager/index.html">KeyingMaterialsManager</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -569,7 +610,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">val </span><a href="key-package-manager.html">keyPackageManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.keypackage/-key-package-manager/index.html">KeyPackageManager</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="key-package-manager.html">keyPackageManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.keypackage/-key-package-manager/index.html">KeyPackageManager</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -584,7 +625,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="logout.html">logout</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-logout-use-case/index.html">LogoutUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="logout.html">logout</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-logout-use-case/index.html">LogoutUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -599,7 +640,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mark-e2-e-i-required-as-notified.html">markE2EIRequiredAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-mark-enabling-e2-e-i-as-notified-use-case/index.html">MarkEnablingE2EIAsNotifiedUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mark-e2-e-i-required-as-notified.html">markE2EIRequiredAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-mark-enabling-e2-e-i-as-notified-use-case/index.html">MarkEnablingE2EIAsNotifiedUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -614,7 +655,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mark-file-sharing-status-as-notified.html">markFileSharingStatusAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-mark-file-sharing-change-as-notified-use-case/index.html">MarkFileSharingChangeAsNotifiedUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mark-file-sharing-status-as-notified.html">markFileSharingStatusAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-mark-file-sharing-change-as-notified-use-case/index.html">MarkFileSharingChangeAsNotifiedUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -629,7 +670,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mark-guest-link-feature-flag-as-not-changed.html">markGuestLinkFeatureFlagAsNotChanged</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.guestroomlink/-mark-guest-link-feature-flag-as-not-changed-use-case/index.html">MarkGuestLinkFeatureFlagAsNotChangedUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mark-guest-link-feature-flag-as-not-changed.html">markGuestLinkFeatureFlagAsNotChanged</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.guestroomlink/-mark-guest-link-feature-flag-as-not-changed-use-case/index.html">MarkGuestLinkFeatureFlagAsNotChangedUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -644,7 +685,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mark-legal-hold-change-as-notified-for-self.html">markLegalHoldChangeAsNotifiedForSelf</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-mark-legal-hold-change-as-notified-for-self-use-case/index.html">MarkLegalHoldChangeAsNotifiedForSelfUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mark-legal-hold-change-as-notified-for-self.html">markLegalHoldChangeAsNotifiedForSelf</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-mark-legal-hold-change-as-notified-for-self-use-case/index.html">MarkLegalHoldChangeAsNotifiedForSelfUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -659,7 +700,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mark-notify-for-revoked-certificate-as-notified.html">markNotifyForRevokedCertificateAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.e2ei/-mark-notify-for-revoked-certificate-as-notified-use-case/index.html">MarkNotifyForRevokedCertificateAsNotifiedUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mark-notify-for-revoked-certificate-as-notified.html">markNotifyForRevokedCertificateAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.e2ei/-mark-notify-for-revoked-certificate-as-notified-use-case/index.html">MarkNotifyForRevokedCertificateAsNotifiedUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -674,7 +715,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mark-self-deleting-messages-as-notified.html">markSelfDeletingMessagesAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-mark-self-deletion-status-as-notified-use-case/index.html">MarkSelfDeletionStatusAsNotifiedUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mark-self-deleting-messages-as-notified.html">markSelfDeletingMessagesAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-mark-self-deletion-status-as-notified-use-case/index.html">MarkSelfDeletionStatusAsNotifiedUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -689,7 +730,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mark-team-app-lock-status-as-notified.html">markTeamAppLockStatusAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.applock/-mark-team-app-lock-status-as-notified-use-case/index.html">MarkTeamAppLockStatusAsNotifiedUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mark-team-app-lock-status-as-notified.html">markTeamAppLockStatusAsNotified</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.applock/-mark-team-app-lock-status-as-notified-use-case/index.html">MarkTeamAppLockStatusAsNotifiedUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -704,7 +745,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="members-having-legal-hold-client.html">membersHavingLegalHoldClient</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-members-having-legal-hold-client-use-case/index.html">MembersHavingLegalHoldClientUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="members-having-legal-hold-client.html">membersHavingLegalHoldClient</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-members-having-legal-hold-client-use-case/index.html">MembersHavingLegalHoldClientUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -719,7 +760,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="messages.html">messages</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.message/-message-scope/index.html">MessageScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="messages.html">messages</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.message/-message-scope/index.html">MessageScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -734,7 +775,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="migrate-from-personal-to-team.html">migrateFromPersonalToTeam</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.migration/-migrate-from-personal-to-team-use-case/index.html">MigrateFromPersonalToTeamUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="migrate-from-personal-to-team.html">migrateFromPersonalToTeam</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.migration/-migrate-from-personal-to-team-use-case/index.html">MigrateFromPersonalToTeamUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -749,7 +790,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mls-client-manager.html">mlsClientManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.client/-m-l-s-client-manager/index.html">MLSClientManager</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mls-client-manager.html">mlsClientManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.client/-m-l-s-client-manager/index.html">MLSClientManager</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -764,7 +805,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mls-migration-manager.html">mlsMigrationManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.mlsmigration/-m-l-s-migration-manager/index.html">MLSMigrationManager</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mls-migration-manager.html">mlsMigrationManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.mlsmigration/-m-l-s-migration-manager/index.html">MLSMigrationManager</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -779,7 +820,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="mls-public-keys-sync-worker.html">mlsPublicKeysSyncWorker</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.mls/-m-l-s-public-keys-sync-worker/index.html">MLSPublicKeysSyncWorker</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mls-public-keys-sync-worker.html">mlsPublicKeysSyncWorker</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.mls/-m-l-s-public-keys-sync-worker/index.html">MLSPublicKeysSyncWorker</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -794,7 +835,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="multi-platform-backup.html">multiPlatformBackup</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.backup/-multi-platform-backup-scope/index.html">MultiPlatformBackupScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="multi-platform-backup.html">multiPlatformBackup</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.backup/-multi-platform-backup-scope/index.html">MultiPlatformBackupScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -809,7 +850,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-analytics-tracking-identifier-status.html">observeAnalyticsTrackingIdentifierStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-observe-analytics-tracking-identifier-status-use-case/index.html">ObserveAnalyticsTrackingIdentifierStatusUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-analytics-tracking-identifier-status.html">observeAnalyticsTrackingIdentifierStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-observe-analytics-tracking-identifier-status-use-case/index.html">ObserveAnalyticsTrackingIdentifierStatusUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -824,7 +865,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-e2-e-i-required.html">observeE2EIRequired</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-observe-e2-e-i-required-use-case/index.html">ObserveE2EIRequiredUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-e2-e-i-required.html">observeE2EIRequired</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-observe-e2-e-i-required-use-case/index.html">ObserveE2EIRequiredUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -839,7 +880,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-file-sharing-status.html">observeFileSharingStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-observe-file-sharing-status-use-case/index.html">ObserveFileSharingStatusUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-file-sharing-status.html">observeFileSharingStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-observe-file-sharing-status-use-case/index.html">ObserveFileSharingStatusUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -854,7 +895,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-guest-room-link-feature-flag.html">observeGuestRoomLinkFeatureFlag</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.guestroomlink/-observe-guest-room-link-feature-flag-use-case/index.html">ObserveGuestRoomLinkFeatureFlagUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-guest-room-link-feature-flag.html">observeGuestRoomLinkFeatureFlag</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.guestroomlink/-observe-guest-room-link-feature-flag-use-case/index.html">ObserveGuestRoomLinkFeatureFlagUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -869,7 +910,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-legal-hold-change-notified-for-self.html">observeLegalHoldChangeNotifiedForSelf</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-change-notified-for-self-use-case/index.html">ObserveLegalHoldChangeNotifiedForSelfUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-legal-hold-change-notified-for-self.html">observeLegalHoldChangeNotifiedForSelf</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-change-notified-for-self-use-case/index.html">ObserveLegalHoldChangeNotifiedForSelfUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -884,7 +925,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-legal-hold-for-self-user.html">observeLegalHoldForSelfUser</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-state-for-self-user-use-case/index.html">ObserveLegalHoldStateForSelfUserUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-legal-hold-for-self-user.html">observeLegalHoldForSelfUser</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-state-for-self-user-use-case/index.html">ObserveLegalHoldStateForSelfUserUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -899,7 +940,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-legal-hold-request.html">observeLegalHoldRequest</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-request-use-case/index.html">ObserveLegalHoldRequestUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-legal-hold-request.html">observeLegalHoldRequest</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-request-use-case/index.html">ObserveLegalHoldRequestUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -914,7 +955,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-legal-hold-state-for-user.html">observeLegalHoldStateForUser</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-state-for-user-use-case/index.html">ObserveLegalHoldStateForUserUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-legal-hold-state-for-user.html">observeLegalHoldStateForUser</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.legalhold/-observe-legal-hold-state-for-user-use-case/index.html">ObserveLegalHoldStateForUserUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -929,7 +970,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-screenshot-censoring-config.html">observeScreenshotCensoringConfig</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.screenshotCensoring/-observe-screenshot-censoring-config-use-case/index.html">ObserveScreenshotCensoringConfigUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-screenshot-censoring-config.html">observeScreenshotCensoringConfig</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.screenshotCensoring/-observe-screenshot-censoring-config-use-case/index.html">ObserveScreenshotCensoringConfigUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -944,7 +985,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-security-classification-label.html">observeSecurityClassificationLabel</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-observe-security-classification-label-use-case/index.html">ObserveSecurityClassificationLabelUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-security-classification-label.html">observeSecurityClassificationLabel</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-observe-security-classification-label-use-case/index.html">ObserveSecurityClassificationLabelUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -959,7 +1000,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-self-deleting-messages.html">observeSelfDeletingMessages</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-self-deletion-timer-settings-for-conversation-use-case/index.html">ObserveSelfDeletionTimerSettingsForConversationUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-self-deleting-messages.html">observeSelfDeletingMessages</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-self-deletion-timer-settings-for-conversation-use-case/index.html">ObserveSelfDeletionTimerSettingsForConversationUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -974,7 +1015,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-should-notify-for-revoked-certificate.html">observeShouldNotifyForRevokedCertificate</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.e2ei/-observe-should-notify-for-revoked-certificate-use-case/index.html">ObserveShouldNotifyForRevokedCertificateUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-should-notify-for-revoked-certificate.html">observeShouldNotifyForRevokedCertificate</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.e2ei/-observe-should-notify-for-revoked-certificate-use-case/index.html">ObserveShouldNotifyForRevokedCertificateUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -989,7 +1030,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-sync-state.html">observeSyncState</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-observe-sync-state-use-case/index.html">ObserveSyncStateUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-sync-state.html">observeSyncState</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-observe-sync-state-use-case/index.html">ObserveSyncStateUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1004,7 +1045,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-team-settings-self-deletion-status.html">observeTeamSettingsSelfDeletionStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-team-settings-self-deleting-status-use-case/index.html">ObserveTeamSettingsSelfDeletingStatusUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="observe-team-settings-self-deletion-status.html">observeTeamSettingsSelfDeletionStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-team-settings-self-deleting-status-use-case/index.html">ObserveTeamSettingsSelfDeletingStatusUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1019,7 +1060,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-message.html">persistMessage</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="persist-message.html">persistMessage</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1034,7 +1075,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-new-self-deletion-status.html">persistNewSelfDeletionStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.selfDeletingMessages/-persist-new-self-deletion-timer-use-case-impl/index.html">PersistNewSelfDeletionTimerUseCaseImpl</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="persist-new-self-deletion-status.html">persistNewSelfDeletionStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.selfDeletingMessages/-persist-new-self-deletion-timer-use-case-impl/index.html">PersistNewSelfDeletionTimerUseCaseImpl</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1049,7 +1090,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-persistent-web-socket-connection-status.html">persistPersistentWebSocketConnectionStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.webSocketStatus/-persist-persistent-web-socket-connection-status-use-case/index.html">PersistPersistentWebSocketConnectionStatusUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="persist-persistent-web-socket-connection-status.html">persistPersistentWebSocketConnectionStatus</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.webSocketStatus/-persist-persistent-web-socket-connection-status-use-case/index.html">PersistPersistentWebSocketConnectionStatusUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1064,7 +1105,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-screenshot-censoring-config.html">persistScreenshotCensoringConfig</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.screenshotCensoring/-persist-screenshot-censoring-config-use-case/index.html">PersistScreenshotCensoringConfigUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="persist-screenshot-censoring-config.html">persistScreenshotCensoringConfig</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.screenshotCensoring/-persist-screenshot-censoring-config-use-case/index.html">PersistScreenshotCensoringConfigUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1079,7 +1120,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="proteus-client-provider.html">proteusClientProvider</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.client/-proteus-client-provider/index.html">ProteusClientProvider</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="proteus-client-provider.html">proteusClientProvider</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.client/-proteus-client-provider/index.html">ProteusClientProvider</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1094,7 +1135,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">val </span><a href="push-token-repository.html">pushTokenRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.notification/-push-token-repository/index.html">PushTokenRepository</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="push-token-repository.html">pushTokenRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.notification/-push-token-repository/index.html">PushTokenRepository</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1109,7 +1150,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="qualified-id-mapper.html">qualifiedIdMapper</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="qualified-id-mapper.html">qualifiedIdMapper</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1124,7 +1165,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="search.html">search</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.search/-search-scope/index.html">SearchScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="search.html">search</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.search/-search-scope/index.html">SearchScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1139,7 +1180,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="service.html">service</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.service/-service-scope/index.html">ServiceScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="service.html">service</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.service/-service-scope/index.html">ServiceScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1154,7 +1195,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="set-new-user-tracking-identifier.html">setNewUserTrackingIdentifier</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-set-new-user-tracking-identifier-use-case/index.html">SetNewUserTrackingIdentifierUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="set-new-user-tracking-identifier.html">setNewUserTrackingIdentifier</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-set-new-user-tracking-identifier-use-case/index.html">SetNewUserTrackingIdentifierUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1169,7 +1210,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="sync-executor.html">syncExecutor</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-executor/index.html">SyncExecutor</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="sync-executor.html">syncExecutor</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-executor/index.html">SyncExecutor</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1184,7 +1225,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="sync-manager.html"><strike>syncManager</strike></a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/index.html#-334454212%2FClasslikes%2F867774983">SyncManager</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="sync-manager.html"><strike>syncManager</strike></a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-manager/index.html">SyncManager</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1199,7 +1240,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="sync-state-observer.html">syncStateObserver</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-state-observer/index.html">SyncStateObserver</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="sync-state-observer.html">syncStateObserver</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-state-observer/index.html">SyncStateObserver</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1214,7 +1255,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="team.html">team</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.team/-team-scope/index.html">TeamScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="team.html">team</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.team/-team-scope/index.html">TeamScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1229,7 +1270,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">val </span><a href="user-config-repository.html">userConfigRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="user-config-repository.html">userConfigRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1244,7 +1285,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="users.html">users</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-user-scope/index.html">UserScope</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="users.html">users</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user/-user-scope/index.html">UserScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -1263,7 +1304,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="observe-if-e2-e-i-required-during-login.html"><span class="token function">observeIfE2EIRequiredDuringLogin</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator">&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="observe-if-e2-e-i-required-during-login.html"><span class="token function">observeIfE2EIRequiredDuringLogin</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator">?</span><span class="token operator">&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -1273,11 +1314,18 @@
     </div>
   </div>
 </div>
-      <div class="footer">
-        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2025 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
-      </div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
     </div>
-</div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
-
