@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
@@ -56,14 +58,14 @@ class RecoverMLSConversationsUseCaseTests {
             .withConversationIsOutOfSyncReturnsTrueFor(listOf(Arrangement.GROUP_ID1, Arrangement.GROUP_ID2))
             .arrange()
 
-        val actual = recoverMLSConversationsUseCase()
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -80,14 +82,14 @@ class RecoverMLSConversationsUseCaseTests {
             .withConversationIsOutOfSyncReturnsTrueFor(listOf(Arrangement.GROUP_ID1, Arrangement.GROUP_ID2))
             .arrange()
 
-        val actual = recoverMLSConversationsUseCase()
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
@@ -104,14 +106,14 @@ class RecoverMLSConversationsUseCaseTests {
             .withConversationIsOutOfSyncReturnsFalseFor(Arrangement.GROUP_ID1)
             .arrange()
 
-        val actual = recoverMLSConversationsUseCase()
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -128,14 +130,14 @@ class RecoverMLSConversationsUseCaseTests {
             .withConversationIsOutOfSyncReturnsFalseFor(Arrangement.GROUP_ID2)
             .arrange()
 
-        val actual = recoverMLSConversationsUseCase()
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
         }.wasInvoked(twice)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
         }.wasInvoked(once)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -151,17 +153,17 @@ class RecoverMLSConversationsUseCaseTests {
             .withConversationIsOutOfSyncReturnsTrueFor(listOf())
             .arrange()
 
-        val actual = recoverMLSConversationsUseCase()
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
 
-    private class Arrangement {
-                val mlsConversationRepository = mock(MLSConversationRepository::class)
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
         val featureSupport = mock(FeatureSupport::class)
         val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
         val clientRepository = mock(ClientRepository::class)
@@ -195,31 +197,31 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withConversationIsOutOfSyncReturnsTrueFor(groupIds: List<GroupID>) = apply {
             coEvery {
-                mlsConversationRepository.isGroupOutOfSync(matches { it in groupIds }, any())
+                mlsConversationRepository.isGroupOutOfSync(any(), matches { it in groupIds }, any())
             }.returns(Either.Right(true))
         }
 
         suspend fun withConversationIsOutOfSyncReturnsFalseFor(groupID: GroupID) = apply {
             coEvery {
-                mlsConversationRepository.isGroupOutOfSync(eq(groupID), any())
+                mlsConversationRepository.isGroupOutOfSync(any(), eq(groupID), any())
             }.returns(Either.Right(false))
             coEvery {
-                mlsConversationRepository.isGroupOutOfSync(matches { it != groupID }, any())
+                mlsConversationRepository.isGroupOutOfSync(any(), matches { it != groupID }, any())
             }.returns(Either.Right(true))
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(failedGroupId, null)
+                joinExistingMLSConversationUseCase.invoke(any(), eq(failedGroupId), any())
             }.returns(Either.Left(StorageFailure.DataNotFound))
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(matches { it != failedGroupId }, any())
+                joinExistingMLSConversationUseCase.invoke(any(), matches { it != failedGroupId }, any())
             }.returns(Either.Right(Unit))
         }
 

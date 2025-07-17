@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
@@ -29,7 +29,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
@@ -41,78 +42,82 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class MLSMessageCreatorTest {
 
-        private val mlsClientProvider = mock(MLSClientProvider::class)
-
-        private val protoContentMapper = mock(ProtoContentMapper::class)
-
-        private val conversationRepository = mock(ConversationRepository::class)
-
-        private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
-
-    private lateinit var mlsMessageCreator: MLSMessageCreator
-
-    @BeforeTest
-    fun setup() {
-        mlsMessageCreator = MLSMessageCreatorImpl(
-            conversationRepository,
-            legalHoldStatusMapper,
-            mlsClientProvider,
-            SELF_USER_ID,
-            protoContentMapper
-        )
-    }
-
     @Test
     fun givenMessage_whenCreatingMLSMessage_thenMLSClientShouldBeUsedToEncryptProtobufContent() = runTest {
         val encryptedData = byteArrayOf()
-        coEvery {
-            mlsClientProvider.getMLSClient(any())
-        }.returns(Either.Right(MLS_CLIENT))
-
-        coEvery {
-            conversationRepository.observeLegalHoldStatus(any())
-        }.returns(flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)))
-
-        every {
-
-            legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-
-        }.returns(Conversation.LegalHoldStatus.DISABLED)
-
-        coEvery {
-            MLS_CLIENT.encryptMessage(any(), any())
-        }.returns(encryptedData)
-
         val plainData = byteArrayOf(0x42, 0x73)
-        every {
-            protoContentMapper.encodeToProtobuf(any())
-        }.returns(PlainMessageBlob(plainData))
 
-        mlsMessageCreator.createOutgoingMLSMessage(GROUP_ID, TestMessage.TEXT_MESSAGE).shouldSucceed {}
+        val (arrangement, creator) = Arrangement()
+            .withObserveLegalHoldStatus(Either.Right(Conversation.LegalHoldStatus.DISABLED))
+            .withMapLegalHoldConversationStatus(Conversation.LegalHoldStatus.DISABLED)
+            .withEncodeToProtobufReturning(plainData)
+            .withMLSEncryptMessage(encryptedData)
+            .arrange {}
+
+        creator.createOutgoingMLSMessage(arrangement.mlsContext, GROUP_ID, TestMessage.TEXT_MESSAGE).shouldSucceed {}
 
         coVerify {
-            MLS_CLIENT.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
+            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
         }.wasInvoked(once)
 
         coVerify {
-            conversationRepository.observeLegalHoldStatus(any())
+            arrangement.conversationRepository.observeLegalHoldStatus(any())
         }.wasInvoked(once)
 
         verify {
-            legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
+            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
         }.wasInvoked(once)
+    }
+
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val protoContentMapper = mock(ProtoContentMapper::class)
+        val conversationRepository = mock(ConversationRepository::class)
+        val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = apply {
+            block()
+        }.let {
+            this to MLSMessageCreatorImpl(
+                conversationRepository,
+                legalHoldStatusMapper,
+                SELF_USER_ID,
+                protoContentMapper
+            )
+        }
+
+        suspend fun withObserveLegalHoldStatus(result: Either<StorageFailure, Conversation.LegalHoldStatus>) = apply {
+            coEvery {
+                conversationRepository.observeLegalHoldStatus(any())
+            }.returns(flowOf(result))
+        }
+
+        fun withEncodeToProtobufReturning(plainData: ByteArray) = apply {
+            every {
+                protoContentMapper.encodeToProtobuf(any())
+            }.returns(PlainMessageBlob(plainData))
+        }
+
+        fun withMapLegalHoldConversationStatus(result: Conversation.LegalHoldStatus) = apply {
+            every {
+                legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withMLSEncryptMessage(data: ByteArray) = apply {
+            coEvery { mlsContext.encryptMessage(any(), any()) }
+                .returns(data)
+        }
+
     }
 
     private companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
         val GROUP_ID = GroupID("groupId")
         val CRYPTO_GROUP_ID = MapperProvider.idMapper().toCryptoModel(GroupID("groupId"))
-        val MLS_CLIENT = mock(MLSClient::class)
     }
 
 }

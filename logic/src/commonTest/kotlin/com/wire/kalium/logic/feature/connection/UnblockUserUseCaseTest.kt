@@ -26,6 +26,8 @@ import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -48,7 +50,11 @@ class UnblockUserUseCaseTest {
 
         assertTrue(result is UnblockUserResult.Failure)
         coVerify {
-            arrangement.connectionRepository.updateConnectionStatus(eq(TestUser.USER_ID), eq(ConnectionState.ACCEPTED))
+            arrangement.connectionRepository.updateConnectionStatus(
+                any(),
+                eq(TestUser.USER_ID),
+                eq(ConnectionState.ACCEPTED)
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -62,22 +68,28 @@ class UnblockUserUseCaseTest {
 
         assertTrue(result is UnblockUserResult.Success)
         coVerify {
-            arrangement.connectionRepository.updateConnectionStatus(eq(TestUser.USER_ID), eq(ConnectionState.ACCEPTED))
+            arrangement.connectionRepository.updateConnectionStatus(
+                any(),
+                eq(TestUser.USER_ID),
+                eq(ConnectionState.ACCEPTED)
+            )
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
-        val unblockUser = UnblockUserUseCaseImpl(connectionRepository)
+        val unblockUser = UnblockUserUseCaseImpl(connectionRepository, cryptoTransactionProvider)
 
         suspend fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
             coEvery {
-                connectionRepository.updateConnectionStatus(any(), any())
+                connectionRepository.updateConnectionStatus(any(), any(), any())
             }.returns(result)
         }
 
-        fun arrange() = this to unblockUser
+        suspend fun arrange() = this to unblockUser.also {
+            withTransactionReturning(Either.Right(Unit))
+        }
     }
 }

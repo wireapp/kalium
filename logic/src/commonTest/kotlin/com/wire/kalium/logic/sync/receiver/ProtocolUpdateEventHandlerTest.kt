@@ -26,6 +26,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandl
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -55,10 +57,10 @@ class ProtocolUpdateEventHandlerTest {
             withoutAnyEstablishedCall()
         }
 
-        useCase.handle(event).shouldSucceed()
+        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         coVerify {
-            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -76,10 +78,10 @@ class ProtocolUpdateEventHandlerTest {
             withEstablishedCall()
         }
 
-        useCase.handle(event).shouldSucceed()
+        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         coVerify {
-            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -101,12 +103,12 @@ class ProtocolUpdateEventHandlerTest {
             withInsertProtocolChangedSystemMessage()
         }
 
-        useCase.handle(event).shouldFail {
+        useCase.handle(arrangement.transactionContext, event).shouldFail {
             assertEquals(failure, it)
         }
 
         coVerify {
-            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -120,10 +122,10 @@ class ProtocolUpdateEventHandlerTest {
             withoutAnyEstablishedCall()
         }
 
-        useCase.handle(event).shouldSucceed()
+        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         coVerify {
-            arrangement.updateConversationProtocol(eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -136,7 +138,7 @@ class ProtocolUpdateEventHandlerTest {
             withInsertProtocolChangedSystemMessage()
         }
 
-        useCase.handle(event).shouldSucceed()
+        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         coVerify {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(
@@ -150,6 +152,7 @@ class ProtocolUpdateEventHandlerTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         CallRepositoryArrangement by CallRepositoryArrangementImpl() {
         val updateConversationProtocol = mock(UpdateConversationProtocolUseCase::class)
 
@@ -161,7 +164,7 @@ class ProtocolUpdateEventHandlerTest {
 
         suspend fun withUpdateProtocolUpdateReturns(result: Either<CoreFailure, Boolean>) {
             coEvery {
-                updateConversationProtocol(any(), any(), any())
+                updateConversationProtocol(any(), any(), any(), any())
             }.returns(result)
         }
 

@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.conversation.delete
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -35,19 +37,21 @@ import io.mockative.Mockable
 
 @Mockable
 interface DeleteConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 internal class DeleteConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository
 ) : DeleteConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
         return conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is Conversation.ProtocolInfo.MLSCapable -> {
                     conversationRepository.deleteConversationLocally(conversationId).flatMap {
-                        mlsConversationRepository.leaveGroup(protocolInfo.groupId)
+                        transactionContext.wrapInMLSContext {
+                            mlsConversationRepository.leaveGroup(it, protocolInfo.groupId)
+                        }
                     }
                 }
 

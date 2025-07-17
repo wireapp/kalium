@@ -21,11 +21,13 @@ package com.wire.kalium.logic.sync.incremental
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -58,7 +60,7 @@ class IncrementalSyncWorkerTest {
 
         // Then
         coVerify {
-            arrangement.eventProcessor.processEvent(eq(envelope))
+            arrangement.eventProcessor.processEvent(any(), eq(envelope))
         }.wasInvoked(exactly = once)
     }
 
@@ -135,7 +137,7 @@ class IncrementalSyncWorkerTest {
         assertEquals(coreFailureCause, resultException.coreFailureCause)
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
 
@@ -153,7 +155,7 @@ class IncrementalSyncWorkerTest {
 
         suspend fun withEventProcessorReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                eventProcessor.processEvent(any())
+                eventProcessor.processEvent(any(), any())
             }.returns(result)
         }
 
@@ -161,8 +163,12 @@ class IncrementalSyncWorkerTest {
 
         suspend fun withEventProcessorFailingWith(failure: CoreFailure) = withEventProcessorReturning(Either.Left(failure))
 
-        fun arrange() = this to IncrementalSyncWorkerImpl(
-            eventGatherer, eventProcessor
-        )
+        suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
+            block()
+            withTransactionReturning(Either.Right(Unit))
+            this to IncrementalSyncWorkerImpl(
+                eventGatherer, eventProcessor, cryptoTransactionProvider
+            )
+        }
     }
 }

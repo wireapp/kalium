@@ -26,8 +26,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -114,8 +113,6 @@ class MessageScope internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
-    private val proteusClientProvider: ProteusClientProvider,
-    private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
@@ -136,6 +133,7 @@ class MessageScope internal constructor(
     private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
     private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -153,13 +151,12 @@ class MessageScope internal constructor(
         )
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
+        get() = SessionEstablisherImpl(preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
             conversationRepository = conversationRepository,
             legalHoldStatusMapper = legalHoldStatusMapper,
-            proteusClientProvider = proteusClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
@@ -168,7 +165,6 @@ class MessageScope internal constructor(
         get() = MLSMessageCreatorImpl(
             conversationRepository = conversationRepository,
             legalHoldStatusMapper = legalHoldStatusMapper,
-            mlsClientProvider = mlsClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
@@ -226,6 +222,7 @@ class MessageScope internal constructor(
             messageSendingInterceptor,
             userRepository,
             staleEpochVerifier,
+            transactionProvider,
             { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
             scope
         )
@@ -428,7 +425,7 @@ class MessageScope internal constructor(
         get() = SessionResetSenderImpl(slowSyncRepository, selfUserId, currentClientIdProvider, messageSender, dispatcher)
 
     val resetSession: ResetSessionUseCase
-        get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
+        get() = ResetSessionUseCaseImpl(transactionProvider, sessionResetSender, messageRepository)
 
     val sendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
         get() = SendButtonActionConfirmationMessageUseCase(

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * Use Case that allows a user to block user
@@ -39,11 +40,19 @@ fun interface BlockUserUseCase {
 }
 
 internal class BlockUserUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : BlockUserUseCase {
 
     override suspend fun invoke(userId: UserId): BlockUserResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.BLOCKED)
+        return transactionProvider
+            .transaction("BlockUser") { transactionContext ->
+                connectionRepository.updateConnectionStatus(
+                    transactionContext,
+                    userId,
+                    ConnectionState.BLOCKED
+                )
+            }
             .fold({
                 kaliumLogger.e("An error occurred when blocking a user $userId")
                 BlockUserResult.Failure(it)

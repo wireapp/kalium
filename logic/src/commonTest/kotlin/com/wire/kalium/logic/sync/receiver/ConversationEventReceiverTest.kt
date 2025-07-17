@@ -41,6 +41,8 @@ import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArr
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
@@ -61,10 +63,14 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(newMessageEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            newMessageEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.newMessageEventHandler.handleNewProteusMessage(eq(newMessageEvent), any())
+            arrangement.newMessageEventHandler.handleNewProteusMessage(any(), eq(newMessageEvent), any())
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -76,10 +82,14 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(newMLSMessageEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            newMLSMessageEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.newMessageEventHandler.handleNewMLSMessage(eq(newMLSMessageEvent), any())
+            arrangement.newMessageEventHandler.handleNewMLSMessage(any(), eq(newMLSMessageEvent), any())
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -91,10 +101,14 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(newConversationEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            newConversationEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.newConversationEventHandler.handle(eq(newConversationEvent))
+            arrangement.newConversationEventHandler.handle(any(), eq(newConversationEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -106,10 +120,14 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(deletedConversationEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            deletedConversationEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.deletedConversationEventHandler.handle(eq(deletedConversationEvent))
+            arrangement.deletedConversationEventHandler.handle(any(), eq(deletedConversationEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -123,10 +141,14 @@ class ConversationEventReceiverTest {
             .withMemberJoinSucceeded()
             .arrange()
 
-        val result = featureConfigEventReceiver.onEvent(memberJoinEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            memberJoinEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(eq(memberJoinEvent))
+            arrangement.memberJoinEventHandler.handle(any(), eq(memberJoinEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -140,10 +162,14 @@ class ConversationEventReceiverTest {
             .withMemberLeaveSucceeded()
             .arrange()
 
-        val result = featureConfigEventReceiver.onEvent(memberLeaveEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            memberLeaveEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.memberLeaveEventHandler.handle(eq(memberLeaveEvent))
+            arrangement.memberLeaveEventHandler.handle(any(), eq(memberLeaveEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -156,10 +182,14 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(memberChangeEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            memberChangeEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.memberChangeEventHandler.handle(eq(memberChangeEvent))
+            arrangement.memberChangeEventHandler.handle(any(), eq(memberChangeEvent))
         }.wasInvoked(once)
         result.shouldSucceed()
     }
@@ -172,10 +202,14 @@ class ConversationEventReceiverTest {
             .withMLSWelcomeEventSucceeded()
             .arrange()
 
-        val result = featureConfigEventReceiver.onEvent(mlsWelcomeEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            mlsWelcomeEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
-            arrangement.mlsWelcomeEventHandler.handle(eq(mlsWelcomeEvent))
+            arrangement.mlsWelcomeEventHandler.handle(any(), eq(mlsWelcomeEvent))
         }.wasInvoked(once)
         result.shouldSucceed()
     }
@@ -186,7 +220,11 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(renamedConversationEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            renamedConversationEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.renamedConversationEventHandler.handle(eq(renamedConversationEvent))
@@ -201,7 +239,11 @@ class ConversationEventReceiverTest {
 
             val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-            val result = featureConfigEventReceiver.onEvent(receiptModeUpdateEvent, TestEvent.liveDeliveryInfo)
+            val result = featureConfigEventReceiver.onEvent(
+                arrangement.transactionContext,
+                receiptModeUpdateEvent,
+                TestEvent.liveDeliveryInfo
+            )
 
             coVerify {
                 arrangement.receiptModeUpdateEventHandler.handle(eq(receiptModeUpdateEvent))
@@ -218,7 +260,11 @@ class ConversationEventReceiverTest {
                 .withConversationMessageTimerFailed()
                 .arrange()
 
-            val result = featureConfigEventReceiver.onEvent(conversationMessageTimerEvent, TestEvent.liveDeliveryInfo)
+            val result = featureConfigEventReceiver.onEvent(
+                arrangement.transactionContext,
+                conversationMessageTimerEvent,
+                TestEvent.liveDeliveryInfo
+            )
 
             coVerify {
                 arrangement.conversationMessageTimerEventHandler.handle(eq(conversationMessageTimerEvent))
@@ -236,7 +282,11 @@ class ConversationEventReceiverTest {
                 withHandleCodeUpdatedEvent(Either.Right(Unit))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            codeUpdatedEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.codeUpdatedHandler.handle(eq(codeUpdatedEvent))
@@ -254,7 +304,11 @@ class ConversationEventReceiverTest {
                 withHandleCodeUpdatedEvent(Either.Left(StorageFailure.DataNotFound))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            codeUpdatedEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.codeUpdatedHandler.handle(eq(codeUpdatedEvent))
@@ -272,7 +326,11 @@ class ConversationEventReceiverTest {
                 withHandleCodeDeleteEvent(Either.Right(Unit))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            codeUpdatedEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.codeDeletedHandler.handle(eq(codeUpdatedEvent))
@@ -290,7 +348,11 @@ class ConversationEventReceiverTest {
                 withHandleCodeDeleteEvent(Either.Left(StorageFailure.DataNotFound))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
+        val result = featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            codeUpdatedEvent,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.codeDeletedHandler.handle(eq(codeUpdatedEvent))
@@ -306,7 +368,11 @@ class ConversationEventReceiverTest {
             .withConversationTypingEventSucceeded(Either.Right(Unit))
             .arrange()
 
-        val result = handler.onEvent(typingStarted, TestEvent.liveDeliveryInfo)
+        val result = handler.onEvent(
+            arrangement.transactionContext,
+            typingStarted,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.typingIndicatorHandler.handle(eq(typingStarted))
@@ -321,7 +387,11 @@ class ConversationEventReceiverTest {
             .withConversationTypingEventSucceeded(Either.Left(StorageFailure.Generic(RuntimeException("some error"))))
             .arrange()
 
-        val result = handler.onEvent(typingStarted, TestEvent.liveDeliveryInfo)
+        val result = handler.onEvent(
+            arrangement.transactionContext,
+            typingStarted,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.typingIndicatorHandler.handle(eq(typingStarted))
@@ -339,6 +409,7 @@ class ConversationEventReceiverTest {
 
         // when
         val result = handler.onEvent(
+            transactionContext = arrangement.transactionContext,
             event = accessUpdateEvent,
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
@@ -360,6 +431,7 @@ class ConversationEventReceiverTest {
 
         // when
         val result = handler.onEvent(
+            transactionContext = arrangement.transactionContext,
             event = accessUpdateEvent,
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
@@ -373,7 +445,8 @@ class ConversationEventReceiverTest {
 
     private class Arrangement :
         CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
-        CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl() {
+        CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
         val receiptModeUpdateEventHandler = mock(ReceiptModeUpdateEventHandler::class)
@@ -416,13 +489,13 @@ class ConversationEventReceiverTest {
 
         suspend fun withMemberLeaveSucceeded() = apply {
             coEvery {
-                memberLeaveEventHandler.handle(any())
+                memberLeaveEventHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withMemberJoinSucceeded() = apply {
             coEvery {
-                memberJoinEventHandler.handle(any())
+                memberJoinEventHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -446,7 +519,7 @@ class ConversationEventReceiverTest {
 
         suspend fun withMLSWelcomeEventSucceeded() = apply {
             coEvery {
-                mlsWelcomeEventHandler.handle(any())
+                mlsWelcomeEventHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
     }

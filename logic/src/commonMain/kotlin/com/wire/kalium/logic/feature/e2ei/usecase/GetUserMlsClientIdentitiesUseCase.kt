@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 
 /**
@@ -36,15 +37,17 @@ interface GetUserMlsClientIdentitiesUseCase {
 class GetUserMlsClientIdentitiesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val isMlsEnabledUseCase: IsMLSEnabledUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : GetUserMlsClientIdentitiesUseCase {
     override suspend operator fun invoke(userId: UserId): Map<String, MLSClientIdentity> =
         if (isMlsEnabledUseCase()) {
-            mlsConversationRepository.getUserIdentity(userId).map { identities ->
-                val result = mutableMapOf<String, MLSClientIdentity>()
-                identities.forEach {
+            transactionProvider.mlsTransaction("UserMlsClientIdentities") { mlsConversationRepository.getUserIdentity(it, userId) }
+                .map { identities ->
+                    val result = mutableMapOf<String, MLSClientIdentity>()
+                    identities.forEach {
                         result[it.clientId.value] = MLSClientIdentity.fromWireIdentity(it)
-                }
-                result
-            }.getOrElse(mapOf())
+                    }
+                    result
+                }.getOrElse(mapOf())
         } else mapOf()
 }

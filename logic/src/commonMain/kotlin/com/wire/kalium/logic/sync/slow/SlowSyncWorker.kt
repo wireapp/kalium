@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.event.EventRepository
@@ -75,6 +76,7 @@ internal class SlowSyncWorkerImpl(
     private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
+    private val transactionProvider: CryptoTransactionProvider,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
@@ -107,7 +109,11 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
-            .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
+            .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
+                transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {
+                    oneOnOneResolver.resolveAllOneOnOneConversations(it)
+                }
+            }
             .flatMap {
                 saveLastSavedEventIdIfNeeded(lastSavedEventIdToSaveOnSuccess)
             }

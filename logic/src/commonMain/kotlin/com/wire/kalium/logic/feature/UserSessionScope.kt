@@ -58,6 +58,8 @@ import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
@@ -686,7 +688,6 @@ class UserSessionScope internal constructor(
             rootProteusPath = rootPathsProvider.rootProteusPath(userId),
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
-            kaliumConfigs = kaliumConfigs,
             proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
         )
     }
@@ -718,8 +719,6 @@ class UserSessionScope internal constructor(
     private val checkRevocationList: RevocationListChecker
         get() = RevocationListCheckerImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
-            currentClientIdProvider = clientIdProvider,
-            mlsClientProvider = mlsClientProvider,
             featureSupport = featureSupport,
             userConfigRepository = userConfigRepository
         )
@@ -730,7 +729,6 @@ class UserSessionScope internal constructor(
         get() = MLSConversationDataSource(
             userId,
             keyPackageRepository,
-            mlsClientProvider,
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.clientApi,
             mlsPublicKeysRepository,
@@ -795,8 +793,7 @@ class UserSessionScope internal constructor(
         get() = ConversationGroupRepositoryImpl(
             mlsConversationRepository,
             joinExistingMLSConversationUseCase,
-            memberJoinHandler,
-            memberLeaveHandler,
+            localEventRepository,
             conversationMessageTimerEventHandler,
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
@@ -806,6 +803,7 @@ class UserSessionScope internal constructor(
             userId,
             selfTeamId,
             legalHoldHandler,
+            cryptoTransactionProvider
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository
@@ -906,8 +904,7 @@ class UserSessionScope internal constructor(
         get() = PersistConversationsUseCaseImpl(
             selfUserId = userId,
             conversationRepository = conversationRepository,
-            selfTeamIdProvider = selfTeamId,
-            mlsClientProvider = mlsClientProvider, // TODO remove on next pr and pass mls context
+            selfTeamIdProvider = selfTeamId
         )
 
     private val persistConversationUseCase: PersistConversationUseCase
@@ -1006,13 +1003,13 @@ class UserSessionScope internal constructor(
             subconversationRepository = subconversationRepository,
             joinSubconversation = joinSubconversationUseCase,
             leaveSubconversation = leaveSubconversationUseCase,
-            mlsClientProvider = mlsClientProvider,
             userRepository = userRepository,
             epochChangesObserver = epochChangesObserver,
             teamRepository = teamRepository,
             persistMessage = persistMessage,
             callMapper = callMapper,
-            federatedIdMapper = federatedIdMapper
+            federatedIdMapper = federatedIdMapper,
+            transactionProvider = cryptoTransactionProvider
         )
     }
 
@@ -1050,6 +1047,12 @@ class UserSessionScope internal constructor(
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
             logger = userScopedLogger
+        )
+
+    val cryptoTransactionProvider: CryptoTransactionProvider
+        get() = CryptoTransactionProviderImpl(
+            mlsClientProvider = mlsClientProvider,
+            proteusClientProvider = proteusClientProvider,
         )
 
     private val eventProcessor: EventProcessor by lazy {
@@ -1097,7 +1100,8 @@ class UserSessionScope internal constructor(
         get() = SyncConversationsUseCaseImpl(
             conversationRepository,
             systemMessageInserter,
-            fetchConversationsUseCase
+            fetchConversationsUseCase,
+            cryptoTransactionProvider
         )
 
     private val updateConversationProtocolUseCase: UpdateConversationProtocolUseCase
@@ -1108,7 +1112,8 @@ class UserSessionScope internal constructor(
 
     private val syncConnections: SyncConnectionsUseCase
         get() = SyncConnectionsUseCaseImpl(
-            connectionRepository = connectionRepository
+            connectionRepository = connectionRepository,
+            transactionProvider = cryptoTransactionProvider
         )
 
     private val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCaseImpl(userRepository)
@@ -1156,20 +1161,21 @@ class UserSessionScope internal constructor(
             featureSupport,
             clientRepository,
             conversationRepository,
-            joinExistingMLSConversationUseCase
+            joinExistingMLSConversationUseCase,
+            cryptoTransactionProvider
         )
 
     private val joinSubconversationUseCase: JoinSubconversationUseCase
         get() = JoinSubconversationUseCaseImpl(
             authenticatedNetworkContainer.conversationApi,
             mlsConversationRepository,
-            subconversationRepository
+            subconversationRepository,
+            cryptoTransactionProvider
         )
 
     private val leaveSubconversationUseCase: LeaveSubconversationUseCase
         get() = LeaveSubconversationUseCaseImpl(
             authenticatedNetworkContainer.conversationApi,
-            mlsClientProvider,
             subconversationRepository,
             userId,
             clientIdProvider,
@@ -1228,7 +1234,8 @@ class UserSessionScope internal constructor(
             syncContacts,
             joinExistingMLSConversations,
             fetchLegalHoldForSelfUserFromRemoteUseCase,
-            oneOnOneResolver
+            oneOnOneResolver,
+            cryptoTransactionProvider
         )
     }
 
@@ -1257,6 +1264,7 @@ class UserSessionScope internal constructor(
             clientRepository,
             recoverMLSConversationsUseCase,
             slowSyncRepository,
+            cryptoTransactionProvider,
             userScopedLogger
         )
     }
@@ -1274,6 +1282,7 @@ class UserSessionScope internal constructor(
         IncrementalSyncWorkerImpl(
             eventGatherer,
             eventProcessor,
+            cryptoTransactionProvider,
             userScopedLogger,
         )
     }
@@ -1299,6 +1308,7 @@ class UserSessionScope internal constructor(
         LocalEventManagerImpl(
             localEventRepository,
             eventProcessor,
+            cryptoTransactionProvider,
             this
         )
     }
@@ -1340,7 +1350,8 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             systemMessageInserter,
             callRepository,
-            updateConversationProtocolUseCase
+            updateConversationProtocolUseCase,
+            cryptoTransactionProvider
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(
@@ -1349,7 +1360,8 @@ class UserSessionScope internal constructor(
         lazy { clientRepository },
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository }
+        lazy { users.timestampKeyRepository },
+        cryptoTransactionProvider
     )
 
     val keyingMaterialsManager: KeyingMaterialsManager
@@ -1408,7 +1420,8 @@ class UserSessionScope internal constructor(
         PendingProposalSchedulerImpl(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
-            lazy { subconversationRepository }
+            lazy { subconversationRepository },
+            cryptoTransactionProvider
         )
 
     private val callManager: Lazy<CallManager> = lazy {
@@ -1477,7 +1490,7 @@ class UserSessionScope internal constructor(
 
     private val proteusUnpacker: ProteusMessageUnpacker
         get() = ProteusMessageUnpackerImpl(
-            proteusClientProvider = proteusClientProvider, selfUserId = userId
+            selfUserId = userId
         )
 
     private val messageEncoder get() = MessageContentEncoder()
@@ -1628,7 +1641,6 @@ class UserSessionScope internal constructor(
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-            mlsClientProvider = mlsClientProvider,
             conversationRepository = conversationRepository,
             oneOnOneResolver = oneOnOneResolver,
             refillKeyPackages = client.refillKeyPackages,
@@ -1751,7 +1763,7 @@ class UserSessionScope internal constructor(
     val observeLegalHoldRequest: ObserveLegalHoldRequestUseCase
         get() = ObserveLegalHoldRequestUseCaseImpl(
             userConfigRepository = userConfigRepository,
-            preKeyRepository = preKeyRepository
+            transactionProvider = cryptoTransactionProvider
         )
 
     val approveLegalHoldRequest: ApproveLegalHoldRequestUseCase
@@ -1833,10 +1845,10 @@ class UserSessionScope internal constructor(
         get() = FileSharingConfigHandler(userConfigRepository)
 
     private val mlsConfigHandler
-        get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
+        get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
 
     private val mlsMigrationConfigHandler
-        get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
+        get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
 
     private val classifiedDomainsConfigHandler
         get() = ClassifiedDomainsConfigHandler(userConfigRepository)
@@ -1909,7 +1921,9 @@ class UserSessionScope internal constructor(
 
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
-            clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
+            clientIdProvider,
+            authenticatedNetworkContainer.keyPackageApi,
+            userId
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(
@@ -1983,7 +1997,8 @@ class UserSessionScope internal constructor(
             updateSupportedProtocolsAndResolveOneOnOnes,
             registerMLSClientUseCase,
             syncFeatureConfigsUseCase,
-            userConfigRepository
+            userConfigRepository,
+            cryptoTransactionProvider
         )
     }
     val conversations: ConversationScope by lazy {
@@ -2018,7 +2033,8 @@ class UserSessionScope internal constructor(
             assetRepository,
             newGroupConversationSystemMessagesCreator,
             deleteConversationUseCase,
-            persistConversationsUseCase
+            persistConversationsUseCase,
+            cryptoTransactionProvider
         )
     }
 
@@ -2039,8 +2055,6 @@ class UserSessionScope internal constructor(
             clientRepository,
             clientRemoteRepository,
             clientIdProvider,
-            proteusClientProvider,
-            mlsClientProvider,
             preKeyRepository,
             userRepository,
             userId,
@@ -2059,6 +2073,7 @@ class UserSessionScope internal constructor(
             updateSelfClientCapabilityToConsumableNotifications,
             users.serverLinks,
             fetchConversationUseCase,
+            cryptoTransactionProvider,
             userScopedLogger,
         )
     }
@@ -2076,8 +2091,6 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
-            proteusClientProvider,
-            mlsClientProvider,
             preKeyRepository,
             userRepository,
             assetRepository,
@@ -2098,6 +2111,7 @@ class UserSessionScope internal constructor(
             cells.removeAttachments,
             cells.deleteAttachmentsUseCase,
             fetchConversationUseCase,
+            cryptoTransactionProvider,
             this,
             userScopedLogger,
         )
@@ -2140,6 +2154,7 @@ class UserSessionScope internal constructor(
             mlsClientManager,
             mlsMigrationManager,
             keyingMaterialsManager,
+            cryptoTransactionProvider,
             this,
         )
     }
@@ -2312,7 +2327,8 @@ class UserSessionScope internal constructor(
             userRepository,
             oneOnOneResolver,
             newGroupConversationSystemMessagesCreator,
-            fetchConversationUseCase
+            fetchConversationUseCase,
+            cryptoTransactionProvider
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
@@ -2330,7 +2346,11 @@ class UserSessionScope internal constructor(
         get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
 
     val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
-        get() = FetchConversationMLSVerificationStatusUseCaseImpl(conversationRepository, fetchMLSVerificationStatusUseCase)
+        get() = FetchConversationMLSVerificationStatusUseCaseImpl(
+            conversationRepository,
+            fetchMLSVerificationStatusUseCase,
+            cryptoTransactionProvider
+        )
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories
@@ -2346,6 +2366,7 @@ class UserSessionScope internal constructor(
         get() = CheckCrlRevocationListUseCase(
             certificateRevocationListRepository,
             checkRevocationList,
+            cryptoTransactionProvider,
             userScopedLogger
         )
 
@@ -2370,7 +2391,6 @@ class UserSessionScope internal constructor(
         FetchMLSVerificationStatusUseCaseImpl(
             conversationRepository,
             persistMessage,
-            mlsClientProvider,
             mlsConversationRepository,
             userId,
             userRepository,
@@ -2383,6 +2403,7 @@ class UserSessionScope internal constructor(
             fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
             epochChangesObserver = epochChangesObserver,
             kaliumLogger = userScopedLogger,
+            transactionProvider = cryptoTransactionProvider
         )
     }
 

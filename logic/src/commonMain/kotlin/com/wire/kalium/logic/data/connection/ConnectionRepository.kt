@@ -32,6 +32,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -73,11 +74,20 @@ import kotlinx.coroutines.flow.map
 
 @Mockable
 interface ConnectionRepository {
-    suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
-    suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
-    suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection>
+    suspend fun fetchSelfUserConnections(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit>
+    suspend fun sendUserConnection(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit>
+    suspend fun updateConnectionStatus(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        connectionState: ConnectionState
+    ): Either<CoreFailure, Connection>
+
     suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
-    suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
+    suspend fun insertConnectionFromEvent(
+        transactionContext: CryptoTransactionContext,
+        event: Event.User.NewConnection
+    ): Either<CoreFailure, Unit>
+
     suspend fun observeConnectionList(): Flow<List<Connection>>
     suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>>
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
@@ -85,7 +95,7 @@ interface ConnectionRepository {
     suspend fun setAllConnectionsAsNotified()
     suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
     suspend fun getConnection(conversationId: ConversationId): Either<StorageFailure, ConversationDetails.Connection>
-    suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit>
+    suspend fun ignoreConnectionRequest(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -101,7 +111,7 @@ internal class ConnectionDataSource(
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper()
 ) : ConnectionRepository {
 
-    override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
+    override suspend fun fetchSelfUserConnections(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit> {
         var hasMore = true
         var lastPagingState: String? = null
         var latestResult: Either<NetworkFailure, Unit> = Either.Right(Unit)
@@ -111,7 +121,7 @@ internal class ConnectionDataSource(
                 kaliumLogger.withFeatureId(CONNECTIONS).v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
-                syncConnectionsStatuses(it.connections)
+                syncConnectionsStatuses(transactionContext, it.connections)
                 lastPagingState = it.pagingState
                 hasMore = it.hasMore
             }.onFailure {
@@ -122,21 +132,25 @@ internal class ConnectionDataSource(
         return latestResult
     }
 
-    private suspend fun syncConnectionsStatuses(connections: List<ConnectionDTO>) {
+    private suspend fun syncConnectionsStatuses(transactionContext: CryptoTransactionContext, connections: List<ConnectionDTO>) {
         connections.forEach { connectionDTO ->
-            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionDTO))
+            handleUserConnectionStatusPersistence(transactionContext, connectionMapper.fromApiToModel(connectionDTO))
         }
     }
 
-    override suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit> {
+    override suspend fun sendUserConnection(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             connectionApi.createConnection(userId.toApi())
         }.flatMap { connection ->
-            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connection))
+            handleUserConnectionStatusPersistence(transactionContext, connectionMapper.fromApiToModel(connection))
         }.map { }
     }
 
-    suspend fun updateRemoteConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, ConnectionDTO> {
+    suspend fun updateRemoteConnectionStatus(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        connectionState: ConnectionState
+    ): Either<CoreFailure, ConnectionDTO> {
         val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!isValidConnectionState || newConnectionStatus == null) {
@@ -155,34 +169,42 @@ internal class ConnectionDataSource(
                             " to $connectionState, probably due to internal data error recovering"
                 )
                 wrapApiRequest { connectionApi.userConnectionInfo(userId.toApi()) }.flatMap {
-                    persistConnection(connectionMapper.fromApiToModel(it))
+                    persistConnection(transactionContext, connectionMapper.fromApiToModel(it))
                 }
             }
         }
     }
 
-    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> =
-        updateRemoteConnectionStatus(userId, connectionState).map { connectionDTO ->
+    override suspend fun updateConnectionStatus(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        connectionState: ConnectionState
+    ): Either<CoreFailure, Connection> =
+        updateRemoteConnectionStatus(transactionContext, userId, connectionState).map { connectionDTO ->
             val connectionStatus = connectionDTO.copy(status = connectionStatusMapper.toApiModel(connectionState)!!)
             val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
-            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionStatus))
+            handleUserConnectionStatusPersistence(transactionContext, connectionMapper.fromApiToModel(connectionStatus))
             connectionModel
         }
 
-    override suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit> =
-        updateRemoteConnectionStatus(userId, IGNORED)
+    override suspend fun ignoreConnectionRequest(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit> =
+        updateRemoteConnectionStatus(transactionContext, userId, IGNORED)
             .flatMapLeft {
                 if (it is NetworkFailure.FederatedBackendFailure.FailedDomains) Either.Right(Unit) else it.left()
             }
             .onSuccess {
-                setConnectionStatus(userId, IGNORED)
+                setConnectionStatus(transactionContext, userId, IGNORED)
             }.map { Unit }
 
-    private suspend fun setConnectionStatus(userId: UserId, status: ConnectionState): Either<CoreFailure, Unit> =
+    private suspend fun setConnectionStatus(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        status: ConnectionState
+    ): Either<CoreFailure, Unit> =
         wrapStorageRequest { connectionDAO.getConnectionByUser(userId.toDao()) }
             .map { connectionEntity ->
                 val updatedConnection = connectionMapper.fromDaoToModel(connectionEntity).copy(status = status)
-                handleUserConnectionStatusPersistence(updatedConnection)
+                handleUserConnectionStatusPersistence(transactionContext, updatedConnection)
             }
 
     /**
@@ -224,8 +246,11 @@ internal class ConnectionDataSource(
         connectionDAO.setAllConnectionsAsNotified()
     }
 
-    override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
-        handleUserConnectionStatusPersistence(event.connection)
+    override suspend fun insertConnectionFromEvent(
+        transactionContext: CryptoTransactionContext,
+        event: Event.User.NewConnection
+    ): Either<CoreFailure, Unit> =
+        handleUserConnectionStatusPersistence(transactionContext, event.connection)
 
     override suspend fun observeConnectionList(): Flow<List<Connection>> {
         return connectionDAO.getConnections().map { connections ->
@@ -235,12 +260,12 @@ internal class ConnectionDataSource(
         }
     }
 
-    private suspend fun persistConnection(connection: Connection) =
+    private suspend fun persistConnection(transactionContext: CryptoTransactionContext, connection: Connection) =
         wrapStorageRequest {
             val connectionStatus = connectionStatusMapper.toDaoModel(state = connection.status)
             userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to connectionStatus))
 
-            insertConversationFromConnection(connection)
+            insertConversationFromConnection(transactionContext, connection)
 
             if (connection.status != ACCEPTED) {
                 connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
@@ -252,8 +277,7 @@ internal class ConnectionDataSource(
     // We override the `type` field of the fetched conversation to WAIT_FOR_CONNECTION,
     // which would not normally be allowed. This is a workaround for missing backend support
     // and should be removed once WPB-3560 is implemented.
-    // TODO KBX check if it can block mls transaction on next PR
-    private suspend fun insertConversationFromConnection(connection: Connection) {
+    private suspend fun insertConversationFromConnection(transactionContext: CryptoTransactionContext, connection: Connection) {
         when (connection.status) {
             SENT -> {
                 // TODO check if this can create mls conv or is needed to check mls status
@@ -263,7 +287,7 @@ internal class ConnectionDataSource(
                         val conversation = it.copy(
                             type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
                         )
-                        persistConversations(listOf(conversation), invalidateMembers = true)
+                        persistConversations(transactionContext, listOf(conversation), invalidateMembers = true)
                     }
             }
 
@@ -326,9 +350,16 @@ internal class ConnectionDataSource(
      * This will update the connection status on user table and will insert members only
      * if the [ConnectionDTO.status] is other than [ConnectionStateDTO.PENDING] or [ConnectionStateDTO.SENT]
      */
-    private suspend fun handleUserConnectionStatusPersistence(connection: Connection): Either<CoreFailure, Unit> =
+    private suspend fun handleUserConnectionStatusPersistence(
+        transactionContext: CryptoTransactionContext,
+        connection: Connection
+    ): Either<CoreFailure, Unit> =
         when (connection.status) {
-            ACCEPTED, MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(connection)
+            ACCEPTED, MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(
+                transactionContext,
+                connection
+            )
+
             CANCELLED -> deleteConnection(connection)
         }
 }

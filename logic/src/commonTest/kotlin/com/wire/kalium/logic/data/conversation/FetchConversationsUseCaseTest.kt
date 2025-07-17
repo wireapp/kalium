@@ -22,6 +22,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -54,12 +56,13 @@ class FetchConversationsUseCaseTest {
             withPersistConversationsSuccess()
         }
 
-        val result = useCase()
+        val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
         coVerify { arrangement.conversationRepository.fetchConversations(null) }.wasInvoked(once)
         coVerify {
             arrangement.persistConversations(
+                any(),
                 eq(batch.response.conversationsFound),
                 eq(true),
                 any()
@@ -77,13 +80,13 @@ class FetchConversationsUseCaseTest {
             withPersistConversationsSuccess()
         }
 
-        val result = useCase()
+        val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
         coVerify { arrangement.conversationRepository.fetchConversations(null) }.wasInvoked(once)
         coVerify { arrangement.conversationRepository.fetchConversations("s1") }.wasInvoked(once)
         coVerify {
-            arrangement.persistConversations(any(), eq(true), any())
+            arrangement.persistConversations(any(), any(), eq(true), any())
         }.wasInvoked(2)
     }
 
@@ -93,10 +96,10 @@ class FetchConversationsUseCaseTest {
             withFetchConversationsFails()
         }
 
-        val result = useCase()
+        val result = useCase(arrangement.transactionContext)
 
         assertTrue(result is Either.Left)
-        coVerify { arrangement.persistConversations(any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.persistConversations(any(), any(), any(), any()) }.wasNotInvoked()
     }
 
     @Test
@@ -120,7 +123,7 @@ class FetchConversationsUseCaseTest {
             withPersistIncompleteConversations()
         }
 
-        useCase()
+        useCase(arrangement.transactionContext)
 
         coVerify {
             arrangement.conversationRepository.persistIncompleteConversations(eq(failed))
@@ -136,10 +139,10 @@ class FetchConversationsUseCaseTest {
             withPersistConversationsSuccess()
         }
 
-        val result = useCase()
+        val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        coVerify { arrangement.persistConversations(emptyList(), true, false) }.wasInvoked(once)
+        coVerify { arrangement.persistConversations(any(), eq(emptyList()),eq( true), eq(false)) }.wasInvoked(once)
     }
 
     @Test
@@ -152,11 +155,11 @@ class FetchConversationsUseCaseTest {
             withPersistConversationsSuccess()
         }
 
-        val result = useCase()
+        val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        coVerify { arrangement.persistConversations(eq(emptyList()), eq(true), eq(false)) }.wasInvoked(once)
-        coVerify { arrangement.persistConversations(eq(batch2.response.conversationsFound), eq(true), eq(false)) }
+        coVerify { arrangement.persistConversations(any(), eq(emptyList()), eq(true), eq(false)) }.wasInvoked(once)
+        coVerify { arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(false)) }
             .wasInvoked(once)
     }
 
@@ -183,7 +186,8 @@ class FetchConversationsUseCaseTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+    CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(){
 
         val persistConversations = mock(PersistConversationsUseCase::class)
 
@@ -203,7 +207,7 @@ class FetchConversationsUseCaseTest {
         }
 
         suspend fun withPersistConversationsSuccess() = apply {
-            coEvery { persistConversations(any(), eq(true), any()) } returns Either.Right(Unit)
+            coEvery { persistConversations(any(), any(), eq(true), any()) } returns Either.Right(Unit)
         }
 
         suspend fun withPersistIncompleteConversations() = apply {
@@ -212,7 +216,7 @@ class FetchConversationsUseCaseTest {
 
         suspend fun withPersistConversationsFails() = apply {
             coEvery {
-                persistConversations(any(), eq(true), eq(false))
+                persistConversations(any(), any(), eq(true), eq(false))
             } returns Either.Left(CoreFailure.Unknown(null))
         }
 

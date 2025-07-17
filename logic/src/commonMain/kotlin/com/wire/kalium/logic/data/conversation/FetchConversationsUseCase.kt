@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
@@ -36,7 +37,7 @@ import io.mockative.Mockable
  */
 @Mockable
 internal interface FetchConversationsUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, Unit>
+    suspend operator fun invoke(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit>
 }
 
 @OptIn(ConversationPersistenceApi::class)
@@ -45,7 +46,7 @@ internal class FetchConversationsUseCaseImpl(
     private val persistConversations: PersistConversationsUseCase
 ) : FetchConversationsUseCase {
 
-    override suspend fun invoke(): Either<CoreFailure, Unit> {
+    override suspend fun invoke(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit> {
         var hasMore = true
         var lastPagingState: String? = null
         var latestResult: Either<CoreFailure, Unit> = Either.Right(Unit)
@@ -63,6 +64,7 @@ internal class FetchConversationsUseCaseImpl(
                             .d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
                     persistConversations(
+                        transactionContext,
                         conversations = conversations.conversationsFound,
                         invalidateMembers = true
                     )

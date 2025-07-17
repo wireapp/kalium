@@ -20,13 +20,13 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
@@ -53,6 +53,7 @@ import io.mockative.Mockable
 @Mockable
 interface PersistConversationsUseCase {
     suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
         conversations: List<ConversationResponse>,
         invalidateMembers: Boolean,
         originatedFromEvent: Boolean = false,
@@ -64,20 +65,22 @@ internal class PersistConversationsUseCaseImpl(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val mlsClientProvider: MLSClientProvider,
     private val idMapper: IdMapper = IdMapperImpl(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
 ) : PersistConversationsUseCase {
 
     override suspend fun invoke(
+        transactionContext: CryptoTransactionContext,
         conversations: List<ConversationResponse>,
         invalidateMembers: Boolean,
         originatedFromEvent: Boolean
     ): Either<CoreFailure, Unit> {
         val conversationEntities = conversations
             .map { conversationResponse ->
-                val mlsGroupState = conversationResponse.groupId?.let {
-                    mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent)
+                val mlsGroupState = transactionContext.mls?.let { mlsContext ->
+                    conversationResponse.groupId?.let {
+                        mlsGroupState(mlsContext, idMapper.fromGroupIDEntity(it), originatedFromEvent)
+                    }
                 }
                 conversationMapper.fromApiModelToDaoModel(
                     conversationResponse,
@@ -96,9 +99,10 @@ internal class PersistConversationsUseCaseImpl(
     }
 
     private suspend fun mlsGroupState(
+        mlsContext: MlsCoreCryptoContext,
         groupId: GroupID,
         originatedFromEvent: Boolean = false
-    ): ConversationEntity.GroupState = hasEstablishedMLSGroup(groupId)
+    ): ConversationEntity.GroupState = hasEstablishedMLSGroup(mlsContext, groupId)
         .fold({ failure ->
             kaliumLogger.withFeatureId(CONVERSATIONS)
                 .w("Error checking MLS group state, setting to ${ConversationEntity.GroupState.PENDING_JOIN}")
@@ -115,12 +119,12 @@ internal class PersistConversationsUseCaseImpl(
             }
         })
 
-    private suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> =
-        mlsClientProvider.getMLSClient()
-            .flatMap {
-                wrapMLSRequest {
-                    it.conversationExists(groupID.toCrypto())
-                }
-            }
+    private suspend fun hasEstablishedMLSGroup(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID
+    ): Either<CoreFailure, Boolean> =
+        wrapMLSRequest {
+            mlsContext.conversationExists(groupID.toCrypto())
+        }
 
 }

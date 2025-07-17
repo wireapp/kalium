@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import kotlinx.coroutines.flow.first
 
 /**
@@ -41,7 +42,8 @@ interface GetOrCreateOneToOneConversationUseCase {
 internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
-    private val oneOnOneResolver: OneOnOneResolver
+    private val oneOnOneResolver: OneOnOneResolver,
+    private val transactionProvider: CryptoTransactionProvider,
 ) : GetOrCreateOneToOneConversationUseCase {
 
     /**
@@ -85,10 +87,13 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private suspend fun resolveOneOnOneConversationWithUser(otherUserId: UserId): Either<CoreFailure, Conversation> =
         userRepository.userById(otherUserId).flatMap { otherUser ->
             // TODO support lazily establishing mls group for team 1-1
-            oneOnOneResolver.resolveOneOnOneConversationWithUser(
-                user = otherUser,
-                invalidateCurrentKnownProtocols = true
-            )
+            transactionProvider.transaction("resolveOneOnOneConversationWithUser") { transactionContext ->
+                oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                    user = otherUser,
+                    invalidateCurrentKnownProtocols = true,
+                    transactionContext = transactionContext
+                )
+            }
         }.flatMap { conversationId -> conversationRepository.getConversationById(conversationId) }
 
 }

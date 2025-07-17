@@ -36,6 +36,8 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
@@ -214,15 +216,23 @@ class MLSMigrationWorkerTest {
             coVerify { arrangement.mlsMigrator.finaliseProteusConversations() }.wasNotInvoked()
         }
 
-    private class Arrangement {
-                val userConfigRepository: UserConfigRepository = mock(of<UserConfigRepository>())
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val userConfigRepository: UserConfigRepository = mock(of<UserConfigRepository>())
         val featureConfigRepository: FeatureConfigRepository = mock(of<FeatureConfigRepository>())
         val updateSupportedProtocolsAndResolveOneOnOnes = mock(of<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
         val mlsMigrator: MLSMigrator = mock(of<MLSMigrator>())
 
-        val mlsConfigHandler = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
+        val mlsConfigHandler = MLSConfigHandler(
+            userConfigRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            cryptoTransactionProvider
+        )
 
-        val mlsMigrationConfigHandler = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
+        val mlsMigrationConfigHandler = MLSMigrationConfigHandler(
+            userConfigRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            cryptoTransactionProvider
+        )
 
         suspend fun withGetMLSMigrationConfigurationsReturns(result: Either<StorageFailure, MLSMigrationModel>) = apply {
             coEvery { userConfigRepository.getMigrationConfiguration() }.returns(result)

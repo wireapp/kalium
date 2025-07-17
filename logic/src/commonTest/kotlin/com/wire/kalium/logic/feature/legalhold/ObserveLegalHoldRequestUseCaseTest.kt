@@ -19,12 +19,13 @@ package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
@@ -32,6 +33,7 @@ import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -43,7 +45,7 @@ class ObserveLegalHoldRequestUseCaseTest {
         runTest {
             val (_, useCase) = Arrangement()
                 .withUserConfigRepositoryDataNotFound()
-                .arrange()
+                .arrange {}
 
             val result = useCase()
 
@@ -54,7 +56,7 @@ class ObserveLegalHoldRequestUseCaseTest {
     fun givenUserConfigRepositoryOtherFailure_whenObserving_thenPropagateFailure() = runTest {
         val (_, useCase) = Arrangement()
             .withUserConfigRepositoryFailure()
-            .arrange()
+            .arrange {}
 
         val result = useCase()
 
@@ -65,8 +67,9 @@ class ObserveLegalHoldRequestUseCaseTest {
     fun givenPreKeyRepositoryFailure_whenObserving_thenPropagateFailure() = runTest {
         val (_, useCase) = Arrangement()
             .withUserConfigRepositorySuccess()
-            .withPreKeyRepositoryFailure()
-            .arrange()
+            .arrange {
+                withProteusTransactionResultOnly(Either.Left(CoreFailure.SyncEventOrClientNotFound))
+            }
 
         val result = useCase()
 
@@ -79,16 +82,15 @@ class ObserveLegalHoldRequestUseCaseTest {
             val (_, useCase) = Arrangement()
                 .withUserConfigRepositorySuccess()
                 .withPreKeyRepositorySuccess()
-                .arrange()
+                .arrange {}
 
             val result = useCase()
 
             assertTrue(result.first() is ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable)
         }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val userConfigRepository = mock(UserConfigRepository::class)
-        val preKeyRepository = mock(PreKeyRepository::class)
 
         fun withUserConfigRepositorySuccess() = apply {
             every {
@@ -108,22 +110,23 @@ class ObserveLegalHoldRequestUseCaseTest {
             }.returns(flowOf(Either.Left(StorageFailure.Generic(IllegalStateException()))))
         }
 
-        suspend fun withPreKeyRepositoryFailure() = apply {
-            coEvery {
-                preKeyRepository.getFingerprintForPreKey(any())
-            }.returns(Either.Left(CoreFailure.SyncEventOrClientNotFound))
-        }
-
         suspend fun withPreKeyRepositorySuccess() = apply {
             coEvery {
-                preKeyRepository.getFingerprintForPreKey(any())
-            }.returns(Either.Right(fingerPrint))
+                proteusContext.getFingerprintFromPreKey(any())
+            }.returns(fingerPrint)
         }
 
-        fun arrange() = this to ObserveLegalHoldRequestUseCaseImpl(
-            userConfigRepository = userConfigRepository,
-            preKeyRepository = preKeyRepository
-        )
+        fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            runBlocking {
+                withProteusTransactionReturning(Either.Right(Unit))
+                block()
+            }
+            this to ObserveLegalHoldRequestUseCaseImpl(
+                userConfigRepository = userConfigRepository,
+                transactionProvider = cryptoTransactionProvider
+            )
+        }
+
     }
 
     companion object {

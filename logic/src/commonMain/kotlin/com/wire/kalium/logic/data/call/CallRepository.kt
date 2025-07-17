@@ -32,13 +32,17 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.onlyRight
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.call.mapper.CallMapper
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -159,9 +163,9 @@ internal class CallDataSource(
     private val subconversationRepository: SubconversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
-    private val mlsClientProvider: MLSClientProvider,
     private val joinSubconversation: JoinSubconversationUseCase,
     private val leaveSubconversation: LeaveSubconversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
@@ -476,12 +480,15 @@ internal class CallDataSource(
         if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS &&
             _callMetadataProfile.value[conversationId]?.conversationType is Conversation.Type.Group
         ) {
-            participants.forEach { participant ->
-                if (participant.hasEstablishedAudio) {
-                    clearStaleParticipantTimeout(participant)
-                } else {
-                    removeStaleParticipantAfterTimeout(participant, conversationId)
+            transactionProvider.transaction("removeStaleParticipantAfterTimeout") { transactionContext ->
+                participants.forEach { participant ->
+                    if (participant.hasEstablishedAudio) {
+                        clearStaleParticipantTimeout(participant)
+                    } else {
+                        removeStaleParticipantAfterTimeout(transactionContext, participant, conversationId)
+                    }
                 }
+                Unit.right()
             }
         }
     }
@@ -530,6 +537,7 @@ internal class CallDataSource(
     }
 
     private fun removeStaleParticipantAfterTimeout(
+        transactionContext: CryptoTransactionContext,
         participant: ParticipantMinimized,
         conversationId: ConversationId
     ) {
@@ -543,10 +551,13 @@ internal class CallDataSource(
             delay(STALE_PARTICIPANT_TIMEOUT)
             callingLogger.i("Removing stale participant")
             subconversationRepository.getSubconversationInfo(conversationId, CALL_SUBCONVERSATION_ID)?.let { groupId ->
-                mlsConversationRepository.removeClientsFromMLSGroup(
-                    groupId,
-                    listOf(qualifiedClient)
-                )
+                transactionContext.wrapInMLSContext { mlsContext ->
+                    mlsConversationRepository.removeClientsFromMLSGroup(
+                        mlsContext,
+                        groupId,
+                        listOf(qualifiedClient)
+                    )
+                }
             }
         }
     }
@@ -677,7 +688,9 @@ internal class CallDataSource(
             map.clear()
         }
 
-        leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
+        transactionProvider.mlsTransaction("leaveSubconversation") { mlsContext ->
+            leaveSubconversation(mlsContext, conversationId, CALL_SUBCONVERSATION_ID)
+        }
             .onSuccess {
                 callingLogger.i("Successfully left MLS conference")
             }
@@ -686,38 +699,40 @@ internal class CallDataSource(
             }
     }
 
-    private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
-                val epoch = mlsClient.conversationEpoch(subconversationGroupID.toCrypto())
-                val secret = mlsClient.deriveSecret(subconversationGroupID.toCrypto(), 32u)
-                val conversationMembers = mlsClient.members(parentGroupID.toCrypto())
-                val subconversationMembers = mlsClient.members(subconversationGroupID.toCrypto())
-                val callClients = conversationMembers.map {
-                    CallClient(
-                        federatedIdMapper.parseToFederatedId(UserId(it.userId.value, it.userId.domain)),
-                        it.value,
-                        subconversationMembers.contains(it)
-                    )
-                }
-
-                callingLogger.logStructuredJson(
-                    level = KaliumLogLevel.DEBUG,
-                    leadingMessage = "[CallRepository] Created epoch info",
-                    jsonStringKeyValues = mapOf(
-                        "groupId" to parentGroupID.toLogString(),
-                        "subConversationGroupID" to subconversationGroupID.toLogString(),
-                        "epoch" to epoch
-                    )
+    private suspend fun createEpochInfo(
+        mlsContext: MlsCoreCryptoContext,
+        parentGroupID: GroupID,
+        subconversationGroupID: GroupID
+    ): Either<CoreFailure, EpochInfo> =
+        wrapMLSRequest {
+            val epoch = mlsContext.conversationEpoch(subconversationGroupID.toCrypto())
+            val secret = mlsContext.deriveSecret(subconversationGroupID.toCrypto(), 32u)
+            val conversationMembers = mlsContext.members(parentGroupID.toCrypto())
+            val subconversationMembers = mlsContext.members(subconversationGroupID.toCrypto())
+            val callClients = conversationMembers.map {
+                CallClient(
+                    federatedIdMapper.parseToFederatedId(UserId(it.userId.value, it.userId.domain)),
+                    it.value,
+                    subconversationMembers.contains(it)
                 )
-
-                val epochInfo = EpochInfo(
-                    epoch,
-                    CallClientList(callClients),
-                    secret
-                )
-                epochInfo
             }
+
+            callingLogger.logStructuredJson(
+                level = KaliumLogLevel.DEBUG,
+                leadingMessage = "[CallRepository] Created epoch info",
+                jsonStringKeyValues = mapOf(
+                    "groupId" to parentGroupID.toLogString(),
+                    "subConversationGroupID" to subconversationGroupID.toLogString(),
+                    "epoch" to epoch
+                )
+            )
+
+            val epochInfo = EpochInfo(
+                epoch,
+                CallClientList(callClients),
+                secret
+            )
+            epochInfo
         }
 
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
@@ -727,12 +742,18 @@ internal class CallDataSource(
                     conversationId,
                     CALL_SUBCONVERSATION_ID
                 )?.let { subconversationGroupId ->
-                    createEpochInfo(protocolInfo.groupId, subconversationGroupId).map { initialEpochInfo ->
+                    transactionProvider.mlsTransaction("createEpochInfo") { mlsContext ->
+                        createEpochInfo(mlsContext, protocolInfo.groupId, subconversationGroupId)
+                    }.map { initialEpochInfo ->
                         flowOf(
                             flowOf(initialEpochInfo),
                             epochChangesObserver.observe()
                                 .filter { it.groupId == protocolInfo.groupId || it.groupId == subconversationGroupId }
-                                .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
+                                .mapNotNull {
+                                    transactionProvider.mlsTransaction { transactionContext ->
+                                        createEpochInfo(transactionContext, protocolInfo.groupId, subconversationGroupId)
+                                    }.getOrNull()
+                                }
                         ).flattenConcat()
                     }
                 } ?: Either.Left(CoreFailure.NotSupportedByProteus)
@@ -745,7 +766,9 @@ internal class CallDataSource(
     override suspend fun advanceEpoch(conversationId: ConversationId) {
         subconversationRepository.getSubconversationInfo(conversationId, CALL_SUBCONVERSATION_ID)?.let { groupId ->
             // Advance the epoch in the subconversation by updating the key material
-            mlsConversationRepository.updateKeyingMaterial(groupId)
+            transactionProvider.mlsTransaction("advanceEpoch") {
+                mlsConversationRepository.updateKeyingMaterial(it, groupId)
+            }
                 .onSuccess { callingLogger.e("[CallRepository] -> Generated new epoch") }
                 .onFailure { callingLogger.e("[CallRepository] -> Failure generating new epoch: $it") }
         } ?: callingLogger.w("[CallRepository] -> Requested new epoch but there's no conference subconversation")

@@ -18,10 +18,16 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapProteusRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
@@ -30,12 +36,6 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mockable
@@ -51,30 +51,32 @@ internal interface SessionEstablisher {
      * Useful for sending a message to a partial list of users.
      */
     suspend fun prepareRecipientsForNewOutgoingMessage(
+        proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>
     ): Either<CoreFailure, UsersWithoutSessions>
 }
 
 internal class SessionEstablisherImpl internal constructor(
-    private val proteusClientProvider: ProteusClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionEstablisher {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
+        proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>
     ): Either<CoreFailure, UsersWithoutSessions> =
-        getAllMissingClients(recipients).flatMap {
+        getAllMissingClients(proteusContext, recipients).flatMap {
             if (it.isEmpty()) {
                 return@flatMap Either.Right(UsersWithoutSessions.EMPTY)
             }
-            preKeyRepository.establishSessions(it)
+            preKeyRepository.establishSessions(proteusContext, it)
         }
 
     private suspend fun getAllMissingClients(
+        proteusContext: ProteusCoreCryptoContext,
         detailedContacts: List<Recipient>
     ): Either<CoreFailure, MutableMap<UserId, List<ClientId>>> =
         detailedContacts.foldToEitherWhileRight(mutableMapOf<UserId, List<ClientId>>()) { recipient, userAccumulator ->
-            getMissingClientsForRecipients(recipient).map { missingClients ->
+            getMissingClientsForRecipients(proteusContext, recipient).map { missingClients ->
                 if (missingClients.isNotEmpty()) {
                     userAccumulator[recipient.id] = missingClients
                 }
@@ -83,10 +85,11 @@ internal class SessionEstablisherImpl internal constructor(
         }
 
     private suspend fun getMissingClientsForRecipients(
+        proteusContext: ProteusCoreCryptoContext,
         recipient: Recipient
     ): Either<CoreFailure, MutableList<ClientId>> =
         recipient.clients.foldToEitherWhileRight(mutableListOf<ClientId>()) { client, clientIdAccumulator ->
-            doesSessionExist(recipient.id, client).map { sessionExists ->
+            doesSessionExist(proteusContext, recipient.id, client).map { sessionExists ->
                 if (!sessionExists) {
                     clientIdAccumulator += client
                 }
@@ -95,16 +98,15 @@ internal class SessionEstablisherImpl internal constructor(
         }
 
     private suspend fun doesSessionExist(
+        proteusContext: ProteusCoreCryptoContext,
         recipientUserId: UserId,
         client: ClientId
-    ): Either<CoreFailure, Boolean> =
-        proteusClientProvider.getOrError()
-            .flatMap { proteusClient ->
-                val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))
-                wrapProteusRequest {
-                    proteusClient.doesSessionExist(cryptoSessionID)
-                }
-            }
+    ): Either<CoreFailure, Boolean> {
+        val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))
+        return wrapProteusRequest {
+            proteusContext.doesSessionExist(cryptoSessionID)
+        }
+    }
 }
 
 internal interface CryptoSessionMapper {

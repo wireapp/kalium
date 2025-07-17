@@ -19,15 +19,15 @@ package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import io.mockative.Mockable
 
 /**
@@ -35,31 +35,27 @@ import io.mockative.Mockable
  */
 @Mockable
 internal interface RevocationListChecker {
-    suspend fun check(url: String): Either<CoreFailure, ULong?>
+    suspend fun check(mlsContext: MlsCoreCryptoContext, url: String): Either<CoreFailure, ULong?>
 }
 
 internal class RevocationListCheckerImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val mlsClientProvider: MLSClientProvider,
     private val featureSupport: FeatureSupport,
     private val userConfigRepository: UserConfigRepository,
 ) : RevocationListChecker {
     private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
-    override suspend fun check(url: String): Either<CoreFailure, ULong?> {
+    override suspend fun check(mlsContext: MlsCoreCryptoContext, url: String): Either<CoreFailure, ULong?> {
         val isE2EIEnabled = getIsE2EIEnabled()
 
         return if (isE2EIEnabled) {
             logger.i("checking crl url: $url")
             certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
-                currentClientIdProvider().flatMap { clientId ->
-                    mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
-                        logger.i("registering crl..")
-                        coreCrypto.registerCrl(url, it).run {
+                    logger.i("registering crl..")
+                    wrapMLSRequest {
+                        mlsContext.registerCrl(url, it).run {
                             this.expiration
                         }
                     }
-                }
             }
         } else Either.Left(E2EIFailure.Disabled)
     }

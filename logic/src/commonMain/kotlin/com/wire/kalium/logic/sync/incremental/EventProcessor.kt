@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.data.event.Event
@@ -44,8 +45,17 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 
 /**
- * Handles incoming events from remote.
- * @see [Event]
+ * Handles processing of incoming [Event]s received via sync or WebSocket.
+ *
+ * Each event is wrapped in an [EventEnvelope], containing both the event and its delivery metadata.
+ * This interface allows disabling processing during testing or debug scenarios.
+ *
+ * Events are dispatched to corresponding domain-specific receivers (e.g., `ConversationEventReceiver`)
+ * and marked as processed via [EventRepository] if processing is successful.
+ *
+ * @see EventEnvelope
+ * @see EventDeliveryInfo
+ * @see EventRepository
  */
 @Mockable
 internal interface EventProcessor {
@@ -56,16 +66,21 @@ internal interface EventProcessor {
     var disableEventProcessing: Boolean
 
     /**
-     * Process the [eventEnvelope], persisting the last processed event ID if the event
-     * is not transient (see [EventDeliveryInfo.isTransient]).
-     * If the processing fails, the last processed event ID will not be updated.
-     * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
-     * @see EventDeliveryInfo.isTransient
-     * @see EventRepository.setEventAsProcessed
-     * @see EventDeliveryInfo
-     * @see Event
+     * Processes a single [eventEnvelope] using the provided [transactionContext].
+     *
+     * The underlying event is dispatched to the appropriate domain receiver (e.g., conversations, users).
+     * If the event is not transient, it is marked as processed via [EventRepository].
+     *
+     * If processing fails, no updates will be persisted to the event store.
+     *
+     * @param transactionContext Contains access to Proteus or MLS cryptographic context.
+     * @param eventEnvelope The envelope containing the event and its metadata.
+     * @return Either a [CoreFailure] if processing failed, or [Unit] if processing succeeded.
      */
-    suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit>
+    suspend fun processEvent(
+        transactionContext: CryptoTransactionContext,
+        eventEnvelope: EventEnvelope
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -88,7 +103,10 @@ internal class EventProcessorImpl(
 
     override var disableEventProcessing: Boolean = false
 
-    override suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> = processingScope.async {
+    override suspend fun processEvent(
+        transactionContext: CryptoTransactionContext,
+        eventEnvelope: EventEnvelope
+    ): Either<CoreFailure, Unit> = processingScope.async {
         val (event, deliveryInfo) = eventEnvelope
         if (disableEventProcessing) {
             logger.w("Skipping processing of ${event.toLogString()} due to debug option")
@@ -96,20 +114,21 @@ internal class EventProcessorImpl(
         } else {
             logger.i("Starting processing of event: ${event.toLogString()}")
             withContext(NonCancellable) {
-                doProcess(event, deliveryInfo, eventEnvelope)
+                doProcess(transactionContext, event, deliveryInfo, eventEnvelope)
             }
         }
     }.await()
 
     private suspend fun doProcess(
+        transactionContext: CryptoTransactionContext,
         event: Event,
         deliveryInfo: EventDeliveryInfo,
         eventEnvelope: EventEnvelope
     ): Either<CoreFailure, Unit> {
         return when (event) {
-            is Event.Conversation -> conversationEventReceiver.onEvent(event, deliveryInfo)
-            is Event.User -> userEventReceiver.onEvent(event, deliveryInfo)
-            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event, deliveryInfo)
+            is Event.Conversation -> conversationEventReceiver.onEvent(transactionContext, event, deliveryInfo)
+            is Event.User -> userEventReceiver.onEvent(transactionContext, event, deliveryInfo)
+            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Unknown -> {
                 kaliumLogger.createEventProcessingLogger(event)
                     .logComplete(EventLoggingStatus.SKIPPED)
@@ -117,11 +136,11 @@ internal class EventProcessorImpl(
                 Either.Right(Unit)
             }
 
-            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
-            is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
-            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
+            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(transactionContext, event, deliveryInfo)
+            is Event.Federation -> federationEventReceiver.onEvent(transactionContext, event, deliveryInfo)
+            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.AsyncMissed -> {
-                missedNotificationsEventReceiver.onEvent(event, deliveryInfo)
+                missedNotificationsEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             }
         }.onSuccess {
             eventRepository.setEventAsProcessed(event.id).onSuccess {

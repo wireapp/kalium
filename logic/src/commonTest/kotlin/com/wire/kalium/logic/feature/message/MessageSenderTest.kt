@@ -58,6 +58,8 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
@@ -321,7 +323,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.staleEpochVerifier.verifyEpoch(eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
+                arrangement.staleEpochVerifier.verifyEpoch(any(), eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
             }.wasInvoked(once)
         }
     }
@@ -367,7 +369,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.mlsConversationRepository.commitPendingProposals(eq(Arrangement.GROUP_ID))
+                arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(Arrangement.GROUP_ID))
             }.wasInvoked(once)
         }
     }
@@ -442,6 +444,7 @@ class MessageSenderTest {
 
             coVerify {
                 arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
+                    any(),
                     eq(
                         listOf(
                             Arrangement.TEST_RECIPIENT_1,
@@ -493,7 +496,7 @@ class MessageSenderTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(eq(listOf(Arrangement.TEST_RECIPIENT_1)))
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), eq(listOf(Arrangement.TEST_RECIPIENT_1)))
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -620,6 +623,7 @@ class MessageSenderTest {
             withCreateOutgoingBroadcastEnvelope()
             withAllRecipients(recipients to listOf())
             withBroadcastEnvelope()
+            withProteusTransactionReturning(Either.Right(Unit))
         }
 
         val message = BroadcastMessage(
@@ -638,7 +642,8 @@ class MessageSenderTest {
             // when
             val result = messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.AllUsers(100)
+                target = BroadcastMessageTarget.AllUsers(100),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
@@ -646,6 +651,7 @@ class MessageSenderTest {
 
             coVerify {
                 arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
+                    any(),
                     eq(
                         listOf(
                             Arrangement.TEST_RECIPIENT_1,
@@ -678,6 +684,7 @@ class MessageSenderTest {
             withCreateOutgoingBroadcastEnvelope()
             withAllRecipients(recipients to listOf())
             withBroadcastEnvelope()
+            withProteusTransactionReturning(Either.Right(Unit))
         }
 
         val message = BroadcastMessage(
@@ -696,12 +703,13 @@ class MessageSenderTest {
             // when
             messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.AllUsers(2)
+                target = BroadcastMessageTarget.AllUsers(2),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
             coVerify {
-                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(matches { it.size == 2 })
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), matches { it.size == 2 })
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -729,6 +737,7 @@ class MessageSenderTest {
             withCreateOutgoingBroadcastEnvelope()
             withAllRecipients(teamRecipients to otherRecipients)
             withBroadcastEnvelope()
+            withProteusTransactionReturning(Either.Right(Unit))
         }
 
         val message = BroadcastMessage(
@@ -747,12 +756,13 @@ class MessageSenderTest {
             // when
             messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.OnlyTeam(100)
+                target = BroadcastMessageTarget.OnlyTeam(100),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
             coVerify {
-                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(matches { it.size == 2 })
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), matches { it.size == 2 })
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -921,7 +931,7 @@ class MessageSenderTest {
             messageSender.sendMessage(message)
             // then
             coVerify {
-                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(eq(failure), eq(message.conversationId))
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), eq(failure), eq(message.conversationId))
             }.wasInvoked()
             coVerify {
                 arrangement.legalHoldHandler.handleMessageSendFailure(eq(message.conversationId), eq(message.date), any())
@@ -941,13 +951,14 @@ class MessageSenderTest {
             withBroadcastEnvelope(Either.Left(failure), Either.Right(TestMessage.TEST_DATE)) // to avoid loop - fail then succeed
             withHandleLegalHoldMessageSendFailure(Either.Right(false))
             withHandleClientsHaveChangedFailure()
+            withProteusTransactionReturning(Either.Right(Unit))
         }
         arrangement.testScope.runTest {
             // when
-            messageSender.broadcastMessage(message, BroadcastMessageTarget.AllUsers(100))
+            messageSender.broadcastMessage(arrangement.transactionContext, message, BroadcastMessageTarget.AllUsers(100))
             // then
             coVerify {
-                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(eq(failure), eq<ConversationId?>(null))
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), eq(failure), eq<ConversationId?>(null))
             }.wasInvoked()
             coVerify {
                 arrangement.legalHoldHandler.handleMessageSendFailure(any(), any(), any())
@@ -1004,8 +1015,10 @@ class MessageSenderTest {
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        StaleEpochVerifierArrangement by StaleEpochVerifierArrangementImpl() {
-                val messageRepository: MessageRepository = mock(MessageRepository::class)
+        StaleEpochVerifierArrangement by StaleEpochVerifierArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+
+        val messageRepository: MessageRepository = mock(MessageRepository::class)
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
@@ -1026,7 +1039,10 @@ class MessageSenderTest {
         }
 
         fun arrange() = run {
-            runBlocking { block() }
+            runBlocking {
+                block()
+                withTransactionReturning(Either.Right(Unit))
+            }
             this@Arrangement to MessageSenderImpl(
                 messageRepository = messageRepository,
                 conversationRepository = conversationRepository,
@@ -1046,6 +1062,7 @@ class MessageSenderTest {
                     )
                 },
                 staleEpochVerifier = staleEpochVerifier,
+                transactionProvider = cryptoTransactionProvider,
                 scope = testScope
             )
         }
@@ -1079,25 +1096,25 @@ class MessageSenderTest {
             usersFailing: UsersWithoutSessions = UsersWithoutSessions.EMPTY // only relevant if failing true
         ) = apply {
             coEvery {
-                sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any())
+                sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(usersFailing))
         }
 
         suspend fun withCommitPendingProposals(failing: Boolean = false) = apply {
             coEvery {
-                mlsConversationRepository.commitPendingProposals(any())
+                mlsConversationRepository.commitPendingProposals(any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
         }
 
         suspend fun withCreateOutgoingEnvelope(failing: Boolean = false) = apply {
             coEvery {
-                messageEnvelopeCreator.createOutgoingEnvelope(any(), any())
+                messageEnvelopeCreator.createOutgoingEnvelope(any(), any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MESSAGE_ENVELOPE))
         }
 
         suspend fun withCreateOutgoingBroadcastEnvelope(failing: Boolean = false) = apply {
             coEvery {
-                messageEnvelopeCreator.createOutgoingBroadcastEnvelope(any(), any())
+                messageEnvelopeCreator.createOutgoingBroadcastEnvelope(any(), any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MESSAGE_ENVELOPE))
         }
 
@@ -1115,7 +1132,7 @@ class MessageSenderTest {
 
         suspend fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
             coEvery {
-                mlsMessageCreator.createOutgoingMLSMessage(any(), any())
+                mlsMessageCreator.createOutgoingMLSMessage(any(), any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
         }
 
@@ -1231,7 +1248,7 @@ class MessageSenderTest {
 
         suspend fun withHandleClientsHaveChangedFailure(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             coEvery {
-                messageSendFailureHandler.handleClientsHaveChangedFailure(any(), any())
+                messageSendFailureHandler.handleClientsHaveChangedFailure(any(), any(), any())
             }.returns(result)
         }
 

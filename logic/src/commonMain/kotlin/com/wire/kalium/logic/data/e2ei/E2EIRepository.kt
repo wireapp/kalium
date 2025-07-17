@@ -41,6 +41,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapE2EIRequest
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
@@ -88,6 +89,7 @@ interface E2EIRepository {
     suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, ACMEResponse>
     suspend fun rotateKeysAndMigrateConversations(
+        mlsContext: MlsCoreCryptoContext,
         certificateChain: String,
         groupIdList: List<GroupID>,
         isNewClient: Boolean = false,
@@ -329,6 +331,7 @@ class E2EIRepositoryImpl(
         }
 
     override suspend fun rotateKeysAndMigrateConversations(
+        mlsContext: MlsCoreCryptoContext,
         certificateChain: String,
         groupIdList: List<GroupID>,
         isNewClient: Boolean
@@ -338,6 +341,7 @@ class E2EIRepositoryImpl(
                 E2EIFailure.RotationAndMigration(it).left()
             }, { clientId ->
                 mlsConversationRepository.rotateKeysAndMigrateConversations(
+                    mlsContext,
                     clientId,
                     e2eiClient,
                     certificateChain,

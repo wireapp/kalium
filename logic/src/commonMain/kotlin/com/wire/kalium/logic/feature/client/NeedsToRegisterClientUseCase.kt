@@ -18,12 +18,13 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.data.auth.AccountInfo
-import com.wire.kalium.common.functional.fold
 
 /**
  * This use case will return true if the current user needs to register a client.
@@ -35,7 +36,7 @@ interface NeedsToRegisterClientUseCase {
 internal class NeedsToRegisterClientUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val sessionRepository: SessionRepository,
-    private val proteusClientProvider: ProteusClientProvider,
+    private val transactionProvider: CryptoTransactionProvider,
     private val selfUserId: UserId
 ) : NeedsToRegisterClientUseCase {
     override suspend fun invoke(): Boolean =
@@ -49,8 +50,7 @@ internal class NeedsToRegisterClientUseCaseImpl(
             }
         )
 
-    private suspend fun onValidAccount(): Boolean =
-        proteusClientProvider.getOrError().fold({ true }, {
-            currentClientIdProvider().fold({ true }, { false })
-        })
+    private suspend fun onValidAccount(): Boolean = transactionProvider.proteusTransaction("NeedsToRegisterClient") {
+        currentClientIdProvider()
+    }.isLeft()
 }

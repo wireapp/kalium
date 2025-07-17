@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
@@ -51,11 +53,11 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationSucceeding(EqualsMatcher(TestConversation.ID))
         }
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         with(arrangement) {
             coVerify {
-                deleteConversation(eq(TestConversation.ID))
+                deleteConversation(any(), eq(TestConversation.ID))
             }.wasNotInvoked()
         }
     }
@@ -71,11 +73,11 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationSucceeding(EqualsMatcher(TestConversation.ID))
         }
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         with(arrangement) {
             coVerify {
-                deleteConversation(eq(TestConversation.ID))
+                deleteConversation(any(), eq(TestConversation.ID))
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -103,7 +105,7 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationFailing()
         }
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         with(arrangement) {
             coVerify {
@@ -119,6 +121,7 @@ class DeletedConversationEventHandlerTest {
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         DeleteConversationArrangement by DeleteConversationArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
         fun arrange() = run {
