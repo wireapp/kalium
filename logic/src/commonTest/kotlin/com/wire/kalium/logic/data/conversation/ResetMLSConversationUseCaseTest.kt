@@ -36,7 +36,7 @@ import kotlin.test.assertTrue
 class ResetMLSConversationUseCaseTest {
 
     @Test
-    fun whenResetMLSConversationFeatureIsDisabled_thenResetConversationNotStarted() = runTest {
+    fun givenFeatureDisabled_whenUseCaseCalled_thenResetConversationNotStarted() = runTest {
 
         val (arrangement, useCase) = Arrangement()
             .withFeatureDisabled()
