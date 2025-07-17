@@ -97,13 +97,18 @@ internal class KeyPackageManagerImpl(
                     kaliumLogger.i("Checking if we need to refill key packages")
                     transactionProvider.mlsTransaction("KeyPackageManager") { mlsContext ->
                         when (val result = refillKeyPackagesUseCase.value(mlsContext)) {
-                            is RefillKeyPackagesResult.Success -> timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
-                            is RefillKeyPackagesResult.Failure -> return@mlsTransaction Either.Left(result.failure)
+                            is RefillKeyPackagesResult.Success -> {
+                                timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
+                                Either.Right(Unit)
+                            }
+                            is RefillKeyPackagesResult.Failure -> {
+                                Either.Left(result.failure)
+                            }
                         }
-                        Either.Right(Unit)
                     }
+                } else {
+                    Either.Right(Unit)
                 }
-                Either.Right(Unit)
             }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
     }
 }

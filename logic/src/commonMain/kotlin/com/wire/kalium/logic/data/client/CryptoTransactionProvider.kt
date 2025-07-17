@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
@@ -78,7 +80,7 @@ class CryptoTransactionProviderImpl(
     ): Either<CoreFailure, R> {
         return proteusClientProvider.getOrError()
             .flatMap { proteus ->
-                proteus.transaction("proteus${name?.let { "_$it" } ?: ""}") { proteusContext ->
+                proteus.transaction(name.toTransactionName("proteus")) { proteusContext ->
                     block(proteusContext)
                 }
             }
@@ -90,7 +92,7 @@ class CryptoTransactionProviderImpl(
     ): Either<CoreFailure, R> {
         return mlsClientProvider.getMLSClient()
             .flatMap { mlsClient ->
-                mlsClient.transaction("mls${name?.let { "_$it" } ?: ""}") { mlsContext ->
+                mlsClient.transaction(name.toTransactionName("mls")) { mlsContext ->
                     block(mlsContext)
                 }
             }
@@ -101,26 +103,25 @@ class CryptoTransactionProviderImpl(
         name: String?,
         block: suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R> {
-        val proteusClient = proteusClientProvider.getOrError()
-        val mlsClient = mlsClientProvider.getMLSClient()
-        return proteusClient
-            .flatMap { proteus ->
-                return proteus.transaction("proteus${name?.let { "_$it" } ?: ""}") { proteusCtx ->
-                    mlsClient.fold({
-                        block(object : CryptoTransactionContext {
-                            override val mls: MlsCoreCryptoContext? = null
-                            override val proteus: ProteusCoreCryptoContext = proteusCtx
-                        })
 
-                    }) { mls ->
-                        mls.transaction("mls${name?.let { "_$it" } ?: ""}") { mlsContext ->
-                            block(object : CryptoTransactionContext {
-                                override val mls: MlsCoreCryptoContext = mlsContext
-                                override val proteus: ProteusCoreCryptoContext = proteusCtx
-                            })
-                        }
-                    }
-                }
+        val proteusClient = proteusClientProvider.getOrError().getOrFail { return it.left() }
+        val mlsClient = mlsClientProvider.getMLSClient().getOrNull()
+
+        return proteusClient.transaction(name.toTransactionName("proteus")) { proteusCtx ->
+            mlsClient?.transaction(name.toTransactionName("mls")) { mlsCtx ->
+                block(withCryptoContext(proteusCtx, mlsCtx))
+            } ?: run {
+                block(withCryptoContext(proteusCtx, null))
             }
+        }
+    }
+
+    private fun withCryptoContext(proteus: ProteusCoreCryptoContext, mls: MlsCoreCryptoContext?) = object : CryptoTransactionContext {
+        override val mls: MlsCoreCryptoContext? = mls
+        override val proteus: ProteusCoreCryptoContext = proteus
+    }
+
+    private fun String?.toTransactionName(protocol: String): String {
+        return this?.let { "${protocol}_$it" } ?: protocol
     }
 }
